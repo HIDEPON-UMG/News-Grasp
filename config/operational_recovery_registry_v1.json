@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "OPERATIONAL_RECOVERY_REGISTRY_V1",
+  "productId": "News-Grasp",
+  "unknownReasonHandler": "major_incident_terminal",
+  "handlers": [
+    {"handlerId": "active_generation_reconcile", "reasonCodes": ["GENERATION_DRIFT"]},
+    {"handlerId": "previous_generation_restore", "reasonCodes": ["RUNTIME_GENERATION_INVALID"]},
+    {"handlerId": "checkpoint_continuation", "reasonCodes": ["CHECKPOINT_VALID_WRAPPER_FAILURE"]},
+    {"handlerId": "summary_audio_script_builder", "reasonCodes": ["SUMMARY_AUDIO_SCRIPT_MISSING"]},
+    {"handlerId": "deepdive_dialogue_builder", "reasonCodes": ["DEEPDIVE_DIALOGUE_MISSING"]},
+    {"handlerId": "deepdive_audio_builder", "reasonCodes": ["DEEPDIVE_AUDIO_MISSING"]},
+    {"handlerId": "current_issue_page_renderer", "reasonCodes": ["CURRENT_ISSUE_PAGE_MISSING"]},
+    {"handlerId": "distribution_manifest_builder", "reasonCodes": ["DISTRIBUTION_MANIFEST_MISSING"]},
+    {"handlerId": "deepdive_provenance_repair", "reasonCodes": ["DEEPDIVE_PROVENANCE_INVALID"]},
+    {"handlerId": "deepdive_dialogue_repair", "reasonCodes": ["DEEPDIVE_DIALOGUE_INVALID"]},
+    {"handlerId": "deepdive_public_repair", "reasonCodes": ["DEEPDIVE_PUBLIC_INVALID"]},
+    {"handlerId": "reporter_artifact_model_route", "reasonCodes": ["REPORTER_ARTIFACT_MISSING"]},
+    {"handlerId": "summary_model_route", "reasonCodes": ["SUMMARY_ARTIFACT_MISSING"]},
+    {"handlerId": "deepdive_article_model_route", "reasonCodes": ["DEEPDIVE_ARTICLE_MISSING"]},
+    {"handlerId": "checkpoint_public_republish", "reasonCodes": ["CHECKPOINT_PUBLIC_REPUBLISH"]},
+    {"handlerId": "major_incident_terminal", "reasonCodes": ["MAJOR_INCIDENT", "UNKNOWN_REASON"]}
+  ]
+}

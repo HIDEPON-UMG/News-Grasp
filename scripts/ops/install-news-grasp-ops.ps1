@@ -29,6 +29,35 @@ function Write-AtomicUtf8Text {
         -Bytes ([Text.UTF8Encoding]::new($false).GetBytes($Text)) | Out-Null
 }
 
+function Assert-NewsGraspAssetRelativePath {
+    param([string] $Value)
+    if ([string]::IsNullOrWhiteSpace($Value)) { throw 'NEWS_GRASP_ASSET_PATH_INVALID' }
+    $normalized = $Value.Replace('/', '\')
+    if ([IO.Path]::IsPathRooted($normalized) -or $normalized.StartsWith('\\')) {
+        throw 'NEWS_GRASP_ASSET_ABSOLUTE_PATH'
+    }
+    foreach ($part in $normalized.Split('\')) {
+        if ([string]::IsNullOrWhiteSpace($part) -or $part -eq '.' -or $part -eq '..' -or $part.Contains(':')) {
+            throw 'NEWS_GRASP_ASSET_RELATIVE_PATH_INVALID'
+        }
+    }
+    return $normalized
+}
+
+function Assert-NewsGraspAssetInstallDestination {
+    param(
+        [Parameter(Mandatory = $true)][string] $DestinationPath,
+        [Parameter(Mandatory = $true)][string] $CanonicalBinDir
+    )
+    $canonicalDestination = Get-NewsGraspCanonicalPath -Path $DestinationPath
+    $canonicalBin = Get-NewsGraspCanonicalPath -Path $CanonicalBinDir
+    $prefix = $canonicalBin + [IO.Path]::DirectorySeparatorChar
+    if (-not $canonicalDestination.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase)) {
+        throw 'NEWS_GRASP_ASSET_INSTALL_DESTINATION_INVALID'
+    }
+    Assert-NewsGraspNoReparsePath -Path (Split-Path -Parent $canonicalDestination) -Boundary $canonicalBin
+}
+
 function Resolve-NewsGraspRepoDir {
     param([string] $Override)
     if ($Override) {
@@ -374,6 +403,37 @@ $files = @(
 )
 
 $RepoDir = Resolve-NewsGraspRepoDir -Override $RepoDir
+$automationAssetManifestPath = Join-Path $RepoDir 'config\news_grasp_automation_assets_v1.json'
+if (-not (Test-Path -LiteralPath $automationAssetManifestPath -PathType Leaf)) {
+    throw 'NEWS_GRASP_AUTOMATION_ASSET_MANIFEST_MISSING'
+}
+try {
+    $automationAssetManifest = Get-Content -LiteralPath $automationAssetManifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
+} catch {
+    throw 'NEWS_GRASP_AUTOMATION_ASSET_MANIFEST_INVALID'
+}
+if (
+    [string]$automationAssetManifest.schemaVersion -ne 'NEWS_GRASP_AUTOMATION_ASSET_MANIFEST_V1' -or
+    [string]$automationAssetManifest.productId -ne 'News-Grasp' -or
+    [string]$automationAssetManifest.installRoot -ne 'news-grasp-assets'
+) {
+    throw 'NEWS_GRASP_AUTOMATION_ASSET_MANIFEST_INVALID'
+}
+$automationAssetRows = @($automationAssetManifest.assets)
+if (-not $automationAssetRows.Count) { throw 'NEWS_GRASP_AUTOMATION_ASSET_MANIFEST_EMPTY' }
+$automationAssetIds = @{}
+foreach ($asset in $automationAssetRows) {
+    $assetId = [string]$asset.assetId
+    if ([string]::IsNullOrWhiteSpace($assetId) -or $automationAssetIds.ContainsKey($assetId)) {
+        throw 'NEWS_GRASP_AUTOMATION_ASSET_DUPLICATE_ID'
+    }
+    $automationAssetIds[$assetId] = $true
+    if ([string]$asset.kind -notin @('skill', 'guard', 'automation')) {
+        throw 'NEWS_GRASP_AUTOMATION_ASSET_KIND_INVALID'
+    }
+    $asset.sourcePath = Assert-NewsGraspAssetRelativePath ([string]$asset.sourcePath)
+    $asset.installPath = Assert-NewsGraspAssetRelativePath ([string]$asset.installPath)
+}
 $TaskPythonwPath = Resolve-NewsGraspTaskPythonw -Override $TaskPythonwPath -ResolvedRepoDir $RepoDir
 $ops = Join-Path $RepoDir 'scripts\ops'
 $installTrustedBoundary = (Resolve-Path -LiteralPath $env:USERPROFILE).Path
@@ -422,6 +482,13 @@ foreach ($file in $files) {
         -TrustedBoundary $RepoDir `
         -RequireSingleLink
 }
+$assetSourceSnapshots = @{}
+foreach ($asset in $automationAssetRows) {
+    $assetSourceSnapshots[[string]$asset.assetId] = Read-NewsGraspVerifiedFile `
+        -Path (Join-Path $RepoDir ([string]$asset.sourcePath)) `
+        -TrustedBoundary $RepoDir `
+        -RequireSingleLink
+}
 $backupRoot = Join-Path $RepoDir 'build\live-runner-backups'
 $null = Assert-NewsGraspCanonicalInstallSource `
     -ResolvedRepoDir $RepoDir `
@@ -450,6 +517,7 @@ $ManifestPath = Join-Path $BackupDir 'install-manifest.json'
 $taskSnapshots = @()
 $manifestFiles = @()
 $destinationSnapshots = @{}
+$assetDestinationSnapshots = @{}
 $null = Assert-NewsGraspCanonicalInstallSource `
     -ResolvedRepoDir $RepoDir `
     -RequestedBinDir $BinDir `
@@ -462,6 +530,17 @@ foreach ($file in $files) {
     if (Test-Path -LiteralPath $destination) {
         Assert-NewsGraspInstallDestination -DestinationPath $destination -CanonicalBinDir $canonicalBinDir
         $destinationSnapshots[$file] = Read-NewsGraspVerifiedFile `
+            -Path $destination `
+            -TrustedBoundary $canonicalBinDir
+    }
+}
+$assetInstallRoot = Join-Path $BinDir ([string]$automationAssetManifest.installRoot)
+foreach ($asset in $automationAssetRows) {
+    $assetId = [string]$asset.assetId
+    $destination = Join-Path $assetInstallRoot ([string]$asset.installPath)
+    if (Test-Path -LiteralPath $destination) {
+        Assert-NewsGraspAssetInstallDestination -DestinationPath $destination -CanonicalBinDir $canonicalBinDir
+        $assetDestinationSnapshots[$assetId] = Read-NewsGraspVerifiedFile `
             -Path $destination `
             -TrustedBoundary $canonicalBinDir
     }
@@ -513,6 +592,29 @@ foreach ($file in $files) {
         backup = if (Test-Path -LiteralPath $backup) { $backup } else { '' }
         before_sha256 = $beforeHash
         source_sha256 = $sourceHash
+        after_sha256 = ''
+    }
+}
+foreach ($asset in $automationAssetRows) {
+    $assetId = [string]$asset.assetId
+    $destination = Join-Path $assetInstallRoot ([string]$asset.installPath)
+    $backup = Join-Path $BackupDir (Join-Path 'news-grasp-assets' ([string]$asset.installPath))
+    $beforeHash = ''
+    if ($assetDestinationSnapshots.ContainsKey($assetId)) {
+        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $backup) | Out-Null
+        Write-NewsGraspAtomicFile `
+            -Path $backup `
+            -TrustedBoundary $BackupDir `
+            -Bytes $assetDestinationSnapshots[$assetId].Bytes | Out-Null
+        $beforeHash = [string]$assetDestinationSnapshots[$assetId].Sha256
+    }
+    $manifestFiles += [ordered]@{
+        file = ('asset:' + $assetId)
+        source = (Join-Path $RepoDir ([string]$asset.sourcePath))
+        destination = $destination
+        backup = if ($beforeHash) { $backup } else { '' }
+        before_sha256 = $beforeHash
+        source_sha256 = [string]$assetSourceSnapshots[$assetId].Sha256
         after_sha256 = ''
     }
 }
@@ -588,6 +690,19 @@ foreach ($file in $files) {
     $row = @($manifestFiles | Where-Object { $_.file -eq $file })[0]
     $row['after_sha256'] = $afterHash
 }
+foreach ($asset in $automationAssetRows) {
+    $assetId = [string]$asset.assetId
+    $destination = Join-Path $assetInstallRoot ([string]$asset.installPath)
+    Assert-NewsGraspAssetInstallDestination -DestinationPath $destination -CanonicalBinDir $canonicalBinDir
+    $assetParent = Split-Path -Parent $destination
+    New-Item -ItemType Directory -Force -Path $assetParent | Out-Null
+    $afterHash = Write-NewsGraspAtomicFile `
+        -Path $destination `
+        -TrustedBoundary $canonicalBinDir `
+        -Bytes $assetSourceSnapshots[$assetId].Bytes
+    $row = @($manifestFiles | Where-Object { $_.file -eq ('asset:' + $assetId) })[0]
+    $row['after_sha256'] = $afterHash
+}
 $runtimePythonPath = Join-Path (Split-Path -Parent $TaskPythonwPath) 'python.exe'
 $runtimeRoot = [ordered]@{
     schemaVersion = 'NEWS_GRASP_RUNTIME_ROOT_V1'
@@ -654,7 +769,8 @@ if (-not $SkipTaskRegistration) {
     $taskLauncherPath = Join-Path $BinDir 'news-grasp-task-launcher.pyw'
     $pythonw = $TaskPythonwPath
     if (-not (Test-Path -LiteralPath $pythonw)) { throw 'News-Grasp .venv pythonw.exe が見つかりません。' }
-    $runnerArgs = "`"$taskLauncherPath`" runner --scheduled-task-name `"$RunnerTaskName`" --repo-dir `"$RepoDir`" --python-exe `"$pythonPath`" --evidence-repo-dir `"$runtimeEvidenceRepoDir`""
+    # Scheduled Taskはstable installed launcherだけを指す。source worktreeのpathをtask定義へ封印しない。
+    $runnerArgs = "`"$taskLauncherPath`" runner --scheduled-task-name `"$RunnerTaskName`""
     $runnerAction = New-ScheduledTaskAction -Execute $pythonw -Argument $runnerArgs -WorkingDirectory $BinDir
     $runnerTrigger = New-ScheduledTaskTrigger -Daily -At 6:00am
     $runnerSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew
@@ -683,7 +799,7 @@ if (-not $SkipTaskRegistration) {
         }
     }
 
-    $bootstrapArgs = "`"$taskLauncherPath`" bootstrap --scheduled-task-name `"$BootstrapTaskName`" --repo-dir `"$RepoDir`" --python-exe `"$pythonPath`" --evidence-repo-dir `"$runtimeEvidenceRepoDir`""
+    $bootstrapArgs = "`"$taskLauncherPath`" bootstrap --scheduled-task-name `"$BootstrapTaskName`""
     $bootstrapAction = New-ScheduledTaskAction -Execute $pythonw -Argument $bootstrapArgs -WorkingDirectory $BinDir
     $bootstrapTrigger = New-ScheduledTaskTrigger -Daily -At 5:55am
     $bootstrapSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew
@@ -711,7 +827,7 @@ if (-not $SkipTaskRegistration) {
         }
     }
 
-    $deadmanArgs = "`"$deadmanLauncherPath`" --repo-dir `"$RepoDir`" --python-exe `"$pythonPath`" --evidence-repo-dir `"$runtimeEvidenceRepoDir`""
+    $deadmanArgs = "`"$deadmanLauncherPath`""
     $deadmanAction = New-ScheduledTaskAction -Execute $pythonw -Argument $deadmanArgs -WorkingDirectory $BinDir
     $deadmanTrigger = New-ScheduledTaskTrigger -Daily -At 6:40am
     $deadmanRepetition = New-CimInstance -Namespace 'Root/Microsoft/Windows/TaskScheduler' -ClassName 'MSFT_TaskRepetitionPattern' -ClientOnly -Property @{

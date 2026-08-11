@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "NEWS_GRASP_HISTORICAL_FAILURE_FIXTURE_V1",
+  "issueDate": "2026-08-11",
+  "scenarioId": "NG2-HISTORICAL-20260811-001",
+  "initialPublicAuthority": "public-green-authority-20260811",
+  "events": [
+    {"phase":"scheduled","status":"failure","reasonCode":"ARTIFACT_TREE_FAILURE","wrapperExit":126,"modelCalls":1},
+    {"phase":"recovery","status":"checkpoint_valid","reasonCode":"CHECKPOINT_VALID_WRAPPER_FAILURE","wrapperExit":126,"modelCalls":0},
+    {"phase":"deepdive","status":"checkpoint_valid","reasonCode":"DEEPDIVE_CHECKPOINT_VALID","wrapperExit":"timeout","modelCalls":0},
+    {"phase":"public","status":"green","reasonCode":"PUBLIC_BUNDLE_VERIFIED","wrapperExit":0,"modelCalls":0},
+    {"phase":"readiness","status":"repaired_green","reasonCode":"READINESS_REPAIRED_VERIFIED","wrapperExit":0,"modelCalls":0}
+  ],
+  "expected": {
+    "publicAuthorityPreserved": true,
+    "totalAdditionalModelCalls": 0,
+    "publishSideEffects": 0,
+    "notificationSideEffects": 0,
+    "dailyOperationLineagePreserved": true
+  }
+}

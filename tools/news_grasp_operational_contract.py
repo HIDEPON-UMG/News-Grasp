@@ -5,9 +5,10 @@ import json
 import argparse
 import ast
 import re
+from dataclasses import asdict, dataclass
 from pathlib import Path
 import sys
-from typing import Any
+from typing import Any, Callable, Mapping
 
 
 RECOVERY_BRANCHES = {
@@ -537,3 +538,145 @@ def finalize_audit_decision(
     )
     result = derive_report_state(payload, result)
     return result
+
+
+@dataclass(frozen=True)
+class CompletionStateVectorV2:
+    """公開、readiness、audit、scheduled、recoveryを交換不能なfieldで保持する。"""
+
+    scheduledAttemptStatus: str
+    recoveryAttemptStatus: str
+    publicCompletionStatus: str
+    nextRunReadinessStatus: str
+    auditObservationStatus: str
+    operationalStatus: str
+
+
+def evaluate_completion(
+    *,
+    scheduled_attempt: Mapping[str, Any],
+    recovery_attempt: Mapping[str, Any],
+    public_receipt: Mapping[str, Any],
+    readiness_probe: Mapping[str, Any],
+    audit_observation: Mapping[str, Any],
+) -> dict[str, Any]:
+    """既存state vectorへpublic/readinessの非後退述語を投影する。"""
+    public_status = str(public_receipt.get("status") or "unverified")
+    authority = public_receipt.get("authorityId")
+    if public_status == "verified_regression":
+        public_completion = "red"
+    elif public_status == "verified_green" and isinstance(authority, str) and authority:
+        public_completion = "green"
+    elif public_receipt.get("previousVerifiedGreen") and isinstance(authority, str) and authority:
+        public_completion = "green"
+    else:
+        public_completion = "unverified"
+    readiness_status = str(readiness_probe.get("status") or "unverified")
+    operational_status = "green" if public_completion == "green" and readiness_status == "green" else "degraded"
+    state_vector = CompletionStateVectorV2(
+        scheduledAttemptStatus=str(scheduled_attempt.get("status") or "unverified"),
+        recoveryAttemptStatus=str(recovery_attempt.get("status") or "unverified"),
+        publicCompletionStatus=public_completion,
+        nextRunReadinessStatus=readiness_status,
+        auditObservationStatus=str(audit_observation.get("status") or "unverified"),
+        operationalStatus=operational_status,
+    )
+    return {
+        "schemaVersion": "COMPLETION_STATE_VECTOR_V2",
+        **asdict(state_vector),
+        "stateVector": asdict(state_vector),
+        "completionAuthorityId": authority,
+        "causeFingerprint": audit_observation.get("causeFingerprint"),
+    }
+
+
+def probe_readiness(*, root: Path | str, expected_paths: list[str], generation_id: str) -> dict[str, Any]:
+    """副作用なしで固定rootのreadinessを観測する。"""
+    base = Path(root).resolve()
+    checked: list[Path] = []
+    for relative in expected_paths:
+        candidate = Path(relative)
+        if candidate.is_absolute() or ".." in candidate.parts:
+            raise ValueError("NG_READINESS_ROOT_INVALID")
+        resolved = (base / candidate).resolve()
+        if base not in resolved.parents and resolved != base:
+            raise ValueError("NG_READINESS_ROOT_INVALID")
+        checked.append(resolved)
+    missing = [
+        relative
+        for relative, resolved in zip(expected_paths, checked)
+        if not resolved.is_file() or resolved.is_symlink()
+    ]
+    return {
+        "schemaVersion": "READINESS_PROBE_RESULT_V1",
+        "status": "green" if not missing else "red",
+        "generationId": generation_id,
+        "missingPaths": missing,
+        "mutationCount": 0,
+    }
+
+
+def repair_readiness(
+    *,
+    authority: Mapping[str, Any],
+    reason_code: str,
+    handler: Callable[[Mapping[str, Any]], Mapping[str, Any]],
+) -> Mapping[str, Any]:
+    """typed authorityと登録handlerの結果だけを返す。"""
+    if not all(authority.get(key) for key in ("authorityId", "generationId", "causeFingerprint")):
+        raise ValueError("NG_READINESS_AUTHORITY_INVALID")
+    result = handler({"reasonCode": reason_code, "authority": dict(authority)})
+    if not isinstance(result, Mapping) or result.get("selfDeclaredGreen") is True:
+        raise ValueError("NG_READINESS_SELF_DECLARED_GREEN")
+    return {"status": "repair_completed", "handlerResult": dict(result), "mutationCount": result.get("mutationCount", 0)}
+
+
+def verify_repaired_readiness(*, root: Path | str, expected_paths: list[str], generation_id: str) -> dict[str, Any]:
+    result = probe_readiness(root=root, expected_paths=expected_paths, generation_id=generation_id)
+    if result["status"] != "green":
+        raise ValueError("NG_READINESS_REPAIR_NOT_VERIFIED")
+    return result
+
+
+def evaluate_bundle(bundle: Mapping[str, Any]) -> dict[str, Any]:
+    """公開必須bundleを一度だけ判定し、既存artifactの再生成を抑止する。
+
+    DeepDive記事・対談・音声は別artifactであるため、いずれか一つでも
+    欠けている場合はGreenにしない。既存artifact hashが入力と一致する場合は
+    ``reuseExisting`` を返し、モデル経路へ戻さない。
+    """
+    if not isinstance(bundle, Mapping):
+        raise ValueError("NG_BUNDLE_INVALID")
+    aliases = {
+        "summary": ("summary",),
+        "deepdiveArticle": ("deepdiveArticle", "deepdive", "article"),
+        "deepdiveDialogue": ("deepdiveDialogue", "dialogue"),
+        "deepdiveAudio": ("deepdiveAudio", "audio"),
+    }
+    missing: list[str] = []
+    selected: dict[str, Any] = {}
+    for canonical, names in aliases.items():
+        value = next((bundle.get(name) for name in names if bundle.get(name) is not None), None)
+        if value in (None, "", {}, [], ()):  # 空fixtureをGreenへ倒さない。
+            missing.append(canonical)
+        else:
+            selected[canonical] = value
+    if missing:
+        return {
+            "schemaVersion": "PUBLIC_BUNDLE_VERIFICATION_V1",
+            "status": "incomplete",
+            "missing": missing,
+            "modelCalls": 0,
+            "reuseExisting": False,
+        }
+    expected = bundle.get("existingArtifactHashes")
+    actual = bundle.get("artifactHashes")
+    reuse = isinstance(expected, Mapping) and isinstance(actual, Mapping) and dict(expected) == dict(actual)
+    return {
+        "schemaVersion": "PUBLIC_BUNDLE_VERIFICATION_V1",
+        "status": "green",
+        "missing": [],
+        "bundle": selected,
+        "modelCalls": 0 if reuse else int(bundle.get("modelCalls", 0) or 0),
+        "reuseExisting": reuse,
+    }

@@ -48,6 +48,13 @@ def _remote_head(repo_root: Path, remote: str, branch: str) -> str:
     return output.split()[0] if output.split() else ""
 
 
+def probe_readiness(*, root: Path | str, expected_paths: list[str], generation_id: str) -> dict[str, Any]:
+    """公開面確認のread-only入口。scheduled gateからpublish mutationを呼ばない。"""
+    from tools.news_grasp_operational_contract import probe_readiness as _probe
+
+    return _probe(root=root, expected_paths=expected_paths, generation_id=generation_id)
+
+
 def verify_public_surface(
     *,
     date: str,

@@ -12,6 +12,49 @@ News-Grasp は、繁忙なITコンサルタントが膨大なニュースを一�
 
 この `docs/spec.md` は News-Grasp の上位プロダクト真実であり、日次バッチ、公開面、品質 gate、Podcast、通知、incident、runner state の改修判断はこの憲法に従う。
 
+## 2026-08-11 運用再設計コミットメント
+
+本節は、公開成果物を保持したまま日次運用を自走させるためのNews-Grasp専用契約である。ProjectFolders共通ハーネス、共有model broker、routing、hook、review基盤、他repo、別sessionのworktree・transactionは変更対象外であり、競合時は競合側の確定commitを正本として本作業を従にする。
+
+### 成功状態
+
+通常scheduled productionは、固定production generation上で `生成 → checkpoint確定 → 登録済み復旧 → 公開確認 → 次回readiness収束` を人手なしで閉じる。自然scheduled runの待機、翌朝の観測、ユーザー目視は完了条件に含めない。次のstateは一値へ潰さず交換不能な別fieldとして保存する。
+
+| state | 意味 | 後退条件 |
+|---|---|---|
+| `scheduledAttemptStatus` | 当日scheduled試行の結果 | 同一lineageのfailure/event追記のみ |
+| `recoveryAttemptStatus` | 登録済み復旧の結果 | retry ledgerのcause変化のみ |
+| `publicCompletionStatus` | 必須bundleと公開面の検証結果 | verified public regressionのみ |
+| `nextRunReadinessStatus` | 次回runnerの純粋readiness | probe結果をrepairへ分岐 |
+| `auditObservationStatus` | 最新観測と履歴の状態 | append-only observation |
+| `operationalStatus` | public/readinessを合わせた総合状態 | 両方GreenのときだけGreen |
+
+readiness Red、verification unavailable、wrapper異常だけで `publicCompletionStatus=Green` をRedへ戻してはならない。DeepDive記事・対談・音声を通常公開bundleに含め、有効なcheckpointがあるstageはwrapper rc126/timeout/hangでもmodelを再実行せず、決定論的な後続工程だけを継続する。
+
+### Product-local write admission
+
+product sourceのmutationは `config/news_grasp_product_write_allowlist_v1.json` と `tools/news_grasp_change_control.py` の単一入口に限定する。Lunaはtargetを直接編集せず、隔離change packetとmetadataだけを生成する。consumerはmutation直前にremote HEAD、全worktree、target hash、競合owner、reparse/symlink/hardlink、absolute/UNC/ADS/`..`/case alias、baseline driftを再検証する。競合ownerが存在する場合はexit 73、path/reparse/baseline driftはexit 74で拒否する。named mutex `Global\\NewsGraspProductChangeV1` とtransaction journalで部分適用を防ぎ、成功receiptのないpacket再利用を拒否する。
+
+### Immutable production generation
+
+`ProductionGenerationManifestV2` はsource commit/origin/common-dir、tracked source manifest、runtime root/file hash、config hash、installed launcher hash、Scheduled Task action/trigger hash、previous generationを封印する。Scheduled Taskはstable installed launcherだけを指し、repo/worktree overrideを持たない。active pointerはpromotion完了後に一度だけatomic replaceし、generationはimmutableとする。rollbackは旧manifestとbytes parityを再検証した後だけ行う。
+
+### Pure readiness と登録済み復旧
+
+`probe-readiness` はread-onlyでfile/process/task/network mutationを行わない。`repair-readiness` はtyped authorityと登録済みhandlerを必須とし、repair側の自己申告Greenを認めない。repair後は同じroot・generationへboundしたpure probeを再実行する。unknown reasonは唯一のappend-only `major incident`へ閉じ、shell/model/source/rule/test writeへ到達させない。
+
+### Checkpoint・lineage・causal retry
+
+`ArtifactCheckpointV1` はissue date、daily operation lineage、stage、input/output hash、schema、oracle、producer route、次工程を保持する。cause fingerprintはartifact/failure class別のcauseInputMaskだけから生成し、run/session/path/時刻を含めない。retry ledger keyは `issueDate | dailyOperationLineageId | artifactKey | producerRouteId | failureClass` とし、同一fingerprintはretry 0、mask内の因果hash変化時だけatomic one-shot retryを許可する。
+
+### Gate分離と物理提出
+
+Daily gateは当日製品oracle・必須bundle・public surface・distribution・notification・pure readinessだけを評価する。pytest全回帰、Playwright、historical、crash/replay/drift、final NoPublish E2EはRelease gateへ移し、scheduled/recovery call graphから到達不能にする。全下位証拠がGreenになった後だけsafe commit、fast-forward push、remote HEAD、正規installer、runtime/task parity、rollback receipt、隔離NoPublish E2E一回を順に閉じる。NoPublish E2Eのpublish/push/upload/notification副作用は0とする。
+
+### Model役割と境界
+
+要件・設計・security判断はSol Max、固定された機械編集と限定fixtureはLuna Max（reasoning effort max）、hash/JSON/test/parityはlocal deterministic toolとする。本節の実装ではLuna packetに `unresolvedDecisionIds=[]`、exact write set、Red oracle、command、causal retry、rollback、`return_to_sol_before_execution` を必須化する。共有global変更、public semantics変更、未登録failure class、write set拡張は実行せず上流設計へ戻す。
+
 | Area | Requirement |
 |---|---|
 | Primary reader | 繁忙なITコンサルタント。一般ニュース読者ではなく、業務判断に使える粒度と示唆を必要とする読者。 |

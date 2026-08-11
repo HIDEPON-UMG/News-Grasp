@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "NEWS_GRASP_USER_PROVENANCE_V1",
+  "source": "user-approved-plan",
+  "planSha256": "a38cb22f54689483ba203e82f3ba678e04636df65ddf6f7cd5d9c5c03cd7804d",
+  "bundleSha256": "34eb00fab9f43a9fb76c9af2547d71e36eeb4f7d1386d141354bab45c115095b",
+  "scope": "News-Grasp product-local only",
+  "excluded": [
+    "ProjectFolders shared harness",
+    "shared model broker and routing",
+    "other repositories",
+    "other session worktrees and transactions"
+  ],
+  "naturalScheduledRunIsCompletionEvidence": false,
+  "manualUserMonitoringIsCompletionEvidence": false,
+  "modelRoles": {
+    "sol": "requirements-design-security",
+    "luna": "mechanical-implementation-and-fixtures",
+    "local": "hash-json-test-parity"
+  }
+}

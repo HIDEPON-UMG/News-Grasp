@@ -1640,7 +1640,7 @@ def test_deadman_task_launcher_uses_pythonw_and_create_no_window() -> None:
     assert "news-grasp-deadman-launcher.pyw" in installer_text
     assert 'parser.add_argument("--repo-dir", type=Path)' in launcher_text
     assert '["-RepoDir", str(repo_dir)]' in launcher_text
-    assert '$deadmanArgs = "`"$deadmanLauncherPath`" --repo-dir `"$RepoDir`" --python-exe `"$pythonPath`" --evidence-repo-dir `"$runtimeEvidenceRepoDir`""' in installer_text
+    assert '$deadmanArgs = "`"$deadmanLauncherPath`""' in installer_text
     assert 'news-grasp-runtime-root-v1.json' in launcher_text
     assert '{"schemaVersion", "repoDir", "pythonExe", "evidenceRepoDir"}' in launcher_text
     assert '["-PythonExe", str(python_exe)]' in launcher_text
@@ -1662,7 +1662,9 @@ def test_runner_and_bootstrap_tasks_use_pythonw_no_console_launcher() -> None:
     assert "news-grasp-task-launcher.pyw" in installer_text
     assert 'parser.add_argument("--repo-dir", type=Path)' in launcher_text
     assert 'extra.extend(["-RepoDir", str(repo_dir)])' in launcher_text
-    assert '--repo-dir `"$RepoDir`"' in installer_text
+    assert '$runnerArgs = "`"$taskLauncherPath`" runner --scheduled-task-name `"$RunnerTaskName`""' in installer_text
+    assert '$bootstrapArgs = "`"$taskLauncherPath`" bootstrap --scheduled-task-name `"$BootstrapTaskName`""' in installer_text
+    assert '--repo-dir `"$RepoDir`"' not in installer_text
     assert 'news-grasp-runtime-root-v1.json' in launcher_text
     assert '{"schemaVersion", "repoDir", "pythonExe", "evidenceRepoDir"}' in launcher_text
     assert 'extra.extend(["-PythonExe", str(python_exe)])' in launcher_text

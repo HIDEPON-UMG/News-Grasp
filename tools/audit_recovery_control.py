@@ -2749,6 +2749,23 @@ def write_audit_terminal(decision: object) -> dict[str, Any]:
     return terminal
 
 
+def append_observation(decision: object) -> dict[str, Any]:
+    """audit observationを既存のimmutable terminal transactionへ追記する。
+
+    呼出側が固定terminalを直接上書きする経路を持たないよう、公開する追加入口は
+    ``write_audit_terminal``へ集約する。履歴検証、replay拒否、lineage検証、WALは
+    既存consumerが一元的に担当する。
+    """
+    terminal = write_audit_terminal(decision)
+    return {
+        "status": "green",
+        "terminal": terminal,
+        "eventSequence": terminal.get("eventSequence"),
+        "eventHash": terminal.get("eventHash"),
+        "completionAuthorityId": terminal.get("completionAuthorityId"),
+    }
+
+
 def _opened_path(descriptor: int, fallback: Path) -> Path:
     if os.name != "nt":
         return Path(os.path.realpath(fallback))

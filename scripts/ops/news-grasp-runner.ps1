@@ -4680,6 +4680,9 @@ Write-Log 'ja-callout gate OK'
 # 「別件」「無関係」judgement での bypass は禁止 — 1 件でも FAIL なら修正してから
 # 再 push する ([[feedback_check_design_principles]] 1 段 illegal state unrepresentable
 # + 2 段 境界 1 箇所集約)。
+if (-not $NoPublish) {
+    Write-Log 'ReleaseGateProfile deferred from scheduled/recovery path (pytest full regression is final-only)'
+} else {
 Write-Log 'pytest gate start (pytest tests/ -q -m "not network")'
 $PytestBaseTempRoot = Join-Path ([System.IO.Path]::GetTempPath()) 'ng-pytest'
 New-Item -ItemType Directory -Force -Path $PytestBaseTempRoot | Out-Null
@@ -4722,6 +4725,7 @@ if ($pytestGateRc -ne 0) {
     Invoke-AutonomousCompletionPolicy -FailureKind 'local-tool' -GateId 'pytest-static' -Reason 'pytest autonomous gate failed' -ExitCode $pytestGateRc
 }
 Write-Log 'pytest gate OK'
+}
 
 # ===== 2.81 batch SLO gate (commit 後・publish 前) =====
 # 1時間 / 300万token を超える自走は goal 未達として止める。

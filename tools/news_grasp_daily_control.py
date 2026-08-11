@@ -538,6 +538,35 @@ def _normalize_causal_retry_evidence(value: object) -> dict[str, Any]:
     return current
 
 
+def _daily_operation_lineage_id(*, issue_date: str, runner_state: dict[str, Any]) -> str:
+    """run/session/path変更では変わらない当日scheduled authority由来のlineage。"""
+    existing = str(
+        runner_state.get("dailyOperationLineageId")
+        or runner_state.get("daily_operation_lineage_id")
+        or ""
+    )
+    if existing:
+        return existing
+    authority = str(
+        runner_state.get("scheduledAuthorityId")
+        or runner_state.get("scheduled_authority_id")
+        or runner_state.get("authorityId")
+        or f"News-Grasp|{issue_date}|scheduled"
+    )
+    return hashlib.sha256(
+        json.dumps(
+            {
+                "schemaVersion": "DAILY_OPERATION_LINEAGE_V1",
+                "issueDate": issue_date,
+                "scheduledAuthorityId": authority,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+
+
 def _admit_causal_retry(
     *,
     repo_root: Path,
@@ -546,6 +575,11 @@ def _admit_causal_retry(
     completion: dict[str, Any],
 ) -> dict[str, Any]:
     current = _normalize_causal_retry_evidence(completion)
+    lineage_id = _daily_operation_lineage_id(
+        issue_date=issue_date,
+        runner_state=runner_state,
+    )
+    current["dailyOperationLineageId"] = lineage_id
     expected_root = Path(repo_root) / "build" / "recovery" / "control"
     state_path = _causal_retry_state_path(repo_root, issue_date)
     expected_path = expected_root / f"{issue_date}-causal-retry.json"
@@ -579,6 +613,11 @@ def _admit_causal_retry(
                 issue_date=issue_date,
                 runner_state=runner_state,
             )
+            if any(
+                previous.get(field) or previous.get(alias)
+                for field, alias in audit_recovery_control.CAUSE_INPUT_ALIASES.items()
+            ):
+                previous.setdefault("dailyOperationLineageId", lineage_id)
             decision = audit_recovery_control.causal_retry_gate(previous, current)
             result = {
                 "schemaVersion": "CAUSAL_RETRY_RUNTIME_EVENT_V1",
@@ -602,6 +641,7 @@ def _admit_causal_retry(
                 "externalEvidenceSha256": current.get(
                     "external_evidence_sha256", ""
                 ),
+                "dailyOperationLineageId": lineage_id,
             }
             if result["allowed"]:
                 state = {

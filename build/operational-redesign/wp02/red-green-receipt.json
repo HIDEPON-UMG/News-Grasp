@@ -1,0 +1,726 @@
+{
+  "greenCount": 42,
+  "matrixSha256": "c25824b9e1517db9b621df85b2c86d2afb203092f437e671a6eba1d952e24caa",
+  "nodeCount": 42,
+  "nodes": [
+    {
+      "acceptanceId": "NG2-A01",
+      "consumer": "news_grasp_change_control.validate_packet",
+      "green": {
+        "oracle": "validated",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A01-primary_behavior]"
+      },
+      "nodeId": "NG2-A01-primary_behavior",
+      "oracle": "validated",
+      "perspective": "primary_behavior",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A01_PRIMARY_BEHAVIOR",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A01",
+      "consumer": "news_grasp_change_control.validate_packet",
+      "green": {
+        "oracle": "NG_CHANGE_PATH_INVALID",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A01-adversarial_boundary]"
+      },
+      "nodeId": "NG2-A01-adversarial_boundary",
+      "oracle": "NG_CHANGE_PATH_INVALID",
+      "perspective": "adversarial_boundary",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A01_ADVERSARIAL_BOUNDARY",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A01",
+      "consumer": "news_grasp_change_control.snapshot",
+      "green": {
+        "oracle": "NG_CONCURRENT_OWNER_PRESENT",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A01-operational_recovery]"
+      },
+      "nodeId": "NG2-A01-operational_recovery",
+      "oracle": "NG_CONCURRENT_OWNER_PRESENT",
+      "perspective": "operational_recovery",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A01_OPERATIONAL_RECOVERY",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A02",
+      "consumer": "news_grasp_generation.verify_parity",
+      "green": {
+        "oracle": "generation_parity_green",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A02-primary_behavior]"
+      },
+      "nodeId": "NG2-A02-primary_behavior",
+      "oracle": "generation_parity_green",
+      "perspective": "primary_behavior",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A02_PRIMARY_BEHAVIOR",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A02",
+      "consumer": "news_grasp_generation.verify_parity",
+      "green": {
+        "oracle": "NG_GENERATION_DRIFT",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A02-adversarial_boundary]"
+      },
+      "nodeId": "NG2-A02-adversarial_boundary",
+      "oracle": "NG_GENERATION_DRIFT",
+      "perspective": "adversarial_boundary",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A02_ADVERSARIAL_BOUNDARY",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A02",
+      "consumer": "news_grasp_generation.rollback",
+      "green": {
+        "oracle": "rollback_receipt_green",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A02-operational_recovery]"
+      },
+      "nodeId": "NG2-A02-operational_recovery",
+      "oracle": "rollback_receipt_green",
+      "perspective": "operational_recovery",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A02_OPERATIONAL_RECOVERY",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A03",
+      "consumer": "news_grasp_operational_contract.evaluate_completion",
+      "green": {
+        "oracle": "public_green_readiness_red",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A03-primary_behavior]"
+      },
+      "nodeId": "NG2-A03-primary_behavior",
+      "oracle": "public_green_readiness_red",
+      "perspective": "primary_behavior",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A03_PRIMARY_BEHAVIOR",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A03",
+      "consumer": "news_grasp_operational_contract.evaluate_completion",
+      "green": {
+        "oracle": "public_authority_preserved",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A03-adversarial_boundary]"
+      },
+      "nodeId": "NG2-A03-adversarial_boundary",
+      "oracle": "public_authority_preserved",
+      "perspective": "adversarial_boundary",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A03_ADVERSARIAL_BOUNDARY",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A03",
+      "consumer": "news_grasp_operational_contract.verify_repaired_readiness",
+      "green": {
+        "oracle": "pure_probe_green",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A03-operational_recovery]"
+      },
+      "nodeId": "NG2-A03-operational_recovery",
+      "oracle": "pure_probe_green",
+      "perspective": "operational_recovery",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A03_OPERATIONAL_RECOVERY",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A04",
+      "consumer": "verify_public_surface.probe_readiness",
+      "green": {
+        "oracle": "mutation_count_zero",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A04-primary_behavior]"
+      },
+      "nodeId": "NG2-A04-primary_behavior",
+      "oracle": "mutation_count_zero",
+      "perspective": "primary_behavior",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A04_PRIMARY_BEHAVIOR",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A04",
+      "consumer": "verify_public_surface.probe_readiness",
+      "green": {
+        "oracle": "root_binding_rejected",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A04-adversarial_boundary]"
+      },
+      "nodeId": "NG2-A04-adversarial_boundary",
+      "oracle": "root_binding_rejected",
+      "perspective": "adversarial_boundary",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A04_ADVERSARIAL_BOUNDARY",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A04",
+      "consumer": "verify_public_surface.probe_readiness",
+      "green": {
+        "oracle": "read_only_replay_green",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A04-operational_recovery]"
+      },
+      "nodeId": "NG2-A04-operational_recovery",
+      "oracle": "read_only_replay_green",
+      "perspective": "operational_recovery",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A04_OPERATIONAL_RECOVERY",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A05",
+      "consumer": "news_grasp_checkpoint.resume_stage",
+      "green": {
+        "oracle": "model_call_count_zero",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A05-primary_behavior]"
+      },
+      "nodeId": "NG2-A05-primary_behavior",
+      "oracle": "model_call_count_zero",
+      "perspective": "primary_behavior",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A05_PRIMARY_BEHAVIOR",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A05",
+      "consumer": "news_grasp_checkpoint.resume_stage",
+      "green": {
+        "oracle": "checkpoint_invalid_rejected",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A05-adversarial_boundary]"
+      },
+      "nodeId": "NG2-A05-adversarial_boundary",
+      "oracle": "checkpoint_invalid_rejected",
+      "perspective": "adversarial_boundary",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A05_ADVERSARIAL_BOUNDARY",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A05",
+      "consumer": "news_grasp_checkpoint.resume_stage",
+      "green": {
+        "oracle": "deterministic_continuation_green",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A05-operational_recovery]"
+      },
+      "nodeId": "NG2-A05-operational_recovery",
+      "oracle": "deterministic_continuation_green",
+      "perspective": "operational_recovery",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A05_OPERATIONAL_RECOVERY",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A06",
+      "consumer": "news_grasp_checkpoint.retry_ledger",
+      "green": {
+        "oracle": "same_fingerprint_retry_zero",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A06-primary_behavior]"
+      },
+      "nodeId": "NG2-A06-primary_behavior",
+      "oracle": "same_fingerprint_retry_zero",
+      "perspective": "primary_behavior",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A06_PRIMARY_BEHAVIOR",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A06",
+      "consumer": "news_grasp_checkpoint.retry_ledger",
+      "green": {
+        "oracle": "unrelated_hash_does_not_retry",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A06-adversarial_boundary]"
+      },
+      "nodeId": "NG2-A06-adversarial_boundary",
+      "oracle": "unrelated_hash_does_not_retry",
+      "perspective": "adversarial_boundary",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A06_ADVERSARIAL_BOUNDARY",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A06",
+      "consumer": "news_grasp_checkpoint.retry_ledger",
+      "green": {
+        "oracle": "cause_change_one_shot",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A06-operational_recovery]"
+      },
+      "nodeId": "NG2-A06-operational_recovery",
+      "oracle": "cause_change_one_shot",
+      "perspective": "operational_recovery",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A06_OPERATIONAL_RECOVERY",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A07",
+      "consumer": "news_grasp_runner.daily_gate",
+      "green": {
+        "oracle": "release_gate_unreachable",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A07-primary_behavior]"
+      },
+      "nodeId": "NG2-A07-primary_behavior",
+      "oracle": "release_gate_unreachable",
+      "perspective": "primary_behavior",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A07_PRIMARY_BEHAVIOR",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A07",
+      "consumer": "news_grasp_runner.daily_gate",
+      "green": {
+        "oracle": "pytest_not_called",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A07-adversarial_boundary]"
+      },
+      "nodeId": "NG2-A07-adversarial_boundary",
+      "oracle": "pytest_not_called",
+      "perspective": "adversarial_boundary",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A07_ADVERSARIAL_BOUNDARY",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A07",
+      "consumer": "news_grasp_runner.release_gate",
+      "green": {
+        "oracle": "release_gate_one_call",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A07-operational_recovery]"
+      },
+      "nodeId": "NG2-A07-operational_recovery",
+      "oracle": "release_gate_one_call",
+      "perspective": "operational_recovery",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A07_OPERATIONAL_RECOVERY",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A08",
+      "consumer": "operational_recovery_registry.dispatch",
+      "green": {
+        "oracle": "registered_handler_once",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A08-primary_behavior]"
+      },
+      "nodeId": "NG2-A08-primary_behavior",
+      "oracle": "registered_handler_once",
+      "perspective": "primary_behavior",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A08_PRIMARY_BEHAVIOR",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A08",
+      "consumer": "operational_recovery_registry.dispatch",
+      "green": {
+        "oracle": "unknown_major_incident_only",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A08-adversarial_boundary]"
+      },
+      "nodeId": "NG2-A08-adversarial_boundary",
+      "oracle": "unknown_major_incident_only",
+      "perspective": "adversarial_boundary",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A08_ADVERSARIAL_BOUNDARY",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A08",
+      "consumer": "operational_recovery_registry.dispatch",
+      "green": {
+        "oracle": "source_write_count_zero",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A08-operational_recovery]"
+      },
+      "nodeId": "NG2-A08-operational_recovery",
+      "oracle": "source_write_count_zero",
+      "perspective": "operational_recovery",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A08_OPERATIONAL_RECOVERY",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A09",
+      "consumer": "news_grasp_operational_contract.evaluate_bundle",
+      "green": {
+        "oracle": "deepdive_bundle_required",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A09-primary_behavior]"
+      },
+      "nodeId": "NG2-A09-primary_behavior",
+      "oracle": "deepdive_bundle_required",
+      "perspective": "primary_behavior",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A09_PRIMARY_BEHAVIOR",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A09",
+      "consumer": "news_grasp_operational_contract.evaluate_bundle",
+      "green": {
+        "oracle": "existing_artifact_not_regenerated",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A09-adversarial_boundary]"
+      },
+      "nodeId": "NG2-A09-adversarial_boundary",
+      "oracle": "existing_artifact_not_regenerated",
+      "perspective": "adversarial_boundary",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A09_ADVERSARIAL_BOUNDARY",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A09",
+      "consumer": "news_grasp_checkpoint.resume_stage",
+      "green": {
+        "oracle": "checkpoint_public_continuation",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A09-operational_recovery]"
+      },
+      "nodeId": "NG2-A09-operational_recovery",
+      "oracle": "checkpoint_public_continuation",
+      "perspective": "operational_recovery",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A09_OPERATIONAL_RECOVERY",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A10",
+      "consumer": "audit_recovery_control.append_observation",
+      "green": {
+        "oracle": "lineage_preserved",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A10-primary_behavior]"
+      },
+      "nodeId": "NG2-A10-primary_behavior",
+      "oracle": "lineage_preserved",
+      "perspective": "primary_behavior",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A10_PRIMARY_BEHAVIOR",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A10",
+      "consumer": "audit_recovery_control.append_observation",
+      "green": {
+        "oracle": "replay_rejected",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A10-adversarial_boundary]"
+      },
+      "nodeId": "NG2-A10-adversarial_boundary",
+      "oracle": "replay_rejected",
+      "perspective": "adversarial_boundary",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A10_ADVERSARIAL_BOUNDARY",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A10",
+      "consumer": "audit_recovery_control.append_observation",
+      "green": {
+        "oracle": "green_unverified_recovered_chain",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A10-operational_recovery]"
+      },
+      "nodeId": "NG2-A10-operational_recovery",
+      "oracle": "green_unverified_recovered_chain",
+      "perspective": "operational_recovery",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A10_OPERATIONAL_RECOVERY",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A11",
+      "consumer": "human_impact.validate",
+      "green": {
+        "oracle": "no_focus_theft",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A11-primary_behavior]"
+      },
+      "nodeId": "NG2-A11-primary_behavior",
+      "oracle": "no_focus_theft",
+      "perspective": "primary_behavior",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A11_PRIMARY_BEHAVIOR",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A11",
+      "consumer": "human_impact.validate",
+      "green": {
+        "oracle": "raw_process_kill_rejected",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A11-adversarial_boundary]"
+      },
+      "nodeId": "NG2-A11-adversarial_boundary",
+      "oracle": "raw_process_kill_rejected",
+      "perspective": "adversarial_boundary",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A11_ADVERSARIAL_BOUNDARY",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A11",
+      "consumer": "human_impact.validate",
+      "green": {
+        "oracle": "owned_process_only",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A11-operational_recovery]"
+      },
+      "nodeId": "NG2-A11-operational_recovery",
+      "oracle": "owned_process_only",
+      "perspective": "operational_recovery",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A11_OPERATIONAL_RECOVERY",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A12",
+      "consumer": "news_grasp_generation.verify_parity",
+      "green": {
+        "oracle": "source_runtime_task_equal",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A12-primary_behavior]"
+      },
+      "nodeId": "NG2-A12-primary_behavior",
+      "oracle": "source_runtime_task_equal",
+      "perspective": "primary_behavior",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A12_PRIMARY_BEHAVIOR",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A12",
+      "consumer": "news_grasp_generation.verify_parity",
+      "green": {
+        "oracle": "stale_runtime_rejected",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A12-adversarial_boundary]"
+      },
+      "nodeId": "NG2-A12-adversarial_boundary",
+      "oracle": "stale_runtime_rejected",
+      "perspective": "adversarial_boundary",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A12_ADVERSARIAL_BOUNDARY",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A12",
+      "consumer": "news_grasp_generation.rollback",
+      "green": {
+        "oracle": "previous_generation_restored",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A12-operational_recovery]"
+      },
+      "nodeId": "NG2-A12-operational_recovery",
+      "oracle": "previous_generation_restored",
+      "perspective": "operational_recovery",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A12_OPERATIONAL_RECOVERY",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A13",
+      "consumer": "news_grasp_change_control.validate_packet",
+      "green": {
+        "oracle": "luna_decision_complete",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A13-primary_behavior]"
+      },
+      "nodeId": "NG2-A13-primary_behavior",
+      "oracle": "luna_decision_complete",
+      "perspective": "primary_behavior",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A13_PRIMARY_BEHAVIOR",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A13",
+      "consumer": "news_grasp_change_control.validate_packet",
+      "green": {
+        "oracle": "model_substitution_rejected",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A13-adversarial_boundary]"
+      },
+      "nodeId": "NG2-A13-adversarial_boundary",
+      "oracle": "model_substitution_rejected",
+      "perspective": "adversarial_boundary",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A13_ADVERSARIAL_BOUNDARY",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A13",
+      "consumer": "news_grasp_change_control.snapshot",
+      "green": {
+        "oracle": "owner_commit_rebase_required",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A13-operational_recovery]"
+      },
+      "nodeId": "NG2-A13-operational_recovery",
+      "oracle": "owner_commit_rebase_required",
+      "perspective": "operational_recovery",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A13_OPERATIONAL_RECOVERY",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A14",
+      "consumer": "invoke-scheduled-equivalent-nopublish",
+      "green": {
+        "oracle": "nopublish_green_once",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A14-primary_behavior]"
+      },
+      "nodeId": "NG2-A14-primary_behavior",
+      "oracle": "nopublish_green_once",
+      "perspective": "primary_behavior",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A14_PRIMARY_BEHAVIOR",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A14",
+      "consumer": "invoke-scheduled-equivalent-nopublish",
+      "green": {
+        "oracle": "side_effect_count_zero",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A14-adversarial_boundary]"
+      },
+      "nodeId": "NG2-A14-adversarial_boundary",
+      "oracle": "side_effect_count_zero",
+      "perspective": "adversarial_boundary",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A14_ADVERSARIAL_BOUNDARY",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    },
+    {
+      "acceptanceId": "NG2-A14",
+      "consumer": "invoke-scheduled-equivalent-nopublish",
+      "green": {
+        "oracle": "failed_attempt_frozen",
+        "status": "green",
+        "testId": "test_ng2_wp02_matrix_red_green[NG2-A14-operational_recovery]"
+      },
+      "nodeId": "NG2-A14-operational_recovery",
+      "oracle": "failed_attempt_frozen",
+      "perspective": "operational_recovery",
+      "red": {
+        "failureSignature": "NG2_RED_NG2_A14_OPERATIONAL_RECOVERY",
+        "fixtureKind": "task_specific_boundary",
+        "status": "observed"
+      }
+    }
+  ],
+  "planSha256": "a38cb22f54689483ba203e82f3ba678e04636df65ddf6f7cd5d9c5c03cd7804d",
+  "receiptSha256": "c2cf20750dc806ab8b1f1c3ef0103444de6fc41e8312fb64c6660c823eeaf7e0",
+  "redCount": 42,
+  "schemaVersion": "NEWS_GRASP_RED_GREEN_RECEIPT_V1",
+  "sourceGeneration": "a5a6443560fae8ca867af35d1f592361236fa0ad"
+}
