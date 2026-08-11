@@ -1744,8 +1744,8 @@ function Test-CodexAuthReadiness {
             $doctorText -match 'stored auth mode\s+(none|api-key)' -or
             $doctorText -match 'auth file.*missing'
         )
-        if ($authConfigured -and $chatGptTokens -and $mcpFailure -and -not $authFailure) {
-            Write-Log "codex doctor non-auth failure ignored: rc=$doctorRc reason=mcp auth is configured stored ChatGPT tokens true"
+        if ($authConfigured -and $chatGptTokens -and -not $authFailure) {
+            Write-Log "codex doctor non-auth failure ignored: rc=$doctorRc reason=auth is configured stored ChatGPT tokens true"
             return $true
         }
         Write-Log "codex auth readiness failed: codex doctor auth rc=$doctorRc"
