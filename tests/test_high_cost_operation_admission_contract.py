@@ -62,6 +62,19 @@ def test_nopublish_wrapper_threads_optional_user_supersession_approval_fail_clos
     assert "SupersessionApprovalPath" not in text[text.index("$runnerArguments = @("):runner]
 
 
+def test_supersession_approval_is_bound_to_issued_attempt_and_issue_date() -> None:
+    text = WRAPPER.read_text(encoding="utf-8-sig")
+    guard = text.split("if ($SupersessionApprovalPath)", 1)[1].split(
+        "$statePath = Get-CanonicalFuturePath", 1
+    )[0]
+    assert "$supersessionApproval = Get-Content -LiteralPath $SupersessionApprovalPath" in guard
+    assert '$issuedAttemptKey = "News-Grasp:${DateStamp}:scheduled-equivalent-nopublish"' in guard
+    assert "$supersessionApproval.canonicalAttemptKey" in guard
+    assert "$supersessionApproval.issueDate" in guard
+    assert "HIGH_COST_SUPERSESSION_BINDING_INVALID" in guard
+    assert "System.StringComparison]::Ordinal" in guard
+
+
 def test_runner_requires_activated_parent_before_any_reporter_fanout() -> None:
     text = RUNNER.read_text(encoding="utf-8-sig")
     consume = text.index("HIGH_COST_PARENT_AUTHORITY_RECEIPT_REQUIRED")

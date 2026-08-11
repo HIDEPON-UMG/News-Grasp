@@ -242,6 +242,21 @@ $E2EAdmissionPath = Get-CanonicalExistingFile -Path $E2EAdmissionPath -Label 'is
 $CausalReplacementProofPath = Get-CanonicalExistingFile -Path $CausalReplacementProofPath -Label 'causal replacement proof' -Boundary $workspacePath -MaxBytes 2097152
 if ($SupersessionApprovalPath) {
     $SupersessionApprovalPath = Get-CanonicalExistingFile -Path $SupersessionApprovalPath -Label 'pre-admission supersession approval' -Boundary $workspacePath -MaxBytes 4194304
+    try {
+        # Supersession approval is bound to this exact issued admission and issue date.
+        # An approval for a prior date/generation must never authorize the successor.
+        $supersessionApproval = Get-Content -LiteralPath $SupersessionApprovalPath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+        $issuedAttemptKey = "News-Grasp:${DateStamp}:scheduled-equivalent-nopublish"
+        $approvedAttemptKey = [string]$supersessionApproval.canonicalAttemptKey
+        $approvedIssueDate = [string]$supersessionApproval.issueDate
+        if ([string]::IsNullOrWhiteSpace($issuedAttemptKey) -or
+            -not [string]::Equals($approvedAttemptKey, $issuedAttemptKey, [System.StringComparison]::Ordinal) -or
+            -not [string]::Equals($approvedIssueDate, $DateStamp, [System.StringComparison]::Ordinal)) {
+            throw "attemptKey/issueDate mismatch issued=$issuedAttemptKey approved=$approvedAttemptKey/$approvedIssueDate expectedDate=$DateStamp"
+        }
+    } catch {
+        throw "HIGH_COST_SUPERSESSION_BINDING_INVALID: $($_.Exception.Message)"
+    }
 }
 $statePath = Get-CanonicalFuturePath -Path $statePath -Boundary $repoPath -Label 'state file'
 $logPath = Get-CanonicalFutureDirectory -Path $logPath -Boundary $repoPath -Label 'log directory'
