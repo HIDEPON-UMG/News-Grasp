@@ -178,6 +178,9 @@ function Assert-CanonicalModelBroker {
     # product workspace rootから読む。これによりcwd変更でconsumerを差し替えない。
     $externalControlScript = Join-Path ([System.IO.Path]::GetFullPath($HighCostWorkspaceRoot)) 'tools\news_grasp_external_control.py'
     if (-not (Test-Path -LiteralPath $externalControlScript -PathType Leaf)) {
+        $externalControlScript = Join-Path $script:CanonicalExecutionRoot 'tools\news_grasp_external_control.py'
+    }
+    if (-not (Test-Path -LiteralPath $externalControlScript -PathType Leaf)) {
         Add-WrapperLog 'EXTERNAL_CONTROL_PLANE_UNAVAILABLE'
         exit 126
     }
