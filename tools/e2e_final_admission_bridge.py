@@ -65,9 +65,11 @@ EXPECTED_RUNNER_ARGUMENTS_SUFFIX = ".runner-arguments.json"
 EXPECTED_RESERVATION_RECEIPT_SUFFIX = ".e2e-final-reservation.json"
 EXPECTED_CLAIM_RECEIPT_SUFFIX = ".e2e-final-claim.json"
 EXPECTED_CLAIM_WITNESS_SUFFIX = ".e2e-final-claim-witness.json"
+EXPECTED_CLAIM_FAILURE_SUFFIX = ".e2e-final-claim-failure.json"
 RESERVATION_SCHEMA = "E2E_FINAL_ADMISSION_CONSUMPTION_V1"
 CLAIM_SCHEMA = "E2E_FINAL_RUNNER_CLAIM_V1"
 CLAIM_WITNESS_SCHEMA = "E2E_FINAL_RUNNER_CLAIM_WITNESS_V1"
+CLAIM_FAILURE_SCHEMA = "E2E_FINAL_RUNNER_CLAIM_FAILURE_V1"
 PROCESS_IDENTITY_FIELDS = {
     "pid",
     "parentPid",
@@ -1236,6 +1238,85 @@ def _validate_claim_receipt(value: dict[str, Any]) -> None:
         raise E2EFinalAdmissionError("E2E_CLAIM_RECEIPT_INVALID")
 
 
+def _claim_failure_marker_path(reservation_path: Path) -> Path:
+    return Path(f"{reservation_path}{EXPECTED_CLAIM_FAILURE_SUFFIX}").resolve()
+
+
+def _validate_claim_failure_marker(value: dict[str, Any]) -> None:
+    required = {
+        "schemaVersion",
+        "state",
+        "attemptKey",
+        "admissionId",
+        "admissionPath",
+        "admissionSha256",
+        "reservationReceiptPath",
+        "reservationReceiptSha256",
+        "runnerPid",
+        "ownerProcessIdentity",
+        "runnerExecutablePath",
+        "runnerExecutableSha256",
+        "authorityPythonExecutablePath",
+        "authorityPythonExecutableSha256",
+        "failureCode",
+        "failureFingerprint",
+        "observedAt",
+        "claimFailureSha256",
+        "receiptSha256",
+    }
+    if set(value) != required or value.get("schemaVersion") != CLAIM_FAILURE_SCHEMA:
+        raise E2EFinalAdmissionError("E2E_CLAIM_FAILURE_INVALID")
+    if value.get("state") != "claim_failure_recorded":
+        raise E2EFinalAdmissionError("E2E_CLAIM_FAILURE_INVALID")
+    for field in (
+        "admissionSha256",
+        "reservationReceiptSha256",
+        "runnerExecutableSha256",
+        "authorityPythonExecutableSha256",
+        "failureFingerprint",
+        "claimFailureSha256",
+        "receiptSha256",
+    ):
+        if HEX_64_RE.fullmatch(str(value.get(field) or "")) is None:
+            raise E2EFinalAdmissionError("E2E_CLAIM_FAILURE_INVALID")
+    for field in (
+        "admissionPath",
+        "reservationReceiptPath",
+        "runnerExecutablePath",
+        "authorityPythonExecutablePath",
+    ):
+        if not isinstance(value.get(field), str) or not Path(value[field]).is_absolute():
+            raise E2EFinalAdmissionError("E2E_CLAIM_FAILURE_INVALID")
+    if type(value.get("runnerPid")) is not int or value["runnerPid"] <= 0:
+        raise E2EFinalAdmissionError("E2E_CLAIM_FAILURE_INVALID")
+    try:
+        owner_identity = _validate_process_identity(
+            value.get("ownerProcessIdentity"), expected_pid=value["runnerPid"]
+        )
+    except E2EFinalAdmissionError as error:
+        raise E2EFinalAdmissionError("E2E_CLAIM_FAILURE_INVALID") from error
+    if (
+        Path(value["runnerExecutablePath"]).resolve()
+        != Path(owner_identity["imagePath"]).resolve()
+        or owner_identity["imageSha256"] != value["runnerExecutableSha256"]
+    ):
+        raise E2EFinalAdmissionError("E2E_CLAIM_FAILURE_INVALID")
+    if not isinstance(value.get("attemptKey"), str) or not value["attemptKey"]:
+        raise E2EFinalAdmissionError("E2E_CLAIM_FAILURE_INVALID")
+    if not isinstance(value.get("admissionId"), str) or HEX_64_RE.fullmatch(value["admissionId"]) is None:
+        raise E2EFinalAdmissionError("E2E_CLAIM_FAILURE_INVALID")
+    if re.fullmatch(r"[A-Z0-9_.:-]{1,128}", str(value.get("failureCode") or "")) is None:
+        raise E2EFinalAdmissionError("E2E_CLAIM_FAILURE_INVALID")
+    if not isinstance(value.get("observedAt"), str) or not value["observedAt"]:
+        raise E2EFinalAdmissionError("E2E_CLAIM_FAILURE_INVALID")
+    if value["claimFailureSha256"] != _canonical_sha256(
+        _receipt_projection(value, "claimFailureSha256")
+    ):
+        raise E2EFinalAdmissionError("E2E_CLAIM_FAILURE_INVALID")
+    if value["receiptSha256"] != _canonical_sha256(_receipt_projection(value)):
+        raise E2EFinalAdmissionError("E2E_CLAIM_FAILURE_INVALID")
+
+
 def issue_admission(
     *,
     issue_date: str,
@@ -1477,6 +1558,27 @@ def _validate_attempt_ledger(value: dict[str, Any]) -> None:
         raise E2EFinalAdmissionError("E2E_ATTEMPT_LEDGER_INVALID")
     replacements = value.get("replacements", {})
     attempts = value["attempts"]
+    for attempt_key, row in attempts.items():
+        if not isinstance(row, dict):
+            continue
+        marker = row.get("claimFailure")
+        if marker is None:
+            continue
+        if row.get("state") != "runner_reserved" or row.get("claimReceiptPath"):
+            raise E2EFinalAdmissionError("E2E_CLAIM_FAILURE_LINEAGE_INVALID")
+        if not isinstance(marker, dict):
+            raise E2EFinalAdmissionError("E2E_CLAIM_FAILURE_LINEAGE_INVALID")
+        _validate_claim_failure_marker(marker)
+        if (
+            marker.get("attemptKey") != attempt_key
+            or marker.get("admissionId") != row.get("admissionId")
+            or marker.get("admissionPath") != row.get("admissionPath")
+            or marker.get("reservationReceiptPath")
+            != row.get("reservationReceiptPath")
+            or marker.get("reservationReceiptSha256")
+            != row.get("reservationReceiptSha256")
+        ):
+            raise E2EFinalAdmissionError("E2E_CLAIM_FAILURE_LINEAGE_INVALID")
     for attempt_key, replacement in replacements.items():
         if (
             attempt_key not in attempts
@@ -1550,7 +1652,7 @@ def _validate_wal_shape(wal: dict[str, Any]) -> None:
     }
     if set(wal) != required or wal.get("schemaVersion") != "NEWS_GRASP_E2E_ADMISSION_WAL_V1":
         raise E2EFinalAdmissionError("E2E_WAL_INVALID")
-    if wal.get("operation") not in {"reserve", "claim"}:
+    if wal.get("operation") not in {"reserve", "claim", "claim_failure"}:
         raise E2EFinalAdmissionError("E2E_WAL_INVALID")
     if not isinstance(wal.get("targetReceipt"), dict) or not isinstance(
         wal.get("targetLedger"), dict
@@ -1559,8 +1661,10 @@ def _validate_wal_shape(wal: dict[str, Any]) -> None:
     _validate_attempt_ledger(wal["targetLedger"])
     if wal["operation"] == "reserve":
         _validate_reservation_receipt(wal["targetReceipt"])
-    else:
+    elif wal["operation"] == "claim":
         _validate_claim_receipt(wal["targetReceipt"])
+    else:
+        _validate_claim_failure_marker(wal["targetReceipt"])
 
 
 def _validate_runtime_bindings(
@@ -1730,8 +1834,21 @@ def _validate_wal_identity(
         raise E2EFinalAdmissionError("E2E_WAL_INVALID")
     if wal["operation"] == "reserve":
         _validate_reservation_receipt(wal["targetReceipt"])
-    else:
+    elif wal["operation"] == "claim":
         _validate_claim_receipt(wal["targetReceipt"])
+    else:
+        _validate_claim_failure_marker(wal["targetReceipt"])
+    expected_receipt_path = (
+        value.get("expectedReservationReceiptPath")
+        if operation == "reserve"
+        else value.get("expectedClaimReceiptPath")
+    )
+    if operation == "claim_failure":
+        expected_receipt_path = str(
+            _claim_failure_marker_path(
+                Path(str(value.get("expectedReservationReceiptPath")))
+            )
+        )
     if (
         wal["operation"] != operation
         or wal["admissionPath"] != str(admission)
@@ -1740,12 +1857,7 @@ def _validate_wal_identity(
         or wal["attemptKey"] != value.get("attemptKey")
         or wal["targetReceipt"].get("admissionId") != value.get("admissionId")
         or wal["targetReceipt"].get("attemptKey") != value.get("attemptKey")
-        or wal["targetReceiptPath"]
-        != (
-            value.get("expectedReservationReceiptPath")
-            if operation == "reserve"
-            else value.get("expectedClaimReceiptPath")
-        )
+        or wal["targetReceiptPath"] != expected_receipt_path
         or not HEX_64_RE.fullmatch(str(wal["sourceAdmissionSha256"] or ""))
         or (
             wal["sourceLedgerSha256"] is not None
@@ -2166,6 +2278,52 @@ def _claim_receipt(
     return value
 
 
+def _claim_failure_marker(
+    *,
+    admission: Path,
+    admission_hash: str,
+    source: dict[str, Any],
+    reservation: dict[str, Any],
+    reservation_path: Path,
+    failure_code: str,
+    failure_fingerprint: str,
+    observed_at: str,
+    runner_pid: int,
+    owner_process_identity: dict[str, Any],
+    runner_executable_path: Path,
+    runner_executable_sha256: str,
+    authority_python_executable_path: Path,
+    authority_python_executable_sha256: str,
+) -> dict[str, Any]:
+    value: dict[str, Any] = {
+        "schemaVersion": CLAIM_FAILURE_SCHEMA,
+        "state": "claim_failure_recorded",
+        "attemptKey": source["attemptKey"],
+        "admissionId": source["admissionId"],
+        "admissionPath": str(admission),
+        "admissionSha256": admission_hash,
+        "reservationReceiptPath": str(reservation_path),
+        "reservationReceiptSha256": reservation["receiptSha256"],
+        "runnerPid": runner_pid,
+        "ownerProcessIdentity": owner_process_identity,
+        "runnerExecutablePath": str(runner_executable_path),
+        "runnerExecutableSha256": runner_executable_sha256,
+        "authorityPythonExecutablePath": str(authority_python_executable_path),
+        "authorityPythonExecutableSha256": authority_python_executable_sha256,
+        "failureCode": failure_code,
+        "failureFingerprint": failure_fingerprint,
+        "observedAt": observed_at,
+        "claimFailureSha256": "",
+        "receiptSha256": "",
+    }
+    value["claimFailureSha256"] = _canonical_sha256(
+        _receipt_projection(value, "claimFailureSha256")
+    )
+    value["receiptSha256"] = _canonical_sha256(_receipt_projection(value))
+    _validate_claim_failure_marker(value)
+    return value
+
+
 def _claim_row(
     reservation_row: dict[str, Any],
     receipt: dict[str, Any],
@@ -2429,6 +2587,228 @@ def consume_admission(
     )
 
 
+def record_claim_failure(
+    *,
+    admission_path: Path,
+    ledger_path: Path,
+    reservation_receipt: Path,
+    failure_code: str,
+    failure_fingerprint: str,
+    runner_executable_path: Path,
+    authority_python_executable_path: Path,
+    current_runner_pid: int,
+    observed_at: str | None = None,
+) -> dict[str, Any]:
+    """claim前検証失敗をcanonical ledgerへ一度だけ終端記録する。"""
+
+    if re.fullmatch(r"[A-Z0-9_.:-]{1,128}", str(failure_code or "")) is None:
+        raise E2EFinalAdmissionError("E2E_CLAIM_FAILURE_CODE_INVALID")
+    if HEX_64_RE.fullmatch(str(failure_fingerprint or "")) is None:
+        raise E2EFinalAdmissionError("E2E_CLAIM_FAILURE_FINGERPRINT_INVALID")
+    runner_executable = _canonical_file(
+        runner_executable_path, code="E2E_RUNNER_EXECUTABLE_INVALID"
+    )
+    authority_python_executable = _canonical_file(
+        authority_python_executable_path, code="E2E_AUTHORITY_PYTHON_INVALID"
+    )
+    owner_process_identity = _validate_process_identity(
+        _query_process_identity(current_runner_pid), expected_pid=current_runner_pid
+    )
+    # bridgeはrunnerの子processとして起動される。embedded consumerの
+    # self-callだけは許可するが、無関係なPIDの自己申告は拒否する。
+    if current_runner_pid not in {os.getpid(), os.getppid()}:
+        raise E2EFinalAdmissionError("E2E_CLAIM_FAILURE_CALLER_INVALID")
+    runner_executable_sha256 = _file_sha256(runner_executable)
+    if (
+        Path(owner_process_identity["imagePath"]).resolve() != runner_executable
+        or owner_process_identity["imageSha256"] != runner_executable_sha256
+    ):
+        raise E2EFinalAdmissionError("E2E_CLAIM_FAILURE_OWNER_INVALID")
+    authority_python_executable_sha256 = _file_sha256(authority_python_executable)
+    marker_time = str(observed_at or datetime.now(timezone.utc).isoformat())
+    if not marker_time:
+        raise E2EFinalAdmissionError("E2E_CLAIM_FAILURE_TIME_INVALID")
+    admission = Path(admission_path).resolve(strict=True)
+    ledger = Path(ledger_path).resolve()
+    with _issue_execution_lock(
+        ledger,
+        admission_path=admission,
+        attempt_key=str(_read_json(admission, "E2E_ADMISSION_INVALID").get("attemptKey") or ""),
+    ):
+        source, source_hash = _json_file_snapshot(admission, "E2E_ADMISSION_INVALID")
+        if source is None or source_hash is None:
+            raise E2EFinalAdmissionError("E2E_ADMISSION_INVALID")
+        _validate_admission(source)
+        if source.get("state") != "issued":
+            raise E2EFinalAdmissionError("E2E_ADMISSION_STATE_INVALID")
+        repo_root = _canonical_directory(
+            Path(str(source["repoRoot"])), code="E2E_ADMISSION_INVALID"
+        )
+        reservation_path = _exact_expected_output(
+            reservation_receipt,
+            value=source,
+            field="expectedReservationReceiptPath",
+            repo_root=repo_root,
+            suffix=EXPECTED_RESERVATION_RECEIPT_SUFFIX,
+            code="E2E_RESERVATION_RECEIPT_PATH_DRIFT",
+            exists_code="E2E_RESERVATION_RECEIPT_OUTPUT_EXISTS",
+        )
+        reservation, reservation_hash = _json_file_snapshot(
+            reservation_path, "E2E_RESERVATION_RECEIPT_INVALID", allow_missing=True
+        )
+        if reservation is None or reservation_hash is None:
+            raise E2EFinalAdmissionError("E2E_RESERVATION_RECEIPT_REQUIRED")
+        _validate_reservation_receipt(reservation)
+        if (
+            reservation.get("admissionId") != source.get("admissionId")
+            or reservation.get("admissionPath") != str(admission)
+            or reservation.get("admissionSha256") != source_hash
+        ):
+            raise E2EFinalAdmissionError("E2E_WAL_CROSS_LINEAGE")
+        bound_executable_pairs = (
+            ("runnerExecutablePath", runner_executable, runner_executable_sha256),
+            (
+                "authorityPythonExecutablePath",
+                authority_python_executable,
+                authority_python_executable_sha256,
+            ),
+        )
+        for path_field, actual_path, actual_hash in bound_executable_pairs:
+            if (
+                Path(str(source[path_field])).resolve() != actual_path
+                or str(source[path_field.replace("Path", "Sha256")]).casefold()
+                != actual_hash
+                or Path(str(reservation[path_field])).resolve() != actual_path
+                or str(reservation[path_field.replace("Path", "Sha256")]).casefold()
+                != actual_hash
+            ):
+                raise E2EFinalAdmissionError(
+                    "E2E_CLAIM_FAILURE_EXECUTABLE_BINDING_INVALID"
+                )
+        wal_path = _wal_path(ledger, admission, source["attemptKey"], "claim_failure")
+        recovered = _recover_wal(
+            wal_path=wal_path,
+            operation="claim_failure",
+            admission=admission,
+            ledger=ledger,
+            value=source,
+        )
+        if recovered is not None:
+            return recovered
+        ledger_value, ledger_hash = _ledger_snapshot(ledger)
+        attempt_key = source["attemptKey"]
+        row = ledger_value["attempts"].get(attempt_key)
+        if not isinstance(row, dict) or row.get("state") != "runner_reserved":
+            raise E2EFinalAdmissionError("E2E_CLAIM_FAILURE_LINEAGE_INVALID")
+        existing = row.get("claimFailure")
+        if existing is not None:
+            _validate_claim_failure_marker(existing)
+            if existing.get("failureFingerprint") != failure_fingerprint:
+                raise E2EFinalAdmissionError("E2E_CLAIM_FAILURE_CAUSE_CHANGED")
+            marker_path = _claim_failure_marker_path(reservation_path)
+            marker, _ = _json_file_snapshot(
+                marker_path, "E2E_CLAIM_FAILURE_INVALID", allow_missing=True
+            )
+            if marker is None:
+                raise E2EFinalAdmissionError("E2E_WAL_DIVERGENCE")
+            _validate_claim_failure_marker(marker)
+            if marker != existing:
+                raise E2EFinalAdmissionError("E2E_WAL_DIVERGENCE")
+            return marker
+        if row.get("claimReceiptPath"):
+            raise E2EFinalAdmissionError("E2E_CLAIM_FAILURE_LINEAGE_INVALID")
+        marker = _claim_failure_marker(
+            admission=admission,
+            admission_hash=source_hash,
+            source=source,
+            reservation=reservation,
+            reservation_path=reservation_path,
+            failure_code=failure_code,
+            failure_fingerprint=failure_fingerprint,
+            observed_at=marker_time,
+            runner_pid=current_runner_pid,
+            owner_process_identity=owner_process_identity,
+            runner_executable_path=runner_executable,
+            runner_executable_sha256=runner_executable_sha256,
+            authority_python_executable_path=authority_python_executable,
+            authority_python_executable_sha256=authority_python_executable_sha256,
+        )
+        marker_path = _claim_failure_marker_path(reservation_path)
+        if marker_path.exists():
+            raise E2EFinalAdmissionError("E2E_CLAIM_FAILURE_OUTPUT_EXISTS")
+        target_row = dict(row)
+        target_row["claimFailure"] = marker
+        target_ledger = {
+            "schemaVersion": LEDGER_SCHEMA,
+            "attempts": dict(ledger_value["attempts"]),
+            "replacements": dict(ledger_value.get("replacements", {})),
+        }
+        target_ledger["attempts"][attempt_key] = target_row
+        return _apply_wal(
+            wal_path=wal_path,
+            admission=admission,
+            ledger=ledger,
+            source_admission=source,
+            source_admission_hash=source_hash,
+            source_ledger=ledger_value,
+            source_ledger_hash=ledger_hash,
+            target_ledger=target_ledger,
+            ledger_row=target_row,
+            target_receipt_path=marker_path,
+            target_receipt=marker,
+            operation="claim_failure",
+        )
+
+
+def claim_failure_status(
+    *,
+    admission_path: Path,
+    ledger_path: Path,
+    reservation_receipt: Path,
+) -> dict[str, Any]:
+    """claim前のdurable failure markerをread-onlyで返す。"""
+
+    admission = Path(admission_path).resolve(strict=True)
+    ledger = Path(ledger_path).resolve()
+    source, _ = _json_file_snapshot(admission, "E2E_ADMISSION_INVALID")
+    if source is None:
+        raise E2EFinalAdmissionError("E2E_ADMISSION_INVALID")
+    _validate_admission(source)
+    repo_root = _canonical_directory(
+        Path(str(source["repoRoot"])), code="E2E_ADMISSION_INVALID"
+    )
+    reservation_path = _exact_expected_output(
+        reservation_receipt,
+        value=source,
+        field="expectedReservationReceiptPath",
+        repo_root=repo_root,
+        suffix=EXPECTED_RESERVATION_RECEIPT_SUFFIX,
+        code="E2E_RESERVATION_RECEIPT_PATH_DRIFT",
+        exists_code="E2E_RESERVATION_RECEIPT_OUTPUT_EXISTS",
+    )
+    ledger_value, _ = _ledger_snapshot(ledger)
+    row = ledger_value["attempts"].get(source["attemptKey"])
+    marker = row.get("claimFailure") if isinstance(row, dict) else None
+    if marker is None:
+        return {
+            "schemaVersion": CLAIM_FAILURE_SCHEMA,
+            "state": "none",
+            "attemptKey": source["attemptKey"],
+        }
+    if not isinstance(marker, dict):
+        raise E2EFinalAdmissionError("E2E_CLAIM_FAILURE_LINEAGE_INVALID")
+    _validate_claim_failure_marker(marker)
+    if marker.get("reservationReceiptPath") != str(reservation_path):
+        raise E2EFinalAdmissionError("E2E_CLAIM_FAILURE_LINEAGE_INVALID")
+    marker_path = _claim_failure_marker_path(reservation_path)
+    stored, _ = _json_file_snapshot(
+        marker_path, "E2E_CLAIM_FAILURE_INVALID", allow_missing=True
+    )
+    if stored is None or stored != marker:
+        raise E2EFinalAdmissionError("E2E_WAL_DIVERGENCE")
+    return marker
+
+
 def claim_runner(
     *,
     admission_path: Path,
@@ -2507,6 +2887,23 @@ def claim_runner(
         )
         if recovered is not None:
             return recovered
+        claim_failure_wal_path = _wal_path(
+            ledger, admission, source["attemptKey"], "claim_failure"
+        )
+        claim_failure_recovered = _recover_wal(
+            wal_path=claim_failure_wal_path,
+            operation="claim_failure",
+            admission=admission,
+            ledger=ledger,
+            value=source,
+        )
+        if claim_failure_recovered is not None:
+            raise E2EFinalAdmissionError("E2E_FINAL_ATTEMPT_CLAIM_TERMINAL")
+        claim_ledger, _ = _ledger_snapshot(ledger)
+        claim_row = claim_ledger["attempts"].get(source["attemptKey"])
+        if isinstance(claim_row, dict) and claim_row.get("claimFailure") is not None:
+            _validate_claim_failure_marker(claim_row["claimFailure"])
+            raise E2EFinalAdmissionError("E2E_FINAL_ATTEMPT_CLAIM_TERMINAL")
         bindings = _validate_runtime_bindings(
             source,
             runner_arguments=runner_arguments,
@@ -3003,6 +3400,24 @@ def main(argv: list[str] | None = None) -> int:
     )
     claim_parser.add_argument("--current-runner-pid", type=int, required=True)
     claim_parser.add_argument("--claim-nonce", required=True)
+    claim_failure_parser = subparsers.add_parser("record-claim-failure")
+    claim_failure_parser.add_argument("--admission", type=Path, required=True)
+    claim_failure_parser.add_argument(
+        "--reservation-receipt", type=Path, required=True
+    )
+    claim_failure_parser.add_argument("--failure-code", required=True)
+    claim_failure_parser.add_argument("--failure-fingerprint", required=True)
+    claim_failure_parser.add_argument("--runner-executable", type=Path, required=True)
+    claim_failure_parser.add_argument(
+        "--authority-python-executable", type=Path, required=True
+    )
+    claim_failure_parser.add_argument("--current-runner-pid", type=int, required=True)
+    claim_failure_parser.add_argument("--observed-at", default="")
+    claim_status_parser = subparsers.add_parser("claim-failure-status")
+    claim_status_parser.add_argument("--admission", type=Path, required=True)
+    claim_status_parser.add_argument(
+        "--reservation-receipt", type=Path, required=True
+    )
     validate_claim_parser = subparsers.add_parser("validate-runner-claim")
     validate_claim_parser.add_argument("--admission", type=Path, required=True)
     validate_claim_parser.add_argument(
@@ -3080,6 +3495,24 @@ def main(argv: list[str] | None = None) -> int:
                 actual_authority_python_executable_path=args.authority_python_executable,
                 current_runner_pid=args.current_runner_pid,
                 claim_nonce=args.claim_nonce,
+            )
+        elif args.command == "record-claim-failure":
+            result = record_claim_failure(
+                admission_path=args.admission,
+                ledger_path=default_attempt_ledger_path(),
+                reservation_receipt=args.reservation_receipt,
+                failure_code=args.failure_code,
+                failure_fingerprint=args.failure_fingerprint,
+                runner_executable_path=args.runner_executable,
+                authority_python_executable_path=args.authority_python_executable,
+                current_runner_pid=args.current_runner_pid,
+                observed_at=args.observed_at or None,
+            )
+        elif args.command == "claim-failure-status":
+            result = claim_failure_status(
+                admission_path=args.admission,
+                ledger_path=default_attempt_ledger_path(),
+                reservation_receipt=args.reservation_receipt,
             )
         elif args.command == "validate-runner-claim":
             result = validate_runner_claim(

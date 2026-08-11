@@ -90,6 +90,18 @@ def test_runner_requires_activated_parent_before_any_reporter_fanout() -> None:
     assert gate.index("'claim-runner'") < text.index("runner-invoked pid=")
 
 
+def test_runner_claim_failure_marker_is_checked_before_parent_validation() -> None:
+    text = RUNNER.read_text(encoding="utf-8-sig")
+    gate = text.split("function Assert-HighCostOperationAdmission", 1)[1].split(
+        "# ===== sentinel", 1
+    )[0]
+    status = gate.index("'claim-failure-status'")
+    parent_validation = gate.index("'validate-activated'")
+    assert status < parent_validation
+    assert "'record-claim-failure'" in text
+    assert "HIGH_COST_FINAL_RUNNER_CLAIM_TERMINAL" in gate
+
+
 def test_normal_daily_runner_never_reserves_final_e2e_budget() -> None:
     text = RUNNER.read_text(encoding="utf-8-sig")
     gate = text.split("function Assert-HighCostOperationAdmission", 1)[1].split(

@@ -7,6 +7,7 @@ import json
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import time
@@ -500,6 +501,36 @@ def _assert_managed_path(path: Path, boundary: Path, code: str) -> Path:
         if current.is_symlink() or attributes & 0x400:
             raise RuntimeError(code)
     return candidate
+
+
+def _retry_readonly_remove(func: object, path: str, exc_info: tuple[object, object, object]) -> None:
+    """managed root内の読み取り専用payloadだけを属性解除して削除する。"""
+    error = exc_info[1]
+    if not isinstance(error, PermissionError) and getattr(error, "winerror", None) != 5:
+        raise error  # type: ignore[misc]
+    target = Path(path)
+    if target.is_symlink():
+        raise RuntimeError("PRODUCTION_RUNTIME_REPARSE_INVALID")
+    try:
+        target.chmod(target.stat().st_mode | stat.S_IWRITE)
+    except OSError:
+        raise error  # type: ignore[misc]
+    func(path)  # type: ignore[operator]
+
+
+def _remove_runtime_path(path: Path) -> None:
+    """caller側でmanaged pathを検証済みのruntime file/dirを回収する。"""
+    if path.is_symlink():
+        raise RuntimeError("PRODUCTION_RUNTIME_REPARSE_INVALID")
+    if path.is_dir():
+        shutil.rmtree(path, onerror=_retry_readonly_remove)
+        return
+    try:
+        path.unlink()
+    except (PermissionError, OSError) as error:
+        if getattr(error, "winerror", None) != 5 and not isinstance(error, PermissionError):
+            raise
+        _retry_readonly_remove(os.unlink, str(path), (type(error), error, error.__traceback__))
 
 
 @contextmanager
@@ -1455,14 +1486,14 @@ def _resume_runtime_recovery_checkpoint_deletions(
             if path.exists():
                 if hashlib.sha256(path.read_bytes()).hexdigest() != str(item.get("sha256") or ""):
                     raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_MAINTENANCE_REQUIRED")
-                path.unlink()
+                _remove_runtime_path(path)
         transaction_dir = runtime_root / "transactions" / transaction_id
         quarantine_dir = runtime_root / "quarantine" / transaction_id
         if transaction_dir.exists():
-            shutil.rmtree(transaction_dir)
+            _remove_runtime_path(transaction_dir)
         if quarantine_dir.exists():
             _assert_managed_path(quarantine_dir, runtime_root, "PRODUCTION_RUNTIME_REPARSE_INVALID")
-            shutil.rmtree(quarantine_dir)
+            _remove_runtime_path(quarantine_dir)
         completed_record = dict(value)
         completed_record["deletionState"] = "completed"
         completed_record["completedAtUtc"] = datetime.now(timezone.utc).isoformat()
@@ -1552,11 +1583,11 @@ def maintain_production_runtime_recovery(
             os.fsync(stream.fileno())
         for path in files:
             _assert_managed_path(path, runtime_root, "PRODUCTION_RUNTIME_REPARSE_INVALID")
-            path.unlink()
+            _remove_runtime_path(path)
         transaction_dir = runtime_root / "transactions" / transaction_id
         if transaction_dir.exists():
-            shutil.rmtree(transaction_dir)
-        shutil.rmtree(quarantine_dir)
+            _remove_runtime_path(transaction_dir)
+        _remove_runtime_path(quarantine_dir)
         completed_record = dict(record)
         completed_record["deletionState"] = "completed"
         completed_record["completedAtUtc"] = datetime.now(timezone.utc).isoformat()

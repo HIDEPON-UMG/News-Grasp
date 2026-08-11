@@ -44,11 +44,16 @@ def test_runner_uses_direct_codex_exe_not_preflight_capturing_wrapper() -> None:
     assert "Join-Path $env:USERPROFILE 'bin\\codex.ps1'" not in runner
 
 
-def test_runner_pytest_gate_uses_repo_local_basetemp() -> None:
-    """pytest の一時ディレクトリ権限で日次公開を止めない。"""
+def test_runner_pytest_gate_uses_bounded_short_temp_root() -> None:
+    """深いdetached worktreeでもWindowsの最大パス長で停止しない。"""
     runner = RUNNER.read_text(encoding="utf-8-sig")
 
-    assert "$PytestBaseTemp = Join-Path $RepoDir '.pytest-tmp'" in runner
+    assert "$PytestBaseTempRoot = Join-Path ([System.IO.Path]::GetTempPath()) 'ng-pytest'" in runner
+    assert "$PytestBaseTemp = Join-Path $PytestBaseTempRoot \"$DateStamp-$RunId-$([Guid]::NewGuid().ToString('N'))\"" in runner
+    assert "PYTEST_BASETEMP_ROOT_REPARSE_POINT_FORBIDDEN" in runner
+    assert "PYTEST_BASETEMP_ROOT_OWNER_INVALID" in runner
+    assert "PYTEST_BASETEMP_LEAF_COLLISION" in runner
+    assert "Join-Path $RepoDir '.pytest-tmp'" not in runner
     assert "PYTEST_ADDOPTS" in runner
     assert "--basetemp=$PytestBaseTemp" in runner
 

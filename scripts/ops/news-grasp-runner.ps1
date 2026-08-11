@@ -2897,6 +2897,35 @@ function Test-DailyArtifactsExist {
     return $false
 }
 
+function Record-HighCostClaimFailure {
+    param(
+        [Parameter(Mandatory=$true)][string] $AdmissionPath,
+        [Parameter(Mandatory=$true)][string] $ReservationPath,
+        [Parameter(Mandatory=$true)][string] $BridgePath,
+        [Parameter(Mandatory=$true)][string] $PythonPath,
+        [Parameter(Mandatory=$true)][string] $RunnerExecutablePath,
+        [Parameter(Mandatory=$true)][string] $FailureCode,
+        [string] $Detail = ''
+    )
+    try {
+        $admissionSha = if (Test-Path -LiteralPath $AdmissionPath -PathType Leaf) { Get-FileSha256Hex -Path $AdmissionPath } else { '' }
+        $reservationSha = if (Test-Path -LiteralPath $ReservationPath -PathType Leaf) { Get-FileSha256Hex -Path $ReservationPath } else { '' }
+        $detailSha = Get-StringSha256Hex -Text ([string]$Detail)
+        $fingerprint = Get-StringSha256Hex -Text ("$FailureCode|$admissionSha|$reservationSha|$detailSha")
+        $recordOutput = (& $PythonPath -I $BridgePath 'record-claim-failure' '--admission' $AdmissionPath '--reservation-receipt' $ReservationPath '--failure-code' $FailureCode '--failure-fingerprint' $fingerprint '--runner-executable' $RunnerExecutablePath '--authority-python-executable' $PythonPath '--current-runner-pid' $PID '--observed-at' ([DateTime]::UtcNow.ToString('o')) 2>&1 | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0) {
+            Add-RunnerLogLine -Text "WARN: HIGH_COST_CLAIM_FAILURE_RECORD_FAILED exit=$LASTEXITCODE detail=$recordOutput"
+            return $false
+        } else {
+            Add-RunnerLogLine -Text "WARN: HIGH_COST_CLAIM_FAILURE_RECORDED code=$FailureCode"
+            return $true
+        }
+    } catch {
+        try { Add-RunnerLogLine -Text "WARN: HIGH_COST_CLAIM_FAILURE_RECORD_EXCEPTION reason=$($_.Exception.Message)" } catch { }
+        return $false
+    }
+}
+
 function Assert-HighCostOperationAdmission {
     if ($SmokeTest -or $PreflightOnly -or $FinalizeVerifiedPublishManifest) { return }
     $modelSpawnBroker = [System.IO.Path]::GetFullPath($HighCostBudgetToolPath)
@@ -3009,8 +3038,32 @@ function Assert-HighCostOperationAdmission {
             Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_FINAL_EXECUTION_IDENTITY_INVALID' -ExitCode 76
             exit 76
         }
+        $claimFailureStatusOutput = (& $authorityPythonPath -I $E2EFinalAdmissionBridge 'claim-failure-status' '--admission' $finalAdmissionReceipt '--reservation-receipt' $finalReservationReceipt 2>&1 | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0) {
+            Add-RunnerLogLine -Text "ERROR: HIGH_COST_FINAL_CLAIM_FAILURE_STATUS_UNAVAILABLE exit=$LASTEXITCODE"
+            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_FINAL_CLAIM_FAILURE_STATUS_UNAVAILABLE' -ExitCode 76
+            exit 76
+        }
+        try {
+            $claimFailureStatus = $claimFailureStatusOutput | ConvertFrom-Json -ErrorAction Stop
+            if ([string]$claimFailureStatus.state -eq 'claim_failure_recorded') {
+                Add-RunnerLogLine -Text "ERROR: HIGH_COST_FINAL_RUNNER_CLAIM_TERMINAL code=$([string]$claimFailureStatus.failureCode)"
+                Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_FINAL_RUNNER_CLAIM_TERMINAL' -ExitCode 76
+                exit 76
+            }
+            if ([string]$claimFailureStatus.state -ne 'none') { throw 'HIGH_COST_FINAL_CLAIM_FAILURE_STATUS_INVALID' }
+        } catch {
+            Add-RunnerLogLine -Text "ERROR: HIGH_COST_FINAL_CLAIM_FAILURE_STATUS_INVALID reason=$($_.Exception.Message)"
+            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_FINAL_CLAIM_FAILURE_STATUS_INVALID' -ExitCode 76
+            exit 76
+        }
         $canonicalValidationOutput = (& $authorityPythonPath -I $highCostAuthorityTool 'validate-activated' '--workspace-root' $HighCostWorkspaceRoot '--admission' $parentAuthorityReceipt '--expected-attempt-kind' 'full_e2e' '--expected-execution-root' $RepoDir 2>&1 | Out-String).Trim()
         if ($LASTEXITCODE -ne 0) {
+            if (-not (Record-HighCostClaimFailure -AdmissionPath $finalAdmissionReceipt -ReservationPath $finalReservationReceipt -BridgePath $E2EFinalAdmissionBridge -PythonPath $authorityPythonPath -RunnerExecutablePath $runnerExecutablePath -FailureCode 'HIGH_COST_PARENT_AUTHORITY_RECEIPT_INVALID' -Detail $canonicalValidationOutput)) {
+                Add-RunnerLogLine -Text 'ERROR: HIGH_COST_CLAIM_FAILURE_RECORD_UNAVAILABLE'
+                Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_CLAIM_FAILURE_RECORD_UNAVAILABLE' -ExitCode 76
+                exit 76
+            }
             Add-RunnerLogLine -Text "ERROR: HIGH_COST_PARENT_AUTHORITY_RECEIPT_INVALID exit=$LASTEXITCODE"
             Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_PARENT_AUTHORITY_RECEIPT_INVALID' -ExitCode 76
             exit 76
@@ -3028,6 +3081,11 @@ function Assert-HighCostOperationAdmission {
             $script:HighCostParentAuthorityPath = $parentAuthorityReceipt
             $script:HighCostParentAuthoritySha256 = Get-FileSha256Hex -Path $parentAuthorityReceipt
         } catch {
+            if (-not (Record-HighCostClaimFailure -AdmissionPath $finalAdmissionReceipt -ReservationPath $finalReservationReceipt -BridgePath $E2EFinalAdmissionBridge -PythonPath $authorityPythonPath -RunnerExecutablePath $runnerExecutablePath -FailureCode 'HIGH_COST_PARENT_AUTHORITY_RECEIPT_INVALID' -Detail $_.Exception.Message)) {
+                Add-RunnerLogLine -Text 'ERROR: HIGH_COST_CLAIM_FAILURE_RECORD_UNAVAILABLE'
+                Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_CLAIM_FAILURE_RECORD_UNAVAILABLE' -ExitCode 76
+                exit 76
+            }
             Add-RunnerLogLine -Text "ERROR: HIGH_COST_PARENT_AUTHORITY_RECEIPT_INVALID reason=$($_.Exception.Message)"
             Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_PARENT_AUTHORITY_RECEIPT_INVALID' -ExitCode 76
             exit 76
@@ -3035,6 +3093,11 @@ function Assert-HighCostOperationAdmission {
         $claimNonce = Get-StringSha256Hex -Text "$script:HighCostAttemptId|$PID|$RunId"
         $claimOutput = (& $authorityPythonPath -I $E2EFinalAdmissionBridge 'claim-runner' '--admission' $finalAdmissionReceipt '--runner-arguments-file' $finalRunnerArguments '--parent-authority' $parentAuthorityReceipt '--reservation-receipt' $finalReservationReceipt '--claim-output' $finalClaimReceipt '--runner-executable' $runnerExecutablePath '--authority-python-executable' $authorityPythonPath '--current-runner-pid' $PID '--claim-nonce' $claimNonce 2>&1 | Out-String).Trim()
         if ($LASTEXITCODE -ne 0) {
+            if (-not (Record-HighCostClaimFailure -AdmissionPath $finalAdmissionReceipt -ReservationPath $finalReservationReceipt -BridgePath $E2EFinalAdmissionBridge -PythonPath $authorityPythonPath -RunnerExecutablePath $runnerExecutablePath -FailureCode 'HIGH_COST_FINAL_RUNNER_CLAIM_REJECTED' -Detail $claimOutput)) {
+                Add-RunnerLogLine -Text 'ERROR: HIGH_COST_CLAIM_FAILURE_RECORD_UNAVAILABLE'
+                Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_CLAIM_FAILURE_RECORD_UNAVAILABLE' -ExitCode 76
+                exit 76
+            }
             Add-RunnerLogLine -Text "ERROR: HIGH_COST_FINAL_RUNNER_CLAIM_REJECTED exit=$LASTEXITCODE"
             Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_FINAL_RUNNER_CLAIM_REJECTED' -ExitCode 76
             exit 76
@@ -4618,8 +4681,20 @@ Write-Log 'ja-callout gate OK'
 # 再 push する ([[feedback_check_design_principles]] 1 段 illegal state unrepresentable
 # + 2 段 境界 1 箇所集約)。
 Write-Log 'pytest gate start (pytest tests/ -q -m "not network")'
-$PytestBaseTemp = Join-Path $RepoDir '.pytest-tmp'
-New-Item -ItemType Directory -Force -Path $PytestBaseTemp | Out-Null
+$PytestBaseTempRoot = Join-Path ([System.IO.Path]::GetTempPath()) 'ng-pytest'
+New-Item -ItemType Directory -Force -Path $PytestBaseTempRoot | Out-Null
+$pytestRootItem = Get-Item -LiteralPath $PytestBaseTempRoot -Force -ErrorAction Stop
+if (($pytestRootItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+    throw 'PYTEST_BASETEMP_ROOT_REPARSE_POINT_FORBIDDEN'
+}
+$pytestRootOwner = [string](Get-Acl -LiteralPath $PytestBaseTempRoot -ErrorAction Stop).Owner
+if (-not $pytestRootOwner -or $pytestRootOwner -notmatch [regex]::Escape([string]$env:USERNAME)) {
+    throw 'PYTEST_BASETEMP_ROOT_OWNER_INVALID'
+}
+$PytestBaseTemp = Join-Path $PytestBaseTempRoot "$DateStamp-$RunId-$([Guid]::NewGuid().ToString('N'))"
+if (Test-Path -LiteralPath $PytestBaseTemp) {
+    throw 'PYTEST_BASETEMP_LEAF_COLLISION'
+}
 $previousPytestAddopts = $env:PYTEST_ADDOPTS
 $previousSkipUrlCheck = $env:NEWS_GRASP_SKIP_URL_CHECK
 try {

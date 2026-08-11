@@ -6,6 +6,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import stat
 import subprocess
 import sys
 from pathlib import Path
@@ -1242,6 +1243,18 @@ def _load_task_launcher_module():
     module = module_from_spec(spec)
     loader.exec_module(module)
     return module
+
+
+def test_runtime_recovery_removes_readonly_managed_path(tmp_path: Path) -> None:
+    """managed quarantineの読み取り専用payloadも正規maintenanceで回収できる。"""
+    launcher = _load_task_launcher_module()
+    target = tmp_path / "readonly-payload.txt"
+    target.write_text("quarantined\n", encoding="utf-8")
+    target.chmod(stat.S_IREAD)
+
+    launcher._remove_runtime_path(target)
+
+    assert not target.exists()
 
 
 def _git(cwd: Path, *args: str) -> str:

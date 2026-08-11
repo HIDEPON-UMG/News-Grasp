@@ -5,6 +5,7 @@ import json
 import multiprocessing
 import os
 import sys
+import subprocess
 import tempfile
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -564,6 +565,7 @@ def _issue(
     *,
     repo_root: Path | None = None,
     admission_name: str = "admission.json",
+    runner_executable_path: Path | None = None,
 ) -> tuple[Path, Path]:
     repo = repo_root or tmp_path / "repo"
     repo.mkdir(parents=True, exist_ok=True)
@@ -578,6 +580,11 @@ def _issue(
         repo_root=repo,
         runner_path=runner,
         runner_arguments=["-NoPublish", "-DateStampOverride", "2026-08-01"],
+        **(
+            {"runner_executable_path": runner_executable_path}
+            if runner_executable_path is not None
+            else {}
+        ),
         evidence_bindings=_green_evidence(tmp_path / admission.stem, repo_root=repo),
         output_path=admission,
     )
@@ -1189,6 +1196,189 @@ def test_reserved_admission_claims_once_and_seals_runner_identity(
     assert row["state"] == "runner_claimed"
     with pytest.raises(E2EFinalAdmissionError, match="E2E_RUNNER_CLAIM_REPLAY"):
         _claim_reserved(admission, ledger, nonce="b" * 64)
+
+
+def test_claim_failure_is_durable_and_blocks_same_attempt_reentry(
+    tmp_path: Path,
+) -> None:
+    process_image = Path(
+        bridge_module._query_process_identity(os.getpid())["imagePath"]
+    )
+    admission, ledger = _issue(tmp_path, runner_executable_path=process_image)
+    reserved = consume_admission(admission_path=admission, ledger_path=ledger)
+    value = json.loads(admission.read_text(encoding="utf-8"))
+
+    failure = bridge_module.record_claim_failure(
+        admission_path=admission,
+        ledger_path=ledger,
+        reservation_receipt=Path(value["expectedReservationReceiptPath"]),
+        failure_code="E2E_PARENT_AUTHORITY_INVALID",
+        failure_fingerprint="f" * 64,
+        runner_executable_path=process_image,
+        authority_python_executable_path=Path(sys.executable),
+        current_runner_pid=os.getpid(),
+    )
+
+    assert reserved["state"] == "runner_reserved"
+    assert failure["state"] == "claim_failure_recorded"
+    row = json.loads(ledger.read_text(encoding="utf-8"))["attempts"][
+        value["attemptKey"]
+    ]
+    assert row["state"] == "runner_reserved"
+    assert row["claimFailure"]["failureFingerprint"] == "f" * 64
+    status = bridge_module.claim_failure_status(
+        admission_path=admission,
+        ledger_path=ledger,
+        reservation_receipt=Path(value["expectedReservationReceiptPath"]),
+    )
+    assert status["state"] == "claim_failure_recorded"
+    with pytest.raises(
+        E2EFinalAdmissionError,
+        match="E2E_FINAL_ATTEMPT_CLAIM_TERMINAL",
+    ):
+        _claim_reserved(admission, ledger, nonce="a" * 64)
+
+    # 同じ原因は再記録せず、既存のimmutable markerを返す。
+    replay = bridge_module.record_claim_failure(
+        admission_path=admission,
+        ledger_path=ledger,
+        reservation_receipt=Path(value["expectedReservationReceiptPath"]),
+        failure_code="E2E_PARENT_AUTHORITY_INVALID",
+        failure_fingerprint="f" * 64,
+        runner_executable_path=process_image,
+        authority_python_executable_path=Path(sys.executable),
+        current_runner_pid=os.getpid(),
+    )
+    assert replay["receiptSha256"] == failure["receiptSha256"]
+
+
+def test_claim_failure_rejects_unrelated_pid_even_when_image_matches(
+    tmp_path: Path,
+) -> None:
+    process_image = Path(
+        bridge_module._query_process_identity(os.getpid())["imagePath"]
+    )
+    admission, ledger = _issue(tmp_path, runner_executable_path=process_image)
+    consume_admission(admission_path=admission, ledger_path=ledger)
+    value = json.loads(admission.read_text(encoding="utf-8"))
+    unrelated = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(5)"])
+    try:
+        with pytest.raises(
+            E2EFinalAdmissionError, match="E2E_CLAIM_FAILURE_CALLER_INVALID"
+        ):
+            bridge_module.record_claim_failure(
+                admission_path=admission,
+                ledger_path=ledger,
+                reservation_receipt=Path(value["expectedReservationReceiptPath"]),
+                failure_code="E2E_PARENT_AUTHORITY_INVALID",
+                failure_fingerprint="c" * 64,
+                runner_executable_path=process_image,
+                authority_python_executable_path=Path(sys.executable),
+                current_runner_pid=unrelated.pid,
+            )
+    finally:
+        unrelated.terminate()
+        unrelated.wait(timeout=5)
+
+
+def test_claim_failure_rejects_executable_binding_drift(
+    tmp_path: Path,
+) -> None:
+    admission, ledger = _issue(tmp_path)
+    consume_admission(admission_path=admission, ledger_path=ledger)
+    value = json.loads(admission.read_text(encoding="utf-8"))
+    process_image = Path(
+        bridge_module._query_process_identity(os.getpid())["imagePath"]
+    )
+    with pytest.raises(
+        E2EFinalAdmissionError, match="E2E_CLAIM_FAILURE_EXECUTABLE_BINDING_INVALID"
+    ):
+        bridge_module.record_claim_failure(
+            admission_path=admission,
+            ledger_path=ledger,
+            reservation_receipt=Path(value["expectedReservationReceiptPath"]),
+            failure_code="E2E_PARENT_AUTHORITY_INVALID",
+            failure_fingerprint="b" * 64,
+            runner_executable_path=process_image,
+            authority_python_executable_path=Path(sys.executable),
+            current_runner_pid=os.getpid(),
+        )
+
+
+def test_claim_failure_rejects_authority_python_binding_drift(
+    tmp_path: Path,
+) -> None:
+    process_image = Path(
+        bridge_module._query_process_identity(os.getpid())["imagePath"]
+    )
+    admission, ledger = _issue(tmp_path, runner_executable_path=process_image)
+    consume_admission(admission_path=admission, ledger_path=ledger)
+    value = json.loads(admission.read_text(encoding="utf-8"))
+    alternate_python = Path(sys.executable).with_name("pythonw.exe")
+    if not alternate_python.exists():
+        pytest.skip("alternate authority python executable unavailable")
+    with pytest.raises(
+        E2EFinalAdmissionError, match="E2E_CLAIM_FAILURE_EXECUTABLE_BINDING_INVALID"
+    ):
+        bridge_module.record_claim_failure(
+            admission_path=admission,
+            ledger_path=ledger,
+            reservation_receipt=Path(value["expectedReservationReceiptPath"]),
+            failure_code="E2E_PARENT_AUTHORITY_INVALID",
+            failure_fingerprint="a" * 64,
+            runner_executable_path=process_image,
+            authority_python_executable_path=alternate_python,
+            current_runner_pid=os.getpid(),
+        )
+
+
+@pytest.mark.parametrize("crash_after", [1, 2])
+def test_claim_failure_wal_recovers_after_each_replace_boundary(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    crash_after: int,
+) -> None:
+    process_image = Path(
+        bridge_module._query_process_identity(os.getpid())["imagePath"]
+    )
+    admission, ledger = _issue(tmp_path, runner_executable_path=process_image)
+    consume_admission(admission_path=admission, ledger_path=ledger)
+    value = json.loads(admission.read_text(encoding="utf-8"))
+    original_replace = bridge_module._replace_json
+    calls = 0
+
+    def crash(path: Path, replacement: dict[str, object]) -> None:
+        nonlocal calls
+        calls += 1
+        original_replace(path, replacement)
+        if calls == crash_after:
+            raise RuntimeError("simulated claim failure crash")
+
+    monkeypatch.setattr(bridge_module, "_replace_json", crash)
+    with pytest.raises(RuntimeError, match="simulated claim failure crash"):
+        bridge_module.record_claim_failure(
+            admission_path=admission,
+            ledger_path=ledger,
+            reservation_receipt=Path(value["expectedReservationReceiptPath"]),
+            failure_code="E2E_PARENT_AUTHORITY_INVALID",
+            failure_fingerprint="e" * 64,
+            runner_executable_path=process_image,
+            authority_python_executable_path=Path(sys.executable),
+            current_runner_pid=os.getpid(),
+        )
+    monkeypatch.setattr(bridge_module, "_replace_json", original_replace)
+    recovered = bridge_module.record_claim_failure(
+        admission_path=admission,
+        ledger_path=ledger,
+        reservation_receipt=Path(value["expectedReservationReceiptPath"]),
+        failure_code="E2E_PARENT_AUTHORITY_INVALID",
+        failure_fingerprint="e" * 64,
+        runner_executable_path=process_image,
+        authority_python_executable_path=Path(sys.executable),
+        current_runner_pid=os.getpid(),
+    )
+    assert recovered["state"] == "claim_failure_recorded"
+    assert not list(ledger.parent.glob(f".{ledger.name}.*.claim_failure.wal.json"))
 
 
 def test_concurrent_claims_have_exactly_one_winner(tmp_path: Path) -> None:
