@@ -18,6 +18,9 @@ from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from tools.news_grasp_operational_contract import (
     OPERATIONAL_TRUTH_ISSUER,
     finalize_audit_decision,
