@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "RED_SUITE_COVERAGE_V2",
+  "planGeneration": "R6",
+  "nodes": [
+    {"nodeId":"A15-P","acceptanceId":"A15","perspective":"primary_behavior","consumer":"tools.news_grasp_daily_control.ProductionBackend","oracle":"external Red is typed deferred; model launch count is zero"},
+    {"nodeId":"A15-X","acceptanceId":"A15","perspective":"adversarial_boundary","consumer":"tools.news_grasp_daily_control.validate_external_readiness_input","oracle":"outside, alias, reparse, identity and oversized input is rejected"},
+    {"nodeId":"A15-R","acceptanceId":"A15","perspective":"operational_recovery","consumer":"tools.news_grasp_daily_control.accept_external_authority","oracle":"lineage N+1/N+k is accepted once; replay and rollback are rejected"},
+    {"nodeId":"A16-P","acceptanceId":"A16","perspective":"primary_behavior","consumer":"tools.news_grasp_daily_control.build_run_generation_binding","oracle":"official installed broker identity is bound only after external Green"},
+    {"nodeId":"A16-X","acceptanceId":"A16","perspective":"adversarial_boundary","consumer":"tools.news_grasp_daily_control.validate_model_invocation_outcome","oracle":"rc2/124/126, non-JSON and stderr are never success"},
+    {"nodeId":"A16-R","acceptanceId":"A16","perspective":"operational_recovery","consumer":"tools.news_grasp_daily_control.external_reentry_decision","oracle":"valid new authority resumes the same checkpoint and lineage once"},
+    {"nodeId":"A17-P","acceptanceId":"A17","perspective":"primary_behavior","consumer":"tools.fx_rates.get_fx_panel","oracle":"API input is written to immutable runtime snapshot, not tracked source"},
+    {"nodeId":"A17-X","acceptanceId":"A17","perspective":"adversarial_boundary","consumer":"tools.news_grasp_runtime_input.RuntimeInputStore.read_current","oracle":"old sequence, rollback and foreign generation are rejected"},
+    {"nodeId":"A17-R","acceptanceId":"A17","perspective":"operational_recovery","consumer":"tools.news_grasp_runtime_input.RuntimeInputStore.recover","oracle":"orphan transaction is forward-recovered or quarantined without pointer rollback"},
+    {"nodeId":"A18-P","acceptanceId":"A18","perspective":"primary_behavior","consumer":"tools.news_grasp_daily_control.decide_operational_convergence","oracle":"one exact registered action is selected from composite state"},
+    {"nodeId":"A18-X","acceptanceId":"A18","perspective":"adversarial_boundary","consumer":"tools.news_grasp_daily_control.record_convergence_event","oracle":"same cause produces no duplicate mutation, model or report"},
+    {"nodeId":"A18-R","acceptanceId":"A18","perspective":"operational_recovery","consumer":"tools.news_grasp_daily_control.reverify_convergence","oracle":"delayed effect remains pending until bounded deadline"},
+    {"nodeId":"A19-P","acceptanceId":"A19","perspective":"primary_behavior","consumer":"tools.news_grasp_generation.create_stable_task_authority","oracle":"stable action has no repo/worktree argument"},
+    {"nodeId":"A19-X","acceptanceId":"A19","perspective":"adversarial_boundary","consumer":"tools.news_grasp_generation.promote_generation","oracle":"promotion phase cannot expose staged mixed state"},
+    {"nodeId":"A19-R","acceptanceId":"A19","perspective":"operational_recovery","consumer":"tools.news_grasp_generation.recover_promotion","oracle":"pre-pointer crash retains old generation and post-pointer state forwards"}
+  ]
+}

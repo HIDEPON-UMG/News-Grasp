@@ -335,6 +335,7 @@ $script:PublishCompleteManifestPath = ''
 $script:PublishCompleteCommit = ''
 $script:ScheduledFailureTerminalized = $false
 $script:ScheduledFailureTerminalInputPath = ''
+$script:ExternalHealthAuthorityPath = Join-Path $env:USERPROFILE '.codex\state\high-cost-operation\external-health-authority-v1.json'
 $ScheduledFailureReceiptRoot = if ($ScheduledFailureReceiptRootOverride) {
     [System.IO.Path]::GetFullPath($ScheduledFailureReceiptRootOverride)
 } else {
@@ -3272,6 +3273,21 @@ function Assert-HighCostOperationAdmission {
     }
 }
 
+# ===== 外部制御面pure readiness =====
+function Get-NewsGraspExternalControlPlaneReadiness {
+    $probeScript = Join-Path $RepoDir 'tools\news_grasp_external_control.py'
+    if (-not (Test-Path -LiteralPath $probeScript -PathType Leaf)) {
+        return [ordered]@{ status = 'unavailable'; reasonCode = 'EXTERNAL_CONTROL_PLANE_CONSUMER_MISSING'; modelLaunchCount = 0 }
+    }
+    $raw = (& $PyExe '-I' $probeScript 'probe' 2>&1 | Out-String).Trim()
+    $rc = $LASTEXITCODE
+    try { $value = $raw | ConvertFrom-Json -ErrorAction Stop } catch {
+        return [ordered]@{ status = 'unavailable'; reasonCode = 'EXTERNAL_CONTROL_PLANE_OUTPUT_INVALID'; modelLaunchCount = 0 }
+    }
+    if ($rc -ne 0 -or [string]$value.status -cne 'ready') { return $value }
+    return $value
+}
+
 # ===== sentinel: 起動できた事実 =====
 if ($RepoDirOverride -or $SmokeTest) {
     Write-Log 'RepoDirOverride mode: skipping artifact-root operational registry validation'
@@ -3282,6 +3298,13 @@ if ($RepoDirOverride -or $SmokeTest) {
         Set-RunnerState -Status 'blocked_operational_registry_invalid' -Message 'NEWS_GRASP_OPERATIONAL_REGISTRY_INVALID' -ExitCode 78
         exit 78
     }
+}
+$externalReadiness = Get-NewsGraspExternalControlPlaneReadiness
+if ([string]$externalReadiness.status -cne 'ready') {
+    $externalReason = [string]$externalReadiness.reasonCode
+    Add-RunnerLogLine -Text "external control plane unavailable; deterministic product path deferred reason=$externalReason authority=$script:ExternalHealthAuthorityPath"
+    Set-RunnerState -Status 'external_control_plane_unavailable' -Message 'operation_deferred_external_dependency' -ExitCode 74
+    exit 74
 }
 Assert-HighCostOperationAdmission
 $pidStamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss.fff'

@@ -11,6 +11,8 @@ from pathlib import Path
 from typing import Any
 
 from tools import audit_recovery_control
+from tools import news_grasp_external_control as external_control
+from tools import news_grasp_convergence as convergence
 from tools.news_grasp_operational_contract import select_recovery_branch_from_truth
 
 
@@ -93,6 +95,12 @@ def classify_observed_failure(
         str(external.get("kind") or "") if isinstance(external, dict) else ""
     )
     if (
+        status in {"failed_shared_broker_generation_drift", "external_control_plane_unavailable"}
+        or external_kind in {"external_control_plane_unavailable", "shared_broker_generation_drift"}
+        or "NEWS_GRASP_SHARED_BROKER_GENERATION_DRIFT" in log_text
+    ):
+        return "external_control_plane_unavailable"
+    if (
         status in INCIDENT_STATUSES
         or external_kind in {"oauth_consent_required", "youtube_quota_or_permission"}
         or "oauth consent required" in log_text.casefold()
@@ -106,6 +114,114 @@ def classify_observed_failure(
     ):
         return "recoverable"
     return "incident_required"
+
+
+def validate_external_readiness_input(
+    payload: dict[str, Any], *, canonical_root: Path | str
+) -> dict[str, Any]:
+    """product entryからexternal readinessをtyped validatorへ渡す。"""
+    try:
+        return external_control.validate_external_readiness_input(
+            payload, canonical_root=canonical_root
+        )
+    except external_control.ExternalControlPlaneError as error:
+        raise ValueError(str(error)) from error
+
+
+def probe_external_control_plane() -> dict[str, Any]:
+    """固定global authorityだけを読むpure readiness probe。"""
+    return external_control.probe_external_readiness()
+
+
+def decide_operational_convergence(
+    *, state: dict[str, Any], previous_event: dict[str, Any] | None
+) -> dict[str, Any]:
+    return convergence.decide_operational_convergence(
+        state=state, previous_event=previous_event
+    )
+
+
+def record_convergence_event(**kwargs: Any) -> dict[str, Any]:
+    return convergence.record_convergence_event(**kwargs)
+
+
+def reverify_convergence(**kwargs: Any) -> dict[str, Any]:
+    return convergence.reverify_convergence(**kwargs)
+
+
+def accept_external_authority(
+    *, authority: dict[str, Any], state_path: Path | str
+) -> dict[str, Any]:
+    """global authorityをproduct-local acceptance ledgerへ一度だけ受理する。"""
+    try:
+        return external_control.accept_external_authority(
+            authority=authority, state_path=state_path
+        )
+    except external_control.ExternalControlPlaneError as error:
+        if str(error) == "EXTERNAL_AUTHORITY_REPLAY":
+            return {"accepted": False, "reasonCode": str(error)}
+        raise ValueError(str(error)) from error
+
+
+def build_run_generation_binding(
+    *,
+    readiness: dict[str, Any],
+    product_generation_id: str,
+    issue_date: str,
+    daily_operation_lineage_id: str,
+    checkpoint_id: str,
+    runtime_input_manifest_sha256: str = "",
+) -> dict[str, Any]:
+    try:
+        return external_control.build_run_generation_binding(
+            readiness=readiness,
+            product_generation_id=product_generation_id,
+            issue_date=issue_date,
+            daily_operation_lineage_id=daily_operation_lineage_id,
+            checkpoint_id=checkpoint_id,
+            runtime_input_manifest_sha256=runtime_input_manifest_sha256,
+        )
+    except external_control.ExternalControlPlaneError as error:
+        raise ValueError(str(error)) from error
+
+
+def validate_model_invocation_outcome(
+    *,
+    return_code: int,
+    stdout: str | bytes,
+    expected_schema: str,
+    stderr: str | bytes = "",
+) -> dict[str, Any]:
+    return external_control.validate_model_invocation_outcome(
+        return_code=return_code,
+        stdout=stdout,
+        expected_schema=expected_schema,
+        stderr=stderr,
+    )
+
+
+def external_reentry_decision(
+    *,
+    previous_authority_generation: int,
+    current_authority_generation: int,
+    previous_lineage: str,
+    current_lineage: str,
+    checkpoint_id: str,
+    issue_date: str,
+    daily_operation_lineage_id: str,
+) -> dict[str, Any]:
+    try:
+        return external_control.external_reentry_decision(
+            previous_authority_generation=previous_authority_generation,
+            current_authority_generation=current_authority_generation,
+            previous_lineage=previous_lineage,
+            current_lineage=current_lineage,
+            checkpoint_id=checkpoint_id,
+            issue_date=issue_date,
+            daily_operation_lineage_id=daily_operation_lineage_id,
+        )
+    except external_control.ExternalControlPlaneError as error:
+        raise ValueError(str(error)) from error
 
 
 def select_audit_recovery_action(completion: object) -> dict[str, Any]:
@@ -169,6 +285,11 @@ def build_recovery_plan(
     broker_stage_decision_sha256: str = "",
     broker_stage_decision_receipt_sha256: str = "",
     minimal_public_proof_sha256: str = "",
+    external_generation_fingerprint: str = "",
+    last_external_authority_generation: int = 0,
+    last_external_authority_receipt_sha256: str = "",
+    checkpoint_id: str = "",
+    daily_operation_lineage_id: str = "",
 ) -> dict[str, Any]:
     issue_date = _validate_date(issue_date)
     common: dict[str, Any] = {
@@ -189,6 +310,31 @@ def build_recovery_plan(
         "noUserMonitoring": True,
         "completion": False,
     }
+    if classification == "external_control_plane_unavailable":
+        deferred = external_control.build_external_dependency_deferred(
+            issue_date=issue_date,
+            daily_operation_lineage_id=daily_operation_lineage_id
+            or f"News-Grasp|{issue_date}|scheduled",
+            checkpoint_id=checkpoint_id,
+            external_generation_fingerprint=external_generation_fingerprint
+            or ("0" * 64),
+            last_authority_generation=last_external_authority_generation,
+            last_authority_receipt_sha256=last_external_authority_receipt_sha256
+            or ("0" * 64),
+            blocked_stage=resume_stage or "external_control_plane",
+        )
+        return _sealed(
+            {
+                **common,
+                **deferred,
+                "action": "defer_external_control_plane",
+                "terminal": "operation_deferred_external_dependency",
+                "reasonCode": "EXTERNAL_CONTROL_PLANE_UNAVAILABLE",
+                "recoveryAttemptStatus": "deferred",
+                "publicStatus": "unchanged",
+                "modelLaunchCount": 0,
+            }
+        )
     if classification != "recoverable":
         return _sealed(
             {
@@ -270,6 +416,10 @@ class ProductionBackend:
         self.broker_path = self.bin_dir / "ai-model-spawn-broker.py"
         self.authority_dir = self.bin_dir / "news-grasp-authority"
         self.mission_path = self.authority_dir / "audit-mission-authority-v1.json"
+
+    def probe_external_control_plane(self) -> dict[str, Any]:
+        """固定global authorityのpure probe。product側からglobalを修復しない。"""
+        return external_control.probe_external_readiness()
 
     def resolve_failure_receipt(self, issue_date: str, receipt_sha256: str) -> Path:
         issue_date = _validate_date(issue_date)
@@ -672,6 +822,48 @@ def prepare_recovery(
         raise ValueError("RECOVERY_TRIGGER_INVALID")
     actual = backend or ProductionBackend()
     state = actual.load_state(issue_date)
+    if hasattr(actual, "probe_external_control_plane"):
+        external_readiness = actual.probe_external_control_plane()
+        if str(external_readiness.get("status") or "") != "ready":
+            lineage = _daily_operation_lineage_id(
+                issue_date=issue_date,
+                runner_state=state,
+            )
+            plan = _sealed(
+                {
+                    "schemaVersion": SCHEMA,
+                    "issuer": ISSUER,
+                    "issueDate": issue_date,
+                    "trigger": trigger,
+                    "action": "defer_external_control_plane",
+                    "terminal": "operation_deferred_external_dependency",
+                    "reasonCode": "EXTERNAL_CONTROL_PLANE_UNAVAILABLE",
+                    "scheduledAttemptStatus": str(
+                        state.get("scheduledAttemptStatus") or "unknown"
+                    ),
+                    "recoveryAttemptStatus": "deferred",
+                    "publicCompletionStatus": "green"
+                    if state.get("publicCompletionStatus") == "green"
+                    else "unchanged",
+                    "publicStatus": "unchanged",
+                    "dailyOperationLineageId": lineage,
+                    "externalGenerationFingerprint": str(
+                        external_readiness.get("externalGenerationFingerprint") or "0" * 64
+                    ),
+                    "externalReasonCode": str(
+                        external_readiness.get("reasonCode") or "EXTERNAL_CONTROL_PLANE_UNAVAILABLE"
+                    ),
+                    "modelLaunchCount": 0,
+                    "duplicateReportCount": 0,
+                    "noFocusTheft": True,
+                    "noAutoOpen": True,
+                    "noUserMonitoring": True,
+                    "completion": False,
+                }
+            )
+            output = actual.repo_root / "build" / "recovery" / "control" / f"{issue_date}-{trigger}.json"
+            _atomic_json(output, plan)
+            return {**plan, "decisionPath": str(output.resolve())}
     log_text = actual.log_text(issue_date)
     pre_admission_failure: dict[str, Any] | None = None
     pre_admission_failure_path: Path | None = None
@@ -1171,6 +1363,19 @@ def execute_audit_0640(
             terminal = _audit_observation_terminal(
                 issue_date=issue_date,
                 decision=decision,
+            )
+            write_terminal(terminal)
+            return terminal
+        if action == "defer_external_control_plane":
+            # 外部Redはaudit terminalをGreenへ偽装せず、公開・checkpointを保持した
+            # observationだけを一件追記する。global修復やmodel起動は行わない。
+            terminal = _audit_observation_terminal(
+                issue_date=issue_date,
+                decision={
+                    **decision,
+                    "reasonCode": "EXTERNAL_CONTROL_PLANE_UNAVAILABLE",
+                    "terminal": "operation_deferred_external_dependency",
+                },
             )
             write_terminal(terminal)
             return terminal

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import json
+import hashlib
 import shutil
 import subprocess
 import sys
@@ -20,6 +21,46 @@ ROOT = Path(__file__).resolve().parent.parent
 REPO_WRAPPER = ROOT / "scripts" / "ops" / "run_codex_with_timeout.ps1"
 
 pytestmark = pytest.mark.skipif(not WRAPPER.exists(), reason=f"wrapper not found: {WRAPPER}")
+
+
+def _write_external_health_authority(profile: Path, broker: Path) -> None:
+    """外部制御面のRedを隠さず、隔離fixtureでのみGreenへ束縛する。"""
+    authority_path = profile / ".codex" / "state" / "high-cost-operation" / "external-health-authority-v1.json"
+    authority_path.parent.mkdir(parents=True, exist_ok=True)
+    body = {
+        "schemaVersion": "EXTERNAL_CONTROL_PLANE_HEALTH_AUTHORITY_V1",
+        "authorityLineageId": "lineage-a",
+        "authorityLineageDerivation": "sha256-utf8-lf-v1",
+        "authorityGeneration": 1,
+        "previousReceiptSha256": "0" * 64,
+        "canonicalDescriptorPath": str((profile / "descriptor.json").resolve()),
+        "canonicalDescriptorSha256": "1" * 64,
+        "sourceBrokerPath": str(broker.resolve()),
+        "sourceBrokerSha256": "2" * 64,
+        "installedBrokerPath": str(broker.resolve()),
+        "installedBrokerSha256": "2" * 64,
+        "dependencyGenerationHash": "3" * 64,
+        "routeGenerationHash": "4" * 64,
+        "ledgerGenerationId": "ledger-fixture",
+        "registryAnchorGenerationId": "registry-fixture",
+        "promotionGuardGenerationId": "promotion-fixture",
+        "statefulSelfTestStatus": "green",
+        "statefulSelfTestId": "self-test-fixture",
+        "testedAt": "2026-08-11T00:00:00+00:00",
+        "publisherId": "global-control-plane-owner",
+    }
+    body["receiptSha256"] = hashlib.sha256(
+        json.dumps(body, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    authority_path.write_text(json.dumps(body, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _write_external_control_script(workspace: Path) -> None:
+    target = workspace / "tools" / "news_grasp_external_control.py"
+    target.write_text(
+        (ROOT / "tools" / "news_grasp_external_control.py").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
 
 
 def _fake_codex(tmp_path: Path) -> Path:
@@ -155,8 +196,10 @@ def _canonical_test_broker(tmp_path: Path) -> tuple[list[str], dict[str, str]]:
         encoding="utf-8",
     )
     admission.write_text("{}\n", encoding="utf-8")
+    _write_external_control_script(workspace)
     env = os.environ.copy()
     env["USERPROFILE"] = str(profile)
+    _write_external_health_authority(profile, broker)
     args = [
         "-HighCostWorkspaceRoot", str(workspace),
         "-HighCostBudgetToolPath", str(broker),
@@ -223,8 +266,10 @@ def _full_e2e_claim_fixture(tmp_path: Path, claim_mode: str) -> tuple[list[str],
         "raise SystemExit(97)\n",
         encoding="utf-8",
     )
+    _write_external_control_script(workspace)
     env = os.environ.copy()
     env["USERPROFILE"] = str(profile)
+    _write_external_health_authority(profile, broker)
     env["BROKER_SENTINEL"] = str(tmp_path / "broker-started.txt")
     model_sentinel = tmp_path / "model-started.txt"
     codex = tmp_path / "fake-codex.ps1"
@@ -353,6 +398,7 @@ def _composed_claim_witness_fixture(
         "raise SystemExit(94)\n",
         encoding="utf-8",
     )
+    _write_external_control_script(workspace)
     codex = tmp_path / "unused-codex.ps1"
     codex.write_text("exit 93\n", encoding="utf-8-sig")
     env = os.environ.copy()
@@ -364,6 +410,7 @@ def _composed_claim_witness_fixture(
             "MODEL_SENTINEL": str(model_sentinel),
         }
     )
+    _write_external_health_authority(profile, broker)
     args = [
         "-HighCostWorkspaceRoot", str(workspace),
         "-HighCostBudgetToolPath", str(broker),

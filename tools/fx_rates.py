@@ -9,12 +9,17 @@ import json
 import os
 import urllib.error
 import urllib.request
+import hashlib
+from datetime import datetime
 from pathlib import Path
 from typing import Any
+
+from tools.news_grasp_runtime_input import RuntimeInputError, RuntimeInputStore
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_SNAPSHOT = ROOT / "data" / "fx_rates_snapshot.json"
 API_URL = "https://open.er-api.com/v6/latest/USD"
+RUNTIME_INPUT_ROOT = ROOT / "build" / "runtime-inputs"
 
 
 class FxRateError(RuntimeError):
@@ -76,21 +81,88 @@ def write_snapshot(payload: dict[str, Any], path: Path = DEFAULT_SNAPSHOT) -> No
     )
 
 
-def get_fx_panel(*, snapshot_path: Path = DEFAULT_SNAPSHOT, timeout: float = 4.0) -> dict[str, Any]:
-    """API、snapshot、静的 fallback の順に FX hero panel context を返す。"""
+def _runtime_snapshot_path(*, issue_date: str, product_generation_id: str) -> Path:
+    return RUNTIME_INPUT_ROOT / issue_date / "fx_rates" / f"{product_generation_id}.json"
+
+
+def get_fx_panel(
+    *,
+    snapshot_path: Path | None = None,
+    timeout: float = 4.0,
+    issue_date: str | None = None,
+    product_generation_id: str | None = None,
+) -> dict[str, Any]:
+    """API、immutable runtime snapshot、LKG snapshot、静的fallbackの順で返す。
+
+    引数なしのproduction経路はtracked ``data/fx_rates_snapshot.json``へ書かない。
+    明示されたsnapshot_pathは既存fixture互換のread-only入力として扱う。
+    """
+    tracked_snapshot = snapshot_path or DEFAULT_SNAPSHOT
+    runtime_mode = snapshot_path is None
+    target_date = issue_date or os.environ.get("NEWS_GRASP_ISSUE_DATE") or datetime.now().strftime("%Y-%m-%d")
+    generation = product_generation_id or os.environ.get("NEWS_GRASP_PRODUCT_GENERATION_ID") or "runtime-input-unbound"
     if os.environ.get("NEWS_GRASP_SKIP_URL_CHECK") == "1":
+        if runtime_mode:
+            try:
+                runtime_store = RuntimeInputStore(RUNTIME_INPUT_ROOT)
+                runtime_manifest = runtime_store.read_current(
+                    input_kind="fx_rates", issue_date=target_date, product_generation_id=generation
+                )
+                return build_fx_panel(
+                    runtime_store.read_payload(runtime_manifest),
+                    source="runtime_snapshot",
+                    has_provider_data=True,
+                )
+            except RuntimeInputError:
+                pass
         try:
-            return build_fx_panel(read_snapshot(snapshot_path), source="snapshot", has_provider_data=True)
+            return build_fx_panel(read_snapshot(tracked_snapshot), source="snapshot", has_provider_data=True)
         except FxRateError:
             return build_fx_panel(STATIC_FALLBACK, source="fallback", has_provider_data=False)
 
     try:
         payload = fetch_fx_rates(timeout=timeout)
-        write_snapshot(payload, snapshot_path)
-        return build_fx_panel(payload, source="api", has_provider_data=True)
+        panel = build_fx_panel(payload, source="api", has_provider_data=True)
+        if not runtime_mode:
+            # 明示fixture pathは既存testの互換性を保つが、production defaultはここへ来ない。
+            write_snapshot(payload, tracked_snapshot)
+            return panel
+        try:
+            store = RuntimeInputStore(RUNTIME_INPUT_ROOT)
+            operation_id = hashlib.sha256(
+                json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+            ).hexdigest()
+            snapshot = store.commit(
+                input_kind="fx_rates",
+                issue_date=target_date,
+                product_generation_id=generation,
+                producer_id="fx-api",
+                producer_operation_id=operation_id,
+                payload=payload,
+                schema_id="FX_RATES_V1",
+                oracle_id="fx-payload-v1",
+                source_status="api",
+            )
+            panel["runtimeInputSnapshot"] = snapshot
+            return panel
+        except RuntimeInputError:
+            # API結果をtracked sourceへ戻さず、直前LKGへ安全にフォールバックする。
+            panel["runtimeInputSnapshot"] = None
+            return panel
     except FxRateError:
         try:
-            return build_fx_panel(read_snapshot(snapshot_path), source="snapshot", has_provider_data=True)
+            if runtime_mode:
+                try:
+                    runtime_manifest = RuntimeInputStore(RUNTIME_INPUT_ROOT).read_current(
+                        input_kind="fx_rates",
+                        issue_date=target_date,
+                        product_generation_id=generation,
+                    )
+                    runtime_payload = RuntimeInputStore(RUNTIME_INPUT_ROOT).read_payload(runtime_manifest)
+                    return build_fx_panel(runtime_payload, source="runtime_snapshot", has_provider_data=True)
+                except (FxRateError, RuntimeInputError):
+                    pass
+            return build_fx_panel(read_snapshot(tracked_snapshot), source="snapshot", has_provider_data=True)
         except FxRateError:
             return build_fx_panel(STATIC_FALLBACK, source="fallback", has_provider_data=False)
 

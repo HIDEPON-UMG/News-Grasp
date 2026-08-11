@@ -41,6 +41,10 @@ def _copy_minimal_repo(dst: Path) -> None:
         "materialize_editor_output.py",
     ]:
         shutil.copy2(ROOT / "tools" / name, dst / "tools" / name)
+    shutil.copy2(
+        ROOT / "tools" / "news_grasp_external_control.py",
+        dst / "tools" / "news_grasp_external_control.py",
+    )
     # semantic details are covered by test_validate_editor_output_preview.py;
     # this isolated runner fixture exposes the same callable/CLI boundary only.
     (dst / "tools" / "validate_editor_output_preview.py").write_text(
@@ -272,6 +276,7 @@ def test_stage2_parallel_reporters_finish_and_editor_reads_all_artifacts(
     high_cost = dict(zip(high_cost_args[::2], high_cost_args[1::2]))
 
     env = os.environ.copy()
+    env.update(_broker_env)
     env["NEWS_GRASP_E2E_DATE"] = ISSUE
     env["NEWS_GRASP_E2E_TRACE"] = str(trace)
     env["NEWS_GRASP_E2E_SENTINEL"] = str(sentinel)

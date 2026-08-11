@@ -174,6 +174,20 @@ function Assert-CanonicalModelBroker {
         Add-WrapperLog 'HIGH_COST_EXECUTION_ROOT_INVALID'
         exit 126
     }
+    # 実行cwdは一時的なartifact rootでもよいが、制御consumerは固定された
+    # product workspace rootから読む。これによりcwd変更でconsumerを差し替えない。
+    $externalControlScript = Join-Path ([System.IO.Path]::GetFullPath($HighCostWorkspaceRoot)) 'tools\news_grasp_external_control.py'
+    if (-not (Test-Path -LiteralPath $externalControlScript -PathType Leaf)) {
+        Add-WrapperLog 'EXTERNAL_CONTROL_PLANE_UNAVAILABLE'
+        exit 126
+    }
+    $externalReadinessText = (& $HighCostPythonExe '-I' $externalControlScript 'probe' 2>&1 | Out-String).Trim()
+    $externalReadinessRc = $LASTEXITCODE
+    try { $externalReadiness = $externalReadinessText | ConvertFrom-Json -ErrorAction Stop } catch { $externalReadiness = $null }
+    if ($externalReadinessRc -ne 0 -or $null -eq $externalReadiness -or [string]$externalReadiness.status -cne 'ready') {
+        Add-WrapperLog "EXTERNAL_CONTROL_PLANE_UNAVAILABLE reason=$([string]$externalReadiness.reasonCode)"
+        exit 126
+    }
     if ($HighCostExpectedOperationKind -eq 'full_e2e') {
         if (-not $E2EFinalAdmissionPath -or -not $E2EFinalRunnerArgumentsPath -or
             -not $E2EFinalReservationReceiptPath -or -not $E2EFinalClaimReceiptPath -or

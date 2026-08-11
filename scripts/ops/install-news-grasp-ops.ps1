@@ -110,6 +110,30 @@ function Assert-NewsGraspSharedBrokerGeneration {
     return $true
 }
 
+function Assert-NewsGraspExternalControlPlaneReady {
+    param(
+        [Parameter(Mandatory = $true)][string] $ResolvedRepoDir,
+        [Parameter(Mandatory = $true)][string] $ResolvedTaskPythonwPath
+    )
+    # 外部制御面はproductのwrite set外。固定pathのpure probeがRedなら、
+    # runtime/task promotionを開始せずtyped deferredへ分岐する。
+    $pythonExe = Join-Path (Split-Path -Parent $ResolvedTaskPythonwPath) 'python.exe'
+    $probeScript = Join-Path $ResolvedRepoDir 'tools\news_grasp_external_control.py'
+    if (-not (Test-Path -LiteralPath $pythonExe -PathType Leaf) -or
+        -not (Test-Path -LiteralPath $probeScript -PathType Leaf)) {
+        throw 'operation_deferred_external_dependency:EXTERNAL_CONTROL_PLANE_UNAVAILABLE'
+    }
+    $probeOutput = (& $pythonExe '-I' $probeScript 'probe' 2>&1 | Out-String).Trim()
+    $probeExit = $LASTEXITCODE
+    $probe = $null
+    try { $probe = $probeOutput | ConvertFrom-Json -ErrorAction Stop } catch { $probe = $null }
+    if ($probeExit -ne 0 -or -not $probe -or [string]$probe.status -cne 'ready') {
+        $reason = if ($probe) { [string]$probe.reasonCode } else { 'EXTERNAL_CONTROL_PLANE_UNAVAILABLE' }
+        throw "operation_deferred_external_dependency:$reason"
+    }
+    return $probe
+}
+
 function Resolve-NewsGraspRepoDir {
     param([string] $Override)
     if ($Override) {
@@ -487,6 +511,9 @@ foreach ($asset in $automationAssetRows) {
     $asset.installPath = Assert-NewsGraspAssetRelativePath ([string]$asset.installPath)
 }
 $TaskPythonwPath = Resolve-NewsGraspTaskPythonw -Override $TaskPythonwPath -ResolvedRepoDir $RepoDir
+$null = Assert-NewsGraspExternalControlPlaneReady `
+    -ResolvedRepoDir $RepoDir `
+    -ResolvedTaskPythonwPath $TaskPythonwPath
 $null = Assert-NewsGraspSharedBrokerGeneration `
     -ResolvedRepoDir $RepoDir
 $ops = Join-Path $RepoDir 'scripts\ops'
@@ -729,6 +756,30 @@ $runtimeRootRow = [ordered]@{
     after_sha256 = ''
 }
 $manifestFiles += $runtimeRootRow
+$stableTaskAuthorityPath = Join-Path $BinDir 'news-grasp-stable-task-authority-v1.json'
+$stableTaskAuthorityBackup = Join-Path $BackupDir 'news-grasp-stable-task-authority-v1.json'
+$stableTaskAuthorityBeforeHash = ''
+if (Test-Path -LiteralPath $stableTaskAuthorityPath -PathType Leaf) {
+    $stableTaskAuthoritySnapshot = Read-NewsGraspVerifiedFile `
+        -Path $stableTaskAuthorityPath `
+        -TrustedBoundary $canonicalBinDir `
+        -RequireSingleLink
+    Write-NewsGraspAtomicFile `
+        -Path $stableTaskAuthorityBackup `
+        -TrustedBoundary $BackupDir `
+        -Bytes $stableTaskAuthoritySnapshot.Bytes | Out-Null
+    $stableTaskAuthorityBeforeHash = [string]$stableTaskAuthoritySnapshot.Sha256
+}
+$stableTaskAuthorityRow = [ordered]@{
+    file = 'news-grasp-stable-task-authority-v1.json'
+    source = 'generated:StableTaskAuthorityV1'
+    destination = $stableTaskAuthorityPath
+    backup = if ($stableTaskAuthorityBeforeHash) { $stableTaskAuthorityBackup } else { '' }
+    before_sha256 = $stableTaskAuthorityBeforeHash
+    source_sha256 = ''
+    after_sha256 = ''
+}
+$manifestFiles += $stableTaskAuthorityRow
 $scheduledTasks = @()
 $rollbackCommands = @('Invoke-NewsGraspInstallRollback')
 Write-NewsGraspInstallJournal -Phase 'prepared'
@@ -786,6 +837,29 @@ $runtimeRootInstalled = Read-NewsGraspVerifiedFile `
     -RequireSingleLink
 $runtimeRootRow['after_sha256'] = [string]$runtimeRootInstalled.Sha256
 $runtimeRootAuthoritySha = [string]$runtimeRootInstalled.Sha256
+$stableTaskAuthority = [ordered]@{
+    schemaVersion = 'STABLE_TASK_AUTHORITY_V1'
+    taskName = $RunnerTaskName
+    stableLauncherPath = (Join-Path $BinDir 'news-grasp-task-launcher.pyw')
+    stableLauncherSha256 = [string]$sourceSnapshots['news-grasp-task-launcher.pyw'].Sha256
+    bootstrapPath = (Join-Path $BinDir 'news-grasp-bootstrap.ps1')
+    bootstrapSha256 = [string]$sourceSnapshots['news-grasp-bootstrap.ps1'].Sha256
+    action = @($TaskPythonwPath, (Join-Path $BinDir 'news-grasp-task-launcher.pyw'), 'runner', '--scheduled-task-name', $RunnerTaskName)
+    trigger = @{ daily = '06:00' }
+    repoArgumentCount = 0
+}
+$stableAuthorityBody = $stableTaskAuthority | ConvertTo-Json -Depth 6 -Compress
+$stableAuthorityHasher = [Security.Cryptography.SHA256]::Create()
+try {
+    $stableAuthorityBytes = [Text.Encoding]::UTF8.GetBytes($stableAuthorityBody)
+    $stableTaskAuthority.authoritySha256 = ([BitConverter]::ToString($stableAuthorityHasher.ComputeHash($stableAuthorityBytes)) -replace '-', '').ToLowerInvariant()
+} finally { $stableAuthorityHasher.Dispose() }
+Write-AtomicUtf8Text -Path $stableTaskAuthorityPath -Text (($stableTaskAuthority | ConvertTo-Json -Depth 6) + [Environment]::NewLine)
+$stableTaskAuthorityInstalled = Read-NewsGraspVerifiedFile `
+    -Path $stableTaskAuthorityPath `
+    -TrustedBoundary $canonicalBinDir `
+    -RequireSingleLink
+$stableTaskAuthorityRow['after_sha256'] = [string]$stableTaskAuthorityInstalled.Sha256
 Write-NewsGraspInstallJournal -Phase 'files_installed'
 
 $brokerPath = Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py'

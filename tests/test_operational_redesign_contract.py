@@ -246,6 +246,20 @@ def test_ng2_wp02_matrix_does_not_admit_placeholder_or_mock_only_consumer() -> N
         assert "mock" not in node["consumer"]
 
 
+def test_ng3_wp17_r6_additional_matrix_has_exact_15_nodes() -> None:
+    repo = Path(__file__).resolve().parents[1]
+    matrix = json.loads(
+        (repo / "tests/fixtures/operational-redesign/r6-additional-matrix.json").read_text(encoding="utf-8")
+    )
+    nodes = matrix["nodes"]
+    assert len(nodes) == 15
+    assert len({node["nodeId"] for node in nodes}) == 15
+    assert {node["perspective"] for node in nodes} == {
+        "primary_behavior", "adversarial_boundary", "operational_recovery"
+    }
+    assert all("mock" not in node["consumer"] and "placeholder" not in node["oracle"] for node in nodes)
+
+
 def _generation_fixture(tmp_path: Path) -> dict[str, object]:
     source = _repo(tmp_path)
     runtime = tmp_path / "runtime"
