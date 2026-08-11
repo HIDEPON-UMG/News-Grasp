@@ -1381,6 +1381,90 @@ def test_runtime_recovery_forwards_after_replacement_before_phase_record(
     ) == "dirty replacement fixture\n"
 
 
+def test_runtime_recovery_finishes_ancestor_transaction_before_new_generation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """writer更新時は旧transactionを終端してから新generationへ一回だけ進む。"""
+    launcher, source, runtime_root, origin_sha = _runtime_fixture(tmp_path)
+    runtime = runtime_root / "production-runtime"
+    (runtime / "tracked.txt").write_text("dirty ancestor fixture\n", encoding="utf-8")
+    real_append = launcher._append_runtime_recovery_event
+    injected = {"raised": False}
+
+    def crash_after_replacement(*args, **kwargs):
+        result = real_append(*args, **kwargs)
+        if kwargs.get("phase") == "replacement_created" and not injected["raised"]:
+            injected["raised"] = True
+            raise RuntimeError("INJECTED_AFTER_REPLACEMENT_RECORDED")
+        return result
+
+    monkeypatch.setattr(launcher, "_append_runtime_recovery_event", crash_after_replacement)
+    with pytest.raises(RuntimeError, match="INJECTED_AFTER_REPLACEMENT_RECORDED"):
+        launcher.converge_production_runtime(
+            source_repo=source,
+            runtime_root=runtime_root,
+            origin_sha=origin_sha,
+        )
+    monkeypatch.setattr(launcher, "_append_runtime_recovery_event", real_append)
+
+    (source / "tracked.txt").write_text("next generation\n", encoding="utf-8")
+    _git(source, "add", "tracked.txt")
+    _git(source, "commit", "-m", "next generation")
+    next_sha = _git(source, "rev-parse", "HEAD")
+
+    recovered = launcher.converge_production_runtime(
+        source_repo=source,
+        runtime_root=runtime_root,
+        origin_sha=next_sha,
+    )
+
+    assert recovered["phase"] == "committed"
+    assert recovered["originSha"] == next_sha
+    assert _git(runtime, "rev-parse", "HEAD") == next_sha
+    assert (runtime / "tracked.txt").read_text(encoding="utf-8") == "next generation\n"
+    assert not list((runtime_root / "transactions").iterdir())
+    assert list((runtime_root / "ledger" / "terminals").glob("*.json"))
+
+
+def test_runtime_recovery_rejects_divergent_generation_during_active_transaction(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """active authorityと非ancestorのgenerationへはforwardしない。"""
+    launcher, source, runtime_root, origin_sha = _runtime_fixture(tmp_path)
+    runtime = runtime_root / "production-runtime"
+    (runtime / "tracked.txt").write_text("dirty divergent fixture\n", encoding="utf-8")
+    real_append = launcher._append_runtime_recovery_event
+    injected = {"raised": False}
+
+    def crash_after_replacement(*args, **kwargs):
+        result = real_append(*args, **kwargs)
+        if kwargs.get("phase") == "replacement_created" and not injected["raised"]:
+            injected["raised"] = True
+            raise RuntimeError("INJECTED_DIVERGENT_REPLACEMENT_RECORDED")
+        return result
+
+    monkeypatch.setattr(launcher, "_append_runtime_recovery_event", crash_after_replacement)
+    with pytest.raises(RuntimeError, match="INJECTED_DIVERGENT_REPLACEMENT_RECORDED"):
+        launcher.converge_production_runtime(
+            source_repo=source,
+            runtime_root=runtime_root,
+            origin_sha=origin_sha,
+        )
+    monkeypatch.setattr(launcher, "_append_runtime_recovery_event", real_append)
+    tree_sha = _git(source, "rev-parse", f"{origin_sha}^{{tree}}")
+    divergent_sha = _git(source, "commit-tree", tree_sha, "-m", "divergent generation")
+
+    with pytest.raises(RuntimeError, match="PRODUCTION_RUNTIME_RECOVERY_GENERATION_DRIFT"):
+        launcher.converge_production_runtime(
+            source_repo=source,
+            runtime_root=runtime_root,
+            origin_sha=divergent_sha,
+        )
+
+    assert not runtime.exists()
+    assert len(list((runtime_root / "transactions").iterdir())) == 1
+
+
 def test_runtime_recovery_forwards_after_quarantine_parent_only_crash(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

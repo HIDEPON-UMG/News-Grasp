@@ -2103,11 +2103,38 @@ def _converge_production_runtime_locked(
 
     if active:
         journal_path, journal = active[0]
-        if (
-            str(journal.get("originSha") or "").lower() != origin_sha
-            or str(journal.get("sourceCommonDir") or "") != str(source_common)
-        ):
+        active_origin_sha = str(journal.get("originSha") or "").lower()
+        if str(journal.get("sourceCommonDir") or "") != str(source_common):
             raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_GENERATION_DRIFT")
+        if active_origin_sha != origin_sha:
+            if not re.fullmatch(r"[0-9a-f]{40}", active_origin_sha):
+                raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_GENERATION_DRIFT")
+            try:
+                _run_git(
+                    source_repo,
+                    "merge-base",
+                    "--is-ancestor",
+                    active_origin_sha,
+                    origin_sha,
+                )
+            except RuntimeError as error:
+                raise RuntimeError(
+                    "PRODUCTION_RUNTIME_RECOVERY_GENERATION_DRIFT"
+                ) from error
+            # writerが進んだ場合も、immutable authorityに束縛された旧transactionを
+            # 先に終端してから、要求された新generationへ一度だけforwardする。
+            _converge_production_runtime_locked(
+                source_repo=source_repo,
+                runtime_root=runtime_root,
+                origin_sha=active_origin_sha,
+                bin_dir=bin_dir,
+            )
+            return _converge_production_runtime_locked(
+                source_repo=source_repo,
+                runtime_root=runtime_root,
+                origin_sha=origin_sha,
+                bin_dir=bin_dir,
+            )
     else:
         _assert_runtime_common_dir(runtime, source_common)
         state = _runtime_state(runtime, origin_sha)
