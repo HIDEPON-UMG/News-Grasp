@@ -801,6 +801,19 @@ try {
             } catch { }
             $nextHeartbeatUtc = $nowUtc.AddSeconds($HeartbeatSec)
         }
+
+        if (
+            (-not $proc.HasExited) -and
+            $SuccessProbeCommand -and
+            $elapsedSec -ge $SuccessProbeMinElapsedSec -and
+            $nowUtc -ge $nextSuccessProbeUtc
+        ) {
+            if (Invoke-SuccessProbe -Command $SuccessProbeCommand -WorkingDirectory $WorkingDirectory -TempRoot $tempRoot) {
+                Add-WrapperLog 'SUCCESS_PROBE_EARLY_TERMINATION_FORBIDDEN'
+                exit 125
+            }
+            $nextSuccessProbeUtc = $nowUtc.AddSeconds([Math]::Max(1, $SuccessProbeIntervalSec))
+        }
     }
 
     $capturedBytes = (Get-Item -LiteralPath $stdoutFile).Length + (Get-Item -LiteralPath $stderrFile).Length
