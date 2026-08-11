@@ -1936,6 +1936,15 @@ def decide_audit_recovery(payload: object) -> dict[str, Any]:
                 process_exit_code=int(observed_state.get("exit_code") or 1),
                 log_text=observed_log,
             )
+            if classification == "external_control_plane_unavailable":
+                try:
+                    from tools import news_grasp_external_control
+
+                    readiness = news_grasp_external_control.probe_external_readiness()
+                except Exception:
+                    readiness = {}
+                if isinstance(readiness, dict) and readiness.get("status") == "ready":
+                    classification = "recoverable"
 
     if ledger_scheduled_status == "reserved" and classification == "normal":
         try:
