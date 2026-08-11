@@ -1411,11 +1411,21 @@ def test_runtime_recovery_finishes_ancestor_transaction_before_new_generation(
     _git(source, "add", "tracked.txt")
     _git(source, "commit", "-m", "next generation")
     next_sha = _git(source, "rev-parse", "HEAD")
+    sealed_origins: list[str] = []
+
+    def record_active_generation(**kwargs):
+        sealed_origins.append(str(kwargs["origin_sha"]))
+        return {"generationId": str(kwargs["origin_sha"])}
+
+    monkeypatch.setattr(
+        launcher, "_seal_active_production_generation", record_active_generation
+    )
 
     recovered = launcher.converge_production_runtime(
         source_repo=source,
         runtime_root=runtime_root,
         origin_sha=next_sha,
+        bin_dir=tmp_path / "bin",
     )
 
     assert recovered["phase"] == "committed"
@@ -1424,6 +1434,7 @@ def test_runtime_recovery_finishes_ancestor_transaction_before_new_generation(
     assert (runtime / "tracked.txt").read_text(encoding="utf-8") == "next generation\n"
     assert not list((runtime_root / "transactions").iterdir())
     assert list((runtime_root / "ledger" / "terminals").glob("*.json"))
+    assert sealed_origins == [next_sha]
 
 
 def test_runtime_recovery_rejects_divergent_generation_during_active_transaction(

@@ -2127,7 +2127,9 @@ def _converge_production_runtime_locked(
                 source_repo=source_repo,
                 runtime_root=runtime_root,
                 origin_sha=active_origin_sha,
-                bin_dir=bin_dir,
+                # 旧transactionはimmutable terminalまで閉じるが、既にremote
+                # mainではない世代をactive pointerへ再昇格しない。
+                bin_dir=None,
             )
             return _converge_production_runtime_locked(
                 source_repo=source_repo,
