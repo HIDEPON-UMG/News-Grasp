@@ -24,6 +24,7 @@
 $ErrorActionPreference = 'Stop'
 $OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$SCHEDULED_TASK_CONTEXT_REJECTED_EXIT = 67
 
 function Write-AtomicUtf8Text {
     param([string] $Path, [string] $Text)
@@ -42,6 +43,66 @@ function Write-AtomicUtf8Text {
         if (Test-Path -LiteralPath $temporary) { Remove-Item -LiteralPath $temporary -Force }
         if (Test-Path -LiteralPath $replacementBackup) { Remove-Item -LiteralPath $replacementBackup -Force }
     }
+}
+
+function Write-BootstrapFailureObservation {
+    param(
+        [Parameter(Mandatory=$true)][string] $Phase,
+        [Parameter(Mandatory=$true)][string] $ReasonCode,
+        [Parameter(Mandatory=$true)][string] $Detail
+    )
+    $boundedDetail = (($Detail -replace '[\r\n]+', ' ').Trim())
+    if ($boundedDetail.Length -gt 2048) {
+        $boundedDetail = $boundedDetail.Substring(0, 2048)
+    }
+    $effectiveReasonCode = $ReasonCode
+    if ($boundedDetail -match '"reasonCode"\s*:\s*"([A-Z][A-Z0-9_]+)"') {
+        $effectiveReasonCode = [string]$Matches[1]
+    }
+    $stateCandidate = if ($StateFile) {
+        if ([System.IO.Path]::IsPathRooted($StateFile)) { $StateFile } else { Join-Path $BinDir $StateFile }
+    } elseif ($SmokeTest) {
+        Join-Path $BinDir 'ng-smoke-state.json'
+    } else {
+        Join-Path $BinDir 'news-grasp-runner-state.json'
+    }
+    $logRoot = if ($LogDir) {
+        if ([System.IO.Path]::IsPathRooted($LogDir)) { $LogDir } else { Join-Path $BinDir $LogDir }
+    } elseif ($SmokeTest) {
+        Join-Path $BinDir 'ng-smoke-logs'
+    } else {
+        Join-Path $BinDir 'news-grasp-logs'
+    }
+    $now = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss.fffK')
+    $causeInput = "$Phase|$effectiveReasonCode"
+    $payload = [ordered]@{
+        schemaVersion = 'NEWS_GRASP_BOOTSTRAP_FAILURE_OBSERVATION_V1'
+        status = 'blocked_startup_self_repair_failed'
+        message = "STARTUP_SELF_REPAIR_FAILED reasonCode=$effectiveReasonCode"
+        exit_code = 72
+        updated_at = $now
+        heartbeat_at = $now
+        date = $DateStamp
+        run_intent = 'ScheduledProduction'
+        run_id = "bootstrap-$([Guid]::NewGuid().ToString('N'))"
+        phase = $Phase
+        reasonCode = $effectiveReasonCode
+        failureClass = $ReasonCode
+        failureDetail = $boundedDetail
+        causeFingerprint = Get-StringSha256Hex -Text $causeInput
+        causalRetryState = 'cause_change_required'
+        attempt_terminal = $true
+        recovery_class = 'startup_self_repair_failure'
+        scheduled_attempt_status = 'failed'
+        recovery_attempt_status = 'not_started'
+    }
+    Write-AtomicUtf8Text -Path $stateCandidate -Text (($payload | ConvertTo-Json -Depth 6) + [Environment]::NewLine)
+    New-Item -ItemType Directory -Force -Path $logRoot | Out-Null
+    [System.IO.File]::AppendAllText(
+        (Join-Path $logRoot "bootstrap-$DateStamp.log"),
+        "[$now] ERROR: phase=$Phase reasonCode=$effectiveReasonCode failureClass=$ReasonCode detail=$boundedDetail" + [Environment]::NewLine,
+        [System.Text.UTF8Encoding]::new($false)
+    )
 }
 
 function Resolve-NewsGraspRepoDir {
@@ -328,7 +389,14 @@ $runtimeOwnerReceiptStream = $null
 $runtimeOwnerReceiptPath = ''
 $runtimeOwnerNonce = ''
 if ($UseProductionRuntime) {
-    Assert-ScheduledTaskLaunchContext -TaskName $ScheduledTaskName -IsSmokeTest ([bool]$SmokeTest) -AllowLegacyDirectEntrypoint ([bool]$LegacyDirectEntrypoint)
+    try {
+        Assert-ScheduledTaskLaunchContext -TaskName $ScheduledTaskName -IsSmokeTest ([bool]$SmokeTest) -AllowLegacyDirectEntrypoint ([bool]$LegacyDirectEntrypoint)
+    } catch {
+        if ($_.Exception.Message -eq 'SCHEDULED_TASK_CONTEXT_INVALID') {
+            exit $SCHEDULED_TASK_CONTEXT_REJECTED_EXIT
+        }
+        throw
+    }
     $runtimeOwnerReceiptPath = Join-Path $BinDir 'news-grasp-runtime-lifecycle-owner.json'
     if (Test-Path -LiteralPath $runtimeOwnerReceiptPath) {
         $ownerItem = Get-Item -LiteralPath $runtimeOwnerReceiptPath -Force
@@ -382,6 +450,7 @@ try {
         $SourceRepoDir
     }
 } catch {
+    Write-BootstrapFailureObservation -Phase 'runtime_convergence' -ReasonCode 'PRODUCTION_RUNTIME_CONVERGENCE_FAILED' -Detail $_.Exception.Message
     if ($UseProductionRuntime -and (-not $SmokeTest) -and $preliminaryAuthority) {
         try {
             Record-StartupFailureForAudit -AuthorityContext $preliminaryAuthority -SourceRepoDir $SourceRepoDir -BinDir $BinDir -IssueDate $DateStamp -Detail $_.Exception.Message

@@ -3730,3 +3730,32 @@ def test_nopublish_parent_authority_input_survives_script_scope_projection_reset
     assert "$incomingHighCostParentAuthorityPath = [string]$HighCostParentAuthorityPath" in runner
     assert "if (-not $incomingHighCostParentAuthorityPath)" in runner
     assert "GetFullPath($incomingHighCostParentAuthorityPath)" in runner
+
+
+def test_bootstrap_runtime_convergence_failure_is_preserved_as_typed_evidence() -> None:
+    """runtime forward recovery の失敗理由を exit 72 へ潰さない。"""
+    bootstrap = (OPS_DIR / "news-grasp-bootstrap.ps1").read_text(encoding="utf-8-sig")
+    runtime_catch = bootstrap.split("Resolve-ProductionRuntimeRepo -SourceRepoDir", 1)[1].split(
+        "$opsDir = Join-Path $RepoDir 'scripts\\ops'", 1
+    )[0]
+
+    assert "Write-BootstrapFailureObservation" in runtime_catch
+    assert "-Phase 'runtime_convergence'" in runtime_catch
+    assert "-ReasonCode 'PRODUCTION_RUNTIME_CONVERGENCE_FAILED'" in runtime_catch
+    assert "-Detail $_.Exception.Message" in runtime_catch
+    assert "exit 72" in runtime_catch
+
+
+def test_rejected_direct_bootstrap_context_does_not_claim_scheduled_failure() -> None:
+    """task context を偽装したdirect起動はscheduled attempt lineageを消費しない。"""
+    bootstrap = (OPS_DIR / "news-grasp-bootstrap.ps1").read_text(encoding="utf-8-sig")
+    launcher = (OPS_DIR / "news-grasp-task-launcher.pyw").read_text(encoding="utf-8-sig")
+
+    assert "NEWS_GRASP_TASK_CONTEXT_REJECTED_EXIT = 67" in launcher
+    assert "SCHEDULED_TASK_CONTEXT_REJECTED_EXIT" in bootstrap
+    assert "exit $SCHEDULED_TASK_CONTEXT_REJECTED_EXIT" in bootstrap
+    assert "context_rejected =" in launcher
+    assert "and not context_rejected" in launcher
+    assert '"context_rejected_no_attempt"' in launcher
+    assert '"scheduledRecoveryFullAuthorityProvable": (' in launcher
+    assert "effective_returncode != 0 and not context_rejected" in launcher

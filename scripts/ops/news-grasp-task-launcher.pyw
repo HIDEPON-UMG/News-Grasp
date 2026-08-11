@@ -43,6 +43,7 @@ RUNTIME_PRODUCTION_MUTEX_PREFIX = "Global\\NewsGraspProductionRuntime-"
 RUNTIME_LEGACY_MUTEX_NAME = "Global\\NewsGraspProductionRuntimeConvergence"
 INSTALLED_NOPUBLISH_AUTHORITY_SCHEMA = "NEWS_GRASP_INSTALLED_NOPUBLISH_LAUNCH_AUTHORITY_V1"
 STABLE_TASK_AUTHORITY_SCHEMA = "STABLE_TASK_AUTHORITY_V1"
+NEWS_GRASP_TASK_CONTEXT_REJECTED_EXIT = 67
 
 
 def _runtime_mutex_identity() -> str:
@@ -2664,6 +2665,10 @@ def main() -> int:
             check=False,
         )
     effective_returncode = int(result.returncode)
+    context_rejected = (
+        args.mode == "bootstrap"
+        and effective_returncode == NEWS_GRASP_TASK_CONTEXT_REJECTED_EXIT
+    )
     if effective_returncode == 0 and args.mode == "bootstrap":
         state_path = bin_dir / "ng-smoke-state.json"
         try:
@@ -2673,7 +2678,7 @@ def main() -> int:
         else:
             if state.get("status") != "smoke_ok":
                 effective_returncode = 73
-    if effective_returncode != 0:
+    if effective_returncode != 0 and not context_rejected:
         freeze_startup_failure_if_needed(
             state_path=failure_state,
             returncode=effective_returncode,
@@ -2684,17 +2689,27 @@ def main() -> int:
         {
             "childReturnCode": effective_returncode,
             "preAttemptStatus": (
-                "controller_started"
-                if effective_returncode == 0
-                else "failed_before_attempt"
+                "context_rejected"
+                if context_rejected
+                else (
+                    "controller_started"
+                    if effective_returncode == 0
+                    else "failed_before_attempt"
+                )
             ),
             "continuationState": (
-                "controller_owns_continuation"
-                if effective_returncode == 0
-                else "scheduled_recovery_required"
+                "context_rejected_no_attempt"
+                if context_rejected
+                else (
+                    "controller_owns_continuation"
+                    if effective_returncode == 0
+                    else "scheduled_recovery_required"
+                )
             ),
             "walClosed": True,
-            "scheduledRecoveryFullAuthorityProvable": effective_returncode != 0,
+            "scheduledRecoveryFullAuthorityProvable": (
+                effective_returncode != 0 and not context_rejected
+            ),
         }
     )
     _write_json_atomic(wal, pre_attempt)
