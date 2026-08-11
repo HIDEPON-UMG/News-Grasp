@@ -463,6 +463,7 @@ def test_official_wrapper_rejects_junction_outputs_before_outside_write(tmp_path
     assert (
         "HIGH_COST_CANONICAL_FUTURE_PATH_INVALID" in output
         or "HIGH_COST_EXECUTABLE_IDENTITY_INVALID" in output
+        or "INSTALLED_LAUNCHER_IDENTITY_INVALID" in output
     )
     assert before == after
     assert marker.read_text(encoding="utf-8") == "outside-stable\n"
