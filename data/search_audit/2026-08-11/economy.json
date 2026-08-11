@@ -1,0 +1,131 @@
+{
+  "date": "2026-08-11",
+  "category_id": "economy",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "Stage1 deduped candidate canonical/date validation: economy",
+    "tools/fetch_article_body.py + tools/fetch_ogp.py selected candidate validation"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/economy.jsonl",
+  "dedup_file": "build/deduped-candidates/economy.jsonl",
+  "coverage_terms_checked": [
+    "Nikkei",
+    "S&P 500",
+    "Fed",
+    "BOJ",
+    "SoftBank",
+    "NVIDIA"
+  ],
+  "canonical_validation": {
+    "method": "tools/fetch_article_body.py + tools/fetch_ogp.py",
+    "validated_count": 5,
+    "date_evidence_source": "url-path or htmldate",
+    "thumb_status": "all selected URLs have external HTTP(S) images"
+  },
+  "dropped": [
+    {
+      "title": "6月の景気後退確率は7.9％",
+      "url": "https://www.jcer.or.jp/economic-forecast/20260810.html",
+      "reason": "本文は確認できたがOGP画像を取得できず、reporter検証のthumb条件を満たせないため"
+    },
+    {
+      "title": "ＮＹ外為市場＝ドル上昇、対円で159円台 週内の米経済指標に注目",
+      "url": "https://jp.reuters.com/opinion/Q5Y3NENBSRIY5GXBROGX7HFXOE-2026-08-10/",
+      "reason": "本文取得が実行環境の制約で完了せず、記事単位の事実確認を閉じられないため"
+    },
+    {
+      "title": "★本日の【サプライズ決算】速報 (08月10日)",
+      "url": "https://kabutan.jp/news/marketnews/?b=n202608100986",
+      "reason": "個別材料の集合速報で、主要論点を代表する記事を優先"
+    },
+    {
+      "title": "決算を読む 名古屋鉄道 ２６年４～６月期 純利益、２年ぶり増益 持ち分法投資利益が寄与 通期予想は増収増益",
+      "url": "https://www.chukei-news.co.jp/news/2026/08/11/OK0002608110201_01/",
+      "reason": "採用5件内で優先順位を調整"
+    },
+    {
+      "title": "経済産業省の管理職級職員を停職3カ月に 銀行口座を不正に譲渡か",
+      "url": "https://www.asahi.com/articles/ASV8B2J2WV8BULFA010M.html",
+      "reason": "経済カテゴリの主要マクロ・決算論点より優先度が低いため"
+    },
+    {
+      "title": "決算:楽天Gが7年ぶり営業黒字 1〜6月504億円、最終赤字は大幅縮小",
+      "url": "https://www.nikkei.com/article/DGXZQOUB103FF0Q6A810C2000000/",
+      "reason": "楽天グループ公式発表と同一テーマの重複を避けるため"
+    },
+    {
+      "title": "ニチレイ（2871）最新決算を発表、サイバー攻撃後で初 株価どうなった？業績「下方修正」も累進配当は維持(LIMO)",
+      "url": "https://finance.yahoo.co.jp/news/detail/bacaab78cbeb65d9b9b97c1c27ee60dba8ee6228",
+      "reason": "個別株材料で、マクロ・金融政策・代表的決算を優先"
+    },
+    {
+      "title": "2026年12月期 第２四半期決算",
+      "url": "https://safie.co.jp/ir/library/5018/",
+      "reason": "個別企業決算で、代表的な業種横断決算を優先"
+    },
+    {
+      "title": "街角景気は3カ月続けて改善、7月調査 熊本地震の影響に懸念の声も",
+      "url": "https://www.asahi.com/articles/ASV8B2SQ7V8BULFA012M.html",
+      "reason": "読売新聞の同一統計記事と重複するため"
+    },
+    {
+      "title": "本日の【イチオシ決算】 ミナトＨＤ、精工技研、スクエニＨＤ (8月10日)(株探ニュース)",
+      "url": "https://finance.yahoo.co.jp/news/detail/cc53843f6be95bdfef7f6067ed3c78c12a4a94f3",
+      "reason": "個別銘柄の集合速報で、主要論点を代表する記事を優先"
+    },
+    {
+      "title": "【決算速報】楽天グループ、上期最終が赤字縮小で着地・4-6月期は黒字浮上(株探ニュース)",
+      "url": "https://finance.yahoo.co.jp/news/detail/970285d3228479515363b0881e5f38d297dc8b87",
+      "reason": "楽天グループ公式発表と同一テーマの二次報道のため"
+    },
+    {
+      "title": "【決算速報】サンリオ、4-6月期(1Q)経常は12％増益で着地(株探ニュース)",
+      "url": "https://finance.yahoo.co.jp/news/detail/e6418fc26f33925b1dddc950218929b20c7e7bee",
+      "reason": "個別企業決算で、代表的な業種横断決算を優先"
+    },
+    {
+      "title": "本日の経済スケジュール ─ ★国内市場休場(山の日)(株探ニュース)",
+      "url": "https://finance.yahoo.co.jp/news/detail/e96e1ced09785920b9d0124d2df8fcfdaba4376a",
+      "reason": "予定表で独立したニュース性が弱いため"
+    },
+    {
+      "title": "ハンズマン売上高最高３５２億円 ６月期決算 大阪店舗好調",
+      "url": "https://www.the-miyanichi.co.jp/today/kennaiippan/986066.html",
+      "reason": "地域企業の個別決算で、主要論点を優先"
+    },
+    {
+      "title": "2027年3⽉期 第1四半期決算概要について | 2026年度 | ニュースリリース",
+      "url": "https://from.sonysonpo.co.jp/topics/news/2026/08/20260810.html",
+      "reason": "個別企業決算で、代表的な業種横断決算を優先"
+    },
+    {
+      "title": "名鉄 4月～6月の連結決算 名鉄百貨店の閉店などが影響 売上高は減少 今年度の業績見通しは据え置く",
+      "url": "https://newsdig.tbs.co.jp/articles/cbc/2865524",
+      "reason": "名鉄の個別決算で、同日業種横断決算を優先"
+    },
+    {
+      "title": "共和コーポレーション、記念株主優待と第1四半期の決算を発表し、前日比で23％超も株価上昇！ 記念優待では人気の｢スクイーズ｣と｢七味缶｣がもらえることに！",
+      "url": "https://diamond.jp/zai/articles/-/1071384",
+      "reason": "個別株・株主優待材料で、経済の主要論点より優先度が低いため"
+    },
+    {
+      "title": "産業政策の新潮流（8）求められる国際協調",
+      "url": "https://www.nikkei.com/article/DGXZQOCD021CU0S6A600C2000000/",
+      "reason": "記事URLの公開日が当日窓より古く、freshness条件を満たさないため"
+    },
+    {
+      "title": "【発言】城内経済相「高市政権の責任ある積極財政は円高圧力」(フィスコ)",
+      "url": "https://finance.yahoo.co.jp/news/detail/3fcfb6ac659b33da2ce8bc3ef9d3a13cd9fe98b1",
+      "reason": "二次報道で、採用した金融政策・決算記事より優先度が低いため"
+    },
+    {
+      "title": "若者ひきつける恋愛リアリティーショー、「おひなさま」ら有名人輩出",
+      "url": "https://www.nikkei.com/article/DGXZQODL053SB0V00C26A8000000/",
+      "reason": "経済カテゴリの当日主要論点との適合が弱いため"
+    }
+  ]
+}

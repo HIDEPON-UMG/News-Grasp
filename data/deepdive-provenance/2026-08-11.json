@@ -1,0 +1,54 @@
+{
+  "articlePath": "digest/DeepDive/2026-08-11-DeepDive.md",
+  "articleSha256": "db6fbe2866723b4337680e45a0e97401320c4e564f87344c271a151de275855e",
+  "issueDate": "2026-08-11",
+  "manifestSha256": "abe36b9207a39b155e763882d02b24ec147f6ffc21d8af81c284ddc8edc91737",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "c843b956df0d5922443cdbd5b64b39678f9783da4251a58cf674edd2aed2c6f8",
+  "sources": [
+    {
+      "contentSha256": "cfeab2ec3b53f70a7d7b61bdb31e4934cb6d418df63d81ec5c4e8e508459ea78",
+      "fetchedAt": "2026-08-11T00:16:17.082748+00:00",
+      "finalUrl": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-and-TSMC-Bring-AI-Into-Fabs-to-Advance-Semiconductor-Design-and-Manufacturing/default.aspx",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-and-TSMC-Bring-AI-Into-Fabs-to-Advance-Semiconductor-Design-and-Manufacturing/default.aspx",
+      "url": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-and-TSMC-Bring-AI-Into-Fabs-to-Advance-Semiconductor-Design-and-Manufacturing/default.aspx"
+    },
+    {
+      "contentSha256": "91e9213d05daca94d71d8f67b7624ef984a798a3894d3cb5e8ee9a0ed751f407",
+      "fetchedAt": "2026-08-11T00:16:20.093876+00:00",
+      "finalUrl": "https://investor.tsmc.com/chinese/monthly-revenue/2026",
+      "httpStatus": 206,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://investor.tsmc.com/chinese/monthly-revenue/2026",
+      "url": "https://investor.tsmc.com/chinese/monthly-revenue/2026"
+    },
+    {
+      "contentSha256": "1d25b904b1e164eeb840394ccde31bf7347ec8a9b1077e5300fe64e1f2e91646",
+      "fetchedAt": "2026-08-11T00:16:20.500209+00:00",
+      "finalUrl": "https://news.samsung.com/global/samsung-electronics-and-broadcom-expand-strategic-collaboration-across-memory-and-foundry-technologies",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://news.samsung.com/global/samsung-electronics-and-broadcom-expand-strategic-collaboration-across-memory-and-foundry-technologies",
+      "url": "https://news.samsung.com/global/samsung-electronics-and-broadcom-expand-strategic-collaboration-across-memory-and-foundry-technologies"
+    }
+  ],
+  "status": "Green"
+}

@@ -1,0 +1,51 @@
+{
+  "date": "2026-08-11",
+  "category_id": "manufacturing",
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "dedup_file": "build/deduped-candidates/manufacturing.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR semiconductor OR supply chain when:1d",
+    "Stage1 dedup candidate review: manufacturing.jsonl",
+    "selected candidate article-page date and OGP verification"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "TSMC",
+    "Samsung",
+    "Intel",
+    "NVIDIA",
+    "Foxconn",
+    "Toyota"
+  ],
+  "dropped": [
+    {
+      "title": "マイクロソフト、自社開発の新ＡＩ半導体を9月発表へ＝報道",
+      "url": "https://jp.reuters.com/economy/5R6C26CVPFPKRN3TI5QQBYBUVY-2026-08-10/",
+      "reason": "記事本文と固有OGPを取得できず、RSS時刻や代理サムネを採用しないため未採用"
+    },
+    {
+      "title": "住友理工、米工場の防振ゴム生産能力15％増",
+      "url": "https://www.logi-today.com/986615",
+      "reason": "本文は確認できたが記事固有OGPを取得できず、thumb必須 gate のため未採用"
+    },
+    {
+      "title": "NY概況－ダウ 60.95ドル安と反落、原油高や半導体株安が重荷",
+      "url": "https://finance.yahoo.co.jp/news/detail/d113fb01fd8d4a5d148b5f443c4b36c7465ce935",
+      "reason": "市況コメント中心で、製造能力・技術・供給網の構造変化が薄い"
+    },
+    {
+      "title": "ソニーＧ－急伸 ＴＳＭＣと熊本工場に1兆円投資 次世代画像センサー29年量産",
+      "url": "https://finance.yahoo.co.jp/news/detail/a22787274fd2703747ec45ab64debd23c3d196ad",
+      "reason": "転載系の株価記事で、一次情報度が選定4件より低い"
+    },
+    {
+      "title": "サントリーHD、熊本工場復旧に3〜4カ月 熊本地震で被災",
+      "url": "https://www.nikkei.com/article/DGXZQOUC101HL0Q6A810C2000000/",
+      "reason": "同一復旧事象の重複候補として朝日新聞の記事に統合"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

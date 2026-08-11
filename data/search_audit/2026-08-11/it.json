@@ -1,0 +1,131 @@
+{
+  "date": "2026-08-11",
+  "category_id": "it",
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "site:atmarkit.itmedia.co.jp 5週間で340超の企業が被害に Microsoft 365 アクセスを奪う 新型フィッシング",
+    "site:enterprisezine.jp Agent Memoryの実装方式をどう選ぶか クラウド統合型 ライブラリ OSS Agent Runtime",
+    "site:it.impress.co.jp 三井不動産 Contract One 導入 シェアオフィス 顧客 更新期日 自動通知",
+    "site:cloud.watch.impress.co.jp HENNGE One 提供プラン 10月1日 全面刷新",
+    "\"Agent Memoryの実装方式をどう選ぶか\"",
+    "\"情報学科小林研と日本コムシス\"",
+    "\"さくらのクラウド検定 ベーシック 教育コンテンツを改訂しました\"",
+    "\"HENNGE、クラウドセキュリティ「HENNGE One」の提供プランを10月1日に全面刷新\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "dropped": [
+    {
+      "title": "第13回成田伝統芸能まつりを盛大に開催したい！",
+      "url": "https://readyfor.jp/projects/173830",
+      "reason": "ITカテゴリの主題に該当せず除外。"
+    },
+    {
+      "title": "Agent Memoryの実装方式をどう選ぶか？ クラウド統合型・ライブラリ・OSS・Agent Runtimeで異なる「責任範囲」",
+      "url": "https://enterprisezine.jp/article/detail/24784",
+      "reason": "公開本文を取得できず、公開日と新材料を独立確認できないため除外。"
+    },
+    {
+      "title": "マネジメント支援サービス 「モチベーションクラウド マネジメント」を8月にリリース！",
+      "url": "https://prtimes.jp/main/html/rd/p/000000623.000006682.html",
+      "reason": "PR発表単体でITコンサル読者への直接的な意思決定価値が低いため除外。"
+    },
+    {
+      "title": "情報学科小林研と日本コムシス、サイバーセキュリティ共同研究の中間報告会",
+      "url": "https://www.shonan-it.ac.jp/topics/20260810_01/",
+      "reason": "ページの公開日が2026年7月30日で、号日の前日窓外のため除外。"
+    },
+    {
+      "title": "さくらのクラウド検定 ベーシック 教育コンテンツを改訂しました（v202605→v202607）",
+      "url": "https://www.sakura.ad.jp/certification/news/basic-update-syllabus-2026-08-10/",
+      "reason": "当日性は確認できたが、上位5件と比べ読者の業務判断への影響範囲が小さいため枠外。"
+    },
+    {
+      "title": "5週間で340超の企業が被害に Microsoft 365のアクセスを奪う新型フィッシングに注意",
+      "url": "https://atmarkit.itmedia.co.jp/ait/articles/2608/10/news018.html",
+      "reason": "URL先の公開日が2026年5月21日で、候補タイトルの8月10日と一致しないため除外。"
+    },
+    {
+      "title": "Mackenzie Dern | As Good As It Gets",
+      "url": "https://jp.ufc.com/video/159067",
+      "reason": "ITカテゴリの主題に該当せず除外。"
+    },
+    {
+      "title": "森山未來がMCを務める『MEET YOUR ART』が2026年夏のおすすめ映像10選を公開！ 夏休みに見たい展覧会・美術館・アーティストを深掘り | ニュース | エイベックス・ポータル",
+      "url": "https://avexnet.jp/news/1035964",
+      "reason": "ITカテゴリの主題に該当せず除外。"
+    },
+    {
+      "title": "千年の奈良から生まれる音楽・ 「たゆたふ -Tayutau-」プロジェクト",
+      "url": "https://motion-gallery.net/projects/Tayutau/updates/62327",
+      "reason": "ITカテゴリの主題に該当せず除外。"
+    },
+    {
+      "title": "【Cloud ten（クラウドテン）ライブレポ】公開ゲネプロに潜入！ 秋元康さんプロデュース・注目プロジェクトの推しポイントは？",
+      "url": "https://news.yahoo.co.jp/articles/d0535745aab98d9ca22866cdfc4142843532e0e1",
+      "reason": "ITカテゴリの主題に該当せず除外。"
+    },
+    {
+      "title": "【令和8年熊本地震】JCHO熊本総合病院の復旧と医療継続にご支援を",
+      "url": "https://readyfor.jp/projects/Kumamoto-General-Hospital2026",
+      "reason": "ITカテゴリの主題に該当せず除外。"
+    },
+    {
+      "title": "当社代表柴田、「CYBER ADVENTURE 2026」でAI時代のサイバーセキュリティを解説",
+      "url": "https://prtimes.jp/main/html/rd/p/000000132.000076589.html",
+      "reason": "PR発表単体で、独立報道と一次情報の差分を確認できないため除外。"
+    },
+    {
+      "title": "クラウド型名刺管理の草分け「Sansan」 米国でプレーヤー数2400万人のピックルボールで注目！｜笑顔でMake Money！",
+      "url": "https://www.nikkan-gendai.com/articles/view/money/391540",
+      "reason": "ITニュースではなく人物・投資寄りの話題で、読者の業務判断への直接性が低いため除外。"
+    },
+    {
+      "title": "【通期決算発表】 アスア：物流事業者特化のコンサルティングサービス…(フィスコ)",
+      "url": "https://finance.yahoo.co.jp/news/detail/e56fc3424bd8cb08713643365da8e48a9f31ebd5",
+      "reason": "決算速報の要約で、ITサービスの新材料が薄いため除外。"
+    },
+    {
+      "title": "【通期決算発表】 構造計画研究所ホールディングス：エンジニアリングコンサルティング等を手掛…(フィスコ)",
+      "url": "https://finance.yahoo.co.jp/news/detail/0b9ea08cd547dc8b5caf6e4facf6964535f3351a",
+      "reason": "決算速報の要約で、ITサービスの新材料が薄いため除外。"
+    },
+    {
+      "title": "Glass Studio TooSが工房改善と海外ECサイト構築に挑戦。日本のガラスペンを世界へ",
+      "url": "https://motion-gallery.net/projects/glasstoos/updates/62324",
+      "reason": "ITカテゴリの主題に該当せず除外。"
+    },
+    {
+      "title": "タナベコンサルティンググループ[9644]：2027年３月期 第１四半期決算補足説明資料 2026年8月10日(適時開示) ：日経会社情報DIGITAL",
+      "url": "https://www.nikkei.com/markets/company/sys/redirect_dis.aspr?ano=g2leab&t=https://www.nikkei.com/nkd/disclosure/tdnr/20260810516339/",
+      "reason": "IR補足資料の再掲で、ITコンサル読者への当日新材料が薄いため除外。"
+    },
+    {
+      "title": "ブリッジＧ",
+      "url": "https://www.nikkei.com/nkd/disclosure/tdnr/20260810516715/",
+      "reason": "見出しから記事内容とITカテゴリ適合性を確認できないため除外。"
+    },
+    {
+      "title": "Weverse エスビーナインティーン (SB19) Media - Outla",
+      "url": "https://weverse.io/sb19/media/4-238587788?hl=ja",
+      "reason": "ITカテゴリの主題に該当せず除外。"
+    },
+    {
+      "title": "企業誘致に益田市本腰 ニーズ想定し戦略構築を ＜ＩＴ校の行方－益田・職業能力開発短期大学校＞（下）",
+      "url": "https://www.sanin-chuo.co.jp/articles/-/1058956",
+      "reason": "地域教育・企業誘致の特集で、ITコンサル読者への直接的な意思決定価値が低いため除外。"
+    }
+  ]
+}

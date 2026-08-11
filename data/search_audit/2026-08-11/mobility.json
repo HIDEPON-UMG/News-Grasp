@@ -1,0 +1,151 @@
+{
+  "date": "2026-08-11",
+  "category_id": "mobility",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "site:prtimes.jp \"BYD、新型軽EV「RACCO」発売2週間で累計受注1,000台突破\"",
+    "site:ligare.news \"軽井沢町、JR東日本、西武HDが自動運転バスの実証運行を開始\"",
+    "site:logi-today.com \"MobiSaviなど3社、EV電池の地域循環モデル構築\"",
+    "site:city.miyazu.kyoto.jp \"サステナブル＆シームレスなモビリティシティMIYAZU\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "dropped": [
+    {
+      "title": "SpaceXとTesla、テキサス州で世界最大級半導体工場「テラファブ」建設",
+      "url": "https://www.sbbit.jp/article/st/186465",
+      "reason": "製造・半導体が主題でMobilityの使う／乗る視点から外れる"
+    },
+    {
+      "title": "テスラ【TSLA】：株価・株式情報",
+      "url": "https://finance.yahoo.co.jp/quote/TSLA",
+      "reason": "株価ページで記事単位のニュースではない"
+    },
+    {
+      "title": "中国製の太陽電池で「無限に走れるロボタクシー」誕生か",
+      "url": "https://jidounten-lab.com/u_66238",
+      "reason": "見出しの推測色が強く、一次情報と実用化時期を確認できない"
+    },
+    {
+      "title": "ＥＶ最新技術のオンラインセミナー ９月８日岡山県内関連企業向け",
+      "url": "https://www.47news.jp/14773759.html",
+      "reason": "イベント告知で読者の当日判断への影響が限定的"
+    },
+    {
+      "title": "MobiSaviなど3社、EV電池の地域循環モデル構築",
+      "url": "https://www.logi-today.com/986570",
+      "reason": "ページ本文の独立公開日が候補日と乖離し、採用保留"
+    },
+    {
+      "title": "米ロボタクシー大手Waymo、中国EV3200台超を極秘輸入",
+      "url": "https://finance.biggo.jp/news/eec4db6e-10b0-4709-b998-abea85a3b66e",
+      "reason": "二次報道で、当日性と一次情報の確認を優先して見送り"
+    },
+    {
+      "title": "【速報】BYD、新型軽EV「RACCO」発売2週間で累計受注1,000台突破",
+      "url": "https://prtimes.jp/main/html/rd/p/000000244.000043078.html",
+      "reason": "採用済みのため重複候補"
+    },
+    {
+      "title": "スマート自律型EV充電ロボットの世界市場（2026年～2032年）",
+      "url": "https://www.atpress.ne.jp/news/6624109",
+      "reason": "市場調査レポート告知で、実利用の新展開より一次情報性が低い"
+    },
+    {
+      "title": "BYDの軽EV「ラッコ」、発売2週間で受注1000台超 過去最速",
+      "url": "https://www.nikkei.com/article/DGXZQOUC103P80Q6A810C2000000/",
+      "reason": "BYD RACCOの同一材料で採用済み記事と重複"
+    },
+    {
+      "title": "中国EV、活路求め日本へ 自国市場鈍化、欧米関税障壁で",
+      "url": "https://news.yahoo.co.jp/articles/6fe1a49547e1200ba363886f664f464f9612dcf8",
+      "reason": "BYD RACCOと日本市場参入の論点が重なり、カテゴリ内の論点分散を優先"
+    },
+    {
+      "title": "世界最高峰の大学が「自動運転チャリ」を開発",
+      "url": "https://jidounten-lab.com/u_66223",
+      "reason": "研究プロトタイプで、当日号の主要な市場・運行動向より優先度が低い"
+    },
+    {
+      "title": "シルバーウィークイベント「ドリームモビリティウィーク」開催",
+      "url": "https://prtimes.jp/main/html/rd/p/000000274.000023355.html",
+      "reason": "イベント告知でニュース性と業務判断への波及が限定的"
+    },
+    {
+      "title": "EVモーターズ・ジャパンのEVバス事業㈱イクヨに",
+      "url": "https://news.yahoo.co.jp/articles/674c4e6a97f6f6dc062ecbe8e194f2300a78a34a",
+      "reason": "企業取引の詳細確認が不足し、採用5件の多様性を優先"
+    },
+    {
+      "title": "自動車市場、国内勢も苦戦 消費不振とEV過当競争で 中国",
+      "url": "https://news.yahoo.co.jp/articles/567e299b8071f8d72c3d3cfe8640fd255fe76b62",
+      "reason": "市場概況の二次報道で、より具体的な登録・生産データを優先"
+    },
+    {
+      "title": "EV失速で「ハイブリッド車」再評価へ 世界の自動車メーカーが方針転換で「現実的な最適解」に",
+      "url": "https://news.yahoo.co.jp/articles/50410cdd9529dcefd842259ec3de4ad345196707?source=rss",
+      "reason": "論点が広く、当日確認できる具体的な一次数値が少ない"
+    },
+    {
+      "title": "重たいEVやSUVでもしっかり止まる！ ネクセンタイヤから頼れるスタッドレスタイヤ「WINGUARD ice3」が登場",
+      "url": "https://carview.yahoo.co.jp/news/detail/9943cb9690267912200259f30d5a062297bcd665/",
+      "reason": "新製品紹介だがカテゴリ全体への影響範囲が狭い"
+    },
+    {
+      "title": "BYDの軽EV「ラッコ」 日本の軽自動車を徹底研究して実現したパッケージングと利便性",
+      "url": "https://www.asahi.com/and/m/article/16786793/31192394",
+      "reason": "BYD RACCOの同一製品解説で採用済み材料と重複"
+    },
+    {
+      "title": "中国製車、韓国輸入車市場で初めてドイツ製車を上回る",
+      "url": "http://j.people.com.cn/n3/2026/0810/c94476-20487271.html",
+      "reason": "採用済みのため重複候補"
+    },
+    {
+      "title": "リープモーター、ＥＶの現地生産開始",
+      "url": "https://www.nna.jp/news/2954933",
+      "reason": "採用済みのため重複候補"
+    },
+    {
+      "title": "「サステナブル＆シームレスなモビリティシティMIYAZU」の実現を目指して令和８年度第２回宮津市地域公共交通会議を開催！",
+      "url": "https://www.city.miyazu.kyoto.jp/site/press/30772.html",
+      "reason": "検索結果で候補日当日の独立公開日を確認できず保留"
+    },
+    {
+      "title": "AirX、長野県で空飛ぶクルマの社会実装を推進へ",
+      "url": "https://smart-mobility.jp/_ct/17856746?o=0",
+      "reason": "実証構想の一次詳細が不足し、運行実績のある自動運転バスを優先"
+    },
+    {
+      "title": "【受注好調につき増産決定】免許不要EV「ブレイズ イーカーゴ」",
+      "url": "https://prtimes.jp/main/html/rd/p/000000666.000046750.html",
+      "reason": "特定車種の受注告知で影響範囲が限定的"
+    },
+    {
+      "title": "三重交通、ポケモンデザインのEVバス1台導入 伊勢で8日から運行",
+      "url": "https://biz.chunichi.co.jp/news/article/10/129182/",
+      "reason": "8月8日公開で号日のfreshness窓外"
+    },
+    {
+      "title": "７月のＥＶ登録台数２倍",
+      "url": "https://www.nna.jp/news/2954964",
+      "reason": "採用済みのため重複候補"
+    },
+    {
+      "title": "軽井沢町、JR東日本、西武HDが自動運転バスの実証運行を開始。交通空白の解消へ",
+      "url": "https://ligare.news/story/jr-east_20260810/",
+      "reason": "採用済みのため重複候補"
+    }
+  ],
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl"
+}

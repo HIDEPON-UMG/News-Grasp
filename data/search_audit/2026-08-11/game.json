@@ -1,0 +1,119 @@
+{
+  "date": "2026-08-11",
+  "category_id": "game",
+  "queries": [
+    "stage1 candidate feed: ゲーム OR Nintendo OR PlayStation OR Steam OR ゲーム業界 OR video game OR game release when:1d",
+    "stage1 watchlist coverage: 任天堂 / SQUARE ENIX / SIE / Cygames / カプコン / コナミ / テンセント / ネットイース / miHoYo",
+    "stage1 keyword coverage: 新作 発表 / アップデート / esports / ゲーム業界 M&A"
+  ],
+  "raw_results_total": 24,
+  "candidates_total": 24,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Nintendo",
+    "Switch 2",
+    "Sony",
+    "Capcom",
+    "Square Enix"
+  ],
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/game.jsonl",
+  "dedup_file": "build/deduped-candidates/game.jsonl",
+  "dropped": [
+    {
+      "title": "【重要】ホームゲーム開催時の迷惑駐車について",
+      "url": "https://www.albirex.co.jp/news/69892/",
+      "reason": "スポーツクラブ運営告知でゲームカテゴリ外"
+    },
+    {
+      "title": "2026-27プレシーズンゲーム（vs.佐賀バルーナーズ）開催のお知らせ",
+      "url": "https://r-zephyr.com/news/detail/id=22327",
+      "reason": "スポーツ試合告知でゲームカテゴリ外"
+    },
+    {
+      "title": "【プレシーズンゲーム】学生無料招待のお知らせ",
+      "url": "https://www.fukuiblowinds.com/news/detail/id=51433",
+      "reason": "スポーツ試合告知でゲームカテゴリ外"
+    },
+    {
+      "title": "「ポケモン30周年」だけじゃない。2026年ゲームソフト・ハード周年まとめ【夏休み特集】",
+      "url": "https://news.yahoo.co.jp/articles/4845aa8e8568043958ce9c9dc26a521e00925e1c",
+      "reason": "特集・背景記事で当日新材料が弱い"
+    },
+    {
+      "title": "「ポケカ30周年記念商品」がポケモンセンターオンラインで抽選販売受付中！",
+      "url": "https://news.yahoo.co.jp/articles/09db7fcb07b46c0eee502d7eab4a214a6d44eb15",
+      "reason": "商品抽選販売の販促情報で重要度が低い"
+    },
+    {
+      "title": "＜9/6 vs 岐阜スゥープス＞プレシーズンホームゲーム情報",
+      "url": "https://bambitious.jp/news/detail/id=21983",
+      "reason": "スポーツ試合告知でゲームカテゴリ外"
+    },
+    {
+      "title": "8/16（日）松本山雅FC vs レイラック滋賀FC ホームゲーム情報",
+      "url": "https://www.yamaga-fc.com/archives/553288",
+      "reason": "スポーツ試合告知でゲームカテゴリ外"
+    },
+    {
+      "title": "【今すぐ読みたい！人気記事】スマホがWindowsゲーム機になる？エミュレータ「Winlator」の実力と限界",
+      "url": "https://pc.watch.impress.co.jp/docs/topic/readitnow/2132079.html",
+      "reason": "人気記事の再掲で当日新材料が弱い"
+    },
+    {
+      "title": "ソニーが吉田・十時改革で過去最高益も「絶頂」は永続せず！",
+      "url": "https://diamond.jp/articles/-/396578",
+      "reason": "再配信の長期分析で当日性が不足"
+    },
+    {
+      "title": "「ビームスが初のオリジナルゲームをロブロックスで公開」",
+      "url": "https://news.yahoo.co.jp/articles/16d96a6c367807e23a3099e57baa9a4c2696c346",
+      "reason": "ブランド販促の単発話題で読者影響が限定的"
+    },
+    {
+      "title": "パトレイバーゲーム化、2026年9月17日発売決定",
+      "url": "https://koubo.jp/article/108053",
+      "reason": "二次情報中心で一次情報度が低い"
+    },
+    {
+      "title": "『Knytt Classic』Steam/GOGでリリース",
+      "url": "https://news.yahoo.co.jp/articles/b1d5689b6b0c8eacf31b73de411fe352bf61a051",
+      "reason": "同一テーマの無料配信で相対重要度を下げた"
+    },
+    {
+      "title": "「協力プレイ対応のホラー×建築×脱出」Steam注目ゲーム16選",
+      "url": "https://www.gamespark.jp/article/2026/08/10/170492.html",
+      "reason": "複数作品の一覧記事で単独ニュース性が弱い"
+    },
+    {
+      "title": "夏休み中のゲームやスマホが及ぼす影響は？",
+      "url": "https://news.yahoo.co.jp/articles/b111ebcc6d41573feeda49f704f1b6bae1d1923c",
+      "reason": "生活・教育解説でゲーム業界ニュースの主題から外れる"
+    },
+    {
+      "title": "中国のゲームでAIの活用主流に",
+      "url": "https://spap.jst.go.jp/china/news/kyodo/260802/ktopic_1_01.html",
+      "reason": "記事本文の日付が8月2日でfreshness gate外"
+    },
+    {
+      "title": "SNSマーケティングだけでは限界？ゲーム業界で加速するオウンドコミュニティ戦略",
+      "url": "https://news.infoseek.co.jp/article/php_0000012740/",
+      "reason": "業界論の解説記事で当日新材料が弱い"
+    },
+    {
+      "title": "母「家ではゲーム三昧」担任「本気ですか？」",
+      "url": "https://news.yahoo.co.jp/articles/963781141cab57d3b8db3835641085da4ddf1d72",
+      "reason": "漫画・人物記事でゲームニュースの主題から外れる"
+    },
+    {
+      "title": "ナイスゲーム！アルプス1200人拍手と大歓声",
+      "url": "https://yama.minato-yamaguchi.co.jp/e-yama/articles/109430",
+      "reason": "高校野球記事でゲームカテゴリ外"
+    },
+    {
+      "title": "1ゲーム差で迎える3連戦初戦",
+      "url": "https://pacificleague.com/news/amp/85324",
+      "reason": "プロ野球記事でゲームカテゴリ外"
+    }
+  ]
+}

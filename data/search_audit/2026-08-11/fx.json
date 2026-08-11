@@ -1,0 +1,128 @@
+{
+  "date": "2026-08-11",
+  "category_id": "fx",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "ドル円 OR USDJPY OR 日銀 OR BOJ OR 為替介入 when:1d",
+    "FRB OR Fed OR ECB OR 金利 OR forex when:1d"
+  ],
+  "raw_results_total": 325,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dropped": [
+    {
+      "title": "【ドル/円、今夜の見通し】ドル/円、158円台回復…米7月雇用統計の下落分を完全に打ち消す＿2026/8/10",
+      "url": "https://www.gaitame.com/media/entry/2026/08/10/161710",
+      "reason": "市場概況として採用5件より優先度が低い"
+    },
+    {
+      "title": "ＦＲＢ、段階的な利上げ必要 現行策「引き締め的でない」＝クリーブランド連銀総裁",
+      "url": "https://jp.reuters.com/markets/japan/ZZY5GWUPGBO6XEVOMLS6MUXSPU-2026-08-10/",
+      "reason": "OGP取得不能のため記者出力のthumb契約を満たせない"
+    },
+    {
+      "title": "【金融政策先読み】日米協調介入が日銀の9月利上げを後押し、将来的な「中立金利超え」も現実味",
+      "url": "https://jbpress.ismedia.jp/articles/-/96383",
+      "reason": "協調介入と9月利上げの分析が採用記事と重複"
+    },
+    {
+      "title": "ドル円、１５９円台に上昇 介入後の下落幅の半分以上を回復＝ＮＹ為替概況",
+      "url": "https://fx.minkabu.jp/news/375766",
+      "reason": "同じ159円台の値動きを読売記事で代表"
+    },
+    {
+      "title": "FRBは複数回の利上げ必要になる可能性－クリーブランド連銀総裁",
+      "url": "https://newsdig.tbs.co.jp/articles/withbloomberg/2865584?display=1",
+      "reason": "Reuters系の同一論点で、日銀・円相場の選定枠を優先"
+    },
+    {
+      "title": "ニューヨーク外国為替市場概況･4時 ドル円、堅調(トレーダーズ・ウェブ)",
+      "url": "https://finance.yahoo.co.jp/news/detail/1e47cbefbab3cf0f322a0da612c9dbe2737e9d68",
+      "reason": "定型的な市場概況で採用枠外"
+    },
+    {
+      "title": "9月利上げ？日銀きょう公表「主な意見」とは",
+      "url": "https://www.khb-tv.co.jp/news/16800983",
+      "reason": "日銀の主な意見は朝日・時事で一次情報に近い報道を代表"
+    },
+    {
+      "title": "日米が協調為替介入、円安抑止には3つの当局対応か 追加介入、日銀利上げ加速、債券市場安定化策 野村證券・後藤祐二朗",
+      "url": "https://www.nomura.co.jp/wealthstyle/article/0830/",
+      "reason": "0831の続編分析を優先"
+    },
+    {
+      "title": "為替相場 11日（日本時間 6時）",
+      "url": "https://www.47news.jp/14773503.html",
+      "reason": "定型的な相場速報で採用枠外"
+    },
+    {
+      "title": "【FX】8/10 ドル円急落！米雇用統計ショックの持続性は？ ｜為替市場ニュースの振り返り、今日の見通し",
+      "url": "https://www.gaitame.com/media/entry/2026/08/10/113000",
+      "reason": "前日の雇用統計振り返りで当日材料の優先度が低い"
+    },
+    {
+      "title": "１０日の為替市場の四本値（ポンド円・豪ドル円・カナダドル円）",
+      "url": "https://fx.minkabu.jp/news/375769",
+      "reason": "定型的な四本値で採用枠外"
+    },
+    {
+      "title": "8月10日のNY為替概況(フィスコ)",
+      "url": "https://finance.yahoo.co.jp/news/detail/aa76354440aef95abd97fece57fe56168ad722e5",
+      "reason": "定型的な市場概況で採用枠外"
+    },
+    {
+      "title": "【ドル円見通し】雇用悪化→消費減速→インフレ鈍化の連鎖でFRB見通しが逆回転 ドル円は下値模索か FX分析 2026年8月10日",
+      "url": "https://www.gaitame.com/media/entry/2026/08/10/125934",
+      "reason": "前日の雇用統計分析で採用枠外"
+    },
+    {
+      "title": "ポンド、英雇用関連調査が改善も英中銀は利上げ見送る可能性＝ＮＹ為替",
+      "url": "https://fx.minkabu.jp/news/375757",
+      "reason": "fx内の主軸であるドル円・日銀材料を優先"
+    },
+    {
+      "title": "【FX】ライブトレード 欧州タイムを攻略だ！「ドル/円、158円台へ反発…市場の関心は米7月CPIへ」ドル円分析＆取引 2026/8/10 17:00",
+      "url": "https://www.gaitame.com/media/entry/2026/08/10/163000",
+      "reason": "ライブトレード告知で採用枠外"
+    },
+    {
+      "title": "日銀委員 利上げペース加速の意見",
+      "url": "https://news.yahoo.co.jp/pickup/6591178",
+      "reason": "元記事単位の情報量が少ないピックアップで採用枠外"
+    },
+    {
+      "title": "ニューヨーク外国為替市場概況・10日 ドル円、反発｜FX・為替ニュース",
+      "url": "https://zai.diamond.jp/articles/-/493725",
+      "reason": "定型的な市場概況で採用枠外"
+    },
+    {
+      "title": "日銀「利上げ」に前向き意見複数　一方で…30代住宅ローン世代、約24万円負担増の試算",
+      "url": "https://s.mxtv.jp/mxnews/amp/mxnews_1htztz1cn3b5a25i2.html",
+      "reason": "日銀会合論点は採用記事で代表し、住宅ローン試算は主題外"
+    },
+    {
+      "title": "２つの条件が続く限り、円安になりやすいとの指摘＝ＮＹ為替",
+      "url": "https://fx.minkabu.jp/news/375749",
+      "reason": "論点が採用した円安・介入記事と重複"
+    },
+    {
+      "title": "日銀９月利上げ示唆で介入 米国、植田総裁発言を評価",
+      "url": "https://www.chukei-news.co.jp/news/2026/08/11/OK0002608110101_02/",
+      "reason": "日米協調介入と日銀利上げの重複論点で採用枠外"
+    },
+    {
+      "url": "https://www.jiji.com/jc/article?k=2026081000610&g=eco&p=20260810ax11S&rel=pv",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

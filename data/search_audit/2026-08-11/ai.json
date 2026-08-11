@@ -1,0 +1,127 @@
+{
+  "date": "2026-08-11",
+  "category_id": "ai",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "Anthropic Macquarie GIC Theseus Infrastructure August 10 2026",
+    "site:claude.com/blog auto mode default Claude Code August 14 2026",
+    "site:anthropic.com/news Fable 5 biology safeguards August 2026"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "OpenAI、次期モデル「Astra」の開発を一部停止--「最高水準のサイバー攻撃能力に達した可能性」",
+      "url": "https://japan.cnet.com/article/35251464/",
+      "reason": "前号と同主題の続報で、5件枠では新規性の高いセキュリティ記事を優先"
+    },
+    {
+      "title": "生成AIが思考力に及ぼす影響",
+      "url": "https://mainichi.jp/zukai/articles/20260806/zki/00m/010/010000c",
+      "reason": "解説・図解中心で速報性と業務上の直接性が相対的に低い"
+    },
+    {
+      "title": "マンガでわかる生成AI【第18話】世界をつなぐ魔法 |",
+      "url": "https://www.asteria.com/jp/inlive/social/8480/",
+      "reason": "企業連載・啓発コンテンツでニュース性が相対的に低い"
+    },
+    {
+      "title": "【AIバイブコーディング最前線】Claude Codeは成功、Codexは挫折、Geminiは9時間格闘——3人のジャーナリストが体験した明暗",
+      "url": "https://finance.biggo.jp/news/5bd0f09f6deb42d7",
+      "reason": "体験記事で、製品の一般的な性能比較を一次情報として確定しにくい"
+    },
+    {
+      "title": "孤立するAnthropic オープンモデルへの支持をめぐり",
+      "url": "https://ascii.jp/elem/000/004/426/4426225/",
+      "reason": "論説中心で、当日発生の具体的な出来事が薄い"
+    },
+    {
+      "title": "Claude Codeで「コマンド実行のたびに人間に判断を求める」という動作を改善するオートモードがデフォルトで有効化される予定",
+      "url": "https://gigazine.net/news/20260810-claude-code-auto-mode/",
+      "reason": "同一テーマの重複候補。詳細な適用条件と実験値を含むビジネス＋IT記事を採用"
+    },
+    {
+      "title": "ローカルLLMとは？クラウド型AIとの違い・必要なPCスペック・無料で使える範囲を解説",
+      "url": "https://chatsense.jp/blog/local-llm",
+      "reason": "常設の入門解説で、当日ニュースとしての鮮度が低い"
+    },
+    {
+      "title": "Claude CodeでGPT-5.6を使ったら凍結！Codexが宣言通り上限をリセットする事態に（PC Watch）",
+      "url": "https://news.yahoo.co.jp/articles/62f6493fd6cc0cfbcfae4bcf76ee33e0f751eecb",
+      "reason": "個別体験の続報で、再現性と一次情報性が限定的"
+    },
+    {
+      "title": "法人向け生成AI「ChatSense」、Notionページを学習可能に | 株式会社ナレッジセンスのプレスリリース",
+      "url": "https://prtimes.jp/main/html/rd/p/000000373.000073671.html",
+      "reason": "企業プレスリリースで、5件枠では影響範囲の大きい話題を優先"
+    },
+    {
+      "title": "週刊生成AI with AWS – 2026/8/3 週",
+      "url": "https://aws.amazon.com/jp/blogs/news/weekly-genai-20260803/",
+      "reason": "週次まとめで、単一の当日ニュースではない"
+    },
+    {
+      "title": "Gemini Notebook入門。ChatGPTと使い分けるとこんなに便利",
+      "url": "https://www.lifehacker.jp/article/2608-matome-gemini-notebook/",
+      "reason": "利用ガイド・比較記事で、速報性が低い"
+    },
+    {
+      "title": "OpenAI×データセクションが議論、“日本クオリティ”のAI開発における可能性とは？",
+      "url": "https://enterprisezine.jp/news/detail/24836",
+      "reason": "イベント報告で、具体的な新製品・制度変更のニュース性が相対的に低い"
+    },
+    {
+      "title": "OpenAIの謎の新モデル「モナリザ」がブラインドテストに登場、画像のリアリティが大幅向上し「プラスチック感」払拭",
+      "url": "https://finance.biggo.jp/news/886a7abe-dc02-489a-bd04-272f4536346f",
+      "reason": "噂ベースのアグリゲーター記事で、一次情報を確認できない"
+    },
+    {
+      "title": "住友鉱、今期純利益予想を51％上方修正 生成ＡＩ普及で需要増(ロイター)",
+      "url": "https://finance.yahoo.co.jp/news/detail/6d45a191b1ead590059b5582fcb1bb119b8a186a",
+      "reason": "企業業績が主題で、AIカテゴリより経済・製造カテゴリとの適合度が高い"
+    },
+    {
+      "title": "ＦＰＴ、OpenAIの「Select Partner」に認定",
+      "url": "https://prtimes.jp/main/html/rd/p/000000136.000017750.html",
+      "reason": "企業プレスリリースで、読者への影響範囲が限定的"
+    },
+    {
+      "title": "OpenAI、GPT-5.6 Lunaを80％値下げ、Terraも20％安く API価格を大幅改定、利用拡大へ",
+      "url": "https://www.sbbit.jp/article/cont1/186441",
+      "reason": "既報の価格改定の再掲で、5件枠では当日発生の安全・導入ニュースを優先"
+    },
+    {
+      "title": "アンソロピック、マッコーリー・GICとAIデータセンター開発で新会社設立へ",
+      "url": "https://finance.biggo.jp/news/dfacb354-d604-4968-9ade-6c024d4581da",
+      "reason": "一次情報への直接到達を確認できず、5件枠では検証可能性の高い候補を優先"
+    },
+    {
+      "title": "ライトアップ、オープンウェイトAI「Kimi K3」対応の「ローカルLLM導入支援サービス」を提供開始",
+      "url": "https://prtimes.jp/main/html/rd/p/000000390.000042366.html",
+      "reason": "企業プレスリリースで、影響範囲が限定的"
+    },
+    {
+      "title": "OpenAI会長が「1年も経てば、AIトークンという言葉を意識する必要すらなくなる」と断言した理由",
+      "url": "https://www.businessinsider.jp/article/2607-openai-chair-predicts-companies-stop-worrying-ai-tokens-price/",
+      "reason": "インタビュー・分析記事で、当日発生の具体的な変更ではない"
+    },
+    {
+      "title": "GMO NIKKO、総合AIO（生成AI最適化）対策ツールを提供開始",
+      "url": "https://ecnomikata.com/ecnews/ec_site_operation/51328/",
+      "reason": "企業サービス告知で、5件枠では汎用性と影響範囲の高い候補を優先"
+    }
+  ]
+}
