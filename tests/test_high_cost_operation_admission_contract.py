@@ -102,6 +102,27 @@ def test_runner_claim_failure_marker_is_checked_before_parent_validation() -> No
     assert "HIGH_COST_FINAL_RUNNER_CLAIM_TERMINAL" in gate
 
 
+def test_runner_claim_failure_recording_unavailable_is_typed_terminal_exit() -> None:
+    text = RUNNER.read_text(encoding="utf-8-sig")
+    helper = text.split("function Record-HighCostClaimFailure", 1)[1].split(
+        "function Assert-HighCostOperationAdmission", 1
+    )[0]
+    assert "return $false" in helper
+    assert "return $true" in helper
+    gate = text.split("function Assert-HighCostOperationAdmission", 1)[1].split(
+        "# ===== sentinel", 1
+    )[0]
+    assert gate.count("HIGH_COST_CLAIM_FAILURE_RECORD_UNAVAILABLE") == 6
+    for failure_code in (
+        "HIGH_COST_PARENT_AUTHORITY_RECEIPT_INVALID",
+        "HIGH_COST_FINAL_RUNNER_CLAIM_REJECTED",
+    ):
+        assert f"-FailureCode '{failure_code}'" in gate
+    assert "Set-RunnerState -Status 'operation_rejected_high_cost_admission'" in gate
+    assert "-Message 'HIGH_COST_CLAIM_FAILURE_RECORD_UNAVAILABLE'" in gate
+    assert "-ExitCode 76" in gate
+
+
 def test_normal_daily_runner_never_reserves_final_e2e_budget() -> None:
     text = RUNNER.read_text(encoding="utf-8-sig")
     gate = text.split("function Assert-HighCostOperationAdmission", 1)[1].split(
