@@ -1,8 +1,8 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 2368,
-  "collectedNodeSetSha256": "366b0b8071f6d440fac6ad423fce5c0933aab624ff22ccb4455e65efeb614965",
+  "collectedNodeCount": 2372,
+  "collectedNodeSetSha256": "b355bf531968f9acdcc414d868cefb21111359a0c47685ff2fdb795b9b5ae5fc",
   "files": [
     {
       "path": "tests/test_all_article_urls_live.py",
@@ -2198,6 +2198,21 @@
         "tests/test_newsroom_prompts.py::test_summary_prompts_generate_section_lanes_for_category_boards",
         "tests/test_newsroom_prompts.py::test_summary_prompts_generate_theme_lanes_before_display_split",
         "tests/test_newsroom_prompts.py::test_thumb_prompts_forbid_google_news_proxy_thumbnail"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
+      "path": "tests/test_nopublish_external_authority_fixture.py",
+      "sha256": "8edf3b8658b51ebfd1fb885e2ecf6f75bdaa9e24c9b0bc65c6ebeaae4f73638c",
+      "nodeCount": 4,
+      "nodeIds": [
+        "tests/test_nopublish_external_authority_fixture.py::test_authority_path_override_without_fixture_mode_is_rejected",
+        "tests/test_nopublish_external_authority_fixture.py::test_final_wrapper_binds_fixture_path_into_exact_runner_arguments",
+        "tests/test_nopublish_external_authority_fixture.py::test_nopublish_fixture_probe_is_explicit_and_read_only",
+        "tests/test_nopublish_external_authority_fixture.py::test_production_runner_keeps_fixed_authority_and_allows_only_nopublish_fixture"
       ],
       "clauseIds": [
         "NGC-C06",

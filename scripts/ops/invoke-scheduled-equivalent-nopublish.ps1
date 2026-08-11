@@ -19,6 +19,7 @@ param(
     [string] $CausalReplacementProofPath = '',
     [string] $SupersessionApprovalPath = '',
     [string] $HighCostParentAuthorityPath = '',
+    [string] $ExternalHealthAuthorityFixturePath = '',
     [string] $PowerShellExe = 'powershell.exe'
 )
 
@@ -283,6 +284,10 @@ $RouteManifestPath = Get-CanonicalExistingFile -Path $RouteManifestPath -Label '
 $StaticReceiptPath = Get-CanonicalExistingFile -Path $StaticReceiptPath -Label 'static evidence' -Boundary $workspacePath -MaxBytes 4194304
 $SimulationReceiptPath = Get-CanonicalExistingFile -Path $SimulationReceiptPath -Label 'simulation evidence' -Boundary $workspacePath -MaxBytes 4194304
 $E2EAdmissionPath = Get-CanonicalExistingFile -Path $E2EAdmissionPath -Label 'issued E2E admission' -Boundary $repoPath -MaxBytes 65536
+if (-not $ExternalHealthAuthorityFixturePath) {
+    throw 'HIGH_COST_NOPUBLISH_FIXTURE_REQUIRED'
+}
+$ExternalHealthAuthorityFixturePath = Get-CanonicalExistingFile -Path $ExternalHealthAuthorityFixturePath -Label 'NoPublish external authority fixture' -Boundary $repoPath -MaxBytes 65536
 $authorizationMode = 'new_attempt'
 $authorizationCommand = 'authorize'
 $authorizationExtraArguments = @('--attempt-kind', $operationKind)
@@ -361,6 +366,7 @@ $runnerArguments = @(
     '-E2EFinalRunnerArgumentsPath', $runnerArgumentsPath,
     '-E2EFinalReservationReceiptPath', $reservationReceiptPath,
     '-E2EFinalClaimReceiptPath', $claimReceiptPath,
+    '-ExternalHealthAuthorityPathOverride', $ExternalHealthAuthorityFixturePath,
     '-HighCostAttemptId', $attemptId
 )
 if (Test-Path -LiteralPath $runnerArgumentsPath) {
@@ -397,6 +403,8 @@ $installedLaunchAuthority = [ordered]@{
     runtimeRepoCommit = $runtimeRepoCommit
     runnerArgumentsPath = $runnerArgumentsPath
     runnerArgumentsFileSha256 = (Get-FileHash -LiteralPath $runnerArgumentsPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    externalHealthAuthorityFixturePath = $ExternalHealthAuthorityFixturePath
+    externalHealthAuthorityFixtureSha256 = (Get-FileHash -LiteralPath $ExternalHealthAuthorityFixturePath -Algorithm SHA256).Hash.ToLowerInvariant()
 }
 $installedLaunchAuthorityBody = $installedLaunchAuthority | ConvertTo-Json -Depth 6 -Compress
 $installedLaunchAuthorityHasher = [Security.Cryptography.SHA256]::Create()
@@ -523,6 +531,8 @@ $receipt = [ordered]@{
     observed_terminal_state = $observedStatus
     high_cost_attempt_id = $attemptId
     high_cost_parent_authority_path = $parentAuthorityFullPath
+    external_health_authority_fixture_path = $ExternalHealthAuthorityFixturePath
+    external_health_authority_fixture_sha256 = (Get-FileHash -LiteralPath $ExternalHealthAuthorityFixturePath -Algorithm SHA256).Hash.ToLowerInvariant()
     high_cost_parent_authority_sha256 = if (Test-Path -LiteralPath $parentAuthorityFullPath -PathType Leaf) { (Get-FileHash -LiteralPath $parentAuthorityFullPath -Algorithm SHA256).Hash.ToLowerInvariant() } else { '' }
     ok = ($runnerExitCode -eq 0 -and $observedStatus -eq 'publish_dry_run_ok' -and $durationSloMet)
 }

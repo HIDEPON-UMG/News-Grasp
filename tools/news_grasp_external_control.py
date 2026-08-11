@@ -118,6 +118,7 @@ def validate_health_authority(
     *,
     expected_lineage: str | None = None,
     minimum_generation: int = 0,
+    fixture_mode: bool = False,
 ) -> dict[str, Any]:
     """authorityのexact schema/self-hashを検証する。"""
     if not isinstance(authority, Mapping):
@@ -139,7 +140,10 @@ def validate_health_authority(
         raise ExternalControlPlaneError("EXTERNAL_AUTHORITY_LINEAGE_INVALID")
     if authority.get("statefulSelfTestStatus") != "green":
         raise ExternalControlPlaneError("EXTERNAL_AUTHORITY_SELF_TEST_NOT_GREEN")
-    if authority.get("publisherId") != "global-control-plane-owner":
+    allowed_publishers = {"global-control-plane-owner"}
+    if fixture_mode:
+        allowed_publishers.add("news-grasp-nopublish-fixture")
+    if authority.get("publisherId") not in allowed_publishers:
         raise ExternalControlPlaneError("EXTERNAL_AUTHORITY_PUBLISHER_INVALID")
     for field in (
         "canonicalDescriptorSha256",
@@ -353,11 +357,22 @@ def _readiness_receipt(value: Mapping[str, Any]) -> str:
 
 
 def probe_external_readiness(
-    *, fixture_source: Mapping[str, Any] | None = None
+    *,
+    fixture_source: Mapping[str, Any] | None = None,
+    authority_path: Path | str | None = None,
+    fixture_mode: bool = False,
 ) -> dict[str, Any]:
     """固定authorityだけを読むpure probe。fixture_sourceはtest専用注入面。"""
+    if authority_path is not None and not fixture_mode:
+        return {
+            "schemaVersion": READINESS_SCHEMA,
+            "status": "unavailable",
+            "reasonCode": "EXTERNAL_AUTHORITY_OVERRIDE_FORBIDDEN",
+            "modelLaunchCount": 0,
+            "receiptSha256": "",
+        }
     if fixture_source is None:
-        path = fixed_authority_path()
+        path = Path(authority_path) if authority_path is not None else fixed_authority_path()
         try:
             authority = _load_bounded_json(path)
         except ExternalControlPlaneError as error:
@@ -371,7 +386,7 @@ def probe_external_readiness(
     else:
         authority = dict(fixture_source.get("authority") or fixture_source)
     try:
-        checked = validate_health_authority(authority)
+        checked = validate_health_authority(authority, fixture_mode=fixture_mode)
     except ExternalControlPlaneError as error:
         return {
             "schemaVersion": READINESS_SCHEMA,
@@ -612,17 +627,73 @@ def should_retry_model(*, previous_authority_generation: int, current_authority_
 
 
 def main(argv: list[str] | None = None) -> int:
-    """installerが使うread-only probe CLI。入力pathのoverrideは受けない。"""
+    """installerが使うread-only probe CLI。fixture pathはNoPublish専用。"""
     import argparse
 
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="command", required=True)
-    sub.add_parser("probe")
+    probe_parser = sub.add_parser("probe")
+    probe_parser.add_argument("--authority-path", default="")
+    probe_parser.add_argument("--fixture-mode", action="store_true")
+    fixture_parser = sub.add_parser("build-fixture")
+    fixture_parser.add_argument("--output", required=True)
+    fixture_parser.add_argument("--canonical-descriptor-path", required=True)
+    fixture_parser.add_argument("--source-broker-path", required=True)
+    fixture_parser.add_argument("--installed-broker-path", required=True)
+    fixture_parser.add_argument("--dependency-anchor", required=True)
+    fixture_parser.add_argument("--route-anchor", required=True)
     args = parser.parse_args(argv)
     if args.command == "probe":
-        result = probe_external_readiness()
+        result = probe_external_readiness(
+            authority_path=args.authority_path or None,
+            fixture_mode=bool(args.fixture_mode),
+        )
         print(json.dumps(result, ensure_ascii=False, sort_keys=True))
         return 0 if result.get("status") == "ready" else 74
+    if args.command == "build-fixture":
+        output = Path(args.output).resolve()
+        anchors = {
+            "canonicalDescriptorPath": Path(args.canonical_descriptor_path).resolve(),
+            "sourceBrokerPath": Path(args.source_broker_path).resolve(),
+            "installedBrokerPath": Path(args.installed_broker_path).resolve(),
+            "dependencyAnchor": Path(args.dependency_anchor).resolve(),
+            "routeAnchor": Path(args.route_anchor).resolve(),
+        }
+        for label, path in anchors.items():
+            if not path.is_file() or path.is_symlink():
+                raise SystemExit(f"EXTERNAL_FIXTURE_ANCHOR_INVALID:{label}")
+        def _file_sha256(path: Path) -> str:
+            digest = hashlib.sha256()
+            with path.open("rb") as stream:
+                for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                    digest.update(chunk)
+            return digest.hexdigest()
+        body = {
+            "schemaVersion": AUTHORITY_SCHEMA,
+            "authorityLineageId": "lineage-a",
+            "authorityLineageDerivation": "sha256-utf8-lf-v1",
+            "authorityGeneration": 1,
+            "previousReceiptSha256": "0" * 64,
+            "canonicalDescriptorPath": str(anchors["canonicalDescriptorPath"]),
+            "canonicalDescriptorSha256": _file_sha256(anchors["canonicalDescriptorPath"]),
+            "sourceBrokerPath": str(anchors["sourceBrokerPath"]),
+            "sourceBrokerSha256": _file_sha256(anchors["sourceBrokerPath"]),
+            "installedBrokerPath": str(anchors["installedBrokerPath"]),
+            "installedBrokerSha256": _file_sha256(anchors["installedBrokerPath"]),
+            "dependencyGenerationHash": _file_sha256(anchors["dependencyAnchor"]),
+            "routeGenerationHash": _file_sha256(anchors["routeAnchor"]),
+            "ledgerGenerationId": "news-grasp-nopublish-fixture-ledger",
+            "registryAnchorGenerationId": "news-grasp-nopublish-fixture-registry",
+            "promotionGuardGenerationId": "news-grasp-nopublish-fixture-promotion",
+            "statefulSelfTestStatus": "green",
+            "statefulSelfTestId": "news-grasp-nopublish-fixture-self-test",
+            "testedAt": _now(),
+            "publisherId": "news-grasp-nopublish-fixture",
+        }
+        body["receiptSha256"] = authority_receipt_sha256(body)
+        _atomic_json(output, body)
+        print(json.dumps(body, ensure_ascii=False, sort_keys=True))
+        return 0
     return 74
 
 

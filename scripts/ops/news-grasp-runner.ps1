@@ -70,6 +70,7 @@ param(
     [string] $HighCostAttemptId = '',
     [string] $HighCostBudgetToolPath = '',
     [string] $HighCostWorkspaceRoot = '',
+    [string] $ExternalHealthAuthorityPathOverride = '',
     [string] $PowerShellExe = 'powershell.exe',
     [string] $ScheduledAuthorityEvidencePath = '',
     [string] $ScheduledFailureReceiptRootOverride = '',
@@ -336,6 +337,38 @@ $script:PublishCompleteCommit = ''
 $script:ScheduledFailureTerminalized = $false
 $script:ScheduledFailureTerminalInputPath = ''
 $script:ExternalHealthAuthorityPath = Join-Path $env:USERPROFILE '.codex\state\high-cost-operation\external-health-authority-v1.json'
+$script:ExternalHealthAuthorityFixtureMode = $false
+if ($ExternalHealthAuthorityPathOverride) {
+    if (-not $NoPublish) {
+        throw 'EXTERNAL_AUTHORITY_OVERRIDE_FORBIDDEN'
+    }
+    try {
+        $fixtureAuthorityPath = [System.IO.Path]::GetFullPath((Resolve-Path -LiteralPath $ExternalHealthAuthorityPathOverride -ErrorAction Stop).Path)
+        $repoBoundary = [System.IO.Path]::GetFullPath((Resolve-Path -LiteralPath $RepoDir -ErrorAction Stop).Path).TrimEnd('\')
+        $repoPrefix = $repoBoundary + '\'
+        if (-not $fixtureAuthorityPath.StartsWith($repoPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw 'fixture authority is outside RepoDir'
+        }
+        $cursor = $fixtureAuthorityPath
+        while ($cursor) {
+            $item = Get-Item -LiteralPath $cursor -Force -ErrorAction Stop
+            if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+                throw 'fixture authority traversal contains reparse point'
+            }
+            if ([string]::Equals($cursor, $repoBoundary, [System.StringComparison]::OrdinalIgnoreCase)) { break }
+            $parent = Split-Path -Parent $cursor
+            if (-not $parent -or $parent -eq $cursor) { throw 'fixture authority boundary traversal failed' }
+            $cursor = $parent
+        }
+        if (-not (Test-Path -LiteralPath $fixtureAuthorityPath -PathType Leaf)) {
+            throw 'fixture authority is not a regular file'
+        }
+        $script:ExternalHealthAuthorityPath = $fixtureAuthorityPath
+        $script:ExternalHealthAuthorityFixtureMode = $true
+    } catch {
+        throw "EXTERNAL_AUTHORITY_FIXTURE_INVALID: $($_.Exception.Message)"
+    }
+}
 $ScheduledFailureReceiptRoot = if ($ScheduledFailureReceiptRootOverride) {
     [System.IO.Path]::GetFullPath($ScheduledFailureReceiptRootOverride)
 } else {
@@ -1407,6 +1440,7 @@ function Get-RunnerScriptArguments {
     if ($DateStampOverride) { $runnerArgs += @('-DateStampOverride', $DateStampOverride) }
     if ($LogDirOverride) { $runnerArgs += @('-LogDirOverride', $LogDirOverride) }
     if ($StateFileOverride) { $runnerArgs += @('-StateFileOverride', $StateFileOverride) }
+    if ($ExternalHealthAuthorityPathOverride) { $runnerArgs += @('-ExternalHealthAuthorityPathOverride', $ExternalHealthAuthorityPathOverride) }
     if ($ScheduledAuthorityEvidencePath) { $runnerArgs += @('-ScheduledAuthorityEvidencePath', $ScheduledAuthorityEvidencePath) }
     if ($PublishVerifyWaitSec -ne 600) { $runnerArgs += @('-PublishVerifyWaitSec', [string]$PublishVerifyWaitSec) }
     if ($PublishVerifyPollSec -ne 30) { $runnerArgs += @('-PublishVerifyPollSec', [string]$PublishVerifyPollSec) }
@@ -3279,7 +3313,11 @@ function Get-NewsGraspExternalControlPlaneReadiness {
     if (-not (Test-Path -LiteralPath $probeScript -PathType Leaf)) {
         return [ordered]@{ status = 'unavailable'; reasonCode = 'EXTERNAL_CONTROL_PLANE_CONSUMER_MISSING'; modelLaunchCount = 0 }
     }
-    $raw = (& $PyExe '-I' $probeScript 'probe' 2>&1 | Out-String).Trim()
+    $probeArgs = @('probe')
+    if ($script:ExternalHealthAuthorityFixtureMode) {
+        $probeArgs += @('--authority-path', $script:ExternalHealthAuthorityPath, '--fixture-mode')
+    }
+    $raw = (& $PyExe '-I' $probeScript @probeArgs 2>&1 | Out-String).Trim()
     $rc = $LASTEXITCODE
     try { $value = $raw | ConvertFrom-Json -ErrorAction Stop } catch {
         return [ordered]@{ status = 'unavailable'; reasonCode = 'EXTERNAL_CONTROL_PLANE_OUTPUT_INVALID'; modelLaunchCount = 0 }
