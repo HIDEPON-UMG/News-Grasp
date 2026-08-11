@@ -1218,7 +1218,7 @@ def test_claim_failure_is_durable_and_blocks_same_attempt_reentry(
         failure_code="E2E_PARENT_AUTHORITY_INVALID",
         failure_fingerprint="f" * 64,
         runner_executable_path=process_image,
-        authority_python_executable_path=Path(sys.executable),
+        authority_python_executable_path=Path(value["authorityPythonExecutablePath"]),
         current_runner_pid=os.getpid(),
     )
 
@@ -1249,7 +1249,7 @@ def test_claim_failure_is_durable_and_blocks_same_attempt_reentry(
         failure_code="E2E_PARENT_AUTHORITY_INVALID",
         failure_fingerprint="f" * 64,
         runner_executable_path=process_image,
-        authority_python_executable_path=Path(sys.executable),
+        authority_python_executable_path=Path(value["authorityPythonExecutablePath"]),
         current_runner_pid=os.getpid(),
     )
     assert replay["receiptSha256"] == failure["receiptSha256"]
@@ -1366,7 +1366,7 @@ def test_claim_failure_wal_recovers_after_each_replace_boundary(
             failure_code="E2E_PARENT_AUTHORITY_INVALID",
             failure_fingerprint="e" * 64,
             runner_executable_path=process_image,
-            authority_python_executable_path=Path(sys.executable),
+            authority_python_executable_path=Path(value["authorityPythonExecutablePath"]),
             current_runner_pid=os.getpid(),
         )
     monkeypatch.setattr(bridge_module, "_replace_json", original_replace)
@@ -1377,7 +1377,7 @@ def test_claim_failure_wal_recovers_after_each_replace_boundary(
         failure_code="E2E_PARENT_AUTHORITY_INVALID",
         failure_fingerprint="e" * 64,
         runner_executable_path=process_image,
-        authority_python_executable_path=Path(sys.executable),
+        authority_python_executable_path=Path(value["authorityPythonExecutablePath"]),
         current_runner_pid=os.getpid(),
     )
     assert recovered["state"] == "claim_failure_recorded"

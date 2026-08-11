@@ -1,8 +1,8 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 2372,
-  "collectedNodeSetSha256": "b355bf531968f9acdcc414d868cefb21111359a0c47685ff2fdb795b9b5ae5fc",
+  "collectedNodeCount": 2373,
+  "collectedNodeSetSha256": "ecd081aa1df66d8eb066adc0ad2f82b8a8361dfe88bc7107172e4db9d399d6f8",
   "files": [
     {
       "path": "tests/test_all_article_urls_live.py",
@@ -1090,7 +1090,7 @@
     },
     {
       "path": "tests/test_e2e_final_admission_bridge.py",
-      "sha256": "639dea76622d9b36534d3f870537fe41a43a8b64b156788847df774fd6f6a902",
+      "sha256": "2e76760b268f76c104668d2c58d508041f4aa6369296cc4cfe42bdf3db439486",
       "nodeCount": 56,
       "nodeIds": [
         "tests/test_e2e_final_admission_bridge.py::test_admission_is_consumed_once_across_worktree_and_receipt_paths",
@@ -3087,8 +3087,8 @@
     },
     {
       "path": "tests/test_runner_convergence_contract.py",
-      "sha256": "8b260b794034441935c1e4c594ecad1c7eb8b49e7bbeee1b040ff57a0df067a2",
-      "nodeCount": 181,
+      "sha256": "b4a16545339334984a01780849d533ff406c2ffaa6d8f95f0688039b32078747",
+      "nodeCount": 182,
       "nodeIds": [
         "tests/test_runner_convergence_contract.py::test_atomic_install_failure_preserves_old_destination",
         "tests/test_runner_convergence_contract.py::test_atomic_install_replaces_hardlink_entry_without_mutating_sibling",
@@ -3159,6 +3159,7 @@
         "tests/test_runner_convergence_contract.py::test_no_publish_e2e_does_not_mark_publish_complete",
         "tests/test_runner_convergence_contract.py::test_no_publish_e2e_forbids_force_full_rerun_after_artifacts_exist",
         "tests/test_runner_convergence_contract.py::test_no_publish_e2e_never_fallback_publishes_on_quality_hold",
+        "tests/test_runner_convergence_contract.py::test_nopublish_installed_python_uses_workspace_reparse_boundary",
         "tests/test_runner_convergence_contract.py::test_nopublish_parent_authority_input_survives_script_scope_projection_reset",
         "tests/test_runner_convergence_contract.py::test_ops_installer_allows_clean_evidence_generation_transition",
         "tests/test_runner_convergence_contract.py::test_ops_installer_creates_backup_manifest_and_rollback_hint_before_live_overwrite",

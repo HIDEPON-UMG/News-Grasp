@@ -215,7 +215,7 @@ try {
     if (-not [string]::Equals($runtimeRepoPath, $expectedRuntimeRepoPath, [System.StringComparison]::OrdinalIgnoreCase)) {
         throw 'production runtime root mismatch'
     }
-    $installedTaskPythonPath = Get-CanonicalExistingFile -Path ([string]$runtimeRootConfig.pythonExe) -Label 'installed launcher Python' -MaxBytes 67108864
+    $installedTaskPythonPath = Get-CanonicalExistingFile -Path ([string]$runtimeRootConfig.pythonExe) -Label 'installed launcher Python' -Boundary $workspacePath -MaxBytes 67108864
     $runnerPath = Join-Path $repoPath 'scripts\ops\news-grasp-runner.ps1'
     $codexWrapperPath = Join-Path $repoPath 'scripts\ops\run_codex_with_timeout.ps1'
     $e2eAdmissionBridgePath = Join-Path $runtimeRepoPath 'tools\e2e_final_admission_bridge.py'
