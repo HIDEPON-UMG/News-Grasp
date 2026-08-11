@@ -2962,13 +2962,18 @@ def test_ops_installer_allows_clean_evidence_generation_transition() -> None:
 
 
 def test_ops_installer_preflights_shared_broker_generation_before_mutation() -> None:
-    """共有broker/routing driftはproduct runtimeへ触れる前にdeferする。"""
+    """共有broker probeは診断用に残すが、決定論的promotionの入口へ結合しない。"""
     installer = (OPS_DIR / "install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
     assert "function Assert-NewsGraspSharedBrokerGeneration" in installer
     assert "NEWS_GRASP_SHARED_BROKER_GENERATION_DRIFT" in installer
-    preflight = installer.index("Assert-NewsGraspSharedBrokerGeneration `\n    -ResolvedRepoDir $RepoDir")
-    mutation = installer.index("$script:InstallationMutationStarted = $true")
-    assert preflight < mutation
+    executable = installer.split("$TaskPythonwPath = Resolve-NewsGraspTaskPythonw", 1)[1]
+    executable = executable.split("$ops = Join-Path $RepoDir 'scripts\\ops'", 1)[0]
+    assert "Assert-NewsGraspSharedBrokerGeneration" not in executable
+    assert "Assert-NewsGraspExternalControlPlaneReady" not in executable
+
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    assert "tools\\news_grasp_external_control.py" in runner
+    assert "external_control_plane_unavailable" in runner
 
 
 def test_install_guard_dynamically_rejects_noncanonical_runtime_root_source(tmp_path: Path) -> None:

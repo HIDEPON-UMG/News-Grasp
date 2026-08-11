@@ -1,8 +1,8 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 2351,
-  "collectedNodeSetSha256": "b807add7dbbac852ba7f0e83de79e6fea7eaacff508e12828e937e057a7992aa",
+  "collectedNodeCount": 2352,
+  "collectedNodeSetSha256": "61e0705040685f58705233ab700511baf0d7bd8a74725addd7131fdd49eb84ee",
   "files": [
     {
       "path": "tests/test_all_article_urls_live.py",
@@ -2116,13 +2116,14 @@
     },
     {
       "path": "tests/test_news_grasp_task_promotion.py",
-      "sha256": "dd3f250a499e68300333b0a86080d26d592d2fe148885745f1e73d06523f0877",
-      "nodeCount": 4,
+      "sha256": "fe9f84131d199fdf3646b2a9556156278710cb6fba8026b0b9c7363710d0fb51",
+      "nodeCount": 5,
       "nodeIds": [
         "tests/test_news_grasp_task_promotion.py::test_ng3_a19_adversarial_task_fire_during_promotion_is_old_or_new_only",
         "tests/test_news_grasp_task_promotion.py::test_ng3_a19_installer_persists_stable_task_authority",
         "tests/test_news_grasp_task_promotion.py::test_ng3_a19_primary_stable_task_has_no_repo_path",
-        "tests/test_news_grasp_task_promotion.py::test_ng3_a19_recovery_crash_forward_or_old_generation"
+        "tests/test_news_grasp_task_promotion.py::test_ng3_a19_recovery_crash_forward_or_old_generation",
+        "tests/test_news_grasp_task_promotion.py::test_ngc_c07_installer_does_not_gate_deterministic_promotion_on_external_model_control"
       ],
       "clauseIds": [
         "NGC-C06",
@@ -3063,7 +3064,7 @@
     },
     {
       "path": "tests/test_runner_convergence_contract.py",
-      "sha256": "8cd8bd1321f99461984eeaf471034b58c3f497fc951fcbf17838c13c3234cb46",
+      "sha256": "064f470a6799335b007592e0edf59cc934cf58fc1f3767b5817c8c36318ee3be",
       "nodeCount": 176,
       "nodeIds": [
         "tests/test_runner_convergence_contract.py::test_atomic_install_failure_preserves_old_destination",

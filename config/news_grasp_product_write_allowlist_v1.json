@@ -67,6 +67,7 @@
     "tests/test_news_grasp_constitution_acceptance.py",
     "tests/test_news_grasp_constitution_projection.py",
     "tests/test_news_grasp_monthly_failure_corpus.py",
+    "tests/test_news_grasp_task_promotion.py",
     "tools/historical_failure_scenarios.py",
     "tools/news_grasp_constitution.py",
     "tools/news_grasp_task_packet.py",

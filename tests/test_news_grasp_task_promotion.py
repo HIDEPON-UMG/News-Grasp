@@ -29,6 +29,24 @@ def test_ng3_a19_installer_persists_stable_task_authority() -> None:
     assert "repoArgumentCount = 0" in source
 
 
+def test_ngc_c07_installer_does_not_gate_deterministic_promotion_on_external_model_control() -> None:
+    """runtime同期はexternal model readinessと分離し、model実行側だけをfail-closedにする。"""
+    root = Path(__file__).parents[1]
+    installer = (root / "scripts/ops/install-news-grasp-ops.ps1").read_text(
+        encoding="utf-8-sig"
+    )
+    executable = installer.split("$TaskPythonwPath = Resolve-NewsGraspTaskPythonw", 1)[1]
+    executable = executable.split("$ops = Join-Path $RepoDir 'scripts\\ops'", 1)[0]
+
+    assert "Assert-NewsGraspExternalControlPlaneReady" not in executable
+    assert "Assert-NewsGraspSharedBrokerGeneration" not in executable
+
+    daily_control = (root / "tools/news_grasp_daily_control.py").read_text(encoding="utf-8")
+    runner = (root / "scripts/ops/news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    assert "probe_external_readiness" in daily_control
+    assert "external_control_plane_unavailable" in runner
+
+
 def test_ng3_a19_adversarial_task_fire_during_promotion_is_old_or_new_only(tmp_path: Path) -> None:
     assert callable(getattr(generation, "promote_generation", None))
     with pytest.raises(generation.NewsGraspGenerationError, match="NG_PROMOTION_PHASE_INVALID"):

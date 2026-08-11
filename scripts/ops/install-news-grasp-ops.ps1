@@ -521,11 +521,9 @@ foreach ($asset in $automationAssetRows) {
     $automationAssetInstallPaths[[string]$asset.installPath] = $true
 }
 $TaskPythonwPath = Resolve-NewsGraspTaskPythonw -Override $TaskPythonwPath -ResolvedRepoDir $RepoDir
-$null = Assert-NewsGraspExternalControlPlaneReady `
-    -ResolvedRepoDir $RepoDir `
-    -ResolvedTaskPythonwPath $TaskPythonwPath
-$null = Assert-NewsGraspSharedBrokerGeneration `
-    -ResolvedRepoDir $RepoDir
+# runtime/task/asset の決定論的promotionはexternal model readinessと分離する。
+# modelを必要とするrunner stageは、tools.news_grasp_daily_controlのpure probeで
+# external authorityをfail-closedに検証し、unavailableならtyped deferredへ遷移する。
 $ops = Join-Path $RepoDir 'scripts\ops'
 $installTrustedBoundary = (Resolve-Path -LiteralPath $env:USERPROFILE).Path
 $canonicalBinDir = Join-Path $installTrustedBoundary 'bin'
