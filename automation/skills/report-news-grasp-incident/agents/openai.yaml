@@ -1,0 +1,7 @@
+interface:
+  display_name: "News-Grasp Incident Report"
+  short_description: "News-Grasp 非公開障害証跡を作成・検証し、承認時だけ公開"
+  default_prompt: "Use $report-news-grasp-incident to create and validate a private News-Grasp incident HTML under build/incidents, and publish it only with separate approval."
+
+policy:
+  allow_implicit_invocation: true

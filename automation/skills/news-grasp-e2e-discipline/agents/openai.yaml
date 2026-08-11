@@ -1,0 +1,7 @@
+interface:
+  display_name: "News-Grasp E2E Discipline"
+  short_description: "News-Grasp E2Eを無駄なく判定"
+  default_prompt: "Use $news-grasp-e2e-discipline to plan or judge a News-Grasp NoPublish E2E run without reruns, goal shrinkage, or production side effects."
+
+policy:
+  allow_implicit_invocation: true

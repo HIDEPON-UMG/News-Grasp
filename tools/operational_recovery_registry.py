@@ -9,6 +9,7 @@ from typing import Any, Callable, Mapping
 
 
 REGISTRY_SCHEMA = "OPERATIONAL_RECOVERY_REGISTRY_V1"
+exact_handler_dispatch = "exact_handler_dispatch"
 REGISTRY_PATH = Path("config/operational_recovery_registry_v1.json")
 Handler = Callable[[Mapping[str, Any]], Mapping[str, Any]]
 
@@ -100,16 +101,27 @@ def validate_registry(repo_root: Path | str) -> dict[str, Any]:
     }
 
 
+def resolve_handler_id(*, repo_root: Path | str, reason_code: str) -> str:
+    """reason codeの完全一致から一意なhandlerだけを返す。"""
+    registrations, unknown = _load(Path(repo_root).resolve())
+    matched = [
+        registration.handler_id
+        for registration in registrations
+        if reason_code in registration.reason_codes
+    ]
+    if len(matched) > 1:
+        raise OperationalRecoveryRegistryError("NG_RECOVERY_REASON_DUPLICATE")
+    return matched[0] if matched else unknown
+
+
 def dispatch(
     *, repo_root: Path | str, reason_code: str, context: Mapping[str, Any], handlers: Mapping[str, Handler]
 ) -> RecoveryDispatch:
     registrations, unknown = _load(Path(repo_root).resolve())
-    selected: str | None = None
-    for registration in registrations:
-        if reason_code in registration.reason_codes:
-            selected = registration.handler_id
-            break
-    if selected is None:
+    selected = resolve_handler_id(repo_root=repo_root, reason_code=reason_code)
+    if selected == unknown and not any(
+        reason_code in registration.reason_codes for registration in registrations
+    ):
         selected = unknown
         reason_code = "UNKNOWN_REASON"
     handler = handlers.get(selected)

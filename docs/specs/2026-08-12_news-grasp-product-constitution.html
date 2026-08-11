@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>News-Grasp Product Constitution</title>
+  <style>
+    :root {
+      --navy: #181C2A;
+      --cream: #F0EBE0;
+      --paper: #FAF7F0;
+      --surface: #FFFFFF;
+      --gold: #C9A155;
+      --border: #949494;
+      --ink: #1A1A1A;
+      --muted: #5C5A52;
+      --success: #197A4B;
+      --focus: #0877D7;
+      --focus-halo: #FFD43D;
+    }
+    * { box-sizing: border-box; }
+    html { background: var(--paper); color: var(--ink); }
+    body { margin: 0; font-family: 'Noto Serif JP', 'Yu Mincho', serif; line-height: 1.85; }
+    .skip-link { position: absolute; left: 8px; top: -80px; background: var(--surface); color: var(--navy); padding: 12px; z-index: 10; }
+    .skip-link:focus { top: 8px; outline: 3px solid var(--focus); box-shadow: 0 0 0 3px var(--focus-halo); }
+    .spec-header { background: var(--navy); color: var(--cream); border-bottom: 3px solid var(--gold); padding: 48px clamp(16px, 6vw, 80px); }
+    .spec-eyebrow { margin: 0 0 8px; font: 700 .82rem/1.4 'JetBrains Mono', Consolas, monospace; letter-spacing: .15em; }
+    h1 { margin: 0; font: 900 clamp(2.25rem, 6vw, 4.5rem)/1.05 Inter, 'Segoe UI', sans-serif; letter-spacing: -.03em; overflow-wrap: anywhere; }
+    .lead { max-width: 72ch; font-size: 1.05rem; }
+    .container { width: min(1280px, calc(100% - 32px)); margin: 0 auto; }
+    main.container { padding-block: 48px 72px; }
+    .summary { background: var(--surface); border-left: 4px solid var(--gold); padding: 24px; margin-bottom: 32px; }
+    .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 24px; padding: 0; border-bottom: 1px solid var(--border); }
+    .tab { border: 1px solid var(--border); border-bottom: 3px solid transparent; background: var(--surface); color: var(--navy); padding: 12px 16px; font: 700 .82rem/1.3 'JetBrains Mono', Consolas, monospace; cursor: pointer; }
+    .tab.active, .tab[aria-selected='true'] { background: var(--navy); color: var(--cream); border-bottom-color: var(--gold); }
+    .tab:focus-visible, button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; box-shadow: 0 0 0 3px var(--focus-halo); }
+    .tab-panel { background: var(--surface); border: 1px solid var(--border); padding: clamp(20px, 4vw, 40px); }
+    .tab-panel[hidden] { display: none; }
+    h2 { margin-top: 0; font: 900 2rem/1.2 Inter, 'Segoe UI', sans-serif; }
+    h3 { font: 800 1.35rem/1.4 'Noto Serif JP', 'Yu Mincho', serif; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 16px; }
+    .card { background: var(--paper); border: 1px solid var(--border); padding: 20px; }
+    .card h3 { margin-top: 0; }
+    .badge { display: inline-block; background: var(--success); color: var(--surface); padding: 4px 8px; font: 700 .78rem/1.3 'JetBrains Mono', Consolas, monospace; }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--border); }
+    table { border-collapse: collapse; width: 100%; min-width: 720px; }
+    th, td { padding: 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
+    th { background: var(--paper); font-family: 'JetBrains Mono', Consolas, monospace; }
+    code, pre, .mono { font-family: 'JetBrains Mono', Consolas, monospace; overflow-wrap: anywhere; }
+    pre.mermaid { white-space: pre-wrap; background: var(--paper); border-left: 4px solid var(--gold); padding: 16px; overflow-x: auto; }
+    .playground { background: var(--paper); border: 1px solid var(--border); padding: 24px; }
+    #copy-prompt { background: var(--navy); color: var(--cream); border: 2px solid var(--navy); padding: 12px 16px; font-weight: 700; }
+    footer { border-top: 1px solid var(--border); padding: 32px 0; color: var(--muted); }
+    @media (max-width: 640px) { .container { width: min(100% - 20px, 1280px); } .spec-header { padding-block: 32px; } .tab { width: 100%; text-align: left; } }
+    @media (forced-colors: active) { * { forced-color-adjust: auto; } .spec-header { border-bottom-color: CanvasText; } }
+    @media print { .tabs, #copy-prompt { display: none; } .tab-panel[hidden] { display: block; } }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">本文へ移動</a>
+  <header class="spec-header">
+    <div class="container">
+      <p class="spec-eyebrow">NEWS-GRASP / PRODUCT CONSTITUTION / GENERATED PROJECTION</p>
+      <h1>公開価値と運用完全性を、同じ正本で閉じる。</h1>
+      <p class="lead">Product Constitution 14条項・6柱を全active仕様・skill・production consumer・状態・証拠へ結線し、自然実行待ちやshared/global harness変更なしで物理提出まで閉じる。</p>
+    </div>
+  </header>
+  <main class="container" id="main">
+    <section class="summary" aria-labelledby="summary-title">
+      <h2 id="summary-title">結論</h2>
+      <p><span class="badge">6 pillars / 14 clauses / 17 acceptances</span></p>
+      <p>固定generation上で、生成・checkpoint・登録済み復旧・公開確認・readinessを人手なしで閉じる。自然scheduled run待ちとshared/global harness変更は完了条件に含めない。</p>
+    </section>
+    <nav class="tabs" role="tablist" aria-label="仕様書セクション">
+      <button class="tab active" role="tab" aria-selected="true" aria-controls="overview" id="tab-overview" data-tab="overview">概要</button>
+      <button class="tab" role="tab" aria-selected="false" aria-controls="alternatives" id="tab-alternatives" data-tab="alternatives">14条項</button>
+      <button class="tab" role="tab" aria-selected="false" aria-controls="dataflow" id="tab-dataflow" data-tab="dataflow">Trace</button>
+      <button class="tab" role="tab" aria-selected="false" aria-controls="impl" id="tab-impl" data-tab="impl">実装binding</button>
+      <button class="tab" role="tab" aria-selected="false" aria-controls="playground" id="tab-playground" data-tab="playground">証拠</button>
+    </nav>
+    <section class="tab-panel active" role="tabpanel" id="overview" aria-labelledby="tab-overview">
+      <h2>6つの利用者価値</h2>
+      <div class="grid">
+        <article class="card">
+          <h3><span class="mono">NGP-P01</span> 利用者価値</h3>
+          <p>意思決定・提案・設計・顧客対話に使える</p>
+        </article>
+        <article class="card">
+          <h3><span class="mono">NGP-P02</span> 完全な公開体験</h3>
+          <p>記事、Web、音声、Podcast、通知が一体で届く</p>
+        </article>
+        <article class="card">
+          <h3><span class="mono">NGP-P03</span> 人手なしの日次運用</h3>
+          <p>生成から次回準備まで自然実行だけで閉じる</p>
+        </article>
+        <article class="card">
+          <h3><span class="mono">NGP-P04</span> 壊さない・信頼できる運用</h3>
+          <p>公開Greenと正しいruntime authorityを守る</p>
+        </article>
+        <article class="card">
+          <h3><span class="mono">NGP-P05</span> 持続可能な作業</h3>
+          <p>人間負担・手戻り・総期待資源を抑える</p>
+        </article>
+        <article class="card">
+          <h3><span class="mono">NGP-P06</span> 物理提出と説明責任</h3>
+          <p>利用可能状態と監査証拠を残す</p>
+        </article>
+      </div>
+    </section>
+    <section class="tab-panel" role="tabpanel" id="alternatives" aria-labelledby="tab-alternatives" hidden>
+      <h2>14条項</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Clause</th><th>Pillar</th><th>拘束内容</th></tr></thead>
+        <tbody>
+          <tr><td><code>NGC-C01</code></td><td><code>NGP-P01</code></td><td>利用者の業務価値へ接続する</td></tr>
+          <tr><td><code>NGC-C02</code></td><td><code>NGP-P01</code></td><td>編集・出典・鮮度・関連性品質を守る</td></tr>
+          <tr><td><code>NGC-C03</code></td><td><code>NGP-P02</code></td><td>必須公開bundleの部分完了を認めない</td></tr>
+          <tr><td><code>NGC-C04</code></td><td><code>NGP-P03</code></td><td>日次全工程を人手なしで閉じる</td></tr>
+          <tr><td><code>NGC-C05</code></td><td><code>NGP-P03</code></td><td>repair-firstで同日公開成果を守る</td></tr>
+          <tr><td><code>NGC-C06</code></td><td><code>NGP-P04</code></td><td>危険・secret・破壊・public regressionをfail-closedにする</td></tr>
+          <tr><td><code>NGC-C07</code></td><td><code>NGP-P04</code></td><td>scheduled/recovery/public/readiness/audit/externalを分離する</td></tr>
+          <tr><td><code>NGC-C08</code></td><td><code>NGP-P05</code></td><td>checkpointと因果retryで再生成を防ぐ</td></tr>
+          <tr><td><code>NGC-C09</code></td><td><code>NGP-P04</code></td><td>immutable generationとsingle writerを守る</td></tr>
+          <tr><td><code>NGC-C10</code></td><td><code>NGP-P04</code></td><td>登録済み復旧だけを実行する</td></tr>
+          <tr><td><code>NGC-C11</code></td><td><code>NGP-P05</code></td><td>noFocusTheft・noAutoOpen・noMonitoring・即時停止を守る</td></tr>
+          <tr><td><code>NGC-C12</code></td><td><code>NGP-P05</code></td><td>Sol/Luna/local toolをentropyに応じて配置する</td></tr>
+          <tr><td><code>NGC-C13</code></td><td><code>NGP-P06</code></td><td>commit/push/install/runtime/task/rollbackを閉じる</td></tr>
+          <tr><td><code>NGC-C14</code></td><td><code>NGP-P06</code></td><td>全active仕様を憲法へ結び、憲法改変をユーザーだけに限定する</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+    <section class="tab-panel" role="tabpanel" id="dataflow" aria-labelledby="tab-dataflow" hidden>
+      <h2>3つのMermaid projection</h2>
+      <p>図はtrace正本からcompilerが生成したsourceであり、手編集した図を証拠にしない。</p>
+      <h3>6柱と14条項</h3>
+      <pre class="mermaid" id="pillar-map"><code>flowchart TD
+  constitution[Product Constitution]
+  constitution --&gt; NGP-P01[利用者価値]
+  constitution --&gt; NGP-P02[完全な公開体験]
+  constitution --&gt; NGP-P03[人手なしの日次運用]
+  constitution --&gt; NGP-P04[壊さない・信頼できる運用]
+  constitution --&gt; NGP-P05[持続可能な作業]
+  constitution --&gt; NGP-P06[物理提出と説明責任]
+  NGC-C01[利用者の業務価値へ接続する] --&gt; NGP-P01
+  NGC-C02[編集・出典・鮮度・関連性品質を守る] --&gt; NGP-P01
+  NGC-C03[必須公開bundleの部分完了を認めない] --&gt; NGP-P02
+  NGC-C04[日次全工程を人手なしで閉じる] --&gt; NGP-P03
+  NGC-C05[repair-firstで同日公開成果を守る] --&gt; NGP-P03
+  NGC-C06[危険・secret・破壊・public regressionをfail-closedにする] --&gt; NGP-P04
+  NGC-C07[scheduled/recovery/public/readiness/audit/externalを分離する] --&gt; NGP-P04
+  NGC-C08[checkpointと因果retryで再生成を防ぐ] --&gt; NGP-P05
+  NGC-C09[immutable generationとsingle writerを守る] --&gt; NGP-P04
+  NGC-C10[登録済み復旧だけを実行する] --&gt; NGP-P04
+  NGC-C11[noFocusTheft・noAutoOpen・noMonitoring・即時停止を守る] --&gt; NGP-P05
+  NGC-C12[Sol/Luna/local toolをentropyに応じて配置する] --&gt; NGP-P05
+  NGC-C13[commit/push/install/runtime/task/rollbackを閉じる] --&gt; NGP-P06
+  NGC-C14[全active仕様を憲法へ結び、憲法改変をユーザーだけに限定する] --&gt; NGP-P06</code></pre>
+      <h3>憲法から物理提出までのtrace</h3>
+      <pre class="mermaid" id="trace-map"><code>flowchart LR
+  clause --&gt; pillar
+  pillar --&gt; userOutcome
+  userOutcome --&gt; requirement
+  requirement --&gt; acceptance
+  acceptance --&gt; TODO
+  TODO --&gt; activeObject
+  activeObject --&gt; consumer
+  consumer --&gt; state
+  state --&gt; recovery
+  recovery --&gt; evidence
+  evidence --&gt; test
+  test --&gt; physicalDelivery</code></pre>
+      <h3>通常scheduled production</h3>
+      <pre class="mermaid" id="operation-map"><code>flowchart LR
+  generation[fixed generation] --&gt; scheduled[scheduled attempt]
+  scheduled --&gt; checkpoint[artifact checkpoint]
+  checkpoint --&gt; recovery[registered recovery]
+  recovery --&gt; public[public completion]
+  public --&gt; readiness[pure readiness]
+  readiness --&gt; evidence[append-only evidence]</code></pre>
+    </section>
+    <section class="tab-panel" role="tabpanel" id="impl" aria-labelledby="tab-impl" hidden>
+      <h2>Acceptanceからproduction consumerへのbinding</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Acceptance</th><th>Requirement</th><th>TODO</th><th>Production route</th><th>State / Recovery</th></tr></thead>
+        <tbody>
+          <tr><td><code>A01</code></td><td><code>R01</code></td><td><code>TODO-146</code></td><td><code>config/news_grasp_constitution_v1.json</code></td><td><code>constitution_compiled</code><br>reject_invalid_constitution</td></tr>
+          <tr><td><code>A02</code></td><td><code>R02</code></td><td><code>TODO-146</code></td><td><code>tools/news_grasp_operational_contract.py</code></td><td><code>task_constitution_admitted</code><br>return_to_structured_question_before_mutation</td></tr>
+          <tr><td><code>A03</code></td><td><code>R03</code></td><td><code>TODO-146</code></td><td><code>config/news_grasp_constitution_trace_v1.json</code></td><td><code>acceptance_trace_compiled</code><br>reject_unbound_active_object</td></tr>
+          <tr><td><code>A05</code></td><td><code>R05</code></td><td><code>TODO-146</code></td><td><code>tools/news_grasp_constitution.py</code></td><td><code>mermaid_projection_compiled</code><br>reject_projection_drift</td></tr>
+          <tr><td><code>A15</code></td><td><code>R15</code></td><td><code>TODO-146</code></td><td><code>tools/news_grasp_task_packet.py</code></td><td><code>luna_packet_decision_complete</code><br>return_to_sol_before_execution</td></tr>
+          <tr><td><code>A04</code></td><td><code>R04</code></td><td><code>TODO-147</code></td><td><code>config/news_grasp_spec_disposition_v1.json</code></td><td><code>all_specs_dispositioned</code><br>disable_then_dependency_scan_before_delete</td></tr>
+          <tr><td><code>A08</code></td><td><code>R08</code></td><td><code>TODO-148</code></td><td><code>config/news_grasp_skill_binding_v1.json</code></td><td><code>skills_audited_and_bound</code><br>disable_unclassified_skill_then_reconcile_installer</td></tr>
+          <tr><td><code>A06</code></td><td><code>R06</code></td><td><code>TODO-149</code></td><td><code>tools/news_grasp_change_control.py</code></td><td><code>all_product_mutation_routes_admitted_by_one_consumer</code><br>reject_packet_then_reseal_against_authoritative_generation</td></tr>
+          <tr><td><code>A07</code></td><td><code>R07</code></td><td><code>TODO-150</code></td><td><code>tools/news_grasp_generation.py</code></td><td><code>production_generation_bound</code><br>retain_old_generation_until_transaction_commit</td></tr>
+          <tr><td><code>A09</code></td><td><code>R09</code></td><td><code>TODO-150</code></td><td><code>tools/news_grasp_operational_contract.py</code></td><td><code>daily_lineage_causal_retry_bound</code><br>allow_one_retry_only_after_masked_input_change</td></tr>
+          <tr><td><code>A10</code></td><td><code>R10</code></td><td><code>TODO-150</code></td><td><code>tools/news_grasp_daily_control.py</code></td><td><code>completion_state_vector_v3_bound</code><br>repair_only_red_substate_then_pure_reprobe</td></tr>
+          <tr><td><code>A11</code></td><td><code>R11</code></td><td><code>TODO-150</code></td><td><code>tools/news_grasp_generation.py</code></td><td><code>immutable_generation_and_input_bound</code><br>invalidate_generation_on_bound_input_drift</td></tr>
+          <tr><td><code>A12</code></td><td><code>R12</code></td><td><code>TODO-150</code></td><td><code>tools/news_grasp_checkpoint.py</code></td><td><code>artifact_checkpoint_continuation_bound</code><br>continue_deterministic_without_model_reexecution</td></tr>
+          <tr><td><code>A13</code></td><td><code>R13</code></td><td><code>TODO-150</code></td><td><code>tools/operational_recovery_registry.py</code></td><td><code>registered_recovery_exact_dispatch</code><br>unknown_reason_to_append_only_major_incident</td></tr>
+          <tr><td><code>A14</code></td><td><code>R14</code></td><td><code>TODO-150</code></td><td><code>tools/news_grasp_gate_profiles.py</code></td><td><code>daily_and_release_profiles_disjoint</code><br>reject_release_oracle_from_scheduled_call_graph</td></tr>
+          <tr><td><code>A16</code></td><td><code>R16</code></td><td><code>TODO-150</code></td><td><code>scripts/ops/invoke-scheduled-equivalent-nopublish.ps1</code></td><td><code>installed_launcher_nopublish_single_route</code><br>freeze_attempt_on_installed_identity_drift</td></tr>
+          <tr><td><code>A17</code></td><td><code>R17</code></td><td><code>TODO-151</code></td><td><code>tools/historical_failure_scenarios.py</code></td><td><code>monthly_failure_corpus_bound</code><br>replay_registered_handler_or_typed_external_to_finite_terminal</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+    <section class="tab-panel" role="tabpanel" id="playground" aria-labelledby="tab-playground" hidden>
+      <h2>生成証拠</h2>
+      <div class="playground">
+        <p><strong>constitution</strong><br><code>b96f1e1c0be6ca50b4cce7ea714ba27440866994e8c5e8548769bb138b6f41f5</code></p>
+        <p><strong>trace</strong><br><code>e101f7c0c95fa7952c4d85258fb3eaf5495abf5c69b8f1f222576689e990dd1e</code></p>
+        <p><strong>projection</strong><br><code>691cc6ae3de9fa93e550490aa9f9c4ee07824eb2a8caa296163798a2b5f32418</code></p>
+        <p><strong>product assets</strong><br><code>e4f8ca1d6a0b5dd761c927ad96b9e3323f74db1495cfb19217829c758b3b7f16</code></p>
+        <p id="prompt-text">News-Graspの変更をNEWS_GRASP_CONSTITUTION_V1へ照合し、clause、acceptance、consumer、state、recovery、evidence、test、physical deliveryを列挙する。</p>
+        <button id="copy-prompt" type="button">照合プロンプトをコピー</button>
+        <p id="copy-status" role="status" aria-live="polite"></p>
+      </div>
+    </section>
+  </main>
+  <footer><div class="container">News-Grasp product-local generated projection. Shared/global harness mutation: 0.</div></footer>
+  <script>
+    (() => {
+      const tabs = [...document.querySelectorAll('.tab')];
+      const panels = [...document.querySelectorAll('.tab-panel')];
+      const activate = (tab) => {
+        tabs.forEach((item) => {
+          const active = item === tab;
+          item.classList.toggle('active', active);
+          item.setAttribute('aria-selected', String(active));
+          item.tabIndex = active ? 0 : -1;
+        });
+        panels.forEach((panel) => {
+          const active = panel.id === tab.dataset.tab;
+          panel.hidden = !active;
+          panel.classList.toggle('active', active);
+        });
+      };
+      tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => activate(tab));
+        tab.addEventListener('keydown', (event) => {
+          if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+          event.preventDefault();
+          let next = index;
+          if (event.key === 'ArrowLeft') next = (index - 1 + tabs.length) % tabs.length;
+          if (event.key === 'ArrowRight') next = (index + 1) % tabs.length;
+          if (event.key === 'Home') next = 0;
+          if (event.key === 'End') next = tabs.length - 1;
+          tabs[next].focus();
+          activate(tabs[next]);
+        });
+      });
+      document.getElementById('copy-prompt').addEventListener('click', async () => {
+        const value = document.getElementById('prompt-text').textContent;
+        await navigator.clipboard.writeText(value);
+        document.getElementById('copy-status').textContent = 'コピーしました。';
+      });
+    })();
+  </script>
+</body>
+</html>

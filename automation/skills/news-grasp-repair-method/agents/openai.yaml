@@ -1,0 +1,7 @@
+interface:
+  display_name: "News-Grasp Repair Method"
+  short_description: "News-Grasp recovery and repair workflow discipline"
+  default_prompt: "Use $news-grasp-repair-method to classify the failure through tools.audit_recovery_control, recover through the authorized production path, or open a typed major incident without ad hoc repair."
+
+policy:
+  allow_implicit_invocation: true

@@ -85,7 +85,13 @@ def cause_fingerprint(
     cause_input_mask: list[str],
     input_hashes: Mapping[str, str],
 ) -> str:
-    selected = {key: input_hashes[key] for key in sorted(cause_input_mask) if key in input_hashes}
+    normalized_mask = sorted(set(cause_input_mask))
+    if not normalized_mask or any(not key for key in normalized_mask):
+        raise NewsGraspCheckpointError("NG_CAUSE_INPUT_MASK_INVALID")
+    missing = [key for key in normalized_mask if key not in input_hashes]
+    if missing:
+        raise NewsGraspCheckpointError("NG_CAUSE_INPUT_HASH_MISSING")
+    selected = {key: input_hashes[key] for key in normalized_mask}
     body = {
         "issueDate": issue_date,
         "dailyOperationLineageId": daily_operation_lineage_id,
@@ -94,7 +100,7 @@ def cause_fingerprint(
         "producerRouteId": producer_route_id,
         "failureClass": failure_class,
         "reasonCode": reason_code,
-        "causeInputMask": sorted(cause_input_mask),
+        "causeInputMask": normalized_mask,
         "selectedInputHashes": selected,
     }
     return hashlib.sha256(_canonical(body)).hexdigest()
@@ -153,6 +159,8 @@ def validate_checkpoint(checkpoint: Mapping[str, Any]) -> dict[str, Any]:
     expected = body.pop("checkpointSha256")
     if expected != hashlib.sha256(_canonical(body)).hexdigest():
         raise NewsGraspCheckpointError("NG_CHECKPOINT_INVALID")
+    if not isinstance(checkpoint.get("inputHashes"), Mapping) or not checkpoint.get("nextDeterministicStep"):
+        raise NewsGraspCheckpointError("NG_CHECKPOINT_INVALID")
     return {"status": "valid", "checkpointSha256": expected, "nextDeterministicStep": checkpoint["nextDeterministicStep"]}
 
 
@@ -160,6 +168,16 @@ def resume_stage(*, checkpoint: Mapping[str, Any] | None, wrapper_result: Mappin
     if checkpoint is None:
         return {"status": "producer_required", "modelCalls": 1, "nextStep": "stage_start"}
     validation = validate_checkpoint(checkpoint)
+    bindings = {
+        "checkpointSha256": validation["checkpointSha256"],
+        "issueDate": checkpoint["issueDate"],
+        "dailyOperationLineageId": checkpoint["dailyOperationLineageId"],
+        "artifactKey": checkpoint["artifactKey"],
+    }
+    for field, expected in bindings.items():
+        observed = wrapper_result.get(field)
+        if observed is not None and observed != expected:
+            raise NewsGraspCheckpointError("NG_CHECKPOINT_WRAPPER_BINDING_INVALID")
     if wrapper_result.get("checkpointAlreadyMaterialized") is True and wrapper_result.get("exitCode") in (126, "timeout", "hang"):
         return {"status": "continue_deterministic", "modelCalls": 0, "nextStep": validation["nextDeterministicStep"]}
     return {"status": "producer_required", "modelCalls": 1, "nextStep": checkpoint["stage"]}

@@ -34,6 +34,21 @@ def _small_repo(root: Path) -> Path:
         '{"allowedPaths":["tools/news_grasp_change_control.py"],"productId":"News-Grasp","schemaVersion":"NEWS_GRASP_PRODUCT_WRITE_ALLOWLIST_V1"}\n',
         encoding="utf-8",
     )
+    (repo / "config" / "news_grasp_product_change_routes_v1.json").write_text(
+        json.dumps(
+            {
+                "schemaVersion": "NEWS_GRASP_PRODUCT_CHANGE_ROUTES_V1",
+                "productId": "News-Grasp",
+                "unknownRoutePolicy": "fail_closed",
+                "consumer": "tools.news_grasp_change_control.apply_packet",
+                "routes": [
+                    {"routeId": route_id, "producer": route_id, "executor": executor}
+                    for route_id, executor in change_control.EXPECTED_ROUTE_EXECUTORS.items()
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
     (repo / "tests" / "marker.txt").write_text("marker\n", encoding="utf-8")
     return repo
 
@@ -42,7 +57,7 @@ def _change_snapshot(repo: Path, tmp_path: Path, owner: str = "matrix-owner") ->
     path = tmp_path / f"snapshot-{owner}.json"
     change_control.snapshot(
         repo_root=repo,
-        target_manifest={"targets": ["tools/news_grasp_change_control.py"], "ownerThreadId": owner},
+        target_manifest={"targets": ["tools/news_grasp_change_control.py"], "ownerThreadId": owner, "actorRouteId": "luna"},
         output=path,
     )
     return path
@@ -53,6 +68,7 @@ def _change_packet(repo: Path, snapshot: Path, path: str = "tools/news_grasp_cha
         "schemaVersion": "NEWS_GRASP_CHANGE_PACKET_V1",
         "packetId": "NG2-WP02-MATRIX",
         "ownerThreadId": "matrix-owner",
+        "actorRouteId": "luna",
         "executor": {"model": "gpt-5.6-luna", "reasoningEffort": "max", "noSubstitution": True},
         "snapshotPath": str(snapshot),
         "changes": [{"path": path, "operation": "replace", "content": "candidate\n"}],

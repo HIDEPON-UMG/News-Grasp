@@ -12,6 +12,97 @@ News-Grasp は、繁忙なITコンサルタントが膨大なニュースを一�
 
 この `docs/spec.md` は News-Grasp の上位プロダクト真実であり、日次バッチ、公開面、品質 gate、Podcast、通知、incident、runner state の改修判断はこの憲法に従う。
 
+<!-- NEWS_GRASP_CONSTITUTION_V1_START -->
+## 憲法の機械正本（NEWS_GRASP_CONSTITUTION_V1）
+
+この節はNews-Graspの全仕様・skill・TODO・production consumer・状態・復旧・証拠・testが実現すべき世界を定義する。ここへ結線できないものはactive経路へ追加しない。意味変更authorityは`user_only`であり、agent・model・reviewer・handlerは新原則を自己追加できない。
+
+```json
+{"schemaVersion":"NEWS_GRASP_CONSTITUTION_V1","constitutionVersion":"2026-08-12","pillarCount":6,"clauseCount":14,"amendmentAuthority":"user_only","primaryUser":"ITコンサルタントとしてNews-Graspを利用するユーザー","naturalRunEvidenceAllowed":false,"sharedGlobalHarnessMutationAllowed":false}
+```
+
+### 6 pillarsと利用者価値
+
+| Pillar ID | 世界観 | 利用者が得る状態 |
+|---|---|---|
+| NGP-P01 | 利用者価値 | 意思決定・提案・設計・顧客対話に使える |
+| NGP-P02 | 完全な公開体験 | 記事、Web、音声、Podcast、通知が一体で届く |
+| NGP-P03 | 人手なしの日次運用 | 生成から次回準備まで自然実行だけで閉じる |
+| NGP-P04 | 壊さない・信頼できる運用 | 公開Greenと正しいruntime authorityを守る |
+| NGP-P05 | 持続可能な作業 | 人間負担・手戻り・総期待資源を抑える |
+| NGP-P06 | 物理提出と説明責任 | 利用可能状態と監査証拠を残す |
+
+### 14 constitution clauses
+
+| Clause ID | Pillar | 不変条件 |
+|---|---|---|
+| NGC-C01 | NGP-P01 | 利用者の業務価値へ接続する |
+| NGC-C02 | NGP-P01 | 編集・出典・鮮度・関連性品質を守る |
+| NGC-C03 | NGP-P02 | 必須公開bundleの部分完了を認めない |
+| NGC-C04 | NGP-P03 | 日次全工程を人手なしで閉じる |
+| NGC-C05 | NGP-P03 | repair-firstで同日公開成果を守る |
+| NGC-C06 | NGP-P04 | 危険・secret・破壊・public regressionをfail-closedにする |
+| NGC-C07 | NGP-P04 | scheduled/recovery/public/readiness/audit/externalを分離する |
+| NGC-C08 | NGP-P05 | checkpointと因果retryで再生成を防ぐ |
+| NGC-C09 | NGP-P04 | immutable generationとsingle writerを守る |
+| NGC-C10 | NGP-P04 | 登録済み復旧だけを実行する |
+| NGC-C11 | NGP-P05 | noFocusTheft・noAutoOpen・noMonitoring・即時停止を守る |
+| NGC-C12 | NGP-P05 | Sol/Luna/local toolをentropyに応じて配置する |
+| NGC-C13 | NGP-P06 | commit/push/install/runtime/task/rollbackを閉じる |
+| NGC-C14 | NGP-P06 | 全active仕様を憲法へ結び、憲法改変をユーザーだけに限定する |
+
+### 憲法から物理提出までの結線
+
+trace正本は `clause→pillar→userOutcome→requirement→acceptance→TODO→activeObject→consumer→state→recovery→evidence→test→physicalDelivery` の全edgeを保持する。図は `NEWS_GRASP_CONSTITUTION_TRACE_V1` から生成されたprojectionだけを証拠とする。
+
+```mermaid
+flowchart TB
+ C[Product Constitution] --> P1[P01 利用者価値]
+ C --> P2[P02 完全な公開体験]
+ C --> P3[P03 人手なしの日次運用]
+ C --> P4[P04 壊さない運用]
+ C --> P5[P05 持続可能な作業]
+ C --> P6[P06 物理提出と説明責任]
+ P1 & P2 & P3 & P4 & P5 & P6 --> R[Requirement / Acceptance]
+ R --> T[順序固定TODO] --> O[active spec / skill / route] --> E[production consumer] --> S[typed state / recovery] --> V[evidence / test] --> D[物理提出]
+```
+
+```mermaid
+flowchart LR
+ A[Constitution Admission] --> G[固定production generation] --> S[Scheduled Trigger] --> C[checkpoint列] --> Q[Daily Product Gate] --> P[完全bundle公開] --> V[Public Verification] --> R[Pure Readiness] --> F[CompletionStateVectorV3]
+ C -. 有効checkpoint .-> N[同stage model再実行0]
+ Q -. 到達禁止 .-> X[Release Gate]
+```
+
+```mermaid
+flowchart TB
+ F[Typed failure] --> C{failure class}
+ C -->|public regression| P[登録済みpublic recovery]
+ C -->|readiness Red| R[登録済みreadiness repair]
+ C -->|external unavailable| E[external_deferred・public Green保持]
+ C -->|unknown| M[append-only major incident]
+ P --> V[Pure re-verification]
+ R --> V
+ E --> X{fresh authority?}
+ X -->|yes・same lineage| V
+ X -->|no| T[external terminal]
+ V --> I{causeInputMask変化?}
+ I -->|yes・未消費| Y[一回だけcausal retry] --> V
+ I -->|no| N[no_progress terminal]
+ U[ユーザー手動停止] --> Z[user_stopped terminal]
+ M --> W[major_incident terminal]
+```
+
+### 憲法不一致物の扱い
+
+`NEWS_GRASP_ACTIVE_OBJECT_CATALOG_V1`はbinding JSONを情報源にせず、Git・AST・実trigger・pytest collectionからactive objectを独立列挙する。traceが無い物は `disabled_pending_dependency_scan`、live参照ありなら `superseded_history`、参照なしなら `delete_ready` とする。
+
+### 完了の意味
+
+Product completionは、生成、checkpoint、登録済み復旧、必須bundle公開、public verification、次回readiness、audit、external status、rollback、証拠、物理提出を別stateで取得した場合だけ成立する。自然scheduled run、待機、ユーザー目視はAcceptanceでも完了証拠でもない。
+
+<!-- NEWS_GRASP_CONSTITUTION_V1_END -->
+
 ## 2026-08-11 運用再設計コミットメント
 
 本節は、公開成果物を保持したまま日次運用を自走させるためのNews-Grasp専用契約である。ProjectFolders共通ハーネス、共有model broker、routing、hook、review基盤、他repo、別sessionのworktree・transactionは変更対象外であり、競合時は競合側の確定commitを正本として本作業を従にする。

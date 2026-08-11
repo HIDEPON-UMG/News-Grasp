@@ -1,0 +1,154 @@
+{
+  "schemaVersion": "NEWS_GRASP_CONSTITUTION_V1",
+  "constitutionVersion": "2026-08-12",
+  "amendmentAuthority": "user_only",
+  "primaryUser": "ITコンサルタントとしてNews-Graspを利用するユーザー",
+  "naturalRunEvidenceAllowed": false,
+  "sharedGlobalHarnessMutationAllowed": false,
+  "specSha256": "f0b92a97b64138d09d4df5735a82bcfde1362f703f1b90a0b973a0451bdf361b",
+  "userProvenance": {
+    "sourceType": "user_confirmed_plan",
+    "confirmedAt": "2026-08-12",
+    "statement": "Product Constitution 14条項・6柱を全active仕様・skill・production consumer・状態・証拠へ結線し、自然実行待ちやshared/global harness変更なしで物理提出まで閉じる。",
+    "amendmentAuthority": "user_only"
+  },
+  "pillars": [
+    {
+      "id": "NGP-P01",
+      "name": "利用者価値",
+      "userOutcome": "意思決定・提案・設計・顧客対話に使える",
+      "consumerMarkers": [
+        "NGC_A01_primary_behavior",
+        "NGC_A01_adversarial_boundary",
+        "NGC_A01_operational_recovery"
+      ]
+    },
+    {
+      "id": "NGP-P02",
+      "name": "完全な公開体験",
+      "userOutcome": "記事、Web、音声、Podcast、通知が一体で届く",
+      "consumerMarkers": [
+        "NGC_A01_primary_behavior",
+        "NGC_A01_adversarial_boundary",
+        "NGC_A01_operational_recovery"
+      ]
+    },
+    {
+      "id": "NGP-P03",
+      "name": "人手なしの日次運用",
+      "userOutcome": "生成から次回準備まで自然実行だけで閉じる",
+      "consumerMarkers": [
+        "NGC_A01_primary_behavior",
+        "NGC_A01_adversarial_boundary",
+        "NGC_A01_operational_recovery"
+      ]
+    },
+    {
+      "id": "NGP-P04",
+      "name": "壊さない・信頼できる運用",
+      "userOutcome": "公開Greenと正しいruntime authorityを守る",
+      "consumerMarkers": [
+        "NGC_A01_primary_behavior",
+        "NGC_A01_adversarial_boundary",
+        "NGC_A01_operational_recovery"
+      ]
+    },
+    {
+      "id": "NGP-P05",
+      "name": "持続可能な作業",
+      "userOutcome": "人間負担・手戻り・総期待資源を抑える",
+      "consumerMarkers": [
+        "NGC_A01_primary_behavior",
+        "NGC_A01_adversarial_boundary",
+        "NGC_A01_operational_recovery"
+      ]
+    },
+    {
+      "id": "NGP-P06",
+      "name": "物理提出と説明責任",
+      "userOutcome": "利用可能状態と監査証拠を残す",
+      "consumerMarkers": [
+        "NGC_A01_primary_behavior",
+        "NGC_A01_adversarial_boundary",
+        "NGC_A01_operational_recovery"
+      ]
+    }
+  ],
+  "clauses": [
+    {
+      "id": "NGC-C01",
+      "pillarId": "NGP-P01",
+      "text": "利用者の業務価値へ接続する"
+    },
+    {
+      "id": "NGC-C02",
+      "pillarId": "NGP-P01",
+      "text": "編集・出典・鮮度・関連性品質を守る"
+    },
+    {
+      "id": "NGC-C03",
+      "pillarId": "NGP-P02",
+      "text": "必須公開bundleの部分完了を認めない"
+    },
+    {
+      "id": "NGC-C04",
+      "pillarId": "NGP-P03",
+      "text": "日次全工程を人手なしで閉じる"
+    },
+    {
+      "id": "NGC-C05",
+      "pillarId": "NGP-P03",
+      "text": "repair-firstで同日公開成果を守る"
+    },
+    {
+      "id": "NGC-C06",
+      "pillarId": "NGP-P04",
+      "text": "危険・secret・破壊・public regressionをfail-closedにする"
+    },
+    {
+      "id": "NGC-C07",
+      "pillarId": "NGP-P04",
+      "text": "scheduled/recovery/public/readiness/audit/externalを分離する"
+    },
+    {
+      "id": "NGC-C08",
+      "pillarId": "NGP-P05",
+      "text": "checkpointと因果retryで再生成を防ぐ"
+    },
+    {
+      "id": "NGC-C09",
+      "pillarId": "NGP-P04",
+      "text": "immutable generationとsingle writerを守る"
+    },
+    {
+      "id": "NGC-C10",
+      "pillarId": "NGP-P04",
+      "text": "登録済み復旧だけを実行する"
+    },
+    {
+      "id": "NGC-C11",
+      "pillarId": "NGP-P05",
+      "text": "noFocusTheft・noAutoOpen・noMonitoring・即時停止を守る"
+    },
+    {
+      "id": "NGC-C12",
+      "pillarId": "NGP-P05",
+      "text": "Sol/Luna/local toolをentropyに応じて配置する"
+    },
+    {
+      "id": "NGC-C13",
+      "pillarId": "NGP-P06",
+      "text": "commit/push/install/runtime/task/rollbackを閉じる"
+    },
+    {
+      "id": "NGC-C14",
+      "pillarId": "NGP-P06",
+      "text": "全active仕様を憲法へ結び、憲法改変をユーザーだけに限定する"
+    }
+  ],
+  "consumerMarkers": [
+    "NGC_A01_primary_behavior",
+    "NGC_A01_adversarial_boundary",
+    "NGC_A01_operational_recovery"
+  ]
+}

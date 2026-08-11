@@ -552,6 +552,23 @@ class CompletionStateVectorV2:
     operationalStatus: str
 
 
+@dataclass(frozen=True)
+class CompletionStateVectorV3:
+    """公開/readinessにexternal/constitutionを加えた交換不能なstate vector。"""
+
+    scheduledAttemptStatus: str
+    recoveryAttemptStatus: str
+    publicCompletionStatus: str
+    nextRunReadinessStatus: str
+    auditObservationStatus: str
+    externalDependencyStatus: str
+    constitutionStatus: str
+    operationalStatus: str
+
+
+COMPLETION_STATE_VECTOR_V3 = "COMPLETION_STATE_VECTOR_V3"
+
+
 def evaluate_completion(
     *,
     scheduled_attempt: Mapping[str, Any],
@@ -587,6 +604,61 @@ def evaluate_completion(
         "stateVector": asdict(state_vector),
         "completionAuthorityId": authority,
         "causeFingerprint": audit_observation.get("causeFingerprint"),
+    }
+
+
+def evaluate_completion_v3(
+    *,
+    scheduled_attempt: Mapping[str, Any],
+    recovery_attempt: Mapping[str, Any],
+    public_receipt: Mapping[str, Any],
+    readiness_probe: Mapping[str, Any],
+    audit_observation: Mapping[str, Any],
+    external_dependency: Mapping[str, Any],
+    constitution_admission: Mapping[str, Any],
+) -> dict[str, Any]:
+    """public Greenをreadiness/external観測で後退させず、総合状態だけを分離する。"""
+
+    base = evaluate_completion(
+        scheduled_attempt=scheduled_attempt,
+        recovery_attempt=recovery_attempt,
+        public_receipt=public_receipt,
+        readiness_probe=readiness_probe,
+        audit_observation=audit_observation,
+    )
+    public_status = str(base["publicCompletionStatus"])
+    readiness_status = str(base["nextRunReadinessStatus"])
+    external_status = str(external_dependency.get("status") or "unverified")
+    constitution_status = str(constitution_admission.get("status") or "unverified")
+    if public_status == "red":
+        operational_status = "red"
+    elif (
+        public_status == "green"
+        and readiness_status == "green"
+        and external_status in {"ready", "not_required"}
+        and constitution_status == "green"
+    ):
+        operational_status = "green"
+    else:
+        operational_status = "degraded"
+    vector = CompletionStateVectorV3(
+        scheduledAttemptStatus=str(base["scheduledAttemptStatus"]),
+        recoveryAttemptStatus=str(base["recoveryAttemptStatus"]),
+        publicCompletionStatus=public_status,
+        nextRunReadinessStatus=readiness_status,
+        auditObservationStatus=str(base["auditObservationStatus"]),
+        externalDependencyStatus=external_status,
+        constitutionStatus=constitution_status,
+        operationalStatus=operational_status,
+    )
+    return {
+        "schemaVersion": COMPLETION_STATE_VECTOR_V3,
+        **asdict(vector),
+        "stateVector": asdict(vector),
+        "completionAuthorityId": base.get("completionAuthorityId"),
+        "causeFingerprint": base.get("causeFingerprint"),
+        "externalEvidenceHash": external_dependency.get("evidenceHash"),
+        "constitutionHash": constitution_admission.get("constitutionHash"),
     }
 
 
@@ -679,4 +751,33 @@ def evaluate_bundle(bundle: Mapping[str, Any]) -> dict[str, Any]:
         "bundle": selected,
         "modelCalls": 0 if reuse else int(bundle.get("modelCalls", 0) or 0),
         "reuseExisting": reuse,
+    }
+# NEWS_GRASP_TASK_CONSTITUTION_ADMISSION_V1
+NEWS_GRASP_TASK_CONSTITUTION_ADMISSION_V1 = "NEWS_GRASP_TASK_CONSTITUTION_ADMISSION_V1"
+NGC_A02_primary_behavior = "NGC_A02_primary_behavior"
+NGC_A02_adversarial_boundary = "NGC_A02_adversarial_boundary"
+NGC_A02_operational_recovery = "NGC_A02_operational_recovery"
+dailyOperationLineageId = "dailyOperationLineageId"
+
+
+def derive_daily_operation_lineage(issue_date: str, scheduled_authority: str) -> str:
+    return hashlib.sha256(f"{issue_date}|{scheduled_authority}".encode("utf-8")).hexdigest()
+
+
+def admit_task_constitution(payload: dict[str, Any]) -> dict[str, Any]:
+    unresolved = tuple(str(value) for value in payload.get("unresolvedDecisionIds", []))
+    if unresolved:
+        raise ValueError("NEWS_GRASP_TASK_UNRESOLVED_DECISIONS")
+    write_set = tuple(str(value) for value in payload.get("writeSet", []))
+    if not write_set:
+        raise ValueError("NEWS_GRASP_TASK_WRITE_SET_REQUIRED")
+    return {
+        "schemaVersion": NEWS_GRASP_TASK_CONSTITUTION_ADMISSION_V1,
+        "taskId": str(payload["taskId"]),
+        "requestSha256": hashlib.sha256(_canonical(payload)).hexdigest(),
+        "clauseIds": tuple(str(value) for value in payload["clauseIds"]),
+        "requirementIds": tuple(str(value) for value in payload["requirementIds"]),
+        "acceptanceIds": tuple(str(value) for value in payload["acceptanceIds"]),
+        "writeSet": write_set,
+        "unresolvedDecisionIds": (),
     }

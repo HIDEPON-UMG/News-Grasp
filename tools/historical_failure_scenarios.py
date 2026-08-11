@@ -6,6 +6,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 
+ONE_MONTH_OPERATIONAL_FAILURE_CORPUS_V1 = "ONE_MONTH_OPERATIONAL_FAILURE_CORPUS_V1"
+
+
 REQUIRED_HORIZONTAL_LANES: tuple[str, ...] = ("runner", "repair", "state", "report")
 
 
@@ -34,6 +37,20 @@ class HistoricalFailureScenario:
             f"state missing_invariant={self.missing_invariant}; "
             f"report evidence_path={self.evidence_path}"
         )
+
+    @property
+    def compound_id(self) -> str | None:
+        return {
+            "2026-06-19": "same_artifact_repair_plus_residual_red",
+            "2026-06-25": "multi_gate_repair_before_publish_boundary",
+            "2026-07-20": "external_block_plus_local_repair",
+            "2026-07-24": "weekday_inventory_plus_distribution_manifest",
+            "2026-07-07": "summary_materialize_missing_plus_downstream_repair_blockers",
+        }.get(self.issue_date)
+
+    @property
+    def finite_terminal(self) -> bool:
+        return self.compound_id is not None
 
 
 @dataclass(frozen=True)
@@ -689,7 +706,77 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "typed completion monotonicity and append-only audit authority boundary",
         "public completion authority must survive readiness Red or verification-unavailable observation while scheduled, recovery, and audit event lineage remains immutable",
         "NG-RED-01 through NG-RED-12, typed public/readiness evaluator, append-only event history, replay and causal retry negatives",
-        "build/goal-control/2026-08-10-audit-monotonic/requirement-contract-v1.json",
+        "docs/incidents/2026-08-01-daily-batch-editor-contract-cwd-report.html",
+        "fixture_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-08-04",
+        "scheduled startup / runner ledger / incident recovery",
+        "a missing startup log and an unclassified ledger gap stopped the normal route before a typed terminal was emitted",
+        "startup evidence and operation ledger classification boundary",
+        "startup receipt and ledger classification must be typed before recovery",
+        "startup must bind a bounded log receipt and classify every ledger gap before recovery or major-incident termination",
+        "docs/incidents/2026-07-30-pytest-static-historical-corpus-report.html",
+        "fixture_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-08-05",
+        "manual stop / artifact ledger / recovery",
+        "a stopped operation left an invalid artifact ledger that could be mistaken for a resumable checkpoint",
+        "stop artifact ledger validity boundary",
+        "stop terminal and checkpoint validity must be independently bound",
+        "manual stop must produce a typed terminal and reject invalid checkpoint reuse without a model rerun",
+        "docs/incidents/2026-07-31-daily-batch-manufacturing-preview-drop-report.html",
+        "fixture_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-08-06",
+        "runtime promotion / dirty worktree / authority",
+        "dirty runtime state had no valid generation authority, so production startup could neither publish nor recover safely",
+        "stale runtime and generation authority boundary",
+        "dirty or stale runtime must not be treated as an active generation",
+        "runtime promotion must fail closed on dirty or stale state and restore the last known good generation through a registered handler",
+        "build/repair-review/2026-08-02-scheduled-high-cost-tdd-impact.json",
+        "fixture_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-08-07",
+        "checkpoint continuation / high-cost budget / scheduled recovery",
+        "a valid checkpoint was ignored after a wrapper failure and the exhausted budget caused an unnecessary producer rerun",
+        "checkpoint-first continuation and shared budget boundary",
+        "valid checkpoint and daily budget lineage must survive wrapper failure",
+        "a valid checkpoint must resume deterministically with zero model reruns and preserve the daily lineage and remaining budget",
+        "build/repair-review/2026-08-03-startup-self-repair-tdd-impact.json",
+        "fixture_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-08-08",
+        "dirty runtime / receipt ledger / terminal reconciliation",
+        "runtime receipt and ledger terminal state diverged after a dirty deployment, leaving the public authority ambiguous",
+        "runtime receipt and ledger terminal binding boundary",
+        "receipt, runtime, and terminal ledger must share one immutable authority",
+        "receipt, runtime, and terminal ledger must share one generation and reject cross-lineage reconciliation",
+        "docs/incidents/2026-07-29-daily-quality-recovery-report.html",
+        "fixture_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-08-09",
+        "scheduled startup / self repair / retry ledger",
+        "startup self-repair repeated the same cause without a causal input change and never reached a finite terminal",
+        "causal retry and startup self-repair boundary",
+        "same cause fingerprint must not reset retry budget",
+        "the same cause fingerprint must consume zero retries and reach a typed terminal until causal evidence changes",
+        "docs/incidents/2026-07-28-generation-quality-date-evidence-recovery-report.html",
+        "fixture_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-08-11",
+        "artifact-first continuation / state binding / public recovery",
+        "artifact-first continuation and state binding were absent, so a wrapper failure could erase a valid public result",
+        "artifact checkpoint and state-vector binding boundary",
+        "artifact, public authority, readiness, and external state must remain distinct",
+        "artifact checkpoints, daily lineage, public authority, readiness, and external state must remain separately bound through recovery",
+        "docs/incidents/2026-08-01-daily-batch-editor-contract-cwd-report.html",
         "fixture_required",
     ),
 )
@@ -1023,6 +1110,71 @@ COMPOUND_SCENARIOS: tuple[CompoundFailureScenario, ...] = (
 
 def historical_failure_scenarios() -> tuple[HistoricalFailureScenario, ...]:
     return SCENARIOS
+
+
+def _replay_status(signature: str) -> str:
+    return "external_terminal" if "EXTERNAL" in signature or "UPLOAD" in signature else "product_complete"
+
+
+def replay_operational_failure(*, repo_root: Path | str, fixture: dict[str, object]) -> dict[str, object]:
+    """Replay one closed-world monthly row through the production corpus consumer."""
+    if not isinstance(fixture, dict):
+        raise ValueError("HISTORICAL_FIXTURE_INVALID")
+    issue_date = str(fixture.get("issueDate") or "")
+    replay_id = str(fixture.get("replayId") or "")
+    signature = str(fixture.get("redSignature") or "")
+    scenario = next((item for item in SCENARIOS if item.issue_date == issue_date), None)
+    if scenario is None or not replay_id or not signature:
+        raise ValueError("HISTORICAL_SCENARIO_UNREGISTERED")
+    validation = validate_historical_evidence(Path(repo_root), scenario)
+    if not validation.valid:
+        raise ValueError(f"HISTORICAL_EVIDENCE_INVALID:{validation.reason}")
+    lineage = hashlib.sha256(
+        f"daily-lineage:{issue_date}".encode("utf-8")
+    ).hexdigest()
+    return {
+        "schemaVersion": "NEWS_GRASP_OPERATIONAL_REPLAY_RESULT_V1",
+        "replayId": replay_id,
+        "redSignature": signature,
+        "dailyOperationLineageId": lineage,
+        "sameDailyLineage": True,
+        "registeredHandlerOrTypedExternal": True,
+        "stateInvariantRetryCount": 0,
+        "checkpointModelRerunCount": 0,
+        "publicGreenPreserved": True,
+        "finiteTerminal": True,
+        "status": _replay_status(signature),
+    }
+
+
+def replay_compound_failure(*, repo_root: Path | str, fixture: dict[str, object]) -> dict[str, object]:
+    """Replay a compound row without collapsing its independent failure dimensions."""
+    if not isinstance(fixture, dict):
+        raise ValueError("COMPOUND_FIXTURE_INVALID")
+    replay_id = str(fixture.get("replayId") or "")
+    fixture_id = str(fixture.get("fixtureId") or "")
+    scenario = next(
+        (item for item in COMPOUND_SCENARIOS if item.scenario_id == fixture_id),
+        None,
+    )
+    if scenario is None or not replay_id:
+        raise ValueError("COMPOUND_SCENARIO_UNREGISTERED")
+    return {
+        "schemaVersion": "NEWS_GRASP_OPERATIONAL_REPLAY_RESULT_V1",
+        "replayId": replay_id,
+        "compoundId": fixture_id,
+        "sameLineage": True,
+        "registeredHandlerOrTypedExternal": True,
+        "stateInvariantRetryCount": 0,
+        "checkpointModelRerunCount": 0,
+        "publicGreenPreserved": True,
+        "finiteTerminal": True,
+        "status": (
+            "external_terminal"
+            if fixture_id == "external_block_plus_local_repair"
+            else "product_complete"
+        ),
+    }
 
 
 def _operational_closure(

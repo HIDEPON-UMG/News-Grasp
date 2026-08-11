@@ -1,0 +1,278 @@
+{
+  "schemaVersion": "NEWS_GRASP_CONSTITUTION_ACCEPTANCE_MATRIX_V1",
+  "matrixVersion": "2026-08-12",
+  "rows": [
+    {
+      "acceptanceId": "A01",
+      "requirementId": "R01",
+      "productionRoute": "config/news_grasp_constitution_v1.json",
+      "consumerMarker": "NEWS_GRASP_CONSTITUTION_V1",
+      "perspectives": [
+        "primary_behavior",
+        "adversarial_boundary",
+        "operational_recovery"
+      ],
+      "redNodeIds": [
+        "test_a01_primary",
+        "test_a01_boundary",
+        "test_a01_recovery"
+      ]
+    },
+    {
+      "acceptanceId": "A02",
+      "requirementId": "R02",
+      "productionRoute": "tools/news_grasp_operational_contract.py",
+      "consumerMarker": "NEWS_GRASP_TASK_CONSTITUTION_ADMISSION_V1",
+      "perspectives": [
+        "primary_behavior",
+        "adversarial_boundary",
+        "operational_recovery"
+      ],
+      "redNodeIds": [
+        "test_a02_primary",
+        "test_a02_boundary",
+        "test_a02_recovery"
+      ]
+    },
+    {
+      "acceptanceId": "A03",
+      "requirementId": "R03",
+      "productionRoute": "config/news_grasp_constitution_trace_v1.json",
+      "consumerMarker": "NEWS_GRASP_CONSTITUTION_TRACE_V1",
+      "perspectives": [
+        "primary_behavior",
+        "adversarial_boundary",
+        "operational_recovery"
+      ],
+      "redNodeIds": [
+        "test_a03_primary",
+        "test_a03_boundary",
+        "test_a03_recovery"
+      ]
+    },
+    {
+      "acceptanceId": "A04",
+      "requirementId": "R04",
+      "productionRoute": "config/news_grasp_spec_disposition_v1.json",
+      "consumerMarker": "NEWS_GRASP_SPEC_DISPOSITION_V1",
+      "perspectives": [
+        "primary_behavior",
+        "adversarial_boundary",
+        "operational_recovery"
+      ],
+      "redNodeIds": [
+        "test_a04_primary",
+        "test_a04_boundary",
+        "test_a04_recovery"
+      ]
+    },
+    {
+      "acceptanceId": "A05",
+      "requirementId": "R05",
+      "productionRoute": "tools/news_grasp_constitution.py",
+      "consumerMarker": "generate_mermaid_projection",
+      "perspectives": [
+        "primary_behavior",
+        "adversarial_boundary",
+        "operational_recovery"
+      ],
+      "redNodeIds": [
+        "test_a05_primary",
+        "test_a05_boundary",
+        "test_a05_recovery"
+      ]
+    },
+    {
+      "acceptanceId": "A06",
+      "requirementId": "R06",
+      "productionRoute": "tools/news_grasp_change_control.py",
+      "consumerMarker": "NEWS_GRASP_PRODUCT_CHANGE_ALLOWLIST_V1",
+      "perspectives": [
+        "primary_behavior",
+        "adversarial_boundary",
+        "operational_recovery"
+      ],
+      "redNodeIds": [
+        "test_a06_primary",
+        "test_a06_boundary",
+        "test_a06_recovery"
+      ]
+    },
+    {
+      "acceptanceId": "A07",
+      "requirementId": "R07",
+      "productionRoute": "tools/news_grasp_generation.py",
+      "consumerMarker": "ProductionGenerationManifestV2",
+      "perspectives": [
+        "primary_behavior",
+        "adversarial_boundary",
+        "operational_recovery"
+      ],
+      "redNodeIds": [
+        "test_a07_primary",
+        "test_a07_boundary",
+        "test_a07_recovery"
+      ]
+    },
+    {
+      "acceptanceId": "A08",
+      "requirementId": "R08",
+      "productionRoute": "config/news_grasp_skill_binding_v1.json",
+      "consumerMarker": "NEWS_GRASP_SKILL_BINDING_V1",
+      "perspectives": [
+        "primary_behavior",
+        "adversarial_boundary",
+        "operational_recovery"
+      ],
+      "redNodeIds": [
+        "test_a08_primary",
+        "test_a08_boundary",
+        "test_a08_recovery"
+      ]
+    },
+    {
+      "acceptanceId": "A09",
+      "requirementId": "R09",
+      "productionRoute": "tools/news_grasp_operational_contract.py",
+      "consumerMarker": "dailyOperationLineageId",
+      "perspectives": [
+        "primary_behavior",
+        "adversarial_boundary",
+        "operational_recovery"
+      ],
+      "redNodeIds": [
+        "test_a09_primary",
+        "test_a09_boundary",
+        "test_a09_recovery"
+      ]
+    },
+    {
+      "acceptanceId": "A10",
+      "requirementId": "R10",
+      "productionRoute": "tools/news_grasp_daily_control.py",
+      "consumerMarker": "COMPLETION_STATE_VECTOR_V3",
+      "perspectives": [
+        "primary_behavior",
+        "adversarial_boundary",
+        "operational_recovery"
+      ],
+      "redNodeIds": [
+        "test_a10_primary",
+        "test_a10_boundary",
+        "test_a10_recovery"
+      ]
+    },
+    {
+      "acceptanceId": "A11",
+      "requirementId": "R11",
+      "productionRoute": "tools/news_grasp_generation.py",
+      "consumerMarker": "immutable_generation",
+      "perspectives": [
+        "primary_behavior",
+        "adversarial_boundary",
+        "operational_recovery"
+      ],
+      "redNodeIds": [
+        "test_a11_primary",
+        "test_a11_boundary",
+        "test_a11_recovery"
+      ]
+    },
+    {
+      "acceptanceId": "A12",
+      "requirementId": "R12",
+      "productionRoute": "tools/news_grasp_checkpoint.py",
+      "consumerMarker": "ArtifactCheckpointV1",
+      "perspectives": [
+        "primary_behavior",
+        "adversarial_boundary",
+        "operational_recovery"
+      ],
+      "redNodeIds": [
+        "test_a12_primary",
+        "test_a12_boundary",
+        "test_a12_recovery"
+      ]
+    },
+    {
+      "acceptanceId": "A13",
+      "requirementId": "R13",
+      "productionRoute": "tools/operational_recovery_registry.py",
+      "consumerMarker": "exact_handler_dispatch",
+      "perspectives": [
+        "primary_behavior",
+        "adversarial_boundary",
+        "operational_recovery"
+      ],
+      "redNodeIds": [
+        "test_a13_primary",
+        "test_a13_boundary",
+        "test_a13_recovery"
+      ]
+    },
+    {
+      "acceptanceId": "A14",
+      "requirementId": "R14",
+      "productionRoute": "tools/news_grasp_gate_profiles.py",
+      "consumerMarker": "DailyProductGateProfileV1",
+      "perspectives": [
+        "primary_behavior",
+        "adversarial_boundary",
+        "operational_recovery"
+      ],
+      "redNodeIds": [
+        "test_a14_primary",
+        "test_a14_boundary",
+        "test_a14_recovery"
+      ]
+    },
+    {
+      "acceptanceId": "A15",
+      "requirementId": "R15",
+      "productionRoute": "tools/news_grasp_task_packet.py",
+      "consumerMarker": "unresolvedDecisionIds",
+      "perspectives": [
+        "primary_behavior",
+        "adversarial_boundary",
+        "operational_recovery"
+      ],
+      "redNodeIds": [
+        "test_a15_primary",
+        "test_a15_boundary",
+        "test_a15_recovery"
+      ]
+    },
+    {
+      "acceptanceId": "A16",
+      "requirementId": "R16",
+      "productionRoute": "scripts/ops/invoke-scheduled-equivalent-nopublish.ps1",
+      "consumerMarker": "installed_launcher_identity",
+      "perspectives": [
+        "primary_behavior",
+        "adversarial_boundary",
+        "operational_recovery"
+      ],
+      "redNodeIds": [
+        "test_a16_primary",
+        "test_a16_boundary",
+        "test_a16_recovery"
+      ]
+    },
+    {
+      "acceptanceId": "A17",
+      "requirementId": "R17",
+      "productionRoute": "tools/historical_failure_scenarios.py",
+      "consumerMarker": "ONE_MONTH_OPERATIONAL_FAILURE_CORPUS_V1",
+      "perspectives": [
+        "primary_behavior",
+        "adversarial_boundary",
+        "operational_recovery"
+      ],
+      "redNodeIds": [
+        "test_a17_primary",
+        "test_a17_boundary",
+        "test_a17_recovery"
+      ]
+    }
+  ]
+}

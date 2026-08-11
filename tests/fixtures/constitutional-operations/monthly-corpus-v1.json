@@ -1,0 +1,490 @@
+{
+  "schemaVersion": "ONE_MONTH_OPERATIONAL_FAILURE_CORPUS_V1",
+  "period": {
+    "start": "2026-07-11",
+    "end": "2026-08-11",
+    "timezone": "Asia/Tokyo"
+  },
+  "rows": [
+    {
+      "fixtureId": "hist-2026-07-11",
+      "issueDate": "2026-07-11",
+      "replayId": "HIST-20260711",
+      "redSignature": "EDITOR_REPAIR_CHAIN_DISCONNECTED",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-07-12",
+      "issueDate": "2026-07-12",
+      "replayId": "HIST-20260712",
+      "redSignature": "EDITOR_SNAPSHOT_PATH_ALIAS",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-07-13",
+      "issueDate": "2026-07-13",
+      "replayId": "HIST-20260713",
+      "redSignature": "WARNING_PREFIX_JSON_UNROUTED",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-07-14",
+      "issueDate": "2026-07-14",
+      "replayId": "HIST-20260714",
+      "redSignature": "POST_PUSH_BUNDLE_NOT_CLOSED",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-07-15",
+      "issueDate": "2026-07-15",
+      "replayId": "HIST-20260715",
+      "redSignature": "SLO_REPAIR_NOT_CHECKPOINTED",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-07-16",
+      "issueDate": "2026-07-16",
+      "replayId": "HIST-20260716",
+      "redSignature": "NESTED_BASETEMP_ROOT_DRIFT",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-07-17",
+      "issueDate": "2026-07-17",
+      "replayId": "HIST-20260717",
+      "redSignature": "HERO_TITLE_REPAIR_UNREGISTERED",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-07-18",
+      "issueDate": "2026-07-18",
+      "replayId": "HIST-20260718",
+      "redSignature": "INCIDENT_POLICY_DRIFT_BLOCKS_DAILY",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-07-19",
+      "issueDate": "2026-07-19",
+      "replayId": "HIST-20260719",
+      "redSignature": "COMPOUND_DAILY_REPAIR_COLLAPSED",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-07-20",
+      "issueDate": "2026-07-20",
+      "replayId": "HIST-20260720",
+      "redSignature": "EXTERNAL_UPLOAD_MASKS_LOCAL_CONVERGENCE",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-07-21",
+      "issueDate": "2026-07-21",
+      "replayId": "HIST-20260721",
+      "redSignature": "DIGEST_RECORD_SYNC_NOT_CAUSAL",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-07-22",
+      "issueDate": "2026-07-22",
+      "replayId": "HIST-20260722",
+      "redSignature": "STRUCTURED_UNKNOWN_NOT_RECOVERED",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-07-23",
+      "issueDate": "2026-07-23",
+      "replayId": "HIST-20260723",
+      "redSignature": "DROPPED_REASON_SOURCE_UNSUPPORTED",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-07-24",
+      "issueDate": "2026-07-24",
+      "replayId": "HIST-20260724",
+      "redSignature": "EDITORIAL_SECTION_MISCLASSIFIED_CARD",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-07-25",
+      "issueDate": "2026-07-25",
+      "replayId": "HIST-20260725",
+      "redSignature": "EXTERNAL_READINESS_AND_GIT_LOCK_COLLAPSED",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-07-26",
+      "issueDate": "2026-07-26",
+      "replayId": "HIST-20260726",
+      "redSignature": "LOCK_PLAYLIST_COMPOUND_NOT_CONVERGED",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-07-27",
+      "issueDate": "2026-07-27",
+      "replayId": "HIST-20260727",
+      "redSignature": "HANDLER_CAPABILITY_DIRECTION_MISMATCH",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-07-28",
+      "issueDate": "2026-07-28",
+      "replayId": "HIST-20260728",
+      "redSignature": "REPORTER_DATE_EVIDENCE_NOT_RECOVERED",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-07-29",
+      "issueDate": "2026-07-29",
+      "replayId": "HIST-20260729",
+      "redSignature": "EMPTY_DIGEST_HISTORY_DRIFT_COMPOUND",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-07-30",
+      "issueDate": "2026-07-30",
+      "replayId": "HIST-20260730",
+      "redSignature": "HISTORY_REPORT_BLOCKS_DAILY",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-07-31",
+      "issueDate": "2026-07-31",
+      "replayId": "HIST-20260731",
+      "redSignature": "EDITOR_DROPS_VALID_CANDIDATE",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-08-01",
+      "issueDate": "2026-08-01",
+      "replayId": "HIST-20260801",
+      "redSignature": "DEEPDIVE_URL_DIALOGUE_FALSE_GREEN",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-08-02",
+      "issueDate": "2026-08-02",
+      "replayId": "HIST-20260802",
+      "redSignature": "SCHEDULED_E2E_IDENTITY_COLLISION",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-08-03",
+      "issueDate": "2026-08-03",
+      "replayId": "HIST-20260803",
+      "redSignature": "STARTUP_FAILURE_DEFERRED_WITHOUT_RECOVERY",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-08-04",
+      "issueDate": "2026-08-04",
+      "replayId": "HIST-20260804",
+      "redSignature": "NO_LOG_LEDGER_GAP_UNCLASSIFIED",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-08-05",
+      "issueDate": "2026-08-05",
+      "replayId": "HIST-20260805",
+      "redSignature": "STOP_ARTIFACT_LEDGER_INVALID",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-08-06",
+      "issueDate": "2026-08-06",
+      "replayId": "HIST-20260806",
+      "redSignature": "STALE_STATE_DIRTY_RUNTIME_NO_AUTHORITY",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-08-07",
+      "issueDate": "2026-08-07",
+      "replayId": "HIST-20260807",
+      "redSignature": "CHECKPOINT_IGNORED_BUDGET_EXHAUSTED",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-08-08",
+      "issueDate": "2026-08-08",
+      "replayId": "HIST-20260808",
+      "redSignature": "DIRTY_RUNTIME_RECEIPT_LEDGER_TERMINAL_DRIFT",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-08-09",
+      "issueDate": "2026-08-09",
+      "replayId": "HIST-20260809",
+      "redSignature": "STARTUP_SELF_REPAIR_REPEATED",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-08-10",
+      "issueDate": "2026-08-10",
+      "replayId": "HIST-20260810",
+      "redSignature": "PUBLIC_GREEN_AUDIT_NON_MONOTONIC",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    },
+    {
+      "fixtureId": "hist-2026-08-11",
+      "issueDate": "2026-08-11",
+      "replayId": "HIST-20260811",
+      "redSignature": "ARTIFACT_FIRST_AND_STATE_BINDING_MISSING",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_daily_lineage",
+        "registered_handler_or_typed_external",
+        "state_invariant_retry_zero",
+        "checkpoint_model_rerun_zero",
+        "public_green_non_regression",
+        "finite_product_or_typed_terminal"
+      ]
+    }
+  ]
+}

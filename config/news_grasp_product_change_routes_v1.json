@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "NEWS_GRASP_PRODUCT_CHANGE_ROUTES_V1",
+  "productId": "News-Grasp",
+  "unknownRoutePolicy": "fail_closed",
+  "consumer": "tools.news_grasp_change_control.apply_packet",
+  "routes": [
+    {
+      "routeId": "codex",
+      "producer": "Codex",
+      "executor": {
+        "actor": "codex",
+        "mode": "change_packet_only",
+        "noDirectWrite": true
+      }
+    },
+    {
+      "routeId": "claude",
+      "producer": "Claude",
+      "executor": {
+        "actor": "claude",
+        "mode": "change_packet_only",
+        "noDirectWrite": true
+      }
+    },
+    {
+      "routeId": "direct-script",
+      "producer": "deterministic local script",
+      "executor": {
+        "actor": "direct-script",
+        "deterministic": true,
+        "noDirectWrite": true
+      }
+    },
+    {
+      "routeId": "luna",
+      "producer": "Luna implementation packet",
+      "executor": {
+        "model": "gpt-5.6-luna",
+        "reasoningEffort": "max",
+        "noSubstitution": true
+      }
+    }
+  ]
+}

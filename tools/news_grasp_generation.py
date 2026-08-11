@@ -13,6 +13,8 @@ from typing import Any, Mapping
 
 
 SCHEMA = "PRODUCTION_GENERATION_MANIFEST_V2"
+ProductionGenerationManifestV2 = SCHEMA
+immutable_generation = "immutable_generation"
 
 
 class NewsGraspGenerationError(RuntimeError):
@@ -23,6 +25,11 @@ def _json(value: object) -> bytes:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
+def _json_insertion_order(value: object) -> bytes:
+    """既存PowerShell installerのordered JSON authorityと互換のhash入力。"""
+    return json.dumps(value, ensure_ascii=False, sort_keys=False, separators=(",", ":")).encode("utf-8")
+
+
 def _hash(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as stream:
@@ -31,10 +38,10 @@ def _hash(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _git_head(root: Path) -> str:
+def _git_value(root: Path, *arguments: str) -> str:
     try:
         result = subprocess.run(
-            ["git", "-C", str(root), "rev-parse", "HEAD"],
+            ["git", "-C", str(root), *arguments],
             capture_output=True,
             check=False,
             text=True,
@@ -45,6 +52,35 @@ def _git_head(root: Path) -> str:
     except OSError:
         return "unavailable"
     return result.stdout.strip() if result.returncode == 0 else "unavailable"
+
+
+def _git_head(root: Path) -> str:
+    return _git_value(root, "rev-parse", "HEAD")
+
+
+def _git_common_dir(root: Path) -> str:
+    value = _git_value(root, "rev-parse", "--git-common-dir")
+    if value == "unavailable":
+        return value
+    path = Path(value)
+    if not path.is_absolute():
+        path = root / path
+    return str(path.resolve())
+
+
+def _manifest_hash(rows: Mapping[str, str]) -> str:
+    return hashlib.sha256(_json(dict(sorted(rows.items())))).hexdigest()
+
+
+def _input_manifest_hash(value: Mapping[str, Any] | Path | str | None) -> str:
+    if value is None:
+        return hashlib.sha256(_json({})).hexdigest()
+    if isinstance(value, Mapping):
+        return hashlib.sha256(_json(dict(value))).hexdigest()
+    path = Path(value).resolve()
+    if not path.is_file() or path.is_symlink():
+        raise NewsGraspGenerationError("NG_INPUT_MANIFEST_INVALID")
+    return _hash(path)
 
 
 def _files(root: Path, paths: list[str]) -> dict[str, str]:
@@ -94,9 +130,88 @@ def create_stable_task_authority(
         "action": list(action),
         "trigger": dict(trigger),
         "repoArgumentCount": 0,
+        "actionSha256": hashlib.sha256(_json(list(action))).hexdigest(),
+        "triggerSha256": hashlib.sha256(_json(dict(trigger))).hexdigest(),
     }
     body["authoritySha256"] = hashlib.sha256(_json(body)).hexdigest()
     return body
+
+
+def validate_stable_task_authority(value: Mapping[str, Any]) -> dict[str, Any]:
+    """stable task authorityを自己hash・action・triggerへ束縛する。"""
+    body = dict(value)
+    authority_sha256 = str(body.pop("authoritySha256", ""))
+    if body.get("schemaVersion") != "STABLE_TASK_AUTHORITY_V1":
+        raise NewsGraspGenerationError("NG_STABLE_TASK_AUTHORITY_INVALID")
+    action = body.get("action")
+    trigger = body.get("trigger")
+    if not isinstance(action, list) or not all(isinstance(item, str) for item in action):
+        raise NewsGraspGenerationError("NG_STABLE_TASK_AUTHORITY_INVALID")
+    if not isinstance(trigger, dict):
+        raise NewsGraspGenerationError("NG_STABLE_TASK_AUTHORITY_INVALID")
+    validate_task_action(action)
+    if body.get("repoArgumentCount") != 0:
+        raise NewsGraspGenerationError("NG_STABLE_TASK_REPO_ARGUMENT_FORBIDDEN")
+    if body.get("actionSha256") not in {
+        None,
+        hashlib.sha256(_json(action)).hexdigest(),
+    }:
+        raise NewsGraspGenerationError("NG_STABLE_TASK_AUTHORITY_INVALID")
+    if body.get("triggerSha256") not in {
+        None,
+        hashlib.sha256(_json(trigger)).hexdigest(),
+    }:
+        raise NewsGraspGenerationError("NG_STABLE_TASK_AUTHORITY_INVALID")
+    allowed_hashes = {
+        hashlib.sha256(_json(body)).hexdigest(),
+        hashlib.sha256(_json_insertion_order(body)).hexdigest(),
+    }
+    if authority_sha256 not in allowed_hashes:
+        raise NewsGraspGenerationError("NG_STABLE_TASK_AUTHORITY_INVALID")
+    return {**body, "authoritySha256": authority_sha256}
+
+
+def validate_installed_launcher_identity(
+    *,
+    launcher_path: Path | str,
+    stable_task_authority: Mapping[str, Any],
+    active_generation: Mapping[str, Any] | None = None,
+    expected_generation_id: str = "",
+) -> dict[str, Any]:
+    """installed launcherをstable task authorityとactive generationへ束縛する。"""
+    authority = validate_stable_task_authority(stable_task_authority)
+    launcher = Path(launcher_path).resolve()
+    if not launcher.is_file() or launcher.is_symlink():
+        raise NewsGraspGenerationError("NG_INSTALLED_LAUNCHER_IDENTITY_INVALID")
+    try:
+        expected_path = Path(str(authority["stableLauncherPath"])).resolve()
+    except (KeyError, OSError, RuntimeError, ValueError) as exc:
+        raise NewsGraspGenerationError("NG_INSTALLED_LAUNCHER_IDENTITY_INVALID") from exc
+    if expected_path != launcher or authority.get("stableLauncherSha256") != _hash(launcher):
+        raise NewsGraspGenerationError("NG_INSTALLED_LAUNCHER_IDENTITY_INVALID")
+    action = list(authority["action"])
+    if len(action) < 2 or Path(action[1]).resolve() != launcher:
+        raise NewsGraspGenerationError("NG_INSTALLED_LAUNCHER_IDENTITY_INVALID")
+    generation_id = ""
+    if active_generation is not None:
+        generation_id = str(active_generation.get("generationId") or "")
+        if active_generation.get("schemaVersion") not in {
+            "NEWS_GRASP_ACTIVE_GENERATION_V1",
+            "NEWS_GRASP_ACTIVE_GENERATION_V2",
+        }:
+            raise NewsGraspGenerationError("NG_ACTIVE_GENERATION_INVALID")
+        if expected_generation_id and generation_id != expected_generation_id:
+            raise NewsGraspGenerationError("NG_ACTIVE_GENERATION_DRIFT")
+        authority_hash = str(active_generation.get("stableTaskAuthoritySha256") or "")
+        if authority_hash and authority_hash != authority["authoritySha256"]:
+            raise NewsGraspGenerationError("NG_ACTIVE_GENERATION_DRIFT")
+    return {
+        "status": "green",
+        "launcherPath": str(launcher),
+        "launcherSha256": _hash(launcher),
+        "stableTaskAuthoritySha256": authority["authoritySha256"],
+        "generationId": generation_id,
+    }
 
 
 PROMOTION_PHASES = (
@@ -121,20 +236,23 @@ def promote_generation(
     external_readiness: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """promotion phaseを検証し、最終phaseだけactive pointerをreplaceする。"""
-    if phase not in PROMOTION_PHASES or not old_generation_id or not new_generation_id or old_generation_id == new_generation_id:
+    if (
+        phase not in PROMOTION_PHASES
+        or phase != "transaction_committed"
+        or not old_generation_id
+        or not new_generation_id
+        or old_generation_id == new_generation_id
+    ):
         raise NewsGraspGenerationError("NG_PROMOTION_PHASE_INVALID")
-    if stable_task_authority.get("repoArgumentCount") != 0:
-        raise NewsGraspGenerationError("NG_STABLE_TASK_REPO_ARGUMENT_FORBIDDEN")
+    validated_task_authority = validate_stable_task_authority(stable_task_authority)
     if external_readiness is not None and external_readiness.get("status") != "ready":
         raise NewsGraspGenerationError("NG_EXTERNAL_DEPENDENCY_DEFERRED")
-    if phase != "transaction_committed":
-        raise NewsGraspGenerationError("NG_PROMOTION_PHASE_INVALID")
     pointer = Path(active_pointer)
     body: dict[str, Any] = {
         "schemaVersion": "NEWS_GRASP_ACTIVE_GENERATION_V2",
         "generationId": new_generation_id,
         "previousGenerationId": old_generation_id,
-        "stableTaskAuthoritySha256": str(stable_task_authority.get("authoritySha256") or ""),
+        "stableTaskAuthoritySha256": validated_task_authority["authoritySha256"],
         "runtimeManifestSha256": runtime_manifest_sha256,
         "inputManifestSha256": input_manifest_sha256,
         "phase": phase,
@@ -186,6 +304,7 @@ def create_manifest(
     generation_id: str,
     previous_generation_id: str | None,
     output: Path | str,
+    input_manifest: Mapping[str, Any] | Path | str | None = None,
 ) -> dict[str, Any]:
     source = Path(source_root).resolve()
     runtime = Path(runtime_root).resolve()
@@ -198,6 +317,10 @@ def create_manifest(
     if not config.is_file():
         raise NewsGraspGenerationError("NG_CONFIG_INVALID")
     launcher_hashes = {str(Path(path).resolve()): _hash(Path(path).resolve()) for path in launcher_paths}
+    source_commit = _git_head(source)
+    source_common_dir = _git_common_dir(source)
+    origin_url = _git_value(source, "config", "--get", "remote.origin.url")
+    remote_head = _git_value(source, "rev-parse", "refs/remotes/origin/main")
     manifest: dict[str, Any] = {
         "schemaVersion": SCHEMA,
         "productId": "News-Grasp",
@@ -205,15 +328,29 @@ def create_manifest(
         "previousGenerationId": previous_generation_id,
         "source": {
             "root": str(source),
-            "commit": _git_head(source),
+            "commit": source_commit,
             "origin": "origin/main",
-            "commonDir": str(source / ".git"),
+            "originUrl": origin_url,
+            "remoteHead": remote_head,
+            "commonDir": source_common_dir,
             "trackedFiles": source_files,
+            "trackedManifestSha256": _manifest_hash(source_files),
         },
-        "runtime": {"root": str(runtime), "files": runtime_files},
+        "runtime": {
+            "root": str(runtime),
+            "files": runtime_files,
+            "manifestSha256": _manifest_hash(runtime_files),
+        },
         "configSha256": _hash(config),
         "installedLauncherHashes": launcher_hashes,
-        "scheduledTask": {"action": task_action, "trigger": task_trigger},
+        "installedLauncherManifestSha256": _manifest_hash(launcher_hashes),
+        "inputManifestSha256": _input_manifest_hash(input_manifest),
+        "scheduledTask": {
+            "action": task_action,
+            "actionSha256": hashlib.sha256(_json(task_action)).hexdigest(),
+            "trigger": task_trigger,
+            "triggerSha256": hashlib.sha256(_json(task_trigger)).hexdigest(),
+        },
     }
     manifest["manifestSha256"] = hashlib.sha256(_json(manifest)).hexdigest()
     destination = Path(output)
@@ -247,6 +384,7 @@ def verify_parity(
     launcher_paths: list[Path | str],
     task_action: list[str],
     task_trigger: dict[str, Any],
+    input_manifest: Mapping[str, Any] | Path | str | None = None,
 ) -> dict[str, Any]:
     value = _load(manifest)
     validate_task_action(task_action)
@@ -254,16 +392,46 @@ def verify_parity(
     runtime = Path(runtime_root).resolve()
     if value["source"]["root"] != str(source) or value["runtime"]["root"] != str(runtime):
         raise NewsGraspGenerationError("NG_GENERATION_DRIFT")
-    if value["source"]["trackedFiles"] != _files(source, list(value["source"]["trackedFiles"])):
+    actual_source_files = _files(source, list(value["source"]["trackedFiles"]))
+    if value["source"]["trackedFiles"] != actual_source_files:
         raise NewsGraspGenerationError("NG_GENERATION_DRIFT")
-    if value["runtime"]["files"] != _files(runtime, list(value["runtime"]["files"])):
+    if value["source"].get("trackedManifestSha256") != _manifest_hash(actual_source_files):
+        raise NewsGraspGenerationError("NG_GENERATION_DRIFT")
+    current_commit = _git_head(source)
+    current_common_dir = _git_common_dir(source)
+    current_origin_url = _git_value(source, "config", "--get", "remote.origin.url")
+    current_remote_head = _git_value(source, "rev-parse", "refs/remotes/origin/main")
+    if any(
+        value["source"].get(field) != actual
+        for field, actual in {
+            "commit": current_commit,
+            "commonDir": current_common_dir,
+            "originUrl": current_origin_url,
+            "remoteHead": current_remote_head,
+        }.items()
+    ):
+        raise NewsGraspGenerationError("NG_GENERATION_DRIFT")
+    actual_runtime_files = _files(runtime, list(value["runtime"]["files"]))
+    if value["runtime"]["files"] != actual_runtime_files:
+        raise NewsGraspGenerationError("NG_GENERATION_DRIFT")
+    if value["runtime"].get("manifestSha256") != _manifest_hash(actual_runtime_files):
         raise NewsGraspGenerationError("NG_GENERATION_DRIFT")
     if value["configSha256"] != _hash(Path(config_path).resolve()):
         raise NewsGraspGenerationError("NG_GENERATION_DRIFT")
     actual_launchers = {str(Path(path).resolve()): _hash(Path(path).resolve()) for path in launcher_paths}
     if value["installedLauncherHashes"] != actual_launchers:
         raise NewsGraspGenerationError("NG_GENERATION_DRIFT")
-    if value["scheduledTask"] != {"action": task_action, "trigger": task_trigger}:
+    if value.get("installedLauncherManifestSha256") != _manifest_hash(actual_launchers):
+        raise NewsGraspGenerationError("NG_GENERATION_DRIFT")
+    if value.get("inputManifestSha256") != _input_manifest_hash(input_manifest):
+        raise NewsGraspGenerationError("NG_GENERATION_INPUT_DRIFT")
+    actual_task = {
+        "action": task_action,
+        "actionSha256": hashlib.sha256(_json(task_action)).hexdigest(),
+        "trigger": task_trigger,
+        "triggerSha256": hashlib.sha256(_json(task_trigger)).hexdigest(),
+    }
+    if value["scheduledTask"] != actual_task:
         raise NewsGraspGenerationError("NG_SCHEDULED_TASK_DRIFT")
     expected_hash = value.get("manifestSha256")
     body = dict(value)

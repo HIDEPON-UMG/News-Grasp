@@ -41,6 +41,8 @@ RUNTIME_RECOVERY_MIN_FREE_BYTES = 128 * 1024 * 1024
 RUNTIME_ORCHESTRATION_MUTEX_PREFIX = "Global\\NewsGraspBootstrapOrchestration-"
 RUNTIME_PRODUCTION_MUTEX_PREFIX = "Global\\NewsGraspProductionRuntime-"
 RUNTIME_LEGACY_MUTEX_NAME = "Global\\NewsGraspProductionRuntimeConvergence"
+INSTALLED_NOPUBLISH_AUTHORITY_SCHEMA = "NEWS_GRASP_INSTALLED_NOPUBLISH_LAUNCH_AUTHORITY_V1"
+STABLE_TASK_AUTHORITY_SCHEMA = "STABLE_TASK_AUTHORITY_V1"
 
 
 def _runtime_mutex_identity() -> str:
@@ -468,6 +470,345 @@ def _sha256_json(value: object) -> str:
             separators=(",", ":"),
         ).encode("utf-8")
     ).hexdigest()
+
+
+def _sha256_json_insertion_order(value: object) -> str:
+    return hashlib.sha256(
+        json.dumps(
+            value,
+            ensure_ascii=False,
+            sort_keys=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+
+
+def _file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _load_stable_launcher_identity(*, bin_dir: Path) -> dict[str, object]:
+    """installed launcher bytesをinstaller発行authorityへ束縛する。"""
+    authority_path = bin_dir / "news-grasp-stable-task-authority-v1.json"
+    try:
+        if authority_path.stat().st_size > 64 * 1024:
+            raise ValueError("oversized")
+        authority = json.loads(authority_path.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError, TypeError) as error:
+        raise RuntimeError("NEWS_GRASP_STABLE_TASK_AUTHORITY_INVALID") from error
+    if not isinstance(authority, dict):
+        raise RuntimeError("NEWS_GRASP_STABLE_TASK_AUTHORITY_INVALID")
+    unsigned = dict(authority)
+    authority_sha256 = str(unsigned.pop("authoritySha256", ""))
+    allowed_hashes = {
+        _sha256_json(unsigned),
+        _sha256_json_insertion_order(unsigned),
+    }
+    action = authority.get("action")
+    launcher = Path(__file__).resolve()
+    try:
+        stable_path = Path(str(authority.get("stableLauncherPath") or "")).resolve(strict=True)
+    except OSError as error:
+        raise RuntimeError("NEWS_GRASP_STABLE_TASK_AUTHORITY_INVALID") from error
+    if (
+        authority.get("schemaVersion") != STABLE_TASK_AUTHORITY_SCHEMA
+        or authority_sha256 not in allowed_hashes
+        or authority.get("repoArgumentCount") != 0
+        or not isinstance(action, list)
+        or len(action) < 3
+        or any(not isinstance(item, str) or not item for item in action)
+        or stable_path != launcher
+        or Path(str(action[1])).resolve() != launcher
+        or str(authority.get("stableLauncherSha256") or "") != _file_sha256(launcher)
+        or any(item.casefold() in {"--repo-dir", "--worktree"} for item in action)
+    ):
+        raise RuntimeError("NEWS_GRASP_STABLE_TASK_AUTHORITY_INVALID")
+    return {
+        **authority,
+        "authorityPath": str(authority_path.resolve()),
+        "authorityFileSha256": _file_sha256(authority_path),
+    }
+
+
+def _validate_active_production_generation(
+    *, runtime_repo: Path, launcher_identity: dict[str, object]
+) -> dict[str, object]:
+    """active pointer・immutable manifest・runtime bytesを同一generationへ束縛する。"""
+    active_pointer_path = runtime_repo.parent / "active-generation-v2.json"
+    try:
+        active_pointer = json.loads(active_pointer_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError) as error:
+        raise RuntimeError("NEWS_GRASP_ACTIVE_GENERATION_INVALID") from error
+    active_unsigned = dict(active_pointer) if isinstance(active_pointer, dict) else {}
+    active_sha256 = str(active_unsigned.pop("pointerSha256", ""))
+    runtime_head = _run_git(runtime_repo, "rev-parse", "HEAD").strip().lower()
+    if (
+        active_pointer.get("schemaVersion") != "NEWS_GRASP_ACTIVE_GENERATION_V2"
+        or active_sha256 != _sha256_json(active_unsigned)
+        or active_pointer.get("stableTaskAuthoritySha256")
+        != launcher_identity.get("authoritySha256")
+    ):
+        raise RuntimeError("NEWS_GRASP_ACTIVE_GENERATION_DRIFT")
+    try:
+        manifest_path = Path(str(active_pointer.get("manifestPath") or "")).resolve(strict=True)
+        expected_generation_root = (runtime_repo.parent / "generations").resolve(strict=True)
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError) as error:
+        raise RuntimeError("NEWS_GRASP_ACTIVE_GENERATION_INVALID") from error
+    if not manifest_path.is_relative_to(expected_generation_root) or not isinstance(manifest, dict):
+        raise RuntimeError("NEWS_GRASP_ACTIVE_GENERATION_INVALID")
+    manifest_unsigned = dict(manifest)
+    manifest_sha256 = str(manifest_unsigned.pop("manifestSha256", ""))
+    runtime_manifest = manifest.get("runtime")
+    tracked_files = runtime_manifest.get("trackedFiles") if isinstance(runtime_manifest, dict) else None
+    if (
+        manifest.get("schemaVersion") != "PRODUCTION_GENERATION_MANIFEST_V2"
+        or manifest.get("generationId") != active_pointer.get("generationId")
+        or manifest_sha256 != _sha256_json(manifest_unsigned)
+        or active_pointer.get("manifestSha256") != manifest_sha256
+        or manifest.get("stableTaskAuthoritySha256") != launcher_identity.get("authoritySha256")
+        or not isinstance(runtime_manifest, dict)
+        or runtime_manifest.get("commit") != runtime_head
+        or not isinstance(tracked_files, dict)
+    ):
+        raise RuntimeError("NEWS_GRASP_ACTIVE_GENERATION_DRIFT")
+    for relative, expected_sha256 in tracked_files.items():
+        candidate = (runtime_repo / str(relative)).resolve(strict=True)
+        if not candidate.is_relative_to(runtime_repo) or _file_sha256(candidate) != expected_sha256:
+            raise RuntimeError("NEWS_GRASP_ACTIVE_GENERATION_DRIFT")
+    return active_pointer
+
+
+def _run_installed_nopublish_authority(
+    *, authority_path: Path, bin_dir: Path, launcher_identity: dict[str, object]
+) -> int:
+    """sealed authorityのexact PowerShell commandだけをinstalled launcherから起動する。"""
+    try:
+        if authority_path.stat().st_size > 64 * 1024:
+            raise ValueError("oversized")
+        value = json.loads(authority_path.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError, TypeError) as error:
+        raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_AUTHORITY_INVALID") from error
+    if not isinstance(value, dict):
+        raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_AUTHORITY_INVALID")
+    unsigned = dict(value)
+    authority_sha256 = str(unsigned.pop("authoritySha256", ""))
+    if authority_sha256 not in {
+        _sha256_json(unsigned),
+        _sha256_json_insertion_order(unsigned),
+    }:
+        raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_AUTHORITY_INVALID")
+    required = {
+        "schemaVersion",
+        "issueDate",
+        "attemptId",
+        "stableLauncherPath",
+        "stableLauncherSha256",
+        "stableTaskAuthorityPath",
+        "stableTaskAuthorityFileSha256",
+        "runnerExecutablePath",
+        "runnerExecutableSha256",
+        "runnerArgumentsPath",
+        "runnerArgumentsFileSha256",
+        "authoritySha256",
+    }
+    if set(value) != required or value.get("schemaVersion") != INSTALLED_NOPUBLISH_AUTHORITY_SCHEMA:
+        raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_AUTHORITY_INVALID")
+    expected_identity = {
+        "stableLauncherPath": str(Path(__file__).resolve()),
+        "stableLauncherSha256": _file_sha256(Path(__file__).resolve()),
+        "stableTaskAuthorityPath": str(launcher_identity["authorityPath"]),
+        "stableTaskAuthorityFileSha256": str(launcher_identity["authorityFileSha256"]),
+    }
+    if any(value.get(field) != expected for field, expected in expected_identity.items()):
+        raise RuntimeError("NEWS_GRASP_INSTALLED_LAUNCHER_IDENTITY_DRIFT")
+    try:
+        executable = Path(str(value["runnerExecutablePath"])).resolve(strict=True)
+        arguments_path = Path(str(value["runnerArgumentsPath"])).resolve(strict=True)
+    except OSError as error:
+        raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_AUTHORITY_INVALID") from error
+    if (
+        not executable.is_file()
+        or executable.is_symlink()
+        or not arguments_path.is_file()
+        or arguments_path.is_symlink()
+        or _file_sha256(executable) != value["runnerExecutableSha256"]
+        or _file_sha256(arguments_path) != value["runnerArgumentsFileSha256"]
+    ):
+        raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_IDENTITY_DRIFT")
+    try:
+        arguments = json.loads(arguments_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError) as error:
+        raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_ARGUMENTS_INVALID") from error
+    if (
+        not isinstance(arguments, list)
+        or not arguments
+        or any(not isinstance(item, str) or not item for item in arguments)
+        or "-NoPublish" not in arguments
+        or "-ResumeFromStage" in arguments
+    ):
+        raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_ARGUMENTS_INVALID")
+    resolved = resolve_bootstrap_launch_roots(
+        bin_dir=bin_dir,
+        enforce_canonical_runtime=True,
+    )
+    runtime_repo = resolved["configuredRuntime"].resolve(strict=True)
+    _validate_active_production_generation(
+        runtime_repo=runtime_repo,
+        launcher_identity=launcher_identity,
+    )
+    expected_runner = (runtime_repo / "scripts" / "ops" / "news-grasp-runner.ps1").resolve(strict=True)
+    try:
+        file_index = arguments.index("-File")
+        observed_runner = Path(arguments[file_index + 1]).resolve(strict=True)
+    except (ValueError, IndexError, OSError) as error:
+        raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_ARGUMENTS_INVALID") from error
+    if observed_runner != expected_runner:
+        raise RuntimeError("NEWS_GRASP_INSTALLED_GENERATION_DRIFT")
+    creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+    result = subprocess.run(
+        [str(executable), *arguments],
+        shell=False,
+        stdin=subprocess.DEVNULL,
+        creationflags=creationflags,
+        check=False,
+    )
+    return int(result.returncode)
+
+
+def _seal_active_production_generation(
+    *,
+    source_repo: Path,
+    runtime_repo: Path,
+    runtime_root: Path,
+    origin_sha: str,
+    bin_dir: Path,
+) -> dict[str, object]:
+    """runtime transaction終端だけでimmutable manifestとactive pointerを発行する。"""
+    identity = _load_stable_launcher_identity(bin_dir=bin_dir)
+    runtime_config = bin_dir / "news-grasp-runtime-root-v1.json"
+    critical_paths = (
+        "scripts/ops/news-grasp-runner.ps1",
+        "tools/daily_self_heal.py",
+        "tools/news_grasp_daily_control.py",
+        "tools/news_grasp_operational_contract.py",
+        "tools/news_grasp_checkpoint.py",
+        "tools/news_grasp_generation.py",
+        "tools/operational_recovery_registry.py",
+        "config/operational_recovery_registry_v1.json",
+    )
+    tracked: dict[str, str] = {}
+    for relative in critical_paths:
+        candidate = runtime_repo / relative
+        if not candidate.is_file() or candidate.is_symlink():
+            raise RuntimeError("NEWS_GRASP_PRODUCTION_GENERATION_FILE_INVALID")
+        tracked[relative] = _file_sha256(candidate)
+    task_action = identity.get("action")
+    task_trigger = identity.get("trigger")
+    if not isinstance(task_action, list) or not isinstance(task_trigger, dict):
+        raise RuntimeError("NEWS_GRASP_STABLE_TASK_AUTHORITY_INVALID")
+    runtime_config_sha256 = _file_sha256(runtime_config)
+    tracked_manifest_sha256 = _sha256_json(tracked)
+    action_sha256 = _sha256_json(task_action)
+    trigger_sha256 = _sha256_json(task_trigger)
+    generation_id = _sha256_json(
+        {
+            "sourceCommit": origin_sha,
+            "runtimeTrackedManifestSha256": tracked_manifest_sha256,
+            "configSha256": runtime_config_sha256,
+            "installedLauncherSha256": identity["stableLauncherSha256"],
+            "stableTaskAuthoritySha256": identity["authoritySha256"],
+            "taskActionSha256": action_sha256,
+            "taskTriggerSha256": trigger_sha256,
+        }
+    )
+    active_pointer_path = runtime_root / "active-generation-v2.json"
+    previous_generation_id = ""
+    if active_pointer_path.is_file():
+        try:
+            previous = json.loads(active_pointer_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, TypeError) as error:
+            raise RuntimeError("NEWS_GRASP_ACTIVE_GENERATION_INVALID") from error
+        if not isinstance(previous, dict):
+            raise RuntimeError("NEWS_GRASP_ACTIVE_GENERATION_INVALID")
+        previous_unsigned = dict(previous)
+        previous_sha256 = str(previous_unsigned.pop("pointerSha256", ""))
+        if (
+            previous.get("schemaVersion") != "NEWS_GRASP_ACTIVE_GENERATION_V2"
+            or previous_sha256 != _sha256_json(previous_unsigned)
+        ):
+            raise RuntimeError("NEWS_GRASP_ACTIVE_GENERATION_INVALID")
+        previous_candidate = (
+            previous.get("previousGenerationId")
+            if previous.get("generationId") == generation_id
+            else previous.get("generationId")
+        )
+        previous_generation_id = str(previous_candidate or "")
+    manifest: dict[str, object] = {
+        "schemaVersion": "PRODUCTION_GENERATION_MANIFEST_V2",
+        "productId": "News-Grasp",
+        "generationId": generation_id,
+        "previousGenerationId": previous_generation_id or None,
+        "source": {
+            "commit": origin_sha,
+            "observedHead": _run_git(source_repo, "rev-parse", "HEAD").strip().lower(),
+            "remoteHead": _run_git(source_repo, "rev-parse", "origin/main").strip().lower(),
+            "commonDir": str(_git_common_dir(source_repo)),
+            "origin": "origin/main",
+        },
+        "runtime": {
+            "root": str(runtime_repo),
+            "commit": _run_git(runtime_repo, "rev-parse", "HEAD").strip().lower(),
+            "commonDir": str(_git_common_dir(runtime_repo)),
+            "trackedFiles": tracked,
+            "trackedManifestSha256": tracked_manifest_sha256,
+        },
+        "configSha256": runtime_config_sha256,
+        "installedLauncherSha256": identity["stableLauncherSha256"],
+        "stableTaskAuthoritySha256": identity["authoritySha256"],
+        "scheduledTask": {
+            "action": task_action,
+            "actionSha256": action_sha256,
+            "trigger": task_trigger,
+            "triggerSha256": trigger_sha256,
+        },
+    }
+    if (
+        manifest["source"]["commit"] != origin_sha
+        or manifest["source"]["remoteHead"] != origin_sha
+        or manifest["runtime"]["commit"] != origin_sha
+        or manifest["source"]["commonDir"] != manifest["runtime"]["commonDir"]
+    ):
+        raise RuntimeError("NEWS_GRASP_PRODUCTION_GENERATION_DRIFT")
+    manifest["manifestSha256"] = _sha256_json(manifest)
+    generation_root = runtime_root / "generations"
+    generation_root.mkdir(parents=True, exist_ok=True)
+    manifest_path = generation_root / f"{generation_id}.json"
+    if manifest_path.is_file():
+        try:
+            existing = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, TypeError) as error:
+            raise RuntimeError("NEWS_GRASP_PRODUCTION_GENERATION_INVALID") from error
+        if existing != manifest:
+            raise RuntimeError("NEWS_GRASP_PRODUCTION_GENERATION_DRIFT")
+    else:
+        _write_json_exclusive(manifest_path, manifest)
+    pointer: dict[str, object] = {
+        "schemaVersion": "NEWS_GRASP_ACTIVE_GENERATION_V2",
+        "generationId": generation_id,
+        "previousGenerationId": previous_generation_id or None,
+        "manifestPath": str(manifest_path),
+        "manifestSha256": manifest["manifestSha256"],
+        "stableTaskAuthoritySha256": identity["authoritySha256"],
+        "phase": "transaction_committed",
+    }
+    pointer["pointerSha256"] = _sha256_json(pointer)
+    _write_json_atomic(active_pointer_path, pointer)
+    return pointer
 
 
 def _assert_managed_path(path: Path, boundary: Path, code: str) -> Path:
@@ -1634,7 +1975,7 @@ def _ensure_runtime_recovery_capacity(runtime_root: Path) -> None:
 
 
 def converge_production_runtime(
-    *, source_repo: Path, runtime_root: Path, origin_sha: str
+    *, source_repo: Path, runtime_root: Path, origin_sha: str, bin_dir: Path | None = None
 ) -> dict[str, object]:
     # direct import/callもbootstrapのlifecycle ownerと同じmutexへ束縛する。
     # これによりCLIのowner receipt検査を迂回した二重writerを許可しない。
@@ -1645,11 +1986,12 @@ def converge_production_runtime(
                     source_repo=source_repo,
                     runtime_root=runtime_root,
                     origin_sha=origin_sha,
+                    bin_dir=bin_dir,
                 )
 
 
 def _converge_production_runtime_locked(
-    *, source_repo: Path, runtime_root: Path, origin_sha: str
+    *, source_repo: Path, runtime_root: Path, origin_sha: str, bin_dir: Path | None = None
 ) -> dict[str, object]:
     """dirty runtimeを無損失隔離し、固定SHAのclean worktreeへforward収束する。"""
     source_repo = source_repo.resolve(strict=True)
@@ -1760,7 +2102,21 @@ def _converge_production_runtime_locked(
                 _run_git(runtime, "checkout", "--detach", origin_sha, "--quiet")
             _assert_runtime_common_dir(runtime, source_common)
             _bind_runtime_dependencies(source_repo, runtime)
-            return {"phase": "committed", "runtimePath": str(runtime), "quarantinePath": ""}
+            result: dict[str, object] = {
+                "phase": "committed",
+                "runtimePath": str(runtime),
+                "quarantinePath": "",
+                "originSha": origin_sha,
+            }
+            if bin_dir is not None:
+                result["activeGeneration"] = _seal_active_production_generation(
+                    source_repo=source_repo,
+                    runtime_repo=runtime,
+                    runtime_root=runtime_root,
+                    origin_sha=origin_sha,
+                    bin_dir=bin_dir,
+                )
+            return result
         _ensure_runtime_recovery_capacity(runtime_root)
         transaction_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ-") + uuid4().hex[:16]
         transaction_dir = transactions / transaction_id
@@ -1978,13 +2334,22 @@ def _converge_production_runtime_locked(
         runtime_root=runtime_root,
     )
 
-    return {
+    result = {
         "phase": str(journal["phase"]),
         "runtimePath": str(runtime),
         "quarantinePath": str(quarantine),
         "journalPath": str(archived_journal),
         "originSha": origin_sha,
     }
+    if bin_dir is not None:
+        result["activeGeneration"] = _seal_active_production_generation(
+            source_repo=source_repo,
+            runtime_repo=runtime,
+            runtime_root=runtime_root,
+            origin_sha=origin_sha,
+            bin_dir=bin_dir,
+        )
+    return result
 
 
 def resolve_bootstrap_launch_roots(
@@ -2091,7 +2456,16 @@ def record_missing_pre_attempt_from_task_history(
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("runner", "bootstrap", "converge-runtime", "maintain-runtime"))
+    parser.add_argument(
+        "mode",
+        choices=(
+            "runner",
+            "bootstrap",
+            "converge-runtime",
+            "maintain-runtime",
+            "scheduled-equivalent-nopublish",
+        ),
+    )
     parser.add_argument("--probe", type=Path)
     parser.add_argument("--repo-dir", type=Path)
     parser.add_argument("--python-exe", type=Path)
@@ -2103,7 +2477,9 @@ def main() -> int:
     parser.add_argument("--bootstrap-owner-nonce")
     parser.add_argument("--runtime-root", type=Path)
     parser.add_argument("--scheduled-task-name", required=False)
+    parser.add_argument("--launch-authority", type=Path)
     args = parser.parse_args()
+    bin_dir = Path.home() / "bin"
     if args.mode == "maintain-runtime":
         runtime_root = args.runtime_root or (Path.home() / ".news-grasp-runtime")
         try:
@@ -2137,6 +2513,7 @@ def main() -> int:
                         source_repo=args.source_repo,
                         runtime_root=Path.home() / ".news-grasp-runtime",
                         origin_sha=str(args.origin_sha),
+                        bin_dir=bin_dir,
                     )
         except (OSError, RuntimeError, ValueError) as error:
             print(
@@ -2158,7 +2535,42 @@ def main() -> int:
         args.probe.parent.mkdir(parents=True, exist_ok=True)
         args.probe.write_text("probe_ok", encoding="utf-8")
         return 0
-    bin_dir = Path.home() / "bin"
+    try:
+        launcher_identity = _load_stable_launcher_identity(bin_dir=bin_dir)
+    except (OSError, RuntimeError, ValueError) as error:
+        print(
+            json.dumps(
+                {"status": "failed", "reasonCode": str(error)},
+                ensure_ascii=False,
+                sort_keys=True,
+            ),
+            file=sys.stderr,
+        )
+        return 66
+    if args.mode == "scheduled-equivalent-nopublish":
+        if args.launch_authority is None:
+            return 66
+        try:
+            return _run_installed_nopublish_authority(
+                authority_path=args.launch_authority.resolve(strict=True),
+                bin_dir=bin_dir,
+                launcher_identity=launcher_identity,
+            )
+        except (OSError, RuntimeError, ValueError) as error:
+            print(
+                json.dumps(
+                    {"status": "failed", "reasonCode": str(error)},
+                    ensure_ascii=False,
+                    sort_keys=True,
+                ),
+                file=sys.stderr,
+            )
+            return 76
+    if args.mode == "runner" and any(
+        value is not None
+        for value in (args.repo_dir, args.python_exe, args.evidence_repo_dir)
+    ):
+        return 66
     script = bin_dir / "news-grasp-bootstrap.ps1"
     extra = [
         "-Start", "-UseProductionRuntime", "-ScheduledTaskName", "News-Grasp Runner",
@@ -2184,7 +2596,11 @@ def main() -> int:
             )
         except (OSError, RuntimeError, ValueError):
             return 66
-        runtime_repo = resolved_roots["repoDir"]
+        runtime_repo = (
+            resolved_roots["configuredRuntime"]
+            if args.mode == "runner"
+            else resolved_roots["repoDir"]
+        )
         runtime_python = resolved_roots["pythonExe"]
         runtime_evidence = resolved_roots["evidenceRepoDir"]
     if runtime_repo is not None:
@@ -2192,6 +2608,14 @@ def main() -> int:
             repo_dir = runtime_repo.resolve(strict=True)
         except OSError:
             return 66
+        if args.mode == "runner":
+            try:
+                _validate_active_production_generation(
+                    runtime_repo=repo_dir,
+                    launcher_identity=launcher_identity,
+                )
+            except (OSError, RuntimeError, ValueError):
+                return 66
         if not (repo_dir / "tools" / "daily_self_heal.py").is_file():
             return 66
         extra.extend(["-RepoDir", str(repo_dir)])

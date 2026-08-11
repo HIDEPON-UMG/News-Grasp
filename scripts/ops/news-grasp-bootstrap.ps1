@@ -85,7 +85,8 @@ function Resolve-ProductionRuntimeRepo {
     }
     $runtimeRoot = Join-Path $env:USERPROFILE '.news-grasp-runtime'
     New-Item -ItemType Directory -Force -Path $runtimeRoot | Out-Null
-    $runtimeHelper = Join-Path $SourceRepoDir 'scripts\ops\news-grasp-task-launcher.pyw'
+    # runtime convergence自体も正規installerが配置したstable launcherだけを入口にする。
+    $runtimeHelper = Join-Path $env:USERPROFILE 'bin\news-grasp-task-launcher.pyw'
     if (-not (Test-Path -LiteralPath $runtimeHelper -PathType Leaf)) {
         throw 'PRODUCTION_RUNTIME_HELPER_MISSING'
     }

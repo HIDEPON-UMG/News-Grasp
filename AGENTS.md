@@ -29,3 +29,14 @@ This is the root routing contract for Claude Code and Codex.
 - **News-Grasp 通常公開 inventory 必須** (`news-grasp-publish-inventory-required`): News-Grasp の通常公開・本日分公開・途中再開を完了報告する場合、7カテゴリ digest、Summary、DeepDive md、DeepDive HTML、日付 docs、`docs/publish-status.json` の `published_ok`、公開 URL sentinel、`validate_daily_quality --require-deepdive` の証跡を必ず列挙する。公開に必要なコンテンツが 1 つでも欠ける場合は、正当な欠落理由と検証 gate を明記し、完了と言わない。
 - When a daily batch stops midway, publish verification fails, recovery is requested, or any News-Grasp incident investigation is requested, capture incident evidence without publishing a new report by default. Do not place new `docs/incidents/*-report.html` files in git or GitHub Pages. If an HTML evidence report is required, write it under untracked `build/incidents/` unless the user separately approves public publication; if HTML is produced, validate it with `python tools/validate_incident_report_design.py <report>` before completion.
 - DeepDive chart series colors must be unique within each chart. Do not publish a chart whose legend maps different series to the same color; enforce this in `tools/render_deepdive.py` and keep a pytest contract in `tests/test_deepdive_render.py`.
+
+<!-- NEWS_GRASP_CONSTITUTION_PROJECTION_V1_START -->
+## Product Constitution operation projection
+
+- `NEWS_GRASP_CONSTITUTION_V1` in `docs/spec.md` is the product-local constitutional authority.
+- All News-Grasp active objects bind to 6 pillars and 14 clauses through `NEWS_GRASP_CONSTITUTION_TRACE_V1`.
+- The closed-world proof contains 17 Acceptance items, 51 core nodes, 32 daily replays, and 5 compound replays; natural scheduled execution is not completion evidence.
+- Shared/global harness, broker, routing, hooks, and other product repositories are read-only boundaries for this product-local contract.
+- Completion keeps implementation, test, commit, push, install, runtime freshness, task parity, rollback, public authority, readiness, and one isolated NoPublish E2E as separate fields.
+- Projection SHA-256: `691cc6ae3de9fa93e550490aa9f9c4ee07824eb2a8caa296163798a2b5f32418`; product asset set SHA-256: `e4f8ca1d6a0b5dd761c927ad96b9e3323f74db1495cfb19217829c758b3b7f16`.
+<!-- NEWS_GRASP_CONSTITUTION_PROJECTION_V1_END -->

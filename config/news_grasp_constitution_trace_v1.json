@@ -1,0 +1,246 @@
+{
+  "schemaVersion": "NEWS_GRASP_CONSTITUTION_TRACE_V1",
+  "constitutionVersion": "2026-08-12",
+  "edges": [
+    {
+      "from": "constitution",
+      "to": "NGP-P01"
+    },
+    {
+      "from": "constitution",
+      "to": "NGP-P02"
+    },
+    {
+      "from": "constitution",
+      "to": "NGP-P03"
+    },
+    {
+      "from": "constitution",
+      "to": "NGP-P04"
+    },
+    {
+      "from": "constitution",
+      "to": "NGP-P05"
+    },
+    {
+      "from": "constitution",
+      "to": "NGP-P06"
+    },
+    {
+      "from": "NGC-C01",
+      "to": "NGP-P01"
+    },
+    {
+      "from": "NGC-C02",
+      "to": "NGP-P01"
+    },
+    {
+      "from": "NGC-C03",
+      "to": "NGP-P02"
+    },
+    {
+      "from": "NGC-C04",
+      "to": "NGP-P03"
+    },
+    {
+      "from": "NGC-C05",
+      "to": "NGP-P03"
+    },
+    {
+      "from": "NGC-C06",
+      "to": "NGP-P04"
+    },
+    {
+      "from": "NGC-C07",
+      "to": "NGP-P04"
+    },
+    {
+      "from": "NGC-C08",
+      "to": "NGP-P05"
+    },
+    {
+      "from": "NGC-C09",
+      "to": "NGP-P04"
+    },
+    {
+      "from": "NGC-C10",
+      "to": "NGP-P04"
+    },
+    {
+      "from": "NGC-C11",
+      "to": "NGP-P05"
+    },
+    {
+      "from": "NGC-C12",
+      "to": "NGP-P05"
+    },
+    {
+      "from": "NGC-C13",
+      "to": "NGP-P06"
+    },
+    {
+      "from": "NGC-C14",
+      "to": "NGP-P06"
+    },
+    {
+      "from": "clause",
+      "to": "pillar"
+    },
+    {
+      "from": "pillar",
+      "to": "userOutcome"
+    },
+    {
+      "from": "userOutcome",
+      "to": "requirement"
+    },
+    {
+      "from": "requirement",
+      "to": "acceptance"
+    },
+    {
+      "from": "acceptance",
+      "to": "TODO"
+    },
+    {
+      "from": "TODO",
+      "to": "activeObject"
+    },
+    {
+      "from": "activeObject",
+      "to": "consumer"
+    },
+    {
+      "from": "consumer",
+      "to": "state"
+    },
+    {
+      "from": "state",
+      "to": "recovery"
+    },
+    {
+      "from": "recovery",
+      "to": "evidence"
+    },
+    {
+      "from": "evidence",
+      "to": "test"
+    },
+    {
+      "from": "test",
+      "to": "physicalDelivery"
+    }
+  ],
+  "consumerMarkers": [
+    "NGC_A03_primary_behavior",
+    "NGC_A03_adversarial_boundary",
+    "NGC_A03_operational_recovery"
+  ],
+  "acceptanceBindings": [
+    {
+      "acceptanceId": "A01",
+      "requirementId": "R01",
+      "clauseIds": ["NGC-C01", "NGC-C14"],
+      "todoId": "TODO-146",
+      "productionRoute": "config/news_grasp_constitution_v1.json",
+      "consumerMarker": "NEWS_GRASP_CONSTITUTION_V1",
+      "stateId": "constitution_compiled",
+      "recoveryId": "reject_invalid_constitution",
+      "evidenceId": "constitution_source_hash_and_user_provenance",
+      "perspectives": [
+        "primary_behavior",
+        "adversarial_boundary",
+        "operational_recovery"
+      ],
+      "testNodeIds": [
+        "test_a01_primary",
+        "test_a01_boundary",
+        "test_a01_recovery"
+      ]
+    },
+    {
+      "acceptanceId": "A02",
+      "requirementId": "R02",
+      "clauseIds": ["NGC-C11", "NGC-C14"],
+      "todoId": "TODO-146",
+      "productionRoute": "tools/news_grasp_operational_contract.py",
+      "consumerMarker": "NEWS_GRASP_TASK_CONSTITUTION_ADMISSION_V1",
+      "stateId": "task_constitution_admitted",
+      "recoveryId": "return_to_structured_question_before_mutation",
+      "evidenceId": "task_request_hash_and_constitution_binding",
+      "perspectives": [
+        "primary_behavior",
+        "adversarial_boundary",
+        "operational_recovery"
+      ],
+      "testNodeIds": [
+        "test_a02_primary",
+        "test_a02_boundary",
+        "test_a02_recovery"
+      ]
+    },
+    {
+      "acceptanceId": "A03",
+      "requirementId": "R03",
+      "clauseIds": ["NGC-C14"],
+      "todoId": "TODO-146",
+      "productionRoute": "config/news_grasp_constitution_trace_v1.json",
+      "consumerMarker": "NEWS_GRASP_CONSTITUTION_TRACE_V1",
+      "stateId": "acceptance_trace_compiled",
+      "recoveryId": "reject_unbound_active_object",
+      "evidenceId": "trace_projection_hash",
+      "perspectives": [
+        "primary_behavior",
+        "adversarial_boundary",
+        "operational_recovery"
+      ],
+      "testNodeIds": [
+        "test_a03_primary",
+        "test_a03_boundary",
+        "test_a03_recovery"
+      ]
+    },
+    {
+      "acceptanceId": "A05",
+      "requirementId": "R05",
+      "clauseIds": ["NGC-C01", "NGC-C14"],
+      "todoId": "TODO-146",
+      "productionRoute": "tools/news_grasp_constitution.py",
+      "consumerMarker": "generate_mermaid_projection",
+      "stateId": "mermaid_projection_compiled",
+      "recoveryId": "reject_projection_drift",
+      "evidenceId": "projection_node_edge_hash",
+      "perspectives": [
+        "primary_behavior",
+        "adversarial_boundary",
+        "operational_recovery"
+      ],
+      "testNodeIds": [
+        "test_a05_primary",
+        "test_a05_boundary",
+        "test_a05_recovery"
+      ]
+    },
+    {
+      "acceptanceId": "A15",
+      "requirementId": "R15",
+      "clauseIds": ["NGC-C11", "NGC-C14"],
+      "todoId": "TODO-146",
+      "productionRoute": "tools/news_grasp_task_packet.py",
+      "consumerMarker": "unresolvedDecisionIds",
+      "stateId": "luna_packet_decision_complete",
+      "recoveryId": "return_to_sol_before_execution",
+      "evidenceId": "luna_packet_validation_receipt",
+      "perspectives": [
+        "primary_behavior",
+        "adversarial_boundary",
+        "operational_recovery"
+      ],
+      "testNodeIds": [
+        "test_a15_primary",
+        "test_a15_boundary",
+        "test_a15_recovery"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,4582 @@
+{
+  "schemaVersion": "NEWS_GRASP_ACTIVE_OBJECT_CATALOG_V1",
+  "sourceCommit": "066b7c40651b2ed90ea18e199d66bae761518417",
+  "discoveryMode": "git_index_plus_untracked_wip_plus_route_reference_scan",
+  "objects": [
+    {
+      "objectId": "52704a9ef019aade4a62ee9d",
+      "class": "product_rule",
+      "path": ".ai/harness/brain-manifest.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C11",
+        "NGC-C14"
+      ],
+      "sha256": "908bd908cd8c69b3fcc8aeb93bbd92a636db503b31aee22d2dfa061bf0cd5d72",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "b18ae5339a48653753e5017d",
+      "class": "product_rule",
+      "path": ".ai/harness/policy.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C11",
+        "NGC-C14"
+      ],
+      "sha256": "e540d76424071dfe5a84ce72fb26d5b7881203b2088be19e55928ac0071d8784",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "d41a09160eed6421fd38f703",
+      "class": "product_rule",
+      "path": ".ai/harness/workflow-contract.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C11",
+        "NGC-C14"
+      ],
+      "sha256": "237bbfce902f387b127e12b18720fcb925063891c33e176da76365e58309fcac",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "70166e7bcc74b3774ff6b370",
+      "class": "product_rule",
+      "path": "AGENTS.md",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C11",
+        "NGC-C14"
+      ],
+      "sha256": "5b4650c31d43505b55a5438ba463855dd93cb3de93d3a9814d2ffae8b3ba1310",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "22da8376f96dfb3544d50307",
+      "class": "product_rule",
+      "path": "CLAUDE.md",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C11",
+        "NGC-C14"
+      ],
+      "sha256": "5b4650c31d43505b55a5438ba463855dd93cb3de93d3a9814d2ffae8b3ba1310",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "0fa258f0503654d400faa6a0",
+      "class": "product_skill",
+      "path": "automation/skills/news-grasp-e2e-discipline/SKILL.md",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C11",
+        "NGC-C12",
+        "NGC-C14"
+      ],
+      "sha256": "fc53ec6f824b3669461bca62d2ccffc4ca48cc92c65f8a427024bd1636b0aa5d",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "c11422489455ff6bcaf66bee",
+      "class": "product_skill",
+      "path": "automation/skills/news-grasp-e2e-discipline/agents/openai.yaml",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C11",
+        "NGC-C12",
+        "NGC-C14"
+      ],
+      "sha256": "bb9c4bcff32e87e5a6f7ef853e5b4d9ec09840e581accf3bb8dcf435217257e4",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "896c71ea6e22d229216ae7d3",
+      "class": "product_skill",
+      "path": "automation/skills/news-grasp-repair-method/SKILL.md",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C11",
+        "NGC-C12",
+        "NGC-C14"
+      ],
+      "sha256": "799dd0704931337477f273eaad0897e25a2f8455a86be5fc8bde9a7f8854be15",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "92e505c3d5c68b1cee86de72",
+      "class": "product_skill",
+      "path": "automation/skills/news-grasp-repair-method/agents/openai.yaml",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C11",
+        "NGC-C12",
+        "NGC-C14"
+      ],
+      "sha256": "a186949df2436d8ec1d7a1101f94c263e02a1ef1b5c67da9623dcc3ca968b72c",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "83f2873bc09e1fc97592f961",
+      "class": "product_skill",
+      "path": "automation/skills/report-news-grasp-incident/SKILL.md",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C11",
+        "NGC-C12",
+        "NGC-C14"
+      ],
+      "sha256": "98bb3f8e937ae47f6dfdebfd88124a7d8d6920eac1e2e90c98d48982d1781f2c",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "c4192547d81059f4208ad3f6",
+      "class": "product_skill",
+      "path": "automation/skills/report-news-grasp-incident/agents/openai.yaml",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C11",
+        "NGC-C12",
+        "NGC-C14"
+      ],
+      "sha256": "f5efd0e86c6e6e539047dc8c843df97d1281ac2d5e2060900d9305df85dd3aa2",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "58146d32b78feb7a4f21f657",
+      "class": "product_skill",
+      "path": "automation/skills/report-news-grasp-incident/references/BUG_REPORT_DESIGN.md",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C11",
+        "NGC-C12",
+        "NGC-C14"
+      ],
+      "sha256": "461741b1c206db209376f7a99e39db8777445df90c29dd25cb7c02672c516dff",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "51c8ddb15a06f6730c61dcd2",
+      "class": "product_skill",
+      "path": "automation/skills/report-news-grasp-incident/scripts/validate_incident_report_design.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C11",
+        "NGC-C12",
+        "NGC-C14"
+      ],
+      "sha256": "5cc8428c4f235d6fa8a2a8fbb1c3d7bcb26cbd79d26de51eaadee969aea6b4ca",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "fa88c3c33723621ad092042e",
+      "class": "product_skill",
+      "path": "automation/skills/report-news-grasp-incident/tests/test_workflow_contract.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C11",
+        "NGC-C12",
+        "NGC-C14"
+      ],
+      "sha256": "3454db0fcf383165dcaa8539e4de081d9220d596e89963b27b7d8087d98554e9",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "975d17a07c5ed136cfaba8c7",
+      "class": "product_source",
+      "path": "build/operational-redesign/wp02/red-green-receipt.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C14"
+      ],
+      "sha256": "e23e3d6e0ed871833a9fa0b58d53ee717f4cbc517e8b9198a240346310b368c6",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "d99b0ae785556643704e1365",
+      "class": "product_configuration",
+      "path": "config/deepdive_quality_routes.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "5aba141bfb765f2d19fdacb113089d5aee708fb7609ddb734786a90d340d5c7a",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "215952d0e999cedb4429e837",
+      "class": "product_configuration",
+      "path": "config/news_grasp_active_object_catalog_v1.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": null,
+      "hashPolicy": "self_excluded",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "6f120c5e3a7e85d07eb4d965",
+      "class": "product_configuration",
+      "path": "config/news_grasp_automation_assets_v1.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "cf5979c9d7695a6b6bb48cef389504ff78e8c00deb529a181855171092238842",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "25f6a9dd7f620ec29c1301cd",
+      "class": "product_configuration",
+      "path": "config/news_grasp_automation_assets_v2.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "275a6f4217db6d064cb9c378541fcab0412d086415ff4043744b816de1d45f70",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "e0bc31339f10ea364f1db04d",
+      "class": "product_configuration",
+      "path": "config/news_grasp_constitution_projection_v1.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "11bf7a0aad775bbd785526d62403ec48c4d5c7563a000ca31e5d208e59483c68",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "6d2f17f40e8c0d4c78471b5d",
+      "class": "product_configuration",
+      "path": "config/news_grasp_constitution_trace_v1.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "e101f7c0c95fa7952c4d85258fb3eaf5495abf5c69b8f1f222576689e990dd1e",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "54e4cc4b6afa0aed3f874359",
+      "class": "product_configuration",
+      "path": "config/news_grasp_constitution_v1.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "b96f1e1c0be6ca50b4cce7ea714ba27440866994e8c5e8548769bb138b6f41f5",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "95c8c28df43d753b94d150f8",
+      "class": "product_configuration",
+      "path": "config/news_grasp_daily_control_routes.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "308f6490fa5257c1f31bd1ef710359da494545e267f17a5c5866ff5157597208",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "a4e298eb2080e5ca80b5f5ff",
+      "class": "product_configuration",
+      "path": "config/news_grasp_operational_bindings_v1.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "d48def3ef8894947a1b9f346e7be3ac629afde6d41bfc388dedcc87e07f694d4",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "8ae40b57f19bac16a029b795",
+      "class": "product_configuration",
+      "path": "config/news_grasp_product_change_routes_v1.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "1f399229a969ea0e1bc45692fa8dd5f4589f9612dc452407523328079842168a",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "b0267ed25a0bc87dac9128ab",
+      "class": "product_configuration",
+      "path": "config/news_grasp_product_write_allowlist_v1.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "a878f08d2cca2e70450ff79d026de2f935d5e5ed6430d11bafd7f24ce1956f8f",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "d25e1fe56c1890ba26380d1c",
+      "class": "product_configuration",
+      "path": "config/news_grasp_skill_binding_v1.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "699e0e3474b6dd57fe6ebbb5036bb7fe1c39c75245811f9246b958c0e3b61c38",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "0f7f11659004c844be15ce07",
+      "class": "product_configuration",
+      "path": "config/news_grasp_spec_disposition_v1.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "232ed3c97ed62ea17feb1cd3f8a5339a9dbae2ef5bc315b55b1fae6b0b9f9d5e",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "c324cadfe877e7607ed5c1f8",
+      "class": "product_configuration",
+      "path": "config/news_grasp_test_constitution_map_v1.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "61e115f1d0cbf92f741cfcdcc6506bfcb8eda0c44d56d7759080504c62df6777",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "cc717229253fff999ccbb6cc",
+      "class": "product_configuration",
+      "path": "config/operational_recovery_registry_v1.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "84810a8f9d6f99a269f418941311f41381582ccda7e941ec1f627035bd9db98f",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "d2bb3002c93c0c0470c655e2",
+      "class": "product_configuration",
+      "path": "config/youtube-podcast-secrets.example.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "f570f0df2e6bb2836b2b1fc0449e9349da1d925384f235f60b7364663b222218",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "be124847a940def51ec92674",
+      "class": "specification",
+      "path": "docs/spec.md",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C14"
+      ],
+      "sha256": "f0b92a97b64138d09d4df5735a82bcfde1362f703f1b90a0b973a0451bdf361b",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "2c1d812e41287d1d819e1216",
+      "class": "specification",
+      "path": "docs/specs/2026-05-21_public-web-ogp.html",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "superseded_history",
+      "active": false,
+      "clauseIds": [
+        "NGC-C14"
+      ],
+      "sha256": "e016d447d4fbb6c118dd88d1e50111de7024145d13f9f6ec1aeba414d995237e",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "be4d9361bd723eedeb2b2173",
+      "class": "specification",
+      "path": "docs/specs/2026-05-28_newsgrasp-mobility-category.html",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "superseded_history",
+      "active": false,
+      "clauseIds": [
+        "NGC-C14"
+      ],
+      "sha256": "f909cac93e5e661d368156723931bbed5d5254e882bc36146d254e0383f5b117",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "c99c79e24b86b65b6360e7f3",
+      "class": "specification",
+      "path": "docs/specs/2026-05-28_newsgrasp-v2-redesign.html",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "superseded_history",
+      "active": false,
+      "clauseIds": [
+        "NGC-C14"
+      ],
+      "sha256": "d35ec01e7896d53c9bb6d58b55c051895f1bd10a82baa7db8ea0155cff70fa88",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "9583721936e73b6aab794f10",
+      "class": "specification",
+      "path": "docs/specs/2026-05-30_newsgrasp-weekly-deep-research.html",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "superseded_history",
+      "active": false,
+      "clauseIds": [
+        "NGC-C14"
+      ],
+      "sha256": "ff3d69cbe6eb9791aec2b1d07bb2d30f626ab38f84214edd9e986d360a14f976",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "437e160a08e7bf5c72ed63c7",
+      "class": "specification",
+      "path": "docs/specs/2026-05-31_deepdive-page-design-brief.md",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "superseded_history",
+      "active": false,
+      "clauseIds": [
+        "NGC-C14"
+      ],
+      "sha256": "23b78e34e6f104937e7dcfbb26574b684f8a0a95fb6dc0630c90af66f1a5f772",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "03dc3adfeb94331b79a00cf1",
+      "class": "specification",
+      "path": "docs/specs/2026-06-03_newsgrasp-manufacturing-category.html",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "superseded_history",
+      "active": false,
+      "clauseIds": [
+        "NGC-C14"
+      ],
+      "sha256": "d3f62c6e0f3bd2bf68fe7dd3be0fb3878625b69de8f2ba6c0c1eb6a20728205a",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "2f53e37a8f00f5482c67272c",
+      "class": "specification",
+      "path": "docs/specs/2026-06-09_newsgrasp-gate-convergence.html",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "superseded_history",
+      "active": false,
+      "clauseIds": [
+        "NGC-C14"
+      ],
+      "sha256": "83a493a89a8a6951c7d0394322ab4d9a093f5ea4741930e6e1779b81f50f93e7",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "55db9f9540ce59b19e50945f",
+      "class": "specification",
+      "path": "docs/specs/2026-06-11_freshness-quality-gate.html",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "superseded_history",
+      "active": false,
+      "clauseIds": [
+        "NGC-C14"
+      ],
+      "sha256": "0c0728dcdfcfbe9b5b37e19fb121b418526ab19f8fa3a6aa5b54ceaef496f97a",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "bd0d7f0b409845b5654af93a",
+      "class": "specification",
+      "path": "docs/specs/2026-06-11_newsroom-architecture.html",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "superseded_history",
+      "active": false,
+      "clauseIds": [
+        "NGC-C14"
+      ],
+      "sha256": "b091e86cd00708aada300a11e7e5d5f469c07d203507c52c54c7974770d3781e",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "9835f153f7309ce4aa3e4983",
+      "class": "specification",
+      "path": "docs/specs/2026-06-11_search-freshness-hardening.html",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "superseded_history",
+      "active": false,
+      "clauseIds": [
+        "NGC-C14"
+      ],
+      "sha256": "06c0c12c4af54b5b4ba4967a0670f57cd4c6882bd83997a1430b78d1250d0d81",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "10b6762ca067042a41392481",
+      "class": "specification",
+      "path": "docs/specs/2026-08-10_news-grasp-audit-monotonic-recovery.html",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "superseded_history",
+      "active": false,
+      "clauseIds": [
+        "NGC-C14"
+      ],
+      "sha256": "ef1e127cafa1ccef9f1000cb41ddb12c844570dd82e9d815a1a68ec2416d37d5",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "05869411db8cbcc2b64621fc",
+      "class": "specification",
+      "path": "docs/specs/2026-08-11_news-grasp-operational-redesign.html",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "superseded_history",
+      "active": false,
+      "clauseIds": [
+        "NGC-C14"
+      ],
+      "sha256": "5275d2dce0836a44c3352a17f883c94cf8a054250c4790ea4ed7f9880a87032c",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "6996d2785b09b1689ca805de",
+      "class": "specification",
+      "path": "docs/specs/2026-08-12_news-grasp-product-constitution.html",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "superseded_history",
+      "active": false,
+      "clauseIds": [
+        "NGC-C14"
+      ],
+      "sha256": "10a625cd786fa7acde265eff5b9e28a90a0d4c066822211d42892a2eb53ebb84",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "090310125f41eb3c8f73b301",
+      "class": "product_source",
+      "path": "docs/sw.js",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C14"
+      ],
+      "sha256": "e1c5d14a71f3011dedd2f686e544bce74357afa74fcda37bcbdc536ce027a60a",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "0f0ed08cdc54fc00dc7875d4",
+      "class": "product_source",
+      "path": "ops-prompts/news-grasp-operational-recovery-v1.md",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C14"
+      ],
+      "sha256": "4d6e2a564234ad1921473cc3df08ad81802cf47d0c976c1dadf8900de20d50f9",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "eb78436d0057737a108b2cdb",
+      "class": "plan",
+      "path": "plans/2026-08-09-scheduled-production-continuation.md",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "superseded_history",
+      "active": false,
+      "clauseIds": [
+        "NGC-C14"
+      ],
+      "sha256": "2395e62b1e0b05668caa9f864d362ce495da97402973a6c4ca1d7bd133183111",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "316eb58dec756a8e25f9db63",
+      "class": "state_schema",
+      "path": "schemas/audit_recovery_decision.schema.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C07",
+        "NGC-C09",
+        "NGC-C14"
+      ],
+      "sha256": "9ce458ee76d7dbffc2c94a7fe7777daedbeedc3467b74e0fa0ee988ac46f7aff",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "a464f32192b54f021302d4cc",
+      "class": "state_schema",
+      "path": "schemas/deepdive_triad_judge.schema.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C07",
+        "NGC-C09",
+        "NGC-C14"
+      ],
+      "sha256": "ec1c386a094e27ab7aec06a0d5989075d7bc015916951ad07fd68693da73888a",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "7c36ce08535b1ce7f3913e4b",
+      "class": "state_schema",
+      "path": "schemas/editor_summary.schema.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C07",
+        "NGC-C09",
+        "NGC-C14"
+      ],
+      "sha256": "ca096a39aa9915dc6998290424e3e14e95c7acb62bd389b0c0cf783a01678971",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "b62528952c27db6ebaaf9959",
+      "class": "state_schema",
+      "path": "schemas/model_benchmark_deepdive.schema.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C07",
+        "NGC-C09",
+        "NGC-C14"
+      ],
+      "sha256": "758d4f8604823d40503360f7d4b3420d198804135bdc5bde892963d7c4d12f80",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "7c4d839c86be05c0fdee41ce",
+      "class": "state_schema",
+      "path": "schemas/model_benchmark_reader_judge.schema.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C07",
+        "NGC-C09",
+        "NGC-C14"
+      ],
+      "sha256": "01b1c579e2ffe4da0dc220ac4158af3324ddf39e382f3a389cd3ca91ef2098a3",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "aed91bb469032e508a46f3ff",
+      "class": "state_schema",
+      "path": "schemas/model_eval_output.schema.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C07",
+        "NGC-C09",
+        "NGC-C14"
+      ],
+      "sha256": "5d4ccb627b898f89caef08eb65397af5e92f85abb89ae1a83ccb5728d012f4b9",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "2a228457d2a99a1970b93dc5",
+      "class": "state_schema",
+      "path": "schemas/news_grasp_constitution_v1.schema.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C07",
+        "NGC-C09",
+        "NGC-C14"
+      ],
+      "sha256": "282ce6545f2158fdb6f50eb3ae9f257c7580aa45f876f6a94ac2537288be7949",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "e8bc3dfaefffa9ef91012f35",
+      "class": "state_schema",
+      "path": "schemas/newsroom_append_safety_benchmark.schema.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C07",
+        "NGC-C09",
+        "NGC-C14"
+      ],
+      "sha256": "af69f90137991a6dcf8d50e65701d26202b91b960f0b8fd7299454f9e094cc75",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "eab4d44a7e16ea3610ff5a2a",
+      "class": "state_schema",
+      "path": "schemas/newsroom_editor_eval_output.schema.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C07",
+        "NGC-C09",
+        "NGC-C14"
+      ],
+      "sha256": "a01f6d58d8cfb4fdcb9498da256f6472a20ddd8217095695e92796bfc19faca6",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "84a237c50ae159d235d78521",
+      "class": "state_schema",
+      "path": "schemas/reporter_fanout_return.schema.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C07",
+        "NGC-C09",
+        "NGC-C14"
+      ],
+      "sha256": "12c0d105401fafb2ec1d257818374e9897ef2ea6040d84b9c0059deeab5c81f4",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "8e1496504542db61bacc7a87",
+      "class": "state_schema",
+      "path": "schemas/reporter_records.schema.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C07",
+        "NGC-C09",
+        "NGC-C14"
+      ],
+      "sha256": "475432902b1b94edc815769ffc1124ab28dd401e6858b40ec897d0f78eac1523",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "7ef533c6c42d34b17f85c0b1",
+      "class": "installer",
+      "path": "scripts/ops/install-news-grasp-ops-guard.ps1",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C11",
+        "NGC-C13"
+      ],
+      "sha256": "0f5e36ef13b9c0bdb1b087a5983a523714eeec95cbeafa2b344720ee7cb2650b",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "ae4e3179cf8711c22e2b476f",
+      "class": "installer",
+      "path": "scripts/ops/install-news-grasp-ops.ps1",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C11",
+        "NGC-C13"
+      ],
+      "sha256": "e44f63000bdf08e17990efd4e09290b22a9e30c00ad5923b0ebcda4507665ad4",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "f6a70135185a09024a941f8a",
+      "class": "installer",
+      "path": "scripts/ops/install-news-grasp-verified-file-boundary.ps1",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C11",
+        "NGC-C13"
+      ],
+      "sha256": "5ffa30f9d8a7f03f694f49e16c62567085fc498bb7a5c11217ebb24bd6d2b1b3",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "1e4676db500fa7d666c51887",
+      "class": "runtime_entry",
+      "path": "scripts/ops/invoke-scheduled-equivalent-nopublish.ps1",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C11"
+      ],
+      "sha256": "3768f5cc5b11815c2063afc6f4441202f4dbc9d1280d0bd30ee638fc02cb683c",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "613da7f0be0189653ef59ee8",
+      "class": "scheduled_task_entry",
+      "path": "scripts/ops/news-grasp-bootstrap.ps1",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C13"
+      ],
+      "sha256": "974c5fc2a0960afee82e2d1c0416b0d9b41e0ceac1966dc7420846bd22db40d4",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "c04b09d904eb26a8dc8e08e5",
+      "class": "runtime_entry",
+      "path": "scripts/ops/news-grasp-deadman-launcher.pyw",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C11"
+      ],
+      "sha256": "b9d2d58092f93cd8f870ec29cce3a4d3bb99c329cc29c41150ff861ed161957f",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "bcf6d7cfca9d2b1b4ed9450e",
+      "class": "runtime_entry",
+      "path": "scripts/ops/news-grasp-deadman.ps1",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C11"
+      ],
+      "sha256": "37763222dda8acee56bfe247b5917e6f907e9abeb68c972afa5d689c06752271",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "30328f1cabf6ddb23fe8c741",
+      "class": "runtime_entry",
+      "path": "scripts/ops/news-grasp-lineage.ps1",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C11"
+      ],
+      "sha256": "f66ba7d6877e6b3f2490f3a62e5232a0651f2bb8a9cf9e737cab70b15bd99fdf",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "39fa2fa5d7c5d22eed215695",
+      "class": "runtime_entry",
+      "path": "scripts/ops/news-grasp-runner.ps1",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C11"
+      ],
+      "sha256": "fe9d192d0c9ca94284514b7657e50f1fe91a37b133ab305025a5e68631b6a129",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "c2e2375996e592e358bf5b5a",
+      "class": "scheduled_task_entry",
+      "path": "scripts/ops/news-grasp-task-launcher.pyw",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C13"
+      ],
+      "sha256": "c25551139f0ba048d734ef08eb3a22508c19b5fb9f07ae2389c483d2cf3200ea",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "5da145e1f834a2c46776adc9",
+      "class": "runtime_entry",
+      "path": "scripts/ops/run_codex_with_timeout.ps1",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C11"
+      ],
+      "sha256": "92606d5fac245f8f674dd9b1dbd73fb3154dcc54721842e3f69a94ff7c920a4c",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "5a8d0b5439034e5588e1d71b",
+      "class": "runtime_entry",
+      "path": "scripts/ops/watch-news-grasp-runner.ps1",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C11"
+      ],
+      "sha256": "aa5e696287957ebf755468d7d8dd64c05cf13d9a8e8650845e0d2c1de409de38",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "f4a41f6281d80b4662c89b30",
+      "class": "test_fixture",
+      "path": "tests/fixtures/constitutional-operations/acceptance-matrix-v1.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "a59bd1970c1ef36feab79e1385eccf21e697780fabeeba8a9722a8d40ab95ec7",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "8b210dfda723f802682564e8",
+      "class": "test_fixture",
+      "path": "tests/fixtures/constitutional-operations/compound-v1.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "3bef8539b0cfc9f74dfa3abdf245efc9f4a19245b90bdcc947cd922cd092ab10",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "46681f5f859073c0de17a403",
+      "class": "test_fixture",
+      "path": "tests/fixtures/constitutional-operations/monthly-corpus-v1.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "ce043b37cba65cf514959acf4357bd77ed0928d43815bf1fbd2c22daa7ec0213",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "91e502b0489c02187c6e6a73",
+      "class": "test_fixture",
+      "path": "tests/fixtures/operational-redesign/acceptance-matrix-v1.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "c25824b9e1517db9b621df85b2c86d2afb203092f437e671a6eba1d952e24caa",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "d9fecdf99fd2442907733d1a",
+      "class": "test_fixture",
+      "path": "tests/fixtures/operational-redesign/historical-2026-08-11.json",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "5da446659d8a7459f22d410a6f6c7651b5280629d1eac2be8558a230925f6862",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "8ba580f9f5ee012ccbf26198",
+      "class": "test",
+      "path": "tests/test_all_article_urls_live.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "a94d2a838da6d161d1444ca6fe2dd4f7f269d7568d2845d33c9a043bb88ad029",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "8770fb11f698e75156cd3515",
+      "class": "test",
+      "path": "tests/test_append_after_dedup.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "9c013d8920e43045c7d4e9627b10bf44c38ad0fe7dd8f4d1df2b1525c993b5af",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "c2fd95aa915c9fa4b28ff186",
+      "class": "test",
+      "path": "tests/test_archive_deepdive_toggle.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "ae316f40d626bbda9089ccc3721450b852658b9b7f9e683152ec6d7fa8dd2e91",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "3656a206dcaee14ab9306edd",
+      "class": "test",
+      "path": "tests/test_artifact_lifecycle.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "acf8bd718d7651267e30a264c2959e20db0051474de1ac93260ce4a740a96e9d",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "222725df1b3c0998e3d9c20c",
+      "class": "test",
+      "path": "tests/test_audit_article_quarantine.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "04071ab316d6739df9d4cabe70cb2d3017eac91402c1c78b19f5e05e46aff43e",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "1767c11c9cd1377310b1e088",
+      "class": "test",
+      "path": "tests/test_audit_recovery_control.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "86223b2987f27fcda962424c1cc6e00ce15a6499c7deeb7114e133f84e600288",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "95fa4849a8c6a89a2d76243c",
+      "class": "test",
+      "path": "tests/test_auto_repair_orchestrator.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "cb4359160ea2accaf71241eb87d7ac282a02048cabf25b5b5cdcba8ba523658b",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "22ffa96d81b8bebf8349fdc9",
+      "class": "test",
+      "path": "tests/test_batch_completion_history.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "4b4ebb20f2f60768c8a96f93f30bff7c41fae8d0db5b2e2b3f74b4bfcd7da0cf",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "4bd1c80cb7aba2f577a5a37a",
+      "class": "test",
+      "path": "tests/test_batch_slo_gate.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "ca34f4d249926f0380bdd69b30ef4bf1ee5857caabf0e84d76c700dff2e5aa28",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "d052fbd788f0912f0e09040d",
+      "class": "test",
+      "path": "tests/test_benchmark_code_safety.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "581017635634a3895acdd6d6b3d4aa28892f00d3c896a8e1baa8f83a121360d4",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "2ab94fc899d5bc54f1517340",
+      "class": "test",
+      "path": "tests/test_benchmark_path_safety.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "010834f12d3e895d03851c3a2ccb0d4a20b1e98d9cea8975096535d0caa8fe6b",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "0e142f88b492c072d4b2f6cc",
+      "class": "test",
+      "path": "tests/test_card_summary_strip_markdown.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "d7265106b99e4fdf683c95d9154d126b32cde97f7580dae77928290f5778de7a",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "e38a17c178ef889854027086",
+      "class": "test",
+      "path": "tests/test_category_editorial_essay.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "252ac4e3484932abd664ce4efe7420ee9bcb41c683a31340146659c90b976fbc",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "e9f111594247fbbd7000e6f5",
+      "class": "test",
+      "path": "tests/test_category_grid_fallback_emphasis.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "10794defd143052d366f4dd07ffa7bca1f76026e3b35ae25cd026565aa768b8a",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "1d5c5365c73bf84522145e43",
+      "class": "test",
+      "path": "tests/test_category_hero_sentence_fit.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "3dd91ab8176a1913bd94aab8415bfee55779eb5877e16bb82b9ded0b24051b31",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "e39d946c27125e032a74cb57",
+      "class": "test",
+      "path": "tests/test_category_hero_turn4_contract.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "eb51ae1aaf10f324419120ecbacb3b0dd455b065d0236d7baf3647423fbb853d",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "ce7ac10f96d5baaf90b869e2",
+      "class": "test",
+      "path": "tests/test_codex_append_session_urls_hook.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "f01958e1e46d20d427c256a292c4668a460ce7837eea022b4fd0408747976b04",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "e9eaebb72617a6a0517faf70",
+      "class": "test",
+      "path": "tests/test_codex_migration_evidence_contract.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "418cdf35d6eac592ef3a01fe9662bdbecc3e99393760c908e9089b82a90e94a3",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "3e2ae7b9b8576ee19a5df558",
+      "class": "test",
+      "path": "tests/test_codex_recovery_benchmark.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "3e01dc4fdd7096c93f4159e67f5977c734afb231ba446e86a2219ae58e720272",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "b89be8c8d3bfc77991b11f43",
+      "class": "test",
+      "path": "tests/test_codex_runner_contract.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "69337fb7635d63c66fd1812040a09e8cd1144cb44b9aad2fd9c608aacc37c5d2",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "360d09b4a595c174d8da2c4d",
+      "class": "test",
+      "path": "tests/test_codex_usage_pressure.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "661460a2baa8315514f53053a1217bc19cf5cc36cdddac55b757b1d9e49db107",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "4893bf9f4015526aa6382b8e",
+      "class": "test",
+      "path": "tests/test_codex_wrapper_reasoning_effort.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "1e427bec61094ed913cc803d32c430d53a9ae313b0ab8577e332274511c4eed6",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "0b88d315a35ad9cc6d6a965a",
+      "class": "test",
+      "path": "tests/test_codex_wrapper_security.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "3ea1d1b0bb42fd792e604ae8bb501dbc4faf83c30ceadadcb7efbc102a1183f6",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "2250f4cc8d2a17ca6a231a43",
+      "class": "test",
+      "path": "tests/test_complete_codex_migration_contract.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "e3b591118d0f6ff1430194cbcf5d6e81edfc29f8464b0ead77c32f5950aeb6ca",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "7e439d09f552276c75dbae68",
+      "class": "test",
+      "path": "tests/test_create_spec.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "910b33b0967fdf782e06d0c2e0b77f2d229c546f871dccc5cacaf429b2b7fa02",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "d6ee5dcb02bd1b178ae17544",
+      "class": "test",
+      "path": "tests/test_cross_category_dedup.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "ca76f6ccc619e30e3c0feeec01325cac23cab4a27357e53c217cb17b45d270fd",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "b64cc54ad2b7f99799c5ea44",
+      "class": "test",
+      "path": "tests/test_daily_model_cost_projection.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "585ffb26581a14c3288eb03558cd1077ef57f81eb3745989a611536866397545",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "72795305df0ccbece4eb5d66",
+      "class": "test",
+      "path": "tests/test_daily_quality_category_presence.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "b3afc4680bca8c47ca85f708bbced814e3939c281b9b6028a85f926e531e0e69",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "a093d6911a242ede2c53cc52",
+      "class": "test",
+      "path": "tests/test_daily_self_heal.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "559ce82348ccc3aec1e5e9498efe7ba957a7be86e609d12d834ed94f68a7b843",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "d1c3cb1b739803730902f5de",
+      "class": "test",
+      "path": "tests/test_date_evidence.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "90a9ecbc5f8abec663252a605269bfb4ebe0d6744ed7c2b8eb275b29c272d876",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "190ad27215576e3cf9e3356a",
+      "class": "test",
+      "path": "tests/test_dedup.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "356adcca723ac7acd9178ceeab3521776974f9cb0c70d58f939ed939f66cf145",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "93192914a3ce1b2449e9c7fc",
+      "class": "test",
+      "path": "tests/test_dedup_followup_gate.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "18a1d7591a50e757497edf1b8627e78f465f3b4b0b999959e07058ee4b11a058",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "95549191a7475d1379fbea5b",
+      "class": "test",
+      "path": "tests/test_dedup_freshness.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "1453fa40160f139161cfa86d5a125e3d77a6d8db441f85ba6dc5d94c5fbd2406",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "8c3741d93c8f773670aa49d4",
+      "class": "test",
+      "path": "tests/test_deepdive_context_pack.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "9e3d2aed975b0956cbc73f6cd5f45d4f11830875cf231ae154162d4bca0ad858",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "87c3731f0ccad1ab4d4f8f64",
+      "class": "test",
+      "path": "tests/test_deepdive_context_pack_integration.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "88e14373b07efb492eabcc9f4caba35608c601435102113ba8564795d32a8271",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "84fad7b03f9a3210d7e959fc",
+      "class": "test",
+      "path": "tests/test_deepdive_dialogue_value_contract.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "816edaf947b37c95df0a9d86c1b2231a8d103a110ba71de4fec1f7bfae8873f5",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "6db29b3328d26be4df295d80",
+      "class": "test",
+      "path": "tests/test_deepdive_not_summary.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "af2f0c1fc418477db45a196cc91e3abd9753cf645f4c0257b452fadf9dbb5afa",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "dad2626377b51f40a1052431",
+      "class": "test",
+      "path": "tests/test_deepdive_quality_engine.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "a59b147c8d36b562d457d5c6d07fbfb7da6af2d0d0a21644ca87b1d165db40ee",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "82d2a756f3f7c4dfd5d5a244",
+      "class": "test",
+      "path": "tests/test_deepdive_quality_route_contract.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "52f76d96fde929600d9a6923633898b9e4cf640ce7bae8357b8cf19b0b753802",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "67ba9244fd523dd8cc338c8d",
+      "class": "test",
+      "path": "tests/test_deepdive_red_suite_coverage.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "573aa7ff01802f6b6e77a159a048855ec6a9b3a4bde403c5d138657ef3a6f68b",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "6d8c135253ba4f8c615cb4f9",
+      "class": "test",
+      "path": "tests/test_deepdive_render.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "409a859c89953e2dc2796531a6335e7450b4f7be55d669fa80d6c32a0369fa01",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "4bfbcf3480e7d29575d0bc13",
+      "class": "test",
+      "path": "tests/test_deepdive_tdd_acceptance_matrix.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "4442b8389f7f0b683a285387913dd5fc9b8ab4ecc4b37f4f52fc62b71ea60188",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "651939c269f7e306867910ff",
+      "class": "test",
+      "path": "tests/test_deepdive_terra_benchmark.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "7755bf21b3e15ae7fb4cdf19a9452ecd2ba415116b5ad269bc5cff750a298455",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "feadf33a19f45a15fbc909b2",
+      "class": "test",
+      "path": "tests/test_deepdive_triad_judge.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "dfd31be392a16f8e092a1f85739c4d2dfe391c3f90fc79f8bf0bbeb2ba21a9e3",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "50659804f9d66cca9bdb8b61",
+      "class": "test",
+      "path": "tests/test_deepdive_urls_live.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "3f1867952920277c7264c7713108d86a50e435c309a73538c098b9c5c6be580b",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "18e769088d009e87ea44563f",
+      "class": "test",
+      "path": "tests/test_deploy_recovery_orchestrator.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "53a59d974cd1653bf45a952359fe745702e274b5b05d775ba84b989a84918d9f",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "5f9b33fd19cb35a586545d92",
+      "class": "test",
+      "path": "tests/test_digest_articles_reconcile.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "67cdf5cae8921e7f2d349fb416bfb6bb98feb96d1f18b4c1e91319b1352dc742",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "a3e71695ea389bcd7989014f",
+      "class": "test",
+      "path": "tests/test_e2e_final_admission_bridge.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "6e80448b12c43c483696000cd9d113595802b9b7399210aedf274fee399de652",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "80960c4e9be1ba68e47404f4",
+      "class": "test",
+      "path": "tests/test_e2e_first_principles_contract.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "535c6a4a45312c24b9e4988b109e780e1b817e606ba1280e821b999a75db6376",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "9474de14720c9a74448a2e23",
+      "class": "test",
+      "path": "tests/test_e2e_isolation.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "68ba361aa1aea317e3d3f07e5977cc34eb4d7647df4f60eb4017b897d7557236",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "97cbb8be7b357255fe9a4b88",
+      "class": "test",
+      "path": "tests/test_e2e_report_contract.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "03e5bc400c95643c08ce71ba99bd3d2cfd0f63134c556473f4cdbdc4d21ea31e",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "f325058dc2953ed963219769",
+      "class": "test",
+      "path": "tests/test_eval_report_quality_gate.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "bfcf2f750839645fde75bebfb1046370876752c91f8c0754e65fdbe79a8a35a4",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "164eb3e6a1dc0d99e45f9cc8",
+      "class": "test",
+      "path": "tests/test_external_benchmark_matrix.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "5a82212298fe018eb8a390df709d3ef658b270f6a0fd59dea8c89d7d6508eefc",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "8fc9e8efc97b8439880847a4",
+      "class": "test",
+      "path": "tests/test_fetch_article_body.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "d7743d4f90ab969afecfb9e4c693764d75dd9318edaa8aa450973d4f50977ef2",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "ed4986666f5c1dc8a49fac0b",
+      "class": "test",
+      "path": "tests/test_fetch_escalation.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "b61918b526eaf6d20dc83b4e62cd41cc9420ec7c9cd4382421af0721f1f12028",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "bff99598521fb54c4736d7a7",
+      "class": "test",
+      "path": "tests/test_fetch_ogp.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "660c95d09b8f5c9107a2750988bbf3b9af0540adcdd1f2cc53c31dda1d732234",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "6468461a2fb07d59e5d428fa",
+      "class": "test",
+      "path": "tests/test_fetch_ogp_smoke.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "1002c9f4aae7838a317cf093ea580750600c71f1a2b9aabacc31a7fe967e49d7",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "b37d24f96053ce4badb71c05",
+      "class": "test",
+      "path": "tests/test_fx_rates.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "4109a07fcd0e41a57b9f43597e4f8de3902a6c1e8ade5e9d9595cde2de37e1a7",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "0ab4e5376ac9fd51aa77a9d8",
+      "class": "test",
+      "path": "tests/test_gate_contract.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "c23cbfa2b55641f2cd806667fcbac22bdb184f50d94caa9741b785aeee0d5110",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "87c88e93f054b79147db5ee9",
+      "class": "test",
+      "path": "tests/test_gate_policy.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "9bb33be0552e95a14699c4f0058e5333cddf79e406d02a7934227c13bc514692",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "cf71ec45494ef0dc2e712629",
+      "class": "test",
+      "path": "tests/test_generate_pages.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "cd8687a04727725304b99560e06d6918f184b30b9758054cb613bd13b62a5371",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "625a817844545bc6e75cc3a7",
+      "class": "test",
+      "path": "tests/test_generate_pages_incremental.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "9992e4b5f0e37df2f82f2ae2ae173bfa94da8dfad47deb1dc0d9597379cabd48",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "469624c94b721d08afb00312",
+      "class": "test",
+      "path": "tests/test_generate_pages_integration.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "eb30c8934768c7c30750a04194f8bbe3b2944bdb97c6138a7417d0c3f3865a33",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "05da40454cb8e2bab8e6b52f",
+      "class": "test",
+      "path": "tests/test_generation_quality_validator.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "3c0c5a0a5e7f1a35896634447ed2c6e5d31b43faf609c0b9ea1bd8d2e84c4949",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "dbce11377d1638aaab77fc3e",
+      "class": "test",
+      "path": "tests/test_gitignore_artifact_hygiene.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "406ee7d932c5dcd78f3ca99155316e0e746d116171054e30f7d76696d6e58da1",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "8e81a88b738bef2213b3166d",
+      "class": "test",
+      "path": "tests/test_harvest_candidates.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "def55d41cf1a62ce0b71809346b02894c8049c1b00c8c38fcbed06fce8b5c7b4",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "0774c2451b189307a7067cf4",
+      "class": "test",
+      "path": "tests/test_high_cost_admission_receipt.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "52f64a935bf7d204ad9a1ddfc05f28e2bb8680d2d2e748de25a768be94aedec0",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "3e8b5f8959fdbca42c53754e",
+      "class": "test",
+      "path": "tests/test_high_cost_containment_v2.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "bc133913a483ec92d8587e28d9a089d3607d9c72e77cd3cf059fa1dd21505b06",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "71649c8747a396cfc3cd3c92",
+      "class": "test",
+      "path": "tests/test_high_cost_operation_admission_contract.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "cc2c9b0c9b9b2a3e945558b29d773061747707d2c75738e7714822bbd0236e85",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "b849c370967ee4446e4511f6",
+      "class": "test",
+      "path": "tests/test_historical_failure_scenarios.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "4edc993feaef96f6865035de061894035423c1370b603c20cca46e82abd76fb9",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "8ac92a3c78de4c6cb61b2157",
+      "class": "test",
+      "path": "tests/test_home_landing_redesign.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "8e0f7ee7271ace9dbab6bfdecbb4e16acedab605ad3986fc0065262864516862",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "587bed6d566399befd079f6a",
+      "class": "test",
+      "path": "tests/test_home_variant_b.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "421469a6e62300d63aaa1e3f327748f136f68fea756318d972d8545f3904fa23",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "45c196ed3c960b7ad0b425bd",
+      "class": "test",
+      "path": "tests/test_incident_report_design.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "38d664d4b730955cd7f4a8363643fdbbe1a8adcd0f018b2cdfe61ad0c3c3b1d5",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "c527ae676975c5a80fe135b1",
+      "class": "test",
+      "path": "tests/test_incident_report_tracking_policy.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "8837189f90c6010d5f89c510837f95e35efbdd2af6b8f662ff55a1c269332768",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "d390fb28943a17d83f6bcf55",
+      "class": "test",
+      "path": "tests/test_live_reconcile_v2.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "af6369ed21907ce93024ae5639610f18953c13b1e4ae3a2ef68690f58f87f9bd",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "36459948acdee6d80cd58a7e",
+      "class": "test",
+      "path": "tests/test_luna_high_replacement_report.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "dd1553a106705f1cc5b84f1d9f75f26cb68c62a0da8554ef03cde506dfb13da2",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "4ccac4712e03aa7a18b54952",
+      "class": "test",
+      "path": "tests/test_materialize_editor_output.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "af76ffeb70bd396b5b1f1eefabc2050a0971825b394abbe271993956b25a1b8a",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "d54c191e106603ea295a7429",
+      "class": "test",
+      "path": "tests/test_model_benchmark.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "7902dfb51ebc873c788bb619a4211d07f2e7fcdaaabea60408a62dad52a7d1b9",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "6adda5aa3b8d4a94f62ef0b4",
+      "class": "test",
+      "path": "tests/test_model_eval_runner.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "c2793c4cc478b83fcbea9977bf7c91f540a3281e876d28ba191154249746aa1f",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "1e4e853a73d1a2d45a4d01a0",
+      "class": "test",
+      "path": "tests/test_model_judge_policy.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "94418f75381b5e6cf9fb4ff01473bbd875b3eb482de9d83d00cf794dd906628e",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "7e0fa446ed59546a09850f0a",
+      "class": "test",
+      "path": "tests/test_model_policy_and_eval.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "12837306387e5596f2641193aee3632d67c156037fa36ec0ddd1f23be26c29b6",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "d6155260b206f08f544fde5e",
+      "class": "test",
+      "path": "tests/test_model_selection_html_report.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "7cae92be02a536dc74606aec7ce9a38346cb947b5179b0628512119ee217ecd5",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "4ee21b5e5719630b1a816a6b",
+      "class": "test",
+      "path": "tests/test_model_spawn_operational_v2.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "0851c171d0bb7f3cb569cbeb1711059995fcafe28908507a3573a97d29244ee0",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "569843cdef45a840ba63e113",
+      "class": "test",
+      "path": "tests/test_nested_worktree_harness_resolution.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "642752181cc1d246ee4d37597ddfefcf958c5afdf139c389980f5092f640f578",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "12c9fac1e188ea0bad6195f4",
+      "class": "test",
+      "path": "tests/test_news_grasp_compound_failure_corpus.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "6ca7114ac48920147ced956ff16a7d0f627e4235a23adac579b75d1f5b040356",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "057c0c2cddf1cb492c66014c",
+      "class": "test",
+      "path": "tests/test_news_grasp_constitution_acceptance.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "19853f4b7dbe54dcd44895f2066772626e5ad79e4c1bfa3034ae12df082b5ab9",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "b045893362cc6f4d2d7ef238",
+      "class": "test",
+      "path": "tests/test_news_grasp_constitution_projection.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "a4de5ec02851b5664800b802cd1463088c986de93c267c3698162178178c5823",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "47e29d5522a773816f394765",
+      "class": "test",
+      "path": "tests/test_news_grasp_convergence.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "bd0f57afe174d3e233a59e3de2c0c61e28e9f30ed886799e585536598ec6289e",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "fb24f7df44eca689637183b8",
+      "class": "test",
+      "path": "tests/test_news_grasp_daily_control.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "ba440dee35ae2a4910a999efb34d7013cc7f4031b231604feee0f92e24625390",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "e6a1b301ccd931326d6af295",
+      "class": "test",
+      "path": "tests/test_news_grasp_monthly_failure_corpus.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "1978b71bd4e674f07f9258ce843fdfabb3198a5fa7c3e3b965c35daadb381cd9",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "165ace41bd667021e4019e7c",
+      "class": "test",
+      "path": "tests/test_news_grasp_task_promotion.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "dd3f250a499e68300333b0a86080d26d592d2fe148885745f1e73d06523f0877",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "90956b3fc9f032fe7af50fe4",
+      "class": "test",
+      "path": "tests/test_newsroom_append_safety_benchmark.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "e27ef9fa5e8db50807415d35bce4300175b213a93d0312865afeb6983e9b518d",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "a4d0c99e773492d4684e6a8c",
+      "class": "test",
+      "path": "tests/test_newsroom_preflight.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "124696f24b1ba0a22f52b1cd0d8bc8e86d3ccf0c1a60257b0332f6150cd62227",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "e22fe5c4862d7faf2aa73d31",
+      "class": "test",
+      "path": "tests/test_newsroom_prompts.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "ac9ab1e1e6c41ce4593abad1ec6d49c2c2036226c4276421fe72e636825c69b1",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "6ac15171f47858fc26a41d0f",
+      "class": "test",
+      "path": "tests/test_normalize_generated_artifacts.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "4a57bd0f2cf3b9b4accaa9cbeea82f15d0b08845395ce0088ceb1e0d295a6f39",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "e5aed359d3579e14a35623fb",
+      "class": "test",
+      "path": "tests/test_official_source_snapshot.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "ef65ec28e7bb291637f5e3b1882d3098e0a9f8387e055fa985d05c43949b0cf4",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "0e7efad24c0088eb85e48274",
+      "class": "test",
+      "path": "tests/test_operational_redesign_contract.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "c0602164ba15c768861b98e5dfc24faf888997e7993dbb73617d6fd4bde109ee",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "17d84fba3edf67cd4ba21789",
+      "class": "test",
+      "path": "tests/test_operational_redesign_matrix.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "eebb7025a9f221dee9fc2d7ece8b52ef9bc5bb27bb8870d9c6ba9187a79d676c",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "6fba7f0364e44f3dededc26c",
+      "class": "test",
+      "path": "tests/test_operational_redesign_r5_contract.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "a2b8044ff68bf027dc16f084505f7efb88a56c965e27829ddeffce2f06b7fe13",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "485d6cae93fbbeb70197ea0d",
+      "class": "test",
+      "path": "tests/test_output_quality.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "580308c57d03d285fa79074b344d80ae2277e4ad0250d1de94399a21e812f4b9",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "0e16995cbb9c0d43f8964be6",
+      "class": "test",
+      "path": "tests/test_overview_pattern_c.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "0b6d7336e8175382745085a67380b2f6c696ec0c72fc9dc07ac5758982ba0c7b",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "8f9e3b1bed6464911151a3db",
+      "class": "test",
+      "path": "tests/test_pages_workflow_contract.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "8570ce0091cfac40cb4301a7eb16d0e02b86d8e51ef1a4ff16cbe97c96dfacba",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "539936e3d758a6c475a78966",
+      "class": "test",
+      "path": "tests/test_planning_mode_correction_prompt.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "90171de66b9e34f4d76a77694ead5375172232e3b78c1550adb89528f63b2825",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "cbe6867635401e0a14bbd55d",
+      "class": "test",
+      "path": "tests/test_powershell_scriptblock_scope_audit.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "11f349db39e6ae303838319525e3de0140fe71b5676f3fb43d153e0bf49cdd89",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "f63cc95a0e6ab1282c99702c",
+      "class": "test",
+      "path": "tests/test_prepare_editor_workspace.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "f97df29ae5e5a46d4c075b662e550065ec1eeb23e9ec71b8a210cd4732500d68",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "ee1b49986e0927f7a5ad2efa",
+      "class": "test",
+      "path": "tests/test_prepare_reporter_candidates.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "0fc21b3ff2a46cc0f60139cdefc1048f767e5d3137531f028434cc894406be79",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "7698c3f011372ca9c9843f48",
+      "class": "test",
+      "path": "tests/test_product_spec_contract.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "c4026ddbbb0cfe2b6230bb201fdaccdf13195339fc4c50e26af850cddf41d289",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "2d0de9eb0e73280a8b138013",
+      "class": "test",
+      "path": "tests/test_publish_fallback.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "2214e41b982f95d83e5892e1a1a3b67ed1970e2cd17f895cec7e443c6ef87061",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "4b53d1b03eb27b8a68f71a52",
+      "class": "test",
+      "path": "tests/test_publish_inventory_manifest.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "ca6a2188896c90ba300f81c173ea6a43d7262c6edd4cbe0605acd8981703d566",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "e762595ed33dc9a2e696d77f",
+      "class": "test",
+      "path": "tests/test_publish_update.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "2ed61197e36cfb45cf1928758f3758ecde04fd4d12fe15baa5213c9dffac29ab",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "d837522545f32fe5f8050d5e",
+      "class": "test",
+      "path": "tests/test_published_docs_presence.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "71991c756e98246b1fb3c720959f94314b08043b1d4a4da0f2042e27c78b6022",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "24642b31e275bc2ebc7a6e0a",
+      "class": "test",
+      "path": "tests/test_pwa_meta.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "28552f5a853523e85114fceee15fdf9aa2fb4c744252a011a44c6d5ba6674c6f",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "ea7ac9f04bf6f7fc89902572",
+      "class": "test",
+      "path": "tests/test_recovery_state_gate.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "1ce81a486eb08f0b51ef77e9ef5a3d594f66eb09164e58d471ae1f706a6bf9e7",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "b00491ea7b32366a51400882",
+      "class": "test",
+      "path": "tests/test_red_suite_execution_contract.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "8c467088b2e12445f81f5a7ade19078db449885cc19972c4a4389390e00cf96b",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "7ec7ea7ea3f4a4cdae8546a8",
+      "class": "test",
+      "path": "tests/test_red_suite_pair_cases.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "406e0ef5dbb6391c5290143ca6bd4d11711e6977812ce0d61f51beb9b1cfe197",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "1da76dbc337dacecc71bf915",
+      "class": "test",
+      "path": "tests/test_refill_category_after_quarantine.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "08aa85437edc21765d1f9de83648db5e7c770b88b7d66c13c35b34de70942f13",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "970b18510196ae6f03a39afa",
+      "class": "test",
+      "path": "tests/test_reflection_theme_essay.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "391ae95a7dc07fe7911abae56835a288f42811eee3c32ae78c9e04df96286050",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "c02c9c34fc0c88270bcfffce",
+      "class": "test",
+      "path": "tests/test_repair_coverage_matrix.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "7b602f864c3fd2d1c7e082cca3973b84b85629f2d32e367589d079cb57ce3e0d",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "d93402267d52dca1009c1d9b",
+      "class": "test",
+      "path": "tests/test_repair_decision_routing.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "ee29d41aa1d1d20589dd854a6bb090058cf0ed44560c8ccd3c84d874b918f4ad",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "86e8004ca5e0864e66c84a85",
+      "class": "test",
+      "path": "tests/test_repair_matrix_validator_sync.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "d582f33b65f3e5d8435d257c04584c53ae27bdc2a7cb589958d549dc67e4713d",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "48ec8800b7068e32cbaa808b",
+      "class": "test",
+      "path": "tests/test_repair_registry.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "1692a0f1d2f6a119cd9df8599f9fa00f07627ab59c38539bdc102674c02e9e57",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "04110f637c2b9bd4dd0ad076",
+      "class": "test",
+      "path": "tests/test_repair_runtime_e2e.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "ea365cb91dee5c5dafed68c060c979fdd64bf243e4135e22782fb1cfc2ac28ed",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "40b94f09aeac46ea6c58d7a7",
+      "class": "test",
+      "path": "tests/test_repair_system_completeness.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "0c7d55c8aa2cb7160c2af41ec2d3e2f2e2c7ec8ed265438f134ebd452c3b8c38",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "ca0c244304c7ab36f993d3cb",
+      "class": "test",
+      "path": "tests/test_resume_first_budget_v2.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "15e874ca6d19ea00d254b11d5645063fe3327bef2b0c70c8822de2c5270e9e1e",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "a15bb68b312cdfafee63a180",
+      "class": "test",
+      "path": "tests/test_retired_model_execution_surfaces.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "ea29f88be842e15629d3d67389d875b4eaca829f2577899cfc283f31861f869d",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "d391e71c6821aa91a6a6bf99",
+      "class": "test",
+      "path": "tests/test_rewrite_bullets_3layer.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "6a04d8b6a18fa7ea51721cc6b16928eb95fc6f601a15749e0a95306f9464128b",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "7f147413ba01a392f9efa943",
+      "class": "test",
+      "path": "tests/test_runner_convergence_contract.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "8cd8bd1321f99461984eeaf471034b58c3f497fc951fcbf17838c13c3234cb46",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "e0efd58db23897aa44564754",
+      "class": "test",
+      "path": "tests/test_runner_no_automatic_var_shadow.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "4d9caba43b298f363ce856516755f4ed84e32294cc0777884416b2ec47c0dbdf",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "92cb0abf7de1d0250f126418",
+      "class": "test",
+      "path": "tests/test_runner_pre_deepdive_e2e.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "a9c29aee5ff66e3af3c9e8c70176d5a25ecbb21a32a45878d2ecea9bf8566e35",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "f419b1af4683e8c755e3ef28",
+      "class": "test",
+      "path": "tests/test_runner_stage2_editor_e2e.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "b46819bfcbe39352f73add0716362404f870ea6c2d45e651ad9cec86f36713d2",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "6b251383da3af713493f5e09",
+      "class": "test",
+      "path": "tests/test_runner_wrapper_smoke.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "3dbf125dbb0b9a853079e456b2f02d7fce341f5256d30205f29918fa02062d6e",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "1715a139d9c38a08712bfb13",
+      "class": "test",
+      "path": "tests/test_runtime_input_snapshot.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "32e58fcb1556b2d688d04900209770c3450e7e72e0c183ae2e98c44d968ab5c9",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "8916d99c9df566cce5a5761e",
+      "class": "test",
+      "path": "tests/test_runtime_model_dependency_audit.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "9165a60e6181d291be796b50b57537fa067993aa65925db3259d2c970d6fb072",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "686ff45161039aa0c28fe6ce",
+      "class": "test",
+      "path": "tests/test_scheduled_high_cost_separation.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "0a88cce74d18aea3493a9c2209e1a00c1957a9033372986918994bf2c7010238",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "1d72927d6ebc5c4a056a6b91",
+      "class": "test",
+      "path": "tests/test_send_push.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "92f6c1024862fcef0b074849c83aec72ecb56df58f1c5244952e2579d4e66783",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "60e1320cf3df622025fa25c2",
+      "class": "test",
+      "path": "tests/test_session_url_fragments.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "9960ce058151ffcb5d3584ae119557f028d69f14c8bdba1b35340c29908a1c44",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "837ae7bbee0727dc395871e3",
+      "class": "test",
+      "path": "tests/test_session_urls_match.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "f8d4d4e732a0a2ae68d7db6fd758d54e82a3c2b8161ab4e23213119cd72603ca",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "92d59ed292d23b59364d0e33",
+      "class": "test",
+      "path": "tests/test_split_theme_phrases.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "fb320ed3f9fd25e26011a896507008d06c2a47bef644f989485c5568f858b554",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "a9ab76d616cbf46841680df4",
+      "class": "test",
+      "path": "tests/test_summary_layer_lanes.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "15565e025b750462b5ddb1cfbe123b02390395175cd7be59168caa9c22c73c79",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "0081cf3bf8d4b722eaa0c5b6",
+      "class": "test",
+      "path": "tests/test_summary_news_headline_contract.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "1178aecd51b7555478be5364b59b71d8413035bb01d31d518372c3db19225a2e",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "e40b7babae24ccb57db3b374",
+      "class": "test",
+      "path": "tests/test_summary_pattern_d.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "52e410e6ead384187415a8f4eaa1aa96f10019127839bfb2c36ba8a7406eb862",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "8d9228ac73ee51948b6b213d",
+      "class": "test",
+      "path": "tests/test_summary_theme_diversity_contract.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "58fc08c2ca5410f0fb40f8e895280e80e38d3d60e08bbc4ece53d1e755c91d21",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "626bad22a04a4bf0aacbfa42",
+      "class": "test",
+      "path": "tests/test_thumb_contract.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "826a0bfc8c97325300af244e7e8195cdd3993ac06ca9e71aa50c3589974efda2",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "c6452131d8c66d099358459e",
+      "class": "test",
+      "path": "tests/test_title_ja_coverage.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "0baf73b7664934d7dd2a1054ead86c6a34a5dfa6d39179ef43d5abfe07fdf099",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "59c223450656ae956b32b57f",
+      "class": "test",
+      "path": "tests/test_tts_aivis_client.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "44e78a083ac04ba827708f2f58ce9da153aef748f2355ea5d5b863e829944863",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "d913f23b73301631737b0b04",
+      "class": "test",
+      "path": "tests/test_tts_audio_embed.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "6c4c50df1431ae643107117297865ca5fb7cd1504d3f08029e74bf6dd08a0d60",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "70b613b1f3a361afccd4bfbd",
+      "class": "test",
+      "path": "tests/test_tts_build_deepdive_dialogue_script.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "2e619f06301bf794d67e6ededbae305ac656e8cab7cb8cdeb6b8c5eedd0cead1",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "4acc1a82dca975c60c76bf94",
+      "class": "test",
+      "path": "tests/test_tts_build_script.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "f541742bba0413babba8a4e9af531064c1d4a17eba5d1ecde7a9df9012eee439",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "4f47b206cfe3659f8bb35c9b",
+      "class": "test",
+      "path": "tests/test_tts_deepdive_audio.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "11105f810d06eb152f82aba333a71d7e3f371adc2387fdb805238069b111f7ea",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "9000deeafe9fb412ab6f5793",
+      "class": "test",
+      "path": "tests/test_tts_deepdive_dialogue.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "4d025a481376207fe193526c13f5d3369de1c18cf4209ffec5f7159c8296cc13",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "5c23af2c1e104c82c935996c",
+      "class": "test",
+      "path": "tests/test_tts_editor_prompt.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "e14fc940b813aac8eec12ba1653deb64b73a7d1c843eae386839b3bc54712226",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "611bc94636b0cf565eaaa4c2",
+      "class": "test",
+      "path": "tests/test_tts_generate_bgm.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "988ff8382149c3e8805ca94cfdfb56e0a6bad8113e6c610ebb70136d0add37bb",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "65df9defa833b314b15df498",
+      "class": "test",
+      "path": "tests/test_tts_proc_boundary.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "a4aeba56f1a796a7437703a1c92d2e48497c14d925655fc3700aa1ef1a35afe4",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "738291ae9b45b80742bda1d1",
+      "class": "test",
+      "path": "tests/test_tts_required_publish_gate.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "5feea029b1b5a08af2d479259c14f946c7bd798633c64ca126d166106fa17fba",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "f34d7f4d4280de281d6cb956",
+      "class": "test",
+      "path": "tests/test_tts_rotation.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "994224ec3acad275b243bf5df242f2be245ea0c3ef856a64a78cc872d36a4770",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "1c3dd8f47ce8cda244d8eaa6",
+      "class": "test",
+      "path": "tests/test_tts_synthesize_daily.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "caf2da197f33ed10b7c58fd8643b073af1d5d84156fadfdd2a7c9cdbaf977c41",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "cea62342d8f4f3e1490dfe6e",
+      "class": "test",
+      "path": "tests/test_validate_daily_quality.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "66fcd7bead5f39b4b480489b6ecad6b8daed97c1c6447a765622e90b86f37dee",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "e58688fb0374dce0d8e24bd4",
+      "class": "test",
+      "path": "tests/test_validate_editor_output_preview.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "f51fd549da466f6d9671ea90a787ea73ac2bb7eee814dc90357ca7762daf118d",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "5c413c0d0516056063c31db7",
+      "class": "test",
+      "path": "tests/test_validate_html_specs.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "478c0e70d5bf8fa2756d181391384cfb71ddebe62aa9b9e633854ce8837f699c",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "fd085ce0fdff5c5187012488",
+      "class": "test",
+      "path": "tests/test_validate_public_home.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "5ed716c79c4ce0e712d5aff9a3708eeca302a26313eedf5a1dac0c4c30d1b773",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "83d96e78ce34e789d3de42e7",
+      "class": "test",
+      "path": "tests/test_validate_record.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "1a698828c9b87edf492c74c6da65f7ad5290b1698d26cfb4a3876cf3c5311dc7",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "8c9df01bda309b5d39199c07",
+      "class": "test",
+      "path": "tests/test_validate_summary_reflection.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "8929248c8779c34b7529db0c27c7518e80eb443b9a1084c7d2f63a66bc79c9a2",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "dcd8dec10b3bda211e7149e1",
+      "class": "test",
+      "path": "tests/test_verify_reporter_output.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "f1c36a54a23152877e0648f3f7e882956e613d978d865e4b344503d546b42945",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "b8f2fb14bf3ae00895da5759",
+      "class": "test",
+      "path": "tests/test_youtube_podcast_auth_doctor.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "7205a144e2cd74d1519bee388f21df6d0807825fbf9ca2f5f3803b7b314741fb",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "f8e56ec02b65f02c4e048fbc",
+      "class": "test",
+      "path": "tests/test_youtube_podcast_upload.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "8b7e7233929d7f65a4b679ccc8d5eb0747e6cb316f353e94aef9c8dcb87fc71a",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "8ded83b3dc7bc4121d35c262",
+      "class": "test",
+      "path": "tests/test_youtube_podcast_video.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ],
+      "sha256": "a71c066174bbe0a73ea43f901f03d6488edfa1bc6d4fa599244d0b2aa9abb137",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "7d8462762c3231cbcbb9353d",
+      "class": "production_consumer",
+      "path": "tools/audit_recovery_control.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "b3048312c7c627da212822345d459c0009bb7e9e70f9bf6f38cfb5b9e4690430",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "9563fbf137acb8621e7bcd4c",
+      "class": "production_consumer",
+      "path": "tools/daily_self_heal.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "bcc8830f60103f5f424c64b69aa25ca50c7db5c24b5a162c817b29e2830590e8",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "df7a6004285eec037734b0fd",
+      "class": "production_consumer",
+      "path": "tools/historical_failure_scenarios.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "2aba8fe0f36cc4ad26dacf4ebce681736d41802ec714cfc6f03c6c0d14f415b7",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "15670d9f1e8d0b2a364223ee",
+      "class": "production_consumer",
+      "path": "tools/news_grasp_asset_manifest.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "caaec6147577c0247338ff510c630a11b83846dfec111ca119146a762710df39",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "4a7a6878bc6bc665638459c7",
+      "class": "production_consumer",
+      "path": "tools/news_grasp_change_control.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "59fa43f1f3b61c993e7d1594fbcd9459e52e590b2a5539e8ebf8cdcc49404570",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "773e3661b370601bded2275d",
+      "class": "production_consumer",
+      "path": "tools/news_grasp_checkpoint.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "48ceeca7ef5ca38498c4d3bfd1639c243a7d357a30a4661f68b62082eaf611c2",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "55bd92d924160ab1f99327be",
+      "class": "production_consumer",
+      "path": "tools/news_grasp_constitution.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "53dc692c7c3a8cec9c3fef491e23868af13a294793f55c87650151578b896d9f",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "5060291938f6d1f693907c80",
+      "class": "production_consumer",
+      "path": "tools/news_grasp_convergence.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "72946e3cf10f5cc5b6910d1461d2f26ba1f64b004532a1993ebe79f825f45c18",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "e8dee65647ee24f818912ece",
+      "class": "production_consumer",
+      "path": "tools/news_grasp_daily_control.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "f73afa2f21a54ceca679ef717b4e0db340fd36070205b1d0591973761ea31eb7",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "a53e87321ccdcce26b4c0d92",
+      "class": "production_consumer",
+      "path": "tools/news_grasp_deterministic_builders.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "45b9f2861ba114b4cb547700cd3162d6bb6897f979c7318e72aa6b05f1249088",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "c394416626d291e553cbbf37",
+      "class": "production_consumer",
+      "path": "tools/news_grasp_gate_profiles.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "fd236bbf29811cf726188d4fc933747c9c25d2d63dd9c8b4f59c8d9c77930e89",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "3b84e129291bb1a03b533fd3",
+      "class": "production_consumer",
+      "path": "tools/news_grasp_generation.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "117e60b5c3a090aa5a75c12f414e9aca22d7b585d298f43cdf2f4a0944b8189c",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "cc452f6cc976555c0cabe321",
+      "class": "production_consumer",
+      "path": "tools/news_grasp_human_impact.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "aefbbab00dc5032a4ca28bfa11b0f5bcdd74b74a70b32afca8adfd132ed02d4d",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "a0db36d44f85d909dd5a0eef",
+      "class": "production_consumer",
+      "path": "tools/news_grasp_nopublish.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "af317487f751176f641b2ffcf67ddda61f5b19b722549280e52db8bb71cadcc7",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "7c6b71f94a659d91f9ff8c8c",
+      "class": "production_consumer",
+      "path": "tools/news_grasp_operational_contract.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "ef7edd61150419a54ea0f47764908755ace5958f64f21499b9723ed6ee772611",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "82d20ff7ca1ddaac3014e883",
+      "class": "production_consumer",
+      "path": "tools/news_grasp_red_green_receipt.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "a44eef3e0805c6fe48a6d3536ed7231f60664613c52bf49ebd8e46c9443835f5",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "370cf3d5732f65b81b58fff6",
+      "class": "production_consumer",
+      "path": "tools/news_grasp_runner.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "d9612d9485c4f24b257eca6af10074159d1a34bea30ee35182bbf280d5b98601",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "1a0a99bc62a40cbcbbce3956",
+      "class": "production_consumer",
+      "path": "tools/news_grasp_task_packet.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "c807364facce5483288c516bb3b44a90f03e51db907fe702715168f53bd47d15",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "09579865b0b9e41d0ef9f7d4",
+      "class": "production_consumer",
+      "path": "tools/operational_recovery_registry.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "afdfdfec2600fc4244ea2aa63c558400a325eb8ba2ecfee78e7dbd6d53485499",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "objectId": "5f43d1667d962076638dcdd4",
+      "class": "production_consumer",
+      "path": "tools/verify_public_surface.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "1dfb23a59b22b920cc703e9654c833e3f3d653766300aef8207443b50a0aab06",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    }
+  ],
+  "activeObjectIds": [
+    "0081cf3bf8d4b722eaa0c5b6",
+    "04110f637c2b9bd4dd0ad076",
+    "057c0c2cddf1cb492c66014c",
+    "05da40454cb8e2bab8e6b52f",
+    "0774c2451b189307a7067cf4",
+    "090310125f41eb3c8f73b301",
+    "09579865b0b9e41d0ef9f7d4",
+    "0ab4e5376ac9fd51aa77a9d8",
+    "0b88d315a35ad9cc6d6a965a",
+    "0e142f88b492c072d4b2f6cc",
+    "0e16995cbb9c0d43f8964be6",
+    "0e7efad24c0088eb85e48274",
+    "0f0ed08cdc54fc00dc7875d4",
+    "0f7f11659004c844be15ce07",
+    "0fa258f0503654d400faa6a0",
+    "12c9fac1e188ea0bad6195f4",
+    "15670d9f1e8d0b2a364223ee",
+    "164eb3e6a1dc0d99e45f9cc8",
+    "165ace41bd667021e4019e7c",
+    "1715a139d9c38a08712bfb13",
+    "1767c11c9cd1377310b1e088",
+    "17d84fba3edf67cd4ba21789",
+    "18e769088d009e87ea44563f",
+    "190ad27215576e3cf9e3356a",
+    "1a0a99bc62a40cbcbbce3956",
+    "1c3dd8f47ce8cda244d8eaa6",
+    "1d5c5365c73bf84522145e43",
+    "1d72927d6ebc5c4a056a6b91",
+    "1da76dbc337dacecc71bf915",
+    "1e4676db500fa7d666c51887",
+    "1e4e853a73d1a2d45a4d01a0",
+    "215952d0e999cedb4429e837",
+    "222725df1b3c0998e3d9c20c",
+    "2250f4cc8d2a17ca6a231a43",
+    "22da8376f96dfb3544d50307",
+    "22ffa96d81b8bebf8349fdc9",
+    "24642b31e275bc2ebc7a6e0a",
+    "25f6a9dd7f620ec29c1301cd",
+    "2a228457d2a99a1970b93dc5",
+    "2ab94fc899d5bc54f1517340",
+    "2d0de9eb0e73280a8b138013",
+    "30328f1cabf6ddb23fe8c741",
+    "316eb58dec756a8e25f9db63",
+    "360d09b4a595c174d8da2c4d",
+    "36459948acdee6d80cd58a7e",
+    "3656a206dcaee14ab9306edd",
+    "370cf3d5732f65b81b58fff6",
+    "39fa2fa5d7c5d22eed215695",
+    "3b84e129291bb1a03b533fd3",
+    "3e2ae7b9b8576ee19a5df558",
+    "3e8b5f8959fdbca42c53754e",
+    "40b94f09aeac46ea6c58d7a7",
+    "45c196ed3c960b7ad0b425bd",
+    "46681f5f859073c0de17a403",
+    "469624c94b721d08afb00312",
+    "47e29d5522a773816f394765",
+    "485d6cae93fbbeb70197ea0d",
+    "4893bf9f4015526aa6382b8e",
+    "48ec8800b7068e32cbaa808b",
+    "4a7a6878bc6bc665638459c7",
+    "4acc1a82dca975c60c76bf94",
+    "4b53d1b03eb27b8a68f71a52",
+    "4bd1c80cb7aba2f577a5a37a",
+    "4bfbcf3480e7d29575d0bc13",
+    "4ccac4712e03aa7a18b54952",
+    "4ee21b5e5719630b1a816a6b",
+    "4f47b206cfe3659f8bb35c9b",
+    "5060291938f6d1f693907c80",
+    "50659804f9d66cca9bdb8b61",
+    "51c8ddb15a06f6730c61dcd2",
+    "52704a9ef019aade4a62ee9d",
+    "539936e3d758a6c475a78966",
+    "54e4cc4b6afa0aed3f874359",
+    "55bd92d924160ab1f99327be",
+    "569843cdef45a840ba63e113",
+    "58146d32b78feb7a4f21f657",
+    "587bed6d566399befd079f6a",
+    "59c223450656ae956b32b57f",
+    "5a8d0b5439034e5588e1d71b",
+    "5c23af2c1e104c82c935996c",
+    "5c413c0d0516056063c31db7",
+    "5da145e1f834a2c46776adc9",
+    "5f43d1667d962076638dcdd4",
+    "5f9b33fd19cb35a586545d92",
+    "60e1320cf3df622025fa25c2",
+    "611bc94636b0cf565eaaa4c2",
+    "613da7f0be0189653ef59ee8",
+    "625a817844545bc6e75cc3a7",
+    "626bad22a04a4bf0aacbfa42",
+    "6468461a2fb07d59e5d428fa",
+    "651939c269f7e306867910ff",
+    "65df9defa833b314b15df498",
+    "67ba9244fd523dd8cc338c8d",
+    "686ff45161039aa0c28fe6ce",
+    "6ac15171f47858fc26a41d0f",
+    "6adda5aa3b8d4a94f62ef0b4",
+    "6b251383da3af713493f5e09",
+    "6d2f17f40e8c0d4c78471b5d",
+    "6d8c135253ba4f8c615cb4f9",
+    "6db29b3328d26be4df295d80",
+    "6f120c5e3a7e85d07eb4d965",
+    "6fba7f0364e44f3dededc26c",
+    "70166e7bcc74b3774ff6b370",
+    "70b613b1f3a361afccd4bfbd",
+    "71649c8747a396cfc3cd3c92",
+    "72795305df0ccbece4eb5d66",
+    "738291ae9b45b80742bda1d1",
+    "7698c3f011372ca9c9843f48",
+    "773e3661b370601bded2275d",
+    "7c36ce08535b1ce7f3913e4b",
+    "7c4d839c86be05c0fdee41ce",
+    "7c6b71f94a659d91f9ff8c8c",
+    "7d8462762c3231cbcbb9353d",
+    "7e0fa446ed59546a09850f0a",
+    "7e439d09f552276c75dbae68",
+    "7ec7ea7ea3f4a4cdae8546a8",
+    "7ef533c6c42d34b17f85c0b1",
+    "7f147413ba01a392f9efa943",
+    "80960c4e9be1ba68e47404f4",
+    "82d20ff7ca1ddaac3014e883",
+    "82d2a756f3f7c4dfd5d5a244",
+    "837ae7bbee0727dc395871e3",
+    "83d96e78ce34e789d3de42e7",
+    "83f2873bc09e1fc97592f961",
+    "84a237c50ae159d235d78521",
+    "84fad7b03f9a3210d7e959fc",
+    "86e8004ca5e0864e66c84a85",
+    "8770fb11f698e75156cd3515",
+    "87c3731f0ccad1ab4d4f8f64",
+    "87c88e93f054b79147db5ee9",
+    "8916d99c9df566cce5a5761e",
+    "896c71ea6e22d229216ae7d3",
+    "8ac92a3c78de4c6cb61b2157",
+    "8ae40b57f19bac16a029b795",
+    "8b210dfda723f802682564e8",
+    "8ba580f9f5ee012ccbf26198",
+    "8c3741d93c8f773670aa49d4",
+    "8c9df01bda309b5d39199c07",
+    "8d9228ac73ee51948b6b213d",
+    "8ded83b3dc7bc4121d35c262",
+    "8e1496504542db61bacc7a87",
+    "8e81a88b738bef2213b3166d",
+    "8f9e3b1bed6464911151a3db",
+    "8fc9e8efc97b8439880847a4",
+    "9000deeafe9fb412ab6f5793",
+    "90956b3fc9f032fe7af50fe4",
+    "91e502b0489c02187c6e6a73",
+    "92cb0abf7de1d0250f126418",
+    "92d59ed292d23b59364d0e33",
+    "92e505c3d5c68b1cee86de72",
+    "93192914a3ce1b2449e9c7fc",
+    "9474de14720c9a74448a2e23",
+    "95549191a7475d1379fbea5b",
+    "9563fbf137acb8621e7bcd4c",
+    "95c8c28df43d753b94d150f8",
+    "95fa4849a8c6a89a2d76243c",
+    "970b18510196ae6f03a39afa",
+    "975d17a07c5ed136cfaba8c7",
+    "97cbb8be7b357255fe9a4b88",
+    "a093d6911a242ede2c53cc52",
+    "a0db36d44f85d909dd5a0eef",
+    "a15bb68b312cdfafee63a180",
+    "a3e71695ea389bcd7989014f",
+    "a464f32192b54f021302d4cc",
+    "a4d0c99e773492d4684e6a8c",
+    "a4e298eb2080e5ca80b5f5ff",
+    "a53e87321ccdcce26b4c0d92",
+    "a9ab76d616cbf46841680df4",
+    "ae4e3179cf8711c22e2b476f",
+    "aed91bb469032e508a46f3ff",
+    "b00491ea7b32366a51400882",
+    "b0267ed25a0bc87dac9128ab",
+    "b045893362cc6f4d2d7ef238",
+    "b18ae5339a48653753e5017d",
+    "b37d24f96053ce4badb71c05",
+    "b62528952c27db6ebaaf9959",
+    "b64cc54ad2b7f99799c5ea44",
+    "b849c370967ee4446e4511f6",
+    "b89be8c8d3bfc77991b11f43",
+    "b8f2fb14bf3ae00895da5759",
+    "bcf6d7cfca9d2b1b4ed9450e",
+    "be124847a940def51ec92674",
+    "bff99598521fb54c4736d7a7",
+    "c02c9c34fc0c88270bcfffce",
+    "c04b09d904eb26a8dc8e08e5",
+    "c11422489455ff6bcaf66bee",
+    "c2e2375996e592e358bf5b5a",
+    "c2fd95aa915c9fa4b28ff186",
+    "c324cadfe877e7607ed5c1f8",
+    "c394416626d291e553cbbf37",
+    "c4192547d81059f4208ad3f6",
+    "c527ae676975c5a80fe135b1",
+    "c6452131d8c66d099358459e",
+    "ca0c244304c7ab36f993d3cb",
+    "cbe6867635401e0a14bbd55d",
+    "cc452f6cc976555c0cabe321",
+    "cc717229253fff999ccbb6cc",
+    "ce7ac10f96d5baaf90b869e2",
+    "cea62342d8f4f3e1490dfe6e",
+    "cf71ec45494ef0dc2e712629",
+    "d052fbd788f0912f0e09040d",
+    "d1c3cb1b739803730902f5de",
+    "d25e1fe56c1890ba26380d1c",
+    "d2bb3002c93c0c0470c655e2",
+    "d390fb28943a17d83f6bcf55",
+    "d391e71c6821aa91a6a6bf99",
+    "d41a09160eed6421fd38f703",
+    "d54c191e106603ea295a7429",
+    "d6155260b206f08f544fde5e",
+    "d6ee5dcb02bd1b178ae17544",
+    "d837522545f32fe5f8050d5e",
+    "d913f23b73301631737b0b04",
+    "d93402267d52dca1009c1d9b",
+    "d99b0ae785556643704e1365",
+    "d9fecdf99fd2442907733d1a",
+    "dad2626377b51f40a1052431",
+    "dbce11377d1638aaab77fc3e",
+    "dcd8dec10b3bda211e7149e1",
+    "df7a6004285eec037734b0fd",
+    "e0bc31339f10ea364f1db04d",
+    "e0efd58db23897aa44564754",
+    "e22fe5c4862d7faf2aa73d31",
+    "e38a17c178ef889854027086",
+    "e39d946c27125e032a74cb57",
+    "e40b7babae24ccb57db3b374",
+    "e58688fb0374dce0d8e24bd4",
+    "e5aed359d3579e14a35623fb",
+    "e6a1b301ccd931326d6af295",
+    "e762595ed33dc9a2e696d77f",
+    "e8bc3dfaefffa9ef91012f35",
+    "e8dee65647ee24f818912ece",
+    "e9eaebb72617a6a0517faf70",
+    "e9f111594247fbbd7000e6f5",
+    "ea7ac9f04bf6f7fc89902572",
+    "eab4d44a7e16ea3610ff5a2a",
+    "ed4986666f5c1dc8a49fac0b",
+    "ee1b49986e0927f7a5ad2efa",
+    "f325058dc2953ed963219769",
+    "f34d7f4d4280de281d6cb956",
+    "f419b1af4683e8c755e3ef28",
+    "f4a41f6281d80b4662c89b30",
+    "f63cc95a0e6ab1282c99702c",
+    "f6a70135185a09024a941f8a",
+    "f8e56ec02b65f02c4e048fbc",
+    "fa88c3c33723621ad092042e",
+    "fb24f7df44eca689637183b8",
+    "fd085ce0fdff5c5187012488",
+    "feadf33a19f45a15fbc909b2"
+  ],
+  "activeObjectCount": 248,
+  "unlinkedActiveObjectCount": 0,
+  "objectPathSetSha256": "bf895bdb367a08d77fe988320be2967bd5bdcc79eee0e9baf63092a281358972",
+  "testNodeSetSha256": "b807add7dbbac852ba7f0e83de79e6fea7eaacff508e12828e937e057a7992aa"
+}

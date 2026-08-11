@@ -479,7 +479,7 @@ $files = @(
 )
 
 $RepoDir = Resolve-NewsGraspRepoDir -Override $RepoDir
-$automationAssetManifestPath = Join-Path $RepoDir 'config\news_grasp_automation_assets_v1.json'
+$automationAssetManifestPath = Join-Path $RepoDir 'config\news_grasp_automation_assets_v2.json'
 if (-not (Test-Path -LiteralPath $automationAssetManifestPath -PathType Leaf)) {
     throw 'NEWS_GRASP_AUTOMATION_ASSET_MANIFEST_MISSING'
 }
@@ -489,7 +489,7 @@ try {
     throw 'NEWS_GRASP_AUTOMATION_ASSET_MANIFEST_INVALID'
 }
 if (
-    [string]$automationAssetManifest.schemaVersion -ne 'NEWS_GRASP_AUTOMATION_ASSET_MANIFEST_V1' -or
+    [string]$automationAssetManifest.schemaVersion -ne 'NEWS_GRASP_AUTOMATION_ASSET_MANIFEST_V2' -or
     [string]$automationAssetManifest.productId -ne 'News-Grasp' -or
     [string]$automationAssetManifest.installRoot -ne 'news-grasp-assets'
 ) {
@@ -498,6 +498,8 @@ if (
 $automationAssetRows = @($automationAssetManifest.assets)
 if (-not $automationAssetRows.Count) { throw 'NEWS_GRASP_AUTOMATION_ASSET_MANIFEST_EMPTY' }
 $automationAssetIds = @{}
+$automationAssetSourcePaths = @{}
+$automationAssetInstallPaths = @{}
 foreach ($asset in $automationAssetRows) {
     $assetId = [string]$asset.assetId
     if ([string]::IsNullOrWhiteSpace($assetId) -or $automationAssetIds.ContainsKey($assetId)) {
@@ -509,6 +511,14 @@ foreach ($asset in $automationAssetRows) {
     }
     $asset.sourcePath = Assert-NewsGraspAssetRelativePath ([string]$asset.sourcePath)
     $asset.installPath = Assert-NewsGraspAssetRelativePath ([string]$asset.installPath)
+    if ($automationAssetSourcePaths.ContainsKey([string]$asset.sourcePath)) {
+        throw 'NEWS_GRASP_AUTOMATION_ASSET_DUPLICATE_SOURCE'
+    }
+    if ($automationAssetInstallPaths.ContainsKey([string]$asset.installPath)) {
+        throw 'NEWS_GRASP_AUTOMATION_ASSET_DUPLICATE_INSTALL_PATH'
+    }
+    $automationAssetSourcePaths[[string]$asset.sourcePath] = $true
+    $automationAssetInstallPaths[[string]$asset.installPath] = $true
 }
 $TaskPythonwPath = Resolve-NewsGraspTaskPythonw -Override $TaskPythonwPath -ResolvedRepoDir $RepoDir
 $null = Assert-NewsGraspExternalControlPlaneReady `
@@ -817,9 +827,10 @@ foreach ($asset in $automationAssetRows) {
     $row['after_sha256'] = $afterHash
 }
 $runtimePythonPath = Join-Path (Split-Path -Parent $TaskPythonwPath) 'python.exe'
+$productionRuntimePath = Join-Path $env:USERPROFILE '.news-grasp-runtime\production-runtime'
 $runtimeRoot = [ordered]@{
     schemaVersion = 'NEWS_GRASP_RUNTIME_ROOT_V1'
-    repoDir = $RepoDir
+    repoDir = $productionRuntimePath
     pythonExe = $runtimePythonPath
     evidenceRepoDir = $runtimeEvidenceRepoDir
 }

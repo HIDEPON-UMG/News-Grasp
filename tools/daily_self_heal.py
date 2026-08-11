@@ -1238,9 +1238,17 @@ def verify_live_runner_readiness(
         elif bootstrap_targets_task_launcher and not task_launcher_checksum["synced"]:
             reason = "bootstrap_task_launcher_hash_mismatch"
         elif bootstrap_targets_task_launcher and not task_launcher_contract.get("ok"):
-            reason = "bootstrap_task_launcher_contract_invalid"
+            reason = (
+                "scheduled_task_launcher_required"
+                if not runner_targets_task_launcher
+                else "bootstrap_task_launcher_contract_invalid"
+            )
         elif bootstrap_targets_task_launcher and not bootstrap_action_contract["task_launcher_mode_ok"]:
-            reason = "bootstrap_task_launcher_mode_invalid"
+            reason = (
+                "scheduled_task_launcher_required"
+                if not runner_targets_task_launcher
+                else "bootstrap_task_launcher_mode_invalid"
+            )
         elif runner_targets_runner and not direct_runner_pre_run_interlock:
             reason = "direct_runner_pre_run_interlock_missing"
         elif runner_targets_runner and not direct_runner_pre_run_reexec:

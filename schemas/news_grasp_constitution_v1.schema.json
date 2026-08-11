@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NEWS_GRASP_CONSTITUTION_V1",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "constitutionVersion",
+    "amendmentAuthority",
+    "primaryUser",
+    "naturalRunEvidenceAllowed",
+    "sharedGlobalHarnessMutationAllowed",
+    "specSha256",
+    "userProvenance",
+    "pillars",
+    "clauses"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "NEWS_GRASP_CONSTITUTION_V1"
+    },
+    "constitutionVersion": {
+      "type": "string"
+    },
+    "amendmentAuthority": {
+      "const": "user_only"
+    },
+    "primaryUser": {
+      "type": "string",
+      "minLength": 1
+    },
+    "naturalRunEvidenceAllowed": {
+      "const": false
+    },
+    "sharedGlobalHarnessMutationAllowed": {
+      "const": false
+    },
+    "specSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "userProvenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceType",
+        "confirmedAt",
+        "statement",
+        "amendmentAuthority"
+      ],
+      "properties": {
+        "sourceType": {
+          "const": "user_confirmed_plan"
+        },
+        "confirmedAt": {
+          "type": "string",
+          "format": "date"
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1
+        },
+        "amendmentAuthority": {
+          "const": "user_only"
+        }
+      }
+    },
+    "pillars": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6
+    },
+    "clauses": {
+      "type": "array",
+      "minItems": 14,
+      "maxItems": 14
+    }
+  }
+}

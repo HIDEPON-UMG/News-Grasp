@@ -1,0 +1,178 @@
+{
+  "schemaVersion": "NEWS_GRASP_SPEC_DISPOSITION_V1",
+  "sourceCommit": "066b7c40651b2ed90ea18e199d66bae761518417",
+  "rows": [
+    {
+      "path": "docs/spec.md",
+      "disposition": "active_linked",
+      "active": true,
+      "dependencyScan": "not_required_active",
+      "deleteAuthorized": false,
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "path": "docs/specs/2026-05-21_public-web-ogp.html",
+      "disposition": "superseded_history",
+      "active": false,
+      "dependencyScan": "preserve_reference_only",
+      "deleteAuthorized": false,
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "path": "docs/specs/2026-05-28_newsgrasp-mobility-category.html",
+      "disposition": "superseded_history",
+      "active": false,
+      "dependencyScan": "preserve_reference_only",
+      "deleteAuthorized": false,
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "path": "docs/specs/2026-05-28_newsgrasp-v2-redesign.html",
+      "disposition": "superseded_history",
+      "active": false,
+      "dependencyScan": "preserve_reference_only",
+      "deleteAuthorized": false,
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "path": "docs/specs/2026-05-30_newsgrasp-weekly-deep-research.html",
+      "disposition": "superseded_history",
+      "active": false,
+      "dependencyScan": "preserve_reference_only",
+      "deleteAuthorized": false,
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "path": "docs/specs/2026-05-31_deepdive-page-design-brief.md",
+      "disposition": "superseded_history",
+      "active": false,
+      "dependencyScan": "preserve_reference_only",
+      "deleteAuthorized": false,
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "path": "docs/specs/2026-06-03_newsgrasp-manufacturing-category.html",
+      "disposition": "superseded_history",
+      "active": false,
+      "dependencyScan": "preserve_reference_only",
+      "deleteAuthorized": false,
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "path": "docs/specs/2026-06-09_newsgrasp-gate-convergence.html",
+      "disposition": "superseded_history",
+      "active": false,
+      "dependencyScan": "preserve_reference_only",
+      "deleteAuthorized": false,
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "path": "docs/specs/2026-06-11_freshness-quality-gate.html",
+      "disposition": "superseded_history",
+      "active": false,
+      "dependencyScan": "preserve_reference_only",
+      "deleteAuthorized": false,
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "path": "docs/specs/2026-06-11_newsroom-architecture.html",
+      "disposition": "superseded_history",
+      "active": false,
+      "dependencyScan": "preserve_reference_only",
+      "deleteAuthorized": false,
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "path": "docs/specs/2026-06-11_search-freshness-hardening.html",
+      "disposition": "superseded_history",
+      "active": false,
+      "dependencyScan": "preserve_reference_only",
+      "deleteAuthorized": false,
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "path": "docs/specs/2026-08-10_news-grasp-audit-monotonic-recovery.html",
+      "disposition": "superseded_history",
+      "active": false,
+      "dependencyScan": "preserve_reference_only",
+      "deleteAuthorized": false,
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "path": "docs/specs/2026-08-11_news-grasp-operational-redesign.html",
+      "disposition": "superseded_history",
+      "active": false,
+      "dependencyScan": "preserve_reference_only",
+      "deleteAuthorized": false,
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "path": "docs/specs/2026-08-12_news-grasp-product-constitution.html",
+      "disposition": "superseded_history",
+      "active": false,
+      "dependencyScan": "preserve_reference_only",
+      "deleteAuthorized": false,
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "path": "plans/2026-08-09-scheduled-production-continuation.md",
+      "disposition": "superseded_history",
+      "active": false,
+      "dependencyScan": "preserve_reference_only",
+      "deleteAuthorized": false,
+      "rollback": "restore tracked bytes from the bound source commit"
+    }
+  ],
+  "deleteReadyCount": 0,
+  "acceptanceBindings": [
+    {
+      "acceptanceId": "A04",
+      "requirementId": "R04",
+      "clauseIds": [
+        "NGC-C09",
+        "NGC-C14"
+      ],
+      "todoId": "TODO-147",
+      "productionRoute": "config/news_grasp_spec_disposition_v1.json",
+      "consumerMarker": "NEWS_GRASP_SPEC_DISPOSITION_V1",
+      "stateId": "all_specs_dispositioned",
+      "recoveryId": "disable_then_dependency_scan_before_delete",
+      "evidenceId": "spec_disposition_set_hash",
+      "perspectives": [
+        "adversarial_boundary",
+        "operational_recovery",
+        "primary_behavior"
+      ],
+      "testNodeIds": [
+        "test_a04_boundary",
+        "test_a04_recovery",
+        "test_a04_primary"
+      ]
+    },
+    {
+      "acceptanceId": "A08",
+      "requirementId": "R08",
+      "clauseIds": [
+        "NGC-C11",
+        "NGC-C12",
+        "NGC-C14"
+      ],
+      "todoId": "TODO-148",
+      "productionRoute": "config/news_grasp_skill_binding_v1.json",
+      "consumerMarker": "NEWS_GRASP_SKILL_BINDING_V1",
+      "stateId": "skills_audited_and_bound",
+      "recoveryId": "disable_unclassified_skill_then_reconcile_installer",
+      "evidenceId": "skill_source_installed_hash_parity",
+      "perspectives": [
+        "adversarial_boundary",
+        "operational_recovery",
+        "primary_behavior"
+      ],
+      "testNodeIds": [
+        "test_a08_boundary",
+        "test_a08_recovery",
+        "test_a08_primary"
+      ]
+    }
+  ]
+}

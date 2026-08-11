@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "NEWS_GRASP_COMPOUND_FAILURE_CORPUS_V1",
+  "rows": [
+    {
+      "fixtureId": "same_artifact_repair_plus_residual_red",
+      "replayId": "same_artifact_repair_plus_residual_red",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_lineage",
+        "finite_terminal",
+        "public_green_preserved",
+        "unknown_fail_closed"
+      ]
+    },
+    {
+      "fixtureId": "multi_gate_repair_before_publish_boundary",
+      "replayId": "multi_gate_repair_before_publish_boundary",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_lineage",
+        "finite_terminal",
+        "public_green_preserved",
+        "unknown_fail_closed"
+      ]
+    },
+    {
+      "fixtureId": "external_block_plus_local_repair",
+      "replayId": "external_block_plus_local_repair",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_lineage",
+        "finite_terminal",
+        "public_green_preserved",
+        "unknown_fail_closed"
+      ]
+    },
+    {
+      "fixtureId": "weekday_inventory_plus_distribution_manifest",
+      "replayId": "weekday_inventory_plus_distribution_manifest",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_lineage",
+        "finite_terminal",
+        "public_green_preserved",
+        "unknown_fail_closed"
+      ]
+    },
+    {
+      "fixtureId": "summary_materialize_missing_plus_downstream_repair_blockers",
+      "replayId": "summary_materialize_missing_plus_downstream_repair_blockers",
+      "consumerRoute": "tools.historical_failure_scenarios.historical_failure_scenarios",
+      "oracle": [
+        "same_lineage",
+        "finite_terminal",
+        "public_green_preserved",
+        "unknown_fail_closed"
+      ]
+    }
+  ]
+}

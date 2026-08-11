@@ -61,11 +61,20 @@ def decide_operational_convergence(
     elif state.get("input") not in {None, "green", "bound"}:
         action, reason, action_class = "checkpoint_continuation", "RUNTIME_INPUT_DRIFT", "mutation"
     elif state.get("readiness") not in {None, "green", "ready"}:
-        action, reason, action_class = "readiness_repair", "READINESS_RED", "mutation"
+        action, reason, action_class = "active_generation_reconcile", "READINESS_RED", "mutation"
     elif state.get("public") not in {None, "green", "verified"}:
         action, reason, action_class = "checkpoint_continuation", "PUBLIC_COMPLETION_RED", "mutation"
     else:
         action, reason, action_class = "terminal_projection", "CONVERGENCE_GREEN", "terminal_projection"
+    if action_class == "mutation":
+        from tools import operational_recovery_registry as recovery_registry
+
+        registered = recovery_registry.resolve_handler_id(
+            repo_root=Path(__file__).resolve().parents[1],
+            reason_code=reason,
+        )
+        if registered != action:
+            raise ConvergenceError("CONVERGENCE_REGISTERED_HANDLER_DRIFT")
     body = {
         "schemaVersion": SCHEMA,
         "observedStateHash": _sha(state),

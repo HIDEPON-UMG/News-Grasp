@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 
-SCHEMA = "NEWS_GRASP_AUTOMATION_ASSET_MANIFEST_V1"
+SCHEMA = "NEWS_GRASP_AUTOMATION_ASSET_MANIFEST_V2"
 
 
 class AssetManifestError(ValueError):
@@ -41,6 +41,8 @@ def load_manifest(path: Path | str) -> dict[str, Any]:
     if not isinstance(assets, list) or not assets:
         raise AssetManifestError("NG_ASSET_LIST_INVALID")
     seen: set[str] = set()
+    seen_sources: set[str] = set()
+    seen_installs: set[str] = set()
     normalized: list[dict[str, Any]] = []
     for asset in assets:
         if not isinstance(asset, dict) or not isinstance(asset.get("assetId"), str):
@@ -51,6 +53,12 @@ def load_manifest(path: Path | str) -> dict[str, Any]:
         seen.add(asset_id)
         source = _relative(asset.get("sourcePath"), field="source_path")
         install = _relative(asset.get("installPath"), field="install_path")
+        if source in seen_sources:
+            raise AssetManifestError("NG_ASSET_DUPLICATE_SOURCE")
+        if install in seen_installs:
+            raise AssetManifestError("NG_ASSET_DUPLICATE_INSTALL_PATH")
+        seen_sources.add(source)
+        seen_installs.add(install)
         if asset.get("kind") not in {"skill", "guard", "automation"}:
             raise AssetManifestError("NG_ASSET_KIND_INVALID")
         normalized.append({"assetId": asset_id, "kind": asset["kind"], "sourcePath": source, "installPath": install})
@@ -98,6 +106,8 @@ def load_manifest_value(value: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(assets, list):
         raise AssetManifestError("NG_ASSET_LIST_INVALID")
     seen: set[str] = set()
+    seen_sources: set[str] = set()
+    seen_installs: set[str] = set()
     normalized: list[dict[str, Any]] = []
     for asset in assets:
         source = _relative(asset.get("sourcePath"), field="source_path")
@@ -106,6 +116,14 @@ def load_manifest_value(value: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(asset_id, str) or asset_id in seen:
             raise AssetManifestError("NG_ASSET_DUPLICATE_ID")
         seen.add(asset_id)
+        if source in seen_sources:
+            raise AssetManifestError("NG_ASSET_DUPLICATE_SOURCE")
+        if install in seen_installs:
+            raise AssetManifestError("NG_ASSET_DUPLICATE_INSTALL_PATH")
+        seen_sources.add(source)
+        seen_installs.add(install)
+        if asset.get("kind") not in {"skill", "guard", "automation"}:
+            raise AssetManifestError("NG_ASSET_KIND_INVALID")
         normalized.append({"assetId": asset_id, "kind": asset.get("kind"), "sourcePath": source, "installPath": install})
     if value.get("installRoot") != "news-grasp-assets":
         raise AssetManifestError("NG_ASSET_INSTALL_ROOT_INVALID")

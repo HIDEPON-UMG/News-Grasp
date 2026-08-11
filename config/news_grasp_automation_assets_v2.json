@@ -1,0 +1,80 @@
+{
+  "schemaVersion": "NEWS_GRASP_AUTOMATION_ASSET_MANIFEST_V2",
+  "productId": "News-Grasp",
+  "assetVersion": "2026-08-12.v2",
+  "installRoot": "news-grasp-assets",
+  "assets": [
+    {
+      "assetId": "operational-recovery-skill-v1",
+      "kind": "skill",
+      "sourcePath": "ops-prompts/news-grasp-operational-recovery-v1.md",
+      "installPath": "operational-recovery-v1.md"
+    },
+    {
+      "assetId": "product-write-guard-v1",
+      "kind": "guard",
+      "sourcePath": "tools/news_grasp_change_control.py",
+      "installPath": "news_grasp_change_control.py"
+    },
+    {
+      "assetId": "recovery-registry-v1",
+      "kind": "automation",
+      "sourcePath": "config/operational_recovery_registry_v1.json",
+      "installPath": "operational_recovery_registry_v1.json"
+    },
+    {
+      "assetId": "e2e-discipline-skill-md-v2",
+      "kind": "skill",
+      "sourcePath": "automation/skills/news-grasp-e2e-discipline/SKILL.md",
+      "installPath": "skills/news-grasp-e2e-discipline/SKILL.md"
+    },
+    {
+      "assetId": "e2e-discipline-openai-yaml-v2",
+      "kind": "skill",
+      "sourcePath": "automation/skills/news-grasp-e2e-discipline/agents/openai.yaml",
+      "installPath": "skills/news-grasp-e2e-discipline/agents/openai.yaml"
+    },
+    {
+      "assetId": "repair-method-skill-md-v2",
+      "kind": "skill",
+      "sourcePath": "automation/skills/news-grasp-repair-method/SKILL.md",
+      "installPath": "skills/news-grasp-repair-method/SKILL.md"
+    },
+    {
+      "assetId": "repair-method-openai-yaml-v2",
+      "kind": "skill",
+      "sourcePath": "automation/skills/news-grasp-repair-method/agents/openai.yaml",
+      "installPath": "skills/news-grasp-repair-method/agents/openai.yaml"
+    },
+    {
+      "assetId": "incident-report-skill-md-v2",
+      "kind": "skill",
+      "sourcePath": "automation/skills/report-news-grasp-incident/SKILL.md",
+      "installPath": "skills/report-news-grasp-incident/SKILL.md"
+    },
+    {
+      "assetId": "incident-report-openai-yaml-v2",
+      "kind": "skill",
+      "sourcePath": "automation/skills/report-news-grasp-incident/agents/openai.yaml",
+      "installPath": "skills/report-news-grasp-incident/agents/openai.yaml"
+    },
+    {
+      "assetId": "incident-report-design-reference-v2",
+      "kind": "skill",
+      "sourcePath": "automation/skills/report-news-grasp-incident/references/BUG_REPORT_DESIGN.md",
+      "installPath": "skills/report-news-grasp-incident/references/BUG_REPORT_DESIGN.md"
+    },
+    {
+      "assetId": "incident-report-design-validator-v2",
+      "kind": "skill",
+      "sourcePath": "automation/skills/report-news-grasp-incident/scripts/validate_incident_report_design.py",
+      "installPath": "skills/report-news-grasp-incident/scripts/validate_incident_report_design.py"
+    },
+    {
+      "assetId": "incident-report-workflow-test-v2",
+      "kind": "skill",
+      "sourcePath": "automation/skills/report-news-grasp-incident/tests/test_workflow_contract.py",
+      "installPath": "skills/report-news-grasp-incident/tests/test_workflow_contract.py"
+    }
+  ]
+}

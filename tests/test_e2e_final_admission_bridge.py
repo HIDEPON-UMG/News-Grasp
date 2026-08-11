@@ -1730,7 +1730,7 @@ def test_product_identity_cannot_be_aliased(tmp_path: Path) -> None:
 def test_final_e2e_wrapper_consumes_before_runner_and_forbids_resume() -> None:
     source = WRAPPER.read_text(encoding="utf-8-sig")
     consume = source.index("e2e_final_admission_bridge.py")
-    launch = source.index("& $PowerShellExe @runnerArguments")
+    launch = source.index("& $installedTaskPythonPath @installedLauncherArguments")
     assert consume < launch
     assert "E2EAdmissionPath" in source
     assert "$runnerArguments | ConvertTo-Json" in source

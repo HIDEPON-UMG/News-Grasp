@@ -3,9 +3,9 @@
   "productId": "News-Grasp",
   "unknownReasonHandler": "major_incident_terminal",
   "handlers": [
-    {"handlerId": "active_generation_reconcile", "reasonCodes": ["GENERATION_DRIFT"]},
-    {"handlerId": "previous_generation_restore", "reasonCodes": ["RUNTIME_GENERATION_INVALID"]},
-    {"handlerId": "checkpoint_continuation", "reasonCodes": ["CHECKPOINT_VALID_WRAPPER_FAILURE"]},
+    {"handlerId": "active_generation_reconcile", "reasonCodes": ["GENERATION_DRIFT", "READINESS_RED", "RUNNER_READINESS_RED"]},
+    {"handlerId": "previous_generation_restore", "reasonCodes": ["RUNTIME_GENERATION_INVALID", "RUNTIME_GENERATION_DRIFT"]},
+    {"handlerId": "checkpoint_continuation", "reasonCodes": ["CHECKPOINT_VALID_WRAPPER_FAILURE", "RUNTIME_INPUT_DRIFT", "PUBLIC_COMPLETION_RED"]},
     {"handlerId": "summary_audio_script_builder", "reasonCodes": ["SUMMARY_AUDIO_SCRIPT_MISSING"]},
     {"handlerId": "deepdive_dialogue_builder", "reasonCodes": ["DEEPDIVE_DIALOGUE_MISSING"]},
     {"handlerId": "deepdive_audio_builder", "reasonCodes": ["DEEPDIVE_AUDIO_MISSING"]},

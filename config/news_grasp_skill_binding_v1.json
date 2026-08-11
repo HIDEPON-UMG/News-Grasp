@@ -1,0 +1,117 @@
+{
+  "schemaVersion": "NEWS_GRASP_SKILL_BINDING_V1",
+  "productId": "News-Grasp",
+  "bindingVersion": "2026-08-12.v1",
+  "sharedGlobalMutationCount": 0,
+  "overlayHashAlgorithm": "sha256_joined_relative_path_nul_file_sha256_lf",
+  "skills": [
+    {
+      "skillId": "ops-write-operational-plan",
+      "role": "operational",
+      "classification": "shared_read_only_unchanged_with_reason",
+      "sourceLocator": "shared-skill://ops-write-operational-plan/SKILL.md",
+      "sourceSha256": "767b01c75e809a8b535e03b6c0d604dc8b94995726154be076b1211b98e05d64",
+      "consumer": "News-Grasp requirement and execution planning",
+      "reason": "Shared planning discipline is consumed read-only; product behavior is bound by the repo constitution."
+    },
+    {
+      "skillId": "ops-codex-long-running-work",
+      "role": "operational",
+      "classification": "shared_read_only_unchanged_with_reason",
+      "sourceLocator": "shared-skill://ops-codex-long-running-work/SKILL.md",
+      "sourceSha256": "840497482a9bf9b8a4c7dbde0648e77d2c59caf3bbb66c2f021e65232d0180fe",
+      "consumer": "News-Grasp append-only TODO continuity",
+      "reason": "Shared long-running work control remains outside the product mutation boundary."
+    },
+    {
+      "skillId": "news-grasp-e2e-discipline",
+      "role": "operational",
+      "classification": "repo_versioned_overlay",
+      "sourceLocator": "shared-skill://news-grasp-e2e-discipline/SKILL.md",
+      "sourceSha256": "896ce7022f26b32e4f330f8d62e3e3b4fb3e03ab9c3faffc67179f8422225452",
+      "overlayPath": "automation/skills/news-grasp-e2e-discipline",
+      "overlaySha256": "38d6792ee10dcc3911b3fcb5adeea83968d978b57add9784556a7f9f4f3a6e04",
+      "installedPath": "news-grasp-assets/skills/news-grasp-e2e-discipline",
+      "consumer": "Scheduled-equivalent NoPublish E2E admission",
+      "reason": "News-Grasp-specific final-only E2E rules require a product-owned versioned projection."
+    },
+    {
+      "skillId": "news-grasp-repair-method",
+      "role": "operational",
+      "classification": "repo_versioned_overlay",
+      "sourceLocator": "shared-skill://news-grasp-repair-method/SKILL.md",
+      "sourceSha256": "3633db76d91507c575b8710d14b9734c7ebdbe9ab6716595c2425d7c039ef1fc",
+      "overlayPath": "automation/skills/news-grasp-repair-method",
+      "overlaySha256": "9edf7ed1a339bda9ca512fc60139463bb37aa7ed9a13dfb370694aadab06eb64",
+      "installedPath": "news-grasp-assets/skills/news-grasp-repair-method",
+      "consumer": "Registered daily recovery classification and execution",
+      "reason": "Product recovery routes and typed incident boundaries require a product-owned versioned projection."
+    },
+    {
+      "skillId": "report-news-grasp-incident",
+      "role": "operational",
+      "classification": "repo_versioned_overlay",
+      "sourceLocator": "shared-skill://report-news-grasp-incident/SKILL.md",
+      "sourceSha256": "0609f0cb9187a7c4b308b199f26f480d2f385022bd0397cfbaa5ba5010b78ae1",
+      "overlayPath": "automation/skills/report-news-grasp-incident",
+      "overlaySha256": "dad224f6e3c9ead7180a9ee334fa33490699e83b8da122dc64f4a7350c5fe736",
+      "installedPath": "news-grasp-assets/skills/report-news-grasp-incident",
+      "consumer": "Private-by-default News-Grasp incident evidence",
+      "reason": "Product incident evidence includes a validator, tests, and presentation contract that must travel together."
+    },
+    {
+      "skillId": "ops-safe-commit",
+      "role": "operational",
+      "classification": "shared_read_only_unchanged_with_reason",
+      "sourceLocator": "shared-skill://ops-safe-commit/SKILL.md",
+      "sourceSha256": "c58fbed7fb93412a2f3fb50c0520fcd46bf09d9b8bf5bde08fc5f4e4ee56e2f9",
+      "consumer": "News-Grasp safe commit and push",
+      "reason": "Repository delivery safety is shared and requires no News-Grasp-specific behavior change."
+    },
+    {
+      "skillId": "report-completion-format",
+      "role": "operational",
+      "classification": "shared_read_only_unchanged_with_reason",
+      "sourceLocator": "shared-skill://report-completion-format/SKILL.md",
+      "sourceSha256": "1b2c7c0b72ddcdb3635821de0383a2ff241d660fc0f618c114dedd9826b7bccd",
+      "consumer": "News-Grasp final physical delivery report",
+      "reason": "Completion claim formatting is a shared reporting boundary and remains read-only."
+    },
+    {
+      "skillId": "ops-human-friendly-work-governance",
+      "role": "operational",
+      "classification": "shared_read_only_unchanged_with_reason",
+      "sourceLocator": "shared-skill://ops-human-friendly-work-governance/SKILL.md",
+      "sourceSha256": "fcae3f9445c953873ba6ca03e971d44409025032729593c9db3aee1503207c0f",
+      "consumer": "News-Grasp runner and child-process human impact",
+      "reason": "Human-impact rules are shared; News-Grasp consumers enforce them without altering shared source."
+    },
+    {
+      "skillId": "ops-sdd-tdd-harness-governance",
+      "role": "design_read_only",
+      "classification": "shared_read_only_unchanged_with_reason",
+      "sourceLocator": "shared-skill://ops-sdd-tdd-harness-governance/SKILL.md",
+      "sourceSha256": "0e30903d03f8451836bf0aea681ca976ece29315bbe107dbadf0ce2db0972d2f",
+      "consumer": "Constitutional Red to Green design evidence",
+      "reason": "Design-only SDD/TDD authority is shared and is not installed as product runtime behavior."
+    },
+    {
+      "skillId": "skill-creator",
+      "role": "design_read_only",
+      "classification": "shared_read_only_unchanged_with_reason",
+      "sourceLocator": "shared-skill://skill-creator/SKILL.md",
+      "sourceSha256": "2940e08d49e5197453e58a4387d14cb07101b97911c992ef75c8289e0a1734c0",
+      "consumer": "Product-local skill package structure validation",
+      "reason": "Skill authoring guidance is needed only while generating and validating overlays."
+    },
+    {
+      "skillId": "diagram-tech-graph",
+      "role": "design_read_only",
+      "classification": "shared_read_only_unchanged_with_reason",
+      "sourceLocator": "shared-skill://diagram-tech-graph/SKILL.md",
+      "sourceSha256": "b98dadc0972c982d90a9eecdf8ad615798603210b70f4858510593506edbfa3a",
+      "consumer": "Constitution architecture projection design",
+      "reason": "Diagram design guidance does not belong in the production execution path."
+    }
+  ]
+}

@@ -13,10 +13,11 @@ from typing import Any
 from tools import audit_recovery_control
 from tools import news_grasp_external_control as external_control
 from tools import news_grasp_convergence as convergence
-from tools.news_grasp_operational_contract import select_recovery_branch_from_truth
+from tools.news_grasp_operational_contract import evaluate_completion_v3, select_recovery_branch_from_truth
 
 
 SCHEMA = "NEWS_GRASP_DAILY_RECOVERY_PLAN_V1"
+COMPLETION_STATE_VECTOR_V3 = "COMPLETION_STATE_VECTOR_V3"
 ISSUER = "tools.news_grasp_daily_control.actual_state_controller"
 RECOVERABLE_STATUSES = {
     "error",
@@ -43,6 +44,15 @@ RESUME_STAGES = {
     "post-deepdive",
     "generation-quality-repair",
 }
+
+
+def build_completion_state_vector_v3(**states: Any) -> dict[str, Any]:
+    """daily/audit consumerからV3 state vectorを一つの実装へ束縛する。"""
+
+    result = evaluate_completion_v3(**states)
+    if result.get("schemaVersion") != COMPLETION_STATE_VECTOR_V3:
+        raise ValueError("COMPLETION_STATE_VECTOR_SCHEMA_DRIFT")
+    return result
 
 
 def _canonical(value: object) -> bytes:

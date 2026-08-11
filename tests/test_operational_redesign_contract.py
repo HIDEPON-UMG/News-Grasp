@@ -4,6 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
+import sys
+from importlib.machinery import SourceFileLoader
+from importlib.util import module_from_spec, spec_from_loader
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -45,6 +49,21 @@ def _repo(tmp_path: Path) -> Path:
         ),
         encoding="utf-8",
     )
+    (repo / "config/news_grasp_product_change_routes_v1.json").write_text(
+        json.dumps(
+            {
+                "schemaVersion": "NEWS_GRASP_PRODUCT_CHANGE_ROUTES_V1",
+                "productId": "News-Grasp",
+                "unknownRoutePolicy": "fail_closed",
+                "consumer": "tools.news_grasp_change_control.apply_packet",
+                "routes": [
+                    {"routeId": route_id, "producer": route_id, "executor": executor}
+                    for route_id, executor in control.EXPECTED_ROUTE_EXECUTORS.items()
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
     (repo / "tests/test_operational_redesign_contract.py").write_text(
         "baseline-tests\n", encoding="utf-8"
     )
@@ -55,7 +74,7 @@ def _snapshot(repo: Path, tmp_path: Path, owner: str = "owner-a") -> Path:
     output = tmp_path / f"snapshot-{owner}.json"
     control.snapshot(
         repo_root=repo,
-        target_manifest={"targets": ALLOWED, "ownerThreadId": owner},
+        target_manifest={"targets": [ALLOWED[0]], "ownerThreadId": owner, "actorRouteId": "luna"},
         output=output,
     )
     return output
@@ -66,11 +85,12 @@ def _packet(repo: Path, snapshot: Path, *, owner: str = "owner-a", path: str = A
         "schemaVersion": "NEWS_GRASP_CHANGE_PACKET_V1",
         "packetId": "NG2-WP00-TEST-001",
         "ownerThreadId": owner,
+        "actorRouteId": "luna",
         "executor": {"model": "gpt-5.6-luna", "reasoningEffort": "max", "noSubstitution": True},
         "snapshotPath": str(snapshot),
         "changes": [{"path": path, "operation": "replace", "content": "candidate\n"}],
         "unresolvedDecisionIds": [],
-        "allowedWriteSet": ALLOWED,
+        "allowedWriteSet": [path],
         "repoRoot": str(repo),
     }
 
@@ -80,7 +100,7 @@ def test_ng2_a01_primary_product_write_allowlist(tmp_path: Path) -> None:
     snapshot = _snapshot(repo, tmp_path)
     result = control.validate_packet(repo_root=repo, packet=_packet(repo, snapshot))
     assert result["status"] == "validated"
-    assert result["allowedWriteSet"] == ALLOWED
+    assert result["allowedWriteSet"] == [ALLOWED[0]]
 
 
 def test_ng2_a01_adversarial_scope_escape(tmp_path: Path) -> None:
@@ -96,6 +116,30 @@ def test_ng2_a01_recovery_concurrent_owner(tmp_path: Path) -> None:
     _snapshot(repo, tmp_path, owner="owner-a")
     with pytest.raises(control.NewsGraspChangeControlError, match="NG_CONCURRENT_OWNER_PRESENT"):
         _snapshot(repo, tmp_path, owner="owner-b")
+
+
+@pytest.mark.parametrize("route_id", sorted(control.EXPECTED_ROUTE_EXECUTORS))
+def test_ng2_a01_all_registered_routes_use_the_single_packet_consumer(
+    tmp_path: Path, route_id: str
+) -> None:
+    repo = _repo(tmp_path)
+    snapshot = tmp_path / f"snapshot-{route_id}.json"
+    control.snapshot(
+        repo_root=repo,
+        target_manifest={
+            "targets": [ALLOWED[0]],
+            "ownerThreadId": "owner-a",
+            "actorRouteId": route_id,
+        },
+        output=snapshot,
+    )
+    packet = _packet(repo, snapshot)
+    packet["packetId"] = f"NG2-WP00-ROUTE-{route_id}"
+    packet["actorRouteId"] = route_id
+    packet["executor"] = control.EXPECTED_ROUTE_EXECUTORS[route_id]
+    result = control.validate_packet(repo_root=repo, packet=packet)
+    assert result["status"] == "validated"
+    assert result["allowedWriteSet"] == [ALLOWED[0]]
 
 
 def test_ng2_a13_primary_luna_packet_decision_complete(tmp_path: Path) -> None:
@@ -345,6 +389,74 @@ def test_ng2_wp03_generation_manifest_rejects_worktree_bound_task_action() -> No
         generation.validate_task_action(["pythonw.exe", "launcher.pyw", "--repo-dir", "C:/worktree"])
 
 
+def test_ng3_wp03_runtime_transaction_seals_active_generation(tmp_path: Path) -> None:
+    repo = Path(__file__).resolve().parents[1]
+    launcher_path = repo / "scripts/ops/news-grasp-task-launcher.pyw"
+    loader = SourceFileLoader("news_grasp_task_launcher_generation_test", str(launcher_path))
+    spec = spec_from_loader(loader.name, loader)
+    assert spec is not None
+    launcher = module_from_spec(spec)
+    loader.exec_module(launcher)
+    bin_dir = tmp_path / "bin"
+    runtime_root = tmp_path / ".news-grasp-runtime"
+    bin_dir.mkdir()
+    runtime_root.mkdir()
+    head = subprocess.run(
+        ["git", "-C", str(repo), "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    ).stdout.strip()
+    authority = {
+        "schemaVersion": "STABLE_TASK_AUTHORITY_V1",
+        "taskName": "News-Grasp Runner",
+        "stableLauncherPath": str(launcher_path.resolve()),
+        "stableLauncherSha256": hashlib.sha256(launcher_path.read_bytes()).hexdigest(),
+        "bootstrapPath": str((repo / "scripts/ops/news-grasp-bootstrap.ps1").resolve()),
+        "bootstrapSha256": "b" * 64,
+        "action": ["pythonw.exe", str(launcher_path.resolve()), "runner"],
+        "trigger": {"daily": "06:00"},
+        "repoArgumentCount": 0,
+    }
+    authority["authoritySha256"] = launcher._sha256_json(authority)
+    (bin_dir / "news-grasp-stable-task-authority-v1.json").write_text(
+        json.dumps(authority, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    (bin_dir / "news-grasp-runtime-root-v1.json").write_text(
+        json.dumps(
+            {
+                "schemaVersion": "NEWS_GRASP_RUNTIME_ROOT_V1",
+                "repoDir": str(repo),
+                "pythonExe": sys.executable,
+                "evidenceRepoDir": str(repo),
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    pointer = launcher._seal_active_production_generation(
+        source_repo=repo,
+        runtime_repo=repo,
+        runtime_root=runtime_root,
+        origin_sha=head,
+        bin_dir=bin_dir,
+    )
+    assert len(str(pointer["generationId"])) == 64
+    assert pointer["phase"] == "transaction_committed"
+    assert (runtime_root / "active-generation-v2.json").is_file()
+    assert (runtime_root / "generations" / f"{pointer['generationId']}.json").is_file()
+    repeated = launcher._seal_active_production_generation(
+        source_repo=repo,
+        runtime_repo=repo,
+        runtime_root=runtime_root,
+        origin_sha=head,
+        bin_dir=bin_dir,
+    )
+    assert repeated == pointer
+
+
 def test_ng2_wp05_daily_lineage_does_not_reset_on_run_or_session_change() -> None:
     first = daily_control._daily_operation_lineage_id(
         issue_date="2026-08-11",
@@ -410,6 +522,38 @@ def test_ng2_a03_adversarial_verification_unavailable_preserves_authority() -> N
     )
     assert result["publicCompletionStatus"] == "green"
     assert result["nextRunReadinessStatus"] == "verification_unavailable"
+
+
+def test_ng3_v3_completion_vector_separates_external_and_constitution_status() -> None:
+    result = operational.evaluate_completion_v3(
+        scheduled_attempt={"status": "completed"},
+        recovery_attempt={"status": "not_needed"},
+        public_receipt={"status": "verified_green", "authorityId": "authority-001"},
+        readiness_probe={"status": "red"},
+        audit_observation={"status": "observed", "causeFingerprint": "cause-001"},
+        external_dependency={"status": "external_deferred", "evidenceHash": "e" * 64},
+        constitution_admission={"status": "green", "constitutionHash": "c" * 64},
+    )
+    assert result["schemaVersion"] == "COMPLETION_STATE_VECTOR_V3"
+    assert result["publicCompletionStatus"] == "green"
+    assert result["nextRunReadinessStatus"] == "red"
+    assert result["externalDependencyStatus"] == "external_deferred"
+    assert result["constitutionStatus"] == "green"
+    assert result["operationalStatus"] == "degraded"
+
+
+def test_ng3_v3_verified_public_regression_is_not_hidden_by_readiness_green() -> None:
+    result = operational.evaluate_completion_v3(
+        scheduled_attempt={"status": "failed"},
+        recovery_attempt={"status": "failed"},
+        public_receipt={"status": "verified_regression", "authorityId": "authority-002"},
+        readiness_probe={"status": "green"},
+        audit_observation={"status": "observed"},
+        external_dependency={"status": "ready", "evidenceHash": "e" * 64},
+        constitution_admission={"status": "green", "constitutionHash": "c" * 64},
+    )
+    assert result["publicCompletionStatus"] == "red"
+    assert result["operationalStatus"] == "red"
 
 
 def test_ng2_a03_recovery_pure_probe_after_registered_repair(tmp_path: Path) -> None:
@@ -569,7 +713,7 @@ def test_ng2_a07_recovery_release_profile_is_explicit_one_call() -> None:
 
 
 def test_ng2_a09_product_automation_asset_manifest_is_versioned_and_bound() -> None:
-    manifest_path = Path(__file__).parents[1] / "config" / "news_grasp_automation_assets_v1.json"
+    manifest_path = Path(__file__).parents[1] / "config" / "news_grasp_automation_assets_v2.json"
     manifest = assets.load_manifest(manifest_path)
     snapshot = assets.snapshot_assets(manifest_path.parents[1], manifest)
     assert snapshot["schemaVersion"] == assets.SCHEMA
@@ -593,7 +737,7 @@ def test_ng2_a09_asset_manifest_rejects_escape_and_absolute_paths(tmp_path: Path
 
 def test_ng2_a09_installer_declares_versioned_asset_sync() -> None:
     installer = (Path(__file__).parents[1] / "scripts" / "ops" / "install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
-    assert "news_grasp_automation_assets_v1.json" in installer
+    assert "news_grasp_automation_assets_v2.json" in installer
     assert "news-grasp-assets" in installer
     assert "source_sha256" in installer
     assert "Assert-NewsGraspAssetInstallDestination" in installer

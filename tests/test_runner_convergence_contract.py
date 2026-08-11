@@ -2800,7 +2800,7 @@ def test_runner_start_log_binds_attempt_to_run_id() -> None:
 
 
 def test_scheduled_equivalent_nopublish_uses_same_runner_with_isolated_state() -> None:
-    """最終E2Eは smoke 入口でなく、同じ runner を隔離 state/log + NoPublish で通す。"""
+    """最終E2Eはinstalled stable launcherから同じrunnerをNoPublishで通す。"""
     source = SCHEDULED_EQUIVALENT_PS1.read_text(encoding="utf-8-sig")
 
     assert "news-grasp-runner.ps1" in source
@@ -2814,7 +2814,10 @@ def test_scheduled_equivalent_nopublish_uses_same_runner_with_isolated_state() -
     assert "scripts\\ops\\run_codex_with_timeout.ps1" in source
     assert "'-WindowStyle', 'Hidden'" in source
     assert "-NonInteractive" in source
-    assert "scheduled_entrypoint_mode = 'same_runner_script'" in source
+    assert "scheduled_entrypoint_mode = 'installed_stable_launcher'" in source
+    assert "NEWS_GRASP_INSTALLED_NOPUBLISH_LAUNCH_AUTHORITY_V1" in source
+    assert "& $installedTaskPythonPath @installedLauncherArguments" in source
+    assert "& $PowerShellExe @runnerArguments" not in source
     assert "expected_terminal_state = 'publish_dry_run_ok'" in source
     assert "elapsed_seconds = $elapsedSeconds" in source
     assert "duration_slo_limit_seconds = $durationSloLimitSeconds" in source

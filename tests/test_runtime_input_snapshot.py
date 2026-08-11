@@ -21,6 +21,7 @@ SAMPLE = {
 
 
 def test_ng3_a17_primary_fx_api_keeps_tracked_snapshot_clean(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("NEWS_GRASP_SKIP_URL_CHECK", raising=False)
     tracked = tmp_path / "tracked-fx.json"
     original = json.dumps({"fixture": "lkg"}, ensure_ascii=False) + "\n"
     tracked.write_text(original, encoding="utf-8")

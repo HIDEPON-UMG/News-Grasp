@@ -69,47 +69,51 @@
   </style>
 </head>
 <body>
-  <header>
-    <p class="mono">NEWS-GRASP / OPERATIONAL REDESIGN / 2026-08-11</p>
+  <header class="spec-header">
+    <p class="spec-eyebrow">NEWS-GRASP / OPERATIONAL REDESIGN / 2026-08-11</p>
     <h1>公開成果物優先、純粋検証、固定generation</h1>
     <p>通常scheduled productionを、公開Greenを失わずに「生成 → checkpoint → 登録済み復旧 → 公開確認 → readiness収束」まで閉じるためのproduct-local仕様書。</p>
   </header>
-  <main>
+  <main class="container">
     <div class="summary">
       <strong>結論:</strong> 公開完了と次回readinessを別stateにし、source・runtime・taskをimmutable generationへ束縛する。共有ハーネス、shared broker、routing、hook、他repo、別sessionのtransactionはこの仕様の変更境界外である。<br>
-      <span class="badge success">review approve</span>
-      <span class="mono">plan=a38cb22f54689483ba203e82f3ba678e04636df65ddf6f7cd5d9c5c03cd7804d</span>
+      <span class="badge success">constitution predicate pass</span>
+      <span class="mono">scope=News-Grasp-local / review-series=closed / natural-run-evidence=false</span>
     </div>
-    <nav role="tablist" aria-label="仕様書セクション">
-      <button role="tab" aria-selected="true" aria-controls="overview" id="tab-overview">概要</button>
-      <button role="tab" aria-selected="false" aria-controls="comparison" id="tab-comparison">比較</button>
-      <button role="tab" aria-selected="false" aria-controls="flow" id="tab-flow">データフロー</button>
-      <button role="tab" aria-selected="false" aria-controls="steps" id="tab-steps">実装ステップ</button>
-      <button role="tab" aria-selected="false" aria-controls="parameters" id="tab-parameters">パラメータ</button>
+    <nav class="tabs" role="tablist" aria-label="仕様書セクション">
+      <button class="tab active" role="tab" aria-selected="true" aria-controls="overview" id="tab-overview" data-tab="overview">概要</button>
+      <button class="tab" role="tab" aria-selected="false" aria-controls="alternatives" id="tab-alternatives" data-tab="alternatives">比較</button>
+      <button class="tab" role="tab" aria-selected="false" aria-controls="dataflow" id="tab-dataflow" data-tab="dataflow">データフロー</button>
+      <button class="tab" role="tab" aria-selected="false" aria-controls="impl" id="tab-impl" data-tab="impl">実装ステップ</button>
+      <button class="tab" role="tab" aria-selected="false" aria-controls="playground" id="tab-playground" data-tab="playground">パラメータ</button>
     </nav>
-    <section role="tabpanel" id="overview" aria-labelledby="tab-overview">
+    <section class="tab-panel active" role="tabpanel" id="overview" aria-labelledby="tab-overview">
       <h2>概要 / 成功状態</h2>
       <p>自然scheduled runを待つことは完了条件にしない。下位証拠を隔離fixtureとlocal deterministic toolで揃え、最後にNoPublish E2Eを一回だけ実行して物理提出へ閉じる。</p>
       <div class="state-grid">
+        <div class="card"><h3>scheduledAttemptStatus</h3><p>当日scheduledの試行状態。public completionとは交換不能。</p></div>
+        <div class="card"><h3>recoveryAttemptStatus</h3><p>登録済みhandlerの試行状態。自己申告Greenは禁止。</p></div>
         <div class="card"><h3>publicCompletionStatus</h3><p>必須bundleとpublic surfaceの検証。verified regressionだけがRed。</p></div>
         <div class="card"><h3>nextRunReadinessStatus</h3><p>read-only probeの結果。Redでもpublic Green authorityを消さない。</p></div>
         <div class="card"><h3>auditObservationStatus</h3><p>failure・unverified・recoveryをappend-onlyで保持。</p></div>
+        <div class="card"><h3>externalDependencyStatus</h3><p>外部 unavailableはpublic Greenを後退させずtyped deferredへ分離。</p></div>
+        <div class="card"><h3>constitutionStatus</h3><p>14条項・6柱・trace・active objectの結線状態。</p></div>
         <div class="card"><h3>operationalStatus</h3><p>publicとreadinessの両方がGreenのときだけGreen。</p></div>
       </div>
       <h3>登録済み復旧の原則</h3>
       <ul><li>unknown reasonはappend-only major incidentへ閉じる。</li><li>repair側の自己申告Greenは禁止し、pure probeで再判定する。</li><li>有効checkpointがあるstageはwrapper異常でもmodelを再実行しない。</li></ul>
     </section>
-    <section role="tabpanel" id="comparison" aria-labelledby="tab-comparison" hidden>
+    <section class="tab-panel" role="tabpanel" id="alternatives" aria-labelledby="tab-alternatives" hidden>
       <h2>比較 / 経路選択</h2>
       <p>全Acceptanceを物理提出まで閉じる候補を、モデル費用だけでなく手戻り・再同期・人間負担を含む期待資源で比較する。</p>
       <table><thead><tr><th>候補</th><th>期待時間</th><th>外部model</th><th>リスク</th><th>判断</th></tr></thead><tbody>
-        <tr><td>dirty WIP統合</td><td>38h</td><td>18 calls</td><td>競合・証拠失効</td><td>不採用</td></tr>
-        <tr><td><strong>clean single generation</strong></td><td><strong>38h</strong></td><td><strong>WP packet単位</strong></td><td>最小のrollback</td><td><span class="badge success">採用</span></td></tr>
-        <tr><td>runtime hotfix backport</td><td>約34h</td><td>二方向sync</td><td>二重writer</td><td>不採用</td></tr>
+        <tr><td>dirty WIP統合</td><td>約58h</td><td>再同期・回帰複数</td><td>競合・証拠失効</td><td>不採用</td></tr>
+        <tr><td><strong>clean single generation</strong></td><td><strong>49h</strong></td><td><strong>Luna 8〜10 turn</strong></td><td>rollback最小</td><td><span class="badge success">採用</span></td></tr>
+        <tr><td>runtime hotfix backport</td><td>約54h</td><td>二方向sync</td><td>二重writer</td><td>不採用</td></tr>
       </tbody></table>
       <div class="callout">選択理由: 初回編集の短さではなく、baseline再生成・回帰・rollback・人間操作を含む総期待資源が最小で、全Acceptanceを縮小しないため。</div>
     </section>
-    <section role="tabpanel" id="flow" aria-labelledby="tab-flow" hidden>
+    <section class="tab-panel" role="tabpanel" id="dataflow" aria-labelledby="tab-dataflow" hidden>
       <h2>データフロー / 所有境界</h2>
       <svg class="flow" viewBox="0 0 960 350" role="img" aria-labelledby="flow-title flow-desc">
         <title id="flow-title">News-Grasp運用再設計の所有境界</title>
@@ -127,36 +131,47 @@
       </svg>
       <p class="mono">共有global harness / shared broker / 他session transactionはこの図の外側でread-only参照。</p>
     </section>
-    <section role="tabpanel" id="steps" aria-labelledby="tab-steps" hidden>
+    <section class="tab-panel" role="tabpanel" id="impl" aria-labelledby="tab-impl" hidden>
       <h2>実装ステップ / 検証順序</h2>
       <ol>
         <li><strong>WP-00</strong> product-local write admissionと6 Red/Green。</li>
         <li><strong>WP-01</strong> 本仕様書、registry、provenance。</li>
-        <li><strong>WP-02</strong> 14 Acceptance × 3観点の42 Red、変更前実測。</li>
+        <li><strong>WP-02</strong> 17 Acceptance × 3観点の51 Red、変更前実測。</li>
+        <li><strong>月次閉世界corpus</strong> 32日＋複合5件を同じproduction consumerで再演。</li>
         <li><strong>WP-03〜07</strong> generation、completion/readiness、checkpoint/retry、registry、gate分離。</li>
         <li><strong>WP-08〜10</strong> focused回帰、専用asset、release/install/parity。</li>
         <li><strong>WP-11</strong> 全下位Green後のNoPublish E2E一回と物理提出。</li>
       </ol>
       <div class="callout warning"><strong>return_to_sol_before_execution:</strong> shared/global変更、write set拡張、public semantics変更、未登録failure class、新model route、Acceptance oracle変更。</div>
     </section>
-    <section role="tabpanel" id="parameters" aria-labelledby="tab-parameters" hidden>
+    <section class="tab-panel" role="tabpanel" id="playground" aria-labelledby="tab-playground" hidden>
       <h2>パラメータ / 契約値</h2>
+      <div class="playground">
       <div class="metric-grid">
-        <div class="card"><h3>見積り</h3><p class="mono">楽観 24.2h / 期待 38.0h / 悲観 58.3h</p></div>
+        <div class="card"><h3>見積り</h3><p class="mono">楽観 30.0h / 期待 49.0h / 悲観 78.0h</p></div>
         <div class="card"><h3>model配置</h3><p class="mono">Sol=設計 / Luna Max=機械実装 / local=hash・JSON・test</p></div>
         <div class="card"><h3>最終E2E</h3><p class="mono">NoPublish=1回 / publish=0 / push=0 / notification=0</p></div>
         <div class="card"><h3>保持</h3><p class="mono">public authority=immutable / observations=append-only</p></div>
+        <div class="card"><h3>適用範囲</h3><p class="mono">14 clauses / 6 pillars / 17 A / 51 nodes / 32+5 replay</p></div>
+        <div class="card"><h3>TODO</h3><p class="mono">TODO-143〜155 / append-only / in_progress=1</p></div>
       </div>
       <h3>証拠ハッシュ</h3>
-      <p class="mono">plan SHA-256: a38cb22f54689483ba203e82f3ba678e04636df65ddf6f7cd5d9c5c03cd7804d</p>
-      <p class="mono">bundle SHA-256: 34eb00fab9f43a9fb76c9af2547d71e36eeb4f7d1386d141354bab45c115095b</p>
+      <p class="mono">constitution SHA-256: b96f1e1c0be6ca50b4cce7ea714ba27440866994e8c5e8548769bb138b6f41f5</p>
+      <p class="mono">trace SHA-256: e101f7c0c95fa7952c4d85258fb3eaf5495abf5c69b8f1f222576689e990dd1e</p>
+      <p class="mono">active-catalog: generated and validated by the constitutional active-object consumer</p>
+      <p class="mono">skill-binding SHA-256: 253a18da0ce051179c46df1d977b83a7437c49fac406f2ee95450623807375cd</p>
+      <p class="mono">automation-assets SHA-256: 275a6f4217db6d064cb9c378541fcab0412d086415ff4043744b816de1d45f70</p>
+      <p id="legacy-prompt">News-Grasp運用再設計をproduct-local境界、固定generation、registered recovery、public/readiness分離へ照合する。</p>
+      <button id="copy-prompt" type="button">照合プロンプトをコピー</button>
+      <p id="copy-status" role="status" aria-live="polite"></p>
+      </div>
     </section>
   </main>
-  <footer>News-Grasp専用仕様。共有ハーネスを変更しない。生成日: 2026-08-11 JST。</footer>
+  <footer>News-Grasp専用仕様。共有ハーネスを変更しない。生成日: 2026-08-12 JST。</footer>
   <script>
     (() => {
-      const tabs = [...document.querySelectorAll('[role="tab"]')];
-      const panels = [...document.querySelectorAll('[role="tabpanel"]')];
+      const tabs = [...document.querySelectorAll('.tab')];
+      const panels = [...document.querySelectorAll('.tab-panel')];
       const select = (tab) => {
         tabs.forEach((item) => item.setAttribute('aria-selected', String(item === tab)));
         panels.forEach((panel) => { panel.hidden = panel.id !== tab.getAttribute('aria-controls'); });
@@ -170,6 +185,10 @@
           const next = tabs[(index + delta + tabs.length) % tabs.length];
           next.focus(); select(next);
         });
+      });
+      document.getElementById('copy-prompt').addEventListener('click', async () => {
+        await navigator.clipboard.writeText(document.getElementById('legacy-prompt').textContent);
+        document.getElementById('copy-status').textContent = 'コピーしました。';
       });
     })();
   </script>

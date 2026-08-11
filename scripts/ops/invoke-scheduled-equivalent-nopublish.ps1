@@ -1,4 +1,5 @@
 ﻿# 本番 Scheduled Task と同じ news-grasp-runner.ps1 を、公開副作用なしで最終確認する。
+# installed_launcher_identity: 最終実行は正規installerが配置したstable launcher identityへ束縛する。
 [CmdletBinding()]
 param(
     [Parameter(Mandatory=$true)][string] $RepoRoot,
@@ -184,17 +185,50 @@ foreach ($candidate in @($statePath, $logPath, $receiptFullPath, $parentAuthorit
     }
 }
 
-$runnerPath = Join-Path $repoPath 'scripts\ops\news-grasp-runner.ps1'
-$codexWrapperPath = Join-Path $repoPath 'scripts\ops\run_codex_with_timeout.ps1'
-$e2eAdmissionBridgePath = Join-Path $repoPath 'tools\e2e_final_admission_bridge.py'
+$binPath = [System.IO.Path]::GetFullPath((Join-Path $env:USERPROFILE 'bin'))
+$stableTaskAuthorityPath = Join-Path $binPath 'news-grasp-stable-task-authority-v1.json'
+$runtimeRootConfigPath = Join-Path $binPath 'news-grasp-runtime-root-v1.json'
+if (-not (Test-Path -LiteralPath $stableTaskAuthorityPath -PathType Leaf)) {
+    throw "HIGH_COST_EXECUTABLE_IDENTITY_INVALID: stable task authority が見つかりません: $stableTaskAuthorityPath"
+}
+if (-not (Test-Path -LiteralPath $runtimeRootConfigPath -PathType Leaf)) {
+    throw "HIGH_COST_EXECUTABLE_IDENTITY_INVALID: production runtime config が見つかりません: $runtimeRootConfigPath"
+}
+try {
+    $stableTaskAuthorityPath = Get-CanonicalExistingFile -Path $stableTaskAuthorityPath -Label 'stable task authority' -Boundary $binPath -MaxBytes 65536
+    $runtimeRootConfigPath = Get-CanonicalExistingFile -Path $runtimeRootConfigPath -Label 'production runtime config' -Boundary $binPath -MaxBytes 65536
+    $stableTaskAuthority = Get-Content -LiteralPath $stableTaskAuthorityPath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+    $runtimeRootConfig = Get-Content -LiteralPath $runtimeRootConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+    if ([string]$stableTaskAuthority.schemaVersion -cne 'STABLE_TASK_AUTHORITY_V1' -or
+        [int]$stableTaskAuthority.repoArgumentCount -ne 0 -or
+        [string]$runtimeRootConfig.schemaVersion -cne 'NEWS_GRASP_RUNTIME_ROOT_V1') {
+        throw 'installed authority schema mismatch'
+    }
+    $installedLauncherPath = Get-CanonicalExistingFile -Path ([string]$stableTaskAuthority.stableLauncherPath) -Label 'installed stable launcher' -Boundary $binPath -MaxBytes 67108864
+    $installedLauncherSha256 = (Get-FileHash -LiteralPath $installedLauncherPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($installedLauncherSha256 -cne ([string]$stableTaskAuthority.stableLauncherSha256).ToLowerInvariant()) {
+        throw 'installed launcher hash mismatch'
+    }
+    $runtimeRepoPath = [System.IO.Path]::GetFullPath((Resolve-Path -LiteralPath ([string]$runtimeRootConfig.repoDir) -ErrorAction Stop).Path)
+    $expectedRuntimeRepoPath = [System.IO.Path]::GetFullPath((Join-Path $env:USERPROFILE '.news-grasp-runtime\production-runtime'))
+    if (-not [string]::Equals($runtimeRepoPath, $expectedRuntimeRepoPath, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw 'production runtime root mismatch'
+    }
+    $installedTaskPythonPath = Get-CanonicalExistingFile -Path ([string]$runtimeRootConfig.pythonExe) -Label 'installed launcher Python' -MaxBytes 67108864
+    $runnerPath = Join-Path $runtimeRepoPath 'scripts\ops\news-grasp-runner.ps1'
+    $codexWrapperPath = Join-Path $runtimeRepoPath 'scripts\ops\run_codex_with_timeout.ps1'
+    $e2eAdmissionBridgePath = Join-Path $runtimeRepoPath 'tools\e2e_final_admission_bridge.py'
+} catch {
+    throw "INSTALLED_LAUNCHER_IDENTITY_INVALID: $($_.Exception.Message)"
+}
 if (-not (Test-Path -LiteralPath $runnerPath -PathType Leaf)) {
-    throw "runner が見つかりません: $runnerPath"
+    throw "installed runner が見つかりません: $runnerPath"
 }
 if (-not (Test-Path -LiteralPath $codexWrapperPath -PathType Leaf)) {
-    throw "repo-managed Codex wrapper が見つかりません: $codexWrapperPath"
+    throw "installed Codex wrapper が見つかりません: $codexWrapperPath"
 }
 if (-not (Test-Path -LiteralPath $e2eAdmissionBridgePath -PathType Leaf)) {
-    throw "E2E final admission consumer が見つかりません: $e2eAdmissionBridgePath"
+    throw "installed E2E final admission consumer が見つかりません: $e2eAdmissionBridgePath"
 }
 if (-not (Test-Path -LiteralPath $PythonExe -PathType Leaf)) {
     throw "Python 実行体が見つかりません: $PythonExe"
@@ -221,9 +255,9 @@ try {
         $powerShellCommand.Source
     }
     $powerShellCanonicalPath = Get-CanonicalExistingFile -Path ([string]$powerShellCommandPath) -Label 'runner executable' -MaxBytes 67108864
-    $runnerPath = Get-CanonicalExistingFile -Path $runnerPath -Label 'runner script' -Boundary $repoPath -MaxBytes 67108864
-    $codexWrapperPath = Get-CanonicalExistingFile -Path $codexWrapperPath -Label 'Codex wrapper' -Boundary $repoPath -MaxBytes 67108864
-    $e2eAdmissionBridgePath = Get-CanonicalExistingFile -Path $e2eAdmissionBridgePath -Label 'E2E admission bridge' -Boundary $repoPath -MaxBytes 67108864
+    $runnerPath = Get-CanonicalExistingFile -Path $runnerPath -Label 'runner script' -Boundary $runtimeRepoPath -MaxBytes 67108864
+    $codexWrapperPath = Get-CanonicalExistingFile -Path $codexWrapperPath -Label 'Codex wrapper' -Boundary $runtimeRepoPath -MaxBytes 67108864
+    $e2eAdmissionBridgePath = Get-CanonicalExistingFile -Path $e2eAdmissionBridgePath -Label 'E2E admission bridge' -Boundary $runtimeRepoPath -MaxBytes 67108864
     $highCostOperationBudgetPath = Get-CanonicalExistingFile -Path $highCostOperationBudgetPath -Label 'high-cost operation budget' -Boundary $workspacePath -MaxBytes 67108864
     $highCostModelBrokerPath = Get-CanonicalExistingFile -Path $highCostModelBrokerPath -Label 'installed model broker' -MaxBytes 67108864
     $pythonSha256 = (Get-FileHash -LiteralPath $pythonCanonicalPath -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -266,6 +300,7 @@ $runnerArgumentsPath = Get-CanonicalFuturePath -Path "$receiptFullPath.runner-ar
 $reservationReceiptPath = Get-CanonicalFuturePath -Path "$receiptFullPath.e2e-final-reservation.json" -Suffix '.e2e-final-reservation.json' -Boundary $repoPath -Label 'reservation receipt'
 $claimReceiptPath = Get-CanonicalFuturePath -Path "$receiptFullPath.e2e-final-claim.json" -Suffix '.e2e-final-claim.json' -Boundary $repoPath -Label 'claim receipt'
 $claimWitnessPath = Get-CanonicalFuturePath -Path "$receiptFullPath.e2e-final-claim-witness.json" -Suffix '.e2e-final-claim-witness.json' -Boundary $repoPath -Label 'claim witness'
+$installedLaunchAuthorityPath = Get-CanonicalFuturePath -Path "$receiptFullPath.installed-launch-authority.json" -Suffix '.installed-launch-authority.json' -Boundary $repoPath -Label 'installed launch authority'
 if ($HighCostParentAuthorityPath -and
     -not [string]::Equals(
         [System.IO.Path]::GetFullPath($HighCostParentAuthorityPath),
@@ -285,12 +320,13 @@ $runnerArgumentsPath = Get-CanonicalFuturePath -Path $runnerArgumentsPath -Suffi
 $reservationReceiptPath = Get-CanonicalFuturePath -Path $reservationReceiptPath -Suffix '.e2e-final-reservation.json' -Boundary $repoPath -Label 'reservation receipt'
 $claimReceiptPath = Get-CanonicalFuturePath -Path $claimReceiptPath -Suffix '.e2e-final-claim.json' -Boundary $repoPath -Label 'claim receipt'
 $claimWitnessPath = Get-CanonicalFuturePath -Path $claimWitnessPath -Suffix '.e2e-final-claim-witness.json' -Boundary $repoPath -Label 'claim witness'
+$installedLaunchAuthorityPath = Get-CanonicalFuturePath -Path $installedLaunchAuthorityPath -Suffix '.installed-launch-authority.json' -Boundary $repoPath -Label 'installed launch authority'
 $runnerArguments = @(
     '-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass',
     '-File', $runnerPath,
     '-NoPublish',
     '-DateStampOverride', $DateStamp,
-    '-RepoDirOverride', $repoPath,
+    '-RepoDirOverride', $runtimeRepoPath,
     '-CodexWrapperOverride', $codexWrapperPath,
     '-StateFileOverride', $statePath,
     '-LogDirOverride', $logPath,
@@ -324,6 +360,40 @@ try {
 } finally {
     if ($runnerArgumentsStream) { $runnerArgumentsStream.Dispose() }
 }
+$installedLaunchAuthority = [ordered]@{
+    schemaVersion = 'NEWS_GRASP_INSTALLED_NOPUBLISH_LAUNCH_AUTHORITY_V1'
+    issueDate = $DateStamp
+    attemptId = $attemptId
+    stableLauncherPath = $installedLauncherPath
+    stableLauncherSha256 = $installedLauncherSha256
+    stableTaskAuthorityPath = $stableTaskAuthorityPath
+    stableTaskAuthorityFileSha256 = (Get-FileHash -LiteralPath $stableTaskAuthorityPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    runnerExecutablePath = $powerShellCanonicalPath
+    runnerExecutableSha256 = $powerShellSha256
+    runnerArgumentsPath = $runnerArgumentsPath
+    runnerArgumentsFileSha256 = (Get-FileHash -LiteralPath $runnerArgumentsPath -Algorithm SHA256).Hash.ToLowerInvariant()
+}
+$installedLaunchAuthorityBody = $installedLaunchAuthority | ConvertTo-Json -Depth 6 -Compress
+$installedLaunchAuthorityHasher = [Security.Cryptography.SHA256]::Create()
+try {
+    $installedLaunchAuthorityBytes = [Text.Encoding]::UTF8.GetBytes($installedLaunchAuthorityBody)
+    $installedLaunchAuthority.authoritySha256 = ([BitConverter]::ToString($installedLaunchAuthorityHasher.ComputeHash($installedLaunchAuthorityBytes)) -replace '-', '').ToLowerInvariant()
+} finally { $installedLaunchAuthorityHasher.Dispose() }
+$installedLaunchAuthorityJson = $installedLaunchAuthority | ConvertTo-Json -Depth 6
+$installedLaunchAuthorityOutputBytes = $utf8NoBom.GetBytes($installedLaunchAuthorityJson + "`n")
+$installedLaunchAuthorityStream = $null
+try {
+    $installedLaunchAuthorityStream = [System.IO.File]::Open(
+        $installedLaunchAuthorityPath,
+        [System.IO.FileMode]::CreateNew,
+        [System.IO.FileAccess]::Write,
+        [System.IO.FileShare]::None
+    )
+    $installedLaunchAuthorityStream.Write($installedLaunchAuthorityOutputBytes, 0, $installedLaunchAuthorityOutputBytes.Length)
+    $installedLaunchAuthorityStream.Flush()
+} finally {
+    if ($installedLaunchAuthorityStream) { $installedLaunchAuthorityStream.Dispose() }
+}
 $e2eAdmissionValidation = & $pythonCanonicalPath -I $e2eAdmissionBridgePath 'validate-issued' `
     '--admission' $E2EAdmissionPath `
     '--runner-arguments-file' $runnerArgumentsPath `
@@ -346,7 +416,7 @@ $authorizeOutput = & $pythonCanonicalPath -I $highCostOperationBudgetPath 'autho
     '--simulation-receipt' $SimulationReceiptPath `
     '--e2e-admission' $E2EAdmissionPath `
     '--causal-replacement-proof' $CausalReplacementProofPath `
-    '--execution-root' $repoPath `
+    '--execution-root' $runtimeRepoPath `
     '--output' $parentAuthorityFullPath @supersessionArguments
 if ($LASTEXITCODE -ne 0) {
     throw "HIGH_COST_OPERATION_AUTHORIZATION_REJECTED exit=$LASTEXITCODE"
@@ -382,8 +452,13 @@ $launchPowerShellSha256 = (Get-FileHash -LiteralPath $powerShellCanonicalPath -A
 if ($launchPowerShellSha256 -ne $powerShellSha256) {
     throw "HIGH_COST_POWERSHELL_EXECUTABLE_DRIFT: $powerShellCanonicalPath"
 }
-$PowerShellExe = $powerShellCanonicalPath
-& $PowerShellExe @runnerArguments
+$installedLauncherArguments = @(
+    $installedLauncherPath,
+    'scheduled-equivalent-nopublish',
+    '--launch-authority',
+    $installedLaunchAuthorityPath
+)
+& $installedTaskPythonPath @installedLauncherArguments
 $runnerExitCode = $LASTEXITCODE
 
 $state = $null
@@ -401,15 +476,18 @@ $durationSloLimitSeconds = 3600
 $durationSloMet = $elapsedSeconds -le $durationSloLimitSeconds
 $receipt = [ordered]@{
     schema = 'NEWS_GRASP_SCHEDULED_EQUIVALENT_NOPUBLISH_E2E_V1'
-    scheduled_entrypoint_mode = 'same_runner_script'
+    scheduled_entrypoint_mode = 'installed_stable_launcher'
     expected_terminal_state = 'publish_dry_run_ok'
     no_publish = $true
     no_push = $true
     no_auto_open = $true
     no_focus_theft = $true
     date = $DateStamp
-    repo_root = $repoPath
+    repo_root = $runtimeRepoPath
     runner_path = $runnerPath
+    installed_launcher_path = $installedLauncherPath
+    installed_launcher_sha256 = $installedLauncherSha256
+    installed_launch_authority_path = $installedLaunchAuthorityPath
     state_file = $statePath
     log_dir = $logPath
     started_at = $startedAt.ToString('o')
