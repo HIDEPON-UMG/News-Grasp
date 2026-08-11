@@ -284,6 +284,21 @@ def test_failure_classification_is_derived_from_observed_state_only() -> None:
     )
 
 
+def test_codex_auth_block_is_typed_external_deferred_without_recovery_reentry() -> None:
+    """Codex認証未準備は再修復へ戻さず、外部依存のdeferredへ分岐する。"""
+    control = _control()
+    assert (
+        control.classify_observed_failure(
+            runner_state={
+                "status": "blocked_codex_auth",
+            },
+            process_exit_code=72,
+            log_text="codex auth readiness failed before repair:generation-quality",
+        )
+        == "external_control_plane_unavailable"
+    )
+
+
 def test_recovery_plan_is_bounded_and_preserves_scheduled_failure() -> None:
     control = _control()
     plan = control.build_recovery_plan(

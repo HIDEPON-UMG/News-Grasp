@@ -105,7 +105,12 @@ def classify_observed_failure(
         str(external.get("kind") or "") if isinstance(external, dict) else ""
     )
     if (
-        status in {"failed_shared_broker_generation_drift", "external_control_plane_unavailable"}
+        status
+        in {
+            "failed_shared_broker_generation_drift",
+            "external_control_plane_unavailable",
+            "blocked_codex_auth",
+        }
         or external_kind in {"external_control_plane_unavailable", "shared_broker_generation_drift"}
         or "NEWS_GRASP_SHARED_BROKER_GENERATION_DRIFT" in log_text
     ):
