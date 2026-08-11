@@ -472,7 +472,15 @@ if (Test-Path -LiteralPath $existingRuntimeRootPath -PathType Leaf) {
         $existingRuntimeRoot.evidenceRepoDir -and
         -not (Test-NewsGraspSamePath -Left $runtimeEvidenceRepoDir -Right ([string]$existingRuntimeRoot.evidenceRepoDir))
     ) {
-        throw 'NEWS_GRASP_EVIDENCE_REPO_GENERATION_DRIFT'
+        # generation更新時はevidence pathが変わり得る。旧rootとのpath一致だけで
+        # fail-closeせず、新evidence自身をcandidateと同じGit generationとして再検証する。
+        $evidenceGenerationGreen = Test-NewsGraspPromotableInstallSource `
+            -CurrentRepoDir $runtimeEvidenceRepoDir `
+            -CandidateRepoDir $RepoDir `
+            -TrustedBoundary $installTrustedBoundary
+        if (-not $evidenceGenerationGreen) {
+            throw 'NEWS_GRASP_EVIDENCE_REPO_GENERATION_DRIFT'
+        }
     }
 }
 $sourceSnapshots = @{}

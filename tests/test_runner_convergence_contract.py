@@ -2950,6 +2950,14 @@ def test_ops_installer_rejects_noncanonical_source_before_recovery_or_mutation()
     assert "$sourceSnapshots[$file]" in pre_mutation
 
 
+def test_ops_installer_allows_clean_evidence_generation_transition() -> None:
+    """旧runtime rootから、同一candidate generationのclean evidenceへ遷移できる。"""
+    installer = (OPS_DIR / "install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
+    transition = "Test-NewsGraspPromotableInstallSource `\n            -CurrentRepoDir $runtimeEvidenceRepoDir `\n            -CandidateRepoDir $RepoDir"
+    assert transition in installer
+    assert "NEWS_GRASP_EVIDENCE_REPO_GENERATION_DRIFT" in installer
+
+
 def test_install_guard_dynamically_rejects_noncanonical_runtime_root_source(tmp_path: Path) -> None:
     canonical_repo = tmp_path / "canonical"
     legacy_repo = tmp_path / "legacy"
