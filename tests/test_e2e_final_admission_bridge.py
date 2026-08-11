@@ -572,6 +572,8 @@ def _issue(
     runner = repo / "scripts" / "ops" / "news-grasp-runner.ps1"
     runner.parent.mkdir(parents=True, exist_ok=True)
     runner.write_text("Write-Output 'runner'\n", encoding="utf-8")
+    authority_python = tmp_path / "fixture-authority-python.exe"
+    authority_python.write_bytes(b"MZ synthetic fixture authority executable\n")
     admission = repo / ".e2e-final-admissions" / admission_name
     ledger = tmp_path / "durable" / "attempts.json"
     issue_admission(
@@ -585,6 +587,7 @@ def _issue(
             if runner_executable_path is not None
             else {}
         ),
+        authority_python_executable_path=authority_python,
         evidence_bindings=_green_evidence(tmp_path / admission.stem, repo_root=repo),
         output_path=admission,
     )
