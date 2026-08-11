@@ -2106,7 +2106,9 @@ def execute_audit_recovery(payload: object) -> dict[str, Any]:
     if not runner_path.is_file() or runner_path.is_symlink():
         raise ValueError("RECOVERY_RUNNER_INVALID")
     runner_sha256 = _file_sha256(runner_path)
-    canonical_python = CANONICAL_REPO_ROOT / ".venv" / "Scripts" / "python.exe"
+    canonical_python = Path(
+        str(payload.get("recoveryPythonExe") or CANONICAL_REPO_ROOT / ".venv" / "Scripts" / "python.exe")
+    ).resolve()
     if not canonical_python.is_file() or canonical_python.is_symlink():
         raise ValueError("RECOVERY_RUNTIME_INTERPRETER_INVALID")
     validate_recovery_execution_manifest(
