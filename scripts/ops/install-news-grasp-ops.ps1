@@ -736,7 +736,7 @@ if (Test-Path -LiteralPath $missionAuthorityPath -PathType Leaf) {
         (Test-Path -LiteralPath $missionValidatorPath -PathType Leaf) -and
         (Test-Path -LiteralPath $missionValidatorPython -PathType Leaf)
     ) {
-        $missionValidationJson = (& $missionValidatorPython '-I' $missionValidatorPath 'validate-existing' '--path' $missionAuthorityPath 2>&1 | Out-String).Trim()
+        $missionValidationJson = (& $missionValidatorPython '-I' '-B' $missionValidatorPath 'validate-existing' '--path' $missionAuthorityPath 2>&1 | Out-String).Trim()
         $missionValidationExit = $LASTEXITCODE
         try { $missionValidation = $missionValidationJson | ConvertFrom-Json -ErrorAction Stop } catch { $missionValidation = $null }
         $reuseExistingMissionAuthority = (
