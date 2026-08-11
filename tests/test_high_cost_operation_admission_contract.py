@@ -21,7 +21,9 @@ REPAIR_SKILL = (
 def test_nopublish_wrapper_authorizes_and_activates_parent_before_runner_launch() -> None:
     text = WRAPPER.read_text(encoding="utf-8-sig")
     validate_issued = text.index("'validate-issued'")
-    authorize = text.index("& $pythonCanonicalPath -I $highCostOperationBudgetPath 'authorize-causal-replacement'")
+    authorize = text.index(
+        "& $pythonCanonicalPath -I $highCostOperationBudgetPath $authorizationCommand"
+    )
     activate = text.index("& $pythonCanonicalPath -I $highCostOperationBudgetPath 'activate'")
     validate_parent = text.index("'validate-activated'")
     consume = text.index("& $pythonCanonicalPath -I $e2eAdmissionBridgePath 'consume'")
@@ -39,6 +41,43 @@ def test_nopublish_wrapper_authorizes_and_activates_parent_before_runner_launch(
     assert "'--reservation-output' $reservationReceiptPath" in text
     assert "NEWS_GRASP_INSTALLED_NOPUBLISH_LAUNCH_AUTHORITY_V1" in text
     assert "& $PowerShellExe @runnerArguments" not in text
+
+
+def test_nopublish_wrapper_selects_new_attempt_without_causal_proof() -> None:
+    """通常日次は旧日付専用causal replacementへ誤配送しない。"""
+    text = WRAPPER.read_text(encoding="utf-8-sig")
+
+    assert "[string] $CausalReplacementProofPath = ''" in text
+    assert "$authorizationCommand = 'authorize'" in text
+    assert "$authorizationMode = 'new_attempt'" in text
+    assert "if ($CausalReplacementProofPath)" in text
+    assert "$authorizationCommand = 'authorize-causal-replacement'" in text
+    assert "$authorizationMode = 'causal_replacement'" in text
+    assert "@authorizationExtraArguments" in text
+    assert "@consumeExtraArguments" in text
+
+
+def test_nopublish_wrapper_rejects_supersession_without_causal_proof() -> None:
+    """supersessionだけを通常新規attemptへ注入する抜け道を閉じる。"""
+    text = WRAPPER.read_text(encoding="utf-8-sig")
+
+    assert "HIGH_COST_SUPERSESSION_REQUIRES_CAUSAL_REPLACEMENT" in text
+    assert text.index("HIGH_COST_SUPERSESSION_REQUIRES_CAUSAL_REPLACEMENT") < text.index(
+        "$statePath = Get-CanonicalFuturePath"
+    )
+
+
+def test_nopublish_wrapper_binds_authority_and_runner_to_isolated_repo() -> None:
+    """installed launcherを使いつつ、生成先は固定generationの隔離worktreeへ束縛する。"""
+    text = WRAPPER.read_text(encoding="utf-8-sig")
+
+    assert "$runnerPath = Join-Path $repoPath 'scripts\\ops\\news-grasp-runner.ps1'" in text
+    assert "$codexWrapperPath = Join-Path $repoPath 'scripts\\ops\\run_codex_with_timeout.ps1'" in text
+    assert "'-RepoDirOverride', $repoPath" in text
+    assert "'--execution-root' $repoPath" in text
+    assert "executionRepoRoot = $repoPath" in text
+    assert "executionRepoCommit = $executionRepoCommit" in text
+    assert "runtimeRepoCommit = $runtimeRepoCommit" in text
 
 
 def test_nopublish_wrapper_propagates_parent_authority_not_shared_child_receipt() -> None:
@@ -159,6 +198,7 @@ def test_wrapper_and_runner_do_not_reserve_two_full_e2e_attempts() -> None:
         "# ===== sentinel", 1
     )[0]
     assert wrapper_gate.count("'authorize-causal-replacement'") == 1
+    assert wrapper_gate.count("$authorizationCommand = 'authorize'") == 1
     assert wrapper_gate.count("'activate'") == 1
     assert "'admit'" not in wrapper_gate
     nopublish_gate = runner_gate.split("if ($NoPublish)", 1)[1].split(

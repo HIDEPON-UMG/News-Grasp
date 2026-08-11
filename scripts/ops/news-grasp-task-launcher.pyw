@@ -613,6 +613,9 @@ def _run_installed_nopublish_authority(
         "stableTaskAuthorityFileSha256",
         "runnerExecutablePath",
         "runnerExecutableSha256",
+        "executionRepoRoot",
+        "executionRepoCommit",
+        "runtimeRepoCommit",
         "runnerArgumentsPath",
         "runnerArgumentsFileSha256",
         "authoritySha256",
@@ -662,13 +665,53 @@ def _run_installed_nopublish_authority(
         runtime_repo=runtime_repo,
         launcher_identity=launcher_identity,
     )
-    expected_runner = (runtime_repo / "scripts" / "ops" / "news-grasp-runner.ps1").resolve(strict=True)
+    try:
+        execution_repo = Path(str(value["executionRepoRoot"])).resolve(strict=True)
+        runtime_head = _run_git(runtime_repo, "rev-parse", "HEAD").strip().lower()
+        execution_head = _run_git(execution_repo, "rev-parse", "HEAD").strip().lower()
+        tracked_diff = _run_git(
+            execution_repo, "status", "--porcelain", "--untracked-files=no"
+        ).strip()
+    except (OSError, RuntimeError) as error:
+        raise RuntimeError("NEWS_GRASP_INSTALLED_GENERATION_DRIFT") from error
+    if (
+        not execution_repo.is_dir()
+        or execution_head != runtime_head
+        or value.get("executionRepoCommit") != execution_head
+        or value.get("runtimeRepoCommit") != runtime_head
+        or tracked_diff
+        or _git_common_dir(execution_repo) != _git_common_dir(runtime_repo)
+    ):
+        raise RuntimeError("NEWS_GRASP_INSTALLED_GENERATION_DRIFT")
+    expected_runner = (
+        execution_repo / "scripts" / "ops" / "news-grasp-runner.ps1"
+    ).resolve(strict=True)
+    runtime_runner = (
+        runtime_repo / "scripts" / "ops" / "news-grasp-runner.ps1"
+    ).resolve(strict=True)
+    expected_codex_wrapper = (
+        execution_repo / "scripts" / "ops" / "run_codex_with_timeout.ps1"
+    ).resolve(strict=True)
+    runtime_codex_wrapper = (
+        runtime_repo / "scripts" / "ops" / "run_codex_with_timeout.ps1"
+    ).resolve(strict=True)
     try:
         file_index = arguments.index("-File")
         observed_runner = Path(arguments[file_index + 1]).resolve(strict=True)
+        repo_index = arguments.index("-RepoDirOverride")
+        observed_repo = Path(arguments[repo_index + 1]).resolve(strict=True)
+        wrapper_index = arguments.index("-CodexWrapperOverride")
+        observed_codex_wrapper = Path(arguments[wrapper_index + 1]).resolve(strict=True)
     except (ValueError, IndexError, OSError) as error:
         raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_ARGUMENTS_INVALID") from error
-    if observed_runner != expected_runner:
+    if (
+        observed_runner != expected_runner
+        or observed_repo != execution_repo
+        or observed_codex_wrapper != expected_codex_wrapper
+        or _file_sha256(expected_runner) != _file_sha256(runtime_runner)
+        or _file_sha256(expected_codex_wrapper)
+        != _file_sha256(runtime_codex_wrapper)
+    ):
         raise RuntimeError("NEWS_GRASP_INSTALLED_GENERATION_DRIFT")
     creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
     result = subprocess.run(

@@ -16,7 +16,7 @@ param(
     [Parameter(Mandatory=$true)][string] $StaticReceiptPath,
     [Parameter(Mandatory=$true)][string] $SimulationReceiptPath,
     [Parameter(Mandatory=$true)][string] $E2EAdmissionPath,
-    [Parameter(Mandatory=$true)][string] $CausalReplacementProofPath,
+    [string] $CausalReplacementProofPath = '',
     [string] $SupersessionApprovalPath = '',
     [string] $HighCostParentAuthorityPath = '',
     [string] $PowerShellExe = 'powershell.exe'
@@ -215,8 +215,8 @@ try {
         throw 'production runtime root mismatch'
     }
     $installedTaskPythonPath = Get-CanonicalExistingFile -Path ([string]$runtimeRootConfig.pythonExe) -Label 'installed launcher Python' -MaxBytes 67108864
-    $runnerPath = Join-Path $runtimeRepoPath 'scripts\ops\news-grasp-runner.ps1'
-    $codexWrapperPath = Join-Path $runtimeRepoPath 'scripts\ops\run_codex_with_timeout.ps1'
+    $runnerPath = Join-Path $repoPath 'scripts\ops\news-grasp-runner.ps1'
+    $codexWrapperPath = Join-Path $repoPath 'scripts\ops\run_codex_with_timeout.ps1'
     $e2eAdmissionBridgePath = Join-Path $runtimeRepoPath 'tools\e2e_final_admission_bridge.py'
 } catch {
     throw "INSTALLED_LAUNCHER_IDENTITY_INVALID: $($_.Exception.Message)"
@@ -255,13 +255,23 @@ try {
         $powerShellCommand.Source
     }
     $powerShellCanonicalPath = Get-CanonicalExistingFile -Path ([string]$powerShellCommandPath) -Label 'runner executable' -MaxBytes 67108864
-    $runnerPath = Get-CanonicalExistingFile -Path $runnerPath -Label 'runner script' -Boundary $runtimeRepoPath -MaxBytes 67108864
-    $codexWrapperPath = Get-CanonicalExistingFile -Path $codexWrapperPath -Label 'Codex wrapper' -Boundary $runtimeRepoPath -MaxBytes 67108864
+    $runnerPath = Get-CanonicalExistingFile -Path $runnerPath -Label 'runner script' -Boundary $repoPath -MaxBytes 67108864
+    $codexWrapperPath = Get-CanonicalExistingFile -Path $codexWrapperPath -Label 'Codex wrapper' -Boundary $repoPath -MaxBytes 67108864
     $e2eAdmissionBridgePath = Get-CanonicalExistingFile -Path $e2eAdmissionBridgePath -Label 'E2E admission bridge' -Boundary $runtimeRepoPath -MaxBytes 67108864
     $highCostOperationBudgetPath = Get-CanonicalExistingFile -Path $highCostOperationBudgetPath -Label 'high-cost operation budget' -Boundary $workspacePath -MaxBytes 67108864
     $highCostModelBrokerPath = Get-CanonicalExistingFile -Path $highCostModelBrokerPath -Label 'installed model broker' -MaxBytes 67108864
     $pythonSha256 = (Get-FileHash -LiteralPath $pythonCanonicalPath -Algorithm SHA256).Hash.ToLowerInvariant()
     $powerShellSha256 = (Get-FileHash -LiteralPath $powerShellCanonicalPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    $runtimeRepoCommit = (& git -C $runtimeRepoPath rev-parse HEAD 2>$null).Trim().ToLowerInvariant()
+    if ($LASTEXITCODE -ne 0) { throw 'runtime commit unavailable' }
+    $executionRepoCommit = (& git -C $repoPath rev-parse HEAD 2>$null).Trim().ToLowerInvariant()
+    if ($LASTEXITCODE -ne 0) { throw 'execution commit unavailable' }
+    $executionTrackedDiff = @(& git -C $repoPath status --porcelain --untracked-files=no 2>$null)
+    if ($LASTEXITCODE -ne 0 -or $runtimeRepoCommit -notmatch '^[0-9a-f]{40}$' -or
+        $executionRepoCommit -notmatch '^[0-9a-f]{40}$' -or
+        $executionRepoCommit -cne $runtimeRepoCommit -or $executionTrackedDiff.Count -ne 0) {
+        throw 'execution generation is not the clean active runtime generation'
+    }
 } catch {
     throw "HIGH_COST_EXECUTABLE_IDENTITY_INVALID: $($_.Exception.Message)"
 }
@@ -273,7 +283,19 @@ $RouteManifestPath = Get-CanonicalExistingFile -Path $RouteManifestPath -Label '
 $StaticReceiptPath = Get-CanonicalExistingFile -Path $StaticReceiptPath -Label 'static evidence' -Boundary $workspacePath -MaxBytes 4194304
 $SimulationReceiptPath = Get-CanonicalExistingFile -Path $SimulationReceiptPath -Label 'simulation evidence' -Boundary $workspacePath -MaxBytes 4194304
 $E2EAdmissionPath = Get-CanonicalExistingFile -Path $E2EAdmissionPath -Label 'issued E2E admission' -Boundary $repoPath -MaxBytes 65536
-$CausalReplacementProofPath = Get-CanonicalExistingFile -Path $CausalReplacementProofPath -Label 'causal replacement proof' -Boundary $workspacePath -MaxBytes 2097152
+$authorizationMode = 'new_attempt'
+$authorizationCommand = 'authorize'
+$authorizationExtraArguments = @('--attempt-kind', $operationKind)
+$consumeExtraArguments = @()
+if ($CausalReplacementProofPath) {
+    $CausalReplacementProofPath = Get-CanonicalExistingFile -Path $CausalReplacementProofPath -Label 'causal replacement proof' -Boundary $workspacePath -MaxBytes 2097152
+    $authorizationMode = 'causal_replacement'
+    $authorizationCommand = 'authorize-causal-replacement'
+    $authorizationExtraArguments = @('--causal-replacement-proof', $CausalReplacementProofPath)
+    $consumeExtraArguments = @('--causal-replacement-proof', $CausalReplacementProofPath)
+} elseif ($SupersessionApprovalPath) {
+    throw 'HIGH_COST_SUPERSESSION_REQUIRES_CAUSAL_REPLACEMENT'
+}
 if ($SupersessionApprovalPath) {
     $SupersessionApprovalPath = Get-CanonicalExistingFile -Path $SupersessionApprovalPath -Label 'pre-admission supersession approval' -Boundary $workspacePath -MaxBytes 4194304
     try {
@@ -326,7 +348,7 @@ $runnerArguments = @(
     '-File', $runnerPath,
     '-NoPublish',
     '-DateStampOverride', $DateStamp,
-    '-RepoDirOverride', $runtimeRepoPath,
+    '-RepoDirOverride', $repoPath,
     '-CodexWrapperOverride', $codexWrapperPath,
     '-StateFileOverride', $statePath,
     '-LogDirOverride', $logPath,
@@ -370,6 +392,9 @@ $installedLaunchAuthority = [ordered]@{
     stableTaskAuthorityFileSha256 = (Get-FileHash -LiteralPath $stableTaskAuthorityPath -Algorithm SHA256).Hash.ToLowerInvariant()
     runnerExecutablePath = $powerShellCanonicalPath
     runnerExecutableSha256 = $powerShellSha256
+    executionRepoRoot = $repoPath
+    executionRepoCommit = $executionRepoCommit
+    runtimeRepoCommit = $runtimeRepoCommit
     runnerArgumentsPath = $runnerArgumentsPath
     runnerArgumentsFileSha256 = (Get-FileHash -LiteralPath $runnerArgumentsPath -Algorithm SHA256).Hash.ToLowerInvariant()
 }
@@ -406,7 +431,7 @@ $e2eAdmissionValidation = & $pythonCanonicalPath -I $e2eAdmissionBridgePath 'val
 if ($LASTEXITCODE -ne 0) {
     throw "E2E_FINAL_ISSUED_ADMISSION_REJECTED exit=$LASTEXITCODE"
 }
-$authorizeOutput = & $pythonCanonicalPath -I $highCostOperationBudgetPath 'authorize-causal-replacement' `
+$authorizeOutput = & $pythonCanonicalPath -I $highCostOperationBudgetPath $authorizationCommand `
     '--workspace-root' $workspacePath `
     '--budget' $BudgetPath `
     '--efficiency-design' $EfficiencyDesignPath `
@@ -415,9 +440,8 @@ $authorizeOutput = & $pythonCanonicalPath -I $highCostOperationBudgetPath 'autho
     '--static-receipt' $StaticReceiptPath `
     '--simulation-receipt' $SimulationReceiptPath `
     '--e2e-admission' $E2EAdmissionPath `
-    '--causal-replacement-proof' $CausalReplacementProofPath `
-    '--execution-root' $runtimeRepoPath `
-    '--output' $parentAuthorityFullPath @supersessionArguments
+    '--execution-root' $repoPath `
+    '--output' $parentAuthorityFullPath @authorizationExtraArguments @supersessionArguments
 if ($LASTEXITCODE -ne 0) {
     throw "HIGH_COST_OPERATION_AUTHORIZATION_REJECTED exit=$LASTEXITCODE"
 }
@@ -441,8 +465,7 @@ if ($LASTEXITCODE -ne 0) {
     '--parent-authority' $parentAuthorityFullPath `
     '--reservation-output' $reservationReceiptPath `
     '--runner-executable' $powerShellCanonicalPath `
-    '--authority-python-executable' $pythonCanonicalPath `
-    '--causal-replacement-proof' $CausalReplacementProofPath
+    '--authority-python-executable' $pythonCanonicalPath @consumeExtraArguments
 if ($LASTEXITCODE -ne 0) {
     throw "E2E_FINAL_ADMISSION_REJECTED exit=$LASTEXITCODE"
 }
@@ -477,6 +500,7 @@ $durationSloMet = $elapsedSeconds -le $durationSloLimitSeconds
 $receipt = [ordered]@{
     schema = 'NEWS_GRASP_SCHEDULED_EQUIVALENT_NOPUBLISH_E2E_V1'
     scheduled_entrypoint_mode = 'installed_stable_launcher'
+    authorization_mode = $authorizationMode
     expected_terminal_state = 'publish_dry_run_ok'
     no_publish = $true
     no_push = $true

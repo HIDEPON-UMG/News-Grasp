@@ -6,8 +6,10 @@ import os
 import json
 import hashlib
 import re
+import runpy
 import subprocess
 import sys
+from types import SimpleNamespace
 from pathlib import Path
 
 import pytest
@@ -2825,6 +2827,157 @@ def test_scheduled_equivalent_nopublish_uses_same_runner_with_isolated_state() -
     assert "$durationSloLimitSeconds = 3600" in source
     assert "$durationSloMet" in source.split("ok =", 1)[1]
     assert "Start-Process" not in source
+
+
+def test_installed_nopublish_launcher_accepts_only_same_generation_isolation() -> None:
+    """隔離runnerはactive runtimeと同一commit/common-dir/hashの場合だけ許可する。"""
+    launcher = (OPS_DIR / "news-grasp-task-launcher.pyw").read_text(
+        encoding="utf-8-sig"
+    )
+
+    for field in (
+        '"executionRepoRoot"',
+        '"executionRepoCommit"',
+        '"runtimeRepoCommit"',
+    ):
+        assert field in launcher
+    assert "_git_common_dir(execution_repo) != _git_common_dir(runtime_repo)" in launcher
+    assert '"status", "--porcelain", "--untracked-files=no"' in launcher
+    assert "observed_runner != expected_runner" in launcher
+    assert "_file_sha256(expected_runner) != _file_sha256(runtime_runner)" in launcher
+    assert "observed_repo != execution_repo" in launcher
+    assert "observed_codex_wrapper != expected_codex_wrapper" in launcher
+    assert "_file_sha256(expected_codex_wrapper)" in launcher
+    assert "_file_sha256(runtime_codex_wrapper)" in launcher
+
+
+def _installed_nopublish_fixture(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    namespace = runpy.run_path(str(OPS_DIR / "news-grasp-task-launcher.pyw"))
+    runtime_repo = tmp_path / "runtime"
+    execution_repo = tmp_path / "isolation"
+    bin_dir = tmp_path / "bin"
+    for root in (runtime_repo, execution_repo):
+        (root / "scripts" / "ops").mkdir(parents=True)
+        (root / "scripts" / "ops" / "news-grasp-runner.ps1").write_text(
+            "runner\n", encoding="utf-8"
+        )
+        (root / "scripts" / "ops" / "run_codex_with_timeout.ps1").write_text(
+            "wrapper\n", encoding="utf-8"
+        )
+    bin_dir.mkdir()
+    executable = tmp_path / "powershell.exe"
+    executable.write_bytes(b"fixture executable")
+    arguments_path = execution_repo / "build" / "runner-arguments.json"
+    arguments_path.parent.mkdir(parents=True)
+    arguments = [
+        "-File",
+        str(execution_repo / "scripts" / "ops" / "news-grasp-runner.ps1"),
+        "-NoPublish",
+        "-RepoDirOverride",
+        str(execution_repo),
+        "-CodexWrapperOverride",
+        str(execution_repo / "scripts" / "ops" / "run_codex_with_timeout.ps1"),
+    ]
+    arguments_path.write_text(json.dumps(arguments), encoding="utf-8")
+    commit = "a" * 40
+    file_hash = "b" * 64
+    launcher_path = (OPS_DIR / "news-grasp-task-launcher.pyw").resolve()
+    launcher_identity = {
+        "authorityPath": str(bin_dir / "stable-authority.json"),
+        "authorityFileSha256": file_hash,
+    }
+    unsigned = {
+        "schemaVersion": "NEWS_GRASP_INSTALLED_NOPUBLISH_LAUNCH_AUTHORITY_V1",
+        "issueDate": "2026-08-12",
+        "attemptId": "nopublish:2026-08-12",
+        "stableLauncherPath": str(launcher_path),
+        "stableLauncherSha256": file_hash,
+        "stableTaskAuthorityPath": launcher_identity["authorityPath"],
+        "stableTaskAuthorityFileSha256": file_hash,
+        "runnerExecutablePath": str(executable),
+        "runnerExecutableSha256": file_hash,
+        "executionRepoRoot": str(execution_repo),
+        "executionRepoCommit": commit,
+        "runtimeRepoCommit": commit,
+        "runnerArgumentsPath": str(arguments_path),
+        "runnerArgumentsFileSha256": file_hash,
+    }
+    authority = {**unsigned, "authoritySha256": namespace["_sha256_json"](unsigned)}
+    authority_path = execution_repo / "build" / "launch-authority.json"
+    authority_path.write_text(json.dumps(authority), encoding="utf-8")
+
+    monkeypatch.setitem(
+        namespace["_run_installed_nopublish_authority"].__globals__,
+        "resolve_bootstrap_launch_roots",
+        lambda **_kwargs: {"configuredRuntime": runtime_repo},
+    )
+    monkeypatch.setitem(
+        namespace["_run_installed_nopublish_authority"].__globals__,
+        "_validate_active_production_generation",
+        lambda **_kwargs: {},
+    )
+    monkeypatch.setitem(
+        namespace["_run_installed_nopublish_authority"].__globals__,
+        "_file_sha256",
+        lambda _path: file_hash,
+    )
+    monkeypatch.setitem(
+        namespace["_run_installed_nopublish_authority"].__globals__,
+        "_git_common_dir",
+        lambda _path: tmp_path / "common",
+    )
+
+    def fake_git(_repo: Path, *args: str, **_kwargs) -> str:
+        return commit if args[:2] == ("rev-parse", "HEAD") else ""
+
+    monkeypatch.setitem(
+        namespace["_run_installed_nopublish_authority"].__globals__,
+        "_run_git",
+        fake_git,
+    )
+    monkeypatch.setattr(
+        namespace["subprocess"],
+        "run",
+        lambda *_args, **_kwargs: SimpleNamespace(returncode=0),
+    )
+    return namespace, authority_path, bin_dir, launcher_identity
+
+
+def test_installed_nopublish_launcher_runs_same_generation_isolation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    namespace, authority_path, bin_dir, launcher_identity = _installed_nopublish_fixture(
+        tmp_path, monkeypatch
+    )
+
+    observed = namespace["_run_installed_nopublish_authority"](
+        authority_path=authority_path,
+        bin_dir=bin_dir,
+        launcher_identity=launcher_identity,
+    )
+
+    assert observed == 0
+
+
+def test_installed_nopublish_launcher_rejects_cross_generation_isolation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    namespace, authority_path, bin_dir, launcher_identity = _installed_nopublish_fixture(
+        tmp_path, monkeypatch
+    )
+    value = json.loads(authority_path.read_text(encoding="utf-8"))
+    value["executionRepoCommit"] = "c" * 40
+    unsigned = dict(value)
+    unsigned.pop("authoritySha256")
+    value["authoritySha256"] = namespace["_sha256_json"](unsigned)
+    authority_path.write_text(json.dumps(value), encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="NEWS_GRASP_INSTALLED_GENERATION_DRIFT"):
+        namespace["_run_installed_nopublish_authority"](
+            authority_path=authority_path,
+            bin_dir=bin_dir,
+            launcher_identity=launcher_identity,
+        )
 
 
 def test_runner_preflight_checks_workspace_write_readiness_before_generation() -> None:
