@@ -221,6 +221,81 @@ def test_recoverable_failure_uses_ledger_backed_authority_not_deferred(
     assert decision["recoveryAuthorityLedgerWitnessSha256"]
 
 
+def test_external_readiness_reopens_typed_recovery(monkeypatch, tmp_path: Path) -> None:
+    control = _control("RED_EXTERNAL_READINESS_RECOVERY_REOPEN_MISSING")
+    repo = tmp_path / "repo"
+    runner_dir = repo / "build" / "runner"
+    runner_dir.mkdir(parents=True)
+    state_path = runner_dir / "runner-state.json"
+    log_path = runner_dir / "runner.log"
+    state_path.write_text(
+        json.dumps(
+            {
+                "repo_dir": str(repo),
+                "log_path": str(log_path),
+                "exit_code": 126,
+            }
+        ),
+        encoding="utf-8",
+    )
+    log_path.write_text("external control plane unavailable", encoding="utf-8")
+    monkeypatch.setattr(control, "CANONICAL_REPO_ROOT", repo)
+    monkeypatch.setattr(control, "CANONICAL_RUNNER_STATE_PATH", state_path)
+    monkeypatch.setattr(
+        control,
+        "validate_canonical_operational_registry",
+        lambda _root: {"status": "Green"},
+    )
+    monkeypatch.setattr(control, "_observe_operational_truth", lambda **_: None)
+    monkeypatch.setattr(
+        control,
+        "_inspect_attempt_via_broker",
+        lambda **_: _attempt_witness(
+            scheduled_status="failed",
+            recovery_status="not_started",
+            failure_sha="e" * 64,
+        ),
+    )
+    from tools import news_grasp_daily_control, news_grasp_external_control
+
+    monkeypatch.setattr(
+        news_grasp_daily_control,
+        "classify_observed_failure",
+        lambda **_: "external_control_plane_unavailable",
+    )
+    monkeypatch.setattr(
+        news_grasp_external_control,
+        "probe_external_readiness",
+        lambda: {"status": "ready"},
+    )
+    monkeypatch.setattr(control, "_resolve_artifact_repo_root", lambda _payload: repo)
+    monkeypatch.setattr(
+        control,
+        "_validate_scheduled_failure_path",
+        lambda *_, **__: {"receiptSha256": "e" * 64},
+    )
+    monkeypatch.setattr(
+        control,
+        "_validate_recovery_authority_via_broker",
+        lambda **_: (
+            {"receiptSha256": "a" * 64},
+            {"receiptSha256": "b" * 64},
+        ),
+    )
+
+    decision = control.decide_audit_recovery(
+        {
+            "issueDate": "2026-08-02",
+            "scheduledFailureReceiptPath": str(runner_dir / "failure.json"),
+            "recoveryAuthorityPath": str(runner_dir / "authority.json"),
+        }
+    )
+
+    assert decision["classification"] == "recoverable"
+    assert decision["action"] == "scheduled_recovery"
+    assert decision["reasonCode"] == "TYPED_RECOVERY_AUTHORITY_READY"
+
+
 def test_incomplete_public_surface_seals_same_day_recovery_as_first_priority(
     monkeypatch, tmp_path: Path
 ) -> None:

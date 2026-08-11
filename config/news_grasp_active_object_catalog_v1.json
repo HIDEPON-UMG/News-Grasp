@@ -1,6 +1,6 @@
 {
   "schemaVersion": "NEWS_GRASP_ACTIVE_OBJECT_CATALOG_V1",
-  "sourceCommit": "6bc172ad9762b86af35dfa9f89506f2bf21d2053",
+  "sourceCommit": "1eeb4f0380021d2b6f935139561aa136280e9128",
   "discoveryMode": "git_index_plus_untracked_wip_plus_route_reference_scan",
   "objects": [
     {
@@ -488,7 +488,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "4af8d5131ba6301195439b5710c927d553cdc8bcfd21119cf51f3cd5ad16d9fd",
+      "sha256": "7a560cd124a59964fd1d09660969d35f2f9be2cd54ee66e927ff0e013f6f43eb",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -506,7 +506,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "7ce1366fbf165715608fe96729d002cea703caef7d2365dbd090c128b08f13d3",
+      "sha256": "b294a4339993d0661074e85b15e9b1d0d98956cf9999a4f40d86fe9c42d27509",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -1380,7 +1380,7 @@
         "NGC-C06",
         "NGC-C14"
       ],
-      "sha256": "86223b2987f27fcda962424c1cc6e00ce15a6499c7deeb7114e133f84e600288",
+      "sha256": "d02786037df0835efaad885d472164dee3321d1c551c27034fbf257c8c64c9d7",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -3975,7 +3975,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "b3048312c7c627da212822345d459c0009bb7e9e70f9bf6f38cfb5b9e4690430",
+      "sha256": "d5130069b1805ff90b337e7d2a9865a6cf514e62eb9d3359608dd20b1cd26946",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -4615,5 +4615,5 @@
   "activeObjectCount": 250,
   "unlinkedActiveObjectCount": 0,
   "objectPathSetSha256": "986b6022370be713c942410e066aeb879262d7faa1c182a3b4a6ec4a9ac5ff18",
-  "testNodeSetSha256": "ecd081aa1df66d8eb066adc0ad2f82b8a8361dfe88bc7107172e4db9d399d6f8"
+  "testNodeSetSha256": "2bf583a13dfc01c69bb423456e23d83a3009ce91dc32ed1915ef8504a7705d7f"
 }

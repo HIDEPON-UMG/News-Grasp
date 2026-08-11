@@ -1,8 +1,8 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 2373,
-  "collectedNodeSetSha256": "ecd081aa1df66d8eb066adc0ad2f82b8a8361dfe88bc7107172e4db9d399d6f8",
+  "collectedNodeCount": 2374,
+  "collectedNodeSetSha256": "2bf583a13dfc01c69bb423456e23d83a3009ce91dc32ed1915ef8504a7705d7f",
   "files": [
     {
       "path": "tests/test_all_article_urls_live.py",
@@ -93,8 +93,8 @@
     },
     {
       "path": "tests/test_audit_recovery_control.py",
-      "sha256": "86223b2987f27fcda962424c1cc6e00ce15a6499c7deeb7114e133f84e600288",
-      "nodeCount": 59,
+      "sha256": "d02786037df0835efaad885d472164dee3321d1c551c27034fbf257c8c64c9d7",
+      "nodeCount": 60,
       "nodeIds": [
         "tests/test_audit_recovery_control.py::test_actual_completion_verifier_owns_all_required_gates",
         "tests/test_audit_recovery_control.py::test_artifact_executable_tree_accepts_windows_crlf_but_rejects_content_drift",
@@ -113,6 +113,7 @@
         "tests/test_audit_recovery_control.py::test_bounded_subprocess_rejects_stderr_over_budget",
         "tests/test_audit_recovery_control.py::test_caller_boolean_or_url_200_cannot_produce_green",
         "tests/test_audit_recovery_control.py::test_execute_runs_one_typed_recovery_then_writes_recovered_terminal",
+        "tests/test_audit_recovery_control.py::test_external_readiness_reopens_typed_recovery",
         "tests/test_audit_recovery_control.py::test_failed_schedule_recovered_keeps_failed_history",
         "tests/test_audit_recovery_control.py::test_green_public_surface_releases_root_cause_work_only_after_recovery",
         "tests/test_audit_recovery_control.py::test_incomplete_public_surface_seals_same_day_recovery_as_first_priority",
