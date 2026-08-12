@@ -359,7 +359,7 @@ function Test-NewsGraspPromotableInstallSource {
 
         & $gitExe -C $CandidateRepoDir diff --cached --quiet --no-ext-diff --no-textconv --
         if ($LASTEXITCODE -ne 0) { return $false }
-        $trackedEntries = @(& $gitExe -C $CandidateRepoDir ls-files -v 2>$null)
+        $trackedEntries = @(& $gitExe -c core.quotepath=false -C $CandidateRepoDir ls-files -v 2>$null)
         if (
             $LASTEXITCODE -ne 0 -or
             $trackedEntries.Count -eq 0 -or

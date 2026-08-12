@@ -3440,6 +3440,7 @@ def test_ops_installer_rejects_noncanonical_source_before_recovery_or_mutation()
     assert "rev-parse --show-toplevel" in guard
     assert "refs/remotes/origin/main" in guard
     assert "ls-files -v" in guard
+    assert "-c core.quotepath=false -C $CandidateRepoDir ls-files -v" in guard
     assert "ArgumentList.Add('hash-object')" not in guard
     assert "'hash-object', '--no-filters', '--'" in guard
     assert "ConvertTo-NewsGraspWindowsProcessArgument" in guard
@@ -3967,6 +3968,47 @@ def test_install_guard_bounds_promotable_source_tree_scan(tmp_path: Path) -> Non
         f"-CurrentRepoDir '{canonical_repo}' -CandidateRepoDir '{promoted_repo}' "
         f"-TrustedBoundary '{tmp_path}' -MaxEntries 3; "
         "if ($result) { throw 'PROMOTABLE_SOURCE_SCAN_LIMIT_NOT_ENFORCED' }"
+    )
+
+    assert completed.returncode == 0, completed.stderr
+
+
+def test_install_guard_accepts_clean_generation_with_non_ascii_tracked_path(
+    tmp_path: Path,
+) -> None:
+    """日本語Windowsのtracked pathをquotepath既定値で誤拒否しない。"""
+    canonical_repo, promoted_repo, _ = _install_source_generation_fixture(tmp_path)
+    git = r"C:\Program Files\Git\cmd\git.exe"
+    localized = canonical_repo / "docs" / "NewsGrasp仕様.txt"
+    localized.parent.mkdir()
+    localized.write_text("clean\n", encoding="utf-8")
+    subprocess.run([git, "-C", str(canonical_repo), "add", str(localized)], check=True)
+    commit = subprocess.run(
+        [git, "-C", str(canonical_repo), "commit", "-m", "localized tracked path"],
+        check=True,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    assert commit.returncode == 0
+    head = subprocess.run(
+        [git, "-C", str(canonical_repo), "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    ).stdout.strip()
+    subprocess.run(
+        [git, "-C", str(canonical_repo), "update-ref", "refs/remotes/origin/main", head],
+        check=True,
+    )
+    subprocess.run([git, "-C", str(promoted_repo), "reset", "--hard", head], check=True)
+
+    completed = _run_install_guard(
+        "$result = Test-NewsGraspPromotableInstallSource "
+        f"-CurrentRepoDir '{canonical_repo}' -CandidateRepoDir '{promoted_repo}' "
+        f"-TrustedBoundary '{tmp_path}'; if (-not $result) {{ "
+        "throw 'NON_ASCII_TRACKED_PATH_FALSE_NEGATIVE' }"
     )
 
     assert completed.returncode == 0, completed.stderr
