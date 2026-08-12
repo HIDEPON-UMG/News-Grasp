@@ -2111,16 +2111,20 @@ def test_bootstrap_smoke_uses_isolated_state_and_backed_up_self_repair() -> None
     assert "$LogDir = Join-Path $BinDir $LogDir" in text
 
 
-def test_runner_watcher_uses_hidden_start_and_terminal_state_polling() -> None:
-    """watcher は runner を hidden 起動し、state/log の終端状態で完了判定する。"""
+def test_runner_watcher_uses_hidden_start_and_event_driven_terminal_state() -> None:
+    """watcher はrunnerをhidden起動し、event/deadlineで終端判定する。"""
     watcher = WATCHER_PS1.read_text(encoding="utf-8-sig")
 
     assert "[switch] $StartOnly" in watcher
     assert "[switch] $Status" in watcher
     assert "[int] $StaleMinutes = 15" in watcher
     assert "[int] $TimeoutMinutes = 120" in watcher
-    assert "Start-Process -FilePath 'powershell'" in watcher
-    assert "-WindowStyle Hidden" in watcher
+    assert "Start-Process -FilePath 'powershell'" not in watcher
+    assert "CreateSuspendedJobProcess" in watcher
+    assert "CREATE_NO_WINDOW" in watcher
+    assert "[System.IO.FileSystemWatcher]" in watcher
+    assert "[System.Threading.WaitHandle]::WaitAny" in watcher
+    assert "Start-Sleep -Seconds $PollSeconds" not in watcher
     assert "-DateStampOverride" in watcher
     assert "-LogDirOverride" in watcher
     assert "-StateFileOverride" in watcher
@@ -2253,8 +2257,8 @@ def test_runner_sha256_helper_has_dotnet_fallback() -> None:
     assert "[System.BitConverter]::ToString" in hash_body
 
 
-def test_watcher_kills_only_verified_runner_and_writes_typed_watchdog_state() -> None:
-    """watcher は照合済み runner だけを止め、照合不能・state破損では kill しない。"""
+def test_watcher_closes_only_verified_owned_job_and_writes_typed_watchdog_state() -> None:
+    """watcherは照合済みrunnerの所有Jobだけを閉じ、生PID killを使わない。"""
     watcher = WATCHER_PS1.read_text(encoding="utf-8-sig")
 
     assert "function Write-WatchdogState" in watcher
@@ -2267,8 +2271,10 @@ def test_watcher_kills_only_verified_runner_and_writes_typed_watchdog_state() ->
     assert "watchdog_wall_timeout" in watcher
     assert "watchdog_stale_unconfirmed" in watcher
     assert "watchdog_state_corrupt" in watcher
-    assert "Stop-Process -Id ([int]$State.pid) -Force" in watcher
-    assert watcher.index("Test-RunnerProcessIdentity") < watcher.index("Stop-Process -Id ([int]$State.pid) -Force")
+    assert "Stop-Process" not in watcher
+    assert "PROC_THREAD_ATTRIBUTE_JOB_LIST" in watcher
+    assert "[NewsGraspRunnerJob]::CloseOwnedJob($handle)" in watcher
+    assert watcher.index("Test-RunnerProcessIdentity") < watcher.index("[NewsGraspRunnerJob]::CloseOwnedJob($handle)")
     assert "heartbeat_at" in watcher
     assert "stale_seconds" in watcher
 
@@ -2848,6 +2854,17 @@ def test_scheduled_equivalent_nopublish_uses_same_runner_with_isolated_state() -
     assert "Start-Process" not in source
 
 
+def test_installed_nopublish_runner_revalidates_external_authority_hash() -> None:
+    """launcherが封印したfixture hashをrunner実consumerがprobe直前にも再検証する。"""
+    wrapper = SCHEDULED_EQUIVALENT_PS1.read_text(encoding="utf-8-sig")
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+
+    assert "'-ExternalHealthAuthorityExpectedSha256'" in wrapper
+    assert "[string] $ExternalHealthAuthorityExpectedSha256" in runner
+    assert "EXTERNAL_AUTHORITY_FIXTURE_HASH_DRIFT" in runner
+    assert "Get-FileHash -LiteralPath $script:ExternalHealthAuthorityPath" in runner
+
+
 def test_installed_nopublish_launcher_accepts_only_same_generation_isolation() -> None:
     """隔離runnerはactive runtimeと同一commit/common-dir/hashの場合だけ許可する。"""
     launcher = (OPS_DIR / "news-grasp-task-launcher.pyw").read_text(
@@ -2888,6 +2905,9 @@ def _installed_nopublish_fixture(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     executable.write_bytes(b"fixture executable")
     arguments_path = execution_repo / "build" / "runner-arguments.json"
     arguments_path.parent.mkdir(parents=True)
+    external_authority_path = execution_repo / "build" / "external-health-authority-v1.json"
+    external_authority_path.write_text('{"status":"ready"}\n', encoding="utf-8")
+    file_hash = "b" * 64
     arguments = [
         "-File",
         str(execution_repo / "scripts" / "ops" / "news-grasp-runner.ps1"),
@@ -2896,10 +2916,13 @@ def _installed_nopublish_fixture(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
         str(execution_repo),
         "-CodexWrapperOverride",
         str(execution_repo / "scripts" / "ops" / "run_codex_with_timeout.ps1"),
+        "-ExternalHealthAuthorityPathOverride",
+        str(external_authority_path),
+        "-ExternalHealthAuthorityExpectedSha256",
+        file_hash,
     ]
     arguments_path.write_text(json.dumps(arguments), encoding="utf-8")
     commit = "a" * 40
-    file_hash = "b" * 64
     launcher_path = (OPS_DIR / "news-grasp-task-launcher.pyw").resolve()
     launcher_identity = {
         "authorityPath": str(bin_dir / "stable-authority.json"),
@@ -2920,6 +2943,8 @@ def _installed_nopublish_fixture(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
         "runtimeRepoCommit": commit,
         "runnerArgumentsPath": str(arguments_path),
         "runnerArgumentsFileSha256": file_hash,
+        "externalHealthAuthorityFixturePath": str(external_authority_path),
+        "externalHealthAuthorityFixtureSha256": file_hash,
     }
     authority = {**unsigned, "authoritySha256": namespace["_sha256_json"](unsigned)}
     authority_path = execution_repo / "build" / "launch-authority.json"

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "NEWS_GRASP_SKILL_CROSS_LAYER_GRAPH_V1",
+  "productId": "News-Grasp",
+  "skills": [
+    {
+      "skillId": "cycle-a",
+      "purposeIds": ["purpose-a"],
+      "clauseIds": ["NGC-C14"],
+      "flowIds": ["flow-a"],
+      "taskIds": ["task-a"],
+      "consumerRoutes": ["tools/news_grasp_constitution.py"],
+      "stateIds": ["shared-state"],
+      "evidenceIds": ["evidence-a"],
+      "owner": "cycle-a",
+      "dependsOn": ["cycle-b"]
+    },
+    {
+      "skillId": "cycle-b",
+      "purposeIds": ["purpose-b"],
+      "clauseIds": ["NGC-C14"],
+      "flowIds": ["flow-b"],
+      "taskIds": ["task-b"],
+      "consumerRoutes": ["tools/news_grasp_constitution.py"],
+      "stateIds": ["shared-state"],
+      "evidenceIds": ["evidence-b"],
+      "owner": "cycle-b",
+      "dependsOn": ["cycle-a"]
+    }
+  ]
+}

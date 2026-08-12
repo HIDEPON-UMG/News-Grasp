@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "NEWS_GRASP_OPERATION_DECISION_GRAPH_V1",
+  "productId": "News-Grasp",
+  "initialState": "admitted",
+  "terminalStateIds": [
+    "success",
+    "recovery_completed",
+    "operation_deferred",
+    "user_stopped",
+    "major_incident",
+    "design_escape",
+    "no_progress"
+  ],
+  "states": [
+    {"stateId": "admitted", "terminal": false},
+    {"stateId": "success", "terminal": true},
+    {"stateId": "recovery_completed", "terminal": true},
+    {"stateId": "operation_deferred", "terminal": true},
+    {"stateId": "user_stopped", "terminal": true},
+    {"stateId": "major_incident", "terminal": true},
+    {"stateId": "design_escape", "terminal": true},
+    {"stateId": "no_progress", "terminal": true}
+  ],
+  "transitions": [
+    {"from": "admitted", "event": "retry_same_state", "to": "admitted"}
+  ]
+}

@@ -46,7 +46,7 @@ DEFAULT_PARAMS: dict[str, Any] = {
 }
 
 _style_id_cache: dict[str, int] = {}
-_owned_engine_process: subprocess.Popen | None = None
+_owned_engine_process: proc.OwnedProcess | None = None
 
 
 def _warn(message: str) -> None:
@@ -138,17 +138,19 @@ def shutdown_started_engine(timeout: int = 10) -> bool:
         except Exception as exc:
             _warn(f"AivisSpeech shutdown endpoint failed: {exc}")
         if owned.poll() is None:
-            owned.terminate()
             try:
                 owned.wait(timeout=timeout)
             except subprocess.TimeoutExpired:
-                _warn("AivisSpeech did not exit after terminate; killing owned process")
-                owned.kill()
+                _warn("AivisSpeech did not exit after shutdown; closing owned Job")
+                owned.close_job()
+                owned.wait(timeout=5)
         return True
     except Exception as exc:
         _warn(f"AivisSpeech owned process cleanup failed: {exc}")
         return False
     finally:
+        if owned is not None:
+            owned.close()
         _owned_engine_process = None
 
 

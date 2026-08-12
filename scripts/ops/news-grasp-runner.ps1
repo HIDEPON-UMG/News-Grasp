@@ -71,6 +71,7 @@ param(
     [string] $HighCostBudgetToolPath = '',
     [string] $HighCostWorkspaceRoot = '',
     [string] $ExternalHealthAuthorityPathOverride = '',
+    [string] $ExternalHealthAuthorityExpectedSha256 = '',
     [string] $PowerShellExe = 'powershell.exe',
     [string] $ScheduledAuthorityEvidencePath = '',
     [string] $ScheduledFailureReceiptRootOverride = '',
@@ -338,9 +339,13 @@ $script:ScheduledFailureTerminalized = $false
 $script:ScheduledFailureTerminalInputPath = ''
 $script:ExternalHealthAuthorityPath = Join-Path $env:USERPROFILE '.codex\state\high-cost-operation\external-health-authority-v1.json'
 $script:ExternalHealthAuthorityFixtureMode = $false
+$script:ExternalHealthAuthorityExpectedSha256 = ''
 if ($ExternalHealthAuthorityPathOverride) {
     if (-not $NoPublish) {
         throw 'EXTERNAL_AUTHORITY_OVERRIDE_FORBIDDEN'
+    }
+    if ($ExternalHealthAuthorityExpectedSha256 -notmatch '^[0-9a-f]{64}$') {
+        throw 'EXTERNAL_AUTHORITY_FIXTURE_HASH_INVALID'
     }
     try {
         $fixtureAuthorityPath = [System.IO.Path]::GetFullPath((Resolve-Path -LiteralPath $ExternalHealthAuthorityPathOverride -ErrorAction Stop).Path)
@@ -363,9 +368,15 @@ if ($ExternalHealthAuthorityPathOverride) {
         if (-not (Test-Path -LiteralPath $fixtureAuthorityPath -PathType Leaf)) {
             throw 'fixture authority is not a regular file'
         }
+        $observedFixtureSha256 = (Get-FileHash -LiteralPath $fixtureAuthorityPath -Algorithm SHA256).Hash.ToLowerInvariant()
+        if (-not [string]::Equals($observedFixtureSha256, $ExternalHealthAuthorityExpectedSha256, [System.StringComparison]::Ordinal)) {
+            throw 'EXTERNAL_AUTHORITY_FIXTURE_HASH_DRIFT'
+        }
         $script:ExternalHealthAuthorityPath = $fixtureAuthorityPath
         $script:ExternalHealthAuthorityFixtureMode = $true
+        $script:ExternalHealthAuthorityExpectedSha256 = $ExternalHealthAuthorityExpectedSha256
     } catch {
+        if ($_.Exception.Message -eq 'EXTERNAL_AUTHORITY_FIXTURE_HASH_DRIFT') { throw }
         throw "EXTERNAL_AUTHORITY_FIXTURE_INVALID: $($_.Exception.Message)"
     }
 }
@@ -1442,7 +1453,12 @@ function Get-RunnerScriptArguments {
     if ($DateStampOverride) { $runnerArgs += @('-DateStampOverride', $DateStampOverride) }
     if ($LogDirOverride) { $runnerArgs += @('-LogDirOverride', $LogDirOverride) }
     if ($StateFileOverride) { $runnerArgs += @('-StateFileOverride', $StateFileOverride) }
-    if ($ExternalHealthAuthorityPathOverride) { $runnerArgs += @('-ExternalHealthAuthorityPathOverride', $ExternalHealthAuthorityPathOverride) }
+    if ($ExternalHealthAuthorityPathOverride) {
+        $runnerArgs += @(
+            '-ExternalHealthAuthorityPathOverride', $ExternalHealthAuthorityPathOverride,
+            '-ExternalHealthAuthorityExpectedSha256', $ExternalHealthAuthorityExpectedSha256
+        )
+    }
     if ($ScheduledAuthorityEvidencePath) { $runnerArgs += @('-ScheduledAuthorityEvidencePath', $ScheduledAuthorityEvidencePath) }
     if ($PublishVerifyWaitSec -ne 600) { $runnerArgs += @('-PublishVerifyWaitSec', [string]$PublishVerifyWaitSec) }
     if ($PublishVerifyPollSec -ne 30) { $runnerArgs += @('-PublishVerifyPollSec', [string]$PublishVerifyPollSec) }
@@ -3317,6 +3333,10 @@ function Get-NewsGraspExternalControlPlaneReadiness {
     }
     $probeArgs = @('probe')
     if ($script:ExternalHealthAuthorityFixtureMode) {
+        $observedFixtureSha256 = (Get-FileHash -LiteralPath $script:ExternalHealthAuthorityPath -Algorithm SHA256).Hash.ToLowerInvariant()
+        if (-not [string]::Equals($observedFixtureSha256, $script:ExternalHealthAuthorityExpectedSha256, [System.StringComparison]::Ordinal)) {
+            throw 'EXTERNAL_AUTHORITY_FIXTURE_HASH_DRIFT'
+        }
         $probeArgs += @('--authority-path', $script:ExternalHealthAuthorityPath, '--fixture-mode')
     }
     $raw = (& $PyExe '-I' $probeScript @probeArgs 2>&1 | Out-String).Trim()

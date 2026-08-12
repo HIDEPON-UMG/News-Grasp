@@ -16,6 +16,7 @@ $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 $script:InstallationCommitted = $false
 $script:InstallationMutationStarted = $false
+$script:DeliveryReceiptSummary = $null
 
 . (Join-Path $PSScriptRoot 'install-news-grasp-ops-guard.ps1')
 
@@ -365,6 +366,7 @@ function Write-NewsGraspInstallJournal {
         }
         scheduled_tasks = $scheduledTasks
         task_snapshots = $taskSnapshots
+        delivery_state = $script:DeliveryReceiptSummary
     }
     Write-AtomicUtf8Text -Path $ManifestPath -Text (($journal | ConvertTo-Json -Depth 10) + [Environment]::NewLine)
 }
@@ -1034,6 +1036,64 @@ if ((-not $SkipTaskRegistration) -and (-not $runnerRegistered)) {
     throw "failed to converge $RunnerTaskName action: $runnerRegisterError"
 }
 Assert-NewsGraspInstalledState
+$deliveryReceiptPath = Join-Path $BackupDir 'physical-delivery-state-v1.json'
+$installedEvidenceBody = [ordered]@{
+    transactionId = $timestamp
+    files = $manifestFiles
+    scheduledTasks = $scheduledTasks
+}
+$installedEvidenceJson = $installedEvidenceBody | ConvertTo-Json -Depth 10 -Compress
+$installedEvidenceHasher = [Security.Cryptography.SHA256]::Create()
+try {
+    $installedEvidenceSha256 = ([BitConverter]::ToString(
+        $installedEvidenceHasher.ComputeHash([Text.Encoding]::UTF8.GetBytes($installedEvidenceJson))
+    ) -replace '-', '').ToLowerInvariant()
+} finally { $installedEvidenceHasher.Dispose() }
+$pendingEvidence = [ordered]@{ status = 'pending'; evidenceSha256 = ''; reasonCode = 'AWAITING_RELEASE_EVIDENCE' }
+$runtimePendingEvidence = [ordered]@{ status = 'pending'; evidenceSha256 = ''; reasonCode = 'AWAITING_ACTIVE_GENERATION' }
+$e2ePendingEvidence = [ordered]@{ status = 'pending'; evidenceSha256 = ''; reasonCode = 'AWAITING_FINAL_NOPUBLISH_E2E' }
+$greenEvidence = [ordered]@{ status = 'green'; evidenceSha256 = $installedEvidenceSha256 }
+$taskEvidence = if ($SkipTaskRegistration) {
+    [ordered]@{ status = 'not_required_not_run'; evidenceSha256 = ''; reasonCode = 'TASK_REGISTRATION_EXPLICITLY_SKIPPED' }
+} else {
+    $greenEvidence
+}
+$deliveryFields = [ordered]@{
+    implemented = $pendingEvidence
+    committed = $pendingEvidence
+    pushed = $pendingEvidence
+    remoteHeadVerified = $pendingEvidence
+    installed = $greenEvidence
+    installedSkillsFresh = $greenEvidence
+    runtimeGenerationFresh = $runtimePendingEvidence
+    scheduledTaskParity = $taskEvidence
+    rollbackReceipt = $greenEvidence
+    noPublishE2E = $e2ePendingEvidence
+}
+$deliveryStateBody = [ordered]@{
+    schemaVersion = 'NEWS_GRASP_PHYSICAL_DELIVERY_STATE_V1'
+    generationId = 'pending-active-generation'
+    fields = $deliveryFields
+    operationalStatus = 'incomplete'
+}
+$deliveryStateJson = $deliveryStateBody | ConvertTo-Json -Depth 8 -Compress
+$deliveryStateHasher = [Security.Cryptography.SHA256]::Create()
+try {
+    $deliveryStateBody.stateSha256 = ([BitConverter]::ToString(
+        $deliveryStateHasher.ComputeHash([Text.Encoding]::UTF8.GetBytes($deliveryStateJson))
+    ) -replace '-', '').ToLowerInvariant()
+} finally { $deliveryStateHasher.Dispose() }
+Write-AtomicUtf8Text -Path $deliveryReceiptPath -Text (($deliveryStateBody | ConvertTo-Json -Depth 8) + [Environment]::NewLine)
+$deliveryReceiptFile = Read-NewsGraspVerifiedFile `
+    -Path $deliveryReceiptPath `
+    -TrustedBoundary $BackupDir `
+    -RequireSingleLink
+$script:DeliveryReceiptSummary = [ordered]@{
+    path = $deliveryReceiptPath
+    sha256 = [string]$deliveryReceiptFile.Sha256
+    schemaVersion = 'NEWS_GRASP_PHYSICAL_DELIVERY_STATE_V1'
+    operationalStatus = 'incomplete'
+}
 Write-NewsGraspInstallJournal -Phase 'verified'
 Write-NewsGraspInstallJournal -Phase 'committed'
 $script:InstallationCommitted = $true

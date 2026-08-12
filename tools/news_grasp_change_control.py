@@ -420,7 +420,7 @@ def snapshot(
 
 def _validate_packet_shape(
     packet: dict[str, Any], repo: Path, allowed: list[str], routes: dict[str, dict[str, Any]]
-) -> None:
+) -> dict[str, Any]:
     if packet.get("schemaVersion") != PACKET_SCHEMA:
         _fail("NG_PACKET_CONTRACT_INVALID")
     actor_route_id = packet.get("actorRouteId")
@@ -446,6 +446,21 @@ def _validate_packet_shape(
     if write_set != change_paths:
         _fail("NG_PACKET_CONTRACT_INVALID")
     _target_paths(repo, write_set, allowed)
+    task_constitution = packet.get("taskConstitution")
+    if not isinstance(task_constitution, dict):
+        _fail("NG_TASK_CONSTITUTION_ADMISSION_REQUIRED")
+    try:
+        from tools.news_grasp_operational_contract import admit_task_constitution
+
+        admission = admit_task_constitution(
+            task_constitution,
+            repo_root=Path(__file__).resolve().parents[1],
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        _fail("NG_TASK_CONSTITUTION_ADMISSION_INVALID", str(exc))
+    if list(admission["writeSet"]) != write_set:
+        _fail("NG_TASK_CONSTITUTION_WRITE_SET_MISMATCH")
+    return admission
 
 
 def validate_packet(*, repo_root: Path | str, packet: Path | str | dict[str, Any]) -> dict[str, Any]:
@@ -458,7 +473,7 @@ def validate_packet(*, repo_root: Path | str, packet: Path | str | dict[str, Any
     for change in value.get("changes", []):
         if isinstance(change, dict) and isinstance(change.get("path"), str):
             _relative_path(repo, change["path"])
-    _validate_packet_shape(value, repo, allowed, routes)
+    task_admission = _validate_packet_shape(value, repo, allowed, routes)
     if value.get("repoRoot") != str(repo):
         _fail("NG_PACKET_CONTRACT_INVALID")
     owner = value.get("ownerThreadId")
@@ -499,6 +514,7 @@ def validate_packet(*, repo_root: Path | str, packet: Path | str | dict[str, Any
         "executor": value["executor"],
         "unresolvedDecisionIds": [],
         "baselineSha256": snapshot_sha256,
+        "taskConstitutionAdmissionSha256": str(task_admission["requestSha256"]),
     }
 
 

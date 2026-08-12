@@ -29,6 +29,7 @@ from tools.news_grasp_operational_contract import (
     validate_completion_authority_receipt,
     validate_operational_truth_receipt,
 )
+from tools.news_grasp_owned_process import run_owned_bounded
 
 
 AUDIT_TERMINALS = {
@@ -387,124 +388,6 @@ def _typed_public_green_readiness_red(
     )
 
 
-def _assign_windows_owned_job(process: subprocess.Popen[bytes]):
-    if os.name != "nt":
-        return None
-    from ctypes import wintypes
-
-    JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000
-    JobObjectExtendedLimitInformation = 9
-
-    class JOBOBJECT_BASIC_LIMIT_INFORMATION(ctypes.Structure):
-        _fields_ = [
-            ("PerProcessUserTimeLimit", ctypes.c_longlong),
-            ("PerJobUserTimeLimit", ctypes.c_longlong),
-            ("LimitFlags", wintypes.DWORD),
-            ("MinimumWorkingSetSize", ctypes.c_size_t),
-            ("MaximumWorkingSetSize", ctypes.c_size_t),
-            ("ActiveProcessLimit", wintypes.DWORD),
-            ("Affinity", ctypes.c_size_t),
-            ("PriorityClass", wintypes.DWORD),
-            ("SchedulingClass", wintypes.DWORD),
-        ]
-
-    class IO_COUNTERS(ctypes.Structure):
-        _fields_ = [
-            ("ReadOperationCount", ctypes.c_ulonglong),
-            ("WriteOperationCount", ctypes.c_ulonglong),
-            ("OtherOperationCount", ctypes.c_ulonglong),
-            ("ReadTransferCount", ctypes.c_ulonglong),
-            ("WriteTransferCount", ctypes.c_ulonglong),
-            ("OtherTransferCount", ctypes.c_ulonglong),
-        ]
-
-    class JOBOBJECT_EXTENDED_LIMIT_INFORMATION(ctypes.Structure):
-        _fields_ = [
-            ("BasicLimitInformation", JOBOBJECT_BASIC_LIMIT_INFORMATION),
-            ("IoInfo", IO_COUNTERS),
-            ("ProcessMemoryLimit", ctypes.c_size_t),
-            ("JobMemoryLimit", ctypes.c_size_t),
-            ("PeakProcessMemoryUsed", ctypes.c_size_t),
-            ("PeakJobMemoryUsed", ctypes.c_size_t),
-        ]
-
-    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-    kernel32.CreateJobObjectW.restype = wintypes.HANDLE
-    kernel32.SetInformationJobObject.argtypes = [
-        wintypes.HANDLE,
-        ctypes.c_int,
-        ctypes.c_void_p,
-        wintypes.DWORD,
-    ]
-    kernel32.AssignProcessToJobObject.argtypes = [wintypes.HANDLE, wintypes.HANDLE]
-    job = kernel32.CreateJobObjectW(None, None)
-    if not job:
-        raise ValueError("OWNED_PROCESS_JOB_CREATE_FAILED")
-    info = JOBOBJECT_EXTENDED_LIMIT_INFORMATION()
-    info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
-    if not kernel32.SetInformationJobObject(
-        job,
-        JobObjectExtendedLimitInformation,
-        ctypes.byref(info),
-        ctypes.sizeof(info),
-    ) or not kernel32.AssignProcessToJobObject(job, wintypes.HANDLE(process._handle)):
-        kernel32.CloseHandle(job)
-        process.terminate()
-        process.wait(timeout=5)
-        raise ValueError("OWNED_PROCESS_JOB_ASSIGNMENT_FAILED")
-    return job
-
-
-def _terminate_owned_process_tree(
-    process: subprocess.Popen[bytes], windows_job: object | None
-) -> None:
-    if process.poll() is not None:
-        return
-    if os.name == "nt":
-        if windows_job:
-            from ctypes import wintypes
-
-            kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-            kernel32.TerminateJobObject.argtypes = [wintypes.HANDLE, wintypes.UINT]
-            kernel32.TerminateJobObject.restype = wintypes.BOOL
-            if not kernel32.TerminateJobObject(windows_job, 1):
-                raise ValueError("OWNED_PROCESS_JOB_TERMINATION_FAILED")
-        else:
-            process.terminate()
-    else:
-        os.killpg(process.pid, signal.SIGTERM)
-    try:
-        process.wait(timeout=5)
-    except subprocess.TimeoutExpired:
-        if os.name == "nt":
-            if windows_job:
-                from ctypes import wintypes
-
-                kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-                kernel32.TerminateJobObject.argtypes = [wintypes.HANDLE, wintypes.UINT]
-                kernel32.TerminateJobObject.restype = wintypes.BOOL
-                if not kernel32.TerminateJobObject(windows_job, 1):
-                    raise ValueError("OWNED_PROCESS_JOB_TERMINATION_FAILED")
-            else:
-                process.kill()
-        else:
-            os.killpg(process.pid, signal.SIGKILL)
-        process.wait(timeout=5)
-
-
-def _resume_windows_owned_process(process: subprocess.Popen[bytes]) -> None:
-    if os.name != "nt":
-        return
-    from ctypes import wintypes
-
-    ntdll = ctypes.WinDLL("ntdll", use_last_error=True)
-    ntdll.NtResumeProcess.argtypes = [wintypes.HANDLE]
-    ntdll.NtResumeProcess.restype = ctypes.c_long
-    status = ntdll.NtResumeProcess(wintypes.HANDLE(process._handle))
-    if status != 0:
-        raise ValueError("OWNED_PROCESS_RESUME_FAILED")
-
-
 def _verify_public_without_notification(*, issue_date: str) -> dict[str, Any] | None:
     """notification だけを除外し、それ以外の同日公開完了面を実 verifier で検証する。"""
     from tools.daily_self_heal import verify_publish_complete
@@ -761,82 +644,23 @@ def _run_bounded(
     timeout: int,
     env_overrides: dict[str, str] | None = None,
 ) -> tuple[int, bytes]:
-    creationflags = 0
-    if os.name == "nt":
-        creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0) | getattr(
-            subprocess, "CREATE_NEW_PROCESS_GROUP", 0
-        ) | getattr(subprocess, "CREATE_SUSPENDED", 0x00000004)
     child_env = os.environ.copy()
     child_env["PYTHONUTF8"] = "1"
     child_env["PYTHONIOENCODING"] = "utf-8"
     if env_overrides:
         child_env.update(env_overrides)
-    process = subprocess.Popen(
+    result = run_owned_bounded(
         command,
         cwd=cwd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        shell=False,
-        creationflags=creationflags,
+        timeout=timeout,
+        max_output_bytes=MAX_JSON_BYTES,
         env=child_env,
-        start_new_session=os.name != "nt",
     )
-    windows_job = None
-    stdout = bytearray()
-    stderr = bytearray()
-    exceeded = threading.Event()
-
-    def drain(stream, target: bytearray) -> None:
-        reader = getattr(stream, "read1", stream.read)
-        while True:
-            chunk = reader(64 * 1024)
-            if not chunk:
-                return
-            remaining = MAX_JSON_BYTES + 1 - len(target)
-            if remaining > 0:
-                target.extend(chunk[:remaining])
-            if len(target) > MAX_JSON_BYTES or len(chunk) > remaining:
-                exceeded.set()
-                return
-
-    try:
-        windows_job = _assign_windows_owned_job(process)
-        _resume_windows_owned_process(process)
-        threads = [
-            threading.Thread(target=drain, args=(process.stdout, stdout), daemon=True),
-            threading.Thread(target=drain, args=(process.stderr, stderr), daemon=True),
-        ]
-        for thread in threads:
-            thread.start()
-        deadline = time.monotonic() + timeout
-        timed_out = False
-        while process.poll() is None:
-            remaining = deadline - time.monotonic()
-            if remaining <= 0:
-                timed_out = True
-                _terminate_owned_process_tree(process, windows_job)
-                break
-            if exceeded.wait(min(0.05, remaining)):
-                _terminate_owned_process_tree(process, windows_job)
-                break
-        for thread in threads:
-            thread.join(timeout=5)
-        if exceeded.is_set() or len(stdout) > MAX_JSON_BYTES or len(stderr) > MAX_JSON_BYTES:
-            raise ValueError("BOUNDED_SUBPROCESS_OUTPUT_EXCEEDED")
-        if timed_out:
-            raise ValueError("BOUNDED_SUBPROCESS_TIMEOUT")
-        return int(process.returncode or 0), bytes(stdout)
-    finally:
-        if process.poll() is None:
-            _terminate_owned_process_tree(process, windows_job)
-        if os.name == "nt" and windows_job:
-            from ctypes import wintypes
-
-            kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-            kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
-            kernel32.CloseHandle.restype = wintypes.BOOL
-            if not kernel32.CloseHandle(windows_job):
-                raise ValueError("OWNED_PROCESS_JOB_CLOSE_FAILED")
+    if result.output_exceeded:
+        raise ValueError("BOUNDED_SUBPROCESS_OUTPUT_EXCEEDED")
+    if result.timed_out:
+        raise ValueError("BOUNDED_SUBPROCESS_TIMEOUT")
+    return result.returncode, result.stdout
 
 
 def _git_bytes(repo_root: Path, *args: str) -> bytes:

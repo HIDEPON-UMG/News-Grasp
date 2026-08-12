@@ -600,52 +600,30 @@ def test_bounded_subprocess_rejects_stderr_over_budget(tmp_path: Path) -> None:
         )
 
 
-def test_bounded_subprocess_owns_windows_descendants() -> None:
+def test_bounded_subprocess_uses_creation_time_owned_job() -> None:
     control = _control("RED_PROCESS_TREE_OWNERSHIP_MISSING")
     source = Path(control.__file__).read_text(encoding="utf-8-sig")
-    assert "JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE" in source
-    assert "AssignProcessToJobObject" in source
-    assert "TerminateJobObject" in source
-    assert "CREATE_SUSPENDED" in source
-    assert "NtResumeProcess" in source
-
-
-def test_windows_cleanup_without_job_terminates_process_without_posix_killpg(
-    monkeypatch,
-) -> None:
-    control = _control("RED_WINDOWS_JOB_CREATE_FAILURE_LEAK")
-
-    class FakeProcess:
-        pid = 424242
-
-        def __init__(self) -> None:
-            self.returncode = None
-            self.terminated = False
-
-        def poll(self):
-            return self.returncode
-
-        def terminate(self) -> None:
-            self.terminated = True
-            self.returncode = 1
-
-        def kill(self) -> None:
-            self.returncode = 1
-
-        def wait(self, timeout=None):
-            return self.returncode
-
-    process = FakeProcess()
-    monkeypatch.setattr(control.os, "name", "nt")
-    monkeypatch.setattr(
-        control.os,
-        "killpg",
-        lambda *_args: pytest.fail("Windows cleanup must not call os.killpg"),
-        raising=False,
+    boundary = (Path(control.__file__).parent / "news_grasp_owned_process.py").read_text(
+        encoding="utf-8-sig"
     )
+    assert "run_owned_bounded" in source
+    assert "PROC_THREAD_ATTRIBUTE_JOB_LIST" in boundary
+    assert "JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE" in boundary
+    assert "CREATE_SUSPENDED" in boundary
+    assert "TerminateProcess" not in boundary
+    assert "AssignProcessToJobObject" not in boundary
 
-    control._terminate_owned_process_tree(process, None)
-    assert process.terminated is True
+
+def test_windows_owned_job_boundary_rejects_missing_executable(tmp_path: Path) -> None:
+    from tools.news_grasp_owned_process import OwnedProcessError, run_owned_bounded
+
+    with pytest.raises(OwnedProcessError, match="OWNED_PROCESS_EXECUTABLE_INVALID"):
+        run_owned_bounded(
+            ["definitely-missing-news-grasp-executable.exe"],
+            cwd=tmp_path,
+            timeout=1,
+            max_output_bytes=1024,
+        )
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows Job Object contract")

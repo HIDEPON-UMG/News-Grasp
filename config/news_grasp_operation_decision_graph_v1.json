@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "NEWS_GRASP_OPERATION_DECISION_GRAPH_V1",
+  "productId": "News-Grasp",
+  "initialState": "admitted",
+  "maxTransitionDepth": 2,
+  "terminalStateIds": [
+    "success",
+    "recovery_completed",
+    "operation_deferred",
+    "user_stopped",
+    "major_incident",
+    "design_escape",
+    "no_progress"
+  ],
+  "states": [
+    {"stateId": "admitted", "terminal": false},
+    {"stateId": "recovery_active", "terminal": false},
+    {"stateId": "success", "terminal": true},
+    {"stateId": "recovery_completed", "terminal": true},
+    {"stateId": "operation_deferred", "terminal": true},
+    {"stateId": "user_stopped", "terminal": true},
+    {"stateId": "major_incident", "terminal": true},
+    {"stateId": "design_escape", "terminal": true},
+    {"stateId": "no_progress", "terminal": true}
+  ],
+  "transitions": [
+    {"from": "admitted", "event": "success", "to": "success"},
+    {"from": "admitted", "event": "recovery_required", "to": "recovery_active"},
+    {"from": "admitted", "event": "external_unavailable", "to": "operation_deferred"},
+    {"from": "admitted", "event": "user_stop", "to": "user_stopped"},
+    {"from": "admitted", "event": "no_progress", "to": "no_progress"},
+    {"from": "admitted", "event": "design_contract_violation", "to": "design_escape"},
+    {"from": "admitted", "event": "*", "to": "major_incident"},
+    {"from": "recovery_active", "event": "recovery_verified", "to": "recovery_completed"},
+    {"from": "recovery_active", "event": "public_verified", "to": "success"},
+    {"from": "recovery_active", "event": "external_unavailable", "to": "operation_deferred"},
+    {"from": "recovery_active", "event": "user_stop", "to": "user_stopped"},
+    {"from": "recovery_active", "event": "no_progress", "to": "no_progress"},
+    {"from": "recovery_active", "event": "design_contract_violation", "to": "design_escape"},
+    {"from": "recovery_active", "event": "*", "to": "major_incident"}
+  ]
+}

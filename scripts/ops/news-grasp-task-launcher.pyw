@@ -564,6 +564,10 @@ def _validate_active_production_generation(
         raise RuntimeError("NEWS_GRASP_ACTIVE_GENERATION_INVALID")
     manifest_unsigned = dict(manifest)
     manifest_sha256 = str(manifest_unsigned.pop("manifestSha256", ""))
+    source_manifest = manifest.get("source")
+    source_tracked_files = (
+        source_manifest.get("trackedFiles") if isinstance(source_manifest, dict) else None
+    )
     runtime_manifest = manifest.get("runtime")
     tracked_files = runtime_manifest.get("trackedFiles") if isinstance(runtime_manifest, dict) else None
     if (
@@ -572,6 +576,13 @@ def _validate_active_production_generation(
         or manifest_sha256 != _sha256_json(manifest_unsigned)
         or active_pointer.get("manifestSha256") != manifest_sha256
         or manifest.get("stableTaskAuthoritySha256") != launcher_identity.get("authoritySha256")
+        or not isinstance(source_manifest, dict)
+        or source_manifest.get("commit") != runtime_head
+        or not isinstance(source_tracked_files, dict)
+        or source_manifest.get("trackedManifestSha256")
+        != _sha256_json(source_tracked_files)
+        or _git_tracked_tree_manifest(runtime_repo, runtime_head)
+        != source_tracked_files
         or not isinstance(runtime_manifest, dict)
         or runtime_manifest.get("commit") != runtime_head
         or not isinstance(tracked_files, dict)
@@ -618,10 +629,27 @@ def _run_installed_nopublish_authority(
         "runtimeRepoCommit",
         "runnerArgumentsPath",
         "runnerArgumentsFileSha256",
+        "externalHealthAuthorityFixturePath",
+        "externalHealthAuthorityFixtureSha256",
         "authoritySha256",
     }
+    external_fields = {
+        "externalHealthAuthorityFixturePath",
+        "externalHealthAuthorityFixtureSha256",
+    }
+    if not external_fields.issubset(value):
+        raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_EXTERNAL_AUTHORITY_INVALID")
     if set(value) != required or value.get("schemaVersion") != INSTALLED_NOPUBLISH_AUTHORITY_SCHEMA:
         raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_AUTHORITY_INVALID")
+    if (
+        not isinstance(value["externalHealthAuthorityFixturePath"], str)
+        or not value["externalHealthAuthorityFixturePath"]
+        or not isinstance(value["externalHealthAuthorityFixtureSha256"], str)
+        or not re.fullmatch(
+            r"[0-9a-f]{64}", value["externalHealthAuthorityFixtureSha256"]
+        )
+    ):
+        raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_EXTERNAL_AUTHORITY_INVALID")
     expected_identity = {
         "stableLauncherPath": str(Path(__file__).resolve()),
         "stableLauncherSha256": _file_sha256(Path(__file__).resolve()),
@@ -633,6 +661,7 @@ def _run_installed_nopublish_authority(
     try:
         executable = Path(str(value["runnerExecutablePath"])).resolve(strict=True)
         arguments_path = Path(str(value["runnerArgumentsPath"])).resolve(strict=True)
+        execution_repo = Path(str(value["executionRepoRoot"])).resolve(strict=True)
     except OSError as error:
         raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_AUTHORITY_INVALID") from error
     if (
@@ -654,8 +683,32 @@ def _run_installed_nopublish_authority(
         or any(not isinstance(item, str) or not item for item in arguments)
         or "-NoPublish" not in arguments
         or "-ResumeFromStage" in arguments
+        or arguments.count("-ExternalHealthAuthorityPathOverride") != 1
+        or arguments.count("-ExternalHealthAuthorityExpectedSha256") != 1
     ):
         raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_ARGUMENTS_INVALID")
+    try:
+        external_authority = _assert_managed_path(
+            Path(value["externalHealthAuthorityFixturePath"]),
+            execution_repo,
+            "NEWS_GRASP_INSTALLED_NOPUBLISH_EXTERNAL_AUTHORITY_INVALID",
+        ).resolve(strict=True)
+        external_stat = external_authority.stat()
+    except OSError as error:
+        raise RuntimeError(
+            "NEWS_GRASP_INSTALLED_NOPUBLISH_EXTERNAL_AUTHORITY_INVALID"
+        ) from error
+    if (
+        not external_authority.is_file()
+        or external_authority.is_symlink()
+        or external_stat.st_size > 64 * 1024
+    ):
+        raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_EXTERNAL_AUTHORITY_INVALID")
+    if (
+        _file_sha256(external_authority)
+        != value["externalHealthAuthorityFixtureSha256"]
+    ):
+        raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_EXTERNAL_AUTHORITY_DRIFT")
     resolved = resolve_bootstrap_launch_roots(
         bin_dir=bin_dir,
         enforce_canonical_runtime=True,
@@ -666,7 +719,6 @@ def _run_installed_nopublish_authority(
         launcher_identity=launcher_identity,
     )
     try:
-        execution_repo = Path(str(value["executionRepoRoot"])).resolve(strict=True)
         runtime_head = _run_git(runtime_repo, "rev-parse", "HEAD").strip().lower()
         execution_head = _run_git(execution_repo, "rev-parse", "HEAD").strip().lower()
         tracked_diff = _run_git(
@@ -702,8 +754,24 @@ def _run_installed_nopublish_authority(
         observed_repo = Path(arguments[repo_index + 1]).resolve(strict=True)
         wrapper_index = arguments.index("-CodexWrapperOverride")
         observed_codex_wrapper = Path(arguments[wrapper_index + 1]).resolve(strict=True)
+        external_index = arguments.index("-ExternalHealthAuthorityPathOverride")
+        observed_external_authority = _assert_managed_path(
+            Path(arguments[external_index + 1]),
+            execution_repo,
+            "NEWS_GRASP_INSTALLED_NOPUBLISH_EXTERNAL_AUTHORITY_INVALID",
+        ).resolve(strict=True)
+        external_hash_index = arguments.index(
+            "-ExternalHealthAuthorityExpectedSha256"
+        )
+        observed_external_authority_sha256 = arguments[external_hash_index + 1]
     except (ValueError, IndexError, OSError) as error:
         raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_ARGUMENTS_INVALID") from error
+    if (
+        observed_external_authority != external_authority
+        or observed_external_authority_sha256
+        != value["externalHealthAuthorityFixtureSha256"]
+    ):
+        raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_EXTERNAL_AUTHORITY_DRIFT")
     if (
         observed_runner != expected_runner
         or observed_repo != execution_repo
@@ -724,6 +792,35 @@ def _run_installed_nopublish_authority(
     return int(result.returncode)
 
 
+def _git_tracked_tree_manifest(repo: Path, commit: str) -> dict[str, str]:
+    """commitの全tracked objectをpathとGit identityへ正規化する。"""
+    output = _run_git(repo, "ls-tree", "-r", "--full-tree", "-z", commit)
+    rows: dict[str, str] = {}
+    for entry in output.split("\0"):
+        if not entry:
+            continue
+        try:
+            metadata, relative = entry.split("\t", 1)
+            mode, object_type, object_id = metadata.split(" ", 2)
+        except ValueError as error:
+            raise RuntimeError("NEWS_GRASP_PRODUCTION_GENERATION_TREE_INVALID") from error
+        if (
+            not relative
+            or relative in rows
+            or "\\" in relative
+            or relative.startswith("/")
+            or any(part in {"", ".", ".."} for part in relative.split("/"))
+            or not re.fullmatch(r"[0-7]{6}", mode)
+            or object_type not in {"blob", "commit"}
+            or not re.fullmatch(r"[0-9a-f]{40,64}", object_id)
+        ):
+            raise RuntimeError("NEWS_GRASP_PRODUCTION_GENERATION_TREE_INVALID")
+        rows[relative] = f"{mode}:{object_type}:{object_id}"
+    if not rows:
+        raise RuntimeError("NEWS_GRASP_PRODUCTION_GENERATION_TREE_INVALID")
+    return dict(sorted(rows.items()))
+
+
 def _seal_active_production_generation(
     *,
     source_repo: Path,
@@ -735,6 +832,26 @@ def _seal_active_production_generation(
     """runtime transaction終端だけでimmutable manifestとactive pointerを発行する。"""
     identity = _load_stable_launcher_identity(bin_dir=bin_dir)
     runtime_config = bin_dir / "news-grasp-runtime-root-v1.json"
+    source_head = _run_git(source_repo, "rev-parse", "HEAD").strip().lower()
+    runtime_head = _run_git(runtime_repo, "rev-parse", "HEAD").strip().lower()
+    remote_head = _run_git(source_repo, "rev-parse", "origin/main").strip().lower()
+    source_status = _run_git(
+        source_repo, "status", "--porcelain", "--untracked-files=no"
+    ).strip()
+    runtime_status = _run_git(
+        runtime_repo, "status", "--porcelain", "--untracked-files=no"
+    ).strip()
+    if source_status or runtime_status:
+        raise RuntimeError("NEWS_GRASP_PRODUCTION_GENERATION_DIRTY")
+    if (
+        source_head != origin_sha
+        or runtime_head != origin_sha
+        or remote_head != origin_sha
+        or _git_common_dir(source_repo) != _git_common_dir(runtime_repo)
+    ):
+        raise RuntimeError("NEWS_GRASP_PRODUCTION_GENERATION_DRIFT")
+    source_tracked = _git_tracked_tree_manifest(source_repo, source_head)
+    source_tracked_manifest_sha256 = _sha256_json(source_tracked)
     critical_paths = (
         "scripts/ops/news-grasp-runner.ps1",
         "tools/daily_self_heal.py",
@@ -762,6 +879,7 @@ def _seal_active_production_generation(
     generation_id = _sha256_json(
         {
             "sourceCommit": origin_sha,
+            "sourceTrackedManifestSha256": source_tracked_manifest_sha256,
             "runtimeTrackedManifestSha256": tracked_manifest_sha256,
             "configSha256": runtime_config_sha256,
             "installedLauncherSha256": identity["stableLauncherSha256"],
@@ -799,14 +917,16 @@ def _seal_active_production_generation(
         "previousGenerationId": previous_generation_id or None,
         "source": {
             "commit": origin_sha,
-            "observedHead": _run_git(source_repo, "rev-parse", "HEAD").strip().lower(),
-            "remoteHead": _run_git(source_repo, "rev-parse", "origin/main").strip().lower(),
+            "observedHead": source_head,
+            "remoteHead": remote_head,
             "commonDir": str(_git_common_dir(source_repo)),
             "origin": "origin/main",
+            "trackedFiles": source_tracked,
+            "trackedManifestSha256": source_tracked_manifest_sha256,
         },
         "runtime": {
             "root": str(runtime_repo),
-            "commit": _run_git(runtime_repo, "rev-parse", "HEAD").strip().lower(),
+            "commit": runtime_head,
             "commonDir": str(_git_common_dir(runtime_repo)),
             "trackedFiles": tracked,
             "trackedManifestSha256": tracked_manifest_sha256,
@@ -821,13 +941,25 @@ def _seal_active_production_generation(
             "triggerSha256": trigger_sha256,
         },
     }
+    final_source_head = _run_git(source_repo, "rev-parse", "HEAD").strip().lower()
+    final_runtime_head = _run_git(runtime_repo, "rev-parse", "HEAD").strip().lower()
+    final_remote_head = _run_git(source_repo, "rev-parse", "origin/main").strip().lower()
+    final_source_status = _run_git(
+        source_repo, "status", "--porcelain", "--untracked-files=no"
+    ).strip()
+    final_runtime_status = _run_git(
+        runtime_repo, "status", "--porcelain", "--untracked-files=no"
+    ).strip()
+    final_source_tracked = _git_tracked_tree_manifest(source_repo, final_source_head)
+    if final_source_status or final_runtime_status:
+        raise RuntimeError("NEWS_GRASP_PRODUCTION_GENERATION_DIRTY")
     if (
-        manifest["source"]["commit"] != origin_sha
-        or manifest["source"]["remoteHead"] != origin_sha
-        or manifest["runtime"]["commit"] != origin_sha
-        or manifest["source"]["commonDir"] != manifest["runtime"]["commonDir"]
+        final_source_head != source_head
+        or final_runtime_head != runtime_head
+        or final_remote_head != remote_head
+        or final_source_tracked != source_tracked
     ):
-        raise RuntimeError("NEWS_GRASP_PRODUCTION_GENERATION_DRIFT")
+        raise RuntimeError("NEWS_GRASP_PRODUCTION_GENERATION_SOURCE_DRIFT")
     manifest["manifestSha256"] = _sha256_json(manifest)
     generation_root = runtime_root / "generations"
     generation_root.mkdir(parents=True, exist_ok=True)

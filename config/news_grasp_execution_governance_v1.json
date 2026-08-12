@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "NEWS_GRASP_EXECUTION_GOVERNANCE_V1",
+  "productId": "News-Grasp",
+  "phaseExecutors": {
+    "requirements_design": {"executor": "sol_max", "reasoningEffort": "max"},
+    "security_judgment": {"executor": "sol_max", "reasoningEffort": "max"},
+    "fixed_implementation": {"executor": "luna_max", "reasoningEffort": "max"},
+    "deterministic_verification": {"executor": "local_tool", "reasoningEffort": "deterministic"}
+  },
+  "weeklyUsage": {
+    "plannedPercent": 6.3,
+    "limitPercent": 8.8,
+    "measurement": "WP開始前に予定model消費から算定"
+  },
+  "delegationPolicy": "allow_only_when_acceptance_complete_and_expected_total_resource_decreases",
+  "retryPolicy": "same_state_same_shape_zero_masked_causal_change_at_most_one",
+  "progressPolicy": {
+    "appendOnly": true,
+    "exactlyOneInProgress": true,
+    "requiredDurableStates": ["durable_goal", "append_only_todo_ledger", "durable_delta_packet", "worktree"]
+  },
+  "stopPolicy": "latest_user_stop_immediate_user_stopped_terminal",
+  "forbiddenContinuationTriggers": ["pending_todo_exists", "active_goal_exists", "same_output_requested_by_agent"]
+}

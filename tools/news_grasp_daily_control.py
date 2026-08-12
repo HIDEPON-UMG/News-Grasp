@@ -8,11 +8,12 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, Mapping
 
 from tools import audit_recovery_control
 from tools import news_grasp_external_control as external_control
 from tools import news_grasp_convergence as convergence
+from tools import operational_recovery_registry
 from tools.news_grasp_operational_contract import evaluate_completion_v3, select_recovery_branch_from_truth
 
 
@@ -280,6 +281,37 @@ def select_audit_recovery_action(completion: object) -> dict[str, Any]:
         "publicRecoveryStarted": True,
         "completionAuthorityId": authority_id,
         "reasonCode": str(value.get("reasonCode") or "PUBLIC_COMPLETION_RED"),
+    }
+
+
+def dispatch_registered_readiness_repair(
+    *,
+    repo_root: Path | str,
+    reason_code: str,
+    context: Mapping[str, Any],
+    executor: Callable[[Mapping[str, Any]], Mapping[str, Any]],
+) -> dict[str, Any]:
+    """readiness repairをexact registry entry経由だけで実行する。"""
+
+    handlers = operational_recovery_registry.default_handlers()
+    handlers["active_generation_reconcile"] = executor
+    dispatched = operational_recovery_registry.dispatch(
+        repo_root=repo_root,
+        reason_code=reason_code,
+        context={**dict(context), "reasonCode": reason_code},
+        handlers=handlers,
+    )
+    if dispatched.handler_id != "active_generation_reconcile":
+        raise ValueError("READINESS_REPAIR_HANDLER_NOT_REGISTERED")
+    result = dict(dispatched.result)
+    if result.get("selfDeclaredGreen") is True:
+        raise ValueError("READINESS_REPAIR_SELF_DECLARED_GREEN")
+    return {
+        "schemaVersion": "REGISTERED_READINESS_REPAIR_RESULT_V1",
+        "status": dispatched.status,
+        "handlerId": dispatched.handler_id,
+        "reasonCode": dispatched.reason_code,
+        "handlerResult": result,
     }
 
 
@@ -1422,7 +1454,38 @@ def execute_audit_0640(
                 "-RepoDir",
                 str(actual.repo_root),
             ]
-            return_code = int(run_command(command, cwd=actual.repo_root))
+            def _execute_registered_reconcile(
+                context: Mapping[str, Any],
+            ) -> Mapping[str, Any]:
+                return_code = int(run_command(command, cwd=actual.repo_root))
+                return {
+                    "status": "command_completed",
+                    "returnCode": return_code,
+                    "mutationCount": 1 if return_code == 0 else 0,
+                    "dailyOperationLineageId": context.get(
+                        "dailyOperationLineageId"
+                    ),
+                }
+
+            registered_repair = dispatch_registered_readiness_repair(
+                repo_root=actual.repo_root,
+                reason_code=str(decision.get("reasonCode") or "READINESS_RED"),
+                context={
+                    "dailyOperationLineageId": str(
+                        decision.get("dailyOperationLineageId") or ""
+                    ),
+                    "completionAuthorityId": str(
+                        decision.get("completionAuthorityId") or ""
+                    ),
+                    "causeFingerprint": str(
+                        decision.get("causeFingerprint") or ""
+                    ),
+                },
+                executor=_execute_registered_reconcile,
+            )
+            return_code = int(
+                registered_repair["handlerResult"].get("returnCode", 1)
+            )
             if return_code != 0:
                 terminal = _audit_observation_terminal(
                     issue_date=issue_date,
@@ -1448,7 +1511,7 @@ def execute_audit_0640(
                 return terminal
             terminal = _audit_green_terminal(
                 issue_date=issue_date,
-                decision=decision,
+                decision={**decision, "registeredRepair": registered_repair},
                 completion=completion,
                 recovered=False,
             )

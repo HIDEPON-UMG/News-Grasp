@@ -1,8 +1,8 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 2374,
-  "collectedNodeSetSha256": "2bf583a13dfc01c69bb423456e23d83a3009ce91dc32ed1915ef8504a7705d7f",
+  "collectedNodeCount": 2454,
+  "collectedNodeSetSha256": "778466954c3240d15813f0ae5761929a0dad1fab36d89435ede37c62f748167d",
   "files": [
     {
       "path": "tests/test_all_article_urls_live.py",
@@ -93,7 +93,7 @@
     },
     {
       "path": "tests/test_audit_recovery_control.py",
-      "sha256": "d02786037df0835efaad885d472164dee3321d1c551c27034fbf257c8c64c9d7",
+      "sha256": "f5f54226db511eabdf0c2a9be707c4be0775699845866c1522779c13f9bbac5d",
       "nodeCount": 60,
       "nodeIds": [
         "tests/test_audit_recovery_control.py::test_actual_completion_verifier_owns_all_required_gates",
@@ -109,8 +109,8 @@
         "tests/test_audit_recovery_control.py::test_audit_normal_requires_actual_same_date_public_green",
         "tests/test_audit_recovery_control.py::test_automation_and_repair_skill_use_executable_fixed_terminal_contract",
         "tests/test_audit_recovery_control.py::test_bootstrap_nonce_and_authority_writes_are_fresh_and_atomic",
-        "tests/test_audit_recovery_control.py::test_bounded_subprocess_owns_windows_descendants",
         "tests/test_audit_recovery_control.py::test_bounded_subprocess_rejects_stderr_over_budget",
+        "tests/test_audit_recovery_control.py::test_bounded_subprocess_uses_creation_time_owned_job",
         "tests/test_audit_recovery_control.py::test_caller_boolean_or_url_200_cannot_produce_green",
         "tests/test_audit_recovery_control.py::test_execute_runs_one_typed_recovery_then_writes_recovered_terminal",
         "tests/test_audit_recovery_control.py::test_external_readiness_reopens_typed_recovery",
@@ -155,7 +155,7 @@
         "tests/test_audit_recovery_control.py::test_sec_red_windows_directory_pin_blocks_root_swap",
         "tests/test_audit_recovery_control.py::test_terminal_writer_has_internal_root_and_only_three_terminals",
         "tests/test_audit_recovery_control.py::test_unknown_repair_class_is_major_incident_not_silent_deferred",
-        "tests/test_audit_recovery_control.py::test_windows_cleanup_without_job_terminates_process_without_posix_killpg"
+        "tests/test_audit_recovery_control.py::test_windows_owned_job_boundary_rejects_missing_executable"
       ],
       "clauseIds": [
         "NGC-C06",
@@ -483,7 +483,7 @@
     },
     {
       "path": "tests/test_codex_wrapper_security.py",
-      "sha256": "3ea1d1b0bb42fd792e604ae8bb501dbc4faf83c30ceadadcb7efbc102a1183f6",
+      "sha256": "ddc52dc911daf92e6567df98cbaf9b3ec7191d50de5548cddb054c0401c06fb4",
       "nodeCount": 5,
       "nodeIds": [
         "tests/test_codex_wrapper_security.py::test_wrapper_job_object_kills_grandchild_when_wrapper_is_terminated",
@@ -1564,7 +1564,7 @@
     },
     {
       "path": "tests/test_high_cost_operation_admission_contract.py",
-      "sha256": "54b8b743019b7376edbfccc67b79c58443104e1fcb77ebd8660df73d0f6a8157",
+      "sha256": "ba6286d92f5614fa8b3983805e05d7a1408d1ad965b649592d4805ed365df0ba",
       "nodeCount": 25,
       "nodeIds": [
         "tests/test_high_cost_operation_admission_contract.py::test_every_full_e2e_model_process_issues_exact_child_immediately_before_start",
@@ -2017,6 +2017,20 @@
       ]
     },
     {
+      "path": "tests/test_news_grasp_constitution_trace_compiler.py",
+      "sha256": "52f7db0b2f5bd08cd3e9c2bd5b76c8f23f7fe85bff686f6eb1c3c2bb9fc48641",
+      "nodeCount": 3,
+      "nodeIds": [
+        "tests/test_news_grasp_constitution_trace_compiler.py::test_trace_compiler_boundary_rejects_missing_user_outcome",
+        "tests/test_news_grasp_constitution_trace_compiler.py::test_trace_compiler_primary_binds_user_outcome_requirement_acceptance",
+        "tests/test_news_grasp_constitution_trace_compiler.py::test_trace_compiler_recovery_rejects_requirement_reuse"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
       "path": "tests/test_news_grasp_convergence.py",
       "sha256": "bd0f57afe174d3e233a59e3de2c0c61e28e9f30ed886799e585536598ec6289e",
       "nodeCount": 3,
@@ -2032,8 +2046,8 @@
     },
     {
       "path": "tests/test_news_grasp_daily_control.py",
-      "sha256": "ba440dee35ae2a4910a999efb34d7013cc7f4031b231604feee0f92e24625390",
-      "nodeCount": 32,
+      "sha256": "adf75012f318e1849bc535c2fcd32867015d89a86079868cccf148c3869f8509",
+      "nodeCount": 33,
       "nodeIds": [
         "tests/test_news_grasp_daily_control.py::test_audit_controller_failure_writes_owned_major_incident",
         "tests/test_news_grasp_daily_control.py::test_audit_decision_does_not_accept_caller_repair_classification",
@@ -2043,6 +2057,7 @@
         "tests/test_news_grasp_daily_control.py::test_audit_resume_branch_is_executed_before_same_date_green",
         "tests/test_news_grasp_daily_control.py::test_audit_terminal_writer_rejects_green_completion_hash_stub",
         "tests/test_news_grasp_daily_control.py::test_bootstrap_startup_failure_terminalizer_passes_run_id",
+        "tests/test_news_grasp_daily_control.py::test_codex_auth_block_is_typed_external_deferred_without_recovery_reentry",
         "tests/test_news_grasp_daily_control.py::test_deadman_calls_same_controller_for_public_incomplete",
         "tests/test_news_grasp_daily_control.py::test_deadman_delegates_to_single_canonical_audit_executor",
         "tests/test_news_grasp_daily_control.py::test_existing_recovery_green_preserves_recovery_terminal_status",
@@ -2067,6 +2082,70 @@
         "tests/test_news_grasp_daily_control.py::test_sec_red_causal_retry_rejects_state_path_escape",
         "tests/test_news_grasp_daily_control.py::test_second_recovery_attempt_becomes_major_incident_not_loop",
         "tests/test_news_grasp_daily_control.py::test_watcher_executes_controller_after_failure_and_rewatches_once"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
+      "path": "tests/test_news_grasp_e2e_composition_contract.py",
+      "sha256": "9b9f7fb11043cb74e91e8895c4b023d6790558950bb91ba3159fd9ed8ae2f6d9",
+      "nodeCount": 4,
+      "nodeIds": [
+        "tests/test_news_grasp_e2e_composition_contract.py::test_installed_launcher_rejects_external_authority_hash_drift",
+        "tests/test_news_grasp_e2e_composition_contract.py::test_installed_launcher_rejects_missing_external_authority_binding",
+        "tests/test_news_grasp_e2e_composition_contract.py::test_installed_launcher_rejects_runner_arguments_without_external_hash",
+        "tests/test_news_grasp_e2e_composition_contract.py::test_wrapper_authority_exactly_composes_with_installed_launcher"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
+      "path": "tests/test_news_grasp_execution_governance.py",
+      "sha256": "4a4028b5cb06ac38ef931b434d216c947f06a897e33237aa960b4721197e2abb",
+      "nodeCount": 5,
+      "nodeIds": [
+        "tests/test_news_grasp_execution_governance.py::test_execution_governance_boundary_rejects_scope_usage_and_same_shape_retry",
+        "tests/test_news_grasp_execution_governance.py::test_execution_governance_primary_routes_model_and_usage_by_fixed_entropy",
+        "tests/test_news_grasp_execution_governance.py::test_execution_governance_recovery_preserves_full_progress_and_manual_stop",
+        "tests/test_news_grasp_execution_governance.py::test_execution_governance_retry_consumption_is_atomic",
+        "tests/test_news_grasp_execution_governance.py::test_execution_governance_retry_consumption_is_not_caller_resettable"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
+      "path": "tests/test_news_grasp_generation_boundary.py",
+      "sha256": "ab71c99ef00b01cf8036b9776297c3731b4fcc8d0257afce95682079a1ddaefa",
+      "nodeCount": 3,
+      "nodeIds": [
+        "tests/test_news_grasp_generation_boundary.py::test_generation_manifest_seals_complete_tracked_source_tree",
+        "tests/test_news_grasp_generation_boundary.py::test_generation_seal_rejects_remote_owner_drift_before_pointer",
+        "tests/test_news_grasp_generation_boundary.py::test_generation_seal_rejects_tracked_dirty_source_before_pointer"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
+      "path": "tests/test_news_grasp_luna_packets.py",
+      "sha256": "2d170456c8585009b7c8557357bc725be49f8b7a650f1067a31046a989ff20cd",
+      "nodeCount": 8,
+      "nodeIds": [
+        "tests/test_news_grasp_luna_packets.py::test_luna_packets_boundary_reject_hash_scope_and_human_impact_drift",
+        "tests/test_news_grasp_luna_packets.py::test_luna_packets_boundary_reject_missing_operational_improvement_binding",
+        "tests/test_news_grasp_luna_packets.py::test_luna_packets_primary_are_decision_complete_and_sequential",
+        "tests/test_news_grasp_luna_packets.py::test_luna_packets_primary_consume_operational_improvement_binding",
+        "tests/test_news_grasp_luna_packets.py::test_luna_packets_recovery_has_single_causal_return_and_design_escape",
+        "tests/test_news_grasp_luna_packets.py::test_todo_196_boundary_rejects_unowned_packet_set_mutation",
+        "tests/test_news_grasp_luna_packets.py::test_todo_196_boundary_rejects_unsealed_derived_writes",
+        "tests/test_news_grasp_luna_packets.py::test_todo_196_primary_seals_complete_multi_root_write_scope"
       ],
       "clauseIds": [
         "NGC-C06",
@@ -2115,6 +2194,104 @@
         "tests/test_news_grasp_monthly_failure_corpus.py::test_hist_20260809",
         "tests/test_news_grasp_monthly_failure_corpus.py::test_hist_20260810",
         "tests/test_news_grasp_monthly_failure_corpus.py::test_hist_20260811"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
+      "path": "tests/test_news_grasp_operation_decision_graph.py",
+      "sha256": "047905a06d87f87aca945804e6d59a9dceabf0ac7aa7bbdb1482b27c0fb1125b",
+      "nodeCount": 3,
+      "nodeIds": [
+        "tests/test_news_grasp_operation_decision_graph.py::test_operation_decision_graph_boundary_rejects_self_loop",
+        "tests/test_news_grasp_operation_decision_graph.py::test_operation_decision_graph_primary_reaches_typed_terminal",
+        "tests/test_news_grasp_operation_decision_graph.py::test_operation_decision_graph_recovery_stops_and_reenters_once"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
+      "path": "tests/test_news_grasp_operation_integrity_matrix.py",
+      "sha256": "d11086d0c8e0eea3d4c0c8c8abf13742382a6bc553d4ffdd598b9a8bb05e376f",
+      "nodeCount": 42,
+      "nodeIds": [
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev01_boundary",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev01_primary",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev01_recovery",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev02_boundary",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev02_primary",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev02_recovery",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev03_boundary",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev03_primary",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev03_recovery",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev04_boundary",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev04_primary",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev04_recovery",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev05_boundary",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev05_primary",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev05_recovery",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev06_boundary",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev06_primary",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev06_recovery",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev07_boundary",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev07_primary",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev07_recovery",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev08_boundary",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev08_primary",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev08_recovery",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev09_boundary",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev09_primary",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev09_recovery",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev10_boundary",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev10_primary",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev10_recovery",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev11_boundary",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev11_primary",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev11_recovery",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev12_boundary",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev12_primary",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev12_recovery",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev13_boundary",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev13_primary",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev13_recovery",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev14_boundary",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev14_primary",
+        "tests/test_news_grasp_operation_integrity_matrix.py::test_ev14_recovery"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
+      "path": "tests/test_news_grasp_operational_skill_contract.py",
+      "sha256": "d4aee5bdad3c08a8b1b4276406a25e050fb8354b259e2912e104c23eec81ed57",
+      "nodeCount": 4,
+      "nodeIds": [
+        "tests/test_news_grasp_operational_skill_contract.py::test_operational_improvement_boundary_rejects_self_declared_layer_binding",
+        "tests/test_news_grasp_operational_skill_contract.py::test_operational_improvement_primary_binds_five_layers_and_efficiency",
+        "tests/test_news_grasp_operational_skill_contract.py::test_operational_improvement_recovery_rejects_wasteful_selected_route",
+        "tests/test_news_grasp_operational_skill_contract.py::test_product_e2e_overlay_keeps_constitution_and_composition_contract"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
+      "path": "tests/test_news_grasp_skill_cross_layer_graph.py",
+      "sha256": "a711c1bc5397c4fb30636cf4b673cb642aae8c9510cdfaa6d5d668381b7334fd",
+      "nodeCount": 5,
+      "nodeIds": [
+        "tests/test_news_grasp_skill_cross_layer_graph.py::test_skill_cross_layer_graph_boundary_rejects_stale_shared_skill_hash",
+        "tests/test_news_grasp_skill_cross_layer_graph.py::test_skill_cross_layer_graph_boundary_rejects_unproven_consumer_symbol",
+        "tests/test_news_grasp_skill_cross_layer_graph.py::test_skill_cross_layer_graph_primary_binds_all_loaded_skills",
+        "tests/test_news_grasp_skill_cross_layer_graph.py::test_skill_cross_layer_graph_recovery_rejects_cycle_or_duplicate_owner",
+        "tests/test_news_grasp_skill_cross_layer_graph.py::test_skill_cross_layer_graph_recovery_rejects_unproven_skill_purpose"
       ],
       "clauseIds": [
         "NGC-C06",
@@ -2249,8 +2426,8 @@
     },
     {
       "path": "tests/test_operational_redesign_contract.py",
-      "sha256": "c0602164ba15c768861b98e5dfc24faf888997e7993dbb73617d6fd4bde109ee",
-      "nodeCount": 52,
+      "sha256": "131c20da9cc95f943fbb2788a4e22bfe33d884b7b37fbe48fbb9aee43fc33927",
+      "nodeCount": 53,
       "nodeIds": [
         "tests/test_operational_redesign_contract.py::test_ng2_a01_adversarial_scope_escape",
         "tests/test_operational_redesign_contract.py::test_ng2_a01_all_registered_routes_use_the_single_packet_consumer[claude]",
@@ -2285,6 +2462,7 @@
         "tests/test_operational_redesign_contract.py::test_ng2_a11_human_impact_contract_is_green",
         "tests/test_operational_redesign_contract.py::test_ng2_a11_raw_process_termination_is_rejected",
         "tests/test_operational_redesign_contract.py::test_ng2_a13_adversarial_packet_scope_or_model_drift",
+        "tests/test_operational_redesign_contract.py::test_ng2_a13_boundary_rejects_missing_task_constitution",
         "tests/test_operational_redesign_contract.py::test_ng2_a13_primary_luna_packet_decision_complete",
         "tests/test_operational_redesign_contract.py::test_ng2_a13_recovery_rebase_packet_after_owner_commit",
         "tests/test_operational_redesign_contract.py::test_ng2_wp01_registered_reason_has_one_exact_owner",
@@ -2312,7 +2490,7 @@
     },
     {
       "path": "tests/test_operational_redesign_matrix.py",
-      "sha256": "eebb7025a9f221dee9fc2d7ece8b52ef9bc5bb27bb8870d9c6ba9187a79d676c",
+      "sha256": "ce21671515a469d4eb0bb07e3f40ab22b8ff577576280fa85f53a61cf2a45cb9",
       "nodeCount": 43,
       "nodeIds": [
         "tests/test_operational_redesign_matrix.py::test_ng2_wp02_matrix_matches_declared_nodes",
@@ -3088,8 +3266,8 @@
     },
     {
       "path": "tests/test_runner_convergence_contract.py",
-      "sha256": "b4a16545339334984a01780849d533ff406c2ffaa6d8f95f0688039b32078747",
-      "nodeCount": 182,
+      "sha256": "a39326f4db33c1adadc60aa54cfd9f2aa9f0c26f9a059e12623776836307ac62",
+      "nodeCount": 183,
       "nodeIds": [
         "tests/test_runner_convergence_contract.py::test_atomic_install_failure_preserves_old_destination",
         "tests/test_runner_convergence_contract.py::test_atomic_install_replaces_hardlink_entry_without_mutating_sibling",
@@ -3150,6 +3328,7 @@
         "tests/test_runner_convergence_contract.py::test_installed_nopublish_launcher_accepts_only_same_generation_isolation",
         "tests/test_runner_convergence_contract.py::test_installed_nopublish_launcher_rejects_cross_generation_isolation",
         "tests/test_runner_convergence_contract.py::test_installed_nopublish_launcher_runs_same_generation_isolation",
+        "tests/test_runner_convergence_contract.py::test_installed_nopublish_runner_revalidates_external_authority_hash",
         "tests/test_runner_convergence_contract.py::test_installer_skip_task_registration_does_not_require_scheduler_convergence",
         "tests/test_runner_convergence_contract.py::test_interrupted_install_rejects_forged_journal_paths_and_task_names_before_mutation",
         "tests/test_runner_convergence_contract.py::test_inventory_repair_artifacts_cover_required_digest_and_docs",
@@ -3250,7 +3429,7 @@
         "tests/test_runner_convergence_contract.py::test_runner_typed_terminal_state_can_replace_generic_error",
         "tests/test_runner_convergence_contract.py::test_runner_url_liveness_does_not_require_interactive_session_whitelist",
         "tests/test_runner_convergence_contract.py::test_runner_verifies_publish_complete_manifest_before_success",
-        "tests/test_runner_convergence_contract.py::test_runner_watcher_uses_hidden_start_and_terminal_state_polling",
+        "tests/test_runner_convergence_contract.py::test_runner_watcher_uses_hidden_start_and_event_driven_terminal_state",
         "tests/test_runner_convergence_contract.py::test_runner_writes_distribution_manifest_with_commit_anchor",
         "tests/test_runner_convergence_contract.py::test_runner_writes_machine_readable_state",
         "tests/test_runner_convergence_contract.py::test_scheduled_equivalent_nopublish_uses_same_runner_with_isolated_state",
@@ -3268,9 +3447,9 @@
         "tests/test_runner_convergence_contract.py::test_verified_rollback_restore_and_delete_do_not_mutate_hardlink_sibling",
         "tests/test_runner_convergence_contract.py::test_verified_source_reader_and_atomic_writer_reject_symlink_entries",
         "tests/test_runner_convergence_contract.py::test_verified_source_reader_rejects_hardlinked_authority_file",
+        "tests/test_runner_convergence_contract.py::test_watcher_closes_only_verified_owned_job_and_writes_typed_watchdog_state",
         "tests/test_runner_convergence_contract.py::test_watcher_does_not_treat_fallback_as_normal_terminal_success",
         "tests/test_runner_convergence_contract.py::test_watcher_ignores_previous_run_state_until_new_process_claims_identity",
-        "tests/test_runner_convergence_contract.py::test_watcher_kills_only_verified_runner_and_writes_typed_watchdog_state",
         "tests/test_runner_convergence_contract.py::test_watcher_repairs_live_ops_before_runner_start",
         "tests/test_runner_convergence_contract.py::test_watcher_status_reports_stale_when_running_pid_is_dead"
       ],
@@ -3710,7 +3889,7 @@
     },
     {
       "path": "tests/test_tts_aivis_client.py",
-      "sha256": "44e78a083ac04ba827708f2f58ce9da153aef748f2355ea5d5b863e829944863",
+      "sha256": "3e16160dd4731009be82bb7144268afaf291188b7109fa86d4943d4add7e944e",
       "nodeCount": 13,
       "nodeIds": [
         "tests/test_tts_aivis_client.py::test_aivis_client_resolves_style_and_synthesizes_short_wav_when_engine_is_up",
@@ -3722,8 +3901,8 @@
         "tests/test_tts_aivis_client.py::test_ensure_engine_starts_executable_from_its_parent_directory",
         "tests/test_tts_aivis_client.py::test_live_aivis_smoke_is_excluded_from_static_runner_gate",
         "tests/test_tts_aivis_client.py::test_requested_dialogue_model_uuids_map_to_local_speaker_uuids",
+        "tests/test_tts_aivis_client.py::test_shutdown_started_engine_closes_owned_job_when_graceful_wait_times_out",
         "tests/test_tts_aivis_client.py::test_shutdown_started_engine_is_noop_for_preexisting_engine",
-        "tests/test_tts_aivis_client.py::test_shutdown_started_engine_kills_when_terminate_times_out",
         "tests/test_tts_aivis_client.py::test_shutdown_started_engine_only_terminates_owned_process",
         "tests/test_tts_aivis_client.py::test_shutdown_started_engine_posts_shutdown_even_when_launcher_already_exited"
       ],
@@ -3893,7 +4072,7 @@
     },
     {
       "path": "tests/test_tts_proc_boundary.py",
-      "sha256": "a4aeba56f1a796a7437703a1c92d2e48497c14d925655fc3700aa1ef1a35afe4",
+      "sha256": "5235dcfce777e4e0a906daac369ea606db6a10e6d4830fbec7aa0411e0af3dac",
       "nodeCount": 3,
       "nodeIds": [
         "tests/test_tts_proc_boundary.py::test_quiet_run_adds_create_no_window_on_windows",

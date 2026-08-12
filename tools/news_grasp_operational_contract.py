@@ -45,6 +45,24 @@ COMPLETION_FIELDS = (
     "runnerState",
 )
 SHA256_PATTERN = re.compile(r"[0-9a-f]{64}")
+ROOT = Path(__file__).resolve().parents[1]
+OPERATION_CONSUMPTION_ROOT: Path | None = None
+OPERATION_DECISION_GRAPH_RELATIVE_PATH = Path(
+    "config/news_grasp_operation_decision_graph_v1.json"
+)
+OPERATION_DECISION_GRAPH_SCHEMA_VERSION = "NEWS_GRASP_OPERATION_DECISION_GRAPH_V1"
+OPERATION_DECISION_SCHEMA_VERSION = "NEWS_GRASP_OPERATION_DECISION_V1"
+EXPECTED_OPERATION_TERMINALS = frozenset(
+    {
+        "success",
+        "recovery_completed",
+        "operation_deferred",
+        "user_stopped",
+        "major_incident",
+        "design_escape",
+        "no_progress",
+    }
+)
 
 
 def _canonical(value: object) -> bytes:
@@ -224,9 +242,223 @@ def map_quality_issue_to_work_order(
     return result
 
 
+def validate_operation_decision_graph(value: object) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError("OPERATION_DECISION_GRAPH_INVALID")
+    if (
+        value.get("schemaVersion") != OPERATION_DECISION_GRAPH_SCHEMA_VERSION
+        or value.get("productId") != "News-Grasp"
+        or value.get("initialState") != "admitted"
+    ):
+        raise ValueError("OPERATION_DECISION_GRAPH_INVALID")
+    states = value.get("states")
+    transitions = value.get("transitions")
+    terminal_ids = value.get("terminalStateIds")
+    if not all(isinstance(rows, list) and rows for rows in (states, transitions, terminal_ids)):
+        raise ValueError("OPERATION_DECISION_GRAPH_INVALID")
+    state_ids = [str(row.get("stateId", "")) for row in states]
+    if len(state_ids) != len(set(state_ids)) or not all(state_ids):
+        raise ValueError("OPERATION_DECISION_GRAPH_STATE_INVALID")
+    state_terminal = {
+        str(row["stateId"]): row.get("terminal") is True
+        for row in states
+    }
+    terminal_set = set(map(str, terminal_ids))
+    if terminal_set != EXPECTED_OPERATION_TERMINALS or terminal_set != {
+        state_id for state_id, terminal in state_terminal.items() if terminal
+    }:
+        raise ValueError("OPERATION_DECISION_GRAPH_TERMINAL_SET_INVALID")
+
+    transition_index: dict[tuple[str, str], str] = {}
+    outgoing: dict[str, set[str]] = {state_id: set() for state_id in state_ids}
+    for row in transitions:
+        source = str(row.get("from", ""))
+        event = str(row.get("event", ""))
+        target = str(row.get("to", ""))
+        if source not in state_terminal or target not in state_terminal or not event:
+            raise ValueError("OPERATION_DECISION_GRAPH_TRANSITION_INVALID")
+        if source == target:
+            raise ValueError("OPERATION_DECISION_GRAPH_CYCLE_INVALID")
+        if state_terminal[source]:
+            raise ValueError("OPERATION_DECISION_GRAPH_TERMINAL_OUTBOUND_INVALID")
+        key = (source, event)
+        if key in transition_index:
+            raise ValueError("OPERATION_DECISION_GRAPH_EVENT_DUPLICATE")
+        transition_index[key] = target
+        outgoing[source].add(target)
+
+    nonterminal_ids = {
+        state_id for state_id, terminal in state_terminal.items() if not terminal
+    }
+    for state_id in nonterminal_ids:
+        if not outgoing[state_id] or (state_id, "user_stop") not in transition_index:
+            raise ValueError("OPERATION_DECISION_GRAPH_NONTERMINAL_INCOMPLETE")
+        if (state_id, "*") not in transition_index:
+            raise ValueError("OPERATION_DECISION_GRAPH_UNKNOWN_ROUTE_MISSING")
+    forbidden_event_parts = ("todo", "goal", "pending")
+    if any(
+        any(part in event.casefold() for part in forbidden_event_parts)
+        for _, event in transition_index
+    ):
+        raise ValueError("OPERATION_DECISION_GRAPH_IMPLICIT_REENTRY_FORBIDDEN")
+
+    visiting: set[str] = set()
+    visited: set[str] = set()
+
+    def assert_acyclic(state_id: str) -> None:
+        if state_id in visited or state_terminal[state_id]:
+            return
+        if state_id in visiting:
+            raise ValueError("OPERATION_DECISION_GRAPH_CYCLE_INVALID")
+        visiting.add(state_id)
+        for target in outgoing[state_id]:
+            assert_acyclic(target)
+        visiting.remove(state_id)
+        visited.add(state_id)
+
+    assert_acyclic(str(value["initialState"]))
+    if visited != nonterminal_ids:
+        raise ValueError("OPERATION_DECISION_GRAPH_ORPHAN_STATE")
+
+    depth_cache: dict[str, int] = {}
+
+    def max_depth(state_id: str) -> int:
+        if state_terminal[state_id]:
+            return 0
+        if state_id not in depth_cache:
+            depth_cache[state_id] = 1 + max(
+                max_depth(target) for target in outgoing[state_id]
+            )
+        return depth_cache[state_id]
+
+    actual_max_depth = max_depth(str(value["initialState"]))
+    if value.get("maxTransitionDepth") != actual_max_depth:
+        raise ValueError("OPERATION_DECISION_GRAPH_DEPTH_INVALID")
+    depth_from_initial = {str(value["initialState"]): 0}
+    frontier = [str(value["initialState"])]
+    while frontier:
+        source = frontier.pop(0)
+        for target in outgoing[source]:
+            candidate_depth = depth_from_initial[source] + 1
+            if target not in depth_from_initial or candidate_depth < depth_from_initial[target]:
+                depth_from_initial[target] = candidate_depth
+                frontier.append(target)
+    if set(depth_from_initial) != set(state_ids):
+        raise ValueError("OPERATION_DECISION_GRAPH_ORPHAN_STATE")
+    return {
+        **value,
+        "transitionIndex": transition_index,
+        "stateTerminal": state_terminal,
+        "actualMaxTransitionDepth": actual_max_depth,
+        "stateDepthFromInitial": depth_from_initial,
+        "graphSha256": _sha(value),
+    }
+
+
+def load_operation_decision_graph(
+    repo_root: Path | str = ROOT,
+) -> dict[str, Any]:
+    root = Path(repo_root).resolve(strict=True)
+    path = (root / OPERATION_DECISION_GRAPH_RELATIVE_PATH).resolve(strict=True)
+    if not path.is_relative_to(root) or not path.is_file() or path.is_symlink():
+        raise ValueError("OPERATION_DECISION_GRAPH_PATH_INVALID")
+    return validate_operation_decision_graph(
+        json.loads(path.read_text(encoding="utf-8"))
+    )
+
+
+def _operation_decision_result(
+    *,
+    graph: dict[str, Any],
+    state_id: str,
+    event: str,
+    extra: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    terminal = bool(graph["stateTerminal"][state_id])
+    result = {
+        "schemaVersion": OPERATION_DECISION_SCHEMA_VERSION,
+        "operationState": state_id,
+        "terminal": terminal,
+        "terminalClass": state_id if terminal else None,
+        "operationEvent": event,
+        "transitionCount": graph["stateDepthFromInitial"][state_id],
+        "maxTransitionDepth": graph["actualMaxTransitionDepth"],
+        "decisionGraphSha256": graph["graphSha256"],
+        "mutationCount": 0,
+    }
+    if extra:
+        result.update(dict(extra))
+    return result
+
+
+def _transition_from_operation_event(
+    payload: Mapping[str, Any],
+    decision: Mapping[str, Any],
+) -> dict[str, Any]:
+    graph = load_operation_decision_graph(ROOT)
+    current = str(payload.get("operationState") or graph["initialState"])
+    event = str(payload.get("operationEvent") or "")
+    if current not in graph["stateTerminal"] or not event:
+        raise ValueError("OPERATION_DECISION_INPUT_INVALID")
+    if current == "operation_deferred" and event == "fresh_external_authority":
+        if payload.get("reentryConsumed") is True:
+            raise ValueError("OPERATION_DECISION_REENTRY_ALREADY_CONSUMED")
+        lineage_id = str(payload.get("dailyOperationLineageId") or "")
+        previous_hash = str(payload.get("previousExternalAuthoritySha256") or "")
+        current_hash = str(payload.get("externalAuthoritySha256") or "")
+        if (
+            not lineage_id
+            or SHA256_PATTERN.fullmatch(previous_hash) is None
+            or SHA256_PATTERN.fullmatch(current_hash) is None
+            or previous_hash == current_hash
+        ):
+            raise ValueError("OPERATION_DECISION_EXTERNAL_AUTHORITY_NOT_FRESH")
+        from tools.news_grasp_execution_governance import consume_once
+
+        consumption = consume_once(
+            repo_root=ROOT,
+            ledger_root=OPERATION_CONSUMPTION_ROOT,
+            kind="external_authority_reentry",
+            key_parts=(lineage_id, previous_hash, current_hash),
+        )
+        if consumption["consumed"] is not True:
+            raise ValueError("OPERATION_DECISION_REENTRY_ALREADY_CONSUMED")
+        return _operation_decision_result(
+            graph=graph,
+            state_id="admitted",
+            event=event,
+            extra={
+                **decision,
+                "dailyOperationLineageId": lineage_id,
+                "externalAuthoritySha256": current_hash,
+                "reentryConsumed": True,
+                "reentryReason": "fresh_external_authority_same_lineage",
+                "consumptionKeySha256": consumption["consumptionKeySha256"],
+            },
+        )
+    if graph["stateTerminal"][current]:
+        return _operation_decision_result(
+            graph=graph,
+            state_id=current,
+            event=event,
+            extra={**decision, "terminalImmutable": True},
+        )
+    target = graph["transitionIndex"].get((current, event))
+    if target is None:
+        target = graph["transitionIndex"][(current, "*")]
+    return _operation_decision_result(
+        graph=graph,
+        state_id=target,
+        event=event,
+        extra=decision,
+    )
+
+
 def transition_operational_state(
     payload: dict[str, Any], decision: dict[str, Any]
 ) -> dict[str, Any]:
+    if payload.get("operationEvent") is not None:
+        return _transition_from_operation_event(payload, decision)
     result = dict(decision)
     if result.get("publicStatus") != "green":
         result["completion"] = False
@@ -764,20 +996,175 @@ def derive_daily_operation_lineage(issue_date: str, scheduled_authority: str) ->
     return hashlib.sha256(f"{issue_date}|{scheduled_authority}".encode("utf-8")).hexdigest()
 
 
-def admit_task_constitution(payload: dict[str, Any]) -> dict[str, Any]:
-    unresolved = tuple(str(value) for value in payload.get("unresolvedDecisionIds", []))
+def _task_string_tuple(payload: dict[str, Any], key: str) -> tuple[str, ...]:
+    value = payload.get(key)
+    if not isinstance(value, list) or not value:
+        raise ValueError(f"NEWS_GRASP_TASK_FIELD_INVALID:{key}")
+    result = tuple(str(item) for item in value)
+    if len(result) != len(set(result)) or any(not item for item in result):
+        raise ValueError(f"NEWS_GRASP_TASK_FIELD_INVALID:{key}")
+    return result
+
+
+def admit_task_constitution(
+    payload: dict[str, Any], *, repo_root: Path | str = ROOT
+) -> dict[str, Any]:
+    if (
+        not isinstance(payload, dict)
+        or payload.get("schemaVersion") != "NEWS_GRASP_TASK_CONSTITUTION_REQUEST_V2"
+    ):
+        raise ValueError("NEWS_GRASP_TASK_CONSTITUTION_SCHEMA_INVALID")
+    unresolved_value = payload.get("unresolvedDecisionIds")
+    if not isinstance(unresolved_value, list):
+        raise ValueError("NEWS_GRASP_TASK_UNRESOLVED_DECISIONS")
+    unresolved = tuple(str(value) for value in unresolved_value)
     if unresolved:
         raise ValueError("NEWS_GRASP_TASK_UNRESOLVED_DECISIONS")
-    write_set = tuple(str(value) for value in payload.get("writeSet", []))
-    if not write_set:
+    if not re.fullmatch(r"TODO-\d{3}", str(payload.get("taskId", ""))):
+        raise ValueError("NEWS_GRASP_TASK_ID_INVALID")
+    if not re.fullmatch(
+        r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+        str(payload.get("durableGoalId", "")),
+    ):
+        raise ValueError("NEWS_GRASP_TASK_DURABLE_GOAL_INVALID")
+    for key in ("todoLedgerSha256", "deltaPacketSha256"):
+        if not SHA256_PATTERN.fullmatch(str(payload.get(key, ""))):
+            raise ValueError(f"NEWS_GRASP_TASK_DURABLE_STATE_INVALID:{key}")
+    review_policy = str(payload.get("reviewPolicy", ""))
+    review_attempt_count = payload.get("reviewAttemptCount")
+    if (
+        review_policy
+        not in {"required_finite_series", "review_series_closed", "no_additional_review"}
+        or type(review_attempt_count) is not int
+        or review_attempt_count < 0
+        or (
+            review_policy in {"review_series_closed", "no_additional_review"}
+            and review_attempt_count != 0
+        )
+    ):
+        raise ValueError("NEWS_GRASP_TASK_REVIEW_POLICY_INVALID")
+
+    root = Path(repo_root).resolve()
+    from tools import news_grasp_constitution as constitution_module
+
+    constitution = constitution_module.load_constitution(root)
+    binding = constitution_module.load_skill_binding(root, verify_shared_sources=False)
+    graph = constitution_module.load_skill_cross_layer_graph(root, constitution, binding)
+    graph_by_id = {str(row["skillId"]): row for row in graph["skills"]}
+    skill_ids = _task_string_tuple(payload, "skillIds")
+    if not set(skill_ids) <= set(graph_by_id):
+        raise ValueError("NEWS_GRASP_TASK_SKILL_UNKNOWN")
+
+    layer_fields = (
+        "purposeIds",
+        "clauseIds",
+        "flowIds",
+        "taskIds",
+        "consumerRoutes",
+        "stateIds",
+        "evidenceIds",
+    )
+    layers: dict[str, tuple[str, ...]] = {}
+    for field_name in layer_fields:
+        actual = _task_string_tuple(payload, field_name)
+        expected = tuple(
+            dict.fromkeys(
+                str(item)
+                for skill_id in skill_ids
+                for item in graph_by_id[skill_id][field_name]
+            )
+        )
+        if actual != expected:
+            raise ValueError("NEWS_GRASP_TASK_LAYER_BINDING_MISMATCH")
+        layers[field_name] = actual
+
+    requirement_ids = _task_string_tuple(payload, "requirementIds")
+    acceptance_ids = _task_string_tuple(payload, "acceptanceIds")
+    if (
+        len(requirement_ids) != len(acceptance_ids)
+        or any(not re.fullmatch(r"R(?:0[1-9]|1[0-7])", value) for value in requirement_ids)
+        or any(not re.fullmatch(r"A(?:0[1-9]|1[0-7])", value) for value in acceptance_ids)
+        or any(requirement[1:] != acceptance[1:] for requirement, acceptance in zip(requirement_ids, acceptance_ids))
+    ):
+        raise ValueError("NEWS_GRASP_TASK_REQUIREMENT_ACCEPTANCE_INVALID")
+    write_set_value = payload.get("writeSet")
+    if not isinstance(write_set_value, list):
         raise ValueError("NEWS_GRASP_TASK_WRITE_SET_REQUIRED")
+    write_set = tuple(str(value) for value in write_set_value)
+    if (
+        len(write_set) != len(set(write_set))
+        or any(not value for value in write_set)
+        or (
+            not write_set
+            and payload.get("mutationMode") != "verification_only"
+        )
+    ):
+        raise ValueError("NEWS_GRASP_TASK_WRITE_SET_REQUIRED")
+
+    candidates = payload.get("efficiencyCandidates")
+    if not isinstance(candidates, list) or len(candidates) < 2:
+        raise ValueError("NEWS_GRASP_TASK_EFFICIENCY_CANDIDATES_REQUIRED")
+    resource_fields = {
+        "modelCalls",
+        "toolCalls",
+        "expectedRetries",
+        "broadRegressions",
+        "e2eAttempts",
+        "humanOperations",
+        "wallClockMinutes",
+    }
+    costs: dict[str, float] = {}
+    for candidate in candidates:
+        if not isinstance(candidate, dict):
+            raise ValueError("NEWS_GRASP_TASK_EFFICIENCY_CANDIDATE_INVALID")
+        candidate_id = str(candidate.get("candidateId", ""))
+        cost = candidate.get("expectedTotalResource")
+        vector = candidate.get("resourceVector")
+        if (
+            not candidate_id
+            or candidate_id in costs
+            or candidate.get("goalFidelity") is not True
+            or candidate.get("safetyComplete") is not True
+            or isinstance(cost, bool)
+            or not isinstance(cost, (int, float))
+            or cost < 0
+            or not isinstance(vector, dict)
+            or set(vector) != resource_fields
+            or any(
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or value < 0
+                for value in vector.values()
+            )
+        ):
+            raise ValueError("NEWS_GRASP_TASK_EFFICIENCY_CANDIDATE_INVALID")
+        costs[candidate_id] = float(cost)
+    selected_candidate_id = str(payload.get("selectedCandidateId", ""))
+    if (
+        selected_candidate_id not in costs
+        or costs[selected_candidate_id] != min(costs.values())
+    ):
+        raise ValueError("NEWS_GRASP_TASK_EFFICIENCY_SELECTION_INVALID")
+
     return {
         "schemaVersion": NEWS_GRASP_TASK_CONSTITUTION_ADMISSION_V1,
         "taskId": str(payload["taskId"]),
         "requestSha256": hashlib.sha256(_canonical(payload)).hexdigest(),
-        "clauseIds": tuple(str(value) for value in payload["clauseIds"]),
-        "requirementIds": tuple(str(value) for value in payload["requirementIds"]),
-        "acceptanceIds": tuple(str(value) for value in payload["acceptanceIds"]),
+        "durableGoalId": str(payload["durableGoalId"]),
+        "skillIds": skill_ids,
+        **layers,
+        "requirementIds": requirement_ids,
+        "acceptanceIds": acceptance_ids,
         "writeSet": write_set,
+        "selectedCandidateId": selected_candidate_id,
+        "reviewPolicy": review_policy,
         "unresolvedDecisionIds": (),
     }
+
+
+def evaluate_execution_governance(payload: dict[str, Any]) -> dict[str, Any]:
+    """News-Grasp product-local execution governanceの単一入口。"""
+
+    from tools.news_grasp_execution_governance import evaluate
+
+    return evaluate(payload, repo_root=Path(__file__).resolve().parents[1])

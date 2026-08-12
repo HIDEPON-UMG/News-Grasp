@@ -405,6 +405,7 @@ public static class NewsGraspOwnedJob
     private const uint EXTENDED_STARTUPINFO_PRESENT = 0x00080000;
     private const uint STARTF_USESTDHANDLES = 0x00000100;
     private const uint PROC_THREAD_ATTRIBUTE_HANDLE_LIST = 0x00020002;
+    private const uint PROC_THREAD_ATTRIBUTE_JOB_LIST = 0x0002000D;
     private const uint GENERIC_READ = 0x80000000;
     private const uint GENERIC_WRITE = 0x40000000;
     private const uint FILE_SHARE_READ = 0x00000001;
@@ -484,10 +485,6 @@ public static class NewsGraspOwnedJob
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern bool SetInformationJobObject(IntPtr job, int infoClass, ref JOBOBJECT_EXTENDED_LIMIT_INFORMATION info, uint length);
     [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern bool AssignProcessToJobObject(IntPtr job, IntPtr process);
-    [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern bool TerminateProcess(IntPtr process, uint exitCode);
-    [DllImport("kernel32.dll", SetLastError = true)]
     private static extern bool InitializeProcThreadAttributeList(IntPtr list, int count, int flags, ref IntPtr size);
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern bool UpdateProcThreadAttribute(IntPtr list, uint flags, IntPtr attribute, IntPtr value, IntPtr size, IntPtr previous, IntPtr returnSize);
@@ -508,9 +505,8 @@ public static class NewsGraspOwnedJob
         security.nLength = Marshal.SizeOf(security);
         security.bInheritHandle = true;
         IntPtr stdin = INVALID_HANDLE_VALUE, stdout = INVALID_HANDLE_VALUE, stderr = INVALID_HANDLE_VALUE;
-        IntPtr attributeList = IntPtr.Zero, handleList = IntPtr.Zero, job = IntPtr.Zero;
+        IntPtr attributeList = IntPtr.Zero, handleList = IntPtr.Zero, jobHandleList = IntPtr.Zero, job = IntPtr.Zero;
         PROCESS_INFORMATION processInfo = new PROCESS_INFORMATION();
-        bool processCreated = false;
         try {
             stdin = CreateFile(stdinPath, GENERIC_READ, FILE_SHARE_READ, ref security, OPEN_EXISTING, 0, IntPtr.Zero);
             stdout = CreateFile(stdoutPath, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, ref security, CREATE_ALWAYS, 0, IntPtr.Zero);
@@ -519,10 +515,20 @@ public static class NewsGraspOwnedJob
                 throw new InvalidOperationException("OWNED_PROCESS_REDIRECTION_OPEN_FAILED:" + Marshal.GetLastWin32Error());
             }
 
+            job = CreateJobObject(IntPtr.Zero, null);
+            if (job == IntPtr.Zero) {
+                throw new InvalidOperationException("OWNED_PROCESS_JOB_CREATE_FAILED:" + Marshal.GetLastWin32Error());
+            }
+            JOBOBJECT_EXTENDED_LIMIT_INFORMATION info = new JOBOBJECT_EXTENDED_LIMIT_INFORMATION();
+            info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+            if (!SetInformationJobObject(job, 9, ref info, (uint)Marshal.SizeOf(info))) {
+                throw new InvalidOperationException("OWNED_PROCESS_JOB_CONFIGURATION_FAILED:" + Marshal.GetLastWin32Error());
+            }
+
             IntPtr attributeSize = IntPtr.Zero;
-            InitializeProcThreadAttributeList(IntPtr.Zero, 1, 0, ref attributeSize);
+            InitializeProcThreadAttributeList(IntPtr.Zero, 2, 0, ref attributeSize);
             attributeList = Marshal.AllocHGlobal(attributeSize);
-            if (!InitializeProcThreadAttributeList(attributeList, 1, 0, ref attributeSize)) {
+            if (!InitializeProcThreadAttributeList(attributeList, 2, 0, ref attributeSize)) {
                 throw new InvalidOperationException("OWNED_PROCESS_ATTRIBUTE_INIT_FAILED:" + Marshal.GetLastWin32Error());
             }
             handleList = Marshal.AllocHGlobal(IntPtr.Size * 3);
@@ -531,6 +537,11 @@ public static class NewsGraspOwnedJob
             Marshal.WriteIntPtr(handleList, IntPtr.Size * 2, stderr);
             if (!UpdateProcThreadAttribute(attributeList, 0, new IntPtr(PROC_THREAD_ATTRIBUTE_HANDLE_LIST), handleList, new IntPtr(IntPtr.Size * 3), IntPtr.Zero, IntPtr.Zero)) {
                 throw new InvalidOperationException("OWNED_PROCESS_ATTRIBUTE_UPDATE_FAILED:" + Marshal.GetLastWin32Error());
+            }
+            jobHandleList = Marshal.AllocHGlobal(IntPtr.Size);
+            Marshal.WriteIntPtr(jobHandleList, job);
+            if (!UpdateProcThreadAttribute(attributeList, 0, new IntPtr(PROC_THREAD_ATTRIBUTE_JOB_LIST), jobHandleList, new IntPtr(IntPtr.Size), IntPtr.Zero, IntPtr.Zero)) {
+                throw new InvalidOperationException("OWNED_PROCESS_JOB_ATTRIBUTE_UPDATE_FAILED:" + Marshal.GetLastWin32Error());
             }
 
             STARTUPINFOEX startup = new STARTUPINFOEX();
@@ -544,17 +555,6 @@ public static class NewsGraspOwnedJob
             if (!CreateProcess(applicationPath, new StringBuilder(command), IntPtr.Zero, IntPtr.Zero, true, CREATE_SUSPENDED | CREATE_NO_WINDOW | EXTENDED_STARTUPINFO_PRESENT, IntPtr.Zero, workingDirectory, ref startup, out processInfo)) {
                 throw new InvalidOperationException("OWNED_PROCESS_CREATE_FAILED:" + Marshal.GetLastWin32Error());
             }
-            processCreated = true;
-
-            job = CreateJobObject(IntPtr.Zero, null);
-            if (job == IntPtr.Zero) {
-                throw new InvalidOperationException("OWNED_PROCESS_JOB_CREATE_FAILED:" + Marshal.GetLastWin32Error());
-            }
-            JOBOBJECT_EXTENDED_LIMIT_INFORMATION info = new JOBOBJECT_EXTENDED_LIMIT_INFORMATION();
-            info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
-            if (!SetInformationJobObject(job, 9, ref info, (uint)Marshal.SizeOf(info)) || !AssignProcessToJobObject(job, processInfo.hProcess)) {
-                throw new InvalidOperationException("OWNED_PROCESS_JOB_ASSIGNMENT_FAILED:" + Marshal.GetLastWin32Error());
-            }
             if (ResumeThread(processInfo.hThread) == UInt32.MaxValue) {
                 throw new InvalidOperationException("OWNED_PROCESS_RESUME_FAILED:" + Marshal.GetLastWin32Error());
             }
@@ -562,16 +562,13 @@ public static class NewsGraspOwnedJob
             job = IntPtr.Zero;
             return result;
         }
-        catch {
-            if (processCreated && processInfo.hProcess != IntPtr.Zero) { TerminateProcess(processInfo.hProcess, 125); }
-            throw;
-        }
         finally {
             if (processInfo.hThread != IntPtr.Zero) { CloseHandle(processInfo.hThread); }
             if (processInfo.hProcess != IntPtr.Zero) { CloseHandle(processInfo.hProcess); }
             if (job != IntPtr.Zero) { CloseHandle(job); }
             if (attributeList != IntPtr.Zero) { DeleteProcThreadAttributeList(attributeList); Marshal.FreeHGlobal(attributeList); }
             if (handleList != IntPtr.Zero) { Marshal.FreeHGlobal(handleList); }
+            if (jobHandleList != IntPtr.Zero) { Marshal.FreeHGlobal(jobHandleList); }
             if (stdin != INVALID_HANDLE_VALUE) { CloseHandle(stdin); }
             if (stdout != INVALID_HANDLE_VALUE) { CloseHandle(stdout); }
             if (stderr != INVALID_HANDLE_VALUE) { CloseHandle(stderr); }

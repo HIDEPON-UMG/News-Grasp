@@ -15,10 +15,127 @@ from typing import Any, Mapping
 SCHEMA = "PRODUCTION_GENERATION_MANIFEST_V2"
 ProductionGenerationManifestV2 = SCHEMA
 immutable_generation = "immutable_generation"
+PHYSICAL_DELIVERY_SCHEMA = "NEWS_GRASP_PHYSICAL_DELIVERY_STATE_V1"
+PHYSICAL_DELIVERY_FIELDS = (
+    "implemented",
+    "committed",
+    "pushed",
+    "remoteHeadVerified",
+    "installed",
+    "installedSkillsFresh",
+    "runtimeGenerationFresh",
+    "scheduledTaskParity",
+    "rollbackReceipt",
+    "noPublishE2E",
+)
+DELIVERY_FIELD_STATUSES = frozenset(
+    {"green", "pending", "operation_deferred", "not_required_not_run"}
+)
 
 
 class NewsGraspGenerationError(RuntimeError):
     """generation parity / promotion違反。"""
+
+
+def create_physical_delivery_state(
+    *, generation_id: str, fields: Mapping[str, Mapping[str, Any]]
+) -> dict[str, Any]:
+    """物理提出を交換不能なfieldとして封印し、総合状態を決定論的に導出する。"""
+    if not generation_id or set(fields) != set(PHYSICAL_DELIVERY_FIELDS):
+        raise NewsGraspGenerationError("NG_PHYSICAL_DELIVERY_FIELDS_INVALID")
+    normalized: dict[str, dict[str, Any]] = {}
+    for field_name in PHYSICAL_DELIVERY_FIELDS:
+        raw = fields[field_name]
+        if not isinstance(raw, Mapping):
+            raise NewsGraspGenerationError("NG_PHYSICAL_DELIVERY_FIELDS_INVALID")
+        if not set(raw).issubset({"status", "evidenceSha256", "reasonCode"}):
+            raise NewsGraspGenerationError("NG_PHYSICAL_DELIVERY_FIELDS_INVALID")
+        status = str(raw.get("status") or "")
+        evidence_sha256 = str(raw.get("evidenceSha256") or "")
+        if status not in DELIVERY_FIELD_STATUSES:
+            raise NewsGraspGenerationError("NG_PHYSICAL_DELIVERY_STATUS_INVALID")
+        if status == "green" and not re.fullmatch(r"[0-9a-f]{64}", evidence_sha256):
+            raise NewsGraspGenerationError("NG_PHYSICAL_DELIVERY_EVIDENCE_INVALID")
+        if status != "green" and evidence_sha256:
+            raise NewsGraspGenerationError("NG_PHYSICAL_DELIVERY_EVIDENCE_INVALID")
+        normalized[field_name] = {
+            "status": status,
+            "evidenceSha256": evidence_sha256,
+        }
+        reason_code = str(raw.get("reasonCode") or "")
+        if reason_code:
+            normalized[field_name]["reasonCode"] = reason_code
+    operational_status = (
+        "green"
+        if all(row["status"] == "green" for row in normalized.values())
+        else "incomplete"
+    )
+    body: dict[str, Any] = {
+        "schemaVersion": PHYSICAL_DELIVERY_SCHEMA,
+        "generationId": generation_id,
+        "fields": normalized,
+        "operationalStatus": operational_status,
+    }
+    body["stateSha256"] = hashlib.sha256(_json(body)).hexdigest()
+    return body
+
+
+def validate_physical_delivery_state(value: Mapping[str, Any]) -> dict[str, Any]:
+    """caller自己申告の総合Greenを拒否し、field evidenceから状態を再計算する。"""
+    body = dict(value)
+    state_sha256 = str(body.pop("stateSha256", ""))
+    if body.get("schemaVersion") != PHYSICAL_DELIVERY_SCHEMA:
+        raise NewsGraspGenerationError("NG_PHYSICAL_DELIVERY_STATE_INVALID")
+    fields = body.get("fields")
+    if not isinstance(fields, Mapping):
+        raise NewsGraspGenerationError("NG_PHYSICAL_DELIVERY_STATE_INVALID")
+    expected_with_hash = create_physical_delivery_state(
+        generation_id=str(body.get("generationId") or ""),
+        fields=fields,
+    )
+    expected = dict(expected_with_hash)
+    expected_sha256 = str(expected.pop("stateSha256"))
+    insertion_order_sha256 = hashlib.sha256(_json_insertion_order(expected)).hexdigest()
+    if (
+        body != expected
+        or state_sha256 not in {expected_sha256, insertion_order_sha256}
+    ):
+        raise NewsGraspGenerationError("NG_PHYSICAL_DELIVERY_STATE_INVALID")
+    return {**expected, "stateSha256": state_sha256}
+
+
+def validate_installer_delivery_contract(installer_source: str) -> dict[str, Any]:
+    """実installerがtyped delivery projectionを発行する契約を検証する。"""
+    required = (
+        PHYSICAL_DELIVERY_SCHEMA,
+        "$deliveryFields",
+        "$deliveryReceiptPath",
+        "$script:DeliveryReceiptSummary",
+        "implemented",
+        "committed",
+        "pushed",
+        "remoteHeadVerified",
+        "installed",
+        "installedSkillsFresh",
+        "runtimeGenerationFresh",
+        "scheduledTaskParity",
+        "rollbackReceipt",
+        "noPublishE2E",
+        "Write-NewsGraspInstallJournal -Phase 'committed'",
+        "Invoke-NewsGraspInstallRollback",
+    )
+    if any(marker not in installer_source for marker in required):
+        raise NewsGraspGenerationError("NG_INSTALL_DELIVERY_CONTRACT_INVALID")
+    if installer_source.index("$deliveryReceiptPath") > installer_source.index(
+        "Write-NewsGraspInstallJournal -Phase 'committed'"
+    ):
+        raise NewsGraspGenerationError("NG_INSTALL_DELIVERY_ORDER_INVALID")
+    return {
+        "status": "green",
+        "schemaVersion": PHYSICAL_DELIVERY_SCHEMA,
+        "fieldCount": len(PHYSICAL_DELIVERY_FIELDS),
+        "overallStatusOwner": "tools/news_grasp_generation.py::validate_physical_delivery_state",
+    }
 
 
 def _json(value: object) -> bytes:
@@ -66,6 +183,37 @@ def _git_common_dir(root: Path) -> str:
     if not path.is_absolute():
         path = root / path
     return str(path.resolve())
+
+
+def _git_tracked_tree(root: Path, commit: str) -> dict[str, str]:
+    """commitの全tracked objectを安定したpath→identityへ変換する。"""
+    output = _git_value(root, "ls-tree", "-r", "--full-tree", "-z", commit)
+    if output == "unavailable":
+        raise NewsGraspGenerationError("NG_GENERATION_SOURCE_INVALID")
+    rows: dict[str, str] = {}
+    for entry in output.split("\0"):
+        if not entry:
+            continue
+        try:
+            metadata, relative = entry.split("\t", 1)
+            mode, object_type, object_id = metadata.split(" ", 2)
+        except ValueError as exc:
+            raise NewsGraspGenerationError("NG_GENERATION_SOURCE_INVALID") from exc
+        if (
+            not relative
+            or relative in rows
+            or "\\" in relative
+            or relative.startswith("/")
+            or any(part in {"", ".", ".."} for part in relative.split("/"))
+            or not re.fullmatch(r"[0-7]{6}", mode)
+            or object_type not in {"blob", "commit"}
+            or not re.fullmatch(r"[0-9a-f]{40,64}", object_id)
+        ):
+            raise NewsGraspGenerationError("NG_GENERATION_SOURCE_INVALID")
+        rows[relative] = f"{mode}:{object_type}:{object_id}"
+    if not rows:
+        raise NewsGraspGenerationError("NG_GENERATION_SOURCE_INVALID")
+    return dict(sorted(rows.items()))
 
 
 def _manifest_hash(rows: Mapping[str, str]) -> str:
@@ -321,6 +469,19 @@ def create_manifest(
     source_common_dir = _git_common_dir(source)
     origin_url = _git_value(source, "config", "--get", "remote.origin.url")
     remote_head = _git_value(source, "rev-parse", "refs/remotes/origin/main")
+    tracked_status = _git_value(
+        source, "status", "--porcelain", "--untracked-files=no"
+    )
+    if tracked_status:
+        raise NewsGraspGenerationError("NG_GENERATION_SOURCE_DIRTY")
+    if (
+        not re.fullmatch(r"[0-9a-f]{40,64}", source_commit)
+        or remote_head != source_commit
+        or source_common_dir == "unavailable"
+        or origin_url == "unavailable"
+    ):
+        raise NewsGraspGenerationError("NG_GENERATION_SOURCE_DRIFT")
+    tracked_tree = _git_tracked_tree(source, source_commit)
     manifest: dict[str, Any] = {
         "schemaVersion": SCHEMA,
         "productId": "News-Grasp",
@@ -333,8 +494,10 @@ def create_manifest(
             "originUrl": origin_url,
             "remoteHead": remote_head,
             "commonDir": source_common_dir,
-            "trackedFiles": source_files,
-            "trackedManifestSha256": _manifest_hash(source_files),
+            "trackedFiles": tracked_tree,
+            "trackedManifestSha256": _manifest_hash(tracked_tree),
+            "workingFiles": source_files,
+            "workingManifestSha256": _manifest_hash(source_files),
         },
         "runtime": {
             "root": str(runtime),
@@ -392,12 +555,25 @@ def verify_parity(
     runtime = Path(runtime_root).resolve()
     if value["source"]["root"] != str(source) or value["runtime"]["root"] != str(runtime):
         raise NewsGraspGenerationError("NG_GENERATION_DRIFT")
-    actual_source_files = _files(source, list(value["source"]["trackedFiles"]))
+    source_status = _git_value(
+        source, "status", "--porcelain", "--untracked-files=no"
+    )
+    if source_status:
+        raise NewsGraspGenerationError("NG_GENERATION_SOURCE_DIRTY")
+    current_commit = _git_head(source)
+    actual_source_files = _git_tracked_tree(source, current_commit)
     if value["source"]["trackedFiles"] != actual_source_files:
         raise NewsGraspGenerationError("NG_GENERATION_DRIFT")
     if value["source"].get("trackedManifestSha256") != _manifest_hash(actual_source_files):
         raise NewsGraspGenerationError("NG_GENERATION_DRIFT")
-    current_commit = _git_head(source)
+    working_files = value["source"].get("workingFiles")
+    if not isinstance(working_files, dict):
+        raise NewsGraspGenerationError("NG_GENERATION_MANIFEST_INVALID")
+    actual_working_files = _files(source, list(working_files))
+    if working_files != actual_working_files or value["source"].get(
+        "workingManifestSha256"
+    ) != _manifest_hash(actual_working_files):
+        raise NewsGraspGenerationError("NG_GENERATION_DRIFT")
     current_common_dir = _git_common_dir(source)
     current_origin_url = _git_value(source, "config", "--get", "remote.origin.url")
     current_remote_head = _git_value(source, "rev-parse", "refs/remotes/origin/main")

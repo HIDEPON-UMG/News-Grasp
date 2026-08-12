@@ -4,6 +4,7 @@ import hashlib
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 
 ONE_MONTH_OPERATIONAL_FAILURE_CORPUS_V1 = "ONE_MONTH_OPERATIONAL_FAILURE_CORPUS_V1"
@@ -1112,8 +1113,182 @@ def historical_failure_scenarios() -> tuple[HistoricalFailureScenario, ...]:
     return SCENARIOS
 
 
-def _replay_status(signature: str) -> str:
-    return "external_terminal" if "EXTERNAL" in signature or "UPLOAD" in signature else "product_complete"
+HISTORICAL_RECOVERY_REASON_CODES: dict[str, str] = {
+    "EDITOR_REPAIR_CHAIN_DISCONNECTED": "CHECKPOINT_VALID_WRAPPER_FAILURE",
+    "EDITOR_SNAPSHOT_PATH_ALIAS": "CHECKPOINT_VALID_WRAPPER_FAILURE",
+    "WARNING_PREFIX_JSON_UNROUTED": "CHECKPOINT_VALID_WRAPPER_FAILURE",
+    "POST_PUSH_BUNDLE_NOT_CLOSED": "PUBLIC_COMPLETION_RED",
+    "SLO_REPAIR_NOT_CHECKPOINTED": "CHECKPOINT_VALID_WRAPPER_FAILURE",
+    "NESTED_BASETEMP_ROOT_DRIFT": "GENERATION_DRIFT",
+    "HERO_TITLE_REPAIR_UNREGISTERED": "PUBLIC_COMPLETION_RED",
+    "INCIDENT_POLICY_DRIFT_BLOCKS_DAILY": "MAJOR_INCIDENT",
+    "COMPOUND_DAILY_REPAIR_COLLAPSED": "CHECKPOINT_VALID_WRAPPER_FAILURE",
+    "EXTERNAL_UPLOAD_MASKS_LOCAL_CONVERGENCE": "TYPED_EXTERNAL_DEPENDENCY",
+    "DIGEST_RECORD_SYNC_NOT_CAUSAL": "CHECKPOINT_VALID_WRAPPER_FAILURE",
+    "STRUCTURED_UNKNOWN_NOT_RECOVERED": "MAJOR_INCIDENT",
+    "DROPPED_REASON_SOURCE_UNSUPPORTED": "MAJOR_INCIDENT",
+    "EDITORIAL_SECTION_MISCLASSIFIED_CARD": "PUBLIC_COMPLETION_RED",
+    "EXTERNAL_READINESS_AND_GIT_LOCK_COLLAPSED": "TYPED_EXTERNAL_DEPENDENCY",
+    "LOCK_PLAYLIST_COMPOUND_NOT_CONVERGED": "CHECKPOINT_VALID_WRAPPER_FAILURE",
+    "HANDLER_CAPABILITY_DIRECTION_MISMATCH": "MAJOR_INCIDENT",
+    "REPORTER_DATE_EVIDENCE_NOT_RECOVERED": "CHECKPOINT_VALID_WRAPPER_FAILURE",
+    "EMPTY_DIGEST_HISTORY_DRIFT_COMPOUND": "CHECKPOINT_VALID_WRAPPER_FAILURE",
+    "HISTORY_REPORT_BLOCKS_DAILY": "CHECKPOINT_VALID_WRAPPER_FAILURE",
+    "EDITOR_DROPS_VALID_CANDIDATE": "CHECKPOINT_VALID_WRAPPER_FAILURE",
+    "DEEPDIVE_URL_DIALOGUE_FALSE_GREEN": "PUBLIC_COMPLETION_RED",
+    "SCHEDULED_E2E_IDENTITY_COLLISION": "GENERATION_DRIFT",
+    "STARTUP_FAILURE_DEFERRED_WITHOUT_RECOVERY": "GENERATION_DRIFT",
+    "NO_LOG_LEDGER_GAP_UNCLASSIFIED": "MAJOR_INCIDENT",
+    "STOP_ARTIFACT_LEDGER_INVALID": "MAJOR_INCIDENT",
+    "STALE_STATE_DIRTY_RUNTIME_NO_AUTHORITY": "GENERATION_DRIFT",
+    "CHECKPOINT_IGNORED_BUDGET_EXHAUSTED": "CHECKPOINT_VALID_WRAPPER_FAILURE",
+    "DIRTY_RUNTIME_RECEIPT_LEDGER_TERMINAL_DRIFT": "GENERATION_DRIFT",
+    "STARTUP_SELF_REPAIR_REPEATED": "GENERATION_DRIFT",
+    "PUBLIC_GREEN_AUDIT_NON_MONOTONIC": "PUBLIC_COMPLETION_RED",
+    "ARTIFACT_FIRST_AND_STATE_BINDING_MISSING": "CHECKPOINT_VALID_WRAPPER_FAILURE",
+}
+
+
+def _execute_operational_replay(
+    *, repo_root: Path, issue_date: str, replay_id: str, signature: str
+) -> dict[str, object]:
+    """実daily consumer、checkpoint、retry ledger、registryで一つのreplayを閉じる。"""
+
+    from tools import news_grasp_checkpoint as checkpoint
+    from tools import news_grasp_daily_control as daily_control
+    from tools import operational_recovery_registry as recovery_registry
+
+    reason_code = HISTORICAL_RECOVERY_REASON_CODES.get(signature)
+    if reason_code is None:
+        raise ValueError("HISTORICAL_FAILURE_CLASS_UNREGISTERED")
+    scheduled_authority_id = f"scheduled-authority:{issue_date}"
+    lineage = checkpoint.derive_daily_operation_lineage(
+        issue_date=issue_date,
+        scheduled_authority_id=scheduled_authority_id,
+    )
+    lineage_replay = checkpoint.derive_daily_operation_lineage(
+        issue_date=issue_date,
+        scheduled_authority_id=scheduled_authority_id,
+    )
+    signature_hash = hashlib.sha256(signature.encode("utf-8")).hexdigest()
+    fingerprint = checkpoint.cause_fingerprint(
+        issue_date=issue_date,
+        daily_operation_lineage_id=lineage,
+        artifact_key="daily-bundle",
+        stage_id="operational-replay",
+        producer_route_id="daily_control",
+        failure_class=reason_code,
+        reason_code=reason_code,
+        cause_input_mask=["signatureHash"],
+        input_hashes={"signatureHash": signature_hash},
+    )
+
+    with TemporaryDirectory(prefix="news-grasp-historical-replay-") as temporary:
+        temporary_root = Path(temporary)
+        artifact_checkpoint = checkpoint.create_checkpoint(
+            issue_date=issue_date,
+            daily_operation_lineage_id=lineage,
+            stage="daily-bundle",
+            artifact_key="daily-bundle",
+            input_hashes={"signatureHash": signature_hash},
+            output_hash=signature_hash,
+            schema="NEWS_GRASP_DAILY_BUNDLE_V1",
+            oracle_id="historical-operational-replay-v1",
+            producer_route_id="daily_control",
+            next_deterministic_step="registered-recovery",
+            cause_fingerprint_value=fingerprint,
+            output_path=temporary_root / "checkpoint.json",
+        )
+        resumed = checkpoint.resume_stage(
+            checkpoint=artifact_checkpoint,
+            wrapper_result={
+                "checkpointAlreadyMaterialized": True,
+                "exitCode": 126,
+                "checkpointSha256": artifact_checkpoint["checkpointSha256"],
+                "issueDate": issue_date,
+                "dailyOperationLineageId": lineage,
+                "artifactKey": "daily-bundle",
+            },
+        )
+        retry_key = (
+            f"{issue_date}|{lineage}|daily-bundle|daily_control|{reason_code}"
+        )
+        retry_ledger = checkpoint.RetryLedger(temporary_root / "retry-ledger.json")
+        retry_ledger.admit_retry(
+            key=retry_key,
+            fingerprint=fingerprint,
+            cause_hash=signature_hash,
+        )
+        repeated = retry_ledger.admit_retry(
+            key=retry_key,
+            fingerprint=fingerprint,
+            cause_hash=signature_hash,
+        )
+
+    typed_external = reason_code == "TYPED_EXTERNAL_DEPENDENCY"
+    dispatch_handler_id = "typed_external_dependency"
+    recovery_status = "operation_deferred" if typed_external else "completed"
+    if not typed_external:
+        dispatched = recovery_registry.dispatch(
+            repo_root=repo_root,
+            reason_code=reason_code,
+            context={
+                "reasonCode": reason_code,
+                "dailyOperationLineageId": lineage,
+                "checkpointSha256": artifact_checkpoint["checkpointSha256"],
+            },
+            handlers=recovery_registry.default_handlers(),
+        )
+        dispatch_handler_id = dispatched.handler_id
+        recovery_status = str(dispatched.result.get("status") or dispatched.status)
+
+    major_incident = dispatch_handler_id == "major_incident_terminal"
+    external_dependency = {
+        "status": "unavailable" if typed_external else "not_required",
+        "evidenceHash": signature_hash,
+    }
+    completion = daily_control.build_completion_state_vector_v3(
+        scheduled_attempt={"status": "failed"},
+        recovery_attempt={"status": recovery_status},
+        public_receipt={
+            "status": "verified_green",
+            "authorityId": hashlib.sha256(
+                f"public:{issue_date}".encode("utf-8")
+            ).hexdigest(),
+        },
+        readiness_probe={"status": "red" if major_incident else "green"},
+        audit_observation={"status": "observed", "causeFingerprint": fingerprint},
+        external_dependency=external_dependency,
+        constitution_admission={
+            "status": "green",
+            "constitutionHash": hashlib.sha256(
+                (repo_root / "docs/spec.md").read_bytes()
+            ).hexdigest(),
+        },
+    )
+    if typed_external:
+        status = "external_terminal"
+    elif major_incident:
+        status = "major_incident_terminal"
+    else:
+        status = "product_complete"
+    return {
+        "schemaVersion": "NEWS_GRASP_OPERATIONAL_REPLAY_RESULT_V1",
+        "replayId": replay_id,
+        "redSignature": signature,
+        "dailyOperationLineageId": lineage,
+        "sameDailyLineage": lineage == lineage_replay,
+        "sameLineage": lineage == lineage_replay,
+        "registeredHandlerOrTypedExternal": bool(dispatch_handler_id),
+        "registeredHandlerId": dispatch_handler_id,
+        "stateInvariantRetryCount": int(repeated["retry"]),
+        "checkpointModelRerunCount": int(resumed["modelCalls"]),
+        "publicGreenPreserved": completion["publicCompletionStatus"] == "green",
+        "finiteTerminal": status.endswith("terminal") or status == "product_complete",
+        "status": status,
+        "completionStateVector": completion,
+        "consumerRoute": "tools.news_grasp_daily_control.build_completion_state_vector_v3",
+    }
 
 
 def replay_operational_failure(*, repo_root: Path | str, fixture: dict[str, object]) -> dict[str, object]:
@@ -1129,22 +1304,12 @@ def replay_operational_failure(*, repo_root: Path | str, fixture: dict[str, obje
     validation = validate_historical_evidence(Path(repo_root), scenario)
     if not validation.valid:
         raise ValueError(f"HISTORICAL_EVIDENCE_INVALID:{validation.reason}")
-    lineage = hashlib.sha256(
-        f"daily-lineage:{issue_date}".encode("utf-8")
-    ).hexdigest()
-    return {
-        "schemaVersion": "NEWS_GRASP_OPERATIONAL_REPLAY_RESULT_V1",
-        "replayId": replay_id,
-        "redSignature": signature,
-        "dailyOperationLineageId": lineage,
-        "sameDailyLineage": True,
-        "registeredHandlerOrTypedExternal": True,
-        "stateInvariantRetryCount": 0,
-        "checkpointModelRerunCount": 0,
-        "publicGreenPreserved": True,
-        "finiteTerminal": True,
-        "status": _replay_status(signature),
-    }
+    return _execute_operational_replay(
+        repo_root=Path(repo_root).resolve(),
+        issue_date=issue_date,
+        replay_id=replay_id,
+        signature=signature,
+    )
 
 
 def replay_compound_failure(*, repo_root: Path | str, fixture: dict[str, object]) -> dict[str, object]:
@@ -1159,22 +1324,20 @@ def replay_compound_failure(*, repo_root: Path | str, fixture: dict[str, object]
     )
     if scenario is None or not replay_id:
         raise ValueError("COMPOUND_SCENARIO_UNREGISTERED")
-    return {
-        "schemaVersion": "NEWS_GRASP_OPERATIONAL_REPLAY_RESULT_V1",
-        "replayId": replay_id,
-        "compoundId": fixture_id,
-        "sameLineage": True,
-        "registeredHandlerOrTypedExternal": True,
-        "stateInvariantRetryCount": 0,
-        "checkpointModelRerunCount": 0,
-        "publicGreenPreserved": True,
-        "finiteTerminal": True,
-        "status": (
-            "external_terminal"
-            if fixture_id == "external_block_plus_local_repair"
-            else "product_complete"
-        ),
+    reason_by_compound = {
+        "same_artifact_repair_plus_residual_red": "CHECKPOINT_IGNORED_BUDGET_EXHAUSTED",
+        "multi_gate_repair_before_publish_boundary": "COMPOUND_DAILY_REPAIR_COLLAPSED",
+        "external_block_plus_local_repair": "EXTERNAL_UPLOAD_MASKS_LOCAL_CONVERGENCE",
+        "weekday_inventory_plus_distribution_manifest": "LOCK_PLAYLIST_COMPOUND_NOT_CONVERGED",
+        "summary_materialize_missing_plus_downstream_repair_blockers": "ARTIFACT_FIRST_AND_STATE_BINDING_MISSING",
     }
+    result = _execute_operational_replay(
+        repo_root=Path(repo_root).resolve(),
+        issue_date="2026-08-11",
+        replay_id=replay_id,
+        signature=reason_by_compound[fixture_id],
+    )
+    return {**result, "compoundId": fixture_id, "failureDimensions": list(scenario.dimensions)}
 
 
 def _operational_closure(

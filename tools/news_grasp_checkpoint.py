@@ -164,6 +164,67 @@ def validate_checkpoint(checkpoint: Mapping[str, Any]) -> dict[str, Any]:
     return {"status": "valid", "checkpointSha256": expected, "nextDeterministicStep": checkpoint["nextDeterministicStep"]}
 
 
+EVIDENCE_REUSE_BINDING_FIELDS = (
+    "requirementIds",
+    "acceptanceIds",
+    "consumerRoute",
+    "oracleId",
+    "fixtureSetSha256",
+    "sourceSha256",
+    "configSha256",
+    "runtimeGenerationId",
+    "dailyOperationLineageId",
+    "mutationGeneration",
+)
+
+
+def evaluate_evidence_reuse(
+    *, evidence: Mapping[str, Any], current: Mapping[str, Any]
+) -> dict[str, Any]:
+    """freshnessが完全一致する既存Greenだけを再利用可能にする。"""
+
+    if evidence.get("status") != "Green":
+        return {
+            "schemaVersion": "EVIDENCE_REUSE_DECISION_V1",
+            "reuse": False,
+            "reasonCode": "EVIDENCE_NOT_GREEN",
+        }
+    missing = [
+        field
+        for field in EVIDENCE_REUSE_BINDING_FIELDS
+        if field not in evidence or field not in current
+    ]
+    if missing:
+        return {
+            "schemaVersion": "EVIDENCE_REUSE_DECISION_V1",
+            "reuse": False,
+            "reasonCode": "EVIDENCE_BINDING_MISSING",
+            "missingFields": missing,
+        }
+    for field in EVIDENCE_REUSE_BINDING_FIELDS:
+        if evidence[field] != current[field]:
+            return {
+                "schemaVersion": "EVIDENCE_REUSE_DECISION_V1",
+                "reuse": False,
+                "reasonCode": f"EVIDENCE_{field.upper()}_DRIFT",
+            }
+    if current.get("subsequentMutationCount") != 0:
+        return {
+            "schemaVersion": "EVIDENCE_REUSE_DECISION_V1",
+            "reuse": False,
+            "reasonCode": "EVIDENCE_SUBSEQUENT_MUTATION",
+        }
+    body = {
+        field: evidence[field] for field in EVIDENCE_REUSE_BINDING_FIELDS
+    }
+    return {
+        "schemaVersion": "EVIDENCE_REUSE_DECISION_V1",
+        "reuse": True,
+        "reasonCode": "EVIDENCE_FRESH_EXACT_MATCH",
+        "evidenceBindingSha256": hashlib.sha256(_canonical(body)).hexdigest(),
+    }
+
+
 def resume_stage(*, checkpoint: Mapping[str, Any] | None, wrapper_result: Mapping[str, Any]) -> dict[str, Any]:
     if checkpoint is None:
         return {"status": "producer_required", "modelCalls": 1, "nextStep": "stage_start"}

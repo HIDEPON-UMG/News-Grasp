@@ -131,29 +131,25 @@ def test_shutdown_started_engine_only_terminates_owned_process(monkeypatch):
     class FakeProcess:
         pid = 1234
 
-        def __init__(self):
-            self.terminated = False
-
         def poll(self):
-            return None if not self.terminated else 0
-
-        def terminate(self):
-            events.append("terminate")
-            self.terminated = True
+            return None
 
         def wait(self, timeout=None):
             events.append(f"wait:{timeout}")
             return 0
 
-        def kill(self):
-            events.append("kill")
+        def close_job(self):
+            events.append("close_job")
+
+        def close(self):
+            events.append("close")
 
     fake_process = FakeProcess()
     monkeypatch.setattr(aivis_client, "_owned_engine_process", fake_process)
     monkeypatch.setattr(aivis_client, "_post_shutdown", lambda: events.append("shutdown"))
 
     assert aivis_client.shutdown_started_engine(timeout=3) is True
-    assert events == ["shutdown", "terminate", "wait:3"]
+    assert events == ["shutdown", "wait:3", "close"]
     assert aivis_client._owned_engine_process is None
 
 
@@ -163,30 +159,36 @@ def test_shutdown_started_engine_is_noop_for_preexisting_engine(monkeypatch):
     assert aivis_client.shutdown_started_engine(timeout=1) is True
 
 
-def test_shutdown_started_engine_kills_when_terminate_times_out(monkeypatch):
+def test_shutdown_started_engine_closes_owned_job_when_graceful_wait_times_out(monkeypatch):
     events: list[str] = []
 
     class FakeProcess:
         pid = 1234
 
+        def __init__(self):
+            self.job_closed = False
+
         def poll(self):
             return None
 
-        def terminate(self):
-            events.append("terminate")
-
         def wait(self, timeout=None):
             events.append(f"wait:{timeout}")
-            raise subprocess.TimeoutExpired(cmd="AivisSpeech", timeout=timeout)
+            if not self.job_closed:
+                raise subprocess.TimeoutExpired(cmd="AivisSpeech", timeout=timeout)
+            return 1
 
-        def kill(self):
-            events.append("kill")
+        def close_job(self):
+            events.append("close_job")
+            self.job_closed = True
+
+        def close(self):
+            events.append("close")
 
     monkeypatch.setattr(aivis_client, "_owned_engine_process", FakeProcess())
     monkeypatch.setattr(aivis_client, "_post_shutdown", lambda: events.append("shutdown"))
 
     assert aivis_client.shutdown_started_engine(timeout=2) is True
-    assert events == ["shutdown", "terminate", "wait:2", "kill"]
+    assert events == ["shutdown", "wait:2", "close_job", "wait:5", "close"]
 
 
 def test_shutdown_started_engine_posts_shutdown_even_when_launcher_already_exited(monkeypatch):
@@ -198,17 +200,17 @@ def test_shutdown_started_engine_posts_shutdown_even_when_launcher_already_exite
         def poll(self):
             return 0
 
-        def terminate(self):
-            events.append("terminate")
-
         def wait(self, timeout=None):
             events.append(f"wait:{timeout}")
 
-        def kill(self):
-            events.append("kill")
+        def close_job(self):
+            events.append("close_job")
+
+        def close(self):
+            events.append("close")
 
     monkeypatch.setattr(aivis_client, "_owned_engine_process", FakeProcess())
     monkeypatch.setattr(aivis_client, "_post_shutdown", lambda: events.append("shutdown"))
 
     assert aivis_client.shutdown_started_engine(timeout=2) is True
-    assert events == ["shutdown"]
+    assert events == ["shutdown", "close"]

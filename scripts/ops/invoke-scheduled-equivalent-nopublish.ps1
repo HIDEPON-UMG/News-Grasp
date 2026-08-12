@@ -288,6 +288,7 @@ if (-not $ExternalHealthAuthorityFixturePath) {
     throw 'HIGH_COST_NOPUBLISH_FIXTURE_REQUIRED'
 }
 $ExternalHealthAuthorityFixturePath = Get-CanonicalExistingFile -Path $ExternalHealthAuthorityFixturePath -Label 'NoPublish external authority fixture' -Boundary $repoPath -MaxBytes 65536
+$externalHealthAuthorityFixtureSha256 = (Get-FileHash -LiteralPath $ExternalHealthAuthorityFixturePath -Algorithm SHA256).Hash.ToLowerInvariant()
 $authorizationMode = 'new_attempt'
 $authorizationCommand = 'authorize'
 $authorizationExtraArguments = @('--attempt-kind', $operationKind)
@@ -367,6 +368,7 @@ $runnerArguments = @(
     '-E2EFinalReservationReceiptPath', $reservationReceiptPath,
     '-E2EFinalClaimReceiptPath', $claimReceiptPath,
     '-ExternalHealthAuthorityPathOverride', $ExternalHealthAuthorityFixturePath,
+    '-ExternalHealthAuthorityExpectedSha256', $externalHealthAuthorityFixtureSha256,
     '-HighCostAttemptId', $attemptId
 )
 if (Test-Path -LiteralPath $runnerArgumentsPath) {
@@ -404,7 +406,7 @@ $installedLaunchAuthority = [ordered]@{
     runnerArgumentsPath = $runnerArgumentsPath
     runnerArgumentsFileSha256 = (Get-FileHash -LiteralPath $runnerArgumentsPath -Algorithm SHA256).Hash.ToLowerInvariant()
     externalHealthAuthorityFixturePath = $ExternalHealthAuthorityFixturePath
-    externalHealthAuthorityFixtureSha256 = (Get-FileHash -LiteralPath $ExternalHealthAuthorityFixturePath -Algorithm SHA256).Hash.ToLowerInvariant()
+    externalHealthAuthorityFixtureSha256 = $externalHealthAuthorityFixtureSha256
 }
 $installedLaunchAuthorityBody = $installedLaunchAuthority | ConvertTo-Json -Depth 6 -Compress
 $installedLaunchAuthorityHasher = [Security.Cryptography.SHA256]::Create()
@@ -532,7 +534,7 @@ $receipt = [ordered]@{
     high_cost_attempt_id = $attemptId
     high_cost_parent_authority_path = $parentAuthorityFullPath
     external_health_authority_fixture_path = $ExternalHealthAuthorityFixturePath
-    external_health_authority_fixture_sha256 = (Get-FileHash -LiteralPath $ExternalHealthAuthorityFixturePath -Algorithm SHA256).Hash.ToLowerInvariant()
+    external_health_authority_fixture_sha256 = $externalHealthAuthorityFixtureSha256
     high_cost_parent_authority_sha256 = if (Test-Path -LiteralPath $parentAuthorityFullPath -PathType Leaf) { (Get-FileHash -LiteralPath $parentAuthorityFullPath -Algorithm SHA256).Hash.ToLowerInvariant() } else { '' }
     ok = ($runnerExitCode -eq 0 -and $observedStatus -eq 'publish_dry_run_ok' -and $durationSloMet)
 }

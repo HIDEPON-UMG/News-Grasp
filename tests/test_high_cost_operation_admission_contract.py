@@ -218,7 +218,9 @@ def test_every_full_e2e_model_process_issues_exact_child_immediately_before_star
     native = text.split("public static OwnedLaunch CreateSuspendedAssignedProcess", 1)[1].split(
         "public static void CloseOwnedJob", 1
     )[0]
-    assert native.index("CreateProcess(") < native.index("AssignProcessToJobObject(") < native.index("ResumeThread(")
+    assert native.index("PROC_THREAD_ATTRIBUTE_JOB_LIST") < native.index("CreateProcess(") < native.index("ResumeThread(")
+    assert "AssignProcessToJobObject" not in native
+    assert "TerminateProcess" not in native
     body = text.split("function Assert-CanonicalModelBroker", 1)[1].split("function ", 1)[0]
     assert "bin\\ai-model-spawn-broker.py" in body
     assert "expectedInstalledBroker" in body

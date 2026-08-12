@@ -1,0 +1,220 @@
+{
+  "schemaVersion": "NEWS_GRASP_SKILL_CROSS_LAYER_GRAPH_V1",
+  "productId": "News-Grasp",
+  "skills": [
+    {
+      "skillId": "ops-sdd-tdd-harness-governance",
+      "purposeIds": ["purpose-constitution-bound-sdd-tdd"],
+      "clauseIds": ["NGC-C01", "NGC-C02", "NGC-C14"],
+      "flowIds": ["flow-impact-red-green"],
+      "taskIds": ["task-freeze-consumer-oracle-fixture"],
+      "consumerRoutes": ["tests/test_news_grasp_constitution_acceptance.py"],
+      "stateIds": ["state-tdd-capability"],
+      "evidenceIds": ["evidence-red-green-receipt"],
+      "sourceEvidenceAuthority": "shared_installed_source",
+      "sourceEvidence": ["TDD_IMPACT_ANALYSIS_RECEIPT_V1"],
+      "consumerEvidenceByRoute": {
+        "tests/test_news_grasp_constitution_acceptance.py": ["def _assert_acceptance("]
+      },
+      "owner": "workspace-sdd-governance",
+      "dependsOn": []
+    },
+    {
+      "skillId": "ops-human-friendly-work-governance",
+      "purposeIds": ["purpose-human-safe-unattended-work"],
+      "clauseIds": ["NGC-C06", "NGC-C11"],
+      "flowIds": ["flow-human-impact-admission"],
+      "taskIds": ["task-enforce-owned-process-boundary"],
+      "consumerRoutes": ["scripts/ops/run_codex_with_timeout.ps1"],
+      "stateIds": ["state-human-impact-contract"],
+      "evidenceIds": ["evidence-human-impact-green"],
+      "sourceEvidenceAuthority": "shared_installed_source",
+      "sourceEvidence": ["noFocusTheft=true"],
+      "consumerEvidenceByRoute": {
+        "scripts/ops/run_codex_with_timeout.ps1": ["$HighCostClaimWitness"]
+      },
+      "owner": "workspace-human-impact-governance",
+      "dependsOn": []
+    },
+    {
+      "skillId": "ops-write-operational-plan",
+      "purposeIds": ["purpose-decision-complete-operational-plan"],
+      "clauseIds": ["NGC-C01", "NGC-C12", "NGC-C14"],
+      "flowIds": ["flow-requirement-to-task-packet"],
+      "taskIds": ["task-compile-luna-work-packet"],
+      "consumerRoutes": ["tools/news_grasp_task_packet.py"],
+      "stateIds": ["state-task-constitution-admission"],
+      "evidenceIds": ["evidence-task-packet-validation"],
+      "sourceEvidenceAuthority": "versioned_owner_contract_test",
+      "sourceEvidenceContract": "snapshot/ProjectFolders/tools/tests/test_news_grasp_operational_skill_integrity.py",
+      "sourceEvidence": [
+        "NEWS_GRASP_OPERATIONAL_IMPROVEMENT_BINDING_V1",
+        "Constitution→skill purpose→flow→task→consumer→evidence",
+        "総期待資源"
+      ],
+      "consumerEvidenceByRoute": {
+        "tools/news_grasp_task_packet.py": ["def validate_packet("]
+      },
+      "owner": "workspace-operational-planning",
+      "dependsOn": ["ops-sdd-tdd-harness-governance"]
+    },
+    {
+      "skillId": "ops-codex-long-running-work",
+      "purposeIds": ["purpose-finite-durable-task-continuation"],
+      "clauseIds": ["NGC-C04", "NGC-C08", "NGC-C11"],
+      "flowIds": ["flow-decision-graph-continuation"],
+      "taskIds": ["task-transition-or-terminal"],
+      "consumerRoutes": ["tools/news_grasp_operational_contract.py"],
+      "stateIds": ["state-operation-decision-graph"],
+      "evidenceIds": ["evidence-durable-delta-packet"],
+      "sourceEvidenceAuthority": "versioned_owner_contract_test",
+      "sourceEvidenceContract": "snapshot/ProjectFolders/tools/tests/test_news_grasp_operational_skill_integrity.py",
+      "sourceEvidence": [
+        "durable goal",
+        "append-only TODO ledger",
+        "durable delta packet",
+        "Decision Graph"
+      ],
+      "consumerEvidenceByRoute": {
+        "tools/news_grasp_operational_contract.py": ["def evaluate_execution_governance("]
+      },
+      "owner": "workspace-long-running-governance",
+      "dependsOn": [
+        "ops-human-friendly-work-governance",
+        "ops-write-operational-plan"
+      ]
+    },
+    {
+      "skillId": "news-grasp-repair-method",
+      "purposeIds": ["purpose-registered-product-recovery"],
+      "clauseIds": ["NGC-C05", "NGC-C07", "NGC-C10"],
+      "flowIds": ["flow-typed-failure-to-registered-handler"],
+      "taskIds": ["task-dispatch-exact-recovery-handler"],
+      "consumerRoutes": ["tools/operational_recovery_registry.py"],
+      "stateIds": ["state-registered-recovery"],
+      "evidenceIds": ["evidence-recovery-dispatch-receipt"],
+      "sourceEvidenceAuthority": "product_overlay",
+      "sourceEvidence": ["# News-Grasp Repair Method", "Product Constitution"],
+      "consumerEvidenceByRoute": {
+        "tools/operational_recovery_registry.py": ["def dispatch("]
+      },
+      "owner": "product-recovery-overlay",
+      "dependsOn": [
+        "ops-human-friendly-work-governance",
+        "ops-sdd-tdd-harness-governance"
+      ]
+    },
+    {
+      "skillId": "report-news-grasp-incident",
+      "purposeIds": ["purpose-private-typed-incident-evidence"],
+      "clauseIds": ["NGC-C06", "NGC-C07", "NGC-C13"],
+      "flowIds": ["flow-terminal-to-incident-evidence"],
+      "taskIds": ["task-append-incident-observation"],
+      "consumerRoutes": ["tools/audit_recovery_control.py"],
+      "stateIds": ["state-incident-observation"],
+      "evidenceIds": ["evidence-private-incident-report"],
+      "sourceEvidenceAuthority": "product_overlay",
+      "sourceEvidence": ["# News-Grasp Incident Report", "private evidence report"],
+      "consumerEvidenceByRoute": {
+        "tools/audit_recovery_control.py": ["def execute_audit_recovery("]
+      },
+      "owner": "product-incident-overlay",
+      "dependsOn": [
+        "news-grasp-repair-method",
+        "ops-human-friendly-work-governance"
+      ]
+    },
+    {
+      "skillId": "news-grasp-e2e-discipline",
+      "purposeIds": ["purpose-final-only-scheduled-equivalent-e2e"],
+      "clauseIds": ["NGC-C03", "NGC-C04", "NGC-C09", "NGC-C13"],
+      "flowIds": ["flow-installed-launcher-nopublish-e2e"],
+      "taskIds": ["task-consume-one-shot-e2e-authority"],
+      "consumerRoutes": ["scripts/ops/invoke-scheduled-equivalent-nopublish.ps1"],
+      "stateIds": ["state-e2e-composition-authority"],
+      "evidenceIds": ["evidence-nopublish-e2e-terminal"],
+      "sourceEvidenceAuthority": "product_overlay",
+      "sourceEvidence": ["Product Constitution", "official wrapper→installed launcher→runner→broker"],
+      "consumerEvidenceByRoute": {
+        "scripts/ops/invoke-scheduled-equivalent-nopublish.ps1": ["NEWS_GRASP_INSTALLED_NOPUBLISH_LAUNCH_AUTHORITY_V1"]
+      },
+      "owner": "product-e2e-overlay",
+      "dependsOn": [
+        "ops-codex-long-running-work",
+        "ops-human-friendly-work-governance",
+        "ops-sdd-tdd-harness-governance"
+      ]
+    },
+    {
+      "skillId": "ops-safe-commit",
+      "purposeIds": ["purpose-safe-physical-source-delivery"],
+      "clauseIds": ["NGC-C06", "NGC-C09", "NGC-C13"],
+      "flowIds": ["flow-safe-commit-push-install"],
+      "taskIds": ["task-deliver-clean-generation"],
+      "consumerRoutes": ["scripts/ops/install-news-grasp-ops.ps1"],
+      "stateIds": ["state-physical-delivery"],
+      "evidenceIds": ["evidence-remote-install-parity"],
+      "sourceEvidenceAuthority": "shared_installed_source",
+      "sourceEvidence": ["# ops-safe-commit", "git commit"],
+      "consumerEvidenceByRoute": {
+        "scripts/ops/install-news-grasp-ops.ps1": ["installedSkillsFresh"]
+      },
+      "owner": "workspace-safe-delivery",
+      "dependsOn": [
+        "ops-human-friendly-work-governance",
+        "ops-sdd-tdd-harness-governance"
+      ]
+    },
+    {
+      "skillId": "report-completion-format",
+      "purposeIds": ["purpose-separate-verified-completion-fields"],
+      "clauseIds": ["NGC-C07", "NGC-C13"],
+      "flowIds": ["flow-state-vector-to-user-report"],
+      "taskIds": ["task-render-completion-state-vector"],
+      "consumerRoutes": ["tools/news_grasp_operational_contract.py"],
+      "stateIds": ["state-completion-report"],
+      "evidenceIds": ["evidence-final-state-vector"],
+      "sourceEvidenceAuthority": "shared_installed_source",
+      "sourceEvidence": ["# Completion Report Format", "Completion state vector rule"],
+      "consumerEvidenceByRoute": {
+        "tools/news_grasp_operational_contract.py": ["class CompletionStateVectorV3"]
+      },
+      "owner": "workspace-completion-reporting",
+      "dependsOn": ["ops-sdd-tdd-harness-governance"]
+    },
+    {
+      "skillId": "skill-creator",
+      "purposeIds": ["purpose-versioned-product-skill-package"],
+      "clauseIds": ["NGC-C12", "NGC-C14"],
+      "flowIds": ["flow-skill-source-to-installed-overlay"],
+      "taskIds": ["task-validate-product-skill-package"],
+      "consumerRoutes": ["automation/skills/news-grasp-e2e-discipline/SKILL.md"],
+      "stateIds": ["state-product-skill-package"],
+      "evidenceIds": ["evidence-skill-package-contract"],
+      "sourceEvidenceAuthority": "shared_installed_source",
+      "sourceEvidence": ["Every skill consists of a required SKILL.md file"],
+      "consumerEvidenceByRoute": {
+        "automation/skills/news-grasp-e2e-discipline/SKILL.md": ["Product Constitution"]
+      },
+      "owner": "workspace-skill-authoring",
+      "dependsOn": ["ops-sdd-tdd-harness-governance"]
+    },
+    {
+      "skillId": "diagram-tech-graph",
+      "purposeIds": ["purpose-machine-projected-constitution-graph"],
+      "clauseIds": ["NGC-C01", "NGC-C14"],
+      "flowIds": ["flow-trace-to-mermaid-projection"],
+      "taskIds": ["task-generate-verified-graph-projection"],
+      "consumerRoutes": ["tools/news_grasp_constitution.py"],
+      "stateIds": ["state-constitution-diagram-projection"],
+      "evidenceIds": ["evidence-mermaid-edge-set-hash"],
+      "sourceEvidenceAuthority": "shared_installed_source",
+      "sourceEvidence": ["# Fireworks Tech Graph"],
+      "consumerEvidenceByRoute": {
+        "tools/news_grasp_constitution.py": ["def validate_skill_cross_layer_graph("]
+      },
+      "owner": "workspace-diagram-guidance",
+      "dependsOn": ["ops-sdd-tdd-harness-governance"]
+    }
+  ]
+}

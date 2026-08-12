@@ -154,7 +154,9 @@ def test_wrapper_job_object_kills_grandchild_when_wrapper_is_terminated(
 def test_wrapper_owns_model_tree_with_kill_on_job_close() -> None:
     source = WRAPPER.read_text(encoding="utf-8-sig")
     assert "JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE" in source
-    assert "AssignProcessToJobObject" in source
+    assert "PROC_THREAD_ATTRIBUTE_JOB_LIST" in source
+    assert "TerminateProcess" not in source
+    assert "AssignProcessToJobObject" not in source
     assert "CREATE_SUSPENDED" in source
     assert "ResumeThread" in source
     assign = source.index("CreateSuspendedAssignedProcess")

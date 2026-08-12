@@ -1,0 +1,198 @@
+{
+  "schemaVersion": "NEWS_GRASP_OPERATION_INTEGRITY_MATRIX_V1",
+  "matrixVersion": "2026-08-12",
+  "perspectives": [
+    "primary_behavior",
+    "adversarial_boundary",
+    "operational_recovery"
+  ],
+  "integrationConsumer": {
+    "productionRoute": "tools/news_grasp_constitution.py",
+    "consumerSymbol": "evaluate_acceptance",
+    "consumerMarker": "evaluate_acceptance"
+  },
+  "rows": [
+    {
+      "evaluationId": "EV-01",
+      "constitutionClauses": ["NGC-C01", "NGC-C14"],
+      "productionRoute": "tools/news_grasp_constitution.py",
+      "consumerSymbol": "compile_constitution",
+      "consumerMarker": "compile_constitution",
+      "stateOwner": "constitution-compiler",
+      "oracles": {
+        "primary_behavior": "全skill purposeをclause・pillar・user outcomeへ一意に結線する",
+        "adversarial_boundary": "未結線・重複・自己申告edgeを拒否する",
+        "operational_recovery": "正本trace再生成後に同じconsumerでGreenへ戻る"
+      }
+    },
+    {
+      "evaluationId": "EV-02",
+      "constitutionClauses": ["NGC-C01", "NGC-C03", "NGC-C13"],
+      "productionRoute": "tools/news_grasp_constitution.py",
+      "consumerSymbol": "validate_active_object_catalog",
+      "consumerMarker": "validate_active_object_catalog",
+      "stateOwner": "active-object-catalog",
+      "oracles": {
+        "primary_behavior": "全flowを利用者価値と物理提出条件へ結線する",
+        "adversarial_boundary": "live consumerへ届かないflowを拒否する",
+        "operational_recovery": "disposition確定後にactive集合を再収束する"
+      }
+    },
+    {
+      "evaluationId": "EV-03",
+      "constitutionClauses": ["NGC-C04", "NGC-C05", "NGC-C10"],
+      "productionRoute": "tools/news_grasp_operational_contract.py",
+      "consumerSymbol": "transition_operational_state",
+      "consumerMarker": "transition_operational_state",
+      "stateOwner": "operation-decision-graph",
+      "oracles": {
+        "primary_behavior": "全flowに開始・成功・失敗・復旧・有限終端がある",
+        "adversarial_boundary": "cycle・state不変edge・unknown routeを拒否する",
+        "operational_recovery": "typed failureから最大二遷移でterminalへ到達する"
+      }
+    },
+    {
+      "evaluationId": "EV-04",
+      "constitutionClauses": ["NGC-C12", "NGC-C14"],
+      "productionRoute": "tools/news_grasp_task_packet.py",
+      "consumerSymbol": "validate_packet",
+      "consumerMarker": "validate_packet",
+      "stateOwner": "task-packet-validator",
+      "oracles": {
+        "primary_behavior": "全flow nodeにdecision-complete taskを持つ",
+        "adversarial_boundary": "未確定decision・write set拡張・scope driftを拒否する",
+        "operational_recovery": "design escape packetへ有限終端する"
+      }
+    },
+    {
+      "evaluationId": "EV-05",
+      "constitutionClauses": ["NGC-C07", "NGC-C10", "NGC-C14"],
+      "productionRoute": "tools/news_grasp_constitution.py",
+      "consumerSymbol": "validate_skill_cross_layer_graph",
+      "consumerMarker": "validate_skill_binding",
+      "stateOwner": "skill-cross-layer-graph",
+      "oracles": {
+        "primary_behavior": "skill間のstate・authority・owner・retry・terminal・evidenceを一致させる",
+        "adversarial_boundary": "duplicate owner・cycle・orphan・stale hashを拒否する",
+        "operational_recovery": "owner最新commitへの一回再封印でGreenへ戻る"
+      }
+    },
+    {
+      "evaluationId": "EV-06",
+      "constitutionClauses": ["NGC-C06", "NGC-C10", "NGC-C14"],
+      "productionRoute": "tools/news_grasp_constitution.py",
+      "consumerSymbol": "evaluate_acceptance",
+      "consumerMarker": "evaluate_acceptance",
+      "stateOwner": "constitution-acceptance-evaluator",
+      "oracles": {
+        "primary_behavior": "declared route・consumer route・positive fixture・negative fixtureをexact一致させる",
+        "adversarial_boundary": "mock-only・文字列存在・route aliasを拒否する",
+        "operational_recovery": "同じconsumer・fixture・oracleで再検証する"
+      }
+    },
+    {
+      "evaluationId": "EV-07",
+      "constitutionClauses": ["NGC-C08", "NGC-C11"],
+      "productionRoute": "tools/news_grasp_checkpoint.py",
+      "consumerSymbol": "cause_fingerprint",
+      "consumerMarker": "cause_fingerprint",
+      "stateOwner": "causal-retry-ledger",
+      "oracles": {
+        "primary_behavior": "state不変retryを0、因果変化時だけ最大1回にする",
+        "adversarial_boundary": "run・session・path変更によるbudget resetを拒否する",
+        "operational_recovery": "manual stopを即時user_stopped terminalへ遷移する"
+      }
+    },
+    {
+      "evaluationId": "EV-08",
+      "constitutionClauses": ["NGC-C09", "NGC-C13"],
+      "productionRoute": "tools/news_grasp_generation.py",
+      "consumerSymbol": "verify_parity",
+      "consumerMarker": "verify_parity",
+      "stateOwner": "production-generation",
+      "oracles": {
+        "primary_behavior": "source・installed・runtime・config・launcher・taskを同generationへ束縛する",
+        "adversarial_boundary": "remote・tracked tree・common-dir・task driftを拒否する",
+        "operational_recovery": "previous immutable generationへforward-only rollbackする"
+      }
+    },
+    {
+      "evaluationId": "EV-09",
+      "constitutionClauses": ["NGC-C04", "NGC-C06", "NGC-C13"],
+      "productionRoute": "scripts/ops/news-grasp-task-launcher.pyw",
+      "consumerSymbol": "_run_installed_nopublish_authority",
+      "consumerMarker": "_run_installed_nopublish_authority",
+      "stateOwner": "installed-nopublish-launcher",
+      "oracles": {
+        "primary_behavior": "prepare→authorize→activate→consume→claim→launchを一経路にする",
+        "adversarial_boundary": "direct runner・wrapper・brokerを拒否する",
+        "operational_recovery": "一attempt一回性を保ちcrashをWALで前進回復する"
+      }
+    },
+    {
+      "evaluationId": "EV-10",
+      "constitutionClauses": ["NGC-C06", "NGC-C09", "NGC-C11"],
+      "productionRoute": "scripts/ops/run_codex_with_timeout.ps1",
+      "consumerSymbol": "broker exec boundary",
+      "consumerMarker": "E2EFinalClaimReceiptPath",
+      "stateOwner": "model-spawn-broker-boundary",
+      "oracles": {
+        "primary_behavior": "cwd・実行体・owner creation identity・claim・timeoutをbrokerで再検証する",
+        "adversarial_boundary": "foreign claim・別cwd・実行体drift・non-descendantを拒否する",
+        "operational_recovery": "broker-owned timeoutがleaseをtyped terminalへ確定する"
+      }
+    },
+    {
+      "evaluationId": "EV-11",
+      "constitutionClauses": ["NGC-C05", "NGC-C07"],
+      "productionRoute": "tools/news_grasp_operational_contract.py",
+      "consumerSymbol": "evaluate_completion_v3",
+      "consumerMarker": "evaluate_completion_v3",
+      "stateOwner": "completion-state-vector",
+      "oracles": {
+        "primary_behavior": "public・readiness・recovery・externalを別stateとして保持する",
+        "adversarial_boundary": "verification unavailableだけでpublic Greenを後退させない",
+        "operational_recovery": "registered repair後にpure re-verificationでoperational Greenへ戻る"
+      }
+    },
+    {
+      "evaluationId": "EV-12",
+      "constitutionClauses": ["NGC-C06", "NGC-C11"],
+      "productionRoute": "tools/news_grasp_human_impact.py",
+      "consumerSymbol": "validate_human_impact",
+      "consumerMarker": "validate_human_impact",
+      "stateOwner": "human-impact-contract",
+      "oracles": {
+        "primary_behavior": "noFocusTheft・noAutoOpen・noUserMonitoring・raw kill 0を強制する",
+        "adversarial_boundary": "生PID kill・共有window操作・persistent pollingを拒否する",
+        "operational_recovery": "所有権付きbroker終了へ自動移行する"
+      }
+    },
+    {
+      "evaluationId": "EV-13",
+      "constitutionClauses": ["NGC-C08", "NGC-C12"],
+      "productionRoute": "tools/news_grasp_checkpoint.py",
+      "consumerSymbol": "validate_checkpoint",
+      "consumerMarker": "validate_checkpoint",
+      "stateOwner": "evidence-reuse-predicate",
+      "oracles": {
+        "primary_behavior": "Requirement・consumer・oracle・fixture・generation一致時だけ証拠を再利用する",
+        "adversarial_boundary": "source・runtime・config・lineage drift時のGreen再利用を拒否する",
+        "operational_recovery": "freshness失効nodeだけを同一oracleで再生成する"
+      }
+    },
+    {
+      "evaluationId": "EV-14",
+      "constitutionClauses": ["NGC-C09", "NGC-C13"],
+      "productionRoute": "scripts/ops/install-news-grasp-ops.ps1",
+      "consumerSymbol": "Assert-NewsGraspSharedBrokerGeneration",
+      "consumerMarker": "Assert-NewsGraspSharedBrokerGeneration",
+      "stateOwner": "physical-delivery-installer",
+      "oracles": {
+        "primary_behavior": "commit・push・install・runtime・task・rollback・E2Eを別fieldで提出する",
+        "adversarial_boundary": "部分提出・stale runtime・task drift・自己申告Greenを拒否する",
+        "operational_recovery": "backup receiptからprevious generationへrollback可能にする"
+      }
+    }
+  ]
+}

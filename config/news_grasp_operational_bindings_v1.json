@@ -110,7 +110,7 @@
     {
       "acceptanceId": "A17",
       "requirementId": "R17",
-      "clauseIds": ["NGC-C03", "NGC-C04", "NGC-C05", "NGC-C07", "NGC-C08", "NGC-C10"],
+      "clauseIds": ["NGC-C02", "NGC-C03", "NGC-C04", "NGC-C05", "NGC-C07", "NGC-C08", "NGC-C10"],
       "todoId": "TODO-151",
       "productionRoute": "tools/historical_failure_scenarios.py",
       "consumerMarker": "ONE_MONTH_OPERATIONAL_FAILURE_CORPUS_V1",

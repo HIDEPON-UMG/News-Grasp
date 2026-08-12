@@ -9,6 +9,12 @@ description: Run or plan News-Grasp daily-batch E2E, scheduled-equivalent NoPubl
 
 このrepo内コピーをNews-Grasp専用のversioned sourceとする。installed copyは`config/news_grasp_automation_assets_v2.json`を読む正規installerだけが同期し、`~/.codex`、`~/.agents`、installed runtimeを直接編集しない。shared/global側と競合した場合はshared側を変更せず、確定hashを新baselineとしてこのoverlayを更新し直す。
 
+## Product Constitutionと実composition
+
+このskillはNews-Grasp Product Constitutionの「人手なしの日次運用」「壊さない運用」「物理提出」を実現する下位手段であり、E2E実行自体を目的にしない。task contractが`review_series_closed`または`no_additional_review`なら追加review seriesを開始しない。
+
+唯一のL8経路は `official wrapper→installed launcher→runner→broker` とする。official wrapperが発行する`NEWS_GRASP_INSTALLED_NOPUBLISH_LAUNCH_AUTHORITY_V1`は`externalHealthAuthorityFixturePath`と`externalHealthAuthorityFixtureSha256`を必須fieldとしてsealし、installed launcherはlaunch直前にfile bytes、repo containment、reparse不在、64KiB上限、runner arguments中の`-ExternalHealthAuthorityPathOverride`とのcanonical path一致を再検証する。claim witnessはcanonical file pathとして渡し、inline JSON、別path、別hashへ置換しない。
+
 ## 1. 目的
 
 E2Eは、完成済みの運用鎖が本番相当入口で一度だけ成立することを確認する最終試験である。

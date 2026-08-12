@@ -30,6 +30,72 @@ ALLOWED = [
     "config/news_grasp_product_write_allowlist_v1.json",
     "tests/test_operational_redesign_contract.py",
 ]
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def _task_constitution(path: str) -> dict[str, Any]:
+    graph = json.loads(
+        (ROOT / "config" / "news_grasp_skill_cross_layer_graph_v1.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    row = next(
+        item for item in graph["skills"] if item["skillId"] == "ops-write-operational-plan"
+    )
+    return {
+        "schemaVersion": "NEWS_GRASP_TASK_CONSTITUTION_REQUEST_V2",
+        "taskId": "TODO-196",
+        "durableGoalId": "b3c2f6bd-e729-58bd-9dfd-6c1d19bbe3d0",
+        "todoLedgerSha256": "a" * 64,
+        "deltaPacketSha256": "b" * 64,
+        "reviewPolicy": "no_additional_review",
+        "reviewAttemptCount": 0,
+        "clauseIds": row["clauseIds"],
+        "requirementIds": ["R08"],
+        "acceptanceIds": ["A08"],
+        "writeSet": [path],
+        "skillIds": [row["skillId"]],
+        "purposeIds": row["purposeIds"],
+        "flowIds": row["flowIds"],
+        "taskIds": row["taskIds"],
+        "consumerRoutes": row["consumerRoutes"],
+        "stateIds": row["stateIds"],
+        "evidenceIds": row["evidenceIds"],
+        "efficiencyCandidates": [
+            {
+                "candidateId": "single-consumer",
+                "goalFidelity": True,
+                "safetyComplete": True,
+                "expectedTotalResource": 1.0,
+                "resourceVector": {
+                    "modelCalls": 0,
+                    "toolCalls": 2,
+                    "expectedRetries": 0,
+                    "broadRegressions": 0,
+                    "e2eAttempts": 0,
+                    "humanOperations": 0,
+                    "wallClockMinutes": 5,
+                },
+            },
+            {
+                "candidateId": "duplicate-consumers",
+                "goalFidelity": True,
+                "safetyComplete": True,
+                "expectedTotalResource": 2.0,
+                "resourceVector": {
+                    "modelCalls": 0,
+                    "toolCalls": 4,
+                    "expectedRetries": 0,
+                    "broadRegressions": 0,
+                    "e2eAttempts": 0,
+                    "humanOperations": 0,
+                    "wallClockMinutes": 10,
+                },
+            },
+        ],
+        "selectedCandidateId": "single-consumer",
+        "unresolvedDecisionIds": [],
+    }
 
 
 def _repo(tmp_path: Path) -> Path:
@@ -91,6 +157,7 @@ def _packet(repo: Path, snapshot: Path, *, owner: str = "owner-a", path: str = A
         "changes": [{"path": path, "operation": "replace", "content": "candidate\n"}],
         "unresolvedDecisionIds": [],
         "allowedWriteSet": [path],
+        "taskConstitution": _task_constitution(path),
         "repoRoot": str(repo),
     }
 
@@ -152,6 +219,19 @@ def test_ng2_a13_primary_luna_packet_decision_complete(tmp_path: Path) -> None:
         "noSubstitution": True,
     }
     assert result["unresolvedDecisionIds"] == []
+    assert len(result["taskConstitutionAdmissionSha256"]) == 64
+
+
+def test_ng2_a13_boundary_rejects_missing_task_constitution(tmp_path: Path) -> None:
+    repo = _repo(tmp_path)
+    snapshot = _snapshot(repo, tmp_path)
+    packet = _packet(repo, snapshot)
+    packet.pop("taskConstitution")
+    with pytest.raises(
+        control.NewsGraspChangeControlError,
+        match="NG_TASK_CONSTITUTION_ADMISSION_REQUIRED",
+    ):
+        control.validate_packet(repo_root=repo, packet=packet)
 
 
 def test_ng2_a13_adversarial_packet_scope_or_model_drift(tmp_path: Path) -> None:
@@ -306,6 +386,27 @@ def test_ng3_wp17_r6_additional_matrix_has_exact_15_nodes() -> None:
 
 def _generation_fixture(tmp_path: Path) -> dict[str, object]:
     source = _repo(tmp_path)
+    for command in (
+        ["git", "-C", str(source), "init", "-q"],
+        ["git", "-C", str(source), "config", "user.name", "News-Grasp Test"],
+        ["git", "-C", str(source), "config", "user.email", "test@example.invalid"],
+        ["git", "-C", str(source), "remote", "add", "origin", "https://example.invalid/news-grasp.git"],
+        ["git", "-C", str(source), "add", "--all"],
+        ["git", "-C", str(source), "commit", "-q", "-m", "generation fixture"],
+    ):
+        subprocess.run(command, check=True, capture_output=True)
+    source_head = subprocess.run(
+        ["git", "-C", str(source), "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    ).stdout.strip()
+    subprocess.run(
+        ["git", "-C", str(source), "update-ref", "refs/remotes/origin/main", source_head],
+        check=True,
+        capture_output=True,
+    )
     runtime = tmp_path / "runtime"
     runtime.mkdir()
     (runtime / "runtime.txt").write_text("runtime-v1\n", encoding="utf-8")
@@ -390,8 +491,8 @@ def test_ng2_wp03_generation_manifest_rejects_worktree_bound_task_action() -> No
 
 
 def test_ng3_wp03_runtime_transaction_seals_active_generation(tmp_path: Path) -> None:
-    repo = Path(__file__).resolve().parents[1]
-    launcher_path = repo / "scripts/ops/news-grasp-task-launcher.pyw"
+    source_repo = Path(__file__).resolve().parents[1]
+    launcher_path = source_repo / "scripts/ops/news-grasp-task-launcher.pyw"
     loader = SourceFileLoader("news_grasp_task_launcher_generation_test", str(launcher_path))
     spec = spec_from_loader(loader.name, loader)
     assert spec is not None
@@ -399,8 +500,35 @@ def test_ng3_wp03_runtime_transaction_seals_active_generation(tmp_path: Path) ->
     loader.exec_module(launcher)
     bin_dir = tmp_path / "bin"
     runtime_root = tmp_path / ".news-grasp-runtime"
+    repo = tmp_path / "clean-generation"
     bin_dir.mkdir()
     runtime_root.mkdir()
+    repo.mkdir()
+    generation_paths = (
+        "scripts/ops/news-grasp-runner.ps1",
+        "scripts/ops/news-grasp-task-launcher.pyw",
+        "scripts/ops/news-grasp-bootstrap.ps1",
+        "tools/daily_self_heal.py",
+        "tools/news_grasp_daily_control.py",
+        "tools/news_grasp_operational_contract.py",
+        "tools/news_grasp_checkpoint.py",
+        "tools/news_grasp_generation.py",
+        "tools/operational_recovery_registry.py",
+        "config/operational_recovery_registry_v1.json",
+    )
+    for relative in generation_paths:
+        source = source_repo / relative
+        destination = repo / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(source.read_bytes())
+    for command in (
+        ["git", "-C", str(repo), "init", "-q"],
+        ["git", "-C", str(repo), "config", "user.name", "News-Grasp Test"],
+        ["git", "-C", str(repo), "config", "user.email", "test@example.invalid"],
+        ["git", "-C", str(repo), "add", "--all"],
+        ["git", "-C", str(repo), "commit", "-q", "-m", "fixture generation"],
+    ):
+        subprocess.run(command, check=True, capture_output=True)
     head = subprocess.run(
         ["git", "-C", str(repo), "rev-parse", "HEAD"],
         check=True,
@@ -408,12 +536,17 @@ def test_ng3_wp03_runtime_transaction_seals_active_generation(tmp_path: Path) ->
         text=True,
         encoding="utf-8",
     ).stdout.strip()
+    subprocess.run(
+        ["git", "-C", str(repo), "update-ref", "refs/remotes/origin/main", head],
+        check=True,
+        capture_output=True,
+    )
     authority = {
         "schemaVersion": "STABLE_TASK_AUTHORITY_V1",
         "taskName": "News-Grasp Runner",
         "stableLauncherPath": str(launcher_path.resolve()),
         "stableLauncherSha256": hashlib.sha256(launcher_path.read_bytes()).hexdigest(),
-        "bootstrapPath": str((repo / "scripts/ops/news-grasp-bootstrap.ps1").resolve()),
+        "bootstrapPath": str((source_repo / "scripts/ops/news-grasp-bootstrap.ps1").resolve()),
         "bootstrapSha256": "b" * 64,
         "action": ["pythonw.exe", str(launcher_path.resolve()), "runner"],
         "trigger": {"daily": "06:00"},

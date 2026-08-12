@@ -63,6 +63,154 @@ if (-not $BinDir) {
 }
 $RepoDir = Resolve-NewsGraspRepoDir -Override $RepoDir
 $BootstrapLog = Join-Path $LogDir "bootstrap-$DateStamp.log"
+$script:RunnerJobHandles = @{}
+
+if (-not ("NewsGraspRunnerJob" -as [type])) {
+    Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
+
+public static class NewsGraspRunnerJob
+{
+    private const uint JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000;
+    private const uint CREATE_SUSPENDED = 0x00000004;
+    private const uint CREATE_NO_WINDOW = 0x08000000;
+    private const uint EXTENDED_STARTUPINFO_PRESENT = 0x00080000;
+    private const uint PROC_THREAD_ATTRIBUTE_JOB_LIST = 0x0002000D;
+
+    public sealed class OwnedLaunch
+    {
+        public int ProcessId { get; set; }
+        public IntPtr JobHandle { get; set; }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct IO_COUNTERS
+    {
+        public UInt64 ReadOperationCount, WriteOperationCount, OtherOperationCount;
+        public UInt64 ReadTransferCount, WriteTransferCount, OtherTransferCount;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct JOBOBJECT_BASIC_LIMIT_INFORMATION
+    {
+        public Int64 PerProcessUserTimeLimit, PerJobUserTimeLimit;
+        public uint LimitFlags;
+        public UIntPtr MinimumWorkingSetSize, MaximumWorkingSetSize;
+        public uint ActiveProcessLimit;
+        public UIntPtr Affinity;
+        public uint PriorityClass, SchedulingClass;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct JOBOBJECT_EXTENDED_LIMIT_INFORMATION
+    {
+        public JOBOBJECT_BASIC_LIMIT_INFORMATION BasicLimitInformation;
+        public IO_COUNTERS IoInfo;
+        public UIntPtr ProcessMemoryLimit, JobMemoryLimit, PeakProcessMemoryUsed, PeakJobMemoryUsed;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct STARTUPINFO
+    {
+        public int cb;
+        public string lpReserved, lpDesktop, lpTitle;
+        public uint dwX, dwY, dwXSize, dwYSize, dwXCountChars, dwYCountChars;
+        public uint dwFillAttribute;
+        public uint dwFlags;
+        public short wShowWindow, cbReserved2;
+        public IntPtr lpReserved2, hStdInput, hStdOutput, hStdError;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct STARTUPINFOEX
+    {
+        public STARTUPINFO StartupInfo;
+        public IntPtr lpAttributeList;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PROCESS_INFORMATION
+    {
+        public IntPtr hProcess, hThread;
+        public uint dwProcessId, dwThreadId;
+    }
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr CreateJobObject(IntPtr attributes, string name);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool SetInformationJobObject(IntPtr job, int infoClass, ref JOBOBJECT_EXTENDED_LIMIT_INFORMATION info, uint length);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool InitializeProcThreadAttributeList(IntPtr list, int count, int flags, ref IntPtr size);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool UpdateProcThreadAttribute(IntPtr list, uint flags, IntPtr attribute, IntPtr value, IntPtr size, IntPtr previous, IntPtr returnSize);
+    [DllImport("kernel32.dll")]
+    private static extern void DeleteProcThreadAttributeList(IntPtr list);
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern bool CreateProcess(string applicationName, StringBuilder commandLine, IntPtr processAttributes, IntPtr threadAttributes, bool inheritHandles, uint creationFlags, IntPtr environment, string currentDirectory, ref STARTUPINFOEX startupInfo, out PROCESS_INFORMATION processInfo);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern uint ResumeThread(IntPtr thread);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool CloseHandle(IntPtr handle);
+
+    public static OwnedLaunch CreateSuspendedJobProcess(string applicationPath, string arguments, string workingDirectory)
+    {
+        IntPtr job = IntPtr.Zero, attributeList = IntPtr.Zero, jobHandleList = IntPtr.Zero;
+        PROCESS_INFORMATION processInfo = new PROCESS_INFORMATION();
+        try {
+            job = CreateJobObject(IntPtr.Zero, null);
+            if (job == IntPtr.Zero) {
+                throw new InvalidOperationException("RUNNER_JOB_CREATE_FAILED:" + Marshal.GetLastWin32Error());
+            }
+            JOBOBJECT_EXTENDED_LIMIT_INFORMATION info = new JOBOBJECT_EXTENDED_LIMIT_INFORMATION();
+            info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+            if (!SetInformationJobObject(job, 9, ref info, (uint)Marshal.SizeOf(info))) {
+                throw new InvalidOperationException("RUNNER_JOB_CONFIGURATION_FAILED:" + Marshal.GetLastWin32Error());
+            }
+            IntPtr attributeSize = IntPtr.Zero;
+            InitializeProcThreadAttributeList(IntPtr.Zero, 1, 0, ref attributeSize);
+            attributeList = Marshal.AllocHGlobal(attributeSize);
+            if (!InitializeProcThreadAttributeList(attributeList, 1, 0, ref attributeSize)) {
+                throw new InvalidOperationException("RUNNER_ATTRIBUTE_INIT_FAILED:" + Marshal.GetLastWin32Error());
+            }
+            jobHandleList = Marshal.AllocHGlobal(IntPtr.Size);
+            Marshal.WriteIntPtr(jobHandleList, job);
+            if (!UpdateProcThreadAttribute(attributeList, 0, new IntPtr(PROC_THREAD_ATTRIBUTE_JOB_LIST), jobHandleList, new IntPtr(IntPtr.Size), IntPtr.Zero, IntPtr.Zero)) {
+                throw new InvalidOperationException("RUNNER_JOB_ATTRIBUTE_FAILED:" + Marshal.GetLastWin32Error());
+            }
+            STARTUPINFOEX startup = new STARTUPINFOEX();
+            startup.StartupInfo.cb = Marshal.SizeOf(startup);
+            startup.lpAttributeList = attributeList;
+            string command = "\"" + applicationPath.Replace("\"", "\\\"") + "\"" + (String.IsNullOrWhiteSpace(arguments) ? "" : " " + arguments);
+            if (!CreateProcess(applicationPath, new StringBuilder(command), IntPtr.Zero, IntPtr.Zero, false, CREATE_SUSPENDED | CREATE_NO_WINDOW | EXTENDED_STARTUPINFO_PRESENT, IntPtr.Zero, workingDirectory, ref startup, out processInfo)) {
+                throw new InvalidOperationException("RUNNER_PROCESS_CREATE_FAILED:" + Marshal.GetLastWin32Error());
+            }
+            if (ResumeThread(processInfo.hThread) == UInt32.MaxValue) {
+                throw new InvalidOperationException("RUNNER_PROCESS_RESUME_FAILED:" + Marshal.GetLastWin32Error());
+            }
+            OwnedLaunch result = new OwnedLaunch { ProcessId = (int)processInfo.dwProcessId, JobHandle = job };
+            job = IntPtr.Zero;
+            return result;
+        }
+        finally {
+            if (processInfo.hThread != IntPtr.Zero) { CloseHandle(processInfo.hThread); }
+            if (processInfo.hProcess != IntPtr.Zero) { CloseHandle(processInfo.hProcess); }
+            if (job != IntPtr.Zero) { CloseHandle(job); }
+            if (attributeList != IntPtr.Zero) { DeleteProcThreadAttributeList(attributeList); Marshal.FreeHGlobal(attributeList); }
+            if (jobHandleList != IntPtr.Zero) { Marshal.FreeHGlobal(jobHandleList); }
+        }
+    }
+
+    public static void CloseOwnedJob(IntPtr job)
+    {
+        if (job != IntPtr.Zero && !CloseHandle(job)) {
+            throw new InvalidOperationException("RUNNER_JOB_CLOSE_FAILED:" + Marshal.GetLastWin32Error());
+        }
+    }
+}
+"@
+}
 
 function Get-LogPath {
     return Join-Path $LogDir "$DateStamp.log"
@@ -365,7 +513,14 @@ function Stop-VerifiedRunner {
         [string] $Message
     )
     if (Test-RunnerProcessIdentity -State $State) {
-        try { Stop-Process -Id ([int]$State.pid) -Force -ErrorAction Stop } catch { }
+        $ownedPid = [int]$State.pid
+        if (-not $script:RunnerJobHandles.ContainsKey($ownedPid)) {
+            Write-WatchdogState -State $State -Status 'watchdog_stale_unconfirmed' -Message $Message -ExitCode 125
+            return 125
+        }
+        $handle = [IntPtr]$script:RunnerJobHandles[$ownedPid]
+        [NewsGraspRunnerJob]::CloseOwnedJob($handle)
+        $script:RunnerJobHandles.Remove($ownedPid)
         Write-WatchdogState -State $State -Status $Status -Message $Message -ExitCode 124
         return 124
     }
@@ -468,7 +623,20 @@ function Start-RunnerProcess {
         }
         $args += @('-RecoveryDecisionPath', [string]$RecoveryDecision.decisionPath)
     }
-    return Start-Process -FilePath 'powershell' -ArgumentList $args -WindowStyle Hidden -PassThru
+    $runnerArguments = @($args | Select-Object -Skip 5)
+    $quote = {
+        param([string]$Value)
+        return "'" + $Value.Replace("'", "''") + "'"
+    }
+    $runnerLiteral = & $quote $RunnerPath
+    $argumentLiterals = @($runnerArguments | ForEach-Object { & $quote ([string]$_) }) -join ', '
+    $childCommand = "& $runnerLiteral @($argumentLiterals); exit `$LASTEXITCODE"
+    $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($childCommand))
+    $powershellExe = (Resolve-Path -LiteralPath (Join-Path $PSHOME 'powershell.exe')).Path
+    $nativeArguments = "-NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand $encoded"
+    $launch = [NewsGraspRunnerJob]::CreateSuspendedJobProcess($powershellExe, $nativeArguments, $RepoDir)
+    $script:RunnerJobHandles[[int]$launch.ProcessId] = [IntPtr]$launch.JobHandle
+    return Get-Process -Id ([int]$launch.ProcessId) -ErrorAction Stop
 }
 
 function Get-DailyControlPython {
@@ -532,8 +700,26 @@ function Watch-Runner {
     $started = Get-Date
     $script:WatchExitCode = 1
     $watchRunId = ''
-    while ($true) {
-        Start-Sleep -Seconds $PollSeconds
+    $stateDirectory = Split-Path -Parent $StateFile
+    New-Item -ItemType Directory -Force -Path $stateDirectory | Out-Null
+    $stateSignal = [System.Threading.AutoResetEvent]::new($true)
+    $exitSignal = [System.Threading.AutoResetEvent]::new($false)
+    $stateWatcher = [System.IO.FileSystemWatcher]::new($stateDirectory, (Split-Path -Leaf $StateFile))
+    $stateWatcher.NotifyFilter = [System.IO.NotifyFilters]'FileName, LastWrite, Size'
+    $stateChanged = [System.IO.FileSystemEventHandler]{ param($sender, $eventArgs) $null = $stateSignal.Set() }
+    $stateRenamed = [System.IO.RenamedEventHandler]{ param($sender, $eventArgs) $null = $stateSignal.Set() }
+    $processExited = [System.EventHandler]{ param($sender, $eventArgs) $null = $exitSignal.Set() }
+    $stateWatcher.add_Changed($stateChanged)
+    $stateWatcher.add_Created($stateChanged)
+    $stateWatcher.add_Renamed($stateRenamed)
+    $Process.EnableRaisingEvents = $true
+    $Process.add_Exited($processExited)
+    $stateWatcher.EnableRaisingEvents = $true
+    $nextDeadline = $started.AddMinutes($TimeoutMinutes)
+    try {
+      while ($true) {
+        $waitMilliseconds = [Math]::Max(1, [Math]::Min([int](($nextDeadline - (Get-Date)).TotalMilliseconds), [int]::MaxValue))
+        $null = [System.Threading.WaitHandle]::WaitAny(@($exitSignal, $stateSignal), $waitMilliseconds)
         $state = Read-State
         if ($state -and $state.__corrupt) {
             Write-WatchdogState -State $state -Status 'watchdog_state_corrupt' -Message 'runner state json is corrupt' -ExitCode 125
@@ -556,12 +742,14 @@ function Watch-Runner {
                 $script:WatchExitCode = 125
                 return
             }
+            $nextDeadline = $started.AddMinutes($TimeoutMinutes)
             continue
         }
         if (-not $watchRunId -and $state -and $state.run_id) {
             $watchRunId = [string]$state.run_id
         }
         if (Test-TerminalState -State $state) {
+            if (-not $Process.HasExited) { $null = $Process.WaitForExit(30000) }
             Write-StatusJson -Mode 'completed' -State $state -ProcessId $Process.Id
             $script:WatchExitCode = 0
             return
@@ -596,6 +784,23 @@ function Watch-Runner {
             $script:WatchExitCode = Stop-VerifiedRunner -State $state -Status 'watchdog_wall_timeout' -Message $message
             Write-StatusJson -Mode 'timeout' -State (Read-State) -ProcessId $Process.Id -Message $message
             return
+        }
+        $staleAt = (Get-Date).AddSeconds([Math]::Max(1, ($StaleMinutes * 60) - $staleSeconds))
+        $wallAt = $started.AddMinutes($TimeoutMinutes)
+        $nextDeadline = if ($staleAt -lt $wallAt) { $staleAt } else { $wallAt }
+      }
+    } finally {
+        $stateWatcher.EnableRaisingEvents = $false
+        $stateWatcher.remove_Changed($stateChanged)
+        $stateWatcher.remove_Created($stateChanged)
+        $stateWatcher.remove_Renamed($stateRenamed)
+        $Process.remove_Exited($processExited)
+        $stateWatcher.Dispose()
+        $stateSignal.Dispose()
+        $exitSignal.Dispose()
+        if ($script:RunnerJobHandles.ContainsKey([int]$Process.Id)) {
+            [NewsGraspRunnerJob]::CloseOwnedJob([IntPtr]$script:RunnerJobHandles[[int]$Process.Id])
+            $script:RunnerJobHandles.Remove([int]$Process.Id)
         }
     }
 }
