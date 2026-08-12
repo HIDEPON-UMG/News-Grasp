@@ -2461,7 +2461,12 @@ def _operation_integrity_oracle(
 
         packet_set = _read(root / "config/news_grasp_luna_packets_v1.json")
         packets = packet_set.get("packets")
-        if not isinstance(packets, list) or len(packets) != 12:
+        if (
+            not isinstance(packets, list)
+            or not packets
+            or len({str(packet.get("todoId", "")) for packet in packets})
+            != len(packets)
+        ):
             raise ValueError("CONSTITUTION_LUNA_PACKET_SET_INVALID")
         validated = [validate_packet(packet, repo_root=root) for packet in packets]
         if any(packet.unresolvedDecisionIds for packet in validated):

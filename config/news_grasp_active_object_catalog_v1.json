@@ -1,6 +1,6 @@
 {
   "schemaVersion": "NEWS_GRASP_ACTIVE_OBJECT_CATALOG_V1",
-  "sourceCommit": "5d0d3262e55da442951d23b103a0dfc34643a2cf",
+  "sourceCommit": "ac957266383512e13533ce3fcb656b75c355a344",
   "discoveryMode": "git_index_plus_untracked_wip_plus_route_reference_scan",
   "objects": [
     {
@@ -543,7 +543,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "1cd7153c812c16ea0aa9eccd6553971814bf7749476910c1df5eb44af4fe078c",
+      "sha256": "f95cc1d925cf65d07ce20977a9cd9c09bdac5a81aa0b1021dfe626140cffa1ac",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -561,7 +561,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "64a63f0e98d2f541c74b0886433558b2629919851758e1dfdd5999588e25d43c",
+      "sha256": "ad53b642e53351ddf553ea2e70a04766b558b98f5e7d1dde7c09d6e5491baea9",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -2825,7 +2825,7 @@
         "NGC-C06",
         "NGC-C14"
       ],
-      "sha256": "1e05523a6674ea8e95d8c268c70852e6c885d2cfbb53cb0f277dc44e3a9d2012",
+      "sha256": "32f73dd008cb6687b7a0166783c9d9a2aeb9004111af17fad2bebc3046a9205a",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -4270,7 +4270,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "19b1cb90f47fa296e40ad9f1d0b2f730ec681bff5992ff7fb803dab681ec59db",
+      "sha256": "d34e2a152523c0b30961e907c0e90b0eb63a44b84c8c46da0ca57cf8bb49741a",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -4555,7 +4555,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "ebbf6a4d6a3f1d1471e6f7e61549a125063045563ba1f124922f371163cc42dd",
+      "sha256": "b9bdda645d063b0386b94c1a0653c03a951de1abcbff52dda5ab04fe0476627c",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -4907,5 +4907,5 @@
   "activeObjectCount": 266,
   "unlinkedActiveObjectCount": 0,
   "objectPathSetSha256": "aa33053d194c97c18770d02bc0bacc3ee4601e6dbeab8edad789f7a77ff0ab0e",
-  "testNodeSetSha256": "0ab46e97648c59ca24c51fb0481eb32b5f4f5d82d6146841c9091d0b193c11d4"
+  "testNodeSetSha256": "604a064d1e12382e7e2835918c25c72fac5477bc06e00fbe6e28522eb675bff0"
 }

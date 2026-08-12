@@ -1,8 +1,8 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 2457,
-  "collectedNodeSetSha256": "0ab46e97648c59ca24c51fb0481eb32b5f4f5d82d6146841c9091d0b193c11d4",
+  "collectedNodeCount": 2459,
+  "collectedNodeSetSha256": "604a064d1e12382e7e2835918c25c72fac5477bc06e00fbe6e28522eb675bff0",
   "files": [
     {
       "path": "tests/test_all_article_urls_live.py",
@@ -2135,14 +2135,16 @@
     },
     {
       "path": "tests/test_news_grasp_luna_packets.py",
-      "sha256": "1e05523a6674ea8e95d8c268c70852e6c885d2cfbb53cb0f277dc44e3a9d2012",
-      "nodeCount": 8,
+      "sha256": "32f73dd008cb6687b7a0166783c9d9a2aeb9004111af17fad2bebc3046a9205a",
+      "nodeCount": 10,
       "nodeIds": [
+        "tests/test_news_grasp_luna_packets.py::test_luna_packet_v2_compatibility_accepts_verification_only_empty_write_set",
         "tests/test_news_grasp_luna_packets.py::test_luna_packets_boundary_reject_hash_scope_and_human_impact_drift",
         "tests/test_news_grasp_luna_packets.py::test_luna_packets_boundary_reject_missing_operational_improvement_binding",
         "tests/test_news_grasp_luna_packets.py::test_luna_packets_primary_are_decision_complete_and_sequential",
         "tests/test_news_grasp_luna_packets.py::test_luna_packets_primary_consume_operational_improvement_binding",
         "tests/test_news_grasp_luna_packets.py::test_luna_packets_recovery_has_single_causal_return_and_design_escape",
+        "tests/test_news_grasp_luna_packets.py::test_luna_packets_use_canonical_v2_execution_contract",
         "tests/test_news_grasp_luna_packets.py::test_todo_196_boundary_rejects_unowned_packet_set_mutation",
         "tests/test_news_grasp_luna_packets.py::test_todo_196_boundary_rejects_unsealed_derived_writes",
         "tests/test_news_grasp_luna_packets.py::test_todo_196_primary_seals_complete_multi_root_write_scope"

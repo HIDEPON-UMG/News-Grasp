@@ -16,6 +16,7 @@ PACKET_SET_PATH = ROOT / "config" / "news_grasp_luna_packets_v1.json"
 EXPECTED_TODOS = tuple(f"TODO-{number}" for number in range(187, 199)) + (
     "TODO-200",
     "TODO-202",
+    "TODO-203",
 )
 EXPECTED_DEPENDENCIES = {
     **{f"TODO-{number}": [f"TODO-{number - 1}"] for number in range(187, 191)},
@@ -29,6 +30,7 @@ EXPECTED_DEPENDENCIES = {
     "TODO-198": ["TODO-190"],
     "TODO-200": ["TODO-197"],
     "TODO-202": ["TODO-201"],
+    "TODO-203": ["TODO-202"],
 }
 EXPECTED_RETURN_CONDITIONS = {
     "write_set_expansion",
@@ -97,6 +99,39 @@ def test_luna_packets_primary_are_decision_complete_and_sequential() -> None:
         assert result.human_impact["rawProcessTermination"] is False
         assert set(result.return_to_sol_conditions) == EXPECTED_RETURN_CONDITIONS
         assert result.unresolvedDecisionIds == ()
+
+
+def test_luna_packets_use_canonical_v2_execution_contract() -> None:
+    packets = _value()["packets"]
+    assert {packet["schemaVersion"] for packet in packets} == {
+        "LUNA_EXECUTION_PACKET_V2"
+    }, "NGI_RED_LUNA_EXECUTION_PACKET_V2_IDENTITY_DRIFT"
+
+    obsolete_v3 = copy.deepcopy(packets[0])
+    obsolete_v3["schemaVersion"] = "LUNA_EXECUTION_PACKET_V3"
+    _expect_code(
+        lambda: _validate(obsolete_v3),
+        "LUNA_PACKET_SCHEMA_VERSION_INVALID",
+    )
+
+
+def test_luna_packet_v2_compatibility_accepts_verification_only_empty_write_set() -> None:
+    """canonical V2のstrict packetでも検証専用packetだけはwrite不要である。"""
+    for packet in _value()["packets"]:
+        legacy = copy.deepcopy(packet)
+        legacy["schemaVersion"] = "LUNA_EXECUTION_PACKET_V2"
+        try:
+            result = validate_packet(legacy, repo_root=ROOT)
+        except Exception as error:
+            pytest.fail(
+                "NGI_RED_LUNA_PACKET_V2_VERIFICATION_WRITE_SET_INCOMPATIBLE:"
+                f"{packet['todoId']}:{type(error).__name__}:{error}",
+                pytrace=False,
+            )
+        if packet["mutationMode"] == "verification_only":
+            assert result.write_set == ()
+        else:
+            assert result.write_set
 
 
 def test_luna_packets_boundary_reject_hash_scope_and_human_impact_drift() -> None:

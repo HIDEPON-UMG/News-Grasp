@@ -12,7 +12,7 @@ NGC_A15_primary_behavior = "NGC_A15_primary_behavior"
 NGC_A15_adversarial_boundary = "NGC_A15_adversarial_boundary"
 NGC_A15_operational_recovery = "NGC_A15_operational_recovery"
 PACKET_SCHEMA_VERSION = "LUNA_EXECUTION_PACKET_V2"
-STRICT_PACKET_SCHEMA_VERSION = "LUNA_EXECUTION_PACKET_V3"
+STRICT_PACKET_DISCRIMINATOR = "mutationMode"
 PACKET_SET_RELATIVE_PATH = Path("config/news_grasp_luna_packets_v1.json")
 TASK_CONSTITUTION_BINDING_SCHEMA = "NEWS_GRASP_OPERATIONAL_IMPROVEMENT_BINDING_V1"
 STOP_POLICY = "return_to_sol_before_execution"
@@ -391,8 +391,9 @@ def validate_packet(
     payload: dict[str, Any], *, repo_root: Path | str | None = None
 ) -> LunaTaskPacket:
     schema_version = payload.get("schemaVersion")
-    if schema_version not in {PACKET_SCHEMA_VERSION, STRICT_PACKET_SCHEMA_VERSION}:
+    if schema_version != PACKET_SCHEMA_VERSION:
         raise ValueError("LUNA_PACKET_SCHEMA_VERSION_INVALID")
+    is_strict_packet = STRICT_PACKET_DISCRIMINATOR in payload
     unresolved = tuple(str(value) for value in payload.get("unresolvedDecisionIds", []))
     if unresolved:
         raise ValueError("LUNA_PACKET_UNRESOLVED_DECISION")
@@ -428,11 +429,15 @@ def validate_packet(
         raise ValueError("LUNA_PACKET_DEPENDENCY_ID_INVALID")
     root = Path(repo_root).resolve() if repo_root is not None else None
     strict: dict[str, Any] | None = None
-    if schema_version == STRICT_PACKET_SCHEMA_VERSION:
+    if is_strict_packet:
         strict = _validate_strict_packet(payload, repo_root=root)
         write_set = strict["write_set"]
     else:
-        write_set = _relative_paths(payload, "writeSet")
+        write_set = _relative_paths(
+            payload,
+            "writeSet",
+            allow_empty=payload.get("mutationMode") == "verification_only",
+        )
     artifact_paths = _relative_paths(payload, "artifactPaths")
     requirement_ids = _tuple(payload, "requirementIds")
     acceptance_ids = _tuple(payload, "acceptanceIds")
@@ -446,7 +451,7 @@ def validate_packet(
         raise ValueError("LUNA_PACKET_RED_NODE_ID_INVALID")
     task_constitution_admission_sha256 = (
         _admit_task_constitution(payload, root)
-        if schema_version == STRICT_PACKET_SCHEMA_VERSION
+        if is_strict_packet
         else ""
     )
 
