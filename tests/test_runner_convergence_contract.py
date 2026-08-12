@@ -2757,6 +2757,8 @@ def test_runner_verifies_publish_complete_manifest_before_success() -> None:
     assert "build\\publish-complete\\$DateStamp.json" in block
     assert "build\\notification\\$DateStamp.json" in runner
     assert "'--notification-state'" in block
+    assert "'--producer-state'" in block
+    assert "$StateFilePath" in block
     assert "Invoke-AutonomousCompletionPolicy" in block
     assert "-FailureKind 'publish'" in block
     assert "-GateId 'publish-complete'" in block

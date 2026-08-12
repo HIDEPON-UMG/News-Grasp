@@ -61,6 +61,7 @@ def verify_public_surface(
     repo_root: Path,
     ops_repo_root: Path | None = None,
     notification_state_path: Path | None = None,
+    producer_state_path: Path | None = None,
     remote: str,
     branch: str,
     public_base_url: str,
@@ -89,6 +90,7 @@ def verify_public_surface(
         wait_sec=wait_sec,
         poll_sec=poll_sec,
         notification_state_path=notification_state_path,
+        producer_state_path=producer_state_path,
     )
 
     checked_at = datetime.now(timezone.utc)
@@ -154,6 +156,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--repo-root", type=Path, required=True)
     parser.add_argument("--ops-repo-root", type=Path, default=None)
     parser.add_argument("--notification-state", type=Path, default=None)
+    parser.add_argument("--producer-state", type=Path, default=None)
     parser.add_argument("--remote", default="origin")
     parser.add_argument("--branch", default="main")
     parser.add_argument("--public-base-url", required=True)
@@ -168,6 +171,7 @@ def main(argv: list[str] | None = None) -> int:
         repo_root=args.repo_root,
         ops_repo_root=args.ops_repo_root,
         notification_state_path=args.notification_state,
+        producer_state_path=args.producer_state,
         remote=args.remote,
         branch=args.branch,
         public_base_url=args.public_base_url,

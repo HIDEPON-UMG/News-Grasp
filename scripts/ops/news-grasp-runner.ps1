@@ -5289,7 +5289,7 @@ if ($NoPush) {
     $publishCompleteManifest = Join-Path $RepoDir "build\publish-complete\$DateStamp.json"
     Push-Location $RepoDir
     try {
-        Invoke-Logged { & $PyExe '-m' 'tools.daily_self_heal' 'verify-publish-complete' '--repo-root' $RepoDir '--ops-repo-root' $OpsRepoRoot '--date' $DateStamp '--remote' 'origin' '--branch' 'main' '--public-base-url' $PublicBaseUrl '--wait-sec' '0' '--poll-sec' $PublishVerifyPollSec '--notification-state' $NotificationStatePath '--output' $publishCompleteManifest }
+        Invoke-Logged { & $PyExe '-m' 'tools.daily_self_heal' 'verify-publish-complete' '--repo-root' $RepoDir '--ops-repo-root' $OpsRepoRoot '--date' $DateStamp '--remote' 'origin' '--branch' 'main' '--public-base-url' $PublicBaseUrl '--wait-sec' '0' '--poll-sec' $PublishVerifyPollSec '--notification-state' $NotificationStatePath '--producer-state' $StateFilePath '--output' $publishCompleteManifest }
         $publishCompleteRc = $LASTEXITCODE
     } finally {
         Pop-Location

@@ -943,6 +943,8 @@ def _run_live_startup_canary(
         str(log_dir),
         "-StateFile",
         str(state_file),
+        "-PythonExe",
+        sys.executable,
     ]
     if live_runner_path is not None:
         command += ["-RunnerPath", str(live_runner_path), "-BinDir", str(live_runner_path.parent)]
@@ -3598,6 +3600,7 @@ def main(argv: list[str] | None = None) -> int:
     complete.add_argument("--primary-podcast-state", type=Path, default=None)
     complete.add_argument("--deepdive-podcast-state", type=Path, default=None)
     complete.add_argument("--notification-state", type=Path, default=None)
+    complete.add_argument("--producer-state", type=Path, default=None)
     complete.add_argument("--output", type=Path, default=None)
 
     live_ready = sub.add_parser("verify-live-runner-readiness")
@@ -3699,6 +3702,7 @@ def main(argv: list[str] | None = None) -> int:
             primary_podcast_state_path=args.primary_podcast_state,
             deepdive_podcast_state_path=args.deepdive_podcast_state,
             notification_state_path=args.notification_state,
+            producer_state_path=args.producer_state,
         )
         text = json.dumps(result, ensure_ascii=False, indent=2)
         if args.output:
