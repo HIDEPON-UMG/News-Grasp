@@ -1027,9 +1027,15 @@ def admit_task_constitution(
         str(payload.get("durableGoalId", "")),
     ):
         raise ValueError("NEWS_GRASP_TASK_DURABLE_GOAL_INVALID")
-    for key in ("todoLedgerSha256", "deltaPacketSha256"):
-        if not SHA256_PATTERN.fullmatch(str(payload.get(key, ""))):
-            raise ValueError(f"NEWS_GRASP_TASK_DURABLE_STATE_INVALID:{key}")
+    mutable_progress_fields = {"todoLedgerSha256", "deltaPacketSha256"}
+    if mutable_progress_fields & set(payload):
+        raise ValueError("NEWS_GRASP_TASK_MUTABLE_PROGRESS_BINDING_FORBIDDEN")
+    if not SHA256_PATTERN.fullmatch(
+        str(payload.get("todoDefinitionSetSha256", ""))
+    ):
+        raise ValueError(
+            "NEWS_GRASP_TASK_DURABLE_STATE_INVALID:todoDefinitionSetSha256"
+        )
     review_policy = str(payload.get("reviewPolicy", ""))
     review_attempt_count = payload.get("reviewAttemptCount")
     if (

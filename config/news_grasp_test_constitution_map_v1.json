@@ -1,8 +1,8 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 2459,
-  "collectedNodeSetSha256": "604a064d1e12382e7e2835918c25c72fac5477bc06e00fbe6e28522eb675bff0",
+  "collectedNodeCount": 2460,
+  "collectedNodeSetSha256": "34b0d0271f73a043a355f39eae1cfe4512331bf56e97222208ba4871ba5b7481",
   "files": [
     {
       "path": "tests/test_all_article_urls_live.py",
@@ -2135,8 +2135,8 @@
     },
     {
       "path": "tests/test_news_grasp_luna_packets.py",
-      "sha256": "32f73dd008cb6687b7a0166783c9d9a2aeb9004111af17fad2bebc3046a9205a",
-      "nodeCount": 10,
+      "sha256": "efe127350c5ae0b029df2566c6c1459f27bbbf7a3458b4aa048f2cf68d44fda6",
+      "nodeCount": 11,
       "nodeIds": [
         "tests/test_news_grasp_luna_packets.py::test_luna_packet_v2_compatibility_accepts_verification_only_empty_write_set",
         "tests/test_news_grasp_luna_packets.py::test_luna_packets_boundary_reject_hash_scope_and_human_impact_drift",
@@ -2145,6 +2145,7 @@
         "tests/test_news_grasp_luna_packets.py::test_luna_packets_primary_consume_operational_improvement_binding",
         "tests/test_news_grasp_luna_packets.py::test_luna_packets_recovery_has_single_causal_return_and_design_escape",
         "tests/test_news_grasp_luna_packets.py::test_luna_packets_use_canonical_v2_execution_contract",
+        "tests/test_news_grasp_luna_packets.py::test_operational_improvement_binding_excludes_mutable_progress_hashes",
         "tests/test_news_grasp_luna_packets.py::test_todo_196_boundary_rejects_unowned_packet_set_mutation",
         "tests/test_news_grasp_luna_packets.py::test_todo_196_boundary_rejects_unsealed_derived_writes",
         "tests/test_news_grasp_luna_packets.py::test_todo_196_primary_seals_complete_multi_root_write_scope"
@@ -2271,7 +2272,7 @@
     },
     {
       "path": "tests/test_news_grasp_operational_skill_contract.py",
-      "sha256": "d4aee5bdad3c08a8b1b4276406a25e050fb8354b259e2912e104c23eec81ed57",
+      "sha256": "b5829482e365cfa453babcef028c7969a922302bff06c7825780710fe171465f",
       "nodeCount": 4,
       "nodeIds": [
         "tests/test_news_grasp_operational_skill_contract.py::test_operational_improvement_boundary_rejects_self_declared_layer_binding",
@@ -2428,7 +2429,7 @@
     },
     {
       "path": "tests/test_operational_redesign_contract.py",
-      "sha256": "131c20da9cc95f943fbb2788a4e22bfe33d884b7b37fbe48fbb9aee43fc33927",
+      "sha256": "33d2b87f110b7e32163d3fee41b3a4ffa7193b037b4dbad7d4577f212fcba2da",
       "nodeCount": 53,
       "nodeIds": [
         "tests/test_operational_redesign_contract.py::test_ng2_a01_adversarial_scope_escape",
@@ -2492,7 +2493,7 @@
     },
     {
       "path": "tests/test_operational_redesign_matrix.py",
-      "sha256": "ce21671515a469d4eb0bb07e3f40ab22b8ff577576280fa85f53a61cf2a45cb9",
+      "sha256": "8d9938b8a180ecd5d46cc54e529f036dfd73c84a4ae6ddca6a4e05a8d791b989",
       "nodeCount": 43,
       "nodeIds": [
         "tests/test_operational_redesign_matrix.py::test_ng2_wp02_matrix_matches_declared_nodes",

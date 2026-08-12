@@ -20,6 +20,7 @@ _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 _ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]*$")
 _CLAUSE_RE = re.compile(r"^NGC-C\d{2}$")
+_TODO_STATUS_PREFIX_RE = re.compile(r"^[☐◉☑⊘■] ")
 _MUTATION_MODES = {"product_mutation", "multi_root_mutation", "verification_only"}
 _DERIVED_WRITE_COMMANDS = {
     "python -m tools.news_grasp_constitution generate-active-catalog --repo-root .",
@@ -115,6 +116,40 @@ def _canonical_sha256(value: object) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def todo_definition_set_sha256(entries: list[dict[str, Any]]) -> str:
+    """可変statusを除外し、append-only ToDo定義集合だけをhash化する。"""
+
+    if not isinstance(entries, list) or not entries:
+        raise ValueError("LUNA_PACKET_TODO_DEFINITION_SET_INVALID")
+    definitions: list[dict[str, Any]] = []
+    seen_ids: set[str] = set()
+    for expected_sequence, row in enumerate(entries, start=1):
+        if not isinstance(row, dict):
+            raise ValueError("LUNA_PACKET_TODO_DEFINITION_SET_INVALID")
+        todo_id = str(row.get("todoId", ""))
+        step = str(row.get("step", ""))
+        if (
+            row.get("sequence") != expected_sequence
+            or not re.fullmatch(r"TODO-\d{3}", todo_id)
+            or todo_id in seen_ids
+            or _TODO_STATUS_PREFIX_RE.match(step) is None
+            or f"[{todo_id}]" not in step
+        ):
+            raise ValueError("LUNA_PACKET_TODO_DEFINITION_SET_INVALID")
+        definition = _TODO_STATUS_PREFIX_RE.sub("", step, count=1)
+        if not definition:
+            raise ValueError("LUNA_PACKET_TODO_DEFINITION_SET_INVALID")
+        seen_ids.add(todo_id)
+        definitions.append(
+            {
+                "sequence": expected_sequence,
+                "todoId": todo_id,
+                "definition": definition,
+            }
+        )
+    return _canonical_sha256(definitions)
+
+
 def _admit_task_constitution(
     payload: dict[str, Any], repo_root: Path | None
 ) -> str:
@@ -134,6 +169,12 @@ def _admit_task_constitution(
         or _canonical_sha256(binding) != expected_sha256
     ):
         raise ValueError("LUNA_PACKET_TASK_CONSTITUTION_BINDING_DRIFT")
+    if (
+        "todoLedgerSha256" in binding
+        or "deltaPacketSha256" in binding
+        or not _SHA256_RE.fullmatch(str(binding.get("todoDefinitionSetSha256", "")))
+    ):
+        raise ValueError("LUNA_PACKET_TASK_CONSTITUTION_MUTABLE_PROGRESS_BINDING")
 
     from tools import news_grasp_constitution as constitution_module
     from tools.news_grasp_operational_contract import admit_task_constitution
@@ -176,8 +217,7 @@ def _admit_task_constitution(
         "schemaVersion": "NEWS_GRASP_TASK_CONSTITUTION_REQUEST_V2",
         "taskId": str(payload["todoId"]),
         "durableGoalId": binding.get("durableGoalId"),
-        "todoLedgerSha256": binding.get("todoLedgerSha256"),
-        "deltaPacketSha256": binding.get("deltaPacketSha256"),
+        "todoDefinitionSetSha256": binding.get("todoDefinitionSetSha256"),
         "reviewPolicy": binding.get("reviewPolicy"),
         "reviewAttemptCount": binding.get("reviewAttemptCount"),
         "skillIds": list(skill_ids),

@@ -8,6 +8,7 @@ from typing import Any, Callable
 
 import pytest
 
+from tools import news_grasp_task_packet as task_packet_module
 from tools.news_grasp_task_packet import validate_packet
 
 
@@ -17,6 +18,7 @@ EXPECTED_TODOS = tuple(f"TODO-{number}" for number in range(187, 199)) + (
     "TODO-200",
     "TODO-202",
     "TODO-203",
+    "TODO-205",
 )
 EXPECTED_DEPENDENCIES = {
     **{f"TODO-{number}": [f"TODO-{number - 1}"] for number in range(187, 191)},
@@ -31,6 +33,7 @@ EXPECTED_DEPENDENCIES = {
     "TODO-200": ["TODO-197"],
     "TODO-202": ["TODO-201"],
     "TODO-203": ["TODO-202"],
+    "TODO-205": ["TODO-203"],
 }
 EXPECTED_RETURN_CONDITIONS = {
     "write_set_expansion",
@@ -132,6 +135,30 @@ def test_luna_packet_v2_compatibility_accepts_verification_only_empty_write_set(
             assert result.write_set == ()
         else:
             assert result.write_set
+
+
+def test_operational_improvement_binding_excludes_mutable_progress_hashes() -> None:
+    binding = _value()["operationalImprovementBinding"]
+    assert {
+        "todoLedgerSha256",
+        "deltaPacketSha256",
+    }.isdisjoint(binding), "NGI_RED_MUTABLE_PROGRESS_HASH_DELIVERY_CYCLE"
+    assert len(binding["todoDefinitionSetSha256"]) == 64
+
+    helper = getattr(task_packet_module, "todo_definition_set_sha256", None)
+    assert callable(helper), "NGI_RED_STABLE_TODO_DEFINITION_HASH_CONSUMER_MISSING"
+    pending = [
+        {
+            "sequence": 1,
+            "todoId": "TODO-001",
+            "step": "☐ [TODO-001][10分|0.1%] deterministic task",
+            "status": "pending",
+        }
+    ]
+    completed = copy.deepcopy(pending)
+    completed[0]["step"] = completed[0]["step"].replace("☐ ", "☑ ", 1)
+    completed[0]["status"] = "completed"
+    assert helper(pending) == helper(completed)
 
 
 def test_luna_packets_boundary_reject_hash_scope_and_human_impact_drift() -> None:
