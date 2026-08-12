@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import ctypes
 import hashlib
+import importlib.util
 import json
 import os
 import re
@@ -624,10 +625,13 @@ def _load_e2e_attempt_policy(
         raise
     except (OSError, ValueError, TypeError) as error:
         raise RuntimeError("NEWS_GRASP_E2E_ATTEMPT_POLICY_INVALID") from error
-    if _validate_e2e_policy_transition is None:
+    policy_validator = _validate_e2e_policy_transition
+    if policy_validator is None:
+        policy_validator = _load_policy_consumer_from_execution_repo(execution_repo)
+    if policy_validator is None:
         raise RuntimeError("NEWS_GRASP_E2E_ATTEMPT_POLICY_CONSUMER_MISSING")
     try:
-        value = _validate_e2e_policy_transition(value, policy)
+        value = policy_validator(value, policy)
     except Exception as error:
         raise RuntimeError(str(error)) from error
     expected_keys = {
@@ -684,6 +688,35 @@ def _load_e2e_attempt_policy(
     ) != (5, "issue_b"):
         raise RuntimeError("NEWS_GRASP_FULL_CORRECTION_REQUIRED")
     return value
+
+
+def _load_policy_consumer_from_execution_repo(execution_repo: Path):
+    """installed bin配置時も、検証済みgenerationのconsumerを読み込む。"""
+    root = Path(execution_repo).resolve(strict=True)
+    candidate = root / "tools" / "news_grasp_e2e_attempt_policy.py"
+    try:
+        candidate = candidate.resolve(strict=True)
+    except OSError as error:
+        raise RuntimeError("NEWS_GRASP_E2E_ATTEMPT_POLICY_CONSUMER_MISSING") from error
+    if (
+        candidate.is_symlink()
+        or not candidate.is_file()
+        or os.path.commonpath((str(root), str(candidate))) != str(root)
+    ):
+        raise RuntimeError("NEWS_GRASP_E2E_ATTEMPT_POLICY_CONSUMER_MISSING")
+    module_name = f"news_grasp_e2e_attempt_policy_{hashlib.sha256(str(candidate).encode()).hexdigest()[:16]}"
+    spec = importlib.util.spec_from_file_location(module_name, candidate)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("NEWS_GRASP_E2E_ATTEMPT_POLICY_CONSUMER_MISSING")
+    module = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(module)
+    except Exception as error:
+        raise RuntimeError("NEWS_GRASP_E2E_ATTEMPT_POLICY_CONSUMER_MISSING") from error
+    consumer = getattr(module, "validate_policy_ledger", None)
+    if not callable(consumer):
+        raise RuntimeError("NEWS_GRASP_E2E_ATTEMPT_POLICY_CONSUMER_MISSING")
+    return consumer
 
 
 def _load_stable_launcher_identity(*, bin_dir: Path) -> dict[str, object]:

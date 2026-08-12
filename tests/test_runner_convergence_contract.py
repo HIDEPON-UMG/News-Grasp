@@ -3301,6 +3301,29 @@ def test_installed_nopublish_launcher_runs_same_generation_isolation(
     assert observed == 0
 
 
+def test_installed_launcher_resolves_policy_consumer_from_execution_repo(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """bin配置後も実行generation側のpolicy consumerを解決できる。"""
+    namespace = runpy.run_path(str(OPS_DIR / "news-grasp-task-launcher.pyw"))
+    execution_repo = tmp_path / "execution"
+    policy_module = execution_repo / "tools" / "news_grasp_e2e_attempt_policy.py"
+    policy_module.parent.mkdir(parents=True)
+    policy_module.write_text(
+        (ROOT / "tools" / "news_grasp_e2e_attempt_policy.py").read_text(
+            encoding="utf-8"
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setitem(namespace, "_validate_e2e_policy_transition", None)
+
+    consumer = namespace["_load_policy_consumer_from_execution_repo"](
+        execution_repo
+    )
+
+    assert callable(consumer)
+
+
 def test_installed_nopublish_launcher_rejects_cross_generation_isolation(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
