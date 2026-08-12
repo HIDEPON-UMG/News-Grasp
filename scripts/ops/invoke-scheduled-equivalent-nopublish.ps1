@@ -142,7 +142,8 @@ function Get-CanonicalFuturePath {
             $cursor = $parent
         }
         if (Test-Path -LiteralPath $candidate) {
-            if (-not $AllowReclaimedParent) {
+            $allowExistingReclaimed = $AllowReclaimedParent -or ($Label -ceq 'parent authority')
+            if (-not $allowExistingReclaimed) {
                 throw "$Label output already exists"
             }
             $existing = Get-Content -LiteralPath $candidate -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
