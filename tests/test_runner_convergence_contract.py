@@ -2323,6 +2323,121 @@ def test_watcher_ignores_previous_run_state_until_new_process_claims_identity() 
     )
 
 
+def test_watcher_failure_before_state_claim_writes_typed_launch_evidence(
+    tmp_path: Path,
+) -> None:
+    """runnerがstate claim前にexit 2でも実consumerが原因証拠を残す。"""
+
+    bin_dir = tmp_path / "bin"
+    log_dir = tmp_path / "logs"
+    state_file = tmp_path / "state.json"
+    bin_dir.mkdir()
+    for name in (
+        "run_codex_with_timeout.ps1",
+        "news-grasp-bootstrap.ps1",
+        "news-grasp-runner.ps1",
+        "news-grasp-lineage.ps1",
+        "watch-news-grasp-runner.ps1",
+        "news-grasp-deadman.ps1",
+        "news-grasp-deadman-launcher.pyw",
+        "news-grasp-task-launcher.pyw",
+    ):
+        shutil.copy2(OPS_DIR / name, bin_dir / name)
+    failing_runner = tmp_path / "typed-failing-runner.ps1"
+    failing_runner.write_text(
+        """param(
+[switch] $SmokeTest,
+[switch] $SkipSourceSync,
+[switch] $RecoverOnly,
+[string] $DateStampOverride,
+[string] $LogDirOverride,
+[string] $StateFileOverride,
+[string] $RepoDirOverride,
+[string] $PyExeOverride,
+[string] $HighCostAdmissionPath,
+[string] $HighCostBudgetToolPath,
+[string] $HighCostWorkspaceRoot,
+[string] $RunIntent,
+[string] $ScheduledAuthorityEvidencePath,
+[string] $ResumeFromStage,
+[string] $RecoveryDecisionPath
+)
+exit 2
+""",
+        encoding="utf-8-sig",
+    )
+
+    completed = subprocess.run(
+        [
+            POWERSHELL,
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(WATCHER_PS1),
+            "-Start",
+            "-SmokeTest",
+            "-SkipSourceSync",
+            "-TimeoutMinutes",
+            "1",
+            "-RunnerPath",
+            str(failing_runner),
+            "-StateFile",
+            str(state_file),
+            "-LogDir",
+            str(log_dir),
+            "-DateStamp",
+            "2026-08-12",
+            "-RepoDir",
+            str(ROOT),
+            "-BinDir",
+            str(bin_dir),
+            "-PyExeOverride",
+            sys.executable,
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=30,
+        check=False,
+    )
+
+    assert completed.returncode == 1, (
+        "NGI_RED_RUNNER_LAUNCH_EVIDENCE_MISSING\n"
+        + completed.stdout
+        + completed.stderr
+    )
+    evidence_path = log_dir / "runner-launch-evidence-2026-08-12.json"
+    assert evidence_path.is_file(), "NGI_RED_RUNNER_LAUNCH_EVIDENCE_MISSING"
+    evidence = json.loads(evidence_path.read_text(encoding="utf-8-sig"))
+    assert evidence == {
+        **evidence,
+        "schemaVersion": "NEWS_GRASP_RUNNER_LAUNCH_EVIDENCE_V1",
+        "status": "failed_before_state_claim",
+        "reasonCode": "RUNNER_EXITED_BEFORE_STATE_CLAIM",
+        "childExitCode": 2,
+        "stateClaimed": False,
+    }
+    assert evidence["processId"] > 0
+    assert len(evidence["processCreationTime"]) >= 20
+    assert len(evidence["commandIdentitySha256"]) == 64
+    assert len(evidence["powershellSha256"]) == 64
+    assert len(evidence["runnerSha256"]) == 64
+    assert Path(evidence["workingDirectory"]).resolve() == ROOT.resolve()
+    launcher = runpy.run_path(str(OPS_DIR / "news-grasp-task-launcher.pyw"))
+    summary = launcher["read_runner_launch_evidence"](
+        evidence_path,
+        issue_date="2026-08-12",
+        expected_root=log_dir,
+    )
+    assert summary["status"] == "failed_before_state_claim"
+    assert summary["reasonCode"] == "RUNNER_EXITED_BEFORE_STATE_CLAIM"
+    assert summary["childExitCode"] == 2
+    assert len(summary["sha256"]) == 64
+
+
 def test_runner_and_watcher_retry_transient_state_reads_before_declaring_corrupt() -> None:
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
     watcher = WATCHER_PS1.read_text(encoding="utf-8-sig")

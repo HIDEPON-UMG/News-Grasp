@@ -2632,6 +2632,63 @@ def _pre_attempt_identity(mode: str, script: Path) -> dict[str, object]:
     }
 
 
+def read_runner_launch_evidence(
+    path: Path,
+    *,
+    issue_date: str,
+    expected_root: Path,
+    expected_min_mtime_ns: int = 0,
+) -> dict[str, object]:
+    """watcherのtyped child launch evidenceを同じbytesで有界検証する。"""
+
+    root = expected_root.resolve(strict=True)
+    candidate = path.resolve(strict=True)
+    if candidate.parent != root or path.is_symlink():
+        raise ValueError("RUNNER_LAUNCH_EVIDENCE_PATH_INVALID")
+    if candidate.stat().st_mtime_ns < expected_min_mtime_ns:
+        raise ValueError("RUNNER_LAUNCH_EVIDENCE_STALE")
+    raw = candidate.read_bytes()
+    if not raw or len(raw) > 65536:
+        raise ValueError("RUNNER_LAUNCH_EVIDENCE_SIZE_INVALID")
+    try:
+        value = json.loads(raw.decode("utf-8-sig"))
+    except (UnicodeDecodeError, ValueError, TypeError) as error:
+        raise ValueError("RUNNER_LAUNCH_EVIDENCE_INVALID") from error
+    if not isinstance(value, dict) or value.get("schemaVersion") != (
+        "NEWS_GRASP_RUNNER_LAUNCH_EVIDENCE_V1"
+    ):
+        raise ValueError("RUNNER_LAUNCH_EVIDENCE_INVALID")
+    if value.get("issueDate") != issue_date or value.get("status") not in {
+        "launch_reserved",
+        "launched",
+        "launch_failed",
+        "failed_before_state_claim",
+        "failed_after_state_claim",
+        "terminal_state_reached",
+    }:
+        raise ValueError("RUNNER_LAUNCH_EVIDENCE_INVALID")
+    for key in ("commandIdentitySha256", "powershellSha256", "runnerSha256"):
+        if re.fullmatch(r"[0-9a-f]{64}", str(value.get(key, ""))) is None:
+            raise ValueError("RUNNER_LAUNCH_EVIDENCE_INVALID")
+    if (
+        not isinstance(value.get("processId"), int)
+        or not isinstance(value.get("childExitCode"), int)
+        or not isinstance(value.get("stateClaimed"), bool)
+        or not str(value.get("reasonCode", ""))
+    ):
+        raise ValueError("RUNNER_LAUNCH_EVIDENCE_INVALID")
+    return {
+        "path": str(candidate),
+        "sha256": hashlib.sha256(raw).hexdigest(),
+        "status": str(value["status"]),
+        "reasonCode": str(value["reasonCode"]),
+        "childExitCode": int(value["childExitCode"]),
+        "stateClaimed": bool(value["stateClaimed"]),
+        "processId": int(value["processId"]),
+        "commandIdentitySha256": str(value["commandIdentitySha256"]),
+    }
+
+
 def record_missing_pre_attempt_from_task_history(
     task_evidence: dict[str, object],
 ) -> dict[str, object]:
@@ -2871,6 +2928,7 @@ def main() -> int:
     wal = bin_dir / "news-grasp-task-launcher-wal.json"
     pre_attempt = _pre_attempt_identity(args.mode, script)
     _write_json_atomic(wal, pre_attempt)
+    launch_started_ns = time.time_ns()
     with log.open("a", encoding="utf-8", errors="replace") as stream:
         result = subprocess.run(
             [str(powershell), "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", str(script), *extra],
@@ -2886,6 +2944,27 @@ def main() -> int:
         args.mode == "bootstrap"
         and effective_returncode == NEWS_GRASP_TASK_CONTEXT_REJECTED_EXIT
     )
+    child_launch_evidence: dict[str, object] | None = None
+    if not context_rejected:
+        evidence_root = bin_dir / (
+            "ng-smoke-logs" if args.mode == "bootstrap" else "news-grasp-logs"
+        )
+        evidence_path = evidence_root / f"runner-launch-evidence-{issue_date}.json"
+        try:
+            child_launch_evidence = read_runner_launch_evidence(
+                evidence_path,
+                issue_date=issue_date,
+                expected_root=evidence_root,
+                expected_min_mtime_ns=launch_started_ns,
+            )
+        except (OSError, ValueError) as error:
+            child_launch_evidence = {
+                "path": str(evidence_path),
+                "status": "unavailable",
+                "reasonCode": str(error),
+                "childExitCode": effective_returncode,
+                "stateClaimed": False,
+            }
     if effective_returncode == 0 and args.mode == "bootstrap":
         state_path = bin_dir / "ng-smoke-state.json"
         try:
@@ -2905,6 +2984,7 @@ def main() -> int:
     pre_attempt.update(
         {
             "childReturnCode": effective_returncode,
+            "childLaunchEvidence": child_launch_evidence,
             "preAttemptStatus": (
                 "context_rejected"
                 if context_rejected

@@ -19,6 +19,7 @@ EXPECTED_TODOS = tuple(f"TODO-{number}" for number in range(187, 199)) + (
     "TODO-202",
     "TODO-203",
     "TODO-205",
+    "TODO-204",
 )
 EXPECTED_DEPENDENCIES = {
     **{f"TODO-{number}": [f"TODO-{number - 1}"] for number in range(187, 191)},
@@ -34,6 +35,7 @@ EXPECTED_DEPENDENCIES = {
     "TODO-202": ["TODO-201"],
     "TODO-203": ["TODO-202"],
     "TODO-205": ["TODO-203"],
+    "TODO-204": ["TODO-205"],
 }
 EXPECTED_RETURN_CONDITIONS = {
     "write_set_expansion",

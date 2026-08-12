@@ -83,6 +83,7 @@ public static class NewsGraspRunnerJob
     {
         public int ProcessId { get; set; }
         public IntPtr JobHandle { get; set; }
+        public System.Diagnostics.Process Process { get; set; }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -186,10 +187,12 @@ public static class NewsGraspRunnerJob
             if (!CreateProcess(applicationPath, new StringBuilder(command), IntPtr.Zero, IntPtr.Zero, false, CREATE_SUSPENDED | CREATE_NO_WINDOW | EXTENDED_STARTUPINFO_PRESENT, IntPtr.Zero, workingDirectory, ref startup, out processInfo)) {
                 throw new InvalidOperationException("RUNNER_PROCESS_CREATE_FAILED:" + Marshal.GetLastWin32Error());
             }
+            System.Diagnostics.Process process = System.Diagnostics.Process.GetProcessById((int)processInfo.dwProcessId);
             if (ResumeThread(processInfo.hThread) == UInt32.MaxValue) {
+                process.Dispose();
                 throw new InvalidOperationException("RUNNER_PROCESS_RESUME_FAILED:" + Marshal.GetLastWin32Error());
             }
-            OwnedLaunch result = new OwnedLaunch { ProcessId = (int)processInfo.dwProcessId, JobHandle = job };
+            OwnedLaunch result = new OwnedLaunch { ProcessId = (int)processInfo.dwProcessId, JobHandle = job, Process = process };
             job = IntPtr.Zero;
             return result;
         }
@@ -388,6 +391,68 @@ function Write-StateAtomic {
     }
 }
 
+function Get-RunnerLaunchEvidencePath {
+    return Join-Path $LogDir "runner-launch-evidence-$DateStamp.json"
+}
+
+function Write-RunnerLaunchEvidence {
+    param(
+        [Parameter(Mandatory = $true)][string] $Status,
+        [Parameter(Mandatory = $true)][string] $ReasonCode,
+        [System.Diagnostics.Process] $Process = $null,
+        [int] $ChildExitCode = -1,
+        [bool] $StateClaimed = $false
+    )
+    $context = $script:RunnerLaunchContext
+    if (-not $context) {
+        throw 'RUNNER_LAUNCH_CONTEXT_MISSING'
+    }
+    $processId = if ($Process) { [int]$Process.Id } else { [int]$context.processId }
+    $creationTime = [string]$context.processCreationTime
+    if ($Process -and -not $creationTime) {
+        try { $creationTime = $Process.StartTime.ToUniversalTime().ToString('o') } catch { }
+    }
+    $payload = [ordered]@{
+        schemaVersion = 'NEWS_GRASP_RUNNER_LAUNCH_EVIDENCE_V1'
+        status = $Status
+        reasonCode = $ReasonCode
+        issueDate = $DateStamp
+        processId = $processId
+        processCreationTime = $creationTime
+        childExitCode = $ChildExitCode
+        stateClaimed = $StateClaimed
+        commandIdentitySha256 = [string]$context.commandIdentitySha256
+        powershellPath = [string]$context.powershellPath
+        powershellSha256 = [string]$context.powershellSha256
+        runnerPath = [string]$context.runnerPath
+        runnerSha256 = [string]$context.runnerSha256
+        workingDirectory = [string]$context.workingDirectory
+        stateFile = $StateFile
+        logDir = $LogDir
+        observedAt = (Get-Date).ToUniversalTime().ToString('o')
+    }
+    Write-StateAtomic -Path (Get-RunnerLaunchEvidencePath) -Payload $payload
+}
+
+function Complete-RunnerLaunchEvidence {
+    param(
+        [Parameter(Mandatory = $true)][System.Diagnostics.Process] $Process,
+        [Parameter(Mandatory = $true)][string] $Status,
+        [Parameter(Mandatory = $true)][string] $ReasonCode,
+        [bool] $StateClaimed
+    )
+    $exitCode = -1
+    if ($Process.HasExited) {
+        try { $exitCode = [int]$Process.ExitCode } catch { }
+    }
+    Write-RunnerLaunchEvidence `
+        -Status $Status `
+        -ReasonCode $ReasonCode `
+        -Process $Process `
+        -ChildExitCode $exitCode `
+        -StateClaimed $StateClaimed
+}
+
 function Get-RunnerProcessAlive {
     param($State)
     if (-not $State -or -not $State.pid) {
@@ -557,6 +622,7 @@ function Write-StatusJson {
         process_alive = $alive
         state_file = $StateFile
         log_path = $logPath
+        launch_evidence_path = Get-RunnerLaunchEvidencePath
         log_updated_at = $logUpdatedAt
         updated_at = if ($State -and $State.updated_at) { [string]$State.updated_at } else { $null }
         run_id = if ($State -and $State.run_id) { [string]$State.run_id } else { $null }
@@ -634,9 +700,29 @@ function Start-RunnerProcess {
     $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($childCommand))
     $powershellExe = (Resolve-Path -LiteralPath (Join-Path $PSHOME 'powershell.exe')).Path
     $nativeArguments = "-NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand $encoded"
-    $launch = [NewsGraspRunnerJob]::CreateSuspendedJobProcess($powershellExe, $nativeArguments, $RepoDir)
-    $script:RunnerJobHandles[[int]$launch.ProcessId] = [IntPtr]$launch.JobHandle
-    return Get-Process -Id ([int]$launch.ProcessId) -ErrorAction Stop
+    $script:RunnerLaunchContext = [ordered]@{
+        processId = -1
+        processCreationTime = ''
+        commandIdentitySha256 = Get-StringSha256Hex -Text "$powershellExe`0$nativeArguments`0$RepoDir"
+        powershellPath = $powershellExe
+        powershellSha256 = Get-FileSha256Hex -Path $powershellExe
+        runnerPath = (Resolve-Path -LiteralPath $RunnerPath).Path
+        runnerSha256 = Get-FileSha256Hex -Path $RunnerPath
+        workingDirectory = (Resolve-Path -LiteralPath $RepoDir).Path
+    }
+    Write-RunnerLaunchEvidence -Status 'launch_reserved' -ReasonCode 'RUNNER_LAUNCH_RESERVED'
+    try {
+        $launch = [NewsGraspRunnerJob]::CreateSuspendedJobProcess($powershellExe, $nativeArguments, $RepoDir)
+        $process = [System.Diagnostics.Process]$launch.Process
+        $script:RunnerLaunchContext.processId = [int]$launch.ProcessId
+        $script:RunnerLaunchContext.processCreationTime = $process.StartTime.ToUniversalTime().ToString('o')
+        $script:RunnerJobHandles[[int]$launch.ProcessId] = [IntPtr]$launch.JobHandle
+        Write-RunnerLaunchEvidence -Status 'launched' -ReasonCode 'RUNNER_PROCESS_LAUNCHED' -Process $process
+        return $process
+    } catch {
+        Write-RunnerLaunchEvidence -Status 'launch_failed' -ReasonCode 'RUNNER_PROCESS_CREATE_FAILED'
+        throw
+    }
 }
 
 function Get-DailyControlPython {
@@ -701,25 +787,70 @@ function Watch-Runner {
     $script:WatchExitCode = 1
     $watchRunId = ''
     $stateDirectory = Split-Path -Parent $StateFile
-    New-Item -ItemType Directory -Force -Path $stateDirectory | Out-Null
-    $stateSignal = [System.Threading.AutoResetEvent]::new($true)
-    $exitSignal = [System.Threading.AutoResetEvent]::new($false)
-    $stateWatcher = [System.IO.FileSystemWatcher]::new($stateDirectory, (Split-Path -Leaf $StateFile))
-    $stateWatcher.NotifyFilter = [System.IO.NotifyFilters]'FileName, LastWrite, Size'
-    $stateChanged = [System.IO.FileSystemEventHandler]{ param($sender, $eventArgs) $null = $stateSignal.Set() }
-    $stateRenamed = [System.IO.RenamedEventHandler]{ param($sender, $eventArgs) $null = $stateSignal.Set() }
-    $processExited = [System.EventHandler]{ param($sender, $eventArgs) $null = $exitSignal.Set() }
-    $stateWatcher.add_Changed($stateChanged)
-    $stateWatcher.add_Created($stateChanged)
-    $stateWatcher.add_Renamed($stateRenamed)
-    $Process.EnableRaisingEvents = $true
-    $Process.add_Exited($processExited)
-    $stateWatcher.EnableRaisingEvents = $true
+    $stateSignal = $null
+    $processSignal = $null
+    $stateWatcher = $null
+    $stateChanged = $null
+    $stateRenamed = $null
+    try {
+        if ($Process.HasExited) {
+            throw [System.InvalidOperationException]::new('RUNNER_EXITED_BEFORE_WATCH_INITIALIZATION')
+        }
+        New-Item -ItemType Directory -Force -Path $stateDirectory | Out-Null
+        $stateSignal = [System.Threading.AutoResetEvent]::new($true)
+        $processSignal = [System.Threading.EventWaitHandle]::new(
+            $false,
+            [System.Threading.EventResetMode]::ManualReset
+        )
+        $processSignal.SafeWaitHandle = [Microsoft.Win32.SafeHandles.SafeWaitHandle]::new(
+            $Process.Handle,
+            $false
+        )
+        $stateWatcher = [System.IO.FileSystemWatcher]::new($stateDirectory, (Split-Path -Leaf $StateFile))
+        $stateWatcher.NotifyFilter = [System.IO.NotifyFilters]'FileName, LastWrite, Size'
+        $stateChanged = [System.IO.FileSystemEventHandler]{ param($sender, $eventArgs) $null = $stateSignal.Set() }
+        $stateRenamed = [System.IO.RenamedEventHandler]{ param($sender, $eventArgs) $null = $stateSignal.Set() }
+        $stateWatcher.add_Changed($stateChanged)
+        $stateWatcher.add_Created($stateChanged)
+        $stateWatcher.add_Renamed($stateRenamed)
+        $stateWatcher.EnableRaisingEvents = $true
+    } catch {
+        $childExited = $false
+        try { $childExited = [bool]$Process.HasExited } catch { }
+        $reasonCode = if ($childExited) { 'RUNNER_EXITED_BEFORE_STATE_CLAIM' } else { 'RUNNER_WATCH_INITIALIZATION_FAILED' }
+        $message = if ($childExited) {
+            'runner process exited before watcher initialization completed'
+        } else {
+            'runner watcher initialization failed before state claim'
+        }
+        Complete-RunnerLaunchEvidence `
+            -Process $Process `
+            -Status 'failed_before_state_claim' `
+            -ReasonCode $reasonCode `
+            -StateClaimed $false
+        Write-StatusJson -Mode 'failed' -State (Read-State) -ProcessId $Process.Id -Message $message
+        if ($stateWatcher) {
+            $stateWatcher.EnableRaisingEvents = $false
+            if ($stateChanged) {
+                $stateWatcher.remove_Changed($stateChanged)
+                $stateWatcher.remove_Created($stateChanged)
+            }
+            if ($stateRenamed) { $stateWatcher.remove_Renamed($stateRenamed) }
+            $stateWatcher.Dispose()
+        }
+        if ($stateSignal) { $stateSignal.Dispose() }
+        if ($processSignal) { $processSignal.Dispose() }
+        if ($script:RunnerJobHandles.ContainsKey([int]$Process.Id)) {
+            [NewsGraspRunnerJob]::CloseOwnedJob([IntPtr]$script:RunnerJobHandles[[int]$Process.Id])
+            $script:RunnerJobHandles.Remove([int]$Process.Id)
+        }
+        return
+    }
     $nextDeadline = $started.AddMinutes($TimeoutMinutes)
     try {
       while ($true) {
         $waitMilliseconds = [Math]::Max(1, [Math]::Min([int](($nextDeadline - (Get-Date)).TotalMilliseconds), [int]::MaxValue))
-        $null = [System.Threading.WaitHandle]::WaitAny(@($exitSignal, $stateSignal), $waitMilliseconds)
+        $null = [System.Threading.WaitHandle]::WaitAny(@($processSignal, $stateSignal), $waitMilliseconds)
         $state = Read-State
         if ($state -and $state.__corrupt) {
             Write-WatchdogState -State $state -Status 'watchdog_state_corrupt' -Message 'runner state json is corrupt' -ExitCode 125
@@ -730,6 +861,11 @@ function Watch-Runner {
         $stateBoundToProcess = Test-StateBelongsToRunnerProcess -State $state -Process $Process
         if (-not $stateBoundToProcess) {
             if ($Process.HasExited) {
+                Complete-RunnerLaunchEvidence `
+                    -Process $Process `
+                    -Status 'failed_before_state_claim' `
+                    -ReasonCode 'RUNNER_EXITED_BEFORE_STATE_CLAIM' `
+                    -StateClaimed $false
                 Write-StatusJson -Mode 'failed' -State $state -ProcessId $Process.Id -Message 'runner process exited before claiming a fresh state identity'
                 $script:WatchExitCode = 1
                 return
@@ -750,16 +886,31 @@ function Watch-Runner {
         }
         if (Test-TerminalState -State $state) {
             if (-not $Process.HasExited) { $null = $Process.WaitForExit(30000) }
+            Complete-RunnerLaunchEvidence `
+                -Process $Process `
+                -Status 'terminal_state_reached' `
+                -ReasonCode 'RUNNER_TERMINAL_STATE_REACHED' `
+                -StateClaimed $true
             Write-StatusJson -Mode 'completed' -State $state -ProcessId $Process.Id
             $script:WatchExitCode = 0
             return
         }
         if ($state -and [string]$state.status -eq 'error' -and $Process.HasExited) {
+            Complete-RunnerLaunchEvidence `
+                -Process $Process `
+                -Status 'failed_after_state_claim' `
+                -ReasonCode 'RUNNER_ERROR_STATE_REACHED' `
+                -StateClaimed $true
             Write-StatusJson -Mode 'failed' -State $state -ProcessId $Process.Id
             $script:WatchExitCode = 1
             return
         }
         if ($Process.HasExited) {
+            Complete-RunnerLaunchEvidence `
+                -Process $Process `
+                -Status 'failed_after_state_claim' `
+                -ReasonCode 'RUNNER_EXITED_WITHOUT_TERMINAL_STATE' `
+                -StateClaimed $true
             Write-StatusJson -Mode 'failed' -State $state -ProcessId $Process.Id -Message "runner process exited without publish_complete marker"
             $script:WatchExitCode = 1
             return
@@ -794,10 +945,9 @@ function Watch-Runner {
         $stateWatcher.remove_Changed($stateChanged)
         $stateWatcher.remove_Created($stateChanged)
         $stateWatcher.remove_Renamed($stateRenamed)
-        $Process.remove_Exited($processExited)
         $stateWatcher.Dispose()
         $stateSignal.Dispose()
-        $exitSignal.Dispose()
+        $processSignal.Dispose()
         if ($script:RunnerJobHandles.ContainsKey([int]$Process.Id)) {
             [NewsGraspRunnerJob]::CloseOwnedJob([IntPtr]$script:RunnerJobHandles[[int]$Process.Id])
             $script:RunnerJobHandles.Remove([int]$Process.Id)

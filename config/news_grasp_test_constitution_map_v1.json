@@ -1,8 +1,8 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 2460,
-  "collectedNodeSetSha256": "34b0d0271f73a043a355f39eae1cfe4512331bf56e97222208ba4871ba5b7481",
+  "collectedNodeCount": 2461,
+  "collectedNodeSetSha256": "97c04d0d69af2d277eadea6e59cc8415b775cd1547538d98e72b72a13d253819",
   "files": [
     {
       "path": "tests/test_all_article_urls_live.py",
@@ -2135,7 +2135,7 @@
     },
     {
       "path": "tests/test_news_grasp_luna_packets.py",
-      "sha256": "efe127350c5ae0b029df2566c6c1459f27bbbf7a3458b4aa048f2cf68d44fda6",
+      "sha256": "3b99e881de9127ae7f435c5f6fef61c9def0eb5010e323846b17a44281cd3749",
       "nodeCount": 11,
       "nodeIds": [
         "tests/test_news_grasp_luna_packets.py::test_luna_packet_v2_compatibility_accepts_verification_only_empty_write_set",
@@ -3269,8 +3269,8 @@
     },
     {
       "path": "tests/test_runner_convergence_contract.py",
-      "sha256": "f9b17a65612703ed2b76d70308e0ed3afea549b98d552a279eef4d7604cb0c7e",
-      "nodeCount": 186,
+      "sha256": "f2d20a4874153b7cd52b3971945034e2a50832d76962b1c4b5142eec80b8acdd",
+      "nodeCount": 187,
       "nodeIds": [
         "tests/test_runner_convergence_contract.py::test_atomic_install_failure_preserves_old_destination",
         "tests/test_runner_convergence_contract.py::test_atomic_install_replaces_hardlink_entry_without_mutating_sibling",
@@ -3455,6 +3455,7 @@
         "tests/test_runner_convergence_contract.py::test_verified_source_reader_rejects_hardlinked_authority_file",
         "tests/test_runner_convergence_contract.py::test_watcher_closes_only_verified_owned_job_and_writes_typed_watchdog_state",
         "tests/test_runner_convergence_contract.py::test_watcher_does_not_treat_fallback_as_normal_terminal_success",
+        "tests/test_runner_convergence_contract.py::test_watcher_failure_before_state_claim_writes_typed_launch_evidence",
         "tests/test_runner_convergence_contract.py::test_watcher_ignores_previous_run_state_until_new_process_claims_identity",
         "tests/test_runner_convergence_contract.py::test_watcher_repairs_live_ops_before_runner_start",
         "tests/test_runner_convergence_contract.py::test_watcher_status_reports_stale_when_running_pid_is_dead"
