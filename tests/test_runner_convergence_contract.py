@@ -7,6 +7,7 @@ import json
 import hashlib
 import re
 import runpy
+import shutil
 import subprocess
 import sys
 from types import SimpleNamespace
@@ -1899,6 +1900,28 @@ def test_ops_installer_preserves_pre_mutation_error_without_rollback_masking(tmp
     assert not bin_dir.exists()
 
 
+def test_ops_installer_initializes_journal_authority_before_mutation_and_trap() -> None:
+    """authority作成前の失敗でもrollback journalが未定義変数で壊れない。"""
+    text = (OPS_DIR / "install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
+    initialization = "$missionAuthorityPath = ''"
+    prepared = "Write-NewsGraspInstallJournal -Phase 'prepared'"
+    mutation_started = "$script:InstallationMutationStarted = $true"
+    first_live_write = "$afterHash = Write-NewsGraspAtomicFile"
+    recovery = text.split("function Recover-NewsGraspInterruptedInstall", 1)[1].split(
+        "function Invoke-NewsGraspInstallRollback", 1
+    )[0]
+
+    assert initialization in text, "NGI_RED_INSTALLER_PRE_AUTHORITY_ROLLBACK_UNBOUND"
+    assert text.index(initialization) < text.index("trap {")
+    assert text.index(initialization) < text.index(mutation_started)
+    assert text.index(prepared) < text.index(mutation_started) < text.index(first_live_write)
+    missing_journal = recovery.split(
+        "if (-not (Test-Path -LiteralPath $journalPath -PathType Leaf)) {", 1
+    )[1].split("        try {", 1)[0]
+    assert "continue" in missing_journal, "NGI_RED_INSTALLER_PREJOURNAL_ORPHAN_BLOCKS_RECOVERY"
+    assert "NEWS_GRASP_INSTALL_JOURNAL_INGEST_MISSING" not in missing_journal
+
+
 def test_ops_installer_task_specs_are_shape_complete_under_strict_mode() -> None:
     """全task specはrepetition有無にかかわらず同一property shapeを持つ。"""
     text = (OPS_DIR / "install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
@@ -3751,6 +3774,53 @@ def test_atomic_install_failure_preserves_old_destination(tmp_path: Path) -> Non
     assert "NEWS_GRASP_ATOMIC_COMMIT_FAILED" in completed.stderr
     assert destination.read_bytes() == b"old"
     assert not list(tmp_path.glob(".news-grasp-install-*.tmp"))
+
+
+def test_atomic_install_supports_long_destination_with_longer_temp_name(tmp_path: Path) -> None:
+    """destinationはMAX_PATH未満でもtemp名で超過するbackupを同じatomic境界で扱う。"""
+    temp_name = ".news-grasp-install-" + ("0" * 32) + ".tmp"
+    fixture_root = ROOT / "build" / "pytest-installer-long-path" / tmp_path.name
+    padding_length = 260 - len(str(fixture_root)) - 2 - len(temp_name)
+    assert padding_length > 0
+    parent = fixture_root / ("p" * padding_length)
+    fixture_root.mkdir(parents=True)
+    destination = parent / "receipt.json"
+    projected_temp = parent / temp_name
+    assert len(str(destination)) < 260
+    assert len(str(projected_temp)) == 260
+
+    try:
+        completed = _run_install_guard(
+            f"New-Item -ItemType Directory -Force -Path '{parent}' | Out-Null; "
+            "Write-NewsGraspAtomicFile "
+            f"-Path '{destination}' -TrustedBoundary '{fixture_root}' "
+            "-Bytes ([Text.Encoding]::UTF8.GetBytes('long-path-green'))"
+        )
+
+        assert completed.returncode == 0, (
+            "NGI_RED_INSTALLER_LONG_PATH_ATOMIC_TEMP_CREATE_FAILED\n"
+            + completed.stdout
+            + completed.stderr
+        )
+        assert destination.read_bytes() == b"long-path-green"
+        assert not list(parent.glob(".news-grasp-install-*.tmp"))
+    finally:
+        shutil.rmtree(fixture_root, ignore_errors=True)
+
+
+def test_atomic_temp_create_failure_preserves_win32_cause_code() -> None:
+    """外部一時失敗を同一shape retryせず分類できるようWin32 causeを保持する。"""
+    boundary = (OPS_DIR / "install-news-grasp-verified-file-boundary.ps1").read_text(
+        encoding="utf-8-sig"
+    )
+    create_failure = boundary.split("if (temporaryHandle.IsInvalid)", 1)[1].split(
+        "try", 1
+    )[0]
+
+    assert "Marshal.GetLastWin32Error()" in create_failure
+    assert "NEWS_GRASP_ATOMIC_TEMP_CREATE_FAILED:" in create_failure, (
+        "NGI_RED_INSTALLER_ATOMIC_CAUSE_CODE_DROPPED"
+    )
 
 
 def test_verified_rollback_restore_and_delete_do_not_mutate_hardlink_sibling(tmp_path: Path) -> None:

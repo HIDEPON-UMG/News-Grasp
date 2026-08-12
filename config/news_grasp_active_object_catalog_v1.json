@@ -1,6 +1,6 @@
 {
   "schemaVersion": "NEWS_GRASP_ACTIVE_OBJECT_CATALOG_V1",
-  "sourceCommit": "a56f9dc1b6021101ac102e5665b64f713d1c8a67",
+  "sourceCommit": "5115f99753a5468ee1cff10e542f88ab491578c0",
   "discoveryMode": "git_index_plus_untracked_wip_plus_route_reference_scan",
   "objects": [
     {
@@ -543,7 +543,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "b846cc66bd93af0dc3bada9602bc5d9bd74748aa7dbad17b69e2be31c8f12822",
+      "sha256": "edc4593b57a8b5bcf8028e52810a1da8da4be6a6924a5afc01e5d9635878b08f",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -561,7 +561,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "0b01ea722e1566c927bdcd1da6b25b74a009d6d161541d81e1528a4b52ec231e",
+      "sha256": "4b40aa84e962fa96917779f42533bc09c9a144e94f9437520a40336b2badabb3",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -1045,7 +1045,7 @@
         "NGC-C11",
         "NGC-C13"
       ],
-      "sha256": "04e2409a02ac76de35deae7081e88ee0ee11d25d3a4cc84ab838bebf9b91a7de",
+      "sha256": "9ab6f39bf2b43b7203ebb58e02cd2d54692f84f90b8a1235f1d3029759d6e0c6",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -1063,7 +1063,7 @@
         "NGC-C11",
         "NGC-C13"
       ],
-      "sha256": "5ffa30f9d8a7f03f694f49e16c62567085fc498bb7a5c11217ebb24bd6d2b1b3",
+      "sha256": "6fa6270a5bf55faaaaee3fc8f7a06438349fc6b5e6bc02237eb1f201d67db6e4",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -2825,7 +2825,7 @@
         "NGC-C06",
         "NGC-C14"
       ],
-      "sha256": "2d170456c8585009b7c8557357bc725be49f8b7a650f1067a31046a989ff20cd",
+      "sha256": "1e05523a6674ea8e95d8c268c70852e6c885d2cfbb53cb0f277dc44e3a9d2012",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -3513,7 +3513,7 @@
         "NGC-C06",
         "NGC-C14"
       ],
-      "sha256": "a39326f4db33c1adadc60aa54cfd9f2aa9f0c26f9a059e12623776836307ac62",
+      "sha256": "ddddbe92495bc14cc1fcc4c09710d60685ec8a43575a472cd7ef3c5566778bfa",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -4907,5 +4907,5 @@
   "activeObjectCount": 266,
   "unlinkedActiveObjectCount": 0,
   "objectPathSetSha256": "aa33053d194c97c18770d02bc0bacc3ee4601e6dbeab8edad789f7a77ff0ab0e",
-  "testNodeSetSha256": "778466954c3240d15813f0ae5761929a0dad1fab36d89435ede37c62f748167d"
+  "testNodeSetSha256": "0ab46e97648c59ca24c51fb0481eb32b5f4f5d82d6146841c9091d0b193c11d4"
 }

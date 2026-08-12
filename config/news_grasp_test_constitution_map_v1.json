@@ -1,8 +1,8 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 2454,
-  "collectedNodeSetSha256": "778466954c3240d15813f0ae5761929a0dad1fab36d89435ede37c62f748167d",
+  "collectedNodeCount": 2457,
+  "collectedNodeSetSha256": "0ab46e97648c59ca24c51fb0481eb32b5f4f5d82d6146841c9091d0b193c11d4",
   "files": [
     {
       "path": "tests/test_all_article_urls_live.py",
@@ -2135,7 +2135,7 @@
     },
     {
       "path": "tests/test_news_grasp_luna_packets.py",
-      "sha256": "2d170456c8585009b7c8557357bc725be49f8b7a650f1067a31046a989ff20cd",
+      "sha256": "1e05523a6674ea8e95d8c268c70852e6c885d2cfbb53cb0f277dc44e3a9d2012",
       "nodeCount": 8,
       "nodeIds": [
         "tests/test_news_grasp_luna_packets.py::test_luna_packets_boundary_reject_hash_scope_and_human_impact_drift",
@@ -3266,11 +3266,13 @@
     },
     {
       "path": "tests/test_runner_convergence_contract.py",
-      "sha256": "a39326f4db33c1adadc60aa54cfd9f2aa9f0c26f9a059e12623776836307ac62",
-      "nodeCount": 183,
+      "sha256": "ddddbe92495bc14cc1fcc4c09710d60685ec8a43575a472cd7ef3c5566778bfa",
+      "nodeCount": 186,
       "nodeIds": [
         "tests/test_runner_convergence_contract.py::test_atomic_install_failure_preserves_old_destination",
         "tests/test_runner_convergence_contract.py::test_atomic_install_replaces_hardlink_entry_without_mutating_sibling",
+        "tests/test_runner_convergence_contract.py::test_atomic_install_supports_long_destination_with_longer_temp_name",
+        "tests/test_runner_convergence_contract.py::test_atomic_temp_create_failure_preserves_win32_cause_code",
         "tests/test_runner_convergence_contract.py::test_autonomous_completion_policy_call_sites_are_covered_by_no_publish_contract",
         "tests/test_runner_convergence_contract.py::test_autonomous_gate_classifies_actual_gate_capture",
         "tests/test_runner_convergence_contract.py::test_blocked_external_readiness_uses_boundary_only",
@@ -3344,6 +3346,7 @@
         "tests/test_runner_convergence_contract.py::test_ops_installer_allows_clean_evidence_generation_transition",
         "tests/test_runner_convergence_contract.py::test_ops_installer_creates_backup_manifest_and_rollback_hint_before_live_overwrite",
         "tests/test_runner_convergence_contract.py::test_ops_installer_disables_legacy_task_after_canonical_convergence",
+        "tests/test_runner_convergence_contract.py::test_ops_installer_initializes_journal_authority_before_mutation_and_trap",
         "tests/test_runner_convergence_contract.py::test_ops_installer_preflights_shared_broker_generation_before_mutation",
         "tests/test_runner_convergence_contract.py::test_ops_installer_preserves_pre_mutation_error_without_rollback_masking",
         "tests/test_runner_convergence_contract.py::test_ops_installer_rejects_noncanonical_source_before_recovery_or_mutation",

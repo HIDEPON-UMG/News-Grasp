@@ -378,7 +378,8 @@ public static class NewsGraspVerifiedFileBoundary
         {
             if (temporaryHandle.IsInvalid)
             {
-                throw new Win32Exception(Marshal.GetLastWin32Error(), "NEWS_GRASP_ATOMIC_TEMP_CREATE_FAILED");
+                int error = Marshal.GetLastWin32Error();
+                throw new Win32Exception(error, "NEWS_GRASP_ATOMIC_TEMP_CREATE_FAILED:" + error.ToString());
             }
             try
             {

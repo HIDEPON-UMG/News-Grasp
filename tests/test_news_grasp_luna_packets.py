@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PACKET_SET_PATH = ROOT / "config" / "news_grasp_luna_packets_v1.json"
 EXPECTED_TODOS = tuple(f"TODO-{number}" for number in range(187, 199)) + (
     "TODO-200",
+    "TODO-202",
 )
 EXPECTED_DEPENDENCIES = {
     **{f"TODO-{number}": [f"TODO-{number - 1}"] for number in range(187, 191)},
@@ -27,6 +28,7 @@ EXPECTED_DEPENDENCIES = {
     "TODO-197": ["TODO-196"],
     "TODO-198": ["TODO-190"],
     "TODO-200": ["TODO-197"],
+    "TODO-202": ["TODO-201"],
 }
 EXPECTED_RETURN_CONDITIONS = {
     "write_set_expansion",

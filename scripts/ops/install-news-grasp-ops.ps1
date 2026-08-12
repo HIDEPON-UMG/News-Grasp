@@ -17,6 +17,7 @@ $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 $script:InstallationCommitted = $false
 $script:InstallationMutationStarted = $false
 $script:DeliveryReceiptSummary = $null
+$missionAuthorityPath = ''
 
 . (Join-Path $PSScriptRoot 'install-news-grasp-ops-guard.ps1')
 
@@ -255,7 +256,10 @@ function Recover-NewsGraspInterruptedInstall {
         Assert-NewsGraspNoReparsePath -Path $transactionDir.FullName -Boundary $BackupRoot
         $journalPath = Join-Path $transactionDir.FullName 'install-manifest.json'
         if (-not (Test-Path -LiteralPath $journalPath -PathType Leaf)) {
-            throw 'NEWS_GRASP_INSTALL_JOURNAL_INGEST_MISSING'
+            # prepared journalより前にはlive mutationを開始しない契約なので、
+            # backup途中のorphanは証拠として保持し、次transactionを妨げない。
+            Write-Warning ("journal作成前に停止したpre-mutation backupを保持します: {0}" -f $transactionDir.FullName)
+            continue
         }
         try {
             $journalFile = Read-NewsGraspVerifiedFile `
@@ -644,7 +648,6 @@ foreach ($asset in $automationAssetRows) {
             -TrustedBoundary $canonicalBinDir
     }
 }
-$script:InstallationMutationStarted = $true
 New-Item -ItemType Directory -Force -Path $BackupDir | Out-Null
 
 if (-not $SkipTaskRegistration) {
@@ -810,6 +813,7 @@ $manifestFiles += $stableTaskAuthorityRow
 $scheduledTasks = @()
 $rollbackCommands = @('Invoke-NewsGraspInstallRollback')
 Write-NewsGraspInstallJournal -Phase 'prepared'
+$script:InstallationMutationStarted = $true
 New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
 
 foreach ($file in $files) {
