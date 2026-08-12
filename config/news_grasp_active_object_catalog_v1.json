@@ -1,6 +1,6 @@
 {
   "schemaVersion": "NEWS_GRASP_ACTIVE_OBJECT_CATALOG_V1",
-  "sourceCommit": "9a9e1ab967f1ec738630871bee9842e8014b9e2e",
+  "sourceCommit": "50225a566527eb24ccd2f81816bbdad42b72ebdb",
   "discoveryMode": "git_index_plus_untracked_wip_plus_route_reference_scan",
   "objects": [
     {
@@ -543,7 +543,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "f92802bace5a20d3d36d3224b0e75d58621f95c33af3ae77b253f3ac7b23e683",
+      "sha256": "29f25016425cfe7745f5b9f7cdb54580068ab4822e1151be8e0abd25d800e09f",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
