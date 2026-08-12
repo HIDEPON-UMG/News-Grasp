@@ -3269,7 +3269,7 @@
     },
     {
       "path": "tests/test_runner_convergence_contract.py",
-      "sha256": "f2d20a4874153b7cd52b3971945034e2a50832d76962b1c4b5142eec80b8acdd",
+      "sha256": "b37d2d02c1a7fabd67b04ba3be1af365e8dc46d7abefc8590b226c7832f9c10f",
       "nodeCount": 187,
       "nodeIds": [
         "tests/test_runner_convergence_contract.py::test_atomic_install_failure_preserves_old_destination",

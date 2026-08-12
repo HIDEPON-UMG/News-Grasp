@@ -2148,9 +2148,11 @@ def test_runner_watcher_uses_hidden_start_and_event_driven_terminal_state() -> N
     assert "[System.IO.FileSystemWatcher]" in watcher
     assert "[System.Threading.WaitHandle]::WaitAny" in watcher
     assert "Start-Sleep -Seconds $PollSeconds" not in watcher
-    assert "-DateStampOverride" in watcher
-    assert "-LogDirOverride" in watcher
-    assert "-StateFileOverride" in watcher
+    assert "DateStampOverride = $DateStamp" in watcher
+    assert "LogDirOverride = $LogDir" in watcher
+    assert "StateFileOverride = $StateFile" in watcher
+    assert "@boundRunnerParameters" in watcher
+    assert "`$global:LASTEXITCODE = `$null" in watcher
     assert "@('publish_complete', 'smoke_ok')" in watcher
     assert "@('ok', 'smoke_ok')" not in watcher
     assert "fallback_ok" not in watcher.split("function Test-TerminalState", 1)[1].split("function", 1)[0]
@@ -2331,6 +2333,7 @@ def test_watcher_failure_before_state_claim_writes_typed_launch_evidence(
     bin_dir = tmp_path / "bin"
     log_dir = tmp_path / "logs"
     state_file = tmp_path / "state.json"
+    binding_path = tmp_path / "runner-bound-arguments.json"
     bin_dir.mkdir()
     for name in (
         "run_codex_with_timeout.ps1",
@@ -2362,7 +2365,25 @@ def test_watcher_failure_before_state_claim_writes_typed_launch_evidence(
 [string] $ResumeFromStage,
 [string] $RecoveryDecisionPath
 )
-exit 2
+$binding = [ordered]@{
+    smokeTest = [bool]$SmokeTest
+    skipSourceSync = [bool]$SkipSourceSync
+    dateStampOverride = [string]$DateStampOverride
+    logDirOverride = [string]$LogDirOverride
+    stateFileOverride = [string]$StateFileOverride
+    repoDirOverride = [string]$RepoDirOverride
+}
+[IO.File]::WriteAllText(
+    $env:NEWS_GRASP_TEST_BINDING_PATH,
+    ($binding | ConvertTo-Json -Compress),
+    [Text.UTF8Encoding]::new($false)
+)
+if (
+    $SmokeTest -and $SkipSourceSync -and
+    $DateStampOverride -eq '2026-08-12' -and
+    $LogDirOverride -and $StateFileOverride -and $RepoDirOverride
+) { exit 2 }
+exit 77
 """,
         encoding="utf-8-sig",
     )
@@ -2402,8 +2423,19 @@ exit 2
         errors="replace",
         timeout=30,
         check=False,
+        env={**os.environ, "NEWS_GRASP_TEST_BINDING_PATH": str(binding_path)},
     )
 
+    assert binding_path.is_file(), "NGI_RED_WATCHER_ARGUMENT_SPLAT_INVALID"
+    binding = json.loads(binding_path.read_text(encoding="utf-8"))
+    assert binding == {
+        "smokeTest": True,
+        "skipSourceSync": True,
+        "dateStampOverride": "2026-08-12",
+        "logDirOverride": str(log_dir),
+        "stateFileOverride": str(state_file),
+        "repoDirOverride": str(ROOT),
+    }, "NGI_RED_WATCHER_ARGUMENT_SPLAT_INVALID"
     assert completed.returncode == 1, (
         "NGI_RED_RUNNER_LAUNCH_EVIDENCE_MISSING\n"
         + completed.stdout
@@ -2419,7 +2451,7 @@ exit 2
         "reasonCode": "RUNNER_EXITED_BEFORE_STATE_CLAIM",
         "childExitCode": 2,
         "stateClaimed": False,
-    }
+    }, "NGI_RED_WATCHER_CHILD_EXIT_CODE_COLLAPSED"
     assert evidence["processId"] > 0
     assert len(evidence["processCreationTime"]) >= 20
     assert len(evidence["commandIdentitySha256"]) == 64

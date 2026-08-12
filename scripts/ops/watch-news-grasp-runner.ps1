@@ -656,47 +656,57 @@ function Start-RunnerProcess {
     if (-not (Test-Path $RunnerPath)) {
         throw "runner not found: $RunnerPath"
     }
-    $args = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $RunnerPath)
-    if ($SmokeTest) {
-        $args += '-SmokeTest'
+    $runnerParameters = [ordered]@{
+        DateStampOverride = $DateStamp
+        LogDirOverride = $LogDir
+        StateFileOverride = $StateFile
+        RepoDirOverride = $RepoDir
     }
-    if ($SkipSourceSync) {
-        $args += '-SkipSourceSync'
-    }
-    if ($RecoverOnly) {
-        $args += '-RecoverOnly'
-    }
-    $args += @('-DateStampOverride', $DateStamp)
-    $args += @('-LogDirOverride', $LogDir)
-    $args += @('-StateFileOverride', $StateFile)
-    $args += @('-RepoDirOverride', $RepoDir)
-    if ($PyExeOverride) { $args += @('-PyExeOverride', $PyExeOverride) }
+    if ($SmokeTest) { $runnerParameters.SmokeTest = $true }
+    if ($SkipSourceSync) { $runnerParameters.SkipSourceSync = $true }
+    if ($RecoverOnly) { $runnerParameters.RecoverOnly = $true }
+    if ($PyExeOverride) { $runnerParameters.PyExeOverride = $PyExeOverride }
     if ($HighCostAdmissionPath) {
-        $args += @('-HighCostAdmissionPath', $HighCostAdmissionPath)
+        $runnerParameters.HighCostAdmissionPath = $HighCostAdmissionPath
     }
     if ($HighCostBudgetToolPath) {
-        $args += @('-HighCostBudgetToolPath', $HighCostBudgetToolPath)
+        $runnerParameters.HighCostBudgetToolPath = $HighCostBudgetToolPath
     }
     if ($HighCostWorkspaceRoot) {
-        $args += @('-HighCostWorkspaceRoot', $HighCostWorkspaceRoot)
+        $runnerParameters.HighCostWorkspaceRoot = $HighCostWorkspaceRoot
     }
     if ($RecoveryDecision) {
-        $args += @('-RunIntent', 'ScheduledRecoveryFull')
-        $args += @('-ScheduledAuthorityEvidencePath', [string]$RecoveryDecision.scheduledAuthorityEvidencePath)
+        $runnerParameters.RunIntent = 'ScheduledRecoveryFull'
+        $runnerParameters.ScheduledAuthorityEvidencePath = [string]$RecoveryDecision.scheduledAuthorityEvidencePath
         if ([string]$RecoveryDecision.recoveryBranch -eq 'ResumeFromStage') {
-            $args += @('-ResumeFromStage', [string]$RecoveryDecision.resumeStage)
-            $args += @('-HighCostAdmissionPath', [string]$RecoveryDecision.sourceAdmissionPath)
+            $runnerParameters.ResumeFromStage = [string]$RecoveryDecision.resumeStage
+            $runnerParameters.HighCostAdmissionPath = [string]$RecoveryDecision.sourceAdmissionPath
         }
-        $args += @('-RecoveryDecisionPath', [string]$RecoveryDecision.decisionPath)
+        $runnerParameters.RecoveryDecisionPath = [string]$RecoveryDecision.decisionPath
     }
-    $runnerArguments = @($args | Select-Object -Skip 5)
     $quote = {
         param([string]$Value)
         return "'" + $Value.Replace("'", "''") + "'"
     }
     $runnerLiteral = & $quote $RunnerPath
-    $argumentLiterals = @($runnerArguments | ForEach-Object { & $quote ([string]$_) }) -join ', '
-    $childCommand = "& $runnerLiteral @($argumentLiterals); exit `$LASTEXITCODE"
+    $parameterAssignments = @(
+        $runnerParameters.GetEnumerator() | ForEach-Object {
+            $literal = if ($_.Value -is [bool]) {
+                if ([bool]$_.Value) { '$true' } else { '$false' }
+            } else {
+                & $quote ([string]$_.Value)
+            }
+            "$($_.Key) = $literal"
+        }
+    ) -join '; '
+    $childCommand = (
+        "`$boundRunnerParameters = @{ $parameterAssignments }; " +
+        "`$global:LASTEXITCODE = `$null; " +
+        "& $runnerLiteral @boundRunnerParameters; " +
+        "`$invocationSucceeded = `$?; `$runnerExitCode = `$LASTEXITCODE; " +
+        "if (`$null -ne `$runnerExitCode) { exit [int]`$runnerExitCode }; " +
+        "if (`$invocationSucceeded) { exit 0 } else { exit 1 }"
+    )
     $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($childCommand))
     $powershellExe = (Resolve-Path -LiteralPath (Join-Path $PSHOME 'powershell.exe')).Path
     $nativeArguments = "-NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand $encoded"
