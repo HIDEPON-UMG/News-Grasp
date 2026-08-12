@@ -3107,7 +3107,10 @@ def test_runner_executes_compound_repair_plan_before_single_gate_reverify() -> N
 
 
 def _run_install_guard(
-    command: str, *, env: dict[str, str] | None = None
+    command: str,
+    *,
+    env: dict[str, str] | None = None,
+    powershell_executable: str = POWERSHELL,
 ) -> subprocess.CompletedProcess[str]:
     guard = OPS_DIR / "install-news-grasp-ops-guard.ps1"
     script = (
@@ -3116,7 +3119,7 @@ def _run_install_guard(
         "[Console]::Error.WriteLine($_.Exception.ToString()); exit 1 }"
     )
     return subprocess.run(
-        [POWERSHELL, "-NoProfile", "-NonInteractive", "-Command", script],
+        [powershell_executable, "-NoProfile", "-NonInteractive", "-Command", script],
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -3779,11 +3782,15 @@ def test_atomic_install_failure_preserves_old_destination(tmp_path: Path) -> Non
 def test_atomic_install_supports_long_destination_with_longer_temp_name(tmp_path: Path) -> None:
     """destinationはMAX_PATH未満でもtemp名で超過するbackupを同じatomic境界で扱う。"""
     temp_name = ".news-grasp-install-" + ("0" * 32) + ".tmp"
-    fixture_root = ROOT / "build" / "pytest-installer-long-path" / tmp_path.name
-    padding_length = 260 - len(str(fixture_root)) - 2 - len(temp_name)
+    fixture_root = ROOT / "build" / "live-runner-backups"
+    suffix = Path("news-grasp-assets") / "skills" / "news-grasp-e2e-discipline" / "agents"
+    minimum = fixture_root / "t" / suffix / temp_name
+    padding_length = 260 - len(str(minimum))
     assert padding_length > 0
-    parent = fixture_root / ("p" * padding_length)
-    fixture_root.mkdir(parents=True)
+    transaction = "t" * (padding_length + 1)
+    transaction_root = fixture_root / transaction
+    parent = transaction_root / suffix
+    fixture_root.mkdir(parents=True, exist_ok=True)
     destination = parent / "receipt.json"
     projected_temp = parent / temp_name
     assert len(str(destination)) < 260
@@ -3794,7 +3801,8 @@ def test_atomic_install_supports_long_destination_with_longer_temp_name(tmp_path
             f"New-Item -ItemType Directory -Force -Path '{parent}' | Out-Null; "
             "Write-NewsGraspAtomicFile "
             f"-Path '{destination}' -TrustedBoundary '{fixture_root}' "
-            "-Bytes ([Text.Encoding]::UTF8.GetBytes('long-path-green'))"
+            "-Bytes ([Text.Encoding]::UTF8.GetBytes('long-path-green'))",
+            powershell_executable="pwsh",
         )
 
         assert completed.returncode == 0, (
@@ -3805,7 +3813,7 @@ def test_atomic_install_supports_long_destination_with_longer_temp_name(tmp_path
         assert destination.read_bytes() == b"long-path-green"
         assert not list(parent.glob(".news-grasp-install-*.tmp"))
     finally:
-        shutil.rmtree(fixture_root, ignore_errors=True)
+        shutil.rmtree(transaction_root, ignore_errors=True)
 
 
 def test_atomic_temp_create_failure_preserves_win32_cause_code() -> None:

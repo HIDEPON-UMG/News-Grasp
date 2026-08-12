@@ -137,6 +137,16 @@ public static class NewsGraspVerifiedFileBoundary
         return Path.GetFullPath(value).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
     }
 
+    private static string ToExtendedWin32Path(string path)
+    {
+        string normalized = NormalizePath(path);
+        if (normalized.StartsWith(@"\\", StringComparison.OrdinalIgnoreCase))
+        {
+            return @"\\?\UNC\" + normalized.Substring(2);
+        }
+        return @"\\?\" + normalized;
+    }
+
     private static string GetFinalPath(SafeFileHandle handle)
     {
         StringBuilder buffer = new StringBuilder(512);
@@ -171,7 +181,7 @@ public static class NewsGraspVerifiedFileBoundary
     {
         string expected = NormalizePath(directoryPath);
         SafeFileHandle handle = CreateFileW(
-            expected,
+            ToExtendedWin32Path(expected),
             FILE_READ_ATTRIBUTES,
             FILE_SHARE_READ | FILE_SHARE_WRITE,
             IntPtr.Zero,
@@ -215,7 +225,7 @@ public static class NewsGraspVerifiedFileBoundary
     {
         string expected = NormalizePath(path);
         SafeFileHandle handle = CreateFileW(
-            expected,
+            ToExtendedWin32Path(expected),
             access,
             share,
             IntPtr.Zero,
@@ -368,7 +378,7 @@ public static class NewsGraspVerifiedFileBoundary
         bool verified = false;
         using (SafeFileHandle parentHandle = OpenVerifiedDirectory(parent))
         using (SafeFileHandle temporaryHandle = CreateFileW(
-            temporary,
+            ToExtendedWin32Path(temporary),
             GENERIC_WRITE | FILE_READ_ATTRIBUTES | DELETE,
             FILE_SHARE_READ,
             IntPtr.Zero,
