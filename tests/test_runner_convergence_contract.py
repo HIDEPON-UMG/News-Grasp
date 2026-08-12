@@ -2135,6 +2135,10 @@ def test_runner_watcher_uses_hidden_start_and_terminal_state_polling() -> None:
 def test_direct_runner_has_pre_run_bootstrap_interlock_before_generation() -> None:
     """06:00 direct runner 残存時も、本番生成へ進む前に bootstrap smoke interlock を通す。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    interlock_body = runner.split("function Assert-PreRunBootstrapInterlock", 1)[1].split(
+        "function Convert-JsonStringArrayToStringList",
+        1,
+    )[0]
 
     assert "function Assert-PreRunBootstrapInterlock" in runner
     assert "ng-smoke-state.json" in runner
@@ -2154,6 +2158,8 @@ def test_direct_runner_has_pre_run_bootstrap_interlock_before_generation() -> No
         "# ===== sentinel: 起動できた事実 =====",
         1,
     )[0]
+    assert "'-PythonExe'" in interlock_body
+    assert "$PyExe" in interlock_body
     assert runner.index("Assert-PreRunBootstrapInterlock") < runner.index("Assert-RunnerBinaryInSync")
     start_block = runner.split("# ===== sentinel: 起動できた事実 =====", 1)[1].split(
         "$IsE2EOrDryRun",

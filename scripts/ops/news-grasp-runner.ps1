@@ -1183,7 +1183,9 @@ function Assert-PreRunBootstrapInterlock {
         '-RepoDir',
         $RepoDir,
         '-BinDir',
-        $LiveBinDir
+        $LiveBinDir,
+        '-PythonExe',
+        $PyExe
     )
     try {
         $proc = Start-Process -FilePath 'powershell' -ArgumentList $bootstrapArgs -WindowStyle Hidden -PassThru -Wait
