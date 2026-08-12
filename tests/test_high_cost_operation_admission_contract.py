@@ -57,6 +57,16 @@ def test_nopublish_wrapper_selects_new_attempt_without_causal_proof() -> None:
     assert "@consumeExtraArguments" in text
 
 
+def test_nopublish_wrapper_allows_only_typed_reclaimed_parent_marker() -> None:
+    text = WRAPPER.read_text(encoding="utf-8-sig")
+    assert "-AllowReclaimedParent" in text
+    assert "HIGH_COST_RECLAIMED_PARENT_AUTHORITY_V1" in text
+    assert "[string]$existing.state -cne 'reclaimed'" in text
+    assert text.index("HIGH_COST_RECLAIMED_PARENT_AUTHORITY_V1") < text.index(
+        "$parentAuthorityFullPath = Get-CanonicalFuturePath"
+    )
+
+
 def test_nopublish_wrapper_rejects_supersession_without_causal_proof() -> None:
     """supersessionだけを通常新規attemptへ注入する抜け道を閉じる。"""
     text = WRAPPER.read_text(encoding="utf-8-sig")

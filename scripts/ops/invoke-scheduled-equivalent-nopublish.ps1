@@ -112,7 +112,8 @@ function Get-CanonicalFuturePath {
         [Parameter(Mandatory=$true)][string] $Path,
         [string] $Suffix = '',
         [Parameter(Mandatory=$true)][string] $Boundary,
-        [Parameter(Mandatory=$true)][string] $Label
+        [Parameter(Mandatory=$true)][string] $Label,
+        [switch] $AllowReclaimedParent
     )
     try {
         $candidate = [System.IO.Path]::GetFullPath($Path)
@@ -141,7 +142,14 @@ function Get-CanonicalFuturePath {
             $cursor = $parent
         }
         if (Test-Path -LiteralPath $candidate) {
-            throw "$Label output already exists"
+            if (-not $AllowReclaimedParent) {
+                throw "$Label output already exists"
+            }
+            $existing = Get-Content -LiteralPath $candidate -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+            if ([string]$existing.schemaVersion -cne 'HIGH_COST_RECLAIMED_PARENT_AUTHORITY_V1' -or
+                [string]$existing.state -cne 'reclaimed') {
+                throw "$Label existing path is not a reclaimed parent marker"
+            }
         }
         return $candidate
     } catch {
@@ -442,7 +450,7 @@ if ($SupersessionApprovalPath) {
 $statePath = Get-CanonicalFuturePath -Path $statePath -Boundary $repoPath -Label 'state file'
 $logPath = Get-CanonicalFutureDirectory -Path $logPath -Boundary $repoPath -Label 'log directory'
 $receiptFullPath = Get-CanonicalFuturePath -Path $receiptFullPath -Boundary $repoPath -Label 'final receipt'
-$parentAuthorityFullPath = Get-CanonicalFuturePath -Path $parentAuthorityFullPath -Suffix '.high-cost-parent-authority.json' -Boundary $repoPath -Label 'parent authority'
+$parentAuthorityFullPath = Get-CanonicalFuturePath -Path $parentAuthorityFullPath -Suffix '.high-cost-parent-authority.json' -Boundary $repoPath -Label 'parent authority' -AllowReclaimedParent
 $runnerArgumentsPath = Get-CanonicalFuturePath -Path "$receiptFullPath.runner-arguments.json" -Suffix '.runner-arguments.json' -Boundary $repoPath -Label 'runner arguments'
 $reservationReceiptPath = Get-CanonicalFuturePath -Path "$receiptFullPath.e2e-final-reservation.json" -Suffix '.e2e-final-reservation.json' -Boundary $repoPath -Label 'reservation receipt'
 $claimReceiptPath = Get-CanonicalFuturePath -Path "$receiptFullPath.e2e-final-claim.json" -Suffix '.e2e-final-claim.json' -Boundary $repoPath -Label 'claim receipt'
