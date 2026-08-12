@@ -1,0 +1,56 @@
+{
+  "schemaVersion": "NEWS_GRASP_E2E_ATTEMPT_POLICY_EVIDENCE_V1",
+  "todoId": "TODO-206",
+  "contract": {
+    "logicalAttempts": 2,
+    "attemptA": "stabilization",
+    "attemptB": "final_confirmation_only_when_A_required_minimal_repair",
+    "fullCorrectionBeforeB": true,
+    "sameAttemptResumeMax": 1,
+    "thirdAttempt": "forbidden",
+    "randomFailureOnB": "design_feedback_terminal"
+  },
+  "red": {
+    "testId": "tests/test_news_grasp_e2e_composition_contract.py::test_installed_launcher_rejects_third_logical_e2e_attempt",
+    "signature": "DID NOT RAISE",
+    "exitCode": 1,
+    "consumer": "scripts/ops/news-grasp-task-launcher.pyw::_run_installed_nopublish_authority"
+  },
+  "green": {
+    "policyTests": 6,
+    "compositionTests": 9,
+    "bridgeTests": 3,
+    "pytestExitCode": 0,
+    "powerShellAstExitCode": 0,
+    "thirdAttemptRejected": true,
+    "attemptAGreenSkipsB": true,
+    "attemptALocalFailureResumesOnce": true,
+    "attemptBRandomFailureBlocksWithDesignFeedback": true,
+    "sameShapeRetry": 0,
+    "finalE2eConsumed": false
+  },
+  "sourceHashes": {
+    "policy": "4407caf8acd353a373ec953faa2a2eb67603d9a06fa4cf06097c2403fbf9c5bf",
+    "policyTest": "39088b6c89760c12316c8b9cd8648d3fd8a9f56acd216427e6a0bb5a716650a1",
+    "launcher": "b55c811bad0835aeb17275f6ca8b86fc5cb0ab63800ab7a32ac5df1e23395789",
+    "runner": "ef3e5acbef541f0e0ec16461e832cd5134e0bc66aff9c79c0a7591be4017b188",
+    "watcher": "2f298ca103ef7b8ef64c0cdedbf43b09b6db5844675b78a509cedb093ba28078",
+    "wrapper": "e408ed12d191ab7a741f42ab788f767f272fcb0bf1c7d9d883b774ea1c2cbf5a",
+    "officialWrapper": "2ae2f57c885a200c5411e39f22ddbfd9fb804c094c9314edb912ced11783ce71",
+    "bridge": "a8e324b7b0c29ab2ec7f6a9df62b5854dcdafef9a7715b27f56e247ac44887f4",
+    "bridgeTest": "dd30a1a4a87c0136998e1dad91e9187a291186fc4a2463e1a354aa5845623333",
+    "productSkill": "31514db9592e81e8350d790c7a7a45da28500a1e0e159a8ee42c13dca0ab3da3",
+    "productSpec": "38adfd138e227e678ae0bf6e6f65399e0c40f89f91db5517de7db8a70076e684",
+    "globalGenerationDesign": "a60d11158d26f51df1f196d537d5f74b0e930c86928e32b67a00d43f53012f6c",
+    "officialWrapperCurrent": "2ae2f57c885a200c5411e39f22ddbfd9fb804c094c9314edb912ced11783ce71",
+    "modelWrapperCurrent": "e408ed12d191ab7a741f42ab788f767f272fcb0bf1c7d9d883b774ea1c2cbf5a",
+    "compositionTest": "1c59979e3f2c3ae25a2375aa9761fe4a461093d63f6c5e109df18cadfc84a2ba",
+    "globalGeneration": "f6af56f8efa152634f7665e87e9983e00b621dca78d7d480cda26ce2140e1a2b",
+    "globalGenerationTest": "a2cc21ab8e5f8227b0a65e452b9cad88c3fce4a11925658088eac3ee14964d98",
+    "externalControl": "4ce5639a027a816d5ee738f86808a69a38586e338c6311feee9198eee221f547",
+    "externalFixtureTest": "53cd46cbb27f5da762ece808d1d778b32b701c3b672fd5b6f8767490b522612d",
+    "executionGovernance": "ec0a75f380aa807e33e3d4011a8e02692446202034576a31cbcf00224822c023",
+    "operationalContract": "7dd6cc9a606ce08566c6d74504e7d875e13f60b368e20ad0be6b394a9b8ff7df"
+  },
+  "status": "red_green_verified"
+}

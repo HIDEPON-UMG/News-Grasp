@@ -2147,6 +2147,15 @@ def test_runner_watcher_uses_hidden_start_and_event_driven_terminal_state() -> N
     assert "CREATE_NO_WINDOW" in watcher
     assert "FindFirstChangeNotification" in watcher
     assert "FindNextChangeNotification" in watcher
+
+
+def test_start_only_keeps_owned_job_watcher_alive_until_terminal() -> None:
+    """StartOnlyがJob handleを閉じる前に親を終了させ、startedだけを残さない。"""
+    watcher = WATCHER_PS1.read_text(encoding="utf-8-sig")
+    start_only = watcher.split("if ($PSCmdlet.ParameterSetName -eq 'StartOnly')", 1)[1]
+    assert "Write-StartedJson -Process $proc" in start_only
+    assert "exit 0" not in start_only.split("Watch-Runner -Process $proc", 1)[0]
+    assert "Watch-Runner -Process $proc" in start_only
     assert "[System.IO.FileSystemWatcher]" not in watcher
     assert "[System.Threading.WaitHandle]::WaitAny" in watcher
     assert "Start-Sleep -Seconds $PollSeconds" not in watcher

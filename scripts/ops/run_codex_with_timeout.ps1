@@ -55,6 +55,9 @@ param(
     [Parameter(Mandatory=$true)] [string] $HighCostPythonExe,
     [Parameter(Mandatory=$true)] [string] $HighCostCallId,
     [string] $HighCostCallReceiptPath = '',
+    [string] $GlobalHarnessGenerationManifestPath = '',
+    [string] $E2EAttemptPolicyPath = '',
+    [ValidateRange(1,2)][int] $E2ELogicalAttempt = 0,
     [string] $E2EFinalAdmissionPath = '',
     [string] $E2EFinalRunnerArgumentsPath = '',
     [string] $E2EFinalReservationReceiptPath = '',
@@ -234,6 +237,56 @@ function Assert-CanonicalModelBroker {
         Add-WrapperLog 'HIGH_COST_MODEL_CALL_ID_INVALID'
         exit 126
     }
+}
+
+function Assert-GlobalHarnessGenerationManifest {
+    param([Parameter(Mandatory=$true)][string] $ManifestPath)
+    try {
+        $resolved = [System.IO.Path]::GetFullPath((Resolve-Path -LiteralPath $ManifestPath -ErrorAction Stop).Path)
+        $root = [System.IO.Path]::GetFullPath($WorkingDirectory).TrimEnd('\')
+        if (-not $resolved.StartsWith($root + '\', [System.StringComparison]::OrdinalIgnoreCase)) { throw 'outside execution root' }
+        $item = Get-Item -LiteralPath $resolved -Force -ErrorAction Stop
+        if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0 -or [int64]$item.Length -gt 65536) { throw 'invalid manifest' }
+        $sha = (Get-FileHash -LiteralPath $resolved -Algorithm SHA256).Hash.ToLowerInvariant()
+        $value = Get-Content -LiteralPath $resolved -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+        $required = @('schemaVersion','generationId','ownerRepo','ownerCommit','sourceSnapshotPath','sourceSnapshotSha256','installedRuntimePath','installedRuntimeSha256','ownerAuthorityReceiptPath','ownerAuthorityReceiptSha256','validForGoalId')
+        $observed = @($value.PSObject.Properties.Name)
+        if ($value.schemaVersion -cne 'NEWS_GRASP_GLOBAL_DEPENDENCY_GENERATION_MANIFEST_V1' -or (@($observed | Sort-Object) -join '|') -cne (@($required | Sort-Object) -join '|')) { throw 'schema mismatch' }
+        if ($env:NEWS_GRASP_GLOBAL_GENERATION_MANIFEST_SHA256 -and $sha -cne $env:NEWS_GRASP_GLOBAL_GENERATION_MANIFEST_SHA256) { throw 'manifest hash drift' }
+        return [pscustomobject]@{ path = $resolved; sha256 = $sha; generationId = [string]$value.generationId; goalId = [string]$value.validForGoalId }
+    } catch {
+        throw "NEWS_GRASP_GLOBAL_GENERATION_MANIFEST_INVALID: $($_.Exception.Message)"
+    }
+}
+
+function Assert-E2EAttemptPolicy {
+    param([Parameter(Mandatory=$true)][string] $PolicyPath, [Parameter(Mandatory=$true)][int] $LogicalAttempt)
+    try {
+        $resolved = [System.IO.Path]::GetFullPath((Resolve-Path -LiteralPath $PolicyPath -ErrorAction Stop).Path)
+        $root = [System.IO.Path]::GetFullPath($WorkingDirectory).TrimEnd('\')
+        if (-not $resolved.StartsWith($root + '\', [System.StringComparison]::OrdinalIgnoreCase)) { throw 'outside execution root' }
+        $item = Get-Item -LiteralPath $resolved -Force -ErrorAction Stop
+        if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0 -or [int64]$item.Length -gt 65536) { throw 'invalid policy' }
+        $value = Get-Content -LiteralPath $resolved -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+        $required = @('schemaVersion','maxLogicalAttempts','maxFailureLocalResumes','logicalAttemptIssued','attemptA','attemptB','terminal','designFeedback','transition','transitionHistory')
+        $observed = @($value.PSObject.Properties.Name)
+        if ($value.schemaVersion -cne 'NEWS_GRASP_E2E_ATTEMPT_POLICY_V1' -or
+            (@($observed | Sort-Object) -join '|') -cne (@($required | Sort-Object) -join '|') -or
+            [int]$value.maxLogicalAttempts -ne 2 -or [int]$value.maxFailureLocalResumes -ne 1 -or
+            [int]$value.logicalAttemptIssued -ne $LogicalAttempt -or $LogicalAttempt -notin @(1,2) -or $null -ne $value.terminal -or
+            $null -eq $value.transition -or [string]$value.transition.event -notin @('issue_a','failure_local_resume','issue_b')) {
+            throw 'policy state mismatch'
+        }
+        return $resolved
+    } catch {
+        throw "NEWS_GRASP_E2E_ATTEMPT_POLICY_INVALID: $($_.Exception.Message)"
+    }
+}
+
+$script:GlobalHarnessGenerationManifest = $null
+if ($GlobalHarnessGenerationManifestPath) {
+    if (-not $WorkingDirectory) { $WorkingDirectory = (Get-Location).Path }
+    $script:GlobalHarnessGenerationManifest = Assert-GlobalHarnessGenerationManifest -ManifestPath $GlobalHarnessGenerationManifestPath
 }
 
 if (-not (Test-Path -LiteralPath $CodexExe)) {
@@ -662,6 +715,14 @@ if ($ExtraArgs) {
 }
 
 Assert-CanonicalModelBroker
+
+if ($HighCostExpectedOperationKind -eq 'full_e2e') {
+    if (-not $E2EAttemptPolicyPath -or $E2ELogicalAttempt -notin @(1,2)) {
+        Add-WrapperLog 'NEWS_GRASP_E2E_ATTEMPT_POLICY_REQUIRED'
+        exit 126
+    }
+    $E2EAttemptPolicyPath = Assert-E2EAttemptPolicy -PolicyPath $E2EAttemptPolicyPath -LogicalAttempt $E2ELogicalAttempt
+}
 
 if ($HighCostExpectedOperationKind -eq 'full_e2e') {
     try {

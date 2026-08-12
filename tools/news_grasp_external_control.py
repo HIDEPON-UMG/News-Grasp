@@ -167,7 +167,12 @@ def validate_health_authority(
     }
 
 
-def _load_bounded_json(path: Path, *, maximum: int = MAX_AUTHORITY_BYTES) -> dict[str, Any]:
+def _load_bounded_json(
+    path: Path,
+    *,
+    maximum: int = MAX_AUTHORITY_BYTES,
+    expected_sha256: str | None = None,
+) -> dict[str, Any]:
     """同一handleのsize before/afterでbounded readする。"""
     candidate = Path(path)
     if candidate.is_symlink() or not candidate.is_file():
@@ -185,6 +190,10 @@ def _load_bounded_json(path: Path, *, maximum: int = MAX_AUTHORITY_BYTES) -> dic
         raise ExternalControlPlaneError("EXTERNAL_AUTHORITY_UNAVAILABLE") from error
     if len(payload) > maximum or before.st_size != after.st_size:
         raise ExternalControlPlaneError("EXTERNAL_AUTHORITY_CHANGED_DURING_READ")
+    if expected_sha256 is not None:
+        expected = str(expected_sha256).lower()
+        if not HEX64.fullmatch(expected) or hashlib.sha256(payload).hexdigest() != expected:
+            raise ExternalControlPlaneError("EXTERNAL_AUTHORITY_HASH_DRIFT")
     try:
         value = json.loads(payload.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
@@ -361,6 +370,7 @@ def probe_external_readiness(
     fixture_source: Mapping[str, Any] | None = None,
     authority_path: Path | str | None = None,
     fixture_mode: bool = False,
+    expected_authority_sha256: str | None = None,
 ) -> dict[str, Any]:
     """固定authorityだけを読むpure probe。fixture_sourceはtest専用注入面。"""
     if authority_path is not None and not fixture_mode:
@@ -374,7 +384,10 @@ def probe_external_readiness(
     if fixture_source is None:
         path = Path(authority_path) if authority_path is not None else fixed_authority_path()
         try:
-            authority = _load_bounded_json(path)
+            authority = _load_bounded_json(
+                path,
+                expected_sha256=expected_authority_sha256,
+            )
         except ExternalControlPlaneError as error:
             return {
                 "schemaVersion": READINESS_SCHEMA,
@@ -635,6 +648,7 @@ def main(argv: list[str] | None = None) -> int:
     probe_parser = sub.add_parser("probe")
     probe_parser.add_argument("--authority-path", default="")
     probe_parser.add_argument("--fixture-mode", action="store_true")
+    probe_parser.add_argument("--expected-authority-sha256", default="")
     fixture_parser = sub.add_parser("build-fixture")
     fixture_parser.add_argument("--output", required=True)
     fixture_parser.add_argument("--canonical-descriptor-path", required=True)
@@ -647,6 +661,7 @@ def main(argv: list[str] | None = None) -> int:
         result = probe_external_readiness(
             authority_path=args.authority_path or None,
             fixture_mode=bool(args.fixture_mode),
+            expected_authority_sha256=args.expected_authority_sha256 or None,
         )
         print(json.dumps(result, ensure_ascii=False, sort_keys=True))
         return 0 if result.get("status") == "ready" else 74

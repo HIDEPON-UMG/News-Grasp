@@ -8,9 +8,37 @@ from typing import Any
 
 import pytest
 
+from tools.news_grasp_e2e_attempt_policy import (
+    append_policy_transition,
+    bind_policy_admission,
+    issue_logical_attempt,
+    new_policy,
+    record_failure,
+)
+
 
 ROOT = Path(__file__).resolve().parents[1]
 LAUNCHER = ROOT / "scripts" / "ops" / "news-grasp-task-launcher.pyw"
+
+
+def _write_fixture_admission(path: Path) -> None:
+    body = {"state": "issued", "attemptKey": "News-Grasp:2026-08-13:scheduled-equivalent-nopublish", "issueDate": "2026-08-13", "purpose": "final_confirmation_only"}
+    import hashlib
+    body["admissionId"] = hashlib.sha256(json.dumps(body, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    path.write_text(json.dumps(body, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _write_transition_receipt(policy_path: Path, admission_path: Path) -> Path:
+    value = json.loads(policy_path.read_text(encoding="utf-8"))
+    admission = json.loads(admission_path.read_text(encoding="utf-8"))
+    transition = value["transition"]
+    path = policy_path.with_name(f"e2e-transition-{transition['sequence']}.json")
+    import hashlib
+    import sys
+    producer = Path(sys.executable).resolve()
+    receipt = {"schemaVersion": "NEWS_GRASP_E2E_TRANSITION_RECEIPT_V1", "event": transition["event"], "sequence": transition["sequence"], "attemptKey": admission["attemptKey"], "issueDate": admission["issueDate"], "admissionId": admission["admissionId"], "previousStateSha256": transition["previousStateSha256"], "stateSha256": transition["stateSha256"], "producerRouteId": "news-grasp-runner", "status": "succeeded", "producerProcessId": 1, "producerExecutablePath": str(producer), "producerExecutableSha256": hashlib.sha256(producer.read_bytes()).hexdigest(), "outcomeSchemaVersion": "NEWS_GRASP_E2E_TRANSITION_OUTCOME_V1", "outcomeStatus": "admission_validated", "outcomeSha256": "0" * 64, "outcomeStatePath": "", "outcomeStateSha256": "", "outcomeExitCode": -1, "outcomeRunnerStatus": "not_started"}
+    path.write_text(json.dumps(receipt, sort_keys=True) + "\n", encoding="utf-8")
+    return path
 
 
 def _composition_fixture(
@@ -213,3 +241,308 @@ def test_installed_launcher_rejects_runner_arguments_without_external_hash(
             bin_dir=tmp_path,
             launcher_identity=launcher_identity,
         )
+
+
+def test_installed_launcher_rejects_unbound_global_generation_manifest_argument(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """グローバル世代manifestをrunnerへ渡す場合はauthority bindingを要求する。"""
+    namespace, authority_path, launcher_identity = _composition_fixture(
+        tmp_path,
+        monkeypatch,
+        include_external=True,
+    )
+    authority = json.loads(authority_path.read_text(encoding="utf-8"))
+    arguments_path = Path(authority["runnerArgumentsPath"])
+    arguments = json.loads(arguments_path.read_text(encoding="utf-8"))
+    manifest_path = Path(authority["executionRepoRoot"]) / "build" / "global-generation.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "schemaVersion": "NEWS_GRASP_GLOBAL_DEPENDENCY_GENERATION_MANIFEST_V1",
+                "generationId": "global:fixture",
+                "sourceCommit": "b" * 40,
+                "sourceSha256": "c" * 64,
+                "validForGoalId": "019fe434-c58f-7441-9a23-6f62aaf7c23b",
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    arguments.extend(["-GlobalHarnessGenerationManifestPath", str(manifest_path)])
+    arguments_path.write_text(json.dumps(arguments) + "\n", encoding="utf-8")
+    authority["runnerArgumentsFileSha256"] = namespace["_file_sha256"](arguments_path)
+    unsigned = dict(authority)
+    unsigned.pop("authoritySha256")
+    authority["authoritySha256"] = namespace["_sha256_json"](unsigned)
+    authority_path.write_text(json.dumps(authority) + "\n", encoding="utf-8")
+
+    with pytest.raises(
+        RuntimeError,
+        match="^NEWS_GRASP_GLOBAL_GENERATION_BINDING_REQUIRED$",
+    ):
+        namespace["_run_installed_nopublish_authority"](
+            authority_path=authority_path,
+            bin_dir=tmp_path,
+            launcher_identity=launcher_identity,
+        )
+
+
+def _bind_global_generation_manifest(
+    namespace: dict[str, Any], authority_path: Path
+) -> None:
+    authority = json.loads(authority_path.read_text(encoding="utf-8"))
+    execution_repo = Path(authority["executionRepoRoot"])
+    snapshot_root = execution_repo / "build" / "global-generation"
+    snapshot_root.mkdir(parents=True)
+    source_snapshot = snapshot_root / "high-cost-operation-budget.py"
+    installed_runtime = snapshot_root / "ai-model-spawn-broker.py"
+    owner_receipt = snapshot_root / "owner-authority-receipt.json"
+    source_snapshot.write_bytes(b"selected-owner-source\n")
+    installed_runtime.write_bytes(b"selected-installed-runtime\n")
+    owner_receipt.write_text(
+        json.dumps(
+            {
+                "schemaVersion": "GLOBAL_OWNER_AUTHORITY_RECEIPT_V1",
+                "ownerRepo": "AIHarnessState",
+                "ownerCommit": "b" * 40,
+                "goalId": "019fe434-c58f-7441-9a23-6f62aaf7c23b",
+                "status": "selected_generation_issued",
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    manifest_path = snapshot_root / "manifest.json"
+    manifest = {
+        "schemaVersion": "NEWS_GRASP_GLOBAL_DEPENDENCY_GENERATION_MANIFEST_V1",
+        "generationId": "global:fixture",
+        "ownerRepo": "AIHarnessState",
+        "ownerCommit": "b" * 40,
+                "sourceSnapshotPath": str(source_snapshot),
+                "sourceSnapshotSha256": namespace["_file_sha256"](source_snapshot),
+                "installedRuntimePath": str(installed_runtime),
+                "installedRuntimeSha256": namespace["_file_sha256"](installed_runtime),
+                "ownerAuthorityReceiptPath": str(owner_receipt),
+                "ownerAuthorityReceiptSha256": namespace["_file_sha256"](owner_receipt),
+        "ownerAuthorityReceiptPath": str(owner_receipt),
+        "ownerAuthorityReceiptSha256": namespace["_file_sha256"](owner_receipt),
+        "validForGoalId": "019fe434-c58f-7441-9a23-6f62aaf7c23b",
+    }
+    manifest_path.write_text(json.dumps(manifest, sort_keys=True) + "\n", encoding="utf-8")
+    arguments_path = Path(authority["runnerArgumentsPath"])
+    arguments = json.loads(arguments_path.read_text(encoding="utf-8"))
+    arguments.extend(["-GlobalHarnessGenerationManifestPath", str(manifest_path)])
+    arguments_path.write_text(json.dumps(arguments) + "\n", encoding="utf-8")
+    authority.update(
+        {
+            "globalGenerationManifestPath": str(manifest_path),
+            "globalGenerationManifestSha256": namespace["_file_sha256"](manifest_path),
+            "globalGenerationId": manifest["generationId"],
+            "globalGenerationGoalId": manifest["validForGoalId"],
+            "runnerArgumentsFileSha256": namespace["_file_sha256"](arguments_path),
+        }
+    )
+    unsigned = dict(authority)
+    unsigned.pop("authoritySha256")
+    authority["authoritySha256"] = namespace["_sha256_json"](unsigned)
+    authority_path.write_text(json.dumps(authority) + "\n", encoding="utf-8")
+
+
+def test_installed_launcher_accepts_bound_global_generation_manifest(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    namespace, authority_path, launcher_identity = _composition_fixture(
+        tmp_path,
+        monkeypatch,
+        include_external=True,
+    )
+    _bind_global_generation_manifest(namespace, authority_path)
+    result = namespace["_run_installed_nopublish_authority"](
+        authority_path=authority_path,
+        bin_dir=tmp_path,
+        launcher_identity=launcher_identity,
+    )
+    assert result == 0
+
+
+def test_installed_launcher_rejects_global_generation_manifest_drift(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    namespace, authority_path, launcher_identity = _composition_fixture(
+        tmp_path,
+        monkeypatch,
+        include_external=True,
+    )
+    _bind_global_generation_manifest(namespace, authority_path)
+    authority = json.loads(authority_path.read_text(encoding="utf-8"))
+    manifest_path = Path(authority["globalGenerationManifestPath"])
+    manifest_path.write_text(manifest_path.read_text(encoding="utf-8") + "drift\n", encoding="utf-8")
+    with pytest.raises(
+        RuntimeError,
+        match="^NEWS_GRASP_GLOBAL_GENERATION_MANIFEST_DRIFT$",
+    ):
+        namespace["_run_installed_nopublish_authority"](
+            authority_path=authority_path,
+            bin_dir=tmp_path,
+            launcher_identity=launcher_identity,
+        )
+
+
+def test_installed_launcher_rejects_third_logical_e2e_attempt(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    namespace, authority_path, launcher_identity = _composition_fixture(
+        tmp_path,
+        monkeypatch,
+        include_external=True,
+    )
+    _bind_global_generation_manifest(namespace, authority_path)
+    authority = json.loads(authority_path.read_text(encoding="utf-8"))
+    execution_repo = Path(authority["executionRepoRoot"])
+    policy_path = execution_repo / "build" / "e2e-attempt-policy.json"
+    policy = new_policy()
+    policy["logicalAttemptIssued"] = 3
+    admission_path = execution_repo / "build" / "e2e-admission.json"
+    _write_fixture_admission(admission_path)
+    policy_path.write_text(json.dumps(policy, sort_keys=True) + "\n", encoding="utf-8")
+    arguments_path = Path(authority["runnerArgumentsPath"])
+    arguments = json.loads(arguments_path.read_text(encoding="utf-8"))
+    arguments.extend(["-E2EAttemptPolicyPath", str(policy_path), "-E2ELogicalAttempt", "3", "-E2EFinalAdmissionPath", str(admission_path)])
+    arguments_path.write_text(json.dumps(arguments) + "\n", encoding="utf-8")
+    authority.update(
+        {
+            "e2eAttemptPolicyPath": str(policy_path),
+            "e2eAttemptPolicySha256": namespace["_file_sha256"](policy_path),
+            "e2eLogicalAttempt": 3,
+            "e2eAdmissionPath": str(admission_path),
+            "e2eAdmissionSha256": namespace["_file_sha256"](admission_path),
+            "runnerArgumentsFileSha256": namespace["_file_sha256"](arguments_path),
+        }
+    )
+    unsigned = dict(authority)
+    unsigned.pop("authoritySha256")
+    authority["authoritySha256"] = namespace["_sha256_json"](unsigned)
+    authority_path.write_text(json.dumps(authority) + "\n", encoding="utf-8")
+
+    with pytest.raises(
+        RuntimeError,
+        match="^NEWS_GRASP_E2E_ATTEMPT_POLICY_INVALID$",
+    ):
+        namespace["_run_installed_nopublish_authority"](
+            authority_path=authority_path,
+            bin_dir=tmp_path,
+            launcher_identity=launcher_identity,
+        )
+
+
+def test_installed_launcher_accepts_first_logical_e2e_attempt_policy(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    namespace, authority_path, launcher_identity = _composition_fixture(
+        tmp_path,
+        monkeypatch,
+        include_external=True,
+    )
+    _bind_global_generation_manifest(namespace, authority_path)
+    authority = json.loads(authority_path.read_text(encoding="utf-8"))
+    execution_repo = Path(authority["executionRepoRoot"])
+    policy_path = execution_repo / "build" / "e2e-attempt-policy.json"
+    admission_path = execution_repo / "build" / "e2e-admission.json"
+    _write_fixture_admission(admission_path)
+    policy_path.write_text(
+        json.dumps(issue_logical_attempt(bind_policy_admission(new_policy(), admission_path), 1), sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    append_policy_transition(policy_path, admission_path, transition_receipt_path=_write_transition_receipt(policy_path, admission_path))
+    arguments_path = Path(authority["runnerArgumentsPath"])
+    arguments = json.loads(arguments_path.read_text(encoding="utf-8"))
+    arguments.extend(["-E2EAttemptPolicyPath", str(policy_path), "-E2ELogicalAttempt", "1", "-E2EFinalAdmissionPath", str(admission_path)])
+    arguments_path.write_text(json.dumps(arguments) + "\n", encoding="utf-8")
+    authority.update(
+        {
+            "e2eAttemptPolicyPath": str(policy_path),
+            "e2eAttemptPolicySha256": namespace["_file_sha256"](policy_path),
+            "e2eLogicalAttempt": 1,
+            "e2eAdmissionPath": str(admission_path),
+            "e2eAdmissionSha256": namespace["_file_sha256"](admission_path),
+            "runnerArgumentsFileSha256": namespace["_file_sha256"](arguments_path),
+        }
+    )
+    unsigned = dict(authority)
+    unsigned.pop("authoritySha256")
+    authority["authoritySha256"] = namespace["_sha256_json"](unsigned)
+    authority_path.write_text(json.dumps(authority) + "\n", encoding="utf-8")
+    assert namespace["_run_installed_nopublish_authority"](
+        authority_path=authority_path,
+        bin_dir=tmp_path,
+        launcher_identity=launcher_identity,
+    ) == 0
+
+
+def test_installed_launcher_allows_same_attempt_resume_after_failure_local_repair(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    namespace, authority_path, launcher_identity = _composition_fixture(
+        tmp_path,
+        monkeypatch,
+        include_external=True,
+    )
+    _bind_global_generation_manifest(namespace, authority_path)
+    authority = json.loads(authority_path.read_text(encoding="utf-8"))
+    execution_repo = Path(authority["executionRepoRoot"])
+    policy_path = execution_repo / "build" / "e2e-attempt-policy.json"
+    admission_path = execution_repo / "build" / "e2e-admission.json"
+    _write_fixture_admission(admission_path)
+    initial = issue_logical_attempt(bind_policy_admission(new_policy(), admission_path), 1)
+    policy_path.write_text(json.dumps(initial, sort_keys=True) + "\n", encoding="utf-8")
+    append_policy_transition(policy_path, admission_path, transition_receipt_path=_write_transition_receipt(policy_path, admission_path))
+    policy = record_failure(initial, 1, "failure_local")
+    policy_path.write_text(json.dumps(policy, sort_keys=True) + "\n", encoding="utf-8")
+    append_policy_transition(
+        policy_path,
+        admission_path,
+        transition_receipt_path=_write_transition_receipt(policy_path, admission_path),
+    )
+    arguments_path = Path(authority["runnerArgumentsPath"])
+    arguments = json.loads(arguments_path.read_text(encoding="utf-8"))
+    arguments.extend(
+        [
+            "-E2EAttemptPolicyPath",
+            str(policy_path),
+            "-E2ELogicalAttempt",
+            "1",
+            "-E2EFinalAdmissionPath",
+            str(admission_path),
+            "-ResumeFromStage",
+            "post-reporter",
+        ]
+    )
+    arguments_path.write_text(json.dumps(arguments) + "\n", encoding="utf-8")
+    authority.update(
+        {
+            "e2eAttemptPolicyPath": str(policy_path),
+            "e2eAttemptPolicySha256": namespace["_file_sha256"](policy_path),
+            "e2eLogicalAttempt": 1,
+            "e2eAdmissionPath": str(admission_path),
+            "e2eAdmissionSha256": namespace["_file_sha256"](admission_path),
+            "runnerArgumentsFileSha256": namespace["_file_sha256"](arguments_path),
+        }
+    )
+    unsigned = dict(authority)
+    unsigned.pop("authoritySha256")
+    authority["authoritySha256"] = namespace["_sha256_json"](unsigned)
+    authority_path.write_text(json.dumps(authority) + "\n", encoding="utf-8")
+    assert namespace["_run_installed_nopublish_authority"](
+        authority_path=authority_path,
+        bin_dir=tmp_path,
+        launcher_identity=launcher_identity,
+    ) == 0

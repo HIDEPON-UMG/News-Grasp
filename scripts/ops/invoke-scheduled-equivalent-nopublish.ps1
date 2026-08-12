@@ -16,10 +16,13 @@ param(
     [Parameter(Mandatory=$true)][string] $StaticReceiptPath,
     [Parameter(Mandatory=$true)][string] $SimulationReceiptPath,
     [Parameter(Mandatory=$true)][string] $E2EAdmissionPath,
+    [string] $E2EAttemptPolicyPath = '',
+    [ValidateRange(1,2)][int] $E2ELogicalAttempt = 0,
     [string] $CausalReplacementProofPath = '',
     [string] $SupersessionApprovalPath = '',
     [string] $HighCostParentAuthorityPath = '',
     [string] $ExternalHealthAuthorityFixturePath = '',
+    [string] $GlobalHarnessGenerationManifestPath = '',
     [string] $PowerShellExe = 'powershell.exe'
 )
 
@@ -30,6 +33,30 @@ $statePath = [System.IO.Path]::GetFullPath($StateFile)
 $logPath = [System.IO.Path]::GetFullPath($LogDir)
 $receiptFullPath = [System.IO.Path]::GetFullPath($ReceiptPath)
 $workspacePath = [System.IO.Path]::GetFullPath((Resolve-Path -LiteralPath $WorkspaceRoot -ErrorAction Stop).Path)
+$e2eAttemptPolicyFullPath = ''
+$e2eAttemptPolicySha256 = ''
+$futurePrefix = $repoPath.TrimEnd('\') + '\'
+foreach ($futureCandidate in @($statePath, $receiptFullPath)) {
+    if (-not $futureCandidate.StartsWith($futurePrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "HIGH_COST_CANONICAL_FUTURE_PATH_INVALID: $futureCandidate"
+    }
+    $futureCursor = Split-Path -Parent $futureCandidate
+    while ($futureCursor -and $futureCursor.StartsWith($futurePrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        if (Test-Path -LiteralPath $futureCursor) {
+            $futureItem = Get-Item -LiteralPath $futureCursor -Force -ErrorAction Stop
+            if (($futureItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+                throw "HIGH_COST_CANONICAL_FUTURE_PATH_INVALID: $futureCandidate"
+            }
+        }
+        if ([string]::Equals($futureCursor, $repoPath, [System.StringComparison]::OrdinalIgnoreCase)) { break }
+        $futureParent = Split-Path -Parent $futureCursor
+        if (-not $futureParent -or $futureParent -eq $futureCursor) { break }
+        $futureCursor = $futureParent
+    }
+}
+if (-not $E2EAttemptPolicyPath -or $E2ELogicalAttempt -notin @(1,2)) {
+    throw 'NEWS_GRASP_E2E_ATTEMPT_POLICY_REQUIRED'
+}
 $highCostOperationBudgetPath = Join-Path $workspacePath 'tools\harness\high_cost_operation_budget.py'
 $highCostModelBrokerPath = Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py'
 $operationKind = 'full_e2e'
@@ -122,6 +149,33 @@ function Get-CanonicalFuturePath {
     }
 }
 
+function Read-BoundedJsonFile {
+    param(
+        [Parameter(Mandatory=$true)][string] $Path,
+        [int64] $MaxBytes = 65536
+    )
+    $stream = $null
+    try {
+        $stream = [System.IO.File]::Open(
+            $Path,
+            [System.IO.FileMode]::Open,
+            [System.IO.FileAccess]::Read,
+            [System.IO.FileShare]::Read
+        )
+        if ($stream.Length -gt $MaxBytes) { throw 'bounded JSON exceeds maximum size' }
+        $buffer = New-Object byte[] ([int]$stream.Length)
+        $offset = 0
+        while ($offset -lt $buffer.Length) {
+            $read = $stream.Read($buffer, $offset, $buffer.Length - $offset)
+            if ($read -le 0) { throw 'bounded JSON read truncated' }
+            $offset += $read
+        }
+        return ([Text.Encoding]::UTF8.GetString($buffer) | ConvertFrom-Json -ErrorAction Stop)
+    } finally {
+        if ($stream) { $stream.Dispose() }
+    }
+}
+
 function Get-CanonicalFutureDirectory {
     param(
         [Parameter(Mandatory=$true)][string] $Path,
@@ -164,6 +218,48 @@ function Get-CanonicalFutureDirectory {
     } catch {
         throw "HIGH_COST_CANONICAL_FUTURE_PATH_INVALID label=$Label path=$Path reason=$($_.Exception.Message)"
     }
+}
+
+$globalGenerationManifestPath = ''
+$globalGenerationManifestSha256 = ''
+$globalGenerationId = ''
+$globalGenerationGoalId = ''
+if ($GlobalHarnessGenerationManifestPath) {
+    $globalGenerationManifestPath = Get-CanonicalExistingFile -Path $GlobalHarnessGenerationManifestPath -Label 'global generation manifest' -Boundary $repoPath -MaxBytes 65536
+    $globalGenerationManifestSha256 = (Get-FileHash -LiteralPath $globalGenerationManifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    try {
+        $globalManifest = Get-Content -LiteralPath $globalGenerationManifestPath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+        $requiredGlobalManifestFields = @('schemaVersion','generationId','ownerRepo','ownerCommit','sourceSnapshotPath','sourceSnapshotSha256','installedRuntimePath','installedRuntimeSha256','ownerAuthorityReceiptPath','ownerAuthorityReceiptSha256','validForGoalId')
+        $observedGlobalManifestFields = @($globalManifest.PSObject.Properties.Name)
+        if ($globalManifest.schemaVersion -cne 'NEWS_GRASP_GLOBAL_DEPENDENCY_GENERATION_MANIFEST_V1' -or
+            (@($observedGlobalManifestFields | Sort-Object) -join '|') -cne (@($requiredGlobalManifestFields | Sort-Object) -join '|') -or
+            [string]$globalManifest.generationId -eq '' -or
+            [string]$globalManifest.validForGoalId -eq '' -or
+            [string]$globalManifest.ownerCommit -notmatch '^[0-9a-f]{40,64}$') {
+            throw 'manifest schema mismatch'
+        }
+        $globalGenerationId = [string]$globalManifest.generationId
+        $globalGenerationGoalId = [string]$globalManifest.validForGoalId
+    } catch {
+        throw "NEWS_GRASP_GLOBAL_GENERATION_MANIFEST_INVALID: $($_.Exception.Message)"
+    }
+}
+
+$e2eAttemptPolicyFullPath = Get-CanonicalExistingFile -Path $E2EAttemptPolicyPath -Label 'E2E attempt policy' -Boundary $repoPath -MaxBytes 65536
+$e2eAttemptPolicySha256 = (Get-FileHash -LiteralPath $e2eAttemptPolicyFullPath -Algorithm SHA256).Hash.ToLowerInvariant()
+try {
+    $attemptPolicy = Read-BoundedJsonFile -Path $e2eAttemptPolicyFullPath -MaxBytes 65536
+    $attemptPolicyFields = @($attemptPolicy.PSObject.Properties.Name)
+    $expectedAttemptPolicyFields = @('schemaVersion','maxLogicalAttempts','maxFailureLocalResumes','logicalAttemptIssued','attemptA','attemptB','terminal','designFeedback','transition','transitionHistory','admissionBinding')
+    if ($attemptPolicy.schemaVersion -cne 'NEWS_GRASP_E2E_ATTEMPT_POLICY_V1' -or
+        (@($attemptPolicyFields | Sort-Object) -join '|') -cne (@($expectedAttemptPolicyFields | Sort-Object) -join '|') -or
+        [int]$attemptPolicy.maxLogicalAttempts -ne 2 -or [int]$attemptPolicy.maxFailureLocalResumes -ne 1 -or
+        [int]$attemptPolicy.logicalAttemptIssued -ne $E2ELogicalAttempt -or $null -ne $attemptPolicy.terminal -or
+        $null -eq $attemptPolicy.transition -or [string]$attemptPolicy.transition.event -notin @('issue_a','failure_local_resume','issue_b')) {
+        throw 'policy state mismatch'
+    }
+} catch {
+    throw "NEWS_GRASP_E2E_ATTEMPT_POLICY_INVALID: $($_.Exception.Message)"
 }
 
 $parentAuthorityFullPath = "$receiptFullPath.high-cost-parent-authority.json"
@@ -284,6 +380,26 @@ $RouteManifestPath = Get-CanonicalExistingFile -Path $RouteManifestPath -Label '
 $StaticReceiptPath = Get-CanonicalExistingFile -Path $StaticReceiptPath -Label 'static evidence' -Boundary $workspacePath -MaxBytes 4194304
 $SimulationReceiptPath = Get-CanonicalExistingFile -Path $SimulationReceiptPath -Label 'simulation evidence' -Boundary $workspacePath -MaxBytes 4194304
 $E2EAdmissionPath = Get-CanonicalExistingFile -Path $E2EAdmissionPath -Label 'issued E2E admission' -Boundary $repoPath -MaxBytes 65536
+try {
+    $issuedAdmission = Read-BoundedJsonFile -Path $E2EAdmissionPath -MaxBytes 65536
+    $expectedLogicalAttemptKey = "News-Grasp:${DateStamp}:scheduled-equivalent-nopublish"
+    if ($E2ELogicalAttempt -eq 2) {
+        $expectedLogicalAttemptKey = "${expectedLogicalAttemptKey}:attempt-b"
+    }
+    if ([string]$issuedAdmission.attemptKey -cne $expectedLogicalAttemptKey) {
+        throw "issued=$($issuedAdmission.attemptKey) expected=$expectedLogicalAttemptKey"
+    }
+} catch {
+    throw "NEWS_GRASP_E2E_ATTEMPT_BINDING_INVALID: $($_.Exception.Message)"
+}
+if (-not $attemptPolicy.admissionBinding -or
+    [string]$attemptPolicy.admissionBinding.attemptKey -ne [string]$issuedAdmission.attemptKey -or
+    [string]$attemptPolicy.admissionBinding.issueDate -ne [string]$issuedAdmission.issueDate -or
+    [string]$attemptPolicy.admissionBinding.admissionId -ne [string]$issuedAdmission.admissionId -or
+    [string]$attemptPolicy.admissionBinding.admissionPath -ne [System.IO.Path]::GetFullPath($E2EAdmissionPath) -or
+    [string]$attemptPolicy.admissionBinding.admissionSha256 -ne (Get-FileHash -LiteralPath $E2EAdmissionPath -Algorithm SHA256).Hash.ToLowerInvariant()) {
+    throw 'NEWS_GRASP_E2E_ATTEMPT_ADMISSION_BINDING_INVALID'
+}
 if (-not $ExternalHealthAuthorityFixturePath) {
     throw 'HIGH_COST_NOPUBLISH_FIXTURE_REQUIRED'
 }
@@ -309,6 +425,9 @@ if ($SupersessionApprovalPath) {
         # An approval for a prior date/generation must never authorize the successor.
         $supersessionApproval = Get-Content -LiteralPath $SupersessionApprovalPath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
         $issuedAttemptKey = "News-Grasp:${DateStamp}:scheduled-equivalent-nopublish"
+        if ($E2ELogicalAttempt -eq 2) {
+            $issuedAttemptKey = "${issuedAttemptKey}:attempt-b"
+        }
         $approvedAttemptKey = [string]$supersessionApproval.canonicalAttemptKey
         $approvedIssueDate = [string]$supersessionApproval.issueDate
         if ([string]::IsNullOrWhiteSpace($issuedAttemptKey) -or
@@ -371,6 +490,10 @@ $runnerArguments = @(
     '-ExternalHealthAuthorityExpectedSha256', $externalHealthAuthorityFixtureSha256,
     '-HighCostAttemptId', $attemptId
 )
+ $runnerArguments += @('-E2EAttemptPolicyPath', $e2eAttemptPolicyFullPath, '-E2ELogicalAttempt', [string]$E2ELogicalAttempt, '-E2EFinalAdmissionPath', $E2EAdmissionPath)
+if ($globalGenerationManifestPath) {
+    $runnerArguments += @('-GlobalHarnessGenerationManifestPath', $globalGenerationManifestPath)
+}
 if (Test-Path -LiteralPath $runnerArgumentsPath) {
     throw "HIGH_COST_RUNNER_ARGUMENTS_OUTPUT_EXISTS: $runnerArgumentsPath"
 }
@@ -407,6 +530,15 @@ $installedLaunchAuthority = [ordered]@{
     runnerArgumentsFileSha256 = (Get-FileHash -LiteralPath $runnerArgumentsPath -Algorithm SHA256).Hash.ToLowerInvariant()
     externalHealthAuthorityFixturePath = $ExternalHealthAuthorityFixturePath
     externalHealthAuthorityFixtureSha256 = $externalHealthAuthorityFixtureSha256
+    e2eAttemptPolicyPath = $e2eAttemptPolicyFullPath
+    e2eAttemptPolicySha256 = $e2eAttemptPolicySha256
+    e2eLogicalAttempt = $E2ELogicalAttempt
+}
+if ($globalGenerationManifestPath) {
+    $installedLaunchAuthority.globalGenerationManifestPath = $globalGenerationManifestPath
+    $installedLaunchAuthority.globalGenerationManifestSha256 = $globalGenerationManifestSha256
+    $installedLaunchAuthority.globalGenerationId = $globalGenerationId
+    $installedLaunchAuthority.globalGenerationGoalId = $globalGenerationGoalId
 }
 $installedLaunchAuthorityBody = $installedLaunchAuthority | ConvertTo-Json -Depth 6 -Compress
 $installedLaunchAuthorityHasher = [Security.Cryptography.SHA256]::Create()
@@ -437,7 +569,9 @@ $e2eAdmissionValidation = & $pythonCanonicalPath -I $e2eAdmissionBridgePath 'val
     '--claim-output' $claimReceiptPath `
     '--claim-witness-output' $claimWitnessPath `
     '--runner-executable' $powerShellCanonicalPath `
-    '--authority-python-executable' $pythonCanonicalPath
+    '--authority-python-executable' $pythonCanonicalPath `
+    '--attempt-policy' $e2eAttemptPolicyFullPath `
+    '--transition-receipt' (Join-Path (Split-Path -Parent $e2eAttemptPolicyFullPath) ("e2e-transition-" + [int]$attemptPolicy.transition.sequence + ".json"))
 if ($LASTEXITCODE -ne 0) {
     throw "E2E_FINAL_ISSUED_ADMISSION_REJECTED exit=$LASTEXITCODE"
 }
@@ -493,6 +627,19 @@ $installedLauncherArguments = @(
 )
 & $installedTaskPythonPath @installedLauncherArguments
 $runnerExitCode = $LASTEXITCODE
+
+if ($runnerExitCode -eq 0) {
+    $runnerOutcomeReceiptPath = Join-Path (Split-Path -Parent $e2eAttemptPolicyFullPath) ("e2e-transition-" + ([int]$attemptPolicy.transition.sequence + 1) + ".json")
+    $runnerTerminalAuthorityPath = Join-Path (Split-Path -Parent $e2eAttemptPolicyFullPath) ("e2e-terminal-authority-" + ([int]$E2ELogicalAttempt) + ".json")
+    & $pythonCanonicalPath -I $e2eAdmissionBridgePath 'record-outcome' `
+        '--admission' $E2EAdmissionPath `
+        '--attempt-policy' $e2eAttemptPolicyFullPath `
+        '--terminal-authority' $runnerTerminalAuthorityPath `
+        '--outcome-receipt' $runnerOutcomeReceiptPath
+    if ($LASTEXITCODE -ne 0) {
+        throw "E2E_FINAL_RUNNER_OUTCOME_REJECTED exit=$LASTEXITCODE"
+    }
+}
 
 $state = $null
 if (Test-Path -LiteralPath $statePath -PathType Leaf) {

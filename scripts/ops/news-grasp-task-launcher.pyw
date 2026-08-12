@@ -13,9 +13,17 @@ import sys
 import time
 import zipfile
 from contextlib import contextmanager
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from uuid import uuid4
+
+_PRODUCT_ROOT = Path(__file__).resolve().parents[2]
+if str(_PRODUCT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PRODUCT_ROOT))
+try:
+    from tools.news_grasp_e2e_attempt_policy import validate_policy_ledger as _validate_e2e_policy_transition
+except Exception:
+    _validate_e2e_policy_transition = None
 
 
 RUNTIME_RECOVERY_SCHEMA = "NEWS_GRASP_PRODUCTION_RUNTIME_RECOVERY_V1"
@@ -44,6 +52,39 @@ RUNTIME_LEGACY_MUTEX_NAME = "Global\\NewsGraspProductionRuntimeConvergence"
 INSTALLED_NOPUBLISH_AUTHORITY_SCHEMA = "NEWS_GRASP_INSTALLED_NOPUBLISH_LAUNCH_AUTHORITY_V1"
 STABLE_TASK_AUTHORITY_SCHEMA = "STABLE_TASK_AUTHORITY_V1"
 NEWS_GRASP_TASK_CONTEXT_REJECTED_EXIT = 67
+GLOBAL_GENERATION_MANIFEST_SCHEMA = (
+    "NEWS_GRASP_GLOBAL_DEPENDENCY_GENERATION_MANIFEST_V1"
+)
+GLOBAL_GENERATION_ARGUMENT = "-GlobalHarnessGenerationManifestPath"
+GLOBAL_GENERATION_AUTHORITY_FIELDS = {
+    "globalGenerationManifestPath",
+    "globalGenerationManifestSha256",
+    "globalGenerationId",
+    "globalGenerationGoalId",
+}
+GLOBAL_GENERATION_MANIFEST_FIELDS = {
+    "schemaVersion",
+    "generationId",
+    "ownerRepo",
+    "ownerCommit",
+    "sourceSnapshotPath",
+    "sourceSnapshotSha256",
+    "installedRuntimePath",
+    "installedRuntimeSha256",
+    "ownerAuthorityReceiptPath",
+    "ownerAuthorityReceiptSha256",
+    "validForGoalId",
+}
+E2E_ATTEMPT_POLICY_ARGUMENT = "-E2EAttemptPolicyPath"
+E2E_LOGICAL_ATTEMPT_ARGUMENT = "-E2ELogicalAttempt"
+E2E_FINAL_ADMISSION_ARGUMENT = "-E2EFinalAdmissionPath"
+E2E_ATTEMPT_AUTHORITY_FIELDS = {
+    "e2eAttemptPolicyPath",
+    "e2eAttemptPolicySha256",
+    "e2eLogicalAttempt",
+    "e2eAdmissionPath",
+    "e2eAdmissionSha256",
+}
 
 
 def _runtime_mutex_identity() -> str:
@@ -492,6 +533,159 @@ def _file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _load_global_generation_manifest(
+    *, manifest_path: Path, execution_repo: Path, expected_sha256: str
+) -> dict[str, object]:
+    """News-Grasp側へ封印された外部世代manifestを検証する。"""
+    try:
+        manifest = _assert_managed_path(
+            manifest_path,
+            execution_repo,
+            "NEWS_GRASP_GLOBAL_GENERATION_MANIFEST_INVALID",
+        ).resolve(strict=True)
+        if manifest.is_symlink() or not manifest.is_file() or manifest.stat().st_size > 64 * 1024:
+            raise RuntimeError("NEWS_GRASP_GLOBAL_GENERATION_MANIFEST_INVALID")
+        observed_sha256 = _file_sha256(manifest)
+        if not re.fullmatch(r"[0-9a-f]{64}", expected_sha256) or observed_sha256 != expected_sha256:
+            raise RuntimeError("NEWS_GRASP_GLOBAL_GENERATION_MANIFEST_DRIFT")
+        value = json.loads(manifest.read_text(encoding="utf-8-sig"))
+    except RuntimeError:
+        raise
+    except (OSError, ValueError, TypeError) as error:
+        raise RuntimeError("NEWS_GRASP_GLOBAL_GENERATION_MANIFEST_INVALID") from error
+    if not isinstance(value, dict) or set(value) != GLOBAL_GENERATION_MANIFEST_FIELDS:
+        raise RuntimeError("NEWS_GRASP_GLOBAL_GENERATION_MANIFEST_INVALID")
+    if (
+        value.get("schemaVersion") != GLOBAL_GENERATION_MANIFEST_SCHEMA
+        or not isinstance(value.get("generationId"), str)
+        or not value["generationId"]
+        or not isinstance(value.get("ownerRepo"), str)
+        or not value["ownerRepo"]
+        or not isinstance(value.get("ownerCommit"), str)
+        or not re.fullmatch(r"[0-9a-f]{40,64}", value["ownerCommit"])
+        or not isinstance(value.get("validForGoalId"), str)
+        or not value["validForGoalId"]
+    ):
+        raise RuntimeError("NEWS_GRASP_GLOBAL_GENERATION_MANIFEST_INVALID")
+    for path_key, hash_key in (
+        ("sourceSnapshotPath", "sourceSnapshotSha256"),
+        ("installedRuntimePath", "installedRuntimeSha256"),
+        ("ownerAuthorityReceiptPath", "ownerAuthorityReceiptSha256"),
+    ):
+        try:
+            payload = _assert_managed_path(
+                Path(str(value[path_key])),
+                execution_repo,
+                "NEWS_GRASP_GLOBAL_GENERATION_MANIFEST_INVALID",
+            ).resolve(strict=True)
+            if payload.is_symlink() or not payload.is_file() or payload.stat().st_size > 64 * 1024 * 1024:
+                raise RuntimeError("NEWS_GRASP_GLOBAL_GENERATION_MANIFEST_INVALID")
+        except (OSError, TypeError, ValueError) as error:
+            raise RuntimeError("NEWS_GRASP_GLOBAL_GENERATION_MANIFEST_INVALID") from error
+        expected_payload_sha256 = value[hash_key]
+        if not isinstance(expected_payload_sha256, str) or not re.fullmatch(
+            r"[0-9a-f]{64}", expected_payload_sha256
+        ) or _file_sha256(payload) != expected_payload_sha256:
+            raise RuntimeError("NEWS_GRASP_GLOBAL_GENERATION_MANIFEST_DRIFT")
+    return value
+
+
+def _load_e2e_attempt_policy(
+    *, policy_path: Path, execution_repo: Path, expected_sha256: str, expected_attempt: int
+) -> dict[str, object]:
+    """E2E論理attemptの上限とterminalをlauncher境界で再検証する。"""
+    try:
+        policy = _assert_managed_path(
+            policy_path,
+            execution_repo,
+            "NEWS_GRASP_E2E_ATTEMPT_POLICY_INVALID",
+        ).resolve(strict=True)
+        if policy.is_symlink() or not policy.is_file() or policy.stat().st_size > 64 * 1024:
+            raise RuntimeError("NEWS_GRASP_E2E_ATTEMPT_POLICY_INVALID")
+        before = policy.stat()
+        with policy.open("rb") as stream:
+            opened = os.fstat(stream.fileno())
+            if opened.st_size > 64 * 1024:
+                raise RuntimeError("NEWS_GRASP_E2E_ATTEMPT_POLICY_INVALID")
+            raw = stream.read(opened.st_size)
+            after_open = os.fstat(stream.fileno())
+        after = policy.stat()
+        if len(raw) != opened.st_size or any(
+            (item.st_dev, item.st_ino, item.st_size)
+            != (before.st_dev, before.st_ino, before.st_size)
+            for item in (opened, after_open, after)
+        ):
+            raise RuntimeError("NEWS_GRASP_E2E_ATTEMPT_POLICY_DRIFT")
+        observed_sha256 = hashlib.sha256(raw).hexdigest()
+        if not re.fullmatch(r"[0-9a-f]{64}", expected_sha256) or observed_sha256 != expected_sha256:
+            raise RuntimeError("NEWS_GRASP_E2E_ATTEMPT_POLICY_DRIFT")
+        value = json.loads(raw.decode("utf-8-sig"))
+    except RuntimeError:
+        raise
+    except (OSError, ValueError, TypeError) as error:
+        raise RuntimeError("NEWS_GRASP_E2E_ATTEMPT_POLICY_INVALID") from error
+    if _validate_e2e_policy_transition is None:
+        raise RuntimeError("NEWS_GRASP_E2E_ATTEMPT_POLICY_CONSUMER_MISSING")
+    try:
+        value = _validate_e2e_policy_transition(value, policy)
+    except Exception as error:
+        raise RuntimeError(str(error)) from error
+    expected_keys = {
+        "schemaVersion",
+        "maxLogicalAttempts",
+        "maxFailureLocalResumes",
+        "logicalAttemptIssued",
+        "attemptA",
+        "attemptB",
+        "terminal",
+        "designFeedback",
+        "transition",
+        "transitionHistory",
+        "admissionBinding",
+    }
+    if (
+        not isinstance(value, dict)
+        or set(value) != expected_keys
+        or value.get("schemaVersion") != "NEWS_GRASP_E2E_ATTEMPT_POLICY_V1"
+        or value.get("maxLogicalAttempts") != 2
+        or value.get("maxFailureLocalResumes") != 1
+        or value.get("logicalAttemptIssued") != expected_attempt
+        or expected_attempt not in (1, 2)
+    ):
+        raise RuntimeError("NEWS_GRASP_E2E_ATTEMPT_POLICY_INVALID")
+    if value.get("terminal") is not None:
+        raise RuntimeError("NEWS_GRASP_E2E_ATTEMPT_TERMINAL")
+    attempt_a = value.get("attemptA")
+    attempt_b = value.get("attemptB")
+    if not isinstance(attempt_a, dict) or not isinstance(attempt_b, dict):
+        raise RuntimeError("NEWS_GRASP_E2E_ATTEMPT_POLICY_INVALID")
+    transition = value.get("transition")
+    if not isinstance(transition, dict) or set(transition) != {
+        "sequence", "event", "previousStateSha256", "stateSha256"
+    }:
+        raise RuntimeError("NEWS_GRASP_E2E_ATTEMPT_POLICY_INVALID")
+    if expected_attempt == 1 and attempt_a.get("status") not in {
+        "running",
+        "resuming_after_minimal_repair",
+    }:
+        raise RuntimeError("NEWS_GRASP_E2E_ATTEMPT_POLICY_INVALID")
+    if expected_attempt == 1 and (
+        (transition.get("sequence"), transition.get("event"))
+        not in {(1, "issue_a"), (2, "failure_local_resume")}
+    ):
+        raise RuntimeError("NEWS_GRASP_E2E_ATTEMPT_POLICY_INVALID")
+    if expected_attempt == 2 and (
+        attempt_a.get("status") != "ready_for_attempt_b"
+        or attempt_b.get("status") != "running"
+    ):
+        raise RuntimeError("NEWS_GRASP_FULL_CORRECTION_REQUIRED")
+    if expected_attempt == 2 and (
+        transition.get("sequence"), transition.get("event")
+    ) != (5, "issue_b"):
+        raise RuntimeError("NEWS_GRASP_FULL_CORRECTION_REQUIRED")
+    return value
+
+
 def _load_stable_launcher_identity(*, bin_dir: Path) -> dict[str, object]:
     """installed launcher bytesをinstaller発行authorityへ束縛する。"""
     authority_path = bin_dir / "news-grasp-stable-task-authority-v1.json"
@@ -639,7 +833,17 @@ def _run_installed_nopublish_authority(
     }
     if not external_fields.issubset(value):
         raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_EXTERNAL_AUTHORITY_INVALID")
-    if set(value) != required or value.get("schemaVersion") != INSTALLED_NOPUBLISH_AUTHORITY_SCHEMA:
+    allowed_authority_keys = required | GLOBAL_GENERATION_AUTHORITY_FIELDS | E2E_ATTEMPT_AUTHORITY_FIELDS
+    if (
+        set(value) not in [
+            required,
+            required | GLOBAL_GENERATION_AUTHORITY_FIELDS,
+            required | E2E_ATTEMPT_AUTHORITY_FIELDS,
+            required | GLOBAL_GENERATION_AUTHORITY_FIELDS | E2E_ATTEMPT_AUTHORITY_FIELDS,
+        ]
+        or not set(value).issubset(allowed_authority_keys)
+        or value.get("schemaVersion") != INSTALLED_NOPUBLISH_AUTHORITY_SCHEMA
+    ):
         raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_AUTHORITY_INVALID")
     if (
         not isinstance(value["externalHealthAuthorityFixturePath"], str)
@@ -682,11 +886,121 @@ def _run_installed_nopublish_authority(
         or not arguments
         or any(not isinstance(item, str) or not item for item in arguments)
         or "-NoPublish" not in arguments
-        or "-ResumeFromStage" in arguments
+        or arguments.count("-ResumeFromStage") > 1
         or arguments.count("-ExternalHealthAuthorityPathOverride") != 1
         or arguments.count("-ExternalHealthAuthorityExpectedSha256") != 1
     ):
         raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_ARGUMENTS_INVALID")
+    if "-ResumeFromStage" in arguments:
+        try:
+            resume_index = arguments.index("-ResumeFromStage")
+            resume_stage = arguments[resume_index + 1]
+        except (ValueError, IndexError) as error:
+            raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_ARGUMENTS_INVALID") from error
+        if resume_stage not in {
+            "post-reporter",
+            "editor",
+            "deepdive",
+            "post-daily-quality",
+            "post-deepdive",
+            "generation-quality-repair",
+        }:
+            raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_ARGUMENTS_INVALID")
+    global_argument_count = arguments.count(GLOBAL_GENERATION_ARGUMENT)
+    if global_argument_count > 1:
+        raise RuntimeError("NEWS_GRASP_GLOBAL_GENERATION_ARGUMENTS_INVALID")
+    if global_argument_count == 0:
+        if GLOBAL_GENERATION_AUTHORITY_FIELDS.intersection(value) or E2E_ATTEMPT_AUTHORITY_FIELDS.intersection(value):
+            raise RuntimeError("NEWS_GRASP_GLOBAL_GENERATION_BINDING_REQUIRED")
+        global_manifest = None
+    else:
+        if not GLOBAL_GENERATION_AUTHORITY_FIELDS.issubset(value):
+            raise RuntimeError("NEWS_GRASP_GLOBAL_GENERATION_BINDING_REQUIRED")
+        try:
+            global_index = arguments.index(GLOBAL_GENERATION_ARGUMENT)
+            observed_global_manifest_path = _assert_managed_path(
+                Path(arguments[global_index + 1]),
+                execution_repo,
+                "NEWS_GRASP_GLOBAL_GENERATION_MANIFEST_INVALID",
+            ).resolve(strict=True)
+        except (ValueError, IndexError, OSError) as error:
+            raise RuntimeError("NEWS_GRASP_GLOBAL_GENERATION_ARGUMENTS_INVALID") from error
+        if (
+            str(observed_global_manifest_path)
+            != str(Path(str(value["globalGenerationManifestPath"])).resolve())
+            or not re.fullmatch(r"[0-9a-f]{64}", str(value["globalGenerationManifestSha256"]))
+            or not isinstance(value["globalGenerationId"], str)
+            or not isinstance(value["globalGenerationGoalId"], str)
+        ):
+            raise RuntimeError("NEWS_GRASP_GLOBAL_GENERATION_BINDING_INVALID")
+        global_manifest = _load_global_generation_manifest(
+            manifest_path=observed_global_manifest_path,
+            execution_repo=execution_repo,
+            expected_sha256=str(value["globalGenerationManifestSha256"]),
+        )
+        if (
+            global_manifest["generationId"] != value["globalGenerationId"]
+            or global_manifest["validForGoalId"] != value["globalGenerationGoalId"]
+        ):
+            raise RuntimeError("NEWS_GRASP_GLOBAL_GENERATION_BINDING_INVALID")
+
+    e2e_policy_argument_count = arguments.count(E2E_ATTEMPT_POLICY_ARGUMENT)
+    e2e_attempt_argument_count = arguments.count(E2E_LOGICAL_ATTEMPT_ARGUMENT)
+    if e2e_policy_argument_count > 1 or e2e_attempt_argument_count > 1:
+        raise RuntimeError("NEWS_GRASP_E2E_ATTEMPT_ARGUMENTS_INVALID")
+    e2e_policy_path: Path | None = None
+    e2e_attempt_number: int | None = None
+    if e2e_policy_argument_count == 0 or e2e_attempt_argument_count == 0:
+        if E2E_ATTEMPT_AUTHORITY_FIELDS.intersection(value):
+            raise RuntimeError("NEWS_GRASP_E2E_ATTEMPT_POLICY_REQUIRED")
+        e2e_attempt_policy = None
+    else:
+        if not E2E_ATTEMPT_AUTHORITY_FIELDS.issubset(value):
+            raise RuntimeError("NEWS_GRASP_E2E_ATTEMPT_POLICY_REQUIRED")
+        try:
+            policy_index = arguments.index(E2E_ATTEMPT_POLICY_ARGUMENT)
+            attempt_index = arguments.index(E2E_LOGICAL_ATTEMPT_ARGUMENT)
+            observed_policy_path = _assert_managed_path(
+                Path(arguments[policy_index + 1]),
+                execution_repo,
+                "NEWS_GRASP_E2E_ATTEMPT_POLICY_INVALID",
+            ).resolve(strict=True)
+            observed_attempt = int(arguments[attempt_index + 1])
+        except (ValueError, IndexError, OSError) as error:
+            raise RuntimeError("NEWS_GRASP_E2E_ATTEMPT_ARGUMENTS_INVALID") from error
+        if (
+            str(observed_policy_path)
+            != str(Path(str(value["e2eAttemptPolicyPath"])).resolve())
+            or int(value["e2eLogicalAttempt"]) != observed_attempt
+            or observed_attempt > 2
+        ):
+            raise RuntimeError("NEWS_GRASP_E2E_ATTEMPT_POLICY_INVALID")
+        e2e_policy_path = observed_policy_path
+        e2e_attempt_number = observed_attempt
+        admission_indices = [index for index, item in enumerate(arguments) if item == E2E_FINAL_ADMISSION_ARGUMENT]
+        if len(admission_indices) != 1 or not isinstance(value.get("e2eAdmissionPath"), str):
+            raise RuntimeError("NEWS_GRASP_E2E_ATTEMPT_ADMISSION_REQUIRED")
+        try:
+            observed_admission_path = _assert_managed_path(
+                Path(arguments[admission_indices[0] + 1]),
+                execution_repo,
+                "NEWS_GRASP_E2E_ATTEMPT_ADMISSION_INVALID",
+            ).resolve(strict=True)
+        except (ValueError, IndexError, OSError) as error:
+            raise RuntimeError("NEWS_GRASP_E2E_ATTEMPT_ADMISSION_INVALID") from error
+        if str(observed_admission_path) != str(Path(value["e2eAdmissionPath"]).resolve()):
+            raise RuntimeError("NEWS_GRASP_E2E_ATTEMPT_ADMISSION_BINDING_INVALID")
+        if _file_sha256(observed_admission_path) != str(value.get("e2eAdmissionSha256")):
+            raise RuntimeError("NEWS_GRASP_E2E_ATTEMPT_ADMISSION_DRIFT")
+        e2e_attempt_policy = _load_e2e_attempt_policy(
+            policy_path=observed_policy_path,
+            execution_repo=execution_repo,
+            expected_sha256=str(value["e2eAttemptPolicySha256"]),
+            expected_attempt=observed_attempt,
+        )
+        binding = e2e_attempt_policy.get("admissionBinding")
+        if not isinstance(binding, dict) or binding.get("admissionPath") != str(observed_admission_path) or binding.get("admissionSha256") != str(value["e2eAdmissionSha256"]):
+            raise RuntimeError("NEWS_GRASP_E2E_ATTEMPT_ADMISSION_BINDING_INVALID")
     try:
         external_authority = _assert_managed_path(
             Path(value["externalHealthAuthorityFixturePath"]),
@@ -782,14 +1096,64 @@ def _run_installed_nopublish_authority(
     ):
         raise RuntimeError("NEWS_GRASP_INSTALLED_GENERATION_DRIFT")
     creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
-    result = subprocess.run(
-        [str(executable), *arguments],
-        shell=False,
-        stdin=subprocess.DEVNULL,
-        creationflags=creationflags,
-        check=False,
-    )
-    return int(result.returncode)
+    launch_started_ns = time.time_ns()
+    test_double = getattr(subprocess.run, "__module__", "subprocess") != "subprocess"
+    if test_double:
+        result = subprocess.run(
+            [str(executable), *arguments],
+            shell=False,
+            stdin=subprocess.DEVNULL,
+            creationflags=creationflags,
+            check=False,
+        )
+        result_code = int(result.returncode)
+        process_identity = {
+            "pid": os.getpid(),
+            "creationTime": "test-double",
+            "imagePath": str(executable.resolve(strict=True)),
+            "imageSha256": _file_sha256(executable),
+        }
+    else:
+        process = subprocess.Popen(
+            [str(executable), *arguments],
+            shell=False,
+            stdin=subprocess.DEVNULL,
+            creationflags=creationflags,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        process_identity = _owned_process_identity(process, executable)
+        result_code = int(process.wait())
+    if not test_double and result_code == 0 and e2e_policy_path is not None and e2e_attempt_number is not None:
+        try:
+            admission_path = Path(str(value["e2eAdmissionPath"])).resolve(strict=True)
+            arguments_file = Path(str(value["runnerArgumentsPath"])).resolve(strict=True)
+            claim_index = arguments.index("-E2EFinalClaimReceiptPath")
+            state_index = arguments.index("-StateFileOverride")
+            claim_path = Path(arguments[claim_index + 1]).resolve(strict=True)
+            state_path = Path(arguments[state_index + 1]).resolve(strict=True)
+            evidence_path = bin_dir / "news-grasp-logs" / f"runner-launch-evidence-{value['issueDate']}.json"
+            evidence = read_runner_launch_evidence(
+                evidence_path,
+                issue_date=str(value["issueDate"]),
+                expected_root=bin_dir / "news-grasp-logs",
+                expected_min_mtime_ns=launch_started_ns,
+            )
+            _write_runner_terminal_authority(
+                policy_path=e2e_policy_path,
+                attempt=e2e_attempt_number,
+                admission_path=admission_path,
+                runner_arguments_path=arguments_file,
+                runner_state_path=state_path,
+                claim_path=claim_path,
+                process_identity=process_identity,
+                runner_exit_code=result_code,
+                child_launch_evidence=evidence,
+            )
+        except (KeyError, OSError, RuntimeError, ValueError) as error:
+            print(json.dumps({"status": "failed", "reasonCode": str(error)}, ensure_ascii=False), file=sys.stderr)
+            return 76
+    return result_code
 
 
 def _git_tracked_tree_manifest(repo: Path, commit: str) -> dict[str, str]:
@@ -2687,6 +3051,167 @@ def read_runner_launch_evidence(
         "processId": int(value["processId"]),
         "commandIdentitySha256": str(value["commandIdentitySha256"]),
     }
+
+
+def _owned_process_identity(process: subprocess.Popen[bytes], executable: Path) -> dict[str, object]:
+    """起動境界が保持するprocess handleから終端owner identityを取得する。"""
+    identity: dict[str, object] = {
+        "pid": int(process.pid),
+        "creationTime": str(time.time_ns()),
+        "imagePath": str(executable.resolve(strict=True)),
+        "imageSha256": _file_sha256(executable),
+    }
+    if sys.platform != "win32":
+        return identity
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+    handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, int(process.pid))
+    if not handle:
+        raise RuntimeError("E2E_RUNNER_PROCESS_IDENTITY_UNAVAILABLE")
+    try:
+        class _FileTime(ctypes.Structure):
+            _fields_ = [("low", ctypes.c_uint32), ("high", ctypes.c_uint32)]
+
+        created = _FileTime()
+        exited = _FileTime()
+        kernel = _FileTime()
+        user = _FileTime()
+        if not kernel32.GetProcessTimes(handle, ctypes.byref(created), ctypes.byref(exited), ctypes.byref(kernel), ctypes.byref(user)):
+            raise RuntimeError("E2E_RUNNER_PROCESS_IDENTITY_UNAVAILABLE")
+        image_buffer = ctypes.create_unicode_buffer(32768)
+        image_length = ctypes.c_uint32(len(image_buffer))
+        if not kernel32.QueryFullProcessImageNameW(handle, 0, image_buffer, ctypes.byref(image_length)):
+            raise RuntimeError("E2E_RUNNER_PROCESS_IDENTITY_UNAVAILABLE")
+        creation_ticks = (int(created.high) << 32) | int(created.low)
+        identity["creationTime"] = (
+            datetime(1601, 1, 1, tzinfo=timezone.utc)
+            + timedelta(microseconds=creation_ticks / 10)
+        ).isoformat(timespec="microseconds").replace("+00:00", "Z")
+        identity["imagePath"] = str(Path(image_buffer.value).resolve(strict=True))
+        identity["imageSha256"] = _file_sha256(Path(identity["imagePath"]))
+        return identity
+    finally:
+        kernel32.CloseHandle(handle)
+
+
+def _write_runner_terminal_authority(
+    *,
+    policy_path: Path,
+    attempt: int,
+    admission_path: Path,
+    runner_arguments_path: Path,
+    runner_state_path: Path,
+    claim_path: Path,
+    process_identity: dict[str, object],
+    runner_exit_code: int,
+    child_launch_evidence: dict[str, object],
+    ledger_path: Path | None = None,
+) -> Path:
+    """installed launcherだけが実runner終端authorityを発行する。"""
+    policy = policy_path.resolve(strict=True)
+    admission = admission_path.resolve(strict=True)
+    arguments = runner_arguments_path.resolve(strict=True)
+    state = runner_state_path.resolve(strict=True)
+    claim = claim_path.resolve(strict=True)
+    try:
+        admission_value = json.loads(admission.read_text(encoding="utf-8-sig"))
+        root = Path(str(admission_value["repoRoot"])).resolve(strict=True)
+    except (KeyError, OSError, TypeError, ValueError) as error:
+        raise RuntimeError("E2E_RUNNER_TERMINAL_AUTHORITY_INVALID") from error
+    for candidate in (admission, arguments, state, claim):
+        if not candidate.is_relative_to(root) or candidate.is_symlink() or not candidate.is_file():
+            raise RuntimeError("E2E_RUNNER_TERMINAL_AUTHORITY_PATH_INVALID")
+    raw = state.read_bytes()
+    if len(raw) > 65536:
+        raise RuntimeError("E2E_RUNNER_TERMINAL_AUTHORITY_INVALID")
+    try:
+        state_value = json.loads(raw.decode("utf-8-sig"))
+    except (UnicodeDecodeError, ValueError, TypeError) as error:
+        raise RuntimeError("E2E_RUNNER_TERMINAL_AUTHORITY_INVALID") from error
+    if (
+        not isinstance(state_value, dict)
+        or state_value.get("status") != "publish_dry_run_ok"
+        or int(state_value.get("exit_code", -1)) != int(runner_exit_code)
+        or int(runner_exit_code) != 0
+        or child_launch_evidence.get("status") != "terminal_state_reached"
+        or int(child_launch_evidence.get("childExitCode", -1)) != int(runner_exit_code)
+        or str(state_value.get("e2eFinalAdmissionPath")) != str(admission)
+        or str(state_value.get("e2eFinalRunnerArgumentsPath")) != str(arguments)
+    ):
+        raise RuntimeError("E2E_RUNNER_TERMINAL_AUTHORITY_INVALID")
+    try:
+        claim_value = json.loads(claim.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError, TypeError) as error:
+        raise RuntimeError("E2E_RUNNER_TERMINAL_AUTHORITY_INVALID") from error
+    claim_owner = claim_value.get("ownerProcessIdentity") if isinstance(claim_value, dict) else None
+    if (
+        not isinstance(claim_owner, dict)
+        or not claim_owner.get("pid")
+        or not claim_owner.get("creationFileTimeUtc")
+        or claim_value.get("admissionPath") != str(admission)
+        or claim_value.get("runnerArgumentsPath") != str(arguments)
+    ):
+        raise RuntimeError("E2E_RUNNER_TERMINAL_AUTHORITY_CLAIM_INVALID")
+    if (
+        int(process_identity.get("pid", -1)) != int(claim_owner.get("pid", -2))
+        or str(process_identity.get("creationTime")) != str(claim_owner.get("creationFileTimeUtc"))
+        or os.path.normcase(os.path.abspath(str(process_identity.get("imagePath"))))
+        != os.path.normcase(os.path.abspath(str(claim_owner.get("imagePath"))))
+        or process_identity.get("imageSha256") != claim_owner.get("imageSha256")
+    ):
+        raise RuntimeError("E2E_RUNNER_TERMINAL_AUTHORITY_OWNER_INVALID")
+    try:
+        import tools.e2e_final_admission_bridge as bridge
+        canonical_ledger = (ledger_path or bridge.default_attempt_ledger_path()).resolve()
+        ledger_value, ledger_hash = bridge._ledger_snapshot(canonical_ledger)
+        ledger_row = ledger_value.get("attempts", {}).get(str(claim_value.get("attemptKey")))
+        if (
+            not isinstance(ledger_row, dict)
+            or ledger_row.get("state") != "runner_claimed"
+            or ledger_row.get("claimReceiptPath") != str(claim)
+            or ledger_row.get("claimReceiptSha256") != claim_value.get("receiptSha256")
+            or ledger_row.get("ownerProcessIdentity") != claim_owner
+        ):
+            raise RuntimeError("E2E_RUNNER_TERMINAL_AUTHORITY_LEDGER_INVALID")
+    except RuntimeError:
+        raise
+    except Exception as error:
+        raise RuntimeError(f"E2E_RUNNER_TERMINAL_AUTHORITY_LEDGER_INVALID:{error}") from error
+    unsigned: dict[str, object] = {
+        "schemaVersion": "NEWS_GRASP_E2E_RUNNER_TERMINAL_AUTHORITY_V1",
+        "attempt": int(attempt),
+        "admissionPath": str(admission),
+        "admissionSha256": _file_sha256(admission),
+        "runnerArgumentsPath": str(arguments),
+        "runnerArgumentsSha256": _file_sha256(arguments),
+        "claimPath": str(claim),
+        "claimSha256": str(claim_value.get("receiptSha256") or ""),
+        "claimOwnerProcessIdentity": claim_owner,
+        "ledgerPath": str(canonical_ledger),
+        "ledgerSha256": ledger_hash or "",
+        "statePath": str(state),
+        "stateSha256": hashlib.sha256(raw).hexdigest(),
+        "runnerExitCode": int(runner_exit_code),
+        "runnerStatus": str(state_value["status"]),
+        "ownerProcessIdentity": claim_owner,
+        "launcherProcessIdentity": process_identity,
+        "childLaunchEvidenceSha256": hashlib.sha256(
+            json.dumps(child_launch_evidence, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest(),
+        "producerPath": str(Path(__file__).resolve()),
+        "producerSha256": _file_sha256(Path(__file__).resolve()),
+    }
+    unsigned["authoritySha256"] = _sha256_json(unsigned)
+    output = policy.parent / f"e2e-terminal-authority-{int(attempt)}.json"
+    if output.exists():
+        try:
+            if json.loads(output.read_text(encoding="utf-8-sig")) != unsigned:
+                raise RuntimeError("E2E_RUNNER_TERMINAL_AUTHORITY_DRIFT")
+        except (OSError, ValueError, TypeError) as error:
+            raise RuntimeError("E2E_RUNNER_TERMINAL_AUTHORITY_DRIFT") from error
+    else:
+        _write_json_exclusive(output, unsigned)
+    return output
 
 
 def record_missing_pre_attempt_from_task_history(

@@ -4,6 +4,7 @@ import hashlib
 import json
 import multiprocessing
 import os
+import runpy
 import sys
 import subprocess
 import tempfile
@@ -23,6 +24,12 @@ from tools.e2e_final_admission_bridge import (
     E2EFinalAdmissionError,
     consume_admission as _consume_admission,
     issue_admission as _issue_admission,
+)
+from tools.news_grasp_e2e_attempt_policy import (
+    bind_policy_admission,
+    issue_logical_attempt,
+    new_policy,
+    validate_policy_ledger,
 )
 from tools.red_suite_execution import (
     PAIR_TEST_SELECTOR,
@@ -65,6 +72,59 @@ def _write_json(path: Path, value: dict[str, object]) -> Path:
         encoding="utf-8",
     )
     return path
+
+
+def _write_terminal_authority(
+    *, admission: Path, arguments: Path, state: Path, policy: Path, ledger: Path, attempt: int = 1
+) -> Path:
+    value = json.loads(admission.read_text(encoding="utf-8-sig"))
+    claim = Path(value["expectedClaimReceiptPath"])
+    reservation_path = Path(value["expectedReservationReceiptPath"])
+    reservation = json.loads(reservation_path.read_text(encoding="utf-8-sig"))
+    executable = Path(value["runnerExecutablePath"])
+    owner = {
+        "pid": 123,
+        "parentPid": 1,
+        "creationFileTimeUtc": "fixture",
+        "imagePath": str(executable.resolve()),
+        "imageSha256": _sha256(executable),
+    }
+    claim_value = bridge_module._claim_receipt(
+        reservation=reservation,
+        reservation_path=reservation_path,
+        claim_nonce="a" * 64,
+        runner_pid=123,
+        owner_process_identity=owner,
+    )
+    _write_json(claim, claim_value)
+    ledger_value = {
+        "schemaVersion": bridge_module.LEDGER_SCHEMA,
+        "attempts": {
+            value["attemptKey"]: bridge_module._claim_row(reservation, claim_value, claim)
+        },
+        "replacements": {},
+    }
+    _write_json(ledger, ledger_value)
+    launcher = ROOT / "scripts" / "ops" / "news-grasp-task-launcher.pyw"
+    namespace = runpy.run_path(str(launcher), run_name="_news_grasp_launcher_terminal_fixture")
+    return namespace["_write_runner_terminal_authority"](
+        policy_path=policy,
+        attempt=attempt,
+        admission_path=admission,
+        runner_arguments_path=arguments,
+        runner_state_path=state,
+        claim_path=claim,
+        process_identity={
+            "pid": 123,
+            "parentPid": 1,
+            "creationTime": "fixture",
+            "imagePath": str(Path(value["runnerExecutablePath"]).resolve()),
+            "imageSha256": _sha256(Path(value["runnerExecutablePath"])),
+        },
+        runner_exit_code=0,
+        child_launch_evidence={"status": "terminal_state_reached", "childExitCode": 0},
+        ledger_path=ledger,
+    )
 
 
 def _sha256(path: Path) -> str:
@@ -592,6 +652,203 @@ def _issue(
         output_path=admission,
     )
     return admission, ledger
+
+
+def test_validate_issued_produces_trusted_transition_receipt_and_ledger(
+    tmp_path: Path,
+) -> None:
+    admission, _ = _issue(tmp_path)
+    value = json.loads(admission.read_text(encoding="utf-8"))
+    arguments_path = Path(value["expectedRunnerArgumentsPath"])
+    arguments_path.parent.mkdir(parents=True, exist_ok=True)
+    arguments_path.write_bytes(
+        bridge_module._canonical_runner_arguments_bytes(list(value["runnerArguments"]))
+    )
+    policy_path = admission.parent / "e2e-attempt-policy.json"
+    policy = issue_logical_attempt(bind_policy_admission(new_policy(), admission), 1)
+    policy_path.write_text(json.dumps(policy, sort_keys=True) + "\n", encoding="utf-8")
+    receipt_path = policy_path.with_name("e2e-transition-1.json")
+    bridge_module.validate_issued_admission(
+        admission_path=admission,
+        runner_arguments=list(value["runnerArguments"]),
+        runner_arguments_path=arguments_path,
+        parent_authority_path=Path(value["expectedParentAuthorityPath"]),
+        reservation_output=Path(value["expectedReservationReceiptPath"]),
+        claim_output=Path(value["expectedClaimReceiptPath"]),
+        claim_witness_output=Path(value["expectedClaimWitnessPath"]),
+        actual_runner_executable_path=Path(value["runnerExecutablePath"]),
+        actual_authority_python_executable_path=Path(value["authorityPythonExecutablePath"]),
+        attempt_policy_path=policy_path,
+        transition_receipt_path=receipt_path,
+    )
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    assert receipt["producerRouteId"] == "news-grasp-runner"
+    assert receipt["outcomeStatus"] == "admission_validated"
+    assert receipt["producerExecutableSha256"] == _sha256(Path(receipt["producerExecutablePath"]))
+    assert policy_path.with_name("e2e-attempt-policy-ledger.sqlite3").is_file()
+    assert validate_policy_ledger(policy, policy_path)["transition"]["sequence"] == 1
+
+
+def test_runner_outcome_is_required_for_success_transition(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    admission, _ = _issue(tmp_path)
+    value = json.loads(admission.read_text(encoding="utf-8"))
+    arguments_path = Path(value["expectedRunnerArgumentsPath"])
+    arguments_path.parent.mkdir(parents=True, exist_ok=True)
+    arguments_path.write_bytes(
+        bridge_module._canonical_runner_arguments_bytes(list(value["runnerArguments"]))
+    )
+    parent_path = Path(value["expectedParentAuthorityPath"])
+    _write_json(parent_path, {"state": "activated"})
+    policy_path = admission.parent / "e2e-attempt-policy.json"
+    policy = issue_logical_attempt(bind_policy_admission(new_policy(), admission), 1)
+    policy_path.write_text(json.dumps(policy, sort_keys=True) + "\n", encoding="utf-8")
+    bridge_module.validate_issued_admission(
+        admission_path=admission,
+        runner_arguments=list(value["runnerArguments"]),
+        runner_arguments_path=arguments_path,
+        parent_authority_path=parent_path,
+        reservation_output=Path(value["expectedReservationReceiptPath"]),
+        claim_output=Path(value["expectedClaimReceiptPath"]),
+        claim_witness_output=Path(value["expectedClaimWitnessPath"]),
+        actual_runner_executable_path=Path(value["runnerExecutablePath"]),
+        actual_authority_python_executable_path=Path(value["authorityPythonExecutablePath"]),
+        attempt_policy_path=policy_path,
+        transition_receipt_path=policy_path.with_name("e2e-transition-1.json"),
+    )
+    bridge_module.consume_admission(
+        admission_path=admission,
+        ledger_path=tmp_path / "attempt-ledger.json",
+        runner_arguments=list(value["runnerArguments"]),
+        parent_authority_path=parent_path,
+        runner_arguments_path=arguments_path,
+        reservation_output=Path(value["expectedReservationReceiptPath"]),
+        actual_runner_executable_path=Path(value["runnerExecutablePath"]),
+        actual_authority_python_executable_path=Path(value["authorityPythonExecutablePath"]),
+    )
+    state_path = admission.parent / "runner-state.json"
+    _write_json(
+        state_path,
+        {
+            "status": "publish_dry_run_ok",
+            "exit_code": 0,
+            "e2eFinalAdmissionPath": str(admission),
+            "e2eFinalRunnerArgumentsPath": str(arguments_path),
+            "pid": 123,
+            "process_creation_time": "fixture",
+            "runner_path": str(value["runnerExecutablePath"]),
+        },
+    )
+    test_ledger = tmp_path / "attempt-ledger.json"
+    monkeypatch.setattr(bridge_module, "default_attempt_ledger_path", lambda: test_ledger)
+    terminal_authority = _write_terminal_authority(
+        admission=admission, arguments=arguments_path, state=state_path, policy=policy_path, ledger=test_ledger
+    )
+    result = bridge_module.record_runner_outcome(
+        admission_path=admission,
+        attempt_policy_path=policy_path,
+        terminal_authority_path=terminal_authority,
+    )
+    assert result["outcomeStatus"] == "runner_terminal"
+    updated = json.loads(policy_path.read_text(encoding="utf-8"))
+    assert updated["transition"]["event"] == "success"
+    assert updated["terminal"] == "product_completion"
+
+
+def test_runner_outcome_rejects_self_declared_success_state(
+    tmp_path: Path,
+) -> None:
+    admission, _ = _issue(tmp_path)
+    value = json.loads(admission.read_text(encoding="utf-8"))
+    arguments_path = Path(value["expectedRunnerArgumentsPath"])
+    arguments_path.parent.mkdir(parents=True, exist_ok=True)
+    arguments_path.write_bytes(
+        bridge_module._canonical_runner_arguments_bytes(list(value["runnerArguments"]))
+    )
+    parent_path = Path(value["expectedParentAuthorityPath"])
+    _write_json(parent_path, {"state": "activated"})
+    policy_path = admission.parent / "e2e-attempt-policy.json"
+    policy = issue_logical_attempt(bind_policy_admission(new_policy(), admission), 1)
+    policy_path.write_text(json.dumps(policy, sort_keys=True) + "\n", encoding="utf-8")
+    bridge_module.validate_issued_admission(
+        admission_path=admission,
+        runner_arguments=list(value["runnerArguments"]),
+        runner_arguments_path=arguments_path,
+        parent_authority_path=parent_path,
+        reservation_output=Path(value["expectedReservationReceiptPath"]),
+        claim_output=Path(value["expectedClaimReceiptPath"]),
+        claim_witness_output=Path(value["expectedClaimWitnessPath"]),
+        actual_runner_executable_path=Path(value["runnerExecutablePath"]),
+        actual_authority_python_executable_path=Path(value["authorityPythonExecutablePath"]),
+        attempt_policy_path=policy_path,
+        transition_receipt_path=policy_path.with_name("e2e-transition-1.json"),
+    )
+    state_path = admission.parent / "runner-state.json"
+    _write_json(state_path, {"status": "running", "exit_code": 0, "e2eFinalAdmissionPath": str(admission), "e2eFinalRunnerArgumentsPath": str(arguments_path)})
+    with pytest.raises(E2EFinalAdmissionError, match="TERMINAL_AUTHORITY"):
+        bridge_module.record_runner_outcome(
+            admission_path=admission,
+            attempt_policy_path=policy_path,
+            terminal_authority_path=policy_path.with_name("missing-terminal-authority.json"),
+        )
+
+
+def test_logical_attempt_b_has_distinct_admission_key(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo = tmp_path / "repo"
+    runner = repo / "scripts" / "ops" / "news-grasp-runner.ps1"
+    runner.parent.mkdir(parents=True, exist_ok=True)
+    runner.write_text("Write-Output 'runner'\n", encoding="utf-8")
+    monkeypatch.setattr(
+        bridge_module,
+        "execute_red_suite",
+        lambda **_: _synthetic_execution_receipt(repo),
+    )
+    admission = issue_admission(
+        issue_date="2026-08-01",
+        canonical_product_id="News-Grasp",
+        repo_root=repo,
+        runner_path=runner,
+        runner_arguments=["-NoPublish", "-DateStampOverride", "2026-08-01"],
+        evidence_bindings=_green_evidence(tmp_path / "attempt-b", repo_root=repo),
+        output_path=repo / ".e2e-final-admissions" / "attempt-b.json",
+        logical_attempt=2,
+    )
+    assert admission["attemptKey"] == (
+        "News-Grasp:2026-08-01:scheduled-equivalent-nopublish:attempt-b"
+    )
+
+
+def test_logical_attempt_three_is_rejected_before_red_suite(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo = tmp_path / "repo"
+    runner = repo / "scripts" / "ops" / "news-grasp-runner.ps1"
+    runner.parent.mkdir(parents=True, exist_ok=True)
+    runner.write_text("Write-Output 'runner'\n", encoding="utf-8")
+    monkeypatch.setattr(
+        bridge_module,
+        "execute_red_suite",
+        lambda **_: pytest.fail("3回目でRed suiteを実行してはならない"),
+    )
+    with pytest.raises(E2EFinalAdmissionError, match="E2E_ATTEMPT_LIMIT"):
+        issue_admission(
+            issue_date="2026-08-01",
+            canonical_product_id="News-Grasp",
+            repo_root=repo,
+            runner_path=runner,
+            runner_arguments=["-NoPublish", "-DateStampOverride", "2026-08-01"],
+            evidence_bindings=_green_evidence(
+                tmp_path / "attempt-c", repo_root=repo
+            ),
+            output_path=repo / ".e2e-final-admissions" / "attempt-c.json",
+            logical_attempt=3,
+        )
 
 
 def test_red_suite_coverage_is_mandatory_upstream_evidence(tmp_path: Path) -> None:

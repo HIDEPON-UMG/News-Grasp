@@ -1,0 +1,166 @@
+{
+  "schemaVersion": "NEWS_GRASP_DURABLE_DELTA_PACKET_V1",
+  "goalId": "019fe434-c58f-7441-9a23-6f62aaf7c23b",
+  "parentRequirementLineage": "News-Grasp Constitution-to-physical-delivery operational integrity",
+  "canonicalTodoRange": ["TODO-117", "TODO-206"],
+  "canonicalTodoCount": 62,
+  "durableTodoLedgerPath": "build/operational-integrity/durable-todo-ledger-v1.json",
+  "durableTodoLedgerSha256": "885e17649e4d6aafba78ae4ef7be16a8313588ab15f2376377d4a6b6b630abfc",
+  "todoDefinitionSetSha256": "90366916746df1821834b7b83d02428894205f27347dfc2da634f7cd15b13670",
+  "currentTodoId": "TODO-194",
+  "restoreOrder": [
+    "get_goal must return this goalId with status active",
+    "load full_plan from Hosted state; if the cache is absent after compaction, reconstruct every row exactly from the durable ledger and call update_plan before resuming",
+    "read and hash durableTodoLedgerPath",
+    "require exact goalId, count, ordered IDs, steps, statuses, and one in-progress row",
+    "read this delta packet and resume nextCriticalOperation only after all predicates pass"
+  ],
+  "sourceGeneration": "6f93e5130b6c2f2c9a29aa5b1a7822eb77214ebe",
+  "worktree": "_worktrees/News-Grasp-operational-integrity-a56f9dc1-20260812",
+  "freshEvidence": [
+    "TODO-206 Red→Green: E2E attempt A/B policy is product-local and installed-launcher bound; same-attempt failure-local resume max 1, attempt B conditional, random failure terminal, third attempt rejected",
+    "TODO-194 product-local global generation binding now validates source snapshot, installed runtime, owner authority receipt, owner commit, goal identity, path containment, reparse absence, and exact hashes at launcher/runner/wrapper boundaries",
+    "goal active and durable",
+    "62-entry append-only TODO ledger is sealed in Hosted state and durableTodoLedgerPath with exact ordered IDs, steps, statuses, and one in-progress row",
+    "TODO-203 canonical V2 packet Red-to-Green is complete: 15 packets use V2, V3 is rejected, packet Green 10, A15 Green 3, EV-04 Green 3, and target hash mismatch is zero",
+    "mutable progress hashes in tracked packet metadata were identified as a physical-delivery cycle; TODO-205 owns their removal while stable todoDefinitionSetSha256 preserves plan lineage",
+    "TODO-205 Green: mutable progress hashes removed, stable todoDefinitionSetSha256 unchanged by status-only transitions, focused contract Green 118, packet target mismatch zero, commit fda2abb3... pushed with remote HEAD exact",
+    "after context compaction the transient full_plan cache was absent; the 58-row plan was reconstructed exactly from the durable ledger, TODO-203 was appended once, and Hosted update_plan was restored before source work resumed",
+    "latest workspace bootstrap requires LUNA_EXECUTION_PACKET_V2 as the execution authority; product V3 packets are now a bound promotion blocker rather than being silently accepted",
+    "continuation integrity receipt Green: active durable goal, Hosted plan, 58-entry ledger, and delta packet matched exactly before resuming TODO-200",
+    "TODO-200 fixed security findings Green: external fixture hash revalidated at wrapper, launcher, runner admission and probe; retry and reentry use atomic durable consumption; watcher StartOnly uses the owned Job boundary",
+    "TODO-200 evidence: 6 unique Red with setup/import failure zero, same 6 Green, focused regression 26, Luna packet contract 8, active universe 266 objects and 2454 test nodes with unlinked zero",
+    "origin/main and production runtime at a56f9dc1",
+    "11-skill binding inventory present",
+    "11 of 11 shared source hashes verified against actual bytes",
+    "skill cross-layer graph Red 3 observed and identical Green 3 verified",
+    "skill graph has 11 skills, no orphan, no cycle, no duplicate state owner",
+    "A03/A04 active-universe focused regression Green 6"
+    ,"17 Requirement and 17 Acceptance paths compile into 202 nodes and 286 edges"
+    ,"three Mermaid projections are generated from Constitution, compiled trace, and skill graph"
+    ,"NGC-C02 editorial quality is bound to A17 monthly corpus"
+    ,"focused Constitution regression Green 22 after deterministic projection regeneration"
+    ,"finite operation Decision Graph has 9 states, 14 transitions, 7 typed terminals, and max depth 2"
+    ,"manual stop is immediate and external deferred reentry is one-shot with fresh authority in the same lineage"
+    ,"pending TODO and active goal are rejected as implicit retry events"
+    ,"E2E composition Red 3 observed through the actual installed-launcher consumer with setup/import failure 0"
+    ,"official wrapper external authority fields and launcher exact field contract are proven inconsistent"
+    ,"corrected wrapper-exact E2E composition nodes Green 3 on source hash 19adc890..."
+    ,"existing one-shot WAL, claim, identity, and broker timeout contract nodes remain Green 81"
+    ,"active catalog regenerated with 258 active objects and unlinked count 0; Constitution A03/A04 Green 6"
+    ,"runtime producer and declared generation consumer now require clean HEAD equals origin/main and seal the complete tracked Git tree"
+    ,"generation/task/promotion/Constitution focused nodes Green 47 plus A03/A04 Green 6"
+    ,"remote owner drift is re-read before active pointer mutation and leaves the prior generation active"
+    ,"planning, long-running, and E2E skill owner contracts Red 3 plus product overlay Red 1 are Green on the same nodes"
+    ,"versioned owner source and installed source are separate states; all three changed skills are stale_pending_installer rather than false Green"
+    ,"cross-skill graph remains Green for 11 skills and active object catalog has 260 active objects with unlinked 0"
+    ,"EV-01 through EV-14 have 42 frozen primary, boundary, and recovery nodes on immutable baseline a56f9dc1"
+    ,"all 42 Red nodes returned unique NGI_RED signatures through production evaluate_acceptance with setup/import error 0"
+    ,"operation-integrity matrix hash dcf2d698... and test hash d11086d0... are frozen in the TODO-185 impact receipt"
+    ,"active catalog regenerated with 262 active objects, 174 test files, 2433 nodes, and unlinked count 0"
+    ,"Luna packet validator V3 Red 3 and identical Green 3; legacy packet focused regression Green 7"
+    ,"TODO-187 through TODO-197 have 11 sequential decision-complete packets with unresolvedDecisionIds empty"
+    ,"packet set hash 1e0550f7..., validator hash c38aca1e..., baseline receipt hash a12df2d8..."
+    ,"active catalog has 265 active objects, 175 test files, 2436 nodes, and unlinked count 0"
+    ,"EV-07, EV-11, and EV-13 Green 9 through production integration consumer"
+    ,"readiness repair now dispatches exact registry handler before installer execution and pure re-verification"
+    ,"evidence reuse requires exact Requirement, consumer, oracle, fixture, source, config, runtime, lineage, and mutation generation"
+    ,"product-local execution governance Red 3 and Green 3 with EV-04/EV-07 Green 6"
+    ,"Sol design, Luna fixed implementation, local deterministic verification, Usage 8.8 limit, and lower-total-resource delegation are one typed decision"
+    ,"exact user TODO display format, append-only prefix, one in-progress, durable restoration order, same-shape retry zero, and manual stop terminal are enforced"
+    ,"EV-10 and EV-12 Green 6 through product E2E and Human Impact consumers"
+    ,"installed launcher to runner claim to broker exec seals execution root, executable, owner claim, and timeout"
+    ,"PowerShell wrapper and watcher use creation-time Job membership; raw PID termination and fixed polling are absent"
+    ,"audit recovery and TTS use one Python owned-process boundary; focused process/E2E/Human Impact regression Green 33"
+    ,"active catalog regenerated with 275 active objects, 176 test files, 2439 nodes, and unlinked count 0"
+    ,"EV-08 and EV-14 Red 6 observed and identical Green 6 through generation and physical-delivery consumers"
+    ,"installer emits an evidence-bound independent delivery projection and cannot self-promote pending release or E2E fields to Green"
+    ,"generation, asset, installer, rollback, scheduled-task, and installed NoPublish focused regression Green 27"
+    ,"PowerShell-produced delivery seal is accepted by the Python product validator; Luna packet contracts Green 3"
+    ,"active catalog regenerated with 278 active objects, 176 test files, 2439 nodes, and unlinked count 0"
+    ,"TODO-191 pre-execution static proof found six missing EV integration branches; known Red execution was skipped and one append-only corrective TODO was admitted"
+    ,"EV-01, EV-02, EV-03, EV-05, EV-06, and EV-09 fresh Red 18 and identical Green 18 now bind real Constitution, Decision Graph, skill graph, route, and E2E consumers"
+    ,"active-universe discovery excludes build evidence and accepts only closed active-object classes; build evidence count is zero"
+    ,"Luna packet and active catalog hash authority is one-way, TODO-198 is decision-complete, and TODO-191 depends on its Green receipt"
+    ,"all 42 frozen core nodes are Green once on the stable TODO-198 generation"
+    ,"E2E composition, generation drift, crash, and rollback focused nodes are Green 6"
+    ,"runner, daily control, audit recovery, and convergence focused integration is Green 327 with source mutation zero"
+    ,"the legacy monthly 37 tests were rejected as false Green because the replay consumer returned fixed booleans without invoking daily control"
+    ,"the immutable baseline is Red on NGC_RED_MONTHLY_REPLAY_DAILY_CONSUMER_DISCONNECTED and the current source is Green on the same binding predicate"
+    ,"32 daily and 5 compound replays now derive lineage, checkpoint continuation, retry zero, registered recovery or typed external, public non-regression, and finite terminal from actual product consumers"
+    ,"monthly/compound Green 37, operational concurrency/drift/crash/rollback/manual-stop Green 7, historical focused regression Green 41"
+    ,"delivery dependency contradiction was removed: TODO-195 to 197 now precede the single release, commit, push, install, and E2E chain TODO-193 to 194"
+    ,"current-generation cross-skill graph is Green for 11 skills with cycle, orphan, and duplicate owner all zero"
+    ,"three Mermaid projections, AGENTS and CLAUDE mirrors, and 882-line HTML were regenerated from the current Constitution trace and validate exactly"
+    ,"TODO-196 five-layer skill binding is Green for 11 skills, 14 Constitution clauses, and zero cycle/orphan/duplicate owner"
+    ,"task constitution, product change-control, and Luna packet consumers now consume the same operational-improvement binding"
+    ,"TODO-196 exact multi-root write ownership is sealed; packet-set metadata has an explicit parent-goal self-mutation policy and packet hash mismatch count is zero"
+    ,"TODO-196 product Green 75, shared-owner contract Green 4, skill validator Green 3, Mermaid 3, DESIGN lint error 0"
+    ,"TODO-197 first verification executed 122 nodes: 119 Green and EV-02 primary/boundary/recovery Red on CONSTITUTION_ACTIVE_OBJECT_HASH_DRIFT"
+    ,"the Red exposed direct-source and canonical-generator output ownership conflation plus stale active-catalog evidence; TODO-197 was returned once to owning TODO-196 instead of patched in verification"
+    ,"direct source hashes and derived generator outputs are now disjoint, two canonical generator commands are sealed, legacy packets remain compatible, and packet direct-hash mismatch count is zero"
+    ,"active catalog is Green with 266 active objects, 176 test files, 2450 nodes, and unlinked count zero"
+    ,"TODO-197 fixed verification suite is Green 122 of 122 with positive, boundary, recovery, actual-consumer, installer, stop/resume, and self-reference predicates"
+    ,"TODO-197 used one causal retry after four bound cause inputs changed; same-state retry count is zero and source/test/fixture mutation during verification is zero"
+    ,"AIHarnessState owner source passed source-authoring, gitleaks, diff-check, and one-shot security audit with Critical/High/Medium all zero"
+    ,"AIHarnessState commit 491e3b37... is fast-forward pushed and remote master matches exactly"
+    ,"News-Grasp skill binding and Luna packet now bind shared owner commit 491e3b37..., active catalog was regenerated with 266 active objects and unlinked zero, and packet direct-hash mismatch count is zero"
+    ,"the single release suite collected 2445 nodes: 2435 Green, 7 skipped, and 3 Red isolated to Playwright module resolution plus two stale direct-subprocess fixture assertions"
+    ,"the three release Red nodes are targeted Green after canonical NODE_PATH binding and replacing the stale fixture oracle with the owned-process boundary; broad retry count remains zero"
+    ,"public-repo privacy scan removed the internal session UUID from staged source and replaced it with uuid5 product lineage b3c2f6bd... derived from the public repository URL; fixture email remains example.invalid only"
+    ,"News-Grasp commit 5115f997... is fast-forward pushed and remote main matches exactly"
+    ,"six operational skill artifacts are installed with source/live hash exact and binding tests Green 17"
+    ,"canonical installer admission rejected the cache-bearing implementation worktree and accepted two pristine detached worktrees on 5115f997..."
+    ,"canonical installer exposed a real long-path atomic temp creation defect before runtime/task mutation; runtime root and all three task actions remain on the prior generation"
+    ,"production pwsh reproduced NEWS_GRASP_ATOMIC_TEMP_CREATE_FAILED:3 at an exact 260-character atomic temp path while 259 characters remained Green"
+    ,"one extended Win32 path conversion boundary made the same production-consumer fixture Green; focused installer and packet/catalog regression Green 36"
+    ,"News-Grasp commit ac957266... is fast-forward pushed and remote main matches exactly"
+    ,"canonical installer transaction 20260812-203640 committed once with destination hash 23/23, rollback backup hash 23/23, and Scheduled Task action 3/3 exact"
+    ,"TODO-204 production-consumer Red reproduced PowerShell watcher host RC=2 after a child wrote a valid smoke_ok terminal state"
+    ,"TODO-204 Green removes all PowerShell background event callbacks and waits on process plus Win32 directory-change kernel handles"
+    ,"News-Grasp commits 9a9e1ab9 and 50225a56 are fast-forward pushed and remote main matches exactly"
+    ,"canonical installer transaction 20260812-221600 committed once with destination hash 23/23, task backup 4/4, and source/install watcher hash exact"
+    ,"changed-generation Bootstrap ran once after install: Scheduled Task result 0, runtime HEAD 50225a56, smoke_ok state, typed terminal launch evidence, and closed WAL"
+    ,"TODO-204 final generation Green: old watcher snapshot reproduced NGI_RED_WATCHER_CALLBACK_HOST_RC2 after smoke_ok, while the same production-consumer fixture on Win32 directory-change handles exited 0"
+    ,"News-Grasp source commits 50225a56 and 6f93e513 are fast-forward pushed and remote main equals 6f93e513 exactly"
+    ,"canonical installer transaction 20260812-222024 committed with 23 managed files, 4 task definitions, source/install mismatch zero, backup mismatch zero, and rollback receipt present"
+    ,"6f93e513 Scheduled Bootstrap ran once with event-driven WAL completion: task result 0, child return 0, runtime HEAD exact, tracked runtime clean, smoke_ok, and typed terminal state claimed"
+    ,"TODO-194 pre-admission fail-closed: the active 61-entry goal/TODO lineage is intact, but workspace-global high-cost user-event authority rejects task-contract pin drift and the 372986479-byte transcript above its 268435456-byte bound"
+    ,"final E2E admission remains unissued, attempt consumption is zero, model launch count is zero, and same-state retry is prohibited until both external authority predicates change"
+    ,"user correction invalidated the premise that installed global harness completion is required; global harness is an actively changing external dependency"
+    ,"TODO-194 design correction selected a product-local bound external-generation strategy; global source is snapshot-bound and global mutation remains zero"
+    ,"todo-194-global-dependency-generation-design-v1.json defines separate product/high-cost roots, owner receipt binding, Red/Green nodes, and hold-release predicates"
+    ,"user correction defines E2E as at most two logical attempts: stabilization attempt A, then final confirmation attempt B only when A needed a minimal repair; same-attempt resume is distinct from a new attempt"
+    ,"TODO-206 requires third-attempt prohibition, causal classification, design-feedback terminal on random second-attempt failure, and zero publish/push/upload/notification side effects"
+    ,"TODO-206 Green: attempt A without repair terminates product completion without B, failure-local A resume is limited to one, B is issued only after A repair, B random/design failure becomes design_feedback_terminal, and third attempt is rejected by installed launcher consumer"
+    ,"TODO-194 TODO表示を旧来の一回実行から、A安定化→必要時B最終確認の最大2論理attemptへ明文化した。A failure-local失敗は最小修正再開1回で通し、全体最適の完全修正とL0-L7 Green後にBを一回実行し、A無修正成功時はBを省略、Bランダム障害は設計feedback terminal、3回目を禁止する"
+  ],
+  "invalidatedEvidence": [
+    "TODO-194 pre-change source/runtime/installer hashes before global-generation and E2E-attempt policy implementation",
+    "receipts bound to 066b7c40 and intermediate promotion commits",
+    "ops-sdd-tdd-harness-governance expected hash 0e30903d...",
+    "the first TODO-185 run that failed in the dynamic module loader before reaching the consumer",
+    "TODO-196 completion receipt before derived generator outputs were separated from direct source hashes"
+  ],
+  "openDecisions": [],
+  "nextCriticalOperation": "TODO-194: continue product-local global-generation manifest binding through wrapper, runner, installed launcher, and owner authority receipt. Do not wait for global installation completion. After the selected generation is immutable and validated, prepare E2E attempt A policy; issue attempt B only if A required a failure-local minimal repair. No third attempt.",
+  "consumedRetryShapes": [
+    "direct file-path invocation of workspace harness modules",
+    "shortened hosted TODO plan that omitted the existing append-only prefix",
+    "generic Windows Store Python alias for E2E contract pytest",
+    "clean worktree local venv path that does not exist",
+    "dynamic source module execution without prior sys.modules registration",
+    "installer regression with a pre-external-authority NoPublish fixture",
+    "Luna packet target hash set that mixed source write paths with receipt artifact paths",
+    "operation-integrity evaluation that referenced a removed observed_route variable",
+    "active-universe discovery that treated build evidence paths in config values as active product objects",
+    "TODO-197 verification before separating direct source hashes from canonical generator outputs and regenerating active catalog evidence"
+    ,"AIHarness capability regression invoked from the snapshot worktree against non-hermetic live/global bootstrap state"
+    ,"Windows PowerShell 5.1 long-path fixture that falsely passed while the production pwsh consumer failed at MAX_PATH"
+    ,"final E2E user-event authority with task-contract expected 2072d8e8 versus actual 5e842d61 and transcript 373186750 bytes versus 268435456-byte maximum"
+    ,"global owner remote origin/master commit 491e3b37a2971cb3b775434d61c8edc650e1f393 contains the expected task-contract bytes, while the installed copy remains stale; News-Grasp records this as a shared-owner promotion dependency without changing global files"
+    ,"latest recheck: owner source hash remains 2072d8e8, installed hash remains 5e842d61, and transcript grows beyond the 268435456-byte bound; this is external moving-state evidence, not a requirement to wait for global promotion"
+  ],
+  "manualStopPolicy": "latest user stop immediately ends the current operation and preserves this packet",
+  "updatedAtJst": "2026-08-12T23:30:00+09:00"
+}

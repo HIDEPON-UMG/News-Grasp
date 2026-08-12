@@ -401,8 +401,6 @@ def _transition_from_operation_event(
     if current not in graph["stateTerminal"] or not event:
         raise ValueError("OPERATION_DECISION_INPUT_INVALID")
     if current == "operation_deferred" and event == "fresh_external_authority":
-        if payload.get("reentryConsumed") is True:
-            raise ValueError("OPERATION_DECISION_REENTRY_ALREADY_CONSUMED")
         lineage_id = str(payload.get("dailyOperationLineageId") or "")
         previous_hash = str(payload.get("previousExternalAuthoritySha256") or "")
         current_hash = str(payload.get("externalAuthoritySha256") or "")

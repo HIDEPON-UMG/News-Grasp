@@ -84,7 +84,7 @@ def test_operation_decision_graph_recovery_stops_and_reenters_once(
             "dailyOperationLineageId": "lineage-2026-08-12",
             "previousExternalAuthoritySha256": "1" * 64,
             "externalAuthoritySha256": "2" * 64,
-            "reentryConsumed": False,
+            "reentryConsumed": True,
         },
         {},
     )

@@ -1,0 +1,397 @@
+{
+  "schemaVersion": "NEWS_GRASP_DURABLE_TODO_LEDGER_V1",
+  "goalId": "019fe434-c58f-7441-9a23-6f62aaf7c23b",
+  "retentionPolicy": "append_only_exact_id_prefix",
+  "canonicalTodoCount": 62,
+  "canonicalTodoRange": [
+    "TODO-117",
+    "TODO-206"
+  ],
+  "todoDefinitionSetSha256": "90366916746df1821834b7b83d02428894205f27347dfc2da634f7cd15b13670",
+  "todoDefinitionHashPolicy": "sha256 canonical JSON of ordered sequence,todoId,definition after stripping only the leading status token",
+  "inProgressTodoId": "TODO-194",
+  "restoreInvariant": {
+    "goalStatusRequired": "active",
+    "hostedPlanMustExist": true,
+    "hostedPlanRecovery": "if the Hosted cache is absent after compaction, reconstruct all rows exactly from this ledger and call update_plan before resuming",
+    "hostedIdsMustEqualLedgerIds": true,
+    "hostedStepsMustEqualLedgerSteps": true,
+    "hostedStatusesMustEqualLedgerStatuses": true,
+    "exactlyOneInProgress": true,
+    "resumeOnlyAfterExactMatch": true
+  },
+  "entries": [
+    {
+      "sequence": 1,
+      "todoId": "TODO-117",
+      "step": "☑ [TODO-117][120分|0.0%] WP-00 product-local change consumer、allowlist、競合owner admissionを隔離bootstrap",
+      "status": "completed"
+    },
+    {
+      "sequence": 2,
+      "todoId": "TODO-118",
+      "step": "☑ [TODO-118][90分|0.0%] WP-01 product spec、interface、registry、ユーザーprovenanceを正本化しHTML仕様書を生成",
+      "status": "completed"
+    },
+    {
+      "sequence": 3,
+      "todoId": "TODO-119",
+      "step": "☑ [TODO-119][450分|0.0%] WP-02 14 Acceptance×3観点の42 Redと2026-08-11 historical fixtureを変更前実測",
+      "status": "completed"
+    },
+    {
+      "sequence": 4,
+      "todoId": "TODO-120",
+      "step": "☑ [TODO-120][240分|0.0%] WP-03 immutable generation、stable launcher、installer promotion/rollback、task固定",
+      "status": "completed"
+    },
+    {
+      "sequence": 5,
+      "todoId": "TODO-121",
+      "step": "☑ [TODO-121][180分|0.0%] WP-04 completion vector、public/readiness分離、pure probe、state/root binding",
+      "status": "completed"
+    },
+    {
+      "sequence": 6,
+      "todoId": "TODO-122",
+      "step": "☑ [TODO-122][270分|0.0%] WP-05 checkpoint、artifact-first continuation、daily-lineage causal retry",
+      "status": "completed"
+    },
+    {
+      "sequence": 7,
+      "todoId": "TODO-123",
+      "step": "☑ [TODO-123][240分|0.0%] WP-06 exact recovery registry、deterministic builders、last-known-good、HumanImpact",
+      "status": "completed"
+    },
+    {
+      "sequence": 8,
+      "todoId": "TODO-124",
+      "step": "☑ [TODO-124][90分|0.0%] WP-07 Daily/Release gate profile分離",
+      "status": "completed"
+    },
+    {
+      "sequence": 9,
+      "todoId": "TODO-125",
+      "step": "☑ [TODO-125][210分|0.0%] WP-08 同一42 node Green、focused integration、historical/crash/drift/rollback",
+      "status": "completed"
+    },
+    {
+      "sequence": 10,
+      "todoId": "TODO-126",
+      "step": "☑ [TODO-126][120分|0.0%] WP-09 News-Grasp専用automation・skill・guardをversioned asset化して正規同期",
+      "status": "completed"
+    },
+    {
+      "sequence": 11,
+      "todoId": "TODO-127",
+      "step": "☑ [TODO-127][150分|1.0%] WP-10 release suite・safe commit・fast-forward push・remote HEADはGreen。外部authority欠損と旧Scheduled Taskのrepo-dir driftにより正規install・task/runtime parity・rollbackはdeferred",
+      "status": "completed"
+    },
+    {
+      "sequence": 12,
+      "todoId": "TODO-128",
+      "step": "☐ [TODO-128][120分|9.0%] WP-11 全上流Green後の隔離NoPublish E2Eをattempt A必須→A failure-local修正・完全修正後のみattempt Bの最大2論理attemptで最終提出（A無修正成功ならBなし、C禁止）",
+      "status": "pending"
+    },
+    {
+      "sequence": 13,
+      "todoId": "TODO-129",
+      "step": "☑ [TODO-129][150分|0.0%] WP-12 重大設計障害をR6正本・Decision Graph・Acceptance delta・resource vectorへ再封印し、最終review指摘2件だけを修正して提示",
+      "status": "completed"
+    },
+    {
+      "sequence": 14,
+      "todoId": "TODO-130",
+      "step": "☑ [TODO-130][324分|1.0%] WP-13 global/sharedを変更せず、fixed identity/security＋ExternalControlPlaneHealthAuthority lineageでdegradation・retry抑止・N→N+k自動再入を実装",
+      "status": "completed"
+    },
+    {
+      "sequence": 15,
+      "todoId": "TODO-131",
+      "step": "☑ [TODO-131][150分|1.0%] WP-14 tracked FX snapshot書込を廃止しimmutable runtime input snapshotへ分離",
+      "status": "completed"
+    },
+    {
+      "sequence": 16,
+      "todoId": "TODO-132",
+      "step": "☑ [TODO-132][180分|1.0%] WP-15 product-local convergence controller・登録済み復旧・no-progress終端を実装",
+      "status": "completed"
+    },
+    {
+      "sequence": 17,
+      "todoId": "TODO-133",
+      "step": "☑ [TODO-133][150分|1.0%] WP-16 installerをdata/runtime/task/control-plane別phaseへ分割しstable Scheduled Taskへ収束",
+      "status": "completed"
+    },
+    {
+      "sequence": 18,
+      "todoId": "TODO-134",
+      "step": "☑ [TODO-134][180分|1.0%] WP-17 15追加Red/Green・2026-08-11/今回障害scenario・focused regressionを同一consumerで固定",
+      "status": "completed"
+    },
+    {
+      "sequence": 19,
+      "todoId": "TODO-143",
+      "step": "☑ [TODO-143][1時間30分|0.2%] clean generationと32日間の一次証拠manifestを封印する",
+      "status": "completed"
+    },
+    {
+      "sequence": 20,
+      "todoId": "TODO-144",
+      "step": "☑ [TODO-144][3時間|0.4%] docs/spec.mdを14条項・6柱・3 Mermaidの憲法正本へ再編する",
+      "status": "completed"
+    },
+    {
+      "sequence": 21,
+      "todoId": "TODO-145",
+      "step": "☑ [TODO-145][7時間30分|1.3%] 51 core node・32日・複合5件の変更前Redを実測して凍結する",
+      "status": "completed"
+    },
+    {
+      "sequence": 22,
+      "todoId": "TODO-146",
+      "step": "☑ [TODO-146][3時間30分|0.5%] constitution compiler・trace・task packet validatorを実装する",
+      "status": "completed"
+    },
+    {
+      "sequence": 23,
+      "todoId": "TODO-147",
+      "step": "☑ [TODO-147][2時間30分|0.4%] 全active objectを独立列挙しhistory/delete dispositionを確定する",
+      "status": "completed"
+    },
+    {
+      "sequence": 24,
+      "todoId": "TODO-148",
+      "step": "☑ [TODO-148][4時間30分|0.7%] 全利用skillを監査しshared upstreamとNews-Grasp overlayへ正本化する",
+      "status": "completed"
+    },
+    {
+      "sequence": 25,
+      "todoId": "TODO-149",
+      "step": "☑ [TODO-149][4時間30分|0.7%] Codex・Claude・direct script・Lunaのproduct-local mutation admissionを接続する",
+      "status": "completed"
+    },
+    {
+      "sequence": 26,
+      "todoId": "TODO-150",
+      "step": "☑ [TODO-150][4時間|0.6%] generation・checkpoint・state・registered recovery・installed NoPublish経路を実装する",
+      "status": "completed"
+    },
+    {
+      "sequence": 27,
+      "todoId": "TODO-151",
+      "step": "☑ [TODO-151][6時間30分|1.0%] 同一51 node・32日・複合5件をGreenにしてfocused regressionを閉じる",
+      "status": "completed"
+    },
+    {
+      "sequence": 28,
+      "todoId": "TODO-152",
+      "step": "☑ [TODO-152][1時間30分|0.2%] AGENTS・CLAUDE・HTML仕様書・Mermaid・asset projectionを生成する",
+      "status": "completed"
+    },
+    {
+      "sequence": 29,
+      "todoId": "TODO-153",
+      "step": "☑ [TODO-153][4時間|0.6%] release回帰・safe commit・両repo push・remote HEADを証明する",
+      "status": "completed"
+    },
+    {
+      "sequence": 30,
+      "todoId": "TODO-154",
+      "step": "☑ [TODO-154][3時間|0.5%] 正規installerで最新競合generationのskill・runtime・taskを同期しrollback/parityを再証明する（6bc反映後のruntime convergenceは外部authority復旧待ち）",
+      "status": "completed"
+    },
+    {
+      "sequence": 31,
+      "todoId": "TODO-155",
+      "step": "⊘ [TODO-155][3時間|0.7%] installed launcherからNoPublish E2Eをattempt A必須→必要時のみattempt Bの最大2論理attemptで最終state vectorを提出する（A無修正成功ならBなし、C禁止、shared global authority上限超過のためoperation_deferred）",
+      "status": "pending"
+    },
+    {
+      "sequence": 32,
+      "todoId": "TODO-156",
+      "step": "☑ [TODO-156][4時間|0.4%] NoPublish専用の隔離deterministic authority入口をproduction固定authorityと分離して実装し、Red→Greenを証明する",
+      "status": "completed"
+    },
+    {
+      "sequence": 33,
+      "todoId": "TODO-177",
+      "step": "☑ [TODO-177][1時間|0.1%] News-Grasp・installed runtime・loaded skill・hook・spec・taskのread-only inventoryとowner境界を確定する",
+      "status": "completed"
+    },
+    {
+      "sequence": 34,
+      "todoId": "TODO-178",
+      "step": "☑ [TODO-178][2時間|0.3%] 全loaded skillを目的→フロー→タスク→consumer→証拠で評価し、スキル間の矛盾・重複・孤立・循環をdurable graphへ確定する",
+      "status": "completed"
+    },
+    {
+      "sequence": 35,
+      "todoId": "TODO-179",
+      "step": "☑ [TODO-179][2時間30分|0.2%] Constitution trace compilerと3 Mermaid projectionを実装し、利用者価値・Requirement・Acceptanceを一意に結線する",
+      "status": "completed"
+    },
+    {
+      "sequence": 36,
+      "todoId": "TODO-180",
+      "step": "☑ [TODO-180][2時間|0.2%] 業務フローを有限Decision Graphへ変換し、success・recovery・deferred・user stopped・major incident・design escapeを終端化する",
+      "status": "completed"
+    },
+    {
+      "sequence": 37,
+      "todoId": "TODO-181",
+      "step": "☑ [TODO-181][3時間|0.2%] wrapper→runner→brokerの実E2E Redを取得し、引数不一致・execution-root欠落・可変root・raw killを固定する",
+      "status": "completed"
+    },
+    {
+      "sequence": 38,
+      "todoId": "TODO-182",
+      "step": "☑ [TODO-182][3時間|0.3%] E2E one-shot WAL、claim、identity、cwd、実行体hash、broker-owned timeoutを実装する",
+      "status": "completed"
+    },
+    {
+      "sequence": 39,
+      "todoId": "TODO-183",
+      "step": "☑ [TODO-183][2時間30分|0.2%] source・installed・runtime・config・launcher・Scheduled Taskのgenerationと競合owner境界を固定する",
+      "status": "completed"
+    },
+    {
+      "sequence": 40,
+      "todoId": "TODO-184",
+      "step": "☑ [TODO-184][3時間|0.4%] 対象skillの目的・flow・task・consumer・contract testを修正し、shared owner競合時は最新commitへ従属再封印する",
+      "status": "completed"
+    },
+    {
+      "sequence": 41,
+      "todoId": "TODO-185",
+      "step": "☑ [TODO-185][4時間|0.4%] TDD impact receiptとEV-01〜EV-14×3観点の42 Redを実consumerで凍結する",
+      "status": "completed"
+    },
+    {
+      "sequence": 42,
+      "todoId": "TODO-186",
+      "step": "☑ [TODO-186][3時間30分|0.3%] Luna Maxへ渡すdecision-complete packetを作り、全packetでunresolvedDecisionIds=[]を検証する",
+      "status": "completed"
+    },
+    {
+      "sequence": 43,
+      "todoId": "TODO-187",
+      "step": "☑ [TODO-187][2時間30分|0.2%] public/readiness/recovery/external分離、checkpoint、daily lineage、causal retry、registered handlerを実装する",
+      "status": "completed"
+    },
+    {
+      "sequence": 44,
+      "todoId": "TODO-188",
+      "step": "☑ [TODO-188][3時間|0.2%] Sol/Luna/local toolの役割、Usage budget、同一shape retry禁止、progress表示、manual stop終端をconsumer化する",
+      "status": "completed"
+    },
+    {
+      "sequence": 45,
+      "todoId": "TODO-189",
+      "step": "☑ [TODO-189][3時間|0.2%] Human-Friendly契約を実consumerへ接続し、raw process termination、focus theft、auto-open、monitoringを除去する",
+      "status": "completed"
+    },
+    {
+      "sequence": 46,
+      "todoId": "TODO-190",
+      "step": "☑ [TODO-190][3時間|0.2%] installer、runtime、task、skill asset、rollback、source/install parityを閉じる",
+      "status": "completed"
+    },
+    {
+      "sequence": 47,
+      "todoId": "TODO-191",
+      "step": "☑ [TODO-191][6時間|0.8%] 42 core nodeをGreen化し、focused integration、E2E composition、generation drift、crash、rollbackを検証する",
+      "status": "completed"
+    },
+    {
+      "sequence": 48,
+      "todoId": "TODO-192",
+      "step": "☑ [TODO-192][5時間|0.6%] 32日corpus・5 compound・replay・concurrency・drift・crash・manual stopを同一consumerでGreen化する",
+      "status": "completed"
+    },
+    {
+      "sequence": 49,
+      "todoId": "TODO-193",
+      "step": "☑ [TODO-193][2時間|0.2%] release gate、safe commit、push、remote HEAD、installer promotionの提出証拠を閉じる",
+      "status": "completed"
+    },
+    {
+      "sequence": 50,
+      "todoId": "TODO-194",
+      "step": "◉ [TODO-194][1時間|0.1%] installed launcher起点のNoPublish E2Eをattempt A（安定化）→必要時のみattempt B（最終確認）の最大2論理attemptで閉じる。Aのfailure-local失敗は最小修正再開1回で通し、全体最適の完全修正とL0-L7 Green後にBを一回実行する。A無修正成功ならBを実行せず、Bのランダム障害は設計feedback terminal、3回目は禁止し副作用0とstate vectorを確定する",
+      "status": "in_progress"
+    },
+    {
+      "sequence": 51,
+      "todoId": "TODO-195",
+      "step": "☑ [TODO-195][3時間|0.3%] skill間の目的・フロー・タスク・証拠graphを生成し、cycle・orphan・duplicate ownerを0にする",
+      "status": "completed"
+    },
+    {
+      "sequence": 52,
+      "todoId": "TODO-196",
+      "step": "☑ [TODO-196][4時間|0.5%] News-Grasp運用改善skill・harnessを改正し、今後の全改善taskへ5層結線・cross-skill整合性・無理無駄評価を強制する",
+      "status": "completed"
+    },
+    {
+      "sequence": 53,
+      "todoId": "TODO-197",
+      "step": "☑ [TODO-197][2時間|0.3%] positive/negative/recovery fixture、実consumer、installer projection、stop/resume契約を検証し、自己参照Greenを拒否する",
+      "status": "completed"
+    },
+    {
+      "sequence": 54,
+      "todoId": "TODO-198",
+      "step": "☑ [TODO-198][1時間30分|0.2%] EV-01/02/03/05/06/09の欠落integration 18 nodeを既存Constitution・Decision Graph・skill graph・E2E consumerへ結線する",
+      "status": "completed"
+    },
+    {
+      "sequence": 55,
+      "todoId": "TODO-199",
+      "step": "☑ [TODO-199][20分|0.1%] source・skill変更後にrelease/push/install/E2Eが一度だけ走るようTODO-193〜197の依存DAGを是正する",
+      "status": "completed"
+    },
+    {
+      "sequence": 56,
+      "todoId": "TODO-200",
+      "step": "☑ [TODO-200][1時間30分|0.2%] safe-commit監査の固定3所見をauthority再検証・atomic consumption・owned-process単一路へ閉じる",
+      "status": "completed"
+    },
+    {
+      "sequence": 57,
+      "todoId": "TODO-201",
+      "step": "☑ [TODO-201][30分|0.1%] goal・Hosted ToDo・durable ledger・delta packetを同一append-only lineageへ束縛し、圧縮後の完全復元を機械化する",
+      "status": "completed"
+    },
+    {
+      "sequence": 58,
+      "todoId": "TODO-202",
+      "step": "☑ [TODO-202][1時間30分|0.2%] installerのlong-path atomic writeとpre-authority rollbackをRed→Greenで閉じ、正規promotionを再開する",
+      "status": "completed"
+    },
+    {
+      "sequence": 59,
+      "todoId": "TODO-203",
+      "step": "☑ [TODO-203][45分|0.1%] 更新されたLUNA_EXECUTION_PACKET_V2契約へ全packet・validator・fixtureを再封印する",
+      "status": "completed"
+    },
+    {
+      "sequence": 60,
+      "todoId": "TODO-204",
+      "step": "☑ [TODO-204][1時間30分|0.2%] scheduled bootstrap後段のRC=2無証跡障害をtyped launch evidenceでRed→Green化しruntime readinessを閉じる",
+      "status": "completed"
+    },
+    {
+      "sequence": 61,
+      "todoId": "TODO-205",
+      "step": "☑ [TODO-205][1時間|0.1%] packet正本からmutable ToDo進捗hashを分離し、進捗更新→source mutation→再deliveryの循環を除去する",
+      "status": "completed"
+    },
+    {
+      "sequence": 62,
+      "todoId": "TODO-206",
+      "step": "☑ [TODO-206][30分|0.1%] E2Eを安定化attempt A→最終確認attempt Bの最大2論理attemptへ固定し、同一attempt内の最小修正再開・3回目禁止・設計feedback terminalをconsumer/fixtureへ結線する",
+      "status": "completed"
+    }
+  ]
+}

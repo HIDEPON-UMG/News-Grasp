@@ -1,6 +1,6 @@
 ---
 name: news-grasp-e2e-discipline
-description: Run or plan News-Grasp daily-batch E2E, scheduled-equivalent NoPublish E2E, goal-run validation, or push-before-publish verification. Use whenever an action might launch the full runner, create an E2E worktree, resume an E2E, judge E2E readiness, or claim E2E completion. Enforces final-confirmation-only execution, one durable attempt per issue date, upstream-first debugging, and bounded resource use.
+description: Run or plan News-Grasp daily-batch E2E, scheduled-equivalent NoPublish E2E, goal-run validation, or push-before-publish verification. Use whenever an action might launch the full runner, create an E2E worktree, resume an E2E, judge E2E readiness, or claim E2E completion. Enforces final-confirmation-only execution, at most two durable logical attempts per issue date (A then conditional B), upstream-first debugging, and bounded resource use.
 ---
 
 # News-Grasp E2E Discipline
@@ -17,7 +17,9 @@ description: Run or plan News-Grasp daily-batch E2E, scheduled-equivalent NoPubl
 
 ## 1. 目的
 
-E2Eは、完成済みの運用鎖が本番相当入口で一度だけ成立することを確認する最終試験である。
+E2Eは、完成済みの運用鎖が本番相当入口で成立することを確認する最終試験である。必須のattempt A（安定化）を一度実行し、Aが失敗した場合だけ、失敗原因へ作用する最小修正と同一attempt内の再開を一回まで許可した後、完全修正後のattempt B（最終確認）を一度だけ実行する。Aが無修正で成功した場合はBを実行しない。Bで修正起因でないrandom/design failureが発生した場合は設計feedbackを記録して終端し、3回目は実行しない。
+
+遷移receiptは実行前の自己申告で作成しない。`tools/e2e_final_admission_bridge.py validate-issued` はissueイベントだけを記録し、installed launcherが実runner process handleのcreation identity、claim、state hash、実exitを束ねた`NEWS_GRASP_E2E_RUNNER_TERMINAL_AUTHORITY_V1`を発行する。実runner終了後の同bridgeの`record-outcome`はこのterminal authorityだけを検証してterminal receiptを発行し、callerのstate JSONやexit codeを成功証拠として受け取らない。success・resume・full correctionはterminal receiptのstate hashとowner identityへ束縛される。launcherはこのreceiptとledgerのread-only検証だけを行い、caller作成receiptや実行前Greenを受理しない。
 
 E2Eを次の用途に使ってはならない。
 
@@ -33,7 +35,7 @@ E2Eを次の用途に使ってはならない。
 
 ## 2. E2Eの定義
 
-News-GraspでE2Eと呼べるのは、production Scheduled Taskと同じ `scripts/ops/news-grasp-runner.ps1` を、隔離state/log、`-NoPublish`、実際のstage順、実際のquality gate、実際のrepair routingで開始し、所定の終端stateまで通す一回の試験だけである。
+News-GraspでE2Eと呼べるのは、production Scheduled Taskと同じ `scripts/ops/news-grasp-runner.ps1` を、隔離state/log、`-NoPublish`、実際のstage順、実際のquality gate、実際のrepair routingで開始し、attempt Aまたは条件付きattempt Bを所定の終端stateまで通す試験である。論理attemptは最大2件で、attempt Cは契約違反として発行前に拒否する。
 
 ### 2.1 通常日次とのidentity分離
 
@@ -58,7 +60,7 @@ News-GraspでE2Eと呼べるのは、production Scheduled Taskと同じ `scripts
 | L5 | integration | 複数componentの接続、fake server、隔離artifact |
 | L6 | fault injection | API失敗、stale、hash drift、replay、停止・復旧 |
 | L7 | live reconcile | repo、installed runner、automation、公開証跡の鮮度 |
-| L8 | final E2E | scheduled-equivalent NoPublishの一回だけの最終確認 |
+| L8 | final E2E | scheduled-equivalent NoPublishのattempt A、必要時だけattempt Bによる最終確認（最大2論理attempt） |
 
 テスト名やディレクトリ名に `e2e` が含まれていても、L8の条件を満たさないものはE2E試行へ数えない。逆に、full runnerを起動するものは名前に関係なくE2Eとして数える。
 
@@ -67,6 +69,8 @@ News-GraspでE2Eと呼べるのは、production Scheduled Taskと同じ `scripts
 試行identityは次で固定する。
 
 `News-Grasp:<issue-date>:scheduled-equivalent-nopublish`
+
+論理attemptは `attemptKey` の末尾で区別する。Aは上記の基底key、Bは同じkeyへ`:attempt-b`を付加する。issue date、daily lineage、source generationはA/Bで共有し、attempt Cは存在しない。
 
 次を変えても同じ試行である。
 
@@ -82,7 +86,7 @@ News-GraspでE2Eと呼べるのは、production Scheduled Taskと同じ `scripts
 - `ResumeFromStage`
 - promptまたはskillの再読込
 
-日付ごとのdurable ledgerにidentityが一度記録されたら、別pathで再発行しても第二起動を拒否する。
+日付ごとのdurable ledgerはA/Bのlogical attempt keyを別々に記録する。Aの無修正成功後のB、原因へ作用する最小修正を経ないB、またはattempt Cは別path・別receipt・別run IDでも発行を拒否する。
 
 ## 4. admissionの意味
 
@@ -93,8 +97,9 @@ admissionは次を全て満たす機械判定済みreceiptである。
 - `schemaVersion=NEWS_GRASP_E2E_FINAL_ADMISSION_V1`
 - `state=issued`
 - `purpose=final_confirmation_only`
-- `singleUse=true`
-- `resumePolicy=forbidden`
+- `singleUse=true`（各logical attempt単位）
+- `resumePolicy=forbidden`（admission自体の再消費は禁止。失敗原因へ作用する最小修正後の同一attempt再開は、外側のattempt policyが一回だけ許可する）
+- 外側のattempt policyは `failureLocalResumeMax=1`、`thirdAttemptForbidden=true`、`attemptRole` は `stabilization`（A）または `final_confirmation`（B）を保持する。
 - issue dateとcanonical product IDからattempt keyを再計算できる。
 - runnerの絶対pathとSHA-256がfreshである。
 - runner argumentsが完全一致し、`-NoPublish`を含み、`-ResumeFromStage`を含まない。
@@ -142,7 +147,7 @@ execution receiptはfixtureだけでなく、tools、runner、config、tests、p
 
 reporter artifactはカテゴリ全体の一括条件でなく、各recordのthumbを個別に検証する。一件でもnull、空、非HTTP、自己参照、Google News proxyならeditorへ渡さない。`followup_review_required`をURL隔離で代用せず、`followup-review-evidence-patch`がcurrent reporter artifact、公開日、date evidence、意味差分を一致確認できるfresh recordだけにreview証拠を付与する。
 
-高コスト正本は日本語goalの意味を保持する。`単一の最終production-equivalent NoPublish E2E`と、重複探索・E2E連発・無駄な外部model起動の禁止が同じNews-Grasp goalにある場合だけ、final E2Eを1回、正常経路のmodel callをreporter 7 + editor 1 + DeepDive 1の9回へ限定する。retry/repair分を追加しない。旧parserが上限0を登録済みでも、call/E2E countがともに0の同一goalだけを一度昇格し、消費済み・曖昧goal・再変更は拒否する。
+高コスト正本は日本語goalの意味を保持する。`最終production-equivalent NoPublish E2E`と、重複探索・無駄な外部model起動の禁止が同じNews-Grasp goalにある場合、final logical attempt Aを必須とし、Aがfailure-local修正を要した場合だけattempt Bを一回追加できる。論理attempt上限は2、各attemptのfailure-local resumeは1回、attempt Cは設計feedback terminalとする。正常経路のmodel callはreporter 7 + editor 1 + DeepDive 1の9回へ限定し、retry/repair分を先回りで追加しない。旧parserが上限0を登録済みでも、call/E2E countがともに0の同一goalだけを一度昇格し、消費済み・曖昧goal・再変更は拒否する。
 
 ## 5. readinessの判定順序
 
@@ -155,7 +160,7 @@ reporter artifactはカテゴリ全体の一括条件でなく、各recordのthu
 5. source、fixture、runner、automation、manifestのhash鮮度を再確認する。
 6. 高コスト予算と独立反証reviewをGreenにする。
 7. 上流証拠manifestからfinal admissionを一度発行する。
-8. official wrapperでadmissionを消費し、L8を一度だけ実行する。
+8. official wrapperでattempt Aのadmissionを消費し、Aがfailure-local修正を要した場合だけattempt Bのadmissionを消費する。attempt Cは実行しない。
 
 一つでもRed、Yellow、stale、missing、unknownならL8を開始しない。missing evidenceを「E2Eで確かめる」ことを禁止する。
 
@@ -188,22 +193,20 @@ wrapper外からfull runnerをE2E目的で直接起動してはならない。
 - installed runnerやautomation差: live reconcile
 - 外部認証やquota: dedicated readiness probe
 
-full runnerを部分stageから再開して確認することはE2Eではなく、復旧integrationである。E2E wrapperにresume機能を持たせてはならない。
+full runnerを無制御に部分stageから再開して確認することはE2Eではなく、復旧integrationである。ただしattempt policyが失敗原因と同一generationを検証し、許可したfailure-local resume一回だけは同じlogical attemptの継続として扱う。admission自体の再消費やattempt resetは許可しない。
 
 ## 8. 失敗時の処理
 
 L0からL7の失敗では、最初に失敗した層へ戻り、その層と直接依存する検証だけを再実行する。無関係な層と既にfreshな証拠を再実行しない。
 
-L8が失敗した場合は次を行う。
+L8が失敗した場合はattempt policyを次のように適用する。
 
-1. attemptを消費済みのまま保持する。
-2. state、log末尾、stage、exit code、artifact差分を凍結する。
-3. 欠けていた不変条件、fixture、owner層を `UPSTREAM_DESIGN_ESCAPE_V1` として記録する。
-4. E2E内でpatchしない。
-5. 同じrunをresumeしない。
-6. worktree、receipt、run IDを変えて第二起動しない。
-7. 最上流の設計・fixture・consumerを修正し、L0からL7を閉じ直す。
-8. 同一issue dateの第二L8は実行しない。completionも宣言しない。
+1. 失敗したlogical attemptを消費済みのまま保持し、state、log末尾、stage、exit code、artifact差分を凍結する。
+2. 失敗原因へ作用する最小修正だけを設計境界で行い、同じlogical attemptの再開を一回だけ許可する。原因に作用しない名前・引数・pathだけの再試行は禁止する。
+3. attempt Aが最小修正後に成功した場合は、全体最適の完全修正とL0-L7再検証を閉じた後にattempt Bを一回だけ実行する。Aが無修正で成功した場合はBを実行しない。
+4. attempt Bで修正起因でないrandom/design failureが発生した場合は、欠けていた不変条件、fixture、owner層を `UPSTREAM_DESIGN_ESCAPE_V1` として記録し、設計feedback terminalへ遷移する。
+5. attempt C、同一issue dateの第三L8、patch後の無制限resume、worktree・receipt・run IDによるattempt resetは実行前に拒否する。
+6. E2E内で場当たり的にpatchせず、最上流の設計・fixture・consumerを修正してから次の論理attemptへ進む。
 
 E2E失敗を外部境界のせいにする前に、専用readiness probeで事前検出できなかった理由を上流欠陥として扱う。
 
@@ -211,7 +214,9 @@ E2E失敗を外部境界のせいにする前に、専用readiness probeで事�
 
 L8前に次を固定する。
 
-- full E2E上限: 1回
+- logical E2E上限: 2回（attempt A必須、attempt BはAがfailure-local修正を要した場合だけ）
+- 各logical attemptのfailure-local resume上限: 1回
+- attempt C: 0回（設計feedback terminal）
 - 外部model call上限
 - wall-clock上限
 - subprocess上限
@@ -230,7 +235,7 @@ L8前に次を固定する。
 4. deterministic fixture/simulation
 5. targeted component/integration
 6. deduplicated readiness probe
-7. 一回のfinal E2E
+7. attempt Aのfinal E2E。Aがfailure-local修正を要した場合だけ、完全修正後にattempt Bを一回実行する。
 
 同じ失敗shapeを名前や引数だけ変えて再試行してはならない。
 
@@ -278,14 +283,14 @@ L8を実行した場合は、成功・失敗を問わず `report-news-grasp-inci
 - attempt key、admission、durable ledger、runner hash、exit code、no-publish/no-push証跡
 - 公開が成功条件に含まれる場合は、public URL returns HTTP 200 だけでなく report-specific sentinel text まで検証した結果
 
-E2E execution is not report-complete until this HTML report exists and passes `tools/validate_incident_report_design.py`. さらにdesktop and one mobile render checkを行い、no horizontal overflowを実測する。レポート作成やrender checkを第二E2Eの理由にしてはならない。
+E2E execution is not report-complete until this HTML report exists and passes `tools/validate_incident_report_design.py`. さらにdesktop and one mobile render checkを行い、no horizontal overflowを実測する。レポート作成やrender checkを追加attemptの理由にしてはならない。
 
 ## 12. 絶対禁止
 
 - E2Eによるfailure discovery
 - E2E内patch
-- patch後resume
-- second E2E
+- 無関係なpatch後resume
+- third E2E（attempt C）
 - worktreeによるattempt reset
 - admission fileの存在だけを信用
 - stale receiptの再利用

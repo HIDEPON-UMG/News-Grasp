@@ -186,6 +186,15 @@ def test_execution_governance_retry_consumption_is_not_caller_resettable() -> No
     assert second["retry"]["reasonCode"] == "CAUSAL_RETRY_ALREADY_CONSUMED"
 
 
+def test_execution_governance_ignores_forged_retry_consumed_on_first_attempt() -> None:
+    payload = _base()
+    payload["retry"]["retryConsumed"] = True
+    result = _consumer()(payload)
+
+    assert result["retry"]["allowed"] is True
+    assert result["retry"]["reasonCode"] == "CAUSAL_INPUT_CHANGED_ONE_SHOT"
+
+
 def test_execution_governance_retry_consumption_is_atomic() -> None:
     with ThreadPoolExecutor(max_workers=2) as executor:
         results = list(executor.map(lambda _: _consumer()(_base()), range(2)))

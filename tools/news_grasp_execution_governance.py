@@ -192,8 +192,6 @@ def _retry(
         return {"allowed": False, "reasonCode": "SAME_SHAPE_RETRY_FORBIDDEN"}
     if value.get("causeInputChanged") is not True:
         return {"allowed": False, "reasonCode": "CAUSAL_INPUT_UNCHANGED"}
-    if value.get("retryConsumed") is True:
-        return {"allowed": False, "reasonCode": "CAUSAL_RETRY_ALREADY_CONSUMED"}
     consumption = consume_once(
         repo_root=repo_root,
         ledger_root=CONSUMPTION_LEDGER_ROOT,

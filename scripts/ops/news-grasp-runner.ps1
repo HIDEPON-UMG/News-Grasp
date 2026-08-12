@@ -66,10 +66,13 @@ param(
     [string] $E2EFinalRunnerArgumentsPath = '',
     [string] $E2EFinalReservationReceiptPath = '',
     [string] $E2EFinalClaimReceiptPath = '',
+    [string] $E2EAttemptPolicyPath = '',
+    [ValidateRange(1,2)][int] $E2ELogicalAttempt = 0,
     [string] $HighCostClaimWitness = '',
     [string] $HighCostAttemptId = '',
     [string] $HighCostBudgetToolPath = '',
     [string] $HighCostWorkspaceRoot = '',
+    [string] $GlobalHarnessGenerationManifestPath = '',
     [string] $ExternalHealthAuthorityPathOverride = '',
     [string] $ExternalHealthAuthorityExpectedSha256 = '',
     [string] $PowerShellExe = 'powershell.exe',
@@ -152,6 +155,9 @@ if ($SkipSourceSync -and (-not $SmokeTest)) {
 }
 if ($StopBeforeDeepDive) { $NoPublish = $true }
 if ($NoPublish) { $NoPush = $true }
+if ($NoPublish -and (-not $E2EAttemptPolicyPath -or $E2ELogicalAttempt -notin @(1,2))) {
+    throw 'NEWS_GRASP_E2E_ATTEMPT_POLICY_REQUIRED'
+}
 $ResumeFromPostDailyQuality = $ResumeFromStage -in @('deepdive', 'post-daily-quality')
 $ResumeAfterDeepDive = $ResumeFromStage -in @('post-deepdive')
 $ResumeGenerationQualityRepair = $ResumeFromStage -eq 'generation-quality-repair'
@@ -379,6 +385,52 @@ if ($ExternalHealthAuthorityPathOverride) {
         if ($_.Exception.Message -eq 'EXTERNAL_AUTHORITY_FIXTURE_HASH_DRIFT') { throw }
         throw "EXTERNAL_AUTHORITY_FIXTURE_INVALID: $($_.Exception.Message)"
     }
+}
+
+function Assert-GlobalHarnessGenerationManifest {
+    param([Parameter(Mandatory=$true)][string] $ManifestPath)
+    try {
+        $resolved = [System.IO.Path]::GetFullPath((Resolve-Path -LiteralPath $ManifestPath -ErrorAction Stop).Path)
+        $repoBoundary = [System.IO.Path]::GetFullPath((Resolve-Path -LiteralPath $RepoDir -ErrorAction Stop).Path).TrimEnd('\')
+        if (-not $resolved.StartsWith($repoBoundary + '\', [System.StringComparison]::OrdinalIgnoreCase)) { throw 'outside RepoDir' }
+        $item = Get-Item -LiteralPath $resolved -Force -ErrorAction Stop
+        if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0 -or [int64]$item.Length -gt 65536) { throw 'invalid manifest file' }
+        $cursor = $resolved
+        while ($cursor) {
+            $cursorItem = Get-Item -LiteralPath $cursor -Force -ErrorAction Stop
+            if (($cursorItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'manifest traversal reparse' }
+            if ([string]::Equals($cursor, $repoBoundary, [System.StringComparison]::OrdinalIgnoreCase)) { break }
+            $parent = Split-Path -Parent $cursor
+            if (-not $parent -or $parent -eq $cursor) { throw 'manifest boundary failed' }
+            $cursor = $parent
+        }
+        $manifestSha = (Get-FileHash -LiteralPath $resolved -Algorithm SHA256).Hash.ToLowerInvariant()
+        $value = Get-Content -LiteralPath $resolved -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+        $required = @('schemaVersion','generationId','ownerRepo','ownerCommit','sourceSnapshotPath','sourceSnapshotSha256','installedRuntimePath','installedRuntimeSha256','ownerAuthorityReceiptPath','ownerAuthorityReceiptSha256','validForGoalId')
+        $observed = @($value.PSObject.Properties.Name)
+        if ($value.schemaVersion -cne 'NEWS_GRASP_GLOBAL_DEPENDENCY_GENERATION_MANIFEST_V1' -or
+            (@($observed | Sort-Object) -join '|') -cne (@($required | Sort-Object) -join '|') -or
+            [string]$value.generationId -eq '' -or [string]$value.validForGoalId -eq '' -or
+            [string]$value.ownerCommit -notmatch '^[0-9a-f]{40,64}$') { throw 'manifest schema mismatch' }
+        foreach ($pair in @(@('sourceSnapshotPath','sourceSnapshotSha256'), @('installedRuntimePath','installedRuntimeSha256'), @('ownerAuthorityReceiptPath','ownerAuthorityReceiptSha256'))) {
+            $payloadPath = [System.IO.Path]::GetFullPath([string]$value.($pair[0]))
+            if (-not $payloadPath.StartsWith($repoBoundary + '\', [System.StringComparison]::OrdinalIgnoreCase)) { throw 'manifest payload outside RepoDir' }
+            $payload = Get-Item -LiteralPath $payloadPath -Force -ErrorAction Stop
+            if (($payload.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0 -or -not $payload.PSIsContainer -and [int64]$payload.Length -gt 67108864) { throw 'manifest payload invalid' }
+            $payloadSha = (Get-FileHash -LiteralPath $payloadPath -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($payloadSha -cne [string]$value.($pair[1])) { throw 'manifest payload drift' }
+        }
+        return [pscustomobject]@{ path = $resolved; sha256 = $manifestSha; generationId = [string]$value.generationId; goalId = [string]$value.validForGoalId }
+    } catch {
+        throw "NEWS_GRASP_GLOBAL_GENERATION_MANIFEST_INVALID: $($_.Exception.Message)"
+    }
+}
+
+$script:GlobalHarnessGenerationManifest = $null
+if ($GlobalHarnessGenerationManifestPath) {
+    $script:GlobalHarnessGenerationManifest = Assert-GlobalHarnessGenerationManifest -ManifestPath $GlobalHarnessGenerationManifestPath
+    $env:NEWS_GRASP_GLOBAL_GENERATION_MANIFEST_PATH = [string]$script:GlobalHarnessGenerationManifest.path
+    $env:NEWS_GRASP_GLOBAL_GENERATION_MANIFEST_SHA256 = [string]$script:GlobalHarnessGenerationManifest.sha256
 }
 $ScheduledFailureReceiptRoot = if ($ScheduledFailureReceiptRootOverride) {
     [System.IO.Path]::GetFullPath($ScheduledFailureReceiptRootOverride)
@@ -1850,6 +1902,8 @@ function Invoke-CodexWrapper {
         'E2EFinalRunnerArgumentsPath' = [string]$script:E2EFinalRunnerArgumentsPath
         'E2EFinalReservationReceiptPath' = [string]$script:E2EFinalReservationReceiptPath
         'E2EFinalClaimReceiptPath' = [string]$script:E2EFinalClaimReceiptPath
+        'E2EAttemptPolicyPath' = [string]$E2EAttemptPolicyPath
+        'E2ELogicalAttempt' = $E2ELogicalAttempt
         'HighCostClaimWitness' = [string]$script:HighCostClaimWitness
         'HighCostAttemptId' = [string]$script:HighCostAttemptId
         'HighCostExpectedOperationKind' = $script:HighCostExpectedOperationKind
@@ -1866,6 +1920,9 @@ function Invoke-CodexWrapper {
     }
     if ($Model) { $codexArgs['Model'] = $Model }
     if ($ReasoningEffort) { $codexArgs['ReasoningEffort'] = $ReasoningEffort }
+    if ($GlobalHarnessGenerationManifestPath) {
+        $codexArgs['GlobalHarnessGenerationManifestPath'] = $GlobalHarnessGenerationManifestPath
+    }
     & $CodexWrapper @codexArgs
     $wrapperOk = $?
     $wrapperRc = $LASTEXITCODE
@@ -3337,7 +3394,11 @@ function Get-NewsGraspExternalControlPlaneReadiness {
         if (-not [string]::Equals($observedFixtureSha256, $script:ExternalHealthAuthorityExpectedSha256, [System.StringComparison]::Ordinal)) {
             throw 'EXTERNAL_AUTHORITY_FIXTURE_HASH_DRIFT'
         }
-        $probeArgs += @('--authority-path', $script:ExternalHealthAuthorityPath, '--fixture-mode')
+        $probeArgs += @(
+            '--authority-path', $script:ExternalHealthAuthorityPath,
+            '--fixture-mode',
+            '--expected-authority-sha256', $script:ExternalHealthAuthorityExpectedSha256
+        )
     }
     $raw = (& $PyExe '-I' $probeScript @probeArgs 2>&1 | Out-String).Trim()
     $rc = $LASTEXITCODE
@@ -3868,6 +3929,8 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                 $script:E2EFinalRunnerArgumentsPath,
                 $script:E2EFinalReservationReceiptPath,
                 $script:E2EFinalClaimReceiptPath,
+                $E2EAttemptPolicyPath,
+                $E2ELogicalAttempt,
                 $script:HighCostClaimWitness,
                 $script:HighCostAttemptId,
                 $script:HighCostExpectedOperationKind,
@@ -3875,7 +3938,8 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                 $HighCostBudgetToolPath,
                 $PyExe,
                 $highCostCallId,
-                $highCostCallReceipt
+                $highCostCallReceipt,
+                $GlobalHarnessGenerationManifestPath
             ) -ScriptBlock {
                 param(
                     [string]$Category,
@@ -3899,6 +3963,8 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                     [string]$E2EFinalRunnerArgumentsPath,
                     [string]$E2EFinalReservationReceiptPath,
                     [string]$E2EFinalClaimReceiptPath,
+                    [string]$E2EAttemptPolicyPath,
+                    [int]$E2ELogicalAttempt,
                     [string]$HighCostClaimWitness,
                     [string]$HighCostAttemptId,
                     [string]$HighCostExpectedOperationKind,
@@ -3906,7 +3972,8 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                     [string]$HighCostBudgetToolPath,
                     [string]$HighCostPythonExe,
                     [string]$HighCostCallId,
-                    [string]$HighCostCallReceiptPath
+                    [string]$HighCostCallReceiptPath,
+                    [string]$GlobalHarnessGenerationManifestPath
                 )
 
                 $started = Get-Date
@@ -3930,6 +3997,8 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                     -E2EFinalRunnerArgumentsPath $E2EFinalRunnerArgumentsPath `
                     -E2EFinalReservationReceiptPath $E2EFinalReservationReceiptPath `
                     -E2EFinalClaimReceiptPath $E2EFinalClaimReceiptPath `
+                    -E2EAttemptPolicyPath $E2EAttemptPolicyPath `
+                    -E2ELogicalAttempt $E2ELogicalAttempt `
                     -HighCostClaimWitness $HighCostClaimWitness `
                     -HighCostAttemptId $HighCostAttemptId `
                     -HighCostExpectedOperationKind $HighCostExpectedOperationKind `
@@ -3937,7 +4006,8 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                     -HighCostBudgetToolPath $HighCostBudgetToolPath `
                     -HighCostPythonExe $HighCostPythonExe `
                     -HighCostCallId $HighCostCallId `
-                    -HighCostCallReceiptPath $HighCostCallReceiptPath
+                    -HighCostCallReceiptPath $HighCostCallReceiptPath `
+                    -GlobalHarnessGenerationManifestPath $GlobalHarnessGenerationManifestPath
                 $wrapperOk = $?
                 $rc = $LASTEXITCODE
                 if ($null -eq $rc) {

@@ -59,6 +59,37 @@ def test_nopublish_fixture_probe_is_explicit_and_read_only(tmp_path: Path, capsy
     assert observed["modelLaunchCount"] == 0
 
 
+def test_nopublish_fixture_probe_binds_expected_raw_file_hash(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    authority = _fixture_authority(tmp_path / "authority.json")
+    expected = hashlib.sha256(authority.read_bytes()).hexdigest()
+
+    assert external_control.main(
+        [
+            "probe",
+            "--authority-path",
+            str(authority),
+            "--fixture-mode",
+            "--expected-authority-sha256",
+            expected,
+        ]
+    ) == 0
+    assert json.loads(capsys.readouterr().out)["status"] == "ready"
+
+    assert external_control.main(
+        [
+            "probe",
+            "--authority-path",
+            str(authority),
+            "--fixture-mode",
+            "--expected-authority-sha256",
+            "0" * 64,
+        ]
+    ) == 74
+    assert json.loads(capsys.readouterr().out)["reasonCode"] == "EXTERNAL_AUTHORITY_HASH_DRIFT"
+
+
 def test_authority_path_override_without_fixture_mode_is_rejected(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -79,6 +110,7 @@ def test_production_runner_keeps_fixed_authority_and_allows_only_nopublish_fixtu
     assert "EXTERNAL_AUTHORITY_OVERRIDE_FORBIDDEN" in runner
     assert "--fixture-mode" in runner
     assert "--authority-path" in runner
+    assert "--expected-authority-sha256" in runner
 
 
 def test_final_wrapper_binds_fixture_path_into_exact_runner_arguments() -> None:

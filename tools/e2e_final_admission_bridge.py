@@ -1,4 +1,4 @@
-"""News-Grasp final E2Eを一日一回だけ許可するadmission境界。"""
+"""News-Grasp final E2Eを最大2論理attempt（A/B）だけ許可するadmission境界。"""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ import ctypes
 from ctypes import wintypes
 from datetime import datetime, timedelta, timezone
 import hashlib
+import importlib.util
 import json
 import msvcrt
 import os
@@ -56,6 +57,7 @@ CALLER_EVIDENCE_KINDS = tuple(
 DATE_RE = re.compile(r"^20\d{2}-\d{2}-\d{2}$")
 HEX_64_RE = re.compile(r"^[a-f0-9]{64}$")
 CANONICAL_PRODUCT_ID = "News-Grasp"
+MAX_LOGICAL_ATTEMPTS = 2
 MAX_JSON_BYTES = 4 * 1024 * 1024
 MAX_ADMISSION_BYTES = 64 * 1024
 MAX_RUNNER_ARGUMENTS_BYTES = 64 * 1024
@@ -87,6 +89,23 @@ KNOWN_LOCAL_APP_DATA_GUID = (
 
 class E2EFinalAdmissionError(RuntimeError):
     """final E2E admissionを安全に発行または消費できない。"""
+
+
+def _final_attempt_key(
+    canonical_product_id: str,
+    issue_date: str,
+    logical_attempt: int,
+) -> str:
+    """A/Bを同一issue date内で分離し、3回目を構造的に拒否する。"""
+    if (
+        isinstance(logical_attempt, bool)
+        or not isinstance(logical_attempt, int)
+        or logical_attempt < 1
+        or logical_attempt > MAX_LOGICAL_ATTEMPTS
+    ):
+        raise E2EFinalAdmissionError("E2E_ATTEMPT_LIMIT")
+    base = f"{canonical_product_id}:{issue_date}:" + "scheduled-equivalent-nopublish"
+    return base if logical_attempt == 1 else f"{base}:attempt-b"
 
 
 def _canonical_sha256(value: object) -> str:
@@ -1003,7 +1022,18 @@ def _validate_admission(value: dict[str, Any]) -> None:
         or value.get("canonicalProductId") != CANONICAL_PRODUCT_ID
         or not DATE_RE.fullmatch(str(value.get("issueDate") or ""))
         or value.get("attemptKey")
-        != f"{value.get('canonicalProductId')}:{value.get('issueDate')}:scheduled-equivalent-nopublish"
+        not in {
+            _final_attempt_key(
+                str(value.get("canonicalProductId")),
+                str(value.get("issueDate")),
+                1,
+            ),
+            _final_attempt_key(
+                str(value.get("canonicalProductId")),
+                str(value.get("issueDate")),
+                2,
+            ),
+        }
         or value.get("commandSha256")
         != _canonical_sha256(value.get("runnerArguments"))
         or not isinstance(value.get("runnerArguments"), list)
@@ -1330,6 +1360,7 @@ def issue_admission(
     authority_python_executable_path: Path,
     evidence_bindings: list[dict[str, str]],
     output_path: Path,
+    logical_attempt: int = 1,
     expected_reservation_receipt_path: Path | None = None,
     expected_claim_receipt_path: Path | None = None,
     expected_claim_witness_path: Path | None = None,
@@ -1340,6 +1371,11 @@ def issue_admission(
         raise E2EFinalAdmissionError("E2E_ISSUE_DATE_INVALID")
     if canonical_product_id != CANONICAL_PRODUCT_ID:
         raise E2EFinalAdmissionError("E2E_PRODUCT_ID_INVALID")
+    attempt_key = _final_attempt_key(
+        canonical_product_id,
+        issue_date,
+        logical_attempt,
+    )
     try:
         repo = _canonical_directory(repo_root, code="E2E_RUNNER_INVALID")
         trusted_workspace = _require_trusted_workspace_root(repo)
@@ -1441,9 +1477,7 @@ def issue_admission(
     )
     with _issue_execution_lock(
         resolved_output,
-        attempt_key=(
-            f"{canonical_product_id}:{issue_date}:scheduled-equivalent-nopublish"
-        ),
+        attempt_key=attempt_key,
         wait_for_lock=False,
     ):
         if resolved_output.exists() or execution_path.exists():
@@ -1484,8 +1518,7 @@ def issue_admission(
             "issueDate": issue_date,
             "canonicalProductId": canonical_product_id,
             "attemptKey": (
-                f"{canonical_product_id}:{issue_date}:"
-                "scheduled-equivalent-nopublish"
+                attempt_key
             ),
             "repoRoot": str(repo),
             "runnerPath": str(runner),
@@ -1975,6 +2008,8 @@ def validate_issued_admission(
     actual_authority_python_executable_path: Path | None = None,
     runner_executable_path: Path | None = None,
     authority_python_executable_path: Path | None = None,
+    attempt_policy_path: Path | None = None,
+    transition_receipt_path: Path | None = None,
 ) -> dict[str, Any]:
     """issued admissionをread-onlyで実行物・証拠ごと検証する。"""
 
@@ -1990,6 +2025,7 @@ def validate_issued_admission(
         raise E2EFinalAdmissionError("E2E_EXECUTABLE_IDENTITY_DRIFT")
     admission = Path(admission_path).resolve(strict=True)
     value = _read_json(admission, "E2E_ADMISSION_INVALID")
+    repo_root = _canonical_directory(Path(str(value.get("repoRoot") or "")), code="E2E_ADMISSION_INVALID")
     if value.get("state") != "issued":
         raise E2EFinalAdmissionError("E2E_ADMISSION_STATE_INVALID")
     repo_root = _canonical_directory(
@@ -2061,7 +2097,288 @@ def validate_issued_admission(
         actual_authority_python_executable_path=actual_authority_python_executable_path,
         require_parent=False,
     )
+    if (attempt_policy_path is None) != (transition_receipt_path is None):
+        raise E2EFinalAdmissionError("E2E_ATTEMPT_TRANSITION_PRODUCER_ARGUMENTS_INVALID")
+    if attempt_policy_path is not None and transition_receipt_path is not None:
+        _issue_transition_receipt_from_validated_admission(
+            admission_path=admission,
+            admission=value,
+            runner_arguments_path=Path(runner_arguments_path).resolve(strict=True),
+            parent_authority_path=caller_parent_candidate,
+            attempt_policy_path=Path(attempt_policy_path),
+            transition_receipt_path=Path(transition_receipt_path),
+        )
     return value
+
+
+def _issue_transition_receipt_from_validated_admission(
+    *,
+    admission_path: Path,
+    admission: dict[str, Any],
+    runner_arguments_path: Path,
+    parent_authority_path: Path,
+    attempt_policy_path: Path,
+    transition_receipt_path: Path,
+) -> dict[str, Any]:
+    """検証済みissued admissionだけから遷移receiptを発行するtrusted producer。"""
+
+    policy = Path(attempt_policy_path).resolve(strict=True)
+    receipt = Path(transition_receipt_path).resolve()
+    repo_root = _canonical_directory(
+        Path(str(admission.get("repoRoot") or "")), code="E2E_ADMISSION_INVALID"
+    )
+    if not policy.is_file() or policy.is_symlink():
+        raise E2EFinalAdmissionError("E2E_ATTEMPT_POLICY_INVALID")
+    try:
+        policy.relative_to(repo_root)
+        receipt.relative_to(repo_root)
+        receipt.relative_to(policy.parent)
+    except ValueError as error:
+        raise E2EFinalAdmissionError("E2E_ATTEMPT_TRANSITION_RECEIPT_PATH_INVALID") from error
+    policy_value = _read_json(policy, "E2E_ATTEMPT_POLICY_INVALID")
+    history = policy_value.get("transitionHistory")
+    transition = policy_value.get("transition")
+    binding = policy_value.get("admissionBinding")
+    if (
+        not isinstance(history, list)
+        or not history
+        or not isinstance(transition, dict)
+        or transition != history[-1]
+        or not isinstance(binding, dict)
+        or binding.get("admissionId") != admission.get("admissionId")
+        or binding.get("attemptKey") != admission.get("attemptKey")
+        or binding.get("issueDate") != admission.get("issueDate")
+        or binding.get("admissionPath") != str(admission_path)
+        or binding.get("admissionSha256") != _file_sha256(admission_path, max_bytes=MAX_ADMISSION_BYTES)
+        or int(transition.get("sequence", 0)) != len(history)
+    ):
+        raise E2EFinalAdmissionError("E2E_ATTEMPT_TRANSITION_BINDING_INVALID")
+    expected_receipt = policy.with_name(f"e2e-transition-{int(transition['sequence'])}.json")
+    if receipt != expected_receipt:
+        raise E2EFinalAdmissionError("E2E_ATTEMPT_TRANSITION_RECEIPT_PATH_INVALID")
+    runner_arguments_sha256 = _file_sha256(runner_arguments_path, max_bytes=MAX_RUNNER_ARGUMENTS_BYTES)
+    parent_sha256 = _file_sha256(parent_authority_path, max_bytes=MAX_JSON_BYTES) if parent_authority_path.is_file() else ""
+    outcome = {
+        "schemaVersion": "NEWS_GRASP_E2E_TRANSITION_OUTCOME_V1",
+        "status": "validated_issued_admission",
+        "admissionId": admission["admissionId"],
+        "admissionSha256": _file_sha256(admission_path, max_bytes=MAX_ADMISSION_BYTES),
+        "runnerArgumentsSha256": runner_arguments_sha256,
+        "parentAuthoritySha256": parent_sha256,
+        "runnerExecutableSha256": _file_sha256(Path(str(admission["runnerExecutablePath"]))),
+        "authorityPythonExecutableSha256": _file_sha256(Path(str(admission["authorityPythonExecutablePath"]))),
+    }
+    outcome_sha256 = hashlib.sha256(_json_bytes(outcome)).hexdigest()
+    producer_path = Path(__file__).resolve()
+    producer = {
+        "schemaVersion": "NEWS_GRASP_E2E_TRANSITION_RECEIPT_V1",
+        "event": transition["event"],
+        "sequence": transition["sequence"],
+        "attemptKey": admission["attemptKey"],
+        "issueDate": admission["issueDate"],
+        "admissionId": admission["admissionId"],
+        "previousStateSha256": transition["previousStateSha256"],
+        "stateSha256": transition["stateSha256"],
+        "producerRouteId": "news-grasp-runner",
+        "status": "succeeded",
+        "producerProcessId": os.getpid(),
+        "producerExecutablePath": str(producer_path),
+        "producerExecutableSha256": _file_sha256(producer_path),
+        "outcomeSchemaVersion": outcome["schemaVersion"],
+        "outcomeStatus": "admission_validated",
+        "outcomeSha256": outcome_sha256,
+        "outcomeStatePath": "",
+        "outcomeStateSha256": "",
+        "outcomeExitCode": -1,
+        "outcomeRunnerStatus": "not_started",
+    }
+    if receipt.exists():
+        existing = _read_json(receipt, "E2E_ATTEMPT_TRANSITION_RECEIPT_INVALID")
+        if existing != producer:
+            raise E2EFinalAdmissionError("E2E_ATTEMPT_TRANSITION_RECEIPT_DRIFT")
+    else:
+        _write_exclusive(receipt, producer)
+    policy_module_path = Path(__file__).with_name("news_grasp_e2e_attempt_policy.py")
+    spec = importlib.util.spec_from_file_location(
+        "_news_grasp_e2e_attempt_policy_producer", policy_module_path
+    )
+    if spec is None or spec.loader is None:
+        raise E2EFinalAdmissionError("E2E_ATTEMPT_TRANSITION_CONSUMER_MISSING")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    try:
+        module.append_policy_transition(
+            policy,
+            admission_path,
+            transition_receipt_path=receipt,
+        )
+    except Exception as error:
+        raise E2EFinalAdmissionError(str(error)) from error
+    return producer
+
+
+def record_runner_outcome(
+    *,
+    admission_path: Path,
+    attempt_policy_path: Path,
+    terminal_authority_path: Path,
+    outcome_receipt_path: Path | None = None,
+) -> dict[str, Any]:
+    """installed launcherが発行した実runner終端authorityだけを受理する。"""
+
+    admission = Path(admission_path).resolve(strict=True)
+    policy = Path(attempt_policy_path).resolve(strict=True)
+    try:
+        authority_path = Path(terminal_authority_path).resolve(strict=True)
+    except OSError as error:
+        raise E2EFinalAdmissionError("E2E_RUNNER_TERMINAL_AUTHORITY_INVALID") from error
+    if authority_path.parent != policy.parent or authority_path.is_symlink():
+        raise E2EFinalAdmissionError("E2E_RUNNER_TERMINAL_AUTHORITY_PATH_INVALID")
+    authority_value, authority_hash = _json_file_snapshot(
+        authority_path, "E2E_RUNNER_TERMINAL_AUTHORITY_INVALID"
+    )
+    if authority_value is None or authority_hash is None:
+        raise E2EFinalAdmissionError("E2E_RUNNER_TERMINAL_AUTHORITY_INVALID")
+    unsigned = dict(authority_value)
+    sealed_hash = str(unsigned.pop("authoritySha256", ""))
+    if sealed_hash != _canonical_sha256(unsigned):
+        raise E2EFinalAdmissionError("E2E_RUNNER_TERMINAL_AUTHORITY_INVALID")
+    value = _read_json(admission, "E2E_ADMISSION_INVALID")
+    repo_root = _canonical_directory(Path(str(value.get("repoRoot") or "")), code="E2E_ADMISSION_INVALID")
+    policy_raw = _read_json(policy, "E2E_ATTEMPT_POLICY_INVALID")
+    expected_attempt = int(policy_raw.get("logicalAttemptIssued", 0) or 0)
+    if authority_value.get("schemaVersion") != "NEWS_GRASP_E2E_RUNNER_TERMINAL_AUTHORITY_V1" or authority_value.get("attempt") != expected_attempt:
+        raise E2EFinalAdmissionError("E2E_RUNNER_TERMINAL_AUTHORITY_INVALID")
+    owner = authority_value.get("ownerProcessIdentity")
+    if (
+        not isinstance(owner, dict)
+        or type(owner.get("pid")) is not int
+        or owner.get("pid", 0) <= 0
+        or type(owner.get("parentPid")) is not int
+        or not isinstance(owner.get("creationFileTimeUtc"), str)
+        or not isinstance(owner.get("imagePath"), str)
+        or not re.fullmatch(r"[0-9a-f]{64}", str(owner.get("imageSha256", "")))
+    ):
+        raise E2EFinalAdmissionError("E2E_RUNNER_TERMINAL_AUTHORITY_OWNER_INVALID")
+    owner_image = Path(str(owner["imagePath"])).resolve(strict=True)
+    if _file_sha256(owner_image) != owner["imageSha256"]:
+        raise E2EFinalAdmissionError("E2E_RUNNER_TERMINAL_AUTHORITY_OWNER_INVALID")
+    state_path = Path(str(authority_value.get("statePath") or "")).resolve(strict=True)
+    arguments_path = Path(str(authority_value.get("runnerArgumentsPath") or "")).resolve(strict=True)
+    claim_path = Path(str(authority_value.get("claimPath") or "")).resolve(strict=True)
+    claim_value, claim_hash = _json_file_snapshot(claim_path, "E2E_RUNNER_TERMINAL_AUTHORITY_INVALID")
+    if claim_value is None or claim_hash is None:
+        raise E2EFinalAdmissionError("E2E_RUNNER_TERMINAL_AUTHORITY_INVALID")
+    try:
+        _validate_claim_receipt(claim_value)
+    except E2EFinalAdmissionError as error:
+        raise E2EFinalAdmissionError("E2E_RUNNER_TERMINAL_AUTHORITY_CLAIM_INVALID") from error
+    state_value, state_hash = _json_file_snapshot(state_path, "E2E_RUNNER_TERMINAL_AUTHORITY_INVALID")
+    if state_value is None or state_hash is None:
+        raise E2EFinalAdmissionError("E2E_RUNNER_TERMINAL_AUTHORITY_INVALID")
+    for candidate in (state_path, arguments_path, claim_path):
+        if not candidate.is_relative_to(repo_root) or candidate.is_symlink() or not candidate.is_file():
+            raise E2EFinalAdmissionError(f"E2E_RUNNER_TERMINAL_AUTHORITY_PATH_INVALID:{candidate}")
+    if (
+        authority_value.get("admissionPath") != str(admission)
+        or authority_value.get("admissionSha256") != _file_sha256(admission)
+        or authority_value.get("runnerArgumentsSha256") != _file_sha256(arguments_path)
+        or authority_value.get("claimSha256") != claim_value.get("receiptSha256")
+        or authority_value.get("claimOwnerProcessIdentity") != claim_value.get("ownerProcessIdentity")
+        or authority_value.get("ownerProcessIdentity") != claim_value.get("ownerProcessIdentity")
+        or claim_value.get("admissionPath") != str(admission)
+        or claim_value.get("runnerArgumentsPath") != str(arguments_path)
+        or claim_value.get("admissionId") != value.get("admissionId")
+        or authority_value.get("stateSha256") != state_hash
+        or authority_value.get("runnerExitCode") != 0
+        or authority_value.get("runnerStatus") != "publish_dry_run_ok"
+        or state_value.get("status") != "publish_dry_run_ok"
+        or int(state_value.get("exit_code", -1)) != 0
+    ):
+        raise E2EFinalAdmissionError("E2E_RUNNER_TERMINAL_AUTHORITY_INVALID")
+    try:
+        ledger_path = Path(str(authority_value.get("ledgerPath") or "")).resolve(strict=True)
+    except OSError as error:
+        raise E2EFinalAdmissionError("E2E_RUNNER_TERMINAL_AUTHORITY_LEDGER_INVALID") from error
+    if ledger_path != default_attempt_ledger_path().resolve():
+        raise E2EFinalAdmissionError("E2E_RUNNER_TERMINAL_AUTHORITY_LEDGER_INVALID")
+    ledger_value, ledger_hash = _ledger_snapshot(ledger_path)
+    ledger_row = ledger_value.get("attempts", {}).get(str(claim_value.get("attemptKey")))
+    if (
+        not re.fullmatch(r"[0-9a-f]{64}", str(authority_value.get("ledgerSha256", "")))
+        or ledger_hash != authority_value.get("ledgerSha256")
+        or not isinstance(ledger_row, dict)
+        or ledger_row.get("state") != "runner_claimed"
+        or ledger_row.get("claimReceiptPath") != str(claim_path)
+        or ledger_row.get("claimReceiptSha256") != claim_value.get("receiptSha256")
+        or ledger_row.get("ownerProcessIdentity") != claim_value.get("ownerProcessIdentity")
+    ):
+        raise E2EFinalAdmissionError("E2E_RUNNER_TERMINAL_AUTHORITY_LEDGER_INVALID")
+    if str(state_value.get("e2eFinalAdmissionPath") or "") != str(admission):
+        raise E2EFinalAdmissionError("E2E_RUNNER_OUTCOME_LINEAGE_INVALID")
+    if str(state_value.get("e2eFinalRunnerArgumentsPath") or "") != str(arguments_path):
+        raise E2EFinalAdmissionError("E2E_RUNNER_OUTCOME_LINEAGE_INVALID")
+    producer_path = Path(str(authority_value.get("producerPath") or "")).resolve(strict=True)
+    if authority_value.get("producerSha256") != _file_sha256(producer_path):
+        raise E2EFinalAdmissionError("E2E_RUNNER_TERMINAL_AUTHORITY_PRODUCER_INVALID")
+    policy_module_path = Path(__file__).with_name("news_grasp_e2e_attempt_policy.py")
+    spec = importlib.util.spec_from_file_location("_news_grasp_e2e_attempt_policy_outcome", policy_module_path)
+    if spec is None or spec.loader is None:
+        raise E2EFinalAdmissionError("E2E_ATTEMPT_TRANSITION_CONSUMER_MISSING")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    current = module.validate_policy_ledger(json.loads(policy.read_text(encoding="utf-8-sig")), policy)
+    attempt = int(current["logicalAttemptIssued"])
+    if current["transition"]["event"] not in {"issue_a", "issue_b"}:
+        raise E2EFinalAdmissionError("E2E_RUNNER_OUTCOME_TRANSITION_ORDER_INVALID")
+    updated = module.record_success(current, attempt)
+    transition = updated["transition"]
+    outcome = {
+        "schemaVersion": "NEWS_GRASP_E2E_TRANSITION_OUTCOME_V1",
+        "status": "runner_terminal",
+        "runnerStatus": state_value["status"],
+        "runnerExitCode": 0,
+        "statePath": str(state_path),
+        "stateSha256": state_hash,
+        "admissionId": value.get("admissionId"),
+        "attemptKey": value.get("attemptKey"),
+        "ownerProcessIdentity": authority_value.get("ownerProcessIdentity"),
+    }
+    receipt = Path(outcome_receipt_path or policy.with_name(f"e2e-transition-{transition['sequence']}.json")).resolve()
+    expected_receipt = policy.with_name(f"e2e-transition-{transition['sequence']}.json")
+    if receipt != expected_receipt:
+        raise E2EFinalAdmissionError("E2E_ATTEMPT_TRANSITION_RECEIPT_PATH_INVALID")
+    producer_path = Path(__file__).resolve()
+    receipt_value = {
+        "schemaVersion": "NEWS_GRASP_E2E_TRANSITION_RECEIPT_V1",
+        "event": transition["event"],
+        "sequence": transition["sequence"],
+        "attemptKey": value["attemptKey"],
+        "issueDate": value["issueDate"],
+        "admissionId": value["admissionId"],
+        "previousStateSha256": transition["previousStateSha256"],
+        "stateSha256": transition["stateSha256"],
+        "producerRouteId": "news-grasp-runner",
+        "status": "succeeded",
+        "producerProcessId": os.getpid(),
+        "producerExecutablePath": str(producer_path),
+        "producerExecutableSha256": _file_sha256(producer_path),
+        "outcomeSchemaVersion": outcome["schemaVersion"],
+        "outcomeStatus": "runner_terminal",
+        "outcomeSha256": hashlib.sha256(_json_bytes(outcome)).hexdigest(),
+        "outcomeStatePath": str(state_path),
+        "outcomeStateSha256": state_hash,
+        "outcomeExitCode": 0,
+        "outcomeRunnerStatus": state_value["status"],
+    }
+    if receipt.exists():
+        if _read_json(receipt, "E2E_ATTEMPT_TRANSITION_RECEIPT_INVALID") != receipt_value:
+            raise E2EFinalAdmissionError("E2E_ATTEMPT_TRANSITION_RECEIPT_DRIFT")
+    else:
+        _write_exclusive(receipt, receipt_value)
+    _replace_json(policy, updated)
+    module.append_policy_transition(policy, admission, transition_receipt_path=receipt)
+    return receipt_value
 
 def _resolve_executable_aliases(
     *,
@@ -3280,6 +3597,7 @@ def _issue_from_manifest(manifest_path: Path, output_path: Path) -> dict[str, An
     return issue_admission(
         issue_date=str(manifest.get("issueDate") or ""),
         canonical_product_id=str(manifest.get("canonicalProductId") or ""),
+        logical_attempt=int(manifest.get("logicalAttempt") or 1),
         repo_root=Path(str(manifest.get("repoRoot") or "")),
         runner_path=Path(str(manifest.get("runnerPath") or "")),
         runner_arguments=manifest.get("runnerArguments"),
@@ -3388,6 +3706,13 @@ def main(argv: list[str] | None = None) -> int:
     validate_issued_parser.add_argument(
         "--authority-python-executable", type=Path, required=True
     )
+    validate_issued_parser.add_argument("--attempt-policy", type=Path)
+    validate_issued_parser.add_argument("--transition-receipt", type=Path)
+    outcome_parser = subparsers.add_parser("record-outcome")
+    outcome_parser.add_argument("--admission", type=Path, required=True)
+    outcome_parser.add_argument("--attempt-policy", type=Path, required=True)
+    outcome_parser.add_argument("--terminal-authority", type=Path, required=True)
+    outcome_parser.add_argument("--outcome-receipt", type=Path)
     claim_parser = subparsers.add_parser("claim-runner")
     claim_parser.add_argument("--admission", type=Path, required=True)
     claim_parser.add_argument("--runner-arguments-file", type=Path, required=True)
@@ -3481,6 +3806,15 @@ def main(argv: list[str] | None = None) -> int:
                 claim_witness_output=args.claim_witness_output,
                 actual_runner_executable_path=args.runner_executable,
                 actual_authority_python_executable_path=args.authority_python_executable,
+                attempt_policy_path=args.attempt_policy,
+                transition_receipt_path=args.transition_receipt,
+            )
+        elif args.command == "record-outcome":
+            result = record_runner_outcome(
+                admission_path=args.admission,
+                attempt_policy_path=args.attempt_policy,
+                terminal_authority_path=args.terminal_authority,
+                outcome_receipt_path=args.outcome_receipt,
             )
         elif args.command == "claim-runner":
             result = claim_runner(

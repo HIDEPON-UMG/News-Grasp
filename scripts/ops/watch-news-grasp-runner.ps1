@@ -1009,8 +1009,9 @@ if ($RecoveryDecisionPath) {
 }
 $proc = if ($decision) { Start-RecoveryFromDecision -Decision $decision } else { Start-RunnerProcess }
 if ($PSCmdlet.ParameterSetName -eq 'StartOnly') {
+    # Job handleはこのwatcherが保持する。ここで終了するとKILL_ON_JOB_CLOSEにより
+    # runnerも終了し、started receiptだけが残るため、StartOnlyも所有watchまで継続する。
     Write-StartedJson -Process $proc
-    exit 0
 }
 
 Watch-Runner -Process $proc
