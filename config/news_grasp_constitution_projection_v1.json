@@ -2,7 +2,7 @@
   "schemaVersion": "NEWS_GRASP_CONSTITUTION_PROJECTION_V1",
   "constitutionVersion": "2026-08-12",
   "generator": "tools/news_grasp_constitution.py",
-  "constitutionSha256": "b96f1e1c0be6ca50b4cce7ea714ba27440866994e8c5e8548769bb138b6f41f5",
+  "constitutionSha256": "6b7a309000a76f8c7e34dad96299a59320e7bdcae2eb847a63520147e17c19e8",
   "traceSha256": "e101f7c0c95fa7952c4d85258fb3eaf5495abf5c69b8f1f222576689e990dd1e",
   "projectionSha256": "691cc6ae3de9fa93e550490aa9f9c4ee07824eb2a8caa296163798a2b5f32418",
   "mermaidDiagramCount": 3,
@@ -57,7 +57,7 @@
         "kind": "skill",
         "sourcePath": "automation/skills/news-grasp-e2e-discipline/SKILL.md",
         "installPath": "skills/news-grasp-e2e-discipline/SKILL.md",
-        "sourceSha256": "05f61408c5335bb8e9f78683f4255bcd8fb5bd1f0b461a42d71e3ec2dfff9fed"
+        "sourceSha256": "31514db9592e81e8350d790c7a7a45da28500a1e0e159a8ee42c13dca0ab3da3"
       },
       {
         "assetId": "e2e-discipline-openai-yaml-v2",
@@ -116,20 +116,20 @@
         "sourceSha256": "3454db0fcf383165dcaa8539e4de081d9220d596e89963b27b7d8087d98554e9"
       }
     ],
-    "assetSetSha256": "b658c1d077285ef959601d5c2929d6a65a7f6215f614b1521bf9798deed78404"
+    "assetSetSha256": "67fa74d9a4d8eb1e5d3ec4587a9f884a0429a3360d15d540f5c1b707c24d512a"
   },
   "outputs": [
     {
       "path": "AGENTS.md",
-      "managedBlockSha256": "79624bb1221c28d36bcd4e3ef31252e313a792e478036401f4db048fa6a7c29e"
+      "managedBlockSha256": "829dbe6f7b0755dd7a2e3c1d599a5c0a1f7d220eb34aba95449d5a258014e4b2"
     },
     {
       "path": "CLAUDE.md",
-      "managedBlockSha256": "79624bb1221c28d36bcd4e3ef31252e313a792e478036401f4db048fa6a7c29e"
+      "managedBlockSha256": "829dbe6f7b0755dd7a2e3c1d599a5c0a1f7d220eb34aba95449d5a258014e4b2"
     },
     {
       "path": "docs/specs/2026-08-12_news-grasp-product-constitution.html",
-      "sha256": "d14bd03dbdeb865fb9eccdad9db6f989339a452ff7354ecf47c012a3cf5abd80",
+      "sha256": "dcfa35311e830c9113bd49eb11a9f498f0408b44350af8cad31fd0562a8fb15e",
       "lineCount": 882
     }
   ]

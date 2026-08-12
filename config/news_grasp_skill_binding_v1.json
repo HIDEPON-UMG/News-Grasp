@@ -42,7 +42,7 @@
       "sharedInstalledSha256": "896ce7022f26b32e4f330f8d62e3e3b4fb3e03ab9c3faffc67179f8422225452",
       "sharedInstalledStatus": "stale_pending_installer",
       "overlayPath": "automation/skills/news-grasp-e2e-discipline",
-      "overlaySha256": "4533722f2ef0dfcb812eb409610bb91627e028ca14561548794cf3845801333f",
+      "overlaySha256": "0283e13d76306826232f92d94d7a4c622a3fbe2f24beddfaf43746e5e9cb2823",
       "installedPath": "news-grasp-assets/skills/news-grasp-e2e-discipline",
       "consumer": "Scheduled-equivalent NoPublish E2E admission",
       "reason": "News-Grasp-specific final-only E2E rules require a product-owned versioned projection."

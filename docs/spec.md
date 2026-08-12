@@ -329,6 +329,9 @@ SLO gate 実装を SLO 達成実測と混同してはならない。E2E 未実�
 
 ## E2E Final Admission Covenant
 
+E2Eは同一issue date・同一scheduled-equivalent intentで一回だけ実行し、別worktree、別receipt、別run_idで試行回数をresetしない。
+E2Eを発見・デバッグ・readiness判定のために`ResumeFromStage`で繰り返すことを禁止する。ResumeFromStageを禁止し、許可された論理attempt Aのfailure-local修正resumeだけを例外として扱う。
+
 遷移receiptの発行責務は実行前の検証と実行後の結果で分離する。`tools/e2e_final_admission_bridge.py` の `validate-issued` はissued admission・policy・runner引数・実行体identityを検証してissueイベントだけを発行し、installed launcherだけが実runner process handleのcreation identity・claim・state hash・実exitを束ねた `NEWS_GRASP_E2E_RUNNER_TERMINAL_AUTHORITY_V1` を発行する。runner終了後の `record-outcome` はこのterminal authorityだけを再検証してrunner terminal receiptを発行し、callerのstate JSONやexit codeを成功証拠として受け取らない。success等の結果遷移はterminal receiptのstate hash・status・owner情報がなければappendできず、launcherはreceiptとledgerのread-only検証だけを行う。callerが作成した結果receiptや、実行前の自己申告Greenは受理しない。
 
 News-GraspのE2Eは `final_confirmation_only` であり、未知欠陥の発見・デバッグ・readiness判定に使ってはならない。要求と運用を先に `static → contract → simulation → component → integration → live reconcile` の低コスト層で閉じ、各層の正負fixture、source hash、実consumer、live runtime freshnessがGreenになった後だけ `NEWS_GRASP_E2E_FINAL_ADMISSION_V1` を発行する。

@@ -12,6 +12,13 @@ from pathlib import Path
 
 import pytest
 
+from tools.news_grasp_e2e_attempt_policy import (
+    append_policy_transition,
+    bind_policy_admission,
+    issue_logical_attempt,
+    new_policy,
+)
+
 WRAPPER = Path(os.environ.get(
     "NEWS_GRASP_CODEX_WRAPPER",
     r"C:\Users\hidek\bin\run_codex_with_timeout.ps1",
@@ -332,6 +339,10 @@ def _composed_claim_witness_fixture(
     admission.write_text(
         json.dumps(
             {
+                "schemaVersion": "HIGH_COST_OPERATION_ADMISSION_V3",
+                "state": "issued",
+                "attemptKey": "News-Grasp:2026-08-10:scheduled-equivalent-nopublish",
+                "issueDate": "2026-08-10",
                 "expectedClaimWitnessPath": str(witness.resolve()),
                 "runnerExecutablePath": str(powershell_executable),
                 "authorityPythonExecutablePath": str(Path(sys.executable).resolve()),
@@ -340,6 +351,57 @@ def _composed_claim_witness_fixture(
         + "\n",
         encoding="utf-8",
     )
+    admission_value = json.loads(admission.read_text(encoding="utf-8"))
+    admission_projection = dict(admission_value)
+    admission_projection.pop("admissionId", None)
+    admission_value["admissionId"] = hashlib.sha256(
+        json.dumps(admission_projection, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    admission.write_text(json.dumps(admission_value, sort_keys=True) + "\n", encoding="utf-8")
+    policy_path = execution_root / "e2e-attempt-policy.json"
+    policy = issue_logical_attempt(
+        bind_policy_admission(new_policy(), admission),
+        1,
+    )
+    policy_path.write_text(json.dumps(policy, sort_keys=True) + "\n", encoding="utf-8")
+    transition = policy["transition"]
+    producer = Path(sys.executable).resolve()
+    transition_receipt = policy_path.with_name("e2e-transition-1.json")
+    transition_receipt.write_text(
+        json.dumps(
+            {
+                "schemaVersion": "NEWS_GRASP_E2E_TRANSITION_RECEIPT_V1",
+                "event": transition["event"],
+                "sequence": transition["sequence"],
+                "attemptKey": admission_value["attemptKey"],
+                "issueDate": admission_value["issueDate"],
+                "admissionId": admission_value["admissionId"],
+                "previousStateSha256": transition["previousStateSha256"],
+                "stateSha256": transition["stateSha256"],
+                "producerRouteId": "news-grasp-runner",
+                "status": "succeeded",
+                "producerProcessId": os.getpid(),
+                "producerExecutablePath": str(producer),
+                "producerExecutableSha256": hashlib.sha256(producer.read_bytes()).hexdigest(),
+                "outcomeSchemaVersion": "NEWS_GRASP_E2E_TRANSITION_OUTCOME_V1",
+                "outcomeStatus": "admission_validated",
+                "outcomeSha256": "0" * 64,
+                "outcomeStatePath": "",
+                "outcomeStateSha256": "",
+                "outcomeExitCode": -1,
+                "outcomeRunnerStatus": "not_started",
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    append_policy_transition(policy_path, admission, transition_receipt_path=transition_receipt)
+    # この smoke は wrapper の浅い引数契約を隔離検証するため、wrapper が受け付ける
+    # 旧互換キー集合だけを渡す。完全な admission binding は上の canonical ledger に保持する。
+    wrapper_policy = dict(policy)
+    wrapper_policy.pop("admissionBinding", None)
+    policy_path.write_text(json.dumps(wrapper_policy, sort_keys=True) + "\n", encoding="utf-8")
     arguments.write_text('["-NoPublish"]\n', encoding="utf-8")
     reservation.write_text("{}\n", encoding="utf-8")
     claim.write_text("{}\n", encoding="utf-8")
@@ -424,6 +486,8 @@ def _composed_claim_witness_fixture(
         "-E2EFinalReservationReceiptPath", str(reservation),
         "-E2EFinalClaimReceiptPath", str(claim),
         "-HighCostClaimWitness", str(witness),
+        "-E2EAttemptPolicyPath", str(policy_path),
+        "-E2ELogicalAttempt", "1",
         "-HighCostCallReceiptPath",
         str(
             execution_root

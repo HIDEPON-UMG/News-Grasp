@@ -689,6 +689,44 @@ def test_validate_issued_produces_trusted_transition_receipt_and_ledger(
     assert validate_policy_ledger(policy, policy_path)["transition"]["sequence"] == 1
 
 
+def test_validate_issued_reuses_preflight_receipt_across_producer_processes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """未起動の事前検証receiptは、別プロセス再実行でPIDだけが変わっても再利用する。"""
+
+    admission, _ = _issue(tmp_path)
+    value = json.loads(admission.read_text(encoding="utf-8"))
+    arguments_path = Path(value["expectedRunnerArgumentsPath"])
+    arguments_path.parent.mkdir(parents=True, exist_ok=True)
+    arguments_path.write_bytes(
+        bridge_module._canonical_runner_arguments_bytes(list(value["runnerArguments"]))
+    )
+    policy_path = admission.parent / "e2e-attempt-policy.json"
+    policy = issue_logical_attempt(bind_policy_admission(new_policy(), admission), 1)
+    policy_path.write_text(json.dumps(policy, sort_keys=True) + "\n", encoding="utf-8")
+    receipt_path = policy_path.with_name("e2e-transition-1.json")
+    kwargs = dict(
+        admission_path=admission,
+        runner_arguments=list(value["runnerArguments"]),
+        runner_arguments_path=arguments_path,
+        parent_authority_path=Path(value["expectedParentAuthorityPath"]),
+        reservation_output=Path(value["expectedReservationReceiptPath"]),
+        claim_output=Path(value["expectedClaimReceiptPath"]),
+        claim_witness_output=Path(value["expectedClaimWitnessPath"]),
+        actual_runner_executable_path=Path(value["runnerExecutablePath"]),
+        actual_authority_python_executable_path=Path(value["authorityPythonExecutablePath"]),
+        attempt_policy_path=policy_path,
+        transition_receipt_path=receipt_path,
+    )
+    monkeypatch.setattr(bridge_module.os, "getpid", lambda: 1001)
+    first = bridge_module.validate_issued_admission(**kwargs)
+    monkeypatch.setattr(bridge_module.os, "getpid", lambda: 1002)
+    second = bridge_module.validate_issued_admission(**kwargs)
+    assert second == first
+    assert json.loads(receipt_path.read_text(encoding="utf-8"))["producerProcessId"] == 1001
+
+
 def test_runner_outcome_is_required_for_success_transition(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

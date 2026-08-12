@@ -401,7 +401,7 @@ def test_resume_branch_consumes_recovery_authority_not_failed_production_admissi
     assert "[string] $RecoveryDecisionPath" in runner
     assert "validate-decision" in runner
     assert "RECOVERY_DECISION_BRANCH_MISMATCH" in runner
-    assert "-RecoveryDecisionPath" in watcher
+    assert "RecoveryDecisionPath" in watcher
     resume_block = runner[
         runner.index("if ($ResumeFromStage)") : runner.index(
             "if ($HighCostAdmissionPath)", runner.index("if ($ResumeFromStage)")

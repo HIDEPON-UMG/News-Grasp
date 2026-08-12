@@ -2195,7 +2195,26 @@ def _issue_transition_receipt_from_validated_admission(
     if receipt.exists():
         existing = _read_json(receipt, "E2E_ATTEMPT_TRANSITION_RECEIPT_INVALID")
         if existing != producer:
-            raise E2EFinalAdmissionError("E2E_ATTEMPT_TRANSITION_RECEIPT_DRIFT")
+            reusable_preflight = (
+                existing.get("schemaVersion") == producer["schemaVersion"]
+                and existing.get("outcomeStatus") == "admission_validated"
+                and existing.get("outcomeRunnerStatus") == "not_started"
+                and existing.get("outcomeExitCode") == -1
+                and {
+                    key: value
+                    for key, value in existing.items()
+                    if key != "producerProcessId"
+                }
+                == {
+                    key: value
+                    for key, value in producer.items()
+                    if key != "producerProcessId"
+                }
+            )
+            if reusable_preflight:
+                producer = existing
+            else:
+                raise E2EFinalAdmissionError("E2E_ATTEMPT_TRANSITION_RECEIPT_DRIFT")
     else:
         _write_exclusive(receipt, producer)
     policy_module_path = Path(__file__).with_name("news_grasp_e2e_attempt_policy.py")

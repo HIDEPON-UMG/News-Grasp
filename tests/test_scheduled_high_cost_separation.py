@@ -2301,7 +2301,7 @@ def test_clean_runtime_identity_is_forwarded_to_runner_and_detached_push_is_exac
     start_body = watcher.split("function Start-RunnerProcess", 1)[1].split(
         "function Test-TerminalState", 1
     )[0]
-    assert "@('-RepoDirOverride', $RepoDir)" in start_body
+    assert "RepoDirOverride = $RepoDir" in start_body
     assert "push origin HEAD:main" in runner
     assert "push origin main" not in runner.split("if ($NoPush)", 1)[1].split(
         "# ===== publish reflection verify", 1

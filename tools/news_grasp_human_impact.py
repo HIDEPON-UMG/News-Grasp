@@ -125,10 +125,16 @@ def validate_production_human_impact(
     ):
         raise HumanImpactContractError("NG_PROCESS_OWNERSHIP_SCAN_UNBOUNDED")
     watcher = sources["scripts/ops/watch-news-grasp-runner.ps1"]
+    event_driven_watch = (
+        "[System.IO.FileSystemWatcher]" in watcher
+        or (
+            "OpenDirectoryChange" in watcher
+            and "ContinueDirectoryChange" in watcher
+        )
+    ) and "[System.Threading.WaitHandle]::WaitAny" in watcher
     if (
         "Start-Sleep -Seconds $PollSeconds" in watcher
-        or "[System.IO.FileSystemWatcher]" not in watcher
-        or "[System.Threading.WaitHandle]::WaitAny" not in watcher
+        or not event_driven_watch
     ):
         raise HumanImpactContractError("NG_PERSISTENT_POLLING_FORBIDDEN")
     if (
