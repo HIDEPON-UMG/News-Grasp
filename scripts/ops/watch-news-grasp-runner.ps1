@@ -154,6 +154,12 @@ public static class NewsGraspRunnerJob
     private static extern uint ResumeThread(IntPtr thread);
     [DllImport("kernel32.dll", SetLastError = true)]
     public static extern bool CloseHandle(IntPtr handle);
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr FindFirstChangeNotification(string pathName, bool watchSubtree, uint notifyFilter);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool FindNextChangeNotification(IntPtr changeHandle);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool FindCloseChangeNotification(IntPtr changeHandle);
 
     public static OwnedLaunch CreateSuspendedJobProcess(string applicationPath, string arguments, string workingDirectory)
     {
@@ -209,6 +215,36 @@ public static class NewsGraspRunnerJob
     {
         if (job != IntPtr.Zero && !CloseHandle(job)) {
             throw new InvalidOperationException("RUNNER_JOB_CLOSE_FAILED:" + Marshal.GetLastWin32Error());
+        }
+    }
+
+    public static IntPtr OpenDirectoryChange(string directoryPath)
+    {
+        const uint FILE_NOTIFY_CHANGE_FILE_NAME = 0x00000001;
+        const uint FILE_NOTIFY_CHANGE_SIZE = 0x00000008;
+        const uint FILE_NOTIFY_CHANGE_LAST_WRITE = 0x00000010;
+        IntPtr handle = FindFirstChangeNotification(
+            directoryPath,
+            false,
+            FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_LAST_WRITE
+        );
+        if (handle == new IntPtr(-1)) {
+            throw new InvalidOperationException("RUNNER_DIRECTORY_CHANGE_OPEN_FAILED:" + Marshal.GetLastWin32Error());
+        }
+        return handle;
+    }
+
+    public static void ContinueDirectoryChange(IntPtr changeHandle)
+    {
+        if (!FindNextChangeNotification(changeHandle)) {
+            throw new InvalidOperationException("RUNNER_DIRECTORY_CHANGE_REARM_FAILED:" + Marshal.GetLastWin32Error());
+        }
+    }
+
+    public static void CloseDirectoryChange(IntPtr changeHandle)
+    {
+        if (changeHandle != IntPtr.Zero && changeHandle != new IntPtr(-1) && !FindCloseChangeNotification(changeHandle)) {
+            throw new InvalidOperationException("RUNNER_DIRECTORY_CHANGE_CLOSE_FAILED:" + Marshal.GetLastWin32Error());
         }
     }
 }
@@ -799,15 +835,21 @@ function Watch-Runner {
     $stateDirectory = Split-Path -Parent $StateFile
     $stateSignal = $null
     $processSignal = $null
-    $stateWatcher = $null
-    $stateChanged = $null
-    $stateRenamed = $null
+    $stateChangeHandle = [IntPtr]::Zero
     try {
         if ($Process.HasExited) {
             throw [System.InvalidOperationException]::new('RUNNER_EXITED_BEFORE_WATCH_INITIALIZATION')
         }
         New-Item -ItemType Directory -Force -Path $stateDirectory | Out-Null
-        $stateSignal = [System.Threading.AutoResetEvent]::new($true)
+        $stateChangeHandle = [NewsGraspRunnerJob]::OpenDirectoryChange($stateDirectory)
+        $stateSignal = [System.Threading.EventWaitHandle]::new(
+            $false,
+            [System.Threading.EventResetMode]::ManualReset
+        )
+        $stateSignal.SafeWaitHandle = [Microsoft.Win32.SafeHandles.SafeWaitHandle]::new(
+            $stateChangeHandle,
+            $false
+        )
         $processSignal = [System.Threading.EventWaitHandle]::new(
             $false,
             [System.Threading.EventResetMode]::ManualReset
@@ -816,14 +858,6 @@ function Watch-Runner {
             $Process.Handle,
             $false
         )
-        $stateWatcher = [System.IO.FileSystemWatcher]::new($stateDirectory, (Split-Path -Leaf $StateFile))
-        $stateWatcher.NotifyFilter = [System.IO.NotifyFilters]'FileName, LastWrite, Size'
-        $stateChanged = [System.IO.FileSystemEventHandler]{ param($sender, $eventArgs) $null = $stateSignal.Set() }
-        $stateRenamed = [System.IO.RenamedEventHandler]{ param($sender, $eventArgs) $null = $stateSignal.Set() }
-        $stateWatcher.add_Changed($stateChanged)
-        $stateWatcher.add_Created($stateChanged)
-        $stateWatcher.add_Renamed($stateRenamed)
-        $stateWatcher.EnableRaisingEvents = $true
     } catch {
         $childExited = $false
         try { $childExited = [bool]$Process.HasExited } catch { }
@@ -839,17 +873,11 @@ function Watch-Runner {
             -ReasonCode $reasonCode `
             -StateClaimed $false
         Write-StatusJson -Mode 'failed' -State (Read-State) -ProcessId $Process.Id -Message $message
-        if ($stateWatcher) {
-            $stateWatcher.EnableRaisingEvents = $false
-            if ($stateChanged) {
-                $stateWatcher.remove_Changed($stateChanged)
-                $stateWatcher.remove_Created($stateChanged)
-            }
-            if ($stateRenamed) { $stateWatcher.remove_Renamed($stateRenamed) }
-            $stateWatcher.Dispose()
-        }
         if ($stateSignal) { $stateSignal.Dispose() }
         if ($processSignal) { $processSignal.Dispose() }
+        if ($stateChangeHandle -ne [IntPtr]::Zero) {
+            [NewsGraspRunnerJob]::CloseDirectoryChange($stateChangeHandle)
+        }
         if ($script:RunnerJobHandles.ContainsKey([int]$Process.Id)) {
             [NewsGraspRunnerJob]::CloseOwnedJob([IntPtr]$script:RunnerJobHandles[[int]$Process.Id])
             $script:RunnerJobHandles.Remove([int]$Process.Id)
@@ -857,10 +885,18 @@ function Watch-Runner {
         return
     }
     $nextDeadline = $started.AddMinutes($TimeoutMinutes)
+    $firstObservation = $true
     try {
       while ($true) {
-        $waitMilliseconds = [Math]::Max(1, [Math]::Min([int](($nextDeadline - (Get-Date)).TotalMilliseconds), [int]::MaxValue))
-        $null = [System.Threading.WaitHandle]::WaitAny(@($processSignal, $stateSignal), $waitMilliseconds)
+        if ($firstObservation) {
+            $firstObservation = $false
+        } else {
+            $waitMilliseconds = [Math]::Max(1, [Math]::Min([int](($nextDeadline - (Get-Date)).TotalMilliseconds), [int]::MaxValue))
+            $signalIndex = [System.Threading.WaitHandle]::WaitAny(@($processSignal, $stateSignal), $waitMilliseconds)
+            if ($signalIndex -eq 1) {
+                [NewsGraspRunnerJob]::ContinueDirectoryChange($stateChangeHandle)
+            }
+        }
         $state = Read-State
         if ($state -and $state.__corrupt) {
             Write-WatchdogState -State $state -Status 'watchdog_state_corrupt' -Message 'runner state json is corrupt' -ExitCode 125
@@ -951,13 +987,9 @@ function Watch-Runner {
         $nextDeadline = if ($staleAt -lt $wallAt) { $staleAt } else { $wallAt }
       }
     } finally {
-        $stateWatcher.EnableRaisingEvents = $false
-        $stateWatcher.remove_Changed($stateChanged)
-        $stateWatcher.remove_Created($stateChanged)
-        $stateWatcher.remove_Renamed($stateRenamed)
-        $stateWatcher.Dispose()
         $stateSignal.Dispose()
         $processSignal.Dispose()
+        [NewsGraspRunnerJob]::CloseDirectoryChange($stateChangeHandle)
         if ($script:RunnerJobHandles.ContainsKey([int]$Process.Id)) {
             [NewsGraspRunnerJob]::CloseOwnedJob([IntPtr]$script:RunnerJobHandles[[int]$Process.Id])
             $script:RunnerJobHandles.Remove([int]$Process.Id)

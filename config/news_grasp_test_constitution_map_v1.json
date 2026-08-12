@@ -1,8 +1,8 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 2461,
-  "collectedNodeSetSha256": "97c04d0d69af2d277eadea6e59cc8415b775cd1547538d98e72b72a13d253819",
+  "collectedNodeCount": 2462,
+  "collectedNodeSetSha256": "4118b0ba5259b43132f99db22aa8ea26ffd8c88ad8083f362a833abc96c30e4f",
   "files": [
     {
       "path": "tests/test_all_article_urls_live.py",
@@ -3269,8 +3269,8 @@
     },
     {
       "path": "tests/test_runner_convergence_contract.py",
-      "sha256": "b37d2d02c1a7fabd67b04ba3be1af365e8dc46d7abefc8590b226c7832f9c10f",
-      "nodeCount": 187,
+      "sha256": "514279c32485eccdf4be98430bb7cbc6e841b75138dc291480c751427fd085cc",
+      "nodeCount": 188,
       "nodeIds": [
         "tests/test_runner_convergence_contract.py::test_atomic_install_failure_preserves_old_destination",
         "tests/test_runner_convergence_contract.py::test_atomic_install_replaces_hardlink_entry_without_mutating_sibling",
@@ -3458,7 +3458,8 @@
         "tests/test_runner_convergence_contract.py::test_watcher_failure_before_state_claim_writes_typed_launch_evidence",
         "tests/test_runner_convergence_contract.py::test_watcher_ignores_previous_run_state_until_new_process_claims_identity",
         "tests/test_runner_convergence_contract.py::test_watcher_repairs_live_ops_before_runner_start",
-        "tests/test_runner_convergence_contract.py::test_watcher_status_reports_stale_when_running_pid_is_dead"
+        "tests/test_runner_convergence_contract.py::test_watcher_status_reports_stale_when_running_pid_is_dead",
+        "tests/test_runner_convergence_contract.py::test_watcher_terminal_state_does_not_crash_powershell_host"
       ],
       "clauseIds": [
         "NGC-C06",

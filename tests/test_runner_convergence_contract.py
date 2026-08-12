@@ -2145,7 +2145,9 @@ def test_runner_watcher_uses_hidden_start_and_event_driven_terminal_state() -> N
     assert "Start-Process -FilePath 'powershell'" not in watcher
     assert "CreateSuspendedJobProcess" in watcher
     assert "CREATE_NO_WINDOW" in watcher
-    assert "[System.IO.FileSystemWatcher]" in watcher
+    assert "FindFirstChangeNotification" in watcher
+    assert "FindNextChangeNotification" in watcher
+    assert "[System.IO.FileSystemWatcher]" not in watcher
     assert "[System.Threading.WaitHandle]::WaitAny" in watcher
     assert "Start-Sleep -Seconds $PollSeconds" not in watcher
     assert "DateStampOverride = $DateStamp" in watcher
@@ -2468,6 +2470,123 @@ exit 77
     assert summary["reasonCode"] == "RUNNER_EXITED_BEFORE_STATE_CLAIM"
     assert summary["childExitCode"] == 2
     assert len(summary["sha256"]) == 64
+
+
+def test_watcher_terminal_state_does_not_crash_powershell_host(
+    tmp_path: Path,
+) -> None:
+    """A terminal child state must leave the watcher host with exit code zero."""
+
+    bin_dir = tmp_path / "bin"
+    log_dir = tmp_path / "logs"
+    state_file = tmp_path / "state.json"
+    bin_dir.mkdir()
+    for name in (
+        "run_codex_with_timeout.ps1",
+        "news-grasp-bootstrap.ps1",
+        "news-grasp-runner.ps1",
+        "news-grasp-lineage.ps1",
+        "watch-news-grasp-runner.ps1",
+        "news-grasp-deadman.ps1",
+        "news-grasp-deadman-launcher.pyw",
+        "news-grasp-task-launcher.pyw",
+    ):
+        shutil.copy2(OPS_DIR / name, bin_dir / name)
+    successful_runner = tmp_path / "typed-successful-runner.ps1"
+    successful_runner.write_text(
+        """param(
+[switch] $SmokeTest,
+[switch] $SkipSourceSync,
+[switch] $RecoverOnly,
+[string] $DateStampOverride,
+[string] $LogDirOverride,
+[string] $StateFileOverride,
+[string] $RepoDirOverride,
+[string] $PyExeOverride,
+[string] $HighCostAdmissionPath,
+[string] $HighCostBudgetToolPath,
+[string] $HighCostWorkspaceRoot,
+[string] $RunIntent,
+[string] $ScheduledAuthorityEvidencePath,
+[string] $ResumeFromStage,
+[string] $RecoveryDecisionPath
+)
+$now = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss.fffK')
+$payload = [ordered]@{
+    status = 'smoke_ok'
+    message = 'typed fixture completed'
+    exit_code = 0
+    updated_at = $now
+    heartbeat_at = $now
+    run_id = 'typed-success'
+    pid = [int]$PID
+    repo_dir = [string]$RepoDirOverride
+    runner_path = [string]$PSCommandPath
+    process_creation_time = [Diagnostics.Process]::GetCurrentProcess().StartTime.ToString('o')
+    command_line_fingerprint = 'fixture'
+}
+[IO.File]::WriteAllText(
+    $StateFileOverride,
+    (($payload | ConvertTo-Json -Depth 6) + [Environment]::NewLine),
+    [Text.UTF8Encoding]::new($false)
+)
+Start-Sleep -Milliseconds 300
+exit 0
+""",
+        encoding="utf-8-sig",
+    )
+
+    completed = subprocess.run(
+        [
+            POWERSHELL,
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(WATCHER_PS1),
+            "-Start",
+            "-SmokeTest",
+            "-SkipSourceSync",
+            "-TimeoutMinutes",
+            "1",
+            "-RunnerPath",
+            str(successful_runner),
+            "-StateFile",
+            str(state_file),
+            "-LogDir",
+            str(log_dir),
+            "-DateStamp",
+            "2026-08-12",
+            "-RepoDir",
+            str(ROOT),
+            "-BinDir",
+            str(bin_dir),
+            "-PyExeOverride",
+            sys.executable,
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=30,
+        check=False,
+    )
+
+    assert state_file.is_file(), "NGI_RED_WATCHER_TERMINAL_STATE_MISSING"
+    state = json.loads(state_file.read_text(encoding="utf-8-sig"))
+    assert state["status"] == "smoke_ok"
+    assert completed.returncode == 0, (
+        "NGI_RED_WATCHER_CALLBACK_HOST_RC2\n"
+        + completed.stdout
+        + completed.stderr
+    )
+    evidence_path = log_dir / "runner-launch-evidence-2026-08-12.json"
+    evidence = json.loads(evidence_path.read_text(encoding="utf-8-sig"))
+    assert evidence["status"] == "terminal_state_reached"
+    assert evidence["reasonCode"] == "RUNNER_TERMINAL_STATE_REACHED"
+    assert evidence["childExitCode"] == 0
+    assert evidence["stateClaimed"] is True
 
 
 def test_runner_and_watcher_retry_transient_state_reads_before_declaring_corrupt() -> None:

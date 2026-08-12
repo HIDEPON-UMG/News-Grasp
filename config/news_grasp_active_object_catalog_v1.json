@@ -1,6 +1,6 @@
 {
   "schemaVersion": "NEWS_GRASP_ACTIVE_OBJECT_CATALOG_V1",
-  "sourceCommit": "b87646f9ceedfff8d55e573127fc4614bc7f7fb4",
+  "sourceCommit": "9a9e1ab967f1ec738630871bee9842e8014b9e2e",
   "discoveryMode": "git_index_plus_untracked_wip_plus_route_reference_scan",
   "objects": [
     {
@@ -543,7 +543,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "b925079984ad81468e2a198e572bd16a75659c3c66d74f9241766bf8e3ff7fea",
+      "sha256": "f92802bace5a20d3d36d3224b0e75d58621f95c33af3ae77b253f3ac7b23e683",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -561,7 +561,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "f401259c39d653188c7ea1aa8088fb0f79c18e3c514d843937cc35b7dfbf7af7",
+      "sha256": "8ee06100df938656e9131972cbda9f9ceb96434f42acab7ae62df5d83833377e",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -1225,7 +1225,7 @@
         "NGC-C09",
         "NGC-C11"
       ],
-      "sha256": "712d4aa6279aa47cde22a30afa8dbe825a5a13447f0d3b577fbd64f3e9ca3cdd",
+      "sha256": "cac5e67e223255b6b52f4f458b4bb52505740912ee20026a2c48f2cb723f0dfa",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -3513,7 +3513,7 @@
         "NGC-C06",
         "NGC-C14"
       ],
-      "sha256": "b37d2d02c1a7fabd67b04ba3be1af365e8dc46d7abefc8590b226c7832f9c10f",
+      "sha256": "514279c32485eccdf4be98430bb7cbc6e841b75138dc291480c751427fd085cc",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -4907,5 +4907,5 @@
   "activeObjectCount": 266,
   "unlinkedActiveObjectCount": 0,
   "objectPathSetSha256": "aa33053d194c97c18770d02bc0bacc3ee4601e6dbeab8edad789f7a77ff0ab0e",
-  "testNodeSetSha256": "97c04d0d69af2d277eadea6e59cc8415b775cd1547538d98e72b72a13d253819"
+  "testNodeSetSha256": "4118b0ba5259b43132f99db22aa8ea26ffd8c88ad8083f362a833abc96c30e4f"
 }
