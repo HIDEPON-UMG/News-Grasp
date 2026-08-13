@@ -1,8 +1,8 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 2583,
-  "collectedNodeSetSha256": "f36afdbb9e295f892b68722b8926fc47c77222ecbeaa047a4575239e19538248",
+  "collectedNodeCount": 2584,
+  "collectedNodeSetSha256": "732558f36e758b7ef1638e3e6455c7b7572350da4062cc2f9afdb579324b6744",
   "files": [
     {
       "path": "tests/test_20260813_control_plane_repair.py",
@@ -634,9 +634,10 @@
     },
     {
       "path": "tests/test_daily_self_heal.py",
-      "sha256": "a34d32790b4a0af0780ea4b3627c7219d5551a715992111f2316640d705fcf43",
-      "nodeCount": 106,
+      "sha256": "391ac7b3648c4be43c5253eeca91a68652212f926e38ee58696c11d21f34b231",
+      "nodeCount": 107,
       "nodeIds": [
+        "tests/test_daily_self_heal.py::test_authenticode_identity_uses_tracked_powershell_helper",
         "tests/test_daily_self_heal.py::test_authenticode_timeout_is_typed_failure",
         "tests/test_daily_self_heal.py::test_canonical_live_json_rejects_hardlink_alias",
         "tests/test_daily_self_heal.py::test_compare_files_detects_drift",

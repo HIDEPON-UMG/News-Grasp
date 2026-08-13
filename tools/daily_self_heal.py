@@ -429,18 +429,28 @@ def _canonical_live_json(path: Path, *, expected: Path, max_bytes: int = 65536) 
         raise ValueError("high_cost_binding_authority_invalid") from error
 
 
-def _authenticode_identity(path: Path) -> dict[str, str]:
+def _authenticode_identity(path: Path, *, ops_repo_root: Path) -> dict[str, str]:
     """Windows trust storeで実ファイルの署名を検証し、JSON自己申告と分離する。"""
-    script = (
-        "$s=Get-AuthenticodeSignature -LiteralPath $args[0];"
-        "$v=[ordered]@{status=[string]$s.Status;subject=[string]$s.SignerCertificate.Subject;"
-        "thumbprint=([string]$s.SignerCertificate.Thumbprint).ToLowerInvariant()};"
-        "$v|ConvertTo-Json -Compress"
+    helper = (
+        ops_repo_root.resolve(strict=True)
+        / "scripts"
+        / "ops"
+        / "get-news-grasp-authenticode-identity.ps1"
     )
+    if not helper.is_file() or helper.is_symlink():
+        raise ValueError("authenticode helper invalid")
     creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
     try:
         completed = subprocess.run(
-            ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", script, str(path)],
+            [
+                r"C:\Program Files\PowerShell\7\pwsh.exe",
+                "-NoProfile",
+                "-NonInteractive",
+                "-File",
+                str(helper),
+                "-TargetPath",
+                str(path),
+            ],
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -542,9 +552,15 @@ def _validate_live_high_cost_binding_files(
         )
         python_sha256 = hashlib.sha256(python_raw).hexdigest()
         pythonw_sha256 = hashlib.sha256(pythonw_raw).hexdigest()
-        python_signature = _authenticode_identity(python_exe)
-        pythonw_signature = _authenticode_identity(task_pythonw)
         trusted_ops = _trusted_ops_generation(ops_repo_root) if ops_repo_root is not None else None
+        if ops_repo_root is None:
+            raise ValueError("ops generation required")
+        python_signature = _authenticode_identity(
+            python_exe, ops_repo_root=ops_repo_root
+        )
+        pythonw_signature = _authenticode_identity(
+            task_pythonw, ops_repo_root=ops_repo_root
+        )
         trusted_remote = "https://github.com/HIDEPON-UMG/News-Grasp.git"
         if (
             not re.fullmatch(r"[0-9a-f]{64}", receipt)

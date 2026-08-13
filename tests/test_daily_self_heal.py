@@ -2732,7 +2732,7 @@ creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
     monkeypatch.setattr(
         dsh,
         "_authenticode_identity",
-        lambda _path: {
+        lambda _path, **_kwargs: {
             "status": "Valid",
             "subject": "CN=Python Software Foundation, O=Python Software Foundation, fixture",
             "thumbprint": "d" * 40,
@@ -3595,7 +3595,7 @@ def test_live_startup_canary_propagates_explicit_high_cost_binding(monkeypatch, 
     monkeypatch.setattr(
         dsh,
         "_authenticode_identity",
-        lambda _path: {
+        lambda _path, **_kwargs: {
             "status": "Valid",
             "subject": "CN=Python Software Foundation, O=Python Software Foundation, fixture",
             "thumbprint": "d" * 40,
@@ -3658,7 +3658,7 @@ def test_live_startup_canary_rejects_ops_provenance_drift_before_launch(
     monkeypatch.setattr(
         dsh,
         "_authenticode_identity",
-        lambda _path: {
+        lambda _path, **_kwargs: {
             "status": "Valid",
             "subject": "CN=Python Software Foundation, O=Python Software Foundation, fixture",
             "thumbprint": "d" * 40,
@@ -3750,7 +3750,7 @@ def test_live_high_cost_binding_authority_fails_closed(
     monkeypatch.setattr(
         dsh,
         "_authenticode_identity",
-        lambda _path: {
+        lambda _path, **_kwargs: {
             "status": "Valid",
             "subject": "CN=Python Software Foundation, O=Python Software Foundation, fixture",
             "thumbprint": "d" * 40,
@@ -3866,13 +3866,54 @@ def test_authenticode_timeout_is_typed_failure(monkeypatch, tmp_path: Path) -> N
     """operational recovery: trust store停滞はtracebackでなくtyped authority failureにする。"""
     executable = tmp_path / "python.exe"
     executable.write_bytes(b"fixture")
+    helper = tmp_path / "scripts" / "ops" / "get-news-grasp-authenticode-identity.ps1"
+    helper.parent.mkdir(parents=True)
+    helper.write_text("param([string]$TargetPath)", encoding="utf-8")
 
     def timeout(*_args, **_kwargs):
         raise subprocess.TimeoutExpired(cmd="powershell.exe", timeout=15)
 
     monkeypatch.setattr(dsh.subprocess, "run", timeout)
     with pytest.raises(ValueError, match="authenticode verification unavailable"):
-        dsh._authenticode_identity(executable)
+        dsh._authenticode_identity(executable, ops_repo_root=tmp_path)
+
+
+def test_authenticode_identity_uses_tracked_powershell_helper(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """primary: Unicode pathを追跡済みhelperの-File引数へ束縛する。"""
+    executable = tmp_path / "python.exe"
+    executable.write_bytes(b"fixture")
+    helper = tmp_path / "scripts" / "ops" / "get-news-grasp-authenticode-identity.ps1"
+    helper.parent.mkdir(parents=True)
+    helper.write_text("param([string]$TargetPath)", encoding="utf-8")
+    captured: dict[str, object] = {}
+
+    class Proc:
+        returncode = 0
+        stdout = json.dumps(
+            {
+                "status": "Valid",
+                "subject": "CN=Python Software Foundation, O=Python Software Foundation, fixture",
+                "thumbprint": "d" * 40,
+            }
+        )
+        stderr = ""
+
+    def fake_run(command, **kwargs):
+        captured["command"] = command
+        captured.update(kwargs)
+        return Proc()
+
+    monkeypatch.setattr(dsh.subprocess, "run", fake_run)
+    identity = dsh._authenticode_identity(executable, ops_repo_root=tmp_path)
+
+    command = captured["command"]
+    assert command[0] == r"C:\Program Files\PowerShell\7\pwsh.exe"
+    assert "-File" in command
+    assert command[command.index("-File") + 1] == str(helper)
+    assert command[command.index("-TargetPath") + 1] == str(executable)
+    assert identity["status"] == "Valid"
 
 
 def test_live_high_cost_binding_authority_rejects_coordinated_recovery_rewrite(
@@ -3924,7 +3965,7 @@ def test_live_high_cost_binding_authority_rejects_coordinated_recovery_rewrite(
     monkeypatch.setattr(
         dsh,
         "_authenticode_identity",
-        lambda _path: {"status": "NotSigned", "subject": "", "thumbprint": ""},
+        lambda _path, **_kwargs: {"status": "NotSigned", "subject": "", "thumbprint": ""},
     )
     monkeypatch.setattr(
         dsh,
