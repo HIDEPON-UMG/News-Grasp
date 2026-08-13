@@ -1,6 +1,6 @@
 {
   "schemaVersion": "NEWS_GRASP_ACTIVE_OBJECT_CATALOG_V1",
-  "sourceCommit": "591c7c302b637b075571694e77946703a575ec8e",
+  "sourceCommit": "1264b6d11c3a26a995eb7b516f50ac5b061dfd57",
   "discoveryMode": "git_index_plus_untracked_wip_plus_route_reference_scan",
   "objects": [
     {
@@ -543,7 +543,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "b5ae81a06bf177eba9e1a28efc63a6b2915b857ddd36870c0cac7210d165ca3e",
+      "sha256": "ef4695c148ce42749e5b506100d2f80b0bc1bf80c82a4bcd5a536f43d72b96ba",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -561,7 +561,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "ee68fa6182ef78bf6ee6da7966170e77bf0ba6035853e98a8c224aa515a6add0",
+      "sha256": "d4ce42d393c93d1d4017991d067f9999a3b2b6c7b6817f94d10f34d973cf8e5b",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -1355,7 +1355,7 @@
         "NGC-C06",
         "NGC-C14"
       ],
-      "sha256": "ae6b468080798fb870e2c0b423f0a1551453e9c6418751f95b5e50361b1e4ed3",
+      "sha256": "37adb308adfcb31dfd45eb38f25fed89342299ce0ffdeafe7117b440e7622d0c",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -4289,7 +4289,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "dd076780f50e702cabbf83ab228c94343c075527f837a98e3565feeb07608a04",
+      "sha256": "a21982814f9b61c859c87193b931471486a912824214ca3a80c425eee986b7fe",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -5028,5 +5028,5 @@
   "activeObjectCount": 273,
   "unlinkedActiveObjectCount": 0,
   "objectPathSetSha256": "84ac6e676da5160abf9d8d312b79fa0c8064d9b08110ffa379cdcc11439612d4",
-  "testNodeSetSha256": "17e8f4668fb19f427df29415533aabe421e155e3a14cdd9017f8098c3a2a927b"
+  "testNodeSetSha256": "271fbc6ae6bf5dc86e8487e9f4c374f032655762570213d1346d145ac28d42d9"
 }

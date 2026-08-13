@@ -873,3 +873,59 @@ def test_ng813_preflight_preserves_failed_bootstrap_history_without_permanent_bl
     assert result["historicalReadinessObservation"]["reason"] == (
         "bootstrap_task_last_result_not_ok"
     )
+
+
+def test_ng813_recovery_admits_missed_production_run_without_rewriting_it(
+    tmp_path: Path,
+) -> None:
+    """recovery: missed runは復旧理由であり、Task定義driftとして遮断しない。"""
+    control_plane = _load_control_plane_module()
+    artifact = tmp_path / "artifact"
+    ops = tmp_path / "ops"
+    runtime = tmp_path / "runtime"
+    live = tmp_path / "live"
+    artifact.mkdir()
+    _write_managed_surface(ops)
+    _write_managed_surface(runtime)
+    _copy_to_live(ops, live)
+    readiness = _control_readiness(ok=False, reason="scheduled_task_missed_runs")
+    readiness["last_scheduled_attempt"] = {
+        "status": "failed",
+        "last_task_result": 1,
+        "last_run_time": "08/13/2026 06:00:00",
+    }
+    readiness["scheduled_task"].update(
+        {
+            "definition_ok": True,
+            "state": "Ready",
+            "number_of_missed_runs": 1,
+            "number_of_missed_runs_ok": False,
+            "trigger_is_daily_0600": True,
+            "next_run_time_is_0600": True,
+            "runner_action_is_production_start": True,
+            "targets_live_task_launcher": True,
+            "task_launcher_mode_ok": True,
+            "task_launcher_ready": True,
+            "high_cost_binding_action_ok": True,
+            "bootstrap_definition_ok": True,
+            "bootstrap_last_task_result": 72,
+        }
+    )
+
+    result = control_plane.verify_control_plane(
+        artifact_root=artifact,
+        ops_root=ops,
+        production_runtime_root=runtime,
+        live_bin_root=live,
+        issue_date="2026-08-14",
+        run_intent="ScheduledRecoveryFull",
+        runner_readiness=readiness,
+        allow_isolated_high_cost_fixture=True,
+    )
+
+    assert result["ok"] is True
+    assert result["lastScheduledAttempt"]["status"] == "failed"
+    assert result["scheduledTask"]["number_of_missed_runs"] == 1
+    assert result["recoveryAdmissionObservation"]["reason"] == (
+        "scheduled_task_missed_runs"
+    )

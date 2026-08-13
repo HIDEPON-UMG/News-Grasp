@@ -304,7 +304,29 @@ def verify_control_plane(
             task_definition_ok
             and readiness_reason == "bootstrap_task_last_result_not_ok"
         )
-        if historical_observation_only:
+        recovery_missed_run = bool(
+            run_intent == "ScheduledRecoveryFull"
+            and task_definition_ok
+            and readiness_reason == "scheduled_task_missed_runs"
+        )
+        if recovery_missed_run:
+            result["recoveryAdmissionObservation"] = {
+                "reason": readiness_reason,
+                "preserved": True,
+                "numberOfMissedRuns": result["scheduledTask"].get(
+                    "number_of_missed_runs"
+                ),
+                "lastScheduledAttemptStatus": result["lastScheduledAttempt"].get(
+                    "status"
+                ),
+            }
+            result["nextRunReadiness"] = {
+                **result["nextRunReadiness"],
+                "ok": True,
+                "status": "ready_for_scheduled_recovery",
+                "scheduledFailurePreserved": True,
+            }
+        elif historical_observation_only:
             result["historicalReadinessObservation"] = {
                 "reason": readiness_reason,
                 "preserved": True,

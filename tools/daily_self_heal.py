@@ -1693,11 +1693,12 @@ def verify_live_runner_readiness(
         and bootstrap_before_runner
     )
     bootstrap_pre_run_ok = bool(bootstrap_definition_ok and bootstrap_last_result_ok)
+    # missed run は過去の実行観測でありTask定義ではない。definitionへ混ぜると、
+    # まさに復旧すべき日にScheduledRecoveryFull自身を遮断してしまう。
     runner_schedule_ok = bool(
         runner_state_ok
         and runner_trigger_ok
         and runner_next_run_ok
-        and runner_missed_runs_ok
     )
     launcher_runner_ready = bool(
         runner_targets_task_launcher and runner_task_launcher_mode_ok and task_launcher_ready
@@ -1716,7 +1717,11 @@ def verify_live_runner_readiness(
         and binding_authority.get("ok") is True
         and (launcher_runner_ready or legacy_direct_runner_ready)
     )
-    task_ok = bool(task_definition_ok and bootstrap_last_result_ok)
+    task_ok = bool(
+        task_definition_ok
+        and runner_missed_runs_ok
+        and bootstrap_last_result_ok
+    )
     result["scheduled_task"] = {
         "ok": task_ok,
         "definition_ok": task_definition_ok,

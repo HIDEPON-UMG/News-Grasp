@@ -1,13 +1,13 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 2585,
-  "collectedNodeSetSha256": "17e8f4668fb19f427df29415533aabe421e155e3a14cdd9017f8098c3a2a927b",
+  "collectedNodeCount": 2586,
+  "collectedNodeSetSha256": "271fbc6ae6bf5dc86e8487e9f4c374f032655762570213d1346d145ac28d42d9",
   "files": [
     {
       "path": "tests/test_20260813_control_plane_repair.py",
-      "sha256": "ae6b468080798fb870e2c0b423f0a1551453e9c6418751f95b5e50361b1e4ed3",
-      "nodeCount": 37,
+      "sha256": "37adb308adfcb31dfd45eb38f25fed89342299ce0ffdeafe7117b440e7622d0c",
+      "nodeCount": 38,
       "nodeIds": [
         "tests/test_20260813_control_plane_repair.py::test_ng813_bootstrap_and_watcher_propagate_explicit_ops_root_before_runner",
         "tests/test_20260813_control_plane_repair.py::test_ng813_bootstrap_preflight_uses_the_selected_isolated_state_path",
@@ -38,6 +38,7 @@
         "tests/test_20260813_control_plane_repair.py::test_ng813_production_recovery_uses_installed_binding_not_caller_root",
         "tests/test_20260813_control_plane_repair.py::test_ng813_public_green_contract_allows_only_finalization_critical_path",
         "tests/test_20260813_control_plane_repair.py::test_ng813_publish_complete_manifest_is_typed_even_when_red",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_recovery_admits_missed_production_run_without_rewriting_it",
         "tests/test_20260813_control_plane_repair.py::test_ng813_recovery_preflight_runs_before_runner_spawn",
         "tests/test_20260813_control_plane_repair.py::test_ng813_recovery_python_entrypoints_are_isolated_direct_scripts",
         "tests/test_20260813_control_plane_repair.py::test_ng813_runner_finalizer_consumes_only_typed_top_level_publish_commit",

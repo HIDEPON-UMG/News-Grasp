@@ -88,7 +88,7 @@
         "tools/operational_recovery_registry.py": "afdfdfec2600fc4244ea2aa63c558400a325eb8ba2ecfee78e7dbd6d53485499",
         "tools/news_grasp_daily_control.py": "50403f360494ee8851ec45657b0cfacaa6dcc97f465b34f616decf7bf1b15849",
         "tools/audit_recovery_control.py": "e8f906fa46994932a295517ded82fe417f5894b47004061a2294168b82f3b3fd",
-        "tools/daily_self_heal.py": "dd076780f50e702cabbf83ab228c94343c075527f837a98e3565feeb07608a04",
+        "tools/daily_self_heal.py": "a21982814f9b61c859c87193b931471486a912824214ca3a80c425eee986b7fe",
         "scripts/ops/get-news-grasp-authenticode-identity.ps1": "b9d58826023b8baee80b8d5622ae24bbbec7feecc244bf52b459d3bd81512c97",
         "config/operational_recovery_registry_v1.json": "84810a8f9d6f99a269f418941311f41381582ccda7e941ec1f627035bd9db98f",
         "tools/news_grasp_constitution.py": "d34e2a152523c0b30961e907c0e90b0eb63a44b84c8c46da0ca57cf8bb49741a"
@@ -384,9 +384,9 @@
         "config/news_grasp_automation_assets_v2.json": "275a6f4217db6d064cb9c378541fcab0412d086415ff4043744b816de1d45f70",
         "tools/news_grasp_generation.py": "04c6fd4c736bc3c2e0f0024a873996a45a5ba75c1e616b1f8379141036a96b16",
         "tools/news_grasp_constitution.py": "d34e2a152523c0b30961e907c0e90b0eb63a44b84c8c46da0ca57cf8bb49741a",
-        "config/news_grasp_active_object_catalog_v1.json": "5641758bbb54ea73b8b1b0345c3d5eb2c289a8d0917660818402993346c564cc",
-        "config/news_grasp_test_constitution_map_v1.json": "ee68fa6182ef78bf6ee6da7966170e77bf0ba6035853e98a8c224aa515a6add0",
-        "config/news_grasp_spec_disposition_v1.json": "b5ae81a06bf177eba9e1a28efc63a6b2915b857ddd36870c0cac7210d165ca3e",
+        "config/news_grasp_active_object_catalog_v1.json": "6f9c5ee81ef65b4a293cf47001cc253ea5eef4c67e031c74034eb371d85712e7",
+        "config/news_grasp_test_constitution_map_v1.json": "d4ce42d393c93d1d4017991d067f9999a3b2b6c7b6817f94d10f34d973cf8e5b",
+        "config/news_grasp_spec_disposition_v1.json": "ef4695c148ce42749e5b506100d2f80b0bc1bf80c82a4bcd5a536f43d72b96ba",
         "tests/test_runner_convergence_contract.py": "833af3f78cc8cd0627d726e18df5e6924e784f16c88433f8851f4ad5d585c928"
       },
       "constitutionClauses": [
