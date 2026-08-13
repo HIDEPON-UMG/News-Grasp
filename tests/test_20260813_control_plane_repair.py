@@ -177,6 +177,8 @@ def test_ng813_smoke_inventory_probe_cannot_write_ops_bytecode() -> None:
     )
     assert "& $PyExe '-B' '-m' 'tools.daily_self_heal'" in deadman
     assert "& $PyExe '-B' '-m' 'tools.news_grasp_daily_control'" in deadman
+    assert "if ((Get-Date).Hour -eq 6)" in deadman
+    assert "exit (Invoke-Audit0640Control)" in deadman
 
 
 def test_ng813_producer_lineage_uses_explicit_ops_root_not_state_parent(

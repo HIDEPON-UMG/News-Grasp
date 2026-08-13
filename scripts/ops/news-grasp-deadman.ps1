@@ -78,7 +78,12 @@ try {
     if ($deadmanExitCode -notin @(0, 2)) {
         Write-SupervisorLog "legacy deadman observer returned exit=$deadmanExitCode; audit controller remains authoritative"
     }
-    exit (Invoke-Audit0640Control)
+    # Deadmanは毎時:40に観測するが、canonical recovery auditは06:40だけ。
+    # 日付が変わった00:40にterminalを先取りすると06:40がAUDIT_EVENT_REPLAYになる。
+    if ((Get-Date).Hour -eq 6) {
+        exit (Invoke-Audit0640Control)
+    }
+    exit $deadmanExitCode
 } finally {
     Pop-Location
 }
