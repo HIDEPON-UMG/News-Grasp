@@ -1380,7 +1380,7 @@ def _run_live_startup_canary(
         command += [
             "-UseProductionRuntime",
             "-RepoDir",
-            str(repo_root),
+            str(resolved_ops_root),
             "-EvidenceRepoDir",
             str(resolved_ops_root),
         ]

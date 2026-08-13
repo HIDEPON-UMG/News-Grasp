@@ -1,6 +1,6 @@
 {
   "schemaVersion": "NEWS_GRASP_ACTIVE_OBJECT_CATALOG_V1",
-  "sourceCommit": "71503258aacce6620e6d602005020c8bd894b1c8",
+  "sourceCommit": "c7e2826bb58d91bb62681108666721ffab12ddaa",
   "discoveryMode": "git_index_plus_untracked_wip_plus_route_reference_scan",
   "objects": [
     {
@@ -543,7 +543,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "0b544f14c188f17403d20da5280d514378f0b872f59f11098db3f34d48e3869d",
+      "sha256": "61b5fb084078d4182be747da87506f00fbe2e3c159f98561ca7691605d2978df",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -561,7 +561,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "18954823628618db834e2f05981561bed489f075b0878b016207ef1e3eaba9c6",
+      "sha256": "5a82db082ece86806e40db9a16fde25f6aeea4bed832366868aae7cef30964d9",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -1355,7 +1355,7 @@
         "NGC-C06",
         "NGC-C14"
       ],
-      "sha256": "c19e818668c12e944ebf2184bf4b7ed062e7dc411e9b8c7ec3bfe43173fb1ab9",
+      "sha256": "f69c1ecbfc05be351514cd54d130cd134b6a334f8532c3aa317e9f918db234d8",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -4289,7 +4289,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "e34f3c6e356e1ce3c801ba9e8ebbdc6ea1b6da6421aa66c7bcab786b825bfb00",
+      "sha256": "dd076780f50e702cabbf83ab228c94343c075527f837a98e3565feeb07608a04",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -5028,5 +5028,5 @@
   "activeObjectCount": 273,
   "unlinkedActiveObjectCount": 0,
   "objectPathSetSha256": "84ac6e676da5160abf9d8d312b79fa0c8064d9b08110ffa379cdcc11439612d4",
-  "testNodeSetSha256": "732558f36e758b7ef1638e3e6455c7b7572350da4062cc2f9afdb579324b6744"
+  "testNodeSetSha256": "40701b4080847e301fbd0dee00b28ceb2ec3dcd3c66548d970bc28ba677c5525"
 }
