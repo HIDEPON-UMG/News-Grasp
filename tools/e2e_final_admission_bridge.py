@@ -1590,6 +1590,9 @@ def _validate_attempt_ledger(value: dict[str, Any]) -> None:
     ):
         raise E2EFinalAdmissionError("E2E_ATTEMPT_LEDGER_INVALID")
     replacements = value.get("replacements", {})
+    replacement_history = value.get("replacementHistory", [])
+    if not isinstance(replacement_history, list):
+        raise E2EFinalAdmissionError("E2E_ATTEMPT_LEDGER_INVALID")
     attempts = value["attempts"]
     for attempt_key, row in attempts.items():
         if not isinstance(row, dict):
@@ -1635,6 +1638,30 @@ def _validate_attempt_ledger(value: dict[str, Any]) -> None:
             or HEX_64_RE.fullmatch(str(replacement.get("proofSha256") or "")) is None
         ):
             raise E2EFinalAdmissionError("E2E_CAUSAL_REPLACEMENT_LINEAGE_INVALID")
+    for history in replacement_history:
+        if (
+            not isinstance(history, dict)
+            or set(history)
+            != {
+                "attemptKey",
+                "originalAdmissionId",
+                "originalReservationReceiptSha256",
+                "originalRow",
+                "replacementAdmissionId",
+                "proofSha256",
+            }
+            or history.get("attemptKey") not in attempts
+            or not isinstance(history.get("originalRow"), dict)
+            or history["originalRow"].get("state") != "runner_reserved"
+            or history["originalRow"].get("claimReceiptPath")
+            or history["originalRow"].get("claimReceiptSha256")
+            or history["originalRow"].get("admissionId")
+            != history.get("originalAdmissionId")
+            or history["originalRow"].get("reservationReceiptSha256")
+            != history.get("originalReservationReceiptSha256")
+            or HEX_64_RE.fullmatch(str(history.get("proofSha256") or "")) is None
+        ):
+            raise E2EFinalAdmissionError("E2E_CAUSAL_REPLACEMENT_LINEAGE_INVALID")
 
 
 def _ledger_snapshot(path: Path) -> tuple[dict[str, Any], str | None]:
@@ -1644,7 +1671,12 @@ def _ledger_snapshot(path: Path) -> tuple[dict[str, Any], str | None]:
         allow_missing=True,
     )
     if value is None:
-        value = {"schemaVersion": LEDGER_SCHEMA, "attempts": {}, "replacements": {}}
+        value = {
+            "schemaVersion": LEDGER_SCHEMA,
+            "attempts": {},
+            "replacements": {},
+            "replacementHistory": [],
+        }
     else:
         _validate_attempt_ledger(value)
     return value, digest
@@ -2792,10 +2824,33 @@ def _immutable_consume_admission(
                     raise E2EFinalAdmissionError(
                         "E2E_CAUSAL_REPLACEMENT_PREDECESSOR_INVALID"
                     )
-                if ledger_value.get("replacements", {}).get(attempt_key):
-                    raise E2EFinalAdmissionError(
-                        "E2E_CAUSAL_REPLACEMENT_LIMIT"
-                    )
+                prior_replacement = ledger_value.get("replacements", {}).get(
+                    attempt_key
+                )
+                replacement_history = list(
+                    ledger_value.get("replacementHistory", [])
+                )
+                if prior_replacement is not None:
+                    if not isinstance(prior_replacement, dict):
+                        raise E2EFinalAdmissionError(
+                            "E2E_CAUSAL_REPLACEMENT_LINEAGE_INVALID"
+                        )
+                    if not replacement_history:
+                        replacement_history.append(
+                            {
+                                "attemptKey": attempt_key,
+                                **prior_replacement,
+                            }
+                        )
+                    if sum(
+                        1
+                        for item in replacement_history
+                        if isinstance(item, dict)
+                        and item.get("attemptKey") == attempt_key
+                    ) >= 2:
+                        raise E2EFinalAdmissionError(
+                            "E2E_CAUSAL_REPLACEMENT_LIMIT"
+                        )
                 receipt = _reservation_receipt(
                     admission=admission,
                     admission_hash=source_hash,
@@ -2811,7 +2866,7 @@ def _immutable_consume_admission(
                     "replacements": dict(ledger_value.get("replacements", {})),
                 }
                 target_ledger["attempts"][attempt_key] = row
-                target_ledger["replacements"][attempt_key] = {
+                replacement = {
                     "originalAdmissionId": existing.get("admissionId"),
                     "originalReservationReceiptSha256": existing.get(
                         "reservationReceiptSha256"
@@ -2820,6 +2875,10 @@ def _immutable_consume_admission(
                     "replacementAdmissionId": source.get("admissionId"),
                     "proofSha256": proof_hash,
                 }
+                target_ledger["replacements"][attempt_key] = replacement
+                target_ledger["replacementHistory"] = replacement_history + [
+                    {"attemptKey": attempt_key, **replacement}
+                ]
                 return _apply_wal(
                     wal_path=wal_path,
                     admission=admission,
