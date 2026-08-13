@@ -1298,6 +1298,113 @@ def test_causal_replacement_ledger_preserves_original_row_and_rejects_tamper() -
         bridge_module._validate_attempt_ledger(tampered)
 
 
+def test_attempt_ledger_accepts_only_explicit_prestart_generation_rebind_marker() -> None:
+    """開始前のgeneration更新だけは、履歴へ明示された専用markerを持てる。"""
+    attempt_key = "News-Grasp:2026-08-10:scheduled-equivalent-nopublish"
+    original_row = {
+        "state": "runner_reserved",
+        "admissionId": "a" * 64,
+        "reservationReceiptSha256": "b" * 64,
+    }
+    replacement = {
+        "originalAdmissionId": original_row["admissionId"],
+        "originalReservationReceiptSha256": original_row["reservationReceiptSha256"],
+        "originalRow": original_row,
+        "replacementAdmissionId": "c" * 64,
+        "proofSha256": "d" * 64,
+        "prestartGenerationRebind": True,
+    }
+    ledger = {
+        "schemaVersion": bridge_module.LEDGER_SCHEMA,
+        "attempts": {attempt_key: {**original_row}},
+        "replacements": {attempt_key: replacement},
+        "replacementHistory": [{"attemptKey": attempt_key, **replacement}],
+    }
+    bridge_module._validate_attempt_ledger(ledger)
+
+
+def test_prestart_generation_rebind_requires_fresh_manifest_and_three_runner_hashes(
+    tmp_path: Path,
+) -> None:
+    repo = tmp_path / "repo"
+    source_runner = repo / "scripts" / "ops" / "news-grasp-runner.ps1"
+    runtime_runner = tmp_path / "runtime" / "scripts" / "ops" / "news-grasp-runner.ps1"
+    installed_runner = tmp_path / "bin" / "news-grasp-runner.ps1"
+    for path in (source_runner, runtime_runner, installed_runner):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"current-generation-runner\n")
+    runner_sha = _sha256(source_runner)
+    manifest_path = tmp_path / "runtime" / "generations" / "generation.json"
+    manifest = {
+        "schemaVersion": "PRODUCTION_GENERATION_MANIFEST_V2",
+        "generationId": "generation-current",
+        "source": {"commit": "commit-current", "remoteHead": "commit-current"},
+        "runtime": {
+            "commit": "commit-current",
+            "root": str(tmp_path / "runtime"),
+            "trackedFiles": {
+                "scripts/ops/news-grasp-runner.ps1": f"100644:blob:{runner_sha}"
+            },
+        },
+    }
+    _write_json(manifest_path, manifest)
+    existing = {
+        "state": "runner_reserved",
+        "admissionId": "a" * 64,
+        "admissionPath": str(repo / "old-admission.json"),
+        "admissionSha256": "b" * 64,
+        "runnerSha256": "c" * 64,
+        "reservationReceiptSha256": "d" * 64,
+    }
+    source = {
+        "admissionId": "e" * 64,
+        "runnerPath": str(source_runner),
+        "runnerSha256": runner_sha,
+    }
+    proof = {
+        "schemaVersion": bridge_module.PRESTART_REBIND_PROOF_SCHEMA,
+        "canonicalAttemptKey": "News-Grasp:2026-08-10:scheduled-equivalent-nopublish",
+        "prestartGenerationRebind": True,
+        "predecessor": {"admissionId": "a" * 64, "runnerSha256": "c" * 64},
+        "successor": {
+            "admissionId": "e" * 64,
+            "runnerSha256": runner_sha,
+            "runnerPath": str(source_runner),
+        },
+        "generation": {
+            "manifestPath": str(manifest_path),
+            "manifestSha256": _sha256(manifest_path),
+            "generationId": "generation-current",
+            "sourceCommit": "commit-current",
+            "sourceRunnerSha256": runner_sha,
+            "runtimeRunnerSha256": runner_sha,
+            "installedRunnerPath": str(installed_runner),
+            "installedRunnerSha256": runner_sha,
+        },
+        "originalEvidence": {
+            "admissionPath": str(repo / "old-admission.json"),
+            "admissionSha256": "b" * 64,
+        },
+    }
+    bridge_module._validate_prestart_generation_rebind_proof(
+        proof,
+        existing=existing,
+        source=source,
+        attempt_key=proof["canonicalAttemptKey"],
+    )
+    installed_runner.write_bytes(b"stale-installed-runner\n")
+    with pytest.raises(
+        E2EFinalAdmissionError,
+        match="E2E_PRESTART_GENERATION_REBIND_INVALID",
+    ):
+        bridge_module._validate_prestart_generation_rebind_proof(
+            proof,
+            existing=existing,
+            source=source,
+            attempt_key=proof["canonicalAttemptKey"],
+        )
+
+
 def test_consumer_rejects_production_dependency_drift(tmp_path: Path) -> None:
     admission, ledger = _issue(tmp_path)
     dependency = tmp_path / "repo" / "tools" / "production_validator.py"

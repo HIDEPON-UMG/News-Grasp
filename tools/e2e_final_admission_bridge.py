@@ -72,6 +72,7 @@ RESERVATION_SCHEMA = "E2E_FINAL_ADMISSION_CONSUMPTION_V1"
 CLAIM_SCHEMA = "E2E_FINAL_RUNNER_CLAIM_V1"
 CLAIM_WITNESS_SCHEMA = "E2E_FINAL_RUNNER_CLAIM_WITNESS_V1"
 CLAIM_FAILURE_SCHEMA = "E2E_FINAL_RUNNER_CLAIM_FAILURE_V1"
+PRESTART_REBIND_PROOF_SCHEMA = "HIGH_COST_E2E_PRESTART_GENERATION_REBIND_PROOF_V1"
 PROCESS_IDENTITY_FIELDS = {
     "pid",
     "parentPid",
@@ -1615,18 +1616,26 @@ def _validate_attempt_ledger(value: dict[str, Any]) -> None:
             != row.get("reservationReceiptSha256")
         ):
             raise E2EFinalAdmissionError("E2E_CLAIM_FAILURE_LINEAGE_INVALID")
+    replacement_fields = {
+        "originalAdmissionId",
+        "originalReservationReceiptSha256",
+        "originalRow",
+        "replacementAdmissionId",
+        "proofSha256",
+    }
+    replacement_fields_with_rebind = replacement_fields | {
+        "prestartGenerationRebind"
+    }
     for attempt_key, replacement in replacements.items():
         if (
             attempt_key not in attempts
             or not isinstance(replacement, dict)
             or set(replacement)
-            != {
-                "originalAdmissionId",
-                "originalReservationReceiptSha256",
-                "originalRow",
-                "replacementAdmissionId",
-                "proofSha256",
-            }
+            not in (replacement_fields, replacement_fields_with_rebind)
+            or (
+                "prestartGenerationRebind" in replacement
+                and replacement.get("prestartGenerationRebind") is not True
+            )
             or not isinstance(replacement.get("originalRow"), dict)
             or replacement["originalRow"].get("state") != "runner_reserved"
             or replacement["originalRow"].get("claimReceiptPath")
@@ -1642,14 +1651,14 @@ def _validate_attempt_ledger(value: dict[str, Any]) -> None:
         if (
             not isinstance(history, dict)
             or set(history)
-            != {
-                "attemptKey",
-                "originalAdmissionId",
-                "originalReservationReceiptSha256",
-                "originalRow",
-                "replacementAdmissionId",
-                "proofSha256",
-            }
+            not in (
+                {"attemptKey", *replacement_fields},
+                {"attemptKey", *replacement_fields_with_rebind},
+            )
+            or (
+                "prestartGenerationRebind" in history
+                and history.get("prestartGenerationRebind") is not True
+            )
             or history.get("attemptKey") not in attempts
             or not isinstance(history.get("originalRow"), dict)
             or history["originalRow"].get("state") != "runner_reserved"
@@ -1872,6 +1881,139 @@ def _validate_runtime_bindings(
         "commandSha256": value["commandSha256"],
         "evidenceSetSha256": value["evidenceSetSha256"],
     }
+
+
+def _validate_prestart_generation_rebind_proof(
+    proof: dict[str, Any],
+    *,
+    existing: dict[str, Any],
+    source: dict[str, Any],
+    attempt_key: str,
+) -> None:
+    """未claimの予約だけに、実generation更新を一度だけ束縛する。"""
+
+    required = {
+        "schemaVersion",
+        "canonicalAttemptKey",
+        "prestartGenerationRebind",
+        "predecessor",
+        "successor",
+        "generation",
+        "originalEvidence",
+    }
+    if set(proof) != required or proof.get("schemaVersion") != PRESTART_REBIND_PROOF_SCHEMA:
+        raise E2EFinalAdmissionError("E2E_PRESTART_GENERATION_REBIND_INVALID")
+    if (
+        proof.get("canonicalAttemptKey") != attempt_key
+        or proof.get("prestartGenerationRebind") is not True
+        or existing.get("state") != "runner_reserved"
+        or existing.get("claimReceiptPath")
+        or existing.get("claimReceiptSha256")
+    ):
+        raise E2EFinalAdmissionError("E2E_PRESTART_GENERATION_REBIND_INVALID")
+    predecessor = proof.get("predecessor")
+    successor = proof.get("successor")
+    generation = proof.get("generation")
+    original = proof.get("originalEvidence")
+    if (
+        not isinstance(predecessor, dict)
+        or set(predecessor) != {"admissionId", "runnerSha256"}
+        or predecessor.get("admissionId") != existing.get("admissionId")
+        or predecessor.get("runnerSha256") != existing.get("runnerSha256")
+        or not HEX_64_RE.fullmatch(str(predecessor.get("runnerSha256") or ""))
+        or not isinstance(successor, dict)
+        or set(successor) != {"admissionId", "runnerSha256", "runnerPath"}
+        or successor.get("admissionId") != source.get("admissionId")
+        or successor.get("runnerSha256") != source.get("runnerSha256")
+        or not HEX_64_RE.fullmatch(str(successor.get("runnerSha256") or ""))
+        or successor.get("runnerSha256") == predecessor.get("runnerSha256")
+        or Path(str(successor.get("runnerPath") or "")).resolve()
+        != Path(str(source.get("runnerPath") or "")).resolve()
+        or not isinstance(original, dict)
+        or set(original) != {"admissionPath", "admissionSha256"}
+        or Path(str(original.get("admissionPath") or "")).resolve()
+        != Path(str(existing.get("admissionPath") or "")).resolve()
+        or original.get("admissionSha256") != existing.get("admissionSha256")
+        or not isinstance(generation, dict)
+    ):
+        raise E2EFinalAdmissionError("E2E_PRESTART_GENERATION_REBIND_INVALID")
+    generation_required = {
+        "manifestPath",
+        "manifestSha256",
+        "generationId",
+        "sourceCommit",
+        "sourceRunnerSha256",
+        "runtimeRunnerSha256",
+        "installedRunnerPath",
+        "installedRunnerSha256",
+    }
+    if set(generation) != generation_required:
+        raise E2EFinalAdmissionError("E2E_PRESTART_GENERATION_REBIND_INVALID")
+    if (
+        not HEX_64_RE.fullmatch(str(generation.get("manifestSha256") or ""))
+        or not HEX_64_RE.fullmatch(str(generation.get("sourceRunnerSha256") or ""))
+        or not HEX_64_RE.fullmatch(str(generation.get("runtimeRunnerSha256") or ""))
+        or not HEX_64_RE.fullmatch(str(generation.get("installedRunnerSha256") or ""))
+        or generation.get("sourceRunnerSha256") != successor.get("runnerSha256")
+        or generation.get("runtimeRunnerSha256") != successor.get("runnerSha256")
+        or generation.get("installedRunnerSha256") != successor.get("runnerSha256")
+        or not Path(str(generation.get("manifestPath") or "")).is_absolute()
+        or not Path(str(generation.get("installedRunnerPath") or "")).is_absolute()
+    ):
+        raise E2EFinalAdmissionError("E2E_PRESTART_GENERATION_REBIND_INVALID")
+    try:
+        manifest_path = _canonical_file(
+            Path(str(generation["manifestPath"])),
+            code="E2E_PRESTART_GENERATION_REBIND_INVALID",
+            max_bytes=MAX_JSON_BYTES,
+        )
+        manifest = _read_bound_json(
+            manifest_path,
+            str(generation["manifestSha256"]),
+            "E2E_PRESTART_GENERATION_REBIND_INVALID",
+        )
+        installed_runner = _canonical_file(
+            Path(str(generation["installedRunnerPath"])),
+            code="E2E_PRESTART_GENERATION_REBIND_INVALID",
+        )
+        successor_runner = _canonical_file(
+            Path(str(source["runnerPath"])),
+            code="E2E_PRESTART_GENERATION_REBIND_INVALID",
+        )
+        runtime_root = _canonical_directory(
+            Path(str(manifest["runtime"]["root"])),
+            code="E2E_PRESTART_GENERATION_REBIND_INVALID",
+        )
+        runtime_runner = _canonical_file(
+            runtime_root / "scripts" / "ops" / "news-grasp-runner.ps1",
+            code="E2E_PRESTART_GENERATION_REBIND_INVALID",
+        )
+    except (KeyError, TypeError, ValueError) as error:
+        raise E2EFinalAdmissionError(
+            "E2E_PRESTART_GENERATION_REBIND_INVALID"
+        ) from error
+    manifest_runtime = manifest.get("runtime")
+    manifest_source = manifest.get("source")
+    tracked_runner = (
+        manifest_runtime.get("trackedFiles", {}).get("scripts/ops/news-grasp-runner.ps1")
+        if isinstance(manifest_runtime, dict)
+        else None
+    )
+    if (
+        manifest.get("schemaVersion") != "PRODUCTION_GENERATION_MANIFEST_V2"
+        or manifest.get("generationId") != generation.get("generationId")
+        or not isinstance(manifest_source, dict)
+        or manifest_source.get("commit") != generation.get("sourceCommit")
+        or manifest_source.get("remoteHead") != generation.get("sourceCommit")
+        or not isinstance(manifest_runtime, dict)
+        or manifest_runtime.get("commit") != generation.get("sourceCommit")
+        or not isinstance(tracked_runner, str)
+        or tracked_runner.split(":")[-1] != successor.get("runnerSha256")
+        or _file_sha256(successor_runner) != successor.get("runnerSha256")
+        or _file_sha256(runtime_runner) != successor.get("runnerSha256")
+        or _file_sha256(installed_runner) != successor.get("runnerSha256")
+    ):
+        raise E2EFinalAdmissionError("E2E_PRESTART_GENERATION_REBIND_INVALID")
 
 
 def _validate_wal_identity(
@@ -2789,6 +2931,17 @@ def _immutable_consume_admission(
                 proof, proof_hash = _json_file_snapshot(
                     proof_path, "E2E_CAUSAL_REPLACEMENT_PROOF_INVALID"
                 )
+                prestart_rebind = bool(
+                    isinstance(proof, dict)
+                    and proof.get("schemaVersion") == PRESTART_REBIND_PROOF_SCHEMA
+                )
+                if prestart_rebind:
+                    _validate_prestart_generation_rebind_proof(
+                        proof,
+                        existing=existing,
+                        source=source,
+                        attempt_key=attempt_key,
+                    )
                 successor = proof.get("successor") if isinstance(proof, dict) else None
                 original_evidence = (
                     proof.get("originalEvidence") if isinstance(proof, dict) else None
@@ -2798,7 +2951,7 @@ def _immutable_consume_admission(
                     if isinstance(original_evidence, dict)
                     else None
                 )
-                if (
+                if not prestart_rebind and (
                     proof is None
                     or proof_hash is None
                     or proof.get("schemaVersion")
@@ -2847,7 +3000,7 @@ def _immutable_consume_admission(
                         for item in replacement_history
                         if isinstance(item, dict)
                         and item.get("attemptKey") == attempt_key
-                    ) >= 2:
+                    ) >= 2 and not prestart_rebind:
                         raise E2EFinalAdmissionError(
                             "E2E_CAUSAL_REPLACEMENT_LIMIT"
                         )
@@ -2875,6 +3028,8 @@ def _immutable_consume_admission(
                     "replacementAdmissionId": source.get("admissionId"),
                     "proofSha256": proof_hash,
                 }
+                if prestart_rebind:
+                    replacement["prestartGenerationRebind"] = True
                 target_ledger["replacements"][attempt_key] = replacement
                 target_ledger["replacementHistory"] = replacement_history + [
                     {"attemptKey": attempt_key, **replacement}
