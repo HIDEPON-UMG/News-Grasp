@@ -3647,7 +3647,7 @@ function Get-NewsGraspExternalControlPlaneReadiness {
             '--expected-authority-sha256', $script:ExternalHealthAuthorityExpectedSha256
         )
     }
-    $raw = (& $PyExe '-I' $probeScript @probeArgs 2>&1 | Out-String).Trim()
+    $raw = (& $PyExe '-I' '-B' $probeScript @probeArgs 2>&1 | Out-String).Trim()
     $rc = $LASTEXITCODE
     try { $value = $raw | ConvertFrom-Json -ErrorAction Stop } catch {
         return [ordered]@{ status = 'unavailable'; reasonCode = 'EXTERNAL_CONTROL_PLANE_OUTPUT_INVALID'; modelLaunchCount = 0 }
@@ -3849,7 +3849,7 @@ $EditorTransactionRecoveryCapture = Join-Path ([System.IO.Path]::GetTempPath()) 
 Push-Location $RepoDir
 try {
     Invoke-LoggedCapture -CapturePath $EditorTransactionRecoveryCapture -Block {
-        & $PyExe '-I' $canonicalMaterializer '--repo-root' $RepoDir '--date' $DateStamp '--recover-only'
+        & $PyExe '-I' '-B' $canonicalMaterializer '--repo-root' $RepoDir '--date' $DateStamp '--recover-only'
     }
     $editorTransactionRecoveryRc = $LASTEXITCODE
 } finally {

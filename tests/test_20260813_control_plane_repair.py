@@ -169,6 +169,8 @@ def test_ng813_smoke_inventory_probe_cannot_write_ops_bytecode() -> None:
     runner = RUNNER.read_text(encoding="utf-8-sig")
 
     assert "& $PyExe '-B' '-m' 'tools.publish_inventory'" in runner
+    assert "& $PyExe '-I' '-B' $probeScript" in runner
+    assert "& $PyExe '-I' '-B' $canonicalMaterializer" in runner
 
 
 def test_ng813_producer_lineage_uses_explicit_ops_root_not_state_parent(
