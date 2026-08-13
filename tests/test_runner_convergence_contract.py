@@ -3163,6 +3163,13 @@ def test_installed_nopublish_runner_revalidates_external_authority_hash() -> Non
     assert "Get-FileHash -LiteralPath $script:ExternalHealthAuthorityPath" in runner
 
 
+def test_runner_does_not_shadow_external_authority_hash_parameter() -> None:
+    """E2E fixture hash引数をscript-scope初期化で空文字へ上書きしない。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+
+    assert "$script:ExternalHealthAuthorityExpectedSha256 = ''" not in runner
+
+
 def test_installed_nopublish_launcher_accepts_only_same_generation_isolation() -> None:
     """隔離runnerはactive runtimeと同一commit/common-dir/hashの場合だけ許可する。"""
     launcher = (OPS_DIR / "news-grasp-task-launcher.pyw").read_text(

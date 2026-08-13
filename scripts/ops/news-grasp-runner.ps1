@@ -345,7 +345,6 @@ $script:ScheduledFailureTerminalized = $false
 $script:ScheduledFailureTerminalInputPath = ''
 $script:ExternalHealthAuthorityPath = Join-Path $env:USERPROFILE '.codex\state\high-cost-operation\external-health-authority-v1.json'
 $script:ExternalHealthAuthorityFixtureMode = $false
-$script:ExternalHealthAuthorityExpectedSha256 = ''
 if ($ExternalHealthAuthorityPathOverride) {
     if (-not $NoPublish) {
         throw 'EXTERNAL_AUTHORITY_OVERRIDE_FORBIDDEN'
