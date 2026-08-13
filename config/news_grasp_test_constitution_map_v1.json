@@ -6,7 +6,7 @@
   "files": [
     {
       "path": "tests/test_20260813_control_plane_repair.py",
-      "sha256": "37adb308adfcb31dfd45eb38f25fed89342299ce0ffdeafe7117b440e7622d0c",
+      "sha256": "dea0762abf2635aa13a240809cb547eeb57c2567a86b3da4b6ab7db30fede590",
       "nodeCount": 38,
       "nodeIds": [
         "tests/test_20260813_control_plane_repair.py::test_ng813_bootstrap_and_watcher_propagate_explicit_ops_root_before_runner",

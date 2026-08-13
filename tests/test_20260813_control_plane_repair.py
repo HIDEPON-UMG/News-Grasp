@@ -172,6 +172,12 @@ def test_ng813_smoke_inventory_probe_cannot_write_ops_bytecode() -> None:
     assert "& $PyExe '-I' '-B' $probeScript" in runner
     assert "& $PyExe '-I' '-B' $canonicalMaterializer" in runner
 
+    deadman = (REPO_ROOT / "scripts" / "ops" / "news-grasp-deadman.ps1").read_text(
+        encoding="utf-8-sig"
+    )
+    assert "& $PyExe '-B' '-m' 'tools.daily_self_heal'" in deadman
+    assert "& $PyExe '-B' '-m' 'tools.news_grasp_daily_control'" in deadman
+
 
 def test_ng813_producer_lineage_uses_explicit_ops_root_not_state_parent(
     tmp_path: Path,

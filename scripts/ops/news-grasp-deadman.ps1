@@ -57,7 +57,7 @@ function Write-SupervisorLog {
 }
 
 function Invoke-Audit0640Control {
-    $terminalJson = (& $PyExe '-m' 'tools.news_grasp_daily_control' 'execute-audit-0640' '--issue-date' $DateStamp 2>&1 | Out-String).Trim()
+    $terminalJson = (& $PyExe '-B' '-m' 'tools.news_grasp_daily_control' 'execute-audit-0640' '--issue-date' $DateStamp 2>&1 | Out-String).Trim()
     $executorExitCode = $LASTEXITCODE
     Write-SupervisorLog "audit canonical executor: exit=$executorExitCode terminal=$terminalJson"
     if ($executorExitCode -notin @(0, 2)) {
@@ -68,7 +68,7 @@ function Invoke-Audit0640Control {
 
 Push-Location $RepoDir
 try {
-    & $PyExe '-m' 'tools.daily_self_heal' 'deadman' `
+    & $PyExe '-B' '-m' 'tools.daily_self_heal' 'deadman' `
         '--state-file' $StateFile `
         '--date' $DateStamp `
         '--max-ok-age-hours' $MaxOkAgeHours `
