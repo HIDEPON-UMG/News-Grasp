@@ -1,0 +1,56 @@
+{
+  "articlePath": "digest/DeepDive/2026-08-13-DeepDive.md",
+  "articleSha256": "7af3b6eb4da3bc3cda12d18aada1b1210e63c858c13214abdb0250fa2bfe0e45",
+  "issueDate": "2026-08-13",
+  "manifestSha256": "bf85e31717052cab48da5059820d872650d006caef4273a7ea9dd3f5b0c67f06",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "7eaca094ea2bc8669ee11a0b0bc9754e6a3360d59547737973c5e226e8f1f394",
+  "sources": [
+    {
+      "contentSha256": "2d262947235e9dc15d6c331856838dd5e488cc5cae4446a40a4311acb6133bd5",
+      "fetchedAt": "2026-08-13T00:38:00.522630+00:00",
+      "finalUrl": "https://gigazine.net/news/20260812-anthropic-claude-digital-watermark/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://gigazine.net/news/20260812-anthropic-claude-digital-watermark/",
+      "url": "https://gigazine.net/news/20260812-anthropic-claude-digital-watermark/"
+    },
+    {
+      "contentSha256": "9e7e4d06fe7bed81728327f130560815466a242f20292d17e92af78b78e308be",
+      "fetchedAt": "2026-08-13T00:38:00.746219+00:00",
+      "finalUrl": "https://reseed.resemom.jp/article/2026/08/12/13897.html",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://reseed.resemom.jp/article/2026/08/12/13897.html",
+      "url": "https://reseed.resemom.jp/article/2026/08/12/13897.html"
+    },
+    {
+      "contentSha256": "579a4da5ff4ecdbc49a4a18048167b60d61b5b5abdc7c6428fb42fbec07351d7",
+      "fetchedAt": "2026-08-13T00:38:00.936768+00:00",
+      "finalUrl": "https://www.itmedia.co.jp/news/article/2608/12/2000000500/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.itmedia.co.jp/news/article/2608/12/2000000500/",
+      "url": "https://www.itmedia.co.jp/news/article/2608/12/2000000500/"
+    }
+  ],
+  "status": "Green"
+}
