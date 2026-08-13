@@ -781,11 +781,14 @@ def _validate_artifact_executable_tree(artifact_repo_root: Path) -> str:
     trusted_head = _git_text(
         CANONICAL_REPO_ROOT, "rev-parse", "refs/remotes/origin/main"
     )
-    if (
-        GIT_SHA_PATTERN.fullmatch(artifact_head) is None
-        or artifact_head != trusted_head
-    ):
+    if GIT_SHA_PATTERN.fullmatch(artifact_head) is None:
         raise ValueError("ARTIFACT_EXECUTABLE_TREE_INVALID")
+    if artifact_head != trusted_head:
+        merge_base = _git_text(
+            artifact_repo_root, "merge-base", artifact_head, trusted_head
+        )
+        if merge_base != trusted_head:
+            raise ValueError("ARTIFACT_EXECUTABLE_TREE_INVALID")
     untracked_executables = _git_text(
         artifact_repo_root,
         "ls-files",
@@ -827,7 +830,7 @@ def _validate_artifact_executable_tree(artifact_repo_root: Path) -> str:
         "-r",
         "-z",
         "--full-tree",
-        trusted_head,
+        artifact_head,
         "--",
         "scripts",
         "tools",
