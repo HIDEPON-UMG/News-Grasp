@@ -1,16 +1,17 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 2552,
-  "collectedNodeSetSha256": "11e62a7ed7b038726f4ece366c33b7a20bc6b84e0b56b42ac6ebcd79b0d82b08",
+  "collectedNodeCount": 2553,
+  "collectedNodeSetSha256": "ab482e0155174843298d25f870f305b8a194dc6671795d4314345fbb6436997b",
   "files": [
     {
       "path": "tests/test_20260813_control_plane_repair.py",
-      "sha256": "620a52aa9dbb11a74476b6824890f3e30dd21c9a6fd9ebd350a7557c2ca283b2",
-      "nodeCount": 35,
+      "sha256": "1cc5e8acd563aea66f72bc496566fc07bfa801f2095313db680f1036273e3055",
+      "nodeCount": 36,
       "nodeIds": [
         "tests/test_20260813_control_plane_repair.py::test_ng813_bootstrap_and_watcher_propagate_explicit_ops_root_before_runner",
         "tests/test_20260813_control_plane_repair.py::test_ng813_bootstrap_preflight_uses_the_selected_isolated_state_path",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_canary_executes_from_ops_root_but_writes_under_artifact_root",
         "tests/test_20260813_control_plane_repair.py::test_ng813_canary_uses_artifact_root_when_ops_root_is_different",
         "tests/test_20260813_control_plane_repair.py::test_ng813_control_plane_repair_only_exits_before_broker_and_watcher",
         "tests/test_20260813_control_plane_repair.py::test_ng813_control_plane_repair_requires_one_shot_sealed_authority",

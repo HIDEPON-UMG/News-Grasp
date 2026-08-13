@@ -103,6 +103,54 @@ def test_ng813_canary_uses_artifact_root_when_ops_root_is_different(
 
     assert result["ok"] is True
     assert observed["repo_root"] == artifact_root.resolve()
+    assert observed["ops_repo_root"] == ops_root.resolve()
+
+
+def test_ng813_canary_executes_from_ops_root_but_writes_under_artifact_root(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """operational recovery: canaryの実行正本と成果物rootを引数でも分離する。"""
+    artifact_root = tmp_path / "artifact"
+    ops_root = tmp_path / "ops"
+    live_bin = tmp_path / "live"
+    for root in (artifact_root, ops_root, live_bin):
+        root.mkdir()
+    startup = live_bin / "news-grasp-bootstrap.ps1"
+    runner = live_bin / "news-grasp-runner.ps1"
+    startup.write_text("bootstrap", encoding="utf-8")
+    runner.write_text("runner", encoding="utf-8")
+
+    class Proc:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+
+    def fake_run(command, **kwargs):
+        assert kwargs["cwd"] == artifact_root.resolve()
+        assert "-UseProductionRuntime" in command
+        assert Path(command[command.index("-RepoDir") + 1]) == ops_root.resolve()
+        assert Path(command[command.index("-EvidenceRepoDir") + 1]) == ops_root.resolve()
+        state_file = Path(command[command.index("-StateFile") + 1])
+        log_dir = Path(command[command.index("-LogDir") + 1])
+        assert state_file.is_relative_to(artifact_root.resolve())
+        assert log_dir.is_relative_to(artifact_root.resolve())
+        state_file.write_text(json.dumps({"status": "smoke_ok"}), encoding="utf-8")
+        (log_dir / "2026-08-13.log").write_text(
+            "news-grasp-runner.ps1 SMOKE OK\n", encoding="utf-8"
+        )
+        return Proc()
+
+    monkeypatch.setattr(dsh.subprocess, "run", fake_run)
+
+    result = dsh._run_live_startup_canary(
+        repo_root=artifact_root,
+        ops_repo_root=ops_root,
+        startup_path=startup,
+        live_runner_path=runner,
+        date="2026-08-13",
+    )
+
+    assert result["ok"] is True
 
 
 def test_ng813_producer_lineage_uses_explicit_ops_root_not_state_parent(

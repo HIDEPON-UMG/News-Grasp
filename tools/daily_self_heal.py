@@ -909,12 +909,15 @@ def _trigger_start_minutes(details: dict) -> int | None:
 def _run_live_startup_canary(
     *,
     repo_root: Path,
+    ops_repo_root: Path | None = None,
     startup_path: Path,
     date: str,
     live_runner_path: Path | None = None,
     timeout_sec: int = 60,
     powershell_exe: str = "powershell.exe",
 ) -> dict:
+    repo_root = repo_root.resolve()
+    resolved_ops_root = ops_repo_root.resolve() if ops_repo_root is not None else None
     canary_root = repo_root / "build" / "live-runner-canary" / date
     log_dir = canary_root / "logs"
     state_file = canary_root / "state.json"
@@ -953,7 +956,16 @@ def _run_live_startup_canary(
     ]
     if live_runner_path is not None:
         command += ["-RunnerPath", str(live_runner_path), "-BinDir", str(live_runner_path.parent)]
-    command += ["-RepoDir", str(repo_root)]
+    if resolved_ops_root is not None:
+        command += [
+            "-UseProductionRuntime",
+            "-RepoDir",
+            str(resolved_ops_root),
+            "-EvidenceRepoDir",
+            str(resolved_ops_root),
+        ]
+    else:
+        command += ["-RepoDir", str(repo_root)]
     try:
         proc = subprocess.run(
             command,
@@ -1371,6 +1383,7 @@ def verify_live_runner_readiness(
     if run_canary:
         canary = _run_live_startup_canary(
             repo_root=repo_root,
+            ops_repo_root=ops_repo_root,
             startup_path=live_bootstrap_path
             if (
                 runner_targets_bootstrap
