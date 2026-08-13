@@ -1,13 +1,13 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 2584,
-  "collectedNodeSetSha256": "40701b4080847e301fbd0dee00b28ceb2ec3dcd3c66548d970bc28ba677c5525",
+  "collectedNodeCount": 2585,
+  "collectedNodeSetSha256": "17e8f4668fb19f427df29415533aabe421e155e3a14cdd9017f8098c3a2a927b",
   "files": [
     {
       "path": "tests/test_20260813_control_plane_repair.py",
-      "sha256": "f69c1ecbfc05be351514cd54d130cd134b6a334f8532c3aa317e9f918db234d8",
-      "nodeCount": 36,
+      "sha256": "64567f984c575c5529c9a664af8fff06473aff2c85bac10c6b0efd7078c004a1",
+      "nodeCount": 37,
       "nodeIds": [
         "tests/test_20260813_control_plane_repair.py::test_ng813_bootstrap_and_watcher_propagate_explicit_ops_root_before_runner",
         "tests/test_20260813_control_plane_repair.py::test_ng813_bootstrap_preflight_uses_the_selected_isolated_state_path",
@@ -42,6 +42,7 @@
         "tests/test_20260813_control_plane_repair.py::test_ng813_recovery_python_entrypoints_are_isolated_direct_scripts",
         "tests/test_20260813_control_plane_repair.py::test_ng813_runner_finalizer_consumes_only_typed_top_level_publish_commit",
         "tests/test_20260813_control_plane_repair.py::test_ng813_runner_passes_real_state_file_and_ops_root",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_smoke_inventory_probe_cannot_write_ops_bytecode",
         "tests/test_20260813_control_plane_repair.py::test_ng813_typed_finalizer_preserves_scheduled_failure_provenance",
         "tests/test_20260813_control_plane_repair.py::test_ng813_typed_finalizer_requires_sealed_receipt_before_state_mutation",
         "tests/test_20260813_control_plane_repair.py::test_ng813_typed_finalizer_skips_global_high_cost_reentry_and_runs_guard"

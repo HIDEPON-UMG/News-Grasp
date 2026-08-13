@@ -662,7 +662,7 @@ function Get-PublishInventoryArtifacts {
     param([ValidateSet('categories', 'digest', 'generated', 'published', 'published-repair', 'distribution')] [string] $Kind)
     Push-Location $RepoDir
     try {
-        $json = & $PyExe '-m' 'tools.publish_inventory' '--date' $DateStamp '--kind' $Kind '--json'
+        $json = & $PyExe '-B' '-m' 'tools.publish_inventory' '--date' $DateStamp '--kind' $Kind '--json'
         if ($LASTEXITCODE -ne 0) {
             throw "tools.publish_inventory failed (kind=$Kind, rc=$LASTEXITCODE)"
         }

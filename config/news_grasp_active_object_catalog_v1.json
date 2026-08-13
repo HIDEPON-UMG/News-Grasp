@@ -1,6 +1,6 @@
 {
   "schemaVersion": "NEWS_GRASP_ACTIVE_OBJECT_CATALOG_V1",
-  "sourceCommit": "c7e2826bb58d91bb62681108666721ffab12ddaa",
+  "sourceCommit": "d83996813958eb149b7eacf0a6a7ffec99f20b0c",
   "discoveryMode": "git_index_plus_untracked_wip_plus_route_reference_scan",
   "objects": [
     {
@@ -543,7 +543,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "61b5fb084078d4182be747da87506f00fbe2e3c159f98561ca7691605d2978df",
+      "sha256": "7d72fbf9f3158c3cefe972873bfbdce66a26c01be483b14607a7e31990e241ff",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -561,7 +561,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "5a82db082ece86806e40db9a16fde25f6aeea4bed832366868aae7cef30964d9",
+      "sha256": "5c4769b001121f6552004b9fc079391241bbb6899d31905adb1876bd2864e538",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -1189,7 +1189,7 @@
         "NGC-C09",
         "NGC-C11"
       ],
-      "sha256": "d06932d4a1a442a3789fe41f722874bd4c027b05a9cc7888e1930ddc88caf26d",
+      "sha256": "29cfb028d502bcd02370101029be8f9b33932abebbd262ff678518f9082936a6",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -1355,7 +1355,7 @@
         "NGC-C06",
         "NGC-C14"
       ],
-      "sha256": "f69c1ecbfc05be351514cd54d130cd134b6a334f8532c3aa317e9f918db234d8",
+      "sha256": "64567f984c575c5529c9a664af8fff06473aff2c85bac10c6b0efd7078c004a1",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -5028,5 +5028,5 @@
   "activeObjectCount": 273,
   "unlinkedActiveObjectCount": 0,
   "objectPathSetSha256": "84ac6e676da5160abf9d8d312b79fa0c8064d9b08110ffa379cdcc11439612d4",
-  "testNodeSetSha256": "40701b4080847e301fbd0dee00b28ceb2ec3dcd3c66548d970bc28ba677c5525"
+  "testNodeSetSha256": "17e8f4668fb19f427df29415533aabe421e155e3a14cdd9017f8098c3a2a927b"
 }

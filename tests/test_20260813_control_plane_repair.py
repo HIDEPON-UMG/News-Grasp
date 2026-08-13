@@ -164,6 +164,13 @@ def test_ng813_canary_keeps_artifacts_in_artifact_root_and_sources_runtime_from_
     assert result["ok"] is True
 
 
+def test_ng813_smoke_inventory_probe_cannot_write_ops_bytecode() -> None:
+    """adversarial: smoke開始前のinventory importもops rootを自己汚染しない。"""
+    runner = RUNNER.read_text(encoding="utf-8-sig")
+
+    assert "& $PyExe '-B' '-m' 'tools.publish_inventory'" in runner
+
+
 def test_ng813_producer_lineage_uses_explicit_ops_root_not_state_parent(
     tmp_path: Path,
 ) -> None:
