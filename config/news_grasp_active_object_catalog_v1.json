@@ -1,6 +1,6 @@
 {
   "schemaVersion": "NEWS_GRASP_ACTIVE_OBJECT_CATALOG_V1",
-  "sourceCommit": "26f1cea54819d1bd224ac411f1163ce94a2d4a0e",
+  "sourceCommit": "1ecec9d92f7a51e3503dad8828bcef3525e2f4bb",
   "discoveryMode": "git_index_plus_untracked_wip_plus_route_reference_scan",
   "objects": [
     {
@@ -543,7 +543,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "05db34498b818c014398f5acad5a2d112eaddebd7b6d796c3f8c9afaa99ab844",
+      "sha256": "00143664fde2943955149f401973e3f4d3e0357cbd7814172ac8454e04c9bae1",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -561,7 +561,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "069f8478edd5dd8cd274c47c6fae60f9cd65ed83e494458231a7613a78eb6941",
+      "sha256": "cc0079e1edbe994291e6875303329e3897f1bb49212fc890818534c3380dc258",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -1189,7 +1189,7 @@
         "NGC-C09",
         "NGC-C11"
       ],
-      "sha256": "3a3e5b12550dba63e2a6f492f6e1ab818ce427a935e1f8c629efcb8a833dae45",
+      "sha256": "5bf5765b793e5fc782c3bbdc44d8336aea63c1cad9b36bb0785c80ada3c19f99",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -3627,7 +3627,7 @@
         "NGC-C06",
         "NGC-C14"
       ],
-      "sha256": "833af3f78cc8cd0627d726e18df5e6924e784f16c88433f8851f4ad5d585c928",
+      "sha256": "97d526dcc2569bb99f6bc32af75eb605816724f5f4c51d0794bdcc2169d4a333",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -5028,5 +5028,5 @@
   "activeObjectCount": 273,
   "unlinkedActiveObjectCount": 0,
   "objectPathSetSha256": "84ac6e676da5160abf9d8d312b79fa0c8064d9b08110ffa379cdcc11439612d4",
-  "testNodeSetSha256": "271fbc6ae6bf5dc86e8487e9f4c374f032655762570213d1346d145ac28d42d9"
+  "testNodeSetSha256": "721a646f226cc839ed376d94162b323e4574f263128b1aded6378a57d27b4d70"
 }

@@ -1481,6 +1481,18 @@ def test_reporter_wave_uses_supervisor_loop_instead_of_blind_wait_job() -> None:
     assert "Append-ReporterWrapperLog" in reporter_body
     assert "wrapper_log_offsets" in reporter_body
     assert "Stop-Job -Job $job -Force" in reporter_body
+
+
+def test_reporter_wave_preserves_binding_resolver_identity_and_job_exceptions() -> None:
+    """本番reporter waveはresolver identityを落とさず、Start-Job例外を空rcに潰さない。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    reporter_body = runner.split("function Invoke-ReporterWave", 1)[1].split(
+        "# ===== Stage3", 1
+    )[0]
+    assert "-HighCostBindingResolverPath $HighCostBindingResolverPath" in reporter_body
+    assert "                '',\n                $HighCostBindingResolverSha256" not in reporter_body
+    assert "wrapper_invocation_exception" in reporter_body
+    assert "if ($received.Count -eq 0)" in reporter_body
     assert "Remove-Job -Job $job -Force" in reporter_body
     assert "blocked_reporter_timeout" in reporter_body
     assert "blocked_reporter_repeated_failure" in runner

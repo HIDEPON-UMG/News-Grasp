@@ -4295,7 +4295,7 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                 $usageLog,
                 $HighCostBindingPath,
                 $HighCostBindingReceiptSha256,
-                '',
+                $HighCostBindingResolverPath,
                 $HighCostBindingResolverSha256,
                 $script:HighCostAdmissionPath,
                 $script:HighCostParentAuthorityPath,
@@ -4352,41 +4352,48 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                 )
 
                 $started = Get-Date
-                & $Wrapper `
-                    -CodexExe $CodexExePath `
-                    -PromptFile $PromptFile `
-                    -LogFile $WrapperLog `
-                    -TimeoutSec $TimeoutSeconds `
-                    -IdleTimeoutSec $IdleTimeoutSeconds `
-                    -WorkingDirectory $WorkingDirectory `
-                    -OutputSchema $OutputSchema `
-                    -OutputLastMessage $OutputLastMessage `
-                    -Model $Model `
-                    -ReasoningEffort $ReasoningEffort `
-                    -FlowName "reporter:$Category" `
-                    -UsageLog $UsageLog `
-                    -HighCostBindingPath $HighCostBindingPath `
-                    -HighCostBindingReceiptSha256 $HighCostBindingReceiptSha256 `
-                    -HighCostBindingResolverPath $HighCostBindingResolverPath `
-                    -HighCostBindingResolverSha256 $HighCostBindingResolverSha256 `
-                    -HighCostAdmissionPath $HighCostAdmissionPath `
-                    -HighCostParentAuthorityPath $HighCostParentAuthorityPath `
-                    -E2EFinalAdmissionPath $E2EFinalAdmissionPath `
-                    -E2EFinalRunnerArgumentsPath $E2EFinalRunnerArgumentsPath `
-                    -E2EFinalReservationReceiptPath $E2EFinalReservationReceiptPath `
-                    -E2EFinalClaimReceiptPath $E2EFinalClaimReceiptPath `
-                    -E2EAttemptPolicyPath $E2EAttemptPolicyPath `
-                    -E2ELogicalAttempt $E2ELogicalAttempt `
-                    -HighCostClaimWitness $HighCostClaimWitness `
-                    -HighCostAttemptId $HighCostAttemptId `
-                    -HighCostExpectedOperationKind $HighCostExpectedOperationKind `
-                    -HighCostExpectedIssueDate $HighCostExpectedIssueDate `
-                    -HighCostPythonExe $HighCostPythonExe `
-                    -HighCostCallId $HighCostCallId `
-                    -HighCostCallReceiptPath $HighCostCallReceiptPath `
-                    -GlobalHarnessGenerationManifestPath $GlobalHarnessGenerationManifestPath
-                $wrapperOk = $?
-                $rc = $LASTEXITCODE
+                $wrapperException = ''
+                try {
+                    & $Wrapper `
+                        -CodexExe $CodexExePath `
+                        -PromptFile $PromptFile `
+                        -LogFile $WrapperLog `
+                        -TimeoutSec $TimeoutSeconds `
+                        -IdleTimeoutSec $IdleTimeoutSeconds `
+                        -WorkingDirectory $WorkingDirectory `
+                        -OutputSchema $OutputSchema `
+                        -OutputLastMessage $OutputLastMessage `
+                        -Model $Model `
+                        -ReasoningEffort $ReasoningEffort `
+                        -FlowName "reporter:$Category" `
+                        -UsageLog $UsageLog `
+                        -HighCostBindingPath $HighCostBindingPath `
+                        -HighCostBindingReceiptSha256 $HighCostBindingReceiptSha256 `
+                        -HighCostBindingResolverPath $HighCostBindingResolverPath `
+                        -HighCostBindingResolverSha256 $HighCostBindingResolverSha256 `
+                        -HighCostAdmissionPath $HighCostAdmissionPath `
+                        -HighCostParentAuthorityPath $HighCostParentAuthorityPath `
+                        -E2EFinalAdmissionPath $E2EFinalAdmissionPath `
+                        -E2EFinalRunnerArgumentsPath $E2EFinalRunnerArgumentsPath `
+                        -E2EFinalReservationReceiptPath $E2EFinalReservationReceiptPath `
+                        -E2EFinalClaimReceiptPath $E2EFinalClaimReceiptPath `
+                        -E2EAttemptPolicyPath $E2EAttemptPolicyPath `
+                        -E2ELogicalAttempt $E2ELogicalAttempt `
+                        -HighCostClaimWitness $HighCostClaimWitness `
+                        -HighCostAttemptId $HighCostAttemptId `
+                        -HighCostExpectedOperationKind $HighCostExpectedOperationKind `
+                        -HighCostExpectedIssueDate $HighCostExpectedIssueDate `
+                        -HighCostPythonExe $HighCostPythonExe `
+                        -HighCostCallId $HighCostCallId `
+                        -HighCostCallReceiptPath $HighCostCallReceiptPath `
+                        -GlobalHarnessGenerationManifestPath $GlobalHarnessGenerationManifestPath
+                    $wrapperOk = $?
+                    $rc = $LASTEXITCODE
+                } catch {
+                    $wrapperOk = $false
+                    $rc = 125
+                    $wrapperException = "{0}: {1}" -f $_.Exception.GetType().Name, $_.Exception.Message
+                }
                 if ($null -eq $rc) {
                     if ($wrapperOk) { $rc = 0 } else { $rc = 125 }
                 }
@@ -4399,6 +4406,8 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                     wrapper_log = $WrapperLog
                     usage_log = $UsageLog
                     last_message = $OutputLastMessage
+                    failure_status = if ($wrapperException) { 'wrapper_invocation_exception' } else { '' }
+                    failure_detail = $wrapperException
                 }
             }
             if ($null -eq $job) {
@@ -4570,6 +4579,9 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                 Stop-ExternalReadiness -Reason "codex CLI rate limit / out of credits during reporter category=$catName attempt=$attempt" -ExitCode 123 -Kind 'codex_quota' -System 'openai_codex' -ExternalStatus "rc=$($waveResult.rc)" -ExternalDetail "reporter:$catName attempt=$attempt wrapper_log=$($waveResult.wrapper_log)"
             } elseif ([int]$waveResult.rc -ne 0) {
                 $failureReason = "wrapper_rc=$($waveResult.rc)"
+                if ([string]$waveResult.failure_status) {
+                    $failureReason += " status=$([string]$waveResult.failure_status) detail=$([string]$waveResult.failure_detail)"
+                }
                 if ([int]$waveResult.rc -eq 124) {
                     $ReporterTerminalExitCode = 124
                 }

@@ -1,8 +1,8 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 2586,
-  "collectedNodeSetSha256": "271fbc6ae6bf5dc86e8487e9f4c374f032655762570213d1346d145ac28d42d9",
+  "collectedNodeCount": 2587,
+  "collectedNodeSetSha256": "721a646f226cc839ed376d94162b323e4574f263128b1aded6378a57d27b4d70",
   "files": [
     {
       "path": "tests/test_20260813_control_plane_repair.py",
@@ -3455,8 +3455,8 @@
     },
     {
       "path": "tests/test_runner_convergence_contract.py",
-      "sha256": "833af3f78cc8cd0627d726e18df5e6924e784f16c88433f8851f4ad5d585c928",
-      "nodeCount": 192,
+      "sha256": "97d526dcc2569bb99f6bc32af75eb605816724f5f4c51d0794bdcc2169d4a333",
+      "nodeCount": 193,
       "nodeIds": [
         "tests/test_runner_convergence_contract.py::test_atomic_install_failure_preserves_old_destination",
         "tests/test_runner_convergence_contract.py::test_atomic_install_replaces_hardlink_entry_without_mutating_sibling",
@@ -3563,6 +3563,7 @@
         "tests/test_runner_convergence_contract.py::test_repair_scope_allows_runner_state_and_ignores_temp_outputs",
         "tests/test_runner_convergence_contract.py::test_reporter_codex_quota_uses_external_readiness_boundary",
         "tests/test_runner_convergence_contract.py::test_reporter_quota_rc_does_not_override_verified_green_artifact",
+        "tests/test_runner_convergence_contract.py::test_reporter_wave_preserves_binding_resolver_identity_and_job_exceptions",
         "tests/test_runner_convergence_contract.py::test_reporter_wave_uses_supervisor_loop_instead_of_blind_wait_job",
         "tests/test_runner_convergence_contract.py::test_runner_and_bootstrap_tasks_use_pythonw_no_console_launcher",
         "tests/test_runner_convergence_contract.py::test_runner_and_watcher_retry_transient_state_reads_before_declaring_corrupt",
