@@ -4,6 +4,7 @@
     [switch] $SmokeTest,
     [switch] $SkipSourceSync,
     [switch] $UseProductionRuntime,
+    [switch] $ControlPlaneRepairOnly,
     [switch] $LegacyDirectEntrypoint,
     [switch] $RecoverOnly,
     [int] $PollSeconds = 30,
@@ -17,6 +18,8 @@
     [string] $PythonExe = '',
     [string] $EvidenceRepoDir = '',
     [string] $BinDir = (Join-Path $env:USERPROFILE 'bin'),
+    [string] $ControlPlaneRepairAuthorityPath = '',
+    [string] $ControlPlaneRepairArtifactRoot = '',
     [string] $ScheduledTaskName = '',
     [string] $ProductionTaskName = 'News-Grasp Production'
 )
@@ -25,6 +28,15 @@ $ErrorActionPreference = 'Stop'
 $OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $SCHEDULED_TASK_CONTEXT_REJECTED_EXIT = 67
+if ($ControlPlaneRepairOnly -and (-not $UseProductionRuntime)) {
+    throw 'CONTROL_PLANE_REPAIR_REQUIRES_PRODUCTION_RUNTIME'
+}
+if ($ControlPlaneRepairOnly -and (-not $ControlPlaneRepairAuthorityPath)) {
+    throw 'CONTROL_PLANE_REPAIR_AUTHORITY_REQUIRED'
+}
+if ($ControlPlaneRepairOnly -and (-not $ControlPlaneRepairArtifactRoot)) {
+    throw 'CONTROL_PLANE_REPAIR_ARTIFACT_ROOT_REQUIRED'
+}
 
 function Write-AtomicUtf8Text {
     param([string] $Path, [string] $Text)
@@ -42,6 +54,80 @@ function Write-AtomicUtf8Text {
     } finally {
         if (Test-Path -LiteralPath $temporary) { Remove-Item -LiteralPath $temporary -Force }
         if (Test-Path -LiteralPath $replacementBackup) { Remove-Item -LiteralPath $replacementBackup -Force }
+    }
+}
+
+function Get-NewsGraspRecoveryRuntimeBinding {
+    $profileRoot = [Environment]::GetFolderPath([Environment+SpecialFolder]::UserProfile)
+    $canonicalBin = Join-Path $profileRoot 'bin'
+    $bindingPath = Join-Path $canonicalBin 'news-grasp-recovery-runtime-binding-v1.json'
+    try {
+        if (-not [string]::Equals([IO.Path]::GetFullPath($BinDir), [IO.Path]::GetFullPath($canonicalBin), [StringComparison]::OrdinalIgnoreCase)) {
+            throw 'bin root mismatch'
+        }
+        $binding = Get-Content -LiteralPath $bindingPath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+        if ([string]$binding.schemaVersion -cne 'NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1') { throw 'schema mismatch' }
+        $ops = (Resolve-Path -LiteralPath ([string]$binding.opsRepoRoot) -ErrorAction Stop).Path
+        $python = (Resolve-Path -LiteralPath ([string]$binding.pythonExe) -ErrorAction Stop).Path
+        $expectedBootstrap = (Resolve-Path -LiteralPath ([string]$binding.bootstrapPath) -ErrorAction Stop).Path
+        $expectedPython = (Resolve-Path -LiteralPath (Join-Path $profileRoot 'OneDrive\ドキュメント\ProjectFolders\News-Grasp\.venv\Scripts\python.exe') -ErrorAction Stop).Path
+        $expectedRuntime = (Resolve-Path -LiteralPath (Join-Path $profileRoot '.news-grasp-runtime\production-runtime') -ErrorAction Stop).Path
+        $gitExe = 'C:\Program Files\Git\cmd\git.exe'
+        $gitSafeArgs = @('-c', 'core.hooksPath=NUL', '-c', 'core.fsmonitor=false', '-c', 'core.attributesFile=NUL')
+        $trustedRemote = 'https://github.com/HIDEPON-UMG/News-Grasp.git'
+        $opsHead = (& $gitExe @gitSafeArgs -C $ops rev-parse HEAD 2>$null | Out-String).Trim().ToLowerInvariant()
+        $remoteLine = (& $gitExe @gitSafeArgs ls-remote $trustedRemote refs/heads/main 2>$null | Out-String).Trim()
+        $remoteHead = if ($remoteLine) { ($remoteLine -split '\s+')[0].ToLowerInvariant() } else { '' }
+        $opsDirty = (& $gitExe @gitSafeArgs -C $ops status --porcelain --untracked-files=all 2>$null | Out-String).Trim()
+        $opsIgnored = (& $gitExe @gitSafeArgs -C $ops ls-files --others --ignored --exclude-standard 2>$null | Out-String).Trim()
+        $startupCustomizationPresent = (
+            (Test-Path -LiteralPath (Join-Path $ops 'sitecustomize.py')) -or
+            (Test-Path -LiteralPath (Join-Path $ops 'usercustomize.py'))
+        )
+        $pythonSignature = Get-AuthenticodeSignature -LiteralPath $python
+        $pythonSignerSubject = [string]$pythonSignature.SignerCertificate.Subject
+        $pythonSignerThumbprint = ([string]$pythonSignature.SignerCertificate.Thumbprint).ToLowerInvariant()
+        if (
+            -not [string]::Equals($python, $expectedPython, [StringComparison]::OrdinalIgnoreCase) -or
+            -not [string]::Equals((Resolve-Path -LiteralPath ([string]$binding.productionRuntimeRoot) -ErrorAction Stop).Path, $expectedRuntime, [StringComparison]::OrdinalIgnoreCase) -or
+            [string]$binding.trustedRemote -cne $trustedRemote -or
+            [string]$binding.opsHead -cne $opsHead -or
+            $opsHead -notmatch '^[0-9a-f]{40}$' -or
+            $opsHead -cne $remoteHead -or
+            $opsDirty -or
+            $opsIgnored -or
+            $startupCustomizationPresent -or
+            -not [string]::Equals($expectedBootstrap, (Resolve-Path -LiteralPath $PSCommandPath).Path, [StringComparison]::OrdinalIgnoreCase) -or
+            -not [string]::Equals((Get-FileHash -Algorithm SHA256 -LiteralPath $python).Hash.ToLowerInvariant(), [string]$binding.pythonExeSha256, [StringComparison]::Ordinal) -or
+            [string]$pythonSignature.Status -cne 'Valid' -or
+            $pythonSignerSubject -notlike 'CN=Python Software Foundation, O=Python Software Foundation,*' -or
+            [string]$binding.pythonTrustAnchor -cne 'authenticode:python-software-foundation' -or
+            [string]$binding.pythonSignerSubject -cne $pythonSignerSubject -or
+            [string]$binding.pythonSignerThumbprint -cne $pythonSignerThumbprint -or
+            -not [string]::Equals((Get-FileHash -Algorithm SHA256 -LiteralPath $expectedBootstrap).Hash.ToLowerInvariant(), [string]$binding.bootstrapSha256, [StringComparison]::Ordinal)
+        ) { throw 'entrypoint hash mismatch' }
+        foreach ($tool in @(
+            @('receiptToolPath', 'receiptToolSha256'),
+            @('controlPlaneToolPath', 'controlPlaneToolSha256'),
+            @('completionGuardToolPath', 'completionGuardToolSha256'),
+            @('dailySelfHealPath', 'dailySelfHealSha256')
+        )) {
+            $toolPath = (Resolve-Path -LiteralPath ([string]$binding.($tool[0])) -ErrorAction Stop).Path
+            $expectedToolPath = (Resolve-Path -LiteralPath (Join-Path $ops ('tools\' + [IO.Path]::GetFileName($toolPath))) -ErrorAction Stop).Path
+            if (
+                -not [string]::Equals($toolPath, $expectedToolPath, [StringComparison]::OrdinalIgnoreCase) -or
+                -not [string]::Equals((Get-FileHash -Algorithm SHA256 -LiteralPath $toolPath).Hash.ToLowerInvariant(), [string]$binding.($tool[1]), [StringComparison]::Ordinal)
+            ) { throw 'tool hash mismatch' }
+        }
+        return [pscustomobject]@{
+            OpsRepoRoot = $ops
+            PythonExe = $python
+            ProductionRuntimeRoot = (Resolve-Path -LiteralPath ([string]$binding.productionRuntimeRoot) -ErrorAction Stop).Path
+            ReceiptToolPath = (Resolve-Path -LiteralPath ([string]$binding.receiptToolPath) -ErrorAction Stop).Path
+            ControlPlaneToolPath = (Resolve-Path -LiteralPath ([string]$binding.controlPlaneToolPath) -ErrorAction Stop).Path
+        }
+    } catch {
+        throw 'RECOVERY_RUNTIME_BINDING_INVALID'
     }
 }
 
@@ -379,9 +465,41 @@ function Record-StartupFailureForAudit {
 $SourceRepoDir = Resolve-NewsGraspRepoDir -Override $RepoDir
 $PythonExe = if ($PythonExe) { (Resolve-Path -LiteralPath $PythonExe).Path } else { Join-Path $SourceRepoDir '.venv\Scripts\python.exe' }
 if (-not (Test-Path -LiteralPath $PythonExe -PathType Leaf)) { throw 'News-Grasp Python runtime is missing.' }
-if ($EvidenceRepoDir) { $env:NEWS_GRASP_EVIDENCE_REPO_DIR = (Resolve-Path -LiteralPath $EvidenceRepoDir).Path }
+$OpsRepoRoot = if ($EvidenceRepoDir) {
+    (Resolve-Path -LiteralPath $EvidenceRepoDir).Path
+} else {
+    $SourceRepoDir
+}
+if ($EvidenceRepoDir) { $env:NEWS_GRASP_EVIDENCE_REPO_DIR = $OpsRepoRoot }
 if (-not $DateStamp) { $DateStamp = Get-Date -Format 'yyyy-MM-dd' }
 New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
+$expectedProductionRuntimeRoot = Join-Path $env:USERPROFILE '.news-grasp-runtime\production-runtime'
+if ($ControlPlaneRepairOnly) {
+    $recoveryBinding = Get-NewsGraspRecoveryRuntimeBinding
+    if (
+        -not [string]::Equals($OpsRepoRoot, [string]$recoveryBinding.OpsRepoRoot, [StringComparison]::OrdinalIgnoreCase) -or
+        -not [string]::Equals($PythonExe, [string]$recoveryBinding.PythonExe, [StringComparison]::OrdinalIgnoreCase)
+    ) {
+        throw 'CONTROL_PLANE_REPAIR_INTERPRETER_INVALID'
+    }
+    $OpsRepoRoot = [string]$recoveryBinding.OpsRepoRoot
+    $PythonExe = [string]$recoveryBinding.PythonExe
+    $expectedProductionRuntimeRoot = [string]$recoveryBinding.ProductionRuntimeRoot
+    $RecoveryReceiptTool = [string]$recoveryBinding.ReceiptToolPath
+    $ControlPlaneVerifier = [string]$recoveryBinding.ControlPlaneToolPath
+    $repairAuthorityJson = (& $PythonExe '-I' '-S' '-B' $RecoveryReceiptTool `
+        'consume-control-plane-repair' `
+        '--receipt' $ControlPlaneRepairAuthorityPath `
+        '--issue-date' $DateStamp `
+        '--artifact-root' $ControlPlaneRepairArtifactRoot `
+        '--ops-root' $OpsRepoRoot `
+        '--production-runtime-root' $expectedProductionRuntimeRoot `
+        '--live-bin-root' $BinDir 2>&1 | Out-String).Trim()
+    $repairAuthorityRc = $LASTEXITCODE
+    if ($repairAuthorityRc -ne 0) {
+        throw "CONTROL_PLANE_REPAIR_AUTHORITY_INVALID detail=$repairAuthorityJson"
+    }
+}
 $preliminaryAuthority = $null
 $runtimeMutex = $null
 $runtimeMutexOwned = $false
@@ -390,7 +508,9 @@ $runtimeOwnerReceiptPath = ''
 $runtimeOwnerNonce = ''
 if ($UseProductionRuntime) {
     try {
-        Assert-ScheduledTaskLaunchContext -TaskName $ScheduledTaskName -IsSmokeTest ([bool]$SmokeTest) -AllowLegacyDirectEntrypoint ([bool]$LegacyDirectEntrypoint)
+        if (-not $ControlPlaneRepairOnly) {
+            Assert-ScheduledTaskLaunchContext -TaskName $ScheduledTaskName -IsSmokeTest ([bool]$SmokeTest) -AllowLegacyDirectEntrypoint ([bool]$LegacyDirectEntrypoint)
+        }
     } catch {
         if ($_.Exception.Message -eq 'SCHEDULED_TASK_CONTEXT_INVALID') {
             exit $SCHEDULED_TASK_CONTEXT_REJECTED_EXIT
@@ -440,7 +560,7 @@ if ($UseProductionRuntime) {
     }
 }
 try {
-if ($UseProductionRuntime -and (-not $SmokeTest)) {
+if ($UseProductionRuntime -and (-not $SmokeTest) -and (-not $ControlPlaneRepairOnly)) {
     $preliminaryAuthority = Write-PreliminaryLaunchPermit -SourceRepoDir $SourceRepoDir -BinDir $BinDir -IssueDate $DateStamp -PythonExe $PythonExe
 }
 try {
@@ -462,7 +582,7 @@ try {
     }
     exit 72
 }
-$opsDir = Join-Path $RepoDir 'scripts\ops'
+$opsDir = Join-Path $OpsRepoRoot 'scripts\ops'
 if ($SmokeTest) {
     if (-not $StateFile) {
         $StateFile = Join-Path $RepoDir 'build\bootstrap-task-smoke\state.json'
@@ -535,6 +655,59 @@ if ($changed) {
     } | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $manifestPath -Encoding UTF8
 }
 
+$controlPlaneVerifier = if ($ControlPlaneRepairOnly) {
+    $ControlPlaneVerifier
+} else {
+    Join-Path $OpsRepoRoot 'tools\news_grasp_control_plane.py'
+}
+$controlPlaneRunIntent = if ($RecoverOnly) { 'ScheduledRecoveryFull' } else { 'ScheduledProduction' }
+try {
+    if (-not (Test-Path -LiteralPath $controlPlaneVerifier -PathType Leaf)) {
+        throw 'NEWS_GRASP_CONTROL_PLANE_PREFLIGHT_MISSING'
+    }
+    $controlPlaneJson = (& $PythonExe '-I' '-S' '-B' $controlPlaneVerifier '--artifact-root' $RepoDir '--ops-root' $OpsRepoRoot '--production-runtime-root' $RepoDir '--live-bin-root' $BinDir '--issue-date' $DateStamp '--run-intent' $controlPlaneRunIntent 2>&1 | Out-String).Trim()
+    $controlPlaneRc = $LASTEXITCODE
+    if ($controlPlaneRc -ne 0) {
+        throw "NEWS_GRASP_CONTROL_PLANE_PREFLIGHT_FAILED detail=$controlPlaneJson"
+    }
+    $controlPlane = $controlPlaneJson | ConvertFrom-Json -ErrorAction Stop
+    if (
+        [string]$controlPlane.schemaVersion -ne 'NEWS_GRASP_CONTROL_PLANE_PREFLIGHT_V1' -or
+        $controlPlane.ok -ne $true -or
+        [string]$controlPlane.status -ne 'ready'
+    ) {
+        throw "NEWS_GRASP_CONTROL_PLANE_PREFLIGHT_FAILED detail=$controlPlaneJson"
+    }
+} catch {
+    Write-BootstrapFailureObservation -Phase 'control_plane_preflight' -ReasonCode 'NEWS_GRASP_CONTROL_PLANE_PREFLIGHT_FAILED' -Detail $_.Exception.Message
+    if ($UseProductionRuntime -and (-not $SmokeTest) -and $preliminaryAuthority) {
+        try {
+            Record-StartupFailureForAudit -AuthorityContext $preliminaryAuthority -SourceRepoDir $SourceRepoDir -BinDir $BinDir -IssueDate $DateStamp -Detail $_.Exception.Message
+        } catch {
+            $failureLog = Join-Path $BinDir "news-grasp-logs\$DateStamp.log"
+            New-Item -ItemType Directory -Force -Path (Split-Path -Parent $failureLog) | Out-Null
+            Add-Content -LiteralPath $failureLog -Value "WARN: CONTROL_PLANE_FAILURE_TERMINALIZER_FAILED reason=$($_.Exception.Message)" -Encoding UTF8
+        }
+    }
+    exit 72
+}
+
+if ($ControlPlaneRepairOnly) {
+    $repairAppliedJson = (& $PythonExe '-I' '-S' '-B' $RecoveryReceiptTool `
+        'mark-control-plane-repair-applied' `
+        '--receipt' $ControlPlaneRepairAuthorityPath `
+        '--issue-date' $DateStamp `
+        '--artifact-root' $ControlPlaneRepairArtifactRoot `
+        '--ops-root' $OpsRepoRoot `
+        '--production-runtime-root' $expectedProductionRuntimeRoot `
+        '--live-bin-root' $BinDir 2>&1 | Out-String).Trim()
+    $repairAppliedRc = $LASTEXITCODE
+    if ($repairAppliedRc -ne 0) {
+        throw "CONTROL_PLANE_REPAIR_JOURNAL_INVALID detail=$repairAppliedJson"
+    }
+    exit 0
+}
+
 $broker = Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py'
 $python = $PythonExe
 $liveRunner = Join-Path $BinDir 'news-grasp-runner.ps1'
@@ -574,7 +747,7 @@ if ($UseProductionRuntime) {
 if ($StateFile) { $args += @('-StateFile', $StateFile) }
 if ($LogDir) { $args += @('-LogDir', $LogDir) }
 if ($DateStamp) { $args += @('-DateStamp', $DateStamp) }
-$args += @('-RepoDir', $RepoDir, '-BinDir', $BinDir)
+$args += @('-RepoDir', $RepoDir, '-OpsRepoRoot', $OpsRepoRoot, '-BinDir', $BinDir)
 $args += @('-PyExeOverride', $PythonExe)
 
 & powershell.exe @args

@@ -19,8 +19,6 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
-import certifi
-
 from tools.tts import deepdive_dialogue, proc
 from tools.validate_deepdive_urls import extract_urls
 
@@ -451,6 +449,13 @@ def _validate_provenance_with_evidence(
 def _build_tls_context() -> ssl.SSLContext:
     """端末固有CA差に依存しない取得contextを返す。"""
 
+    try:
+        import certifi
+    except ModuleNotFoundError:
+        # The recovery verifier runs with ``-I -S`` so startup hooks in the
+        # venv cannot execute before trusted code. Windows' system CA store is
+        # the bounded fallback for that isolated path.
+        return ssl.create_default_context()
     return ssl.create_default_context(cafile=certifi.where())
 
 

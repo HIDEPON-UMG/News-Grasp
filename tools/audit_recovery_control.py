@@ -14,7 +14,7 @@ import sys
 import tempfile
 import threading
 import time
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -30,6 +30,7 @@ from tools.news_grasp_operational_contract import (
     validate_operational_truth_receipt,
 )
 from tools.news_grasp_owned_process import run_owned_bounded
+from tools import news_grasp_control_plane, news_grasp_recovery_receipts
 
 
 AUDIT_TERMINALS = {
@@ -39,7 +40,12 @@ AUDIT_TERMINALS = {
     "audit_major_incident_open",
 }
 SAME_DAY_PUBLIC_RECOVERY_PRIORITY = "same_day_public_recovery_first"
-PUBLIC_GREEN_FOLLOWUP_PRIORITY = "root_cause_after_public_green"
+PUBLIC_GREEN_FOLLOWUP_PRIORITY = "runner_finalization_only"
+PUBLIC_GREEN_ALLOWED_OPERATIONS = (
+    "manifest_reverification",
+    "typed_runner_finalizer",
+    "completion_guard",
+)
 ALLOWED_BEFORE_PUBLIC_GREEN = [
     "scheduled_recovery",
     "minimal_recovery_unblocker",
@@ -85,6 +91,7 @@ CAUSE_INPUT_ALIASES = {
     "external_evidence_sha256": "externalEvidenceSha256",
 }
 CANONICAL_REPO_ROOT = Path(__file__).resolve().parents[1]
+CANONICAL_LIVE_BIN_ROOT = Path.home() / "bin"
 CANONICAL_CONTROL_ROOT = Path(__file__).resolve().parents[1]
 CANONICAL_TERMINAL_ROOT = CANONICAL_REPO_ROOT / "build" / "incidents"
 CANONICAL_BROKER_PATH = Path.home() / "bin" / "ai-model-spawn-broker.py"
@@ -200,7 +207,11 @@ def seal_audit_decision(decision: object) -> dict[str, Any]:
         ):
             raise ValueError("AUDIT_DECISION_RECEIPT_INVALID")
     elif public_status == "green":
-        if decision.get("workPriority") != PUBLIC_GREEN_FOLLOWUP_PRIORITY:
+        if (
+            decision.get("workPriority") != PUBLIC_GREEN_FOLLOWUP_PRIORITY
+            or tuple(decision.get("allowedAfterPublicGreen") or ())
+            != PUBLIC_GREEN_ALLOWED_OPERATIONS
+        ):
             raise ValueError("AUDIT_DECISION_RECEIPT_INVALID")
     else:
         raise ValueError("AUDIT_DECISION_RECEIPT_INVALID")
@@ -1213,9 +1224,73 @@ def _verify_same_date_completion(
                 artifact_repo_root=artifact_repo_root,
             )
         return None
+    completion_guard: dict[str, Any] = {}
+    if expected_run_intent == "ScheduledRecoveryFull":
+        finalization_receipt_path = str(
+            runner_state.get("recovery_finalization_receipt_path") or ""
+        )
+        if finalization_receipt_path:
+            from tools import news_grasp_completion_guard
+
+            try:
+                completion_guard, validated_finalization = (
+                    news_grasp_completion_guard.evaluate_finalization_receipt(
+                        Path(finalization_receipt_path),
+                        artifact_root=artifact_repo_root,
+                        ops_root=CANONICAL_REPO_ROOT,
+                        production_runtime_root=(
+                            Path.home() / ".news-grasp-runtime" / "production-runtime"
+                        ),
+                        live_bin_root=CANONICAL_RUNNER_STATE_PATH.parent,
+                        runner_state_path=CANONICAL_RUNNER_STATE_PATH,
+                        runner_script_path=(
+                            CANONICAL_REPO_ROOT
+                            / "scripts"
+                            / "ops"
+                            / "news-grasp-runner.ps1"
+                        ),
+                    )
+                )
+            except (OSError, ValueError, RuntimeError):
+                return None
+            if (
+                completion_guard.get("ok") is not True
+                or completion_guard.get("issueDate") != issue_date
+                or validated_finalization.get("receiptSha256")
+                != runner_state.get("recovery_finalization_receipt_sha256")
+            ):
+                return None
+        else:
+            legacy_guard_path = (
+                artifact_repo_root
+                / "build"
+                / "publish-complete"
+                / f"{issue_date}.automation-guard.json"
+            )
+            try:
+                legacy_guard = _load(
+                    legacy_guard_path,
+                    expected_root=artifact_repo_root / "build",
+                )
+            except (OSError, ValueError, json.JSONDecodeError):
+                return None
+            if (
+                legacy_guard.get("schemaVersion")
+                != "NEWS_GRASP_640_COMPLETION_GUARD_V1"
+                or legacy_guard.get("ok") is not True
+                or legacy_guard.get("issueDate") != issue_date
+                or legacy_guard.get("scheduled_attempt_status")
+                != "failed_then_recovered"
+                or legacy_guard.get("recovery_attempt_status") != "succeeded"
+                or legacy_guard.get("public_status") != "green"
+                or legacy_guard.get("runner_status") != "publish_complete"
+            ):
+                return None
+            completion_guard = legacy_guard
     evidence_seed = {
         "quality": quality,
         "publish": publish,
+        "completionGuard": completion_guard,
         "runnerStateSha256": _file_sha256(runner_state_path),
     }
     typed_hashes = _typed_completion_hashes(
@@ -1798,6 +1873,7 @@ def decide_audit_recovery(payload: object) -> dict[str, Any]:
                 "publicStatus": "green",
                 "operationState": "complete",
                 "workPriority": PUBLIC_GREEN_FOLLOWUP_PRIORITY,
+                "allowedAfterPublicGreen": PUBLIC_GREEN_ALLOWED_OPERATIONS,
                 "attemptLedgerWitnessSha256": attempt_witness["receiptSha256"],
                 "completionEvidenceSha256": completion["receiptSha256"],
                 "completionEvidence": completion,
@@ -1858,6 +1934,7 @@ def decide_audit_recovery(payload: object) -> dict[str, Any]:
                 "publicStatus": "green",
                 "operationState": "complete",
                 "workPriority": PUBLIC_GREEN_FOLLOWUP_PRIORITY,
+                "allowedAfterPublicGreen": PUBLIC_GREEN_ALLOWED_OPERATIONS,
                 "attemptLedgerWitnessSha256": attempt_witness["receiptSha256"],
                 "scheduledFailureReceiptSha256": failure_sha,
                 "recoveryAuthorityReceiptSha256": authority["receiptSha256"],
@@ -1906,11 +1983,403 @@ def decide_audit_recovery(payload: object) -> dict[str, Any]:
     ))
 
 
+def _is_typed_recovery_manifest_candidate(
+    path: Path, issue_date: str, *, artifact_root: Path
+) -> bool:
+    lexical_root = _lexical_absolute(artifact_root)
+    lexical_path = _lexical_absolute(path)
+    if not _same_lexical_path(lexical_path.parents[2], lexical_root):
+        return False
+    cursor = lexical_path
+    while True:
+        if _is_reparse_or_symlink(cursor):
+            return False
+        if _same_lexical_path(cursor, lexical_root):
+            break
+        parent = cursor.parent
+        if parent == cursor:
+            return False
+        cursor = parent
+    if not lexical_path.is_file():
+        return False
+    try:
+        if lexical_path.stat().st_size > MAX_JSON_BYTES:
+            return False
+        value = json.loads(lexical_path.read_text(encoding="utf-8-sig"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return False
+    if not isinstance(value, dict):
+        return False
+    return _is_typed_recovery_manifest_value(value, issue_date)
+
+
+def _has_verified_public_green_proof(
+    *, artifact_root: Path, issue_date: str
+) -> bool:
+    """固定proofの完全な公開bundleだけをpost-Green境界として扱う。"""
+    proof_path = (
+        artifact_root
+        / "build"
+        / "recovery"
+        / "proofs"
+        / f"{issue_date}-public-surface-final.json"
+    )
+    try:
+        value = _load(proof_path, expected_root=artifact_root / "build")
+    except (OSError, ValueError, json.JSONDecodeError):
+        return False
+    publish = value.get("publish_complete_manifest")
+    nested_publish = publish.get("publish") if isinstance(publish, dict) else None
+    distribution = (
+        publish.get("distribution_artifacts") if isinstance(publish, dict) else None
+    )
+    podcasts = publish.get("podcasts") if isinstance(publish, dict) else None
+    notification = publish.get("notification") if isinstance(publish, dict) else None
+    return bool(
+        value.get("schema_version") == 1
+        and value.get("issue_date") == issue_date
+        and value.get("overall_status") == "green"
+        and value.get("errors") == []
+        and isinstance(publish, dict)
+        and publish.get("ok") is True
+        and publish.get("public_status") == "green"
+        and publish.get("scheduled_attempt_status") == "failed_then_recovered"
+        and publish.get("recovery_attempt_status") == "succeeded"
+        and isinstance(nested_publish, dict)
+        and nested_publish.get("ok") is True
+        and isinstance(distribution, dict)
+        and distribution.get("missing") == []
+        and isinstance(notification, dict)
+        and notification.get("ok") is True
+        and isinstance(podcasts, dict)
+        and isinstance(podcasts.get("primary"), dict)
+        and podcasts["primary"].get("ok") is True
+        and isinstance(podcasts.get("deepdive"), dict)
+        and podcasts["deepdive"].get("ok") is True
+    )
+
+
+def _is_typed_recovery_manifest_value(value: object, issue_date: str) -> bool:
+    if not isinstance(value, dict):
+        return False
+    publish_commit = str(value.get("publish_commit") or "")
+    publish = value.get("publish")
+    distribution = value.get("distribution_artifacts")
+    podcasts = value.get("podcasts")
+    readiness = value.get("live_runner_readiness")
+    next_run = readiness.get("next_run_readiness") if isinstance(readiness, dict) else None
+    return bool(
+        value.get("schemaVersion") == "NEWS_GRASP_PUBLISH_COMPLETE_V2"
+        and value.get("date") == issue_date
+        and value.get("ok") is True
+        and value.get("public_status") == "green"
+        and value.get("scheduled_attempt_status") == "failed_then_recovered"
+        and value.get("recovery_attempt_status") == "succeeded"
+        and all(
+            GIT_SHA_PATTERN.fullmatch(str(value.get(field) or ""))
+            for field in ("source_commit", "artifact_commit", "publish_commit")
+        )
+        and GIT_SHA_PATTERN.fullmatch(publish_commit)
+        and isinstance(publish, dict)
+        and publish.get("ok") is True
+        and publish.get("deploy_head") == publish_commit
+        and isinstance(distribution, dict)
+        and not distribution.get("missing")
+        and isinstance(value.get("notification"), dict)
+        and value["notification"].get("ok") is True
+        and isinstance(podcasts, dict)
+        and all(
+            isinstance(podcasts.get(kind), dict)
+            and podcasts[kind].get("ok") is True
+            for kind in ("primary", "deepdive")
+        )
+        and isinstance(readiness, dict)
+        and readiness.get("ok") is True
+        and isinstance(next_run, dict)
+        and next_run.get("ok") is True
+    )
+
+
+def _load_recovery_evidence_for_receipt(
+    *,
+    payload: dict[str, Any],
+    decision: dict[str, Any],
+    issue_date: str,
+    artifact_repo_root: Path,
+) -> tuple[Path, dict[str, Any], Path, dict[str, Any], dict[str, Any]]:
+    failure_path = _contained_file(
+        payload.get("scheduledFailureReceiptPath"),
+        root=artifact_repo_root / "build",
+        code="SCHEDULED_ATTEMPT_EVIDENCE_INVALID",
+    )
+    failure = _validate_scheduled_failure_path(
+        {"status": "failed", "failureReceiptPath": str(failure_path)},
+        issue_date=issue_date,
+        evidence_repo_root=artifact_repo_root,
+    )
+    authority_path = _contained_file(
+        payload.get("recoveryAuthorityPath"),
+        root=artifact_repo_root / "build",
+        code="RECOVERY_AUTHORITY_INVALID",
+    )
+    authority, authority_witness = _validate_recovery_authority_via_broker(
+        issue_date=issue_date,
+        authority_path_value=str(authority_path),
+        failure_receipt_sha256=str(failure["receiptSha256"]),
+        evidence_repo_root=artifact_repo_root,
+    )
+    if authority.get("receiptSha256") != decision.get("recoveryAuthorityReceiptSha256"):
+        raise ValueError("RECOVERY_AUTHORITY_IDENTITY_DRIFT")
+    return failure_path, failure, authority_path, authority, authority_witness
+
+
+def _issue_control_plane_repair_receipt(
+    *,
+    payload: dict[str, Any],
+    decision: dict[str, Any],
+    issue_date: str,
+    artifact_repo_root: Path,
+    production_runtime_root: Path,
+    live_bin_root: Path,
+    preflight: dict[str, Any],
+) -> Path:
+    _, _, authority_path, authority, authority_witness = _load_recovery_evidence_for_receipt(
+        payload=payload,
+        decision=decision,
+        issue_date=issue_date,
+        artifact_repo_root=artifact_repo_root,
+    )
+    receipt_path = (
+        artifact_repo_root
+        / "build"
+        / "control-plane"
+        / f"{issue_date}-bounded-repair-authority.json"
+    )
+    if receipt_path.is_file() and not receipt_path.is_symlink():
+        try:
+            news_grasp_recovery_receipts.validate_control_plane_repair_receipt(
+                receipt_path=receipt_path,
+                issue_date=issue_date,
+                artifact_root=artifact_repo_root,
+                ops_root=CANONICAL_REPO_ROOT,
+                production_runtime_root=production_runtime_root,
+                live_bin_root=live_bin_root,
+                current_preflight=preflight,
+            )
+            return receipt_path
+        except (OSError, ValueError):
+            pass
+    receipt = news_grasp_recovery_receipts.create_control_plane_repair_receipt(
+        issue_date=issue_date,
+        artifact_root=artifact_repo_root,
+        ops_root=CANONICAL_REPO_ROOT,
+        production_runtime_root=production_runtime_root,
+        live_bin_root=live_bin_root,
+        preflight=preflight,
+        recovery_authority_path=authority_path,
+        recovery_authority=authority,
+        authority_ledger_witness=authority_witness,
+    )
+    news_grasp_recovery_receipts.write_atomic_json(
+        receipt_path, receipt, root=artifact_repo_root
+    )
+    return receipt_path
+
+
+def _issue_recovery_execution_receipt(
+    *,
+    payload: dict[str, Any],
+    decision: dict[str, Any],
+    issue_date: str,
+    audit_accepted_at: str,
+    artifact_repo_root: Path,
+    production_runtime_root: Path,
+    live_bin_root: Path,
+    runner_path: Path,
+) -> Path:
+    failure_path, failure, authority_path, authority, authority_witness = _load_recovery_evidence_for_receipt(
+        payload=payload,
+        decision=decision,
+        issue_date=issue_date,
+        artifact_repo_root=artifact_repo_root,
+    )
+    receipt_path = (
+        artifact_repo_root
+        / "build"
+        / "recovery-authority"
+        / f"{issue_date}-execution-receipt.json"
+    )
+    if receipt_path.is_file() and not receipt_path.is_symlink():
+        try:
+            news_grasp_recovery_receipts.validate_recovery_execution_receipt(
+                receipt_path=receipt_path,
+                issue_date=issue_date,
+                artifact_root=artifact_repo_root,
+                ops_root=CANONICAL_REPO_ROOT,
+                production_runtime_root=production_runtime_root,
+                live_bin_root=live_bin_root,
+                runner_state_path=CANONICAL_RUNNER_STATE_PATH,
+                runner_script_path=runner_path,
+            )
+            return receipt_path
+        except (OSError, ValueError):
+            pass
+    receipt = news_grasp_recovery_receipts.create_recovery_execution_receipt(
+        issue_date=issue_date,
+        artifact_root=artifact_repo_root,
+        ops_root=CANONICAL_REPO_ROOT,
+        production_runtime_root=production_runtime_root,
+        live_bin_root=live_bin_root,
+        runner_state_path=CANONICAL_RUNNER_STATE_PATH,
+        runner_script_path=runner_path,
+        recovery_authority_path=authority_path,
+        recovery_authority=authority,
+        scheduled_failure_receipt_path=failure_path,
+        scheduled_failure_receipt=failure,
+        authority_ledger_witness=authority_witness,
+        audit_accepted_at=audit_accepted_at,
+    )
+    news_grasp_recovery_receipts.write_atomic_json(
+        receipt_path, receipt, root=artifact_repo_root
+    )
+    return receipt_path
+
+
+def _fresh_reverify_publish_manifest(
+    *,
+    payload: dict[str, Any],
+    issue_date: str,
+    artifact_repo_root: Path,
+    manifest_path: Path,
+) -> tuple[dict[str, Any], Path, str]:
+    """既存manifestをauthorityにせず、canonical verifierで同日面を再検証する。"""
+    from tools import daily_self_heal
+
+    state_path = CANONICAL_RUNNER_STATE_PATH
+    state = _load(state_path, expected_root=state_path.parent)
+    news_grasp_recovery_receipts.validate_producer_lineage(
+        producer_state=state,
+        issue_date=issue_date,
+        artifact_root=artifact_repo_root,
+        ops_root=CANONICAL_REPO_ROOT,
+    )
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    producer_snapshot = (
+        artifact_repo_root
+        / "build"
+        / "recovery-authority"
+        / f"{issue_date}-producer-state.json"
+    )
+    news_grasp_recovery_receipts.write_atomic_json(
+        producer_snapshot, state, root=artifact_repo_root
+    )
+    producer_state_sha256 = _file_sha256(producer_snapshot)
+    wait_sec = int(payload.get("verificationWaitSec", 0))
+    poll_sec = int(payload.get("verificationPollSec", 10))
+    if wait_sec < 0 or wait_sec > 600 or poll_sec < 1 or poll_sec > 60:
+        raise ValueError("COMPLETION_VERIFICATION_BUDGET_INVALID")
+    fresh = daily_self_heal.verify_publish_complete(
+            repo_root=artifact_repo_root,
+            ops_repo_root=CANONICAL_REPO_ROOT,
+            date=issue_date,
+            remote="origin",
+            branch="main",
+            public_base_url="https://hidepon-umg.github.io/News-Grasp/",
+            wait_sec=wait_sec,
+            poll_sec=poll_sec,
+            primary_podcast_state_path=(
+                artifact_repo_root / "build" / "youtube-podcast" / "uploads.json"
+            ),
+            deepdive_podcast_state_path=(
+                artifact_repo_root
+                / "build"
+                / "youtube-podcast-deepdive"
+                / "uploads.json"
+            ),
+            notification_state_path=(
+                artifact_repo_root / "build" / "notification" / f"{issue_date}.json"
+            ),
+            producer_state_path=producer_snapshot,
+        )
+    if not _is_typed_recovery_manifest_value(fresh, issue_date):
+        raise ValueError(str(fresh.get("reason") or "FINALIZATION_REVERIFICATION_RED"))
+    news_grasp_recovery_receipts.write_atomic_json(
+        manifest_path, fresh, root=artifact_repo_root
+    )
+    return fresh, producer_snapshot, producer_state_sha256
+
+
+def _fresh_reverify_and_issue_finalization(
+    *,
+    payload: dict[str, Any],
+    decision: dict[str, Any],
+    issue_date: str,
+    audit_accepted_at: str,
+    artifact_repo_root: Path,
+    production_runtime_root: Path,
+    live_bin_root: Path,
+    runner_path: Path,
+    manifest_path: Path,
+    execution_receipt_path: Path,
+) -> Path:
+    fresh, producer_snapshot, producer_state_sha256 = _fresh_reverify_publish_manifest(
+        payload=payload,
+        issue_date=issue_date,
+        artifact_repo_root=artifact_repo_root,
+        manifest_path=manifest_path,
+    )
+    failure_path, failure, authority_path, authority, authority_witness = _load_recovery_evidence_for_receipt(
+        payload=payload,
+        decision=decision,
+        issue_date=issue_date,
+        artifact_repo_root=artifact_repo_root,
+    )
+    receipt = news_grasp_recovery_receipts.create_finalization_receipt(
+        issue_date=issue_date,
+        artifact_root=artifact_repo_root,
+        ops_root=CANONICAL_REPO_ROOT,
+        production_runtime_root=production_runtime_root,
+        live_bin_root=live_bin_root,
+        runner_state_path=CANONICAL_RUNNER_STATE_PATH,
+        runner_script_path=runner_path,
+        manifest_path=manifest_path,
+        manifest=fresh,
+        recovery_authority_path=authority_path,
+        recovery_authority=authority,
+        scheduled_failure_receipt_path=failure_path,
+        scheduled_failure_receipt=failure,
+        authority_ledger_witness=authority_witness,
+        execution_receipt_path=execution_receipt_path,
+        execution_receipt=_load(
+            execution_receipt_path, expected_root=artifact_repo_root / "build"
+        ),
+        producer_state_path=producer_snapshot,
+        producer_state_sha256=producer_state_sha256,
+        audit_accepted_at=audit_accepted_at,
+    )
+    receipt_path = manifest_path.with_name(f"{issue_date}.finalization-receipt.json")
+    news_grasp_recovery_receipts.write_atomic_json(
+        receipt_path, receipt, root=artifact_repo_root
+    )
+    return receipt_path
+
+
 def execute_audit_recovery(payload: object) -> dict[str, Any]:
     """監査判断、production recovery 1回、same-gate再検証、typed terminalを一続きで閉じる。"""
     if not isinstance(payload, dict):
         raise ValueError("AUDIT_RECOVERY_INPUT_INVALID")
+    if any(
+        field in payload
+        for field in (
+            "auditAcceptedAt",
+            "productionRuntimeRoot",
+            "liveBinRoot",
+            "recoveryPythonExe",
+        )
+    ):
+        raise ValueError("AUDIT_PRODUCTION_IDENTITY_OVERRIDE_FORBIDDEN")
     issue_date = _validate_issue_date(payload.get("issueDate"))
+    audit_accepted_at = datetime.now().astimezone().isoformat()
     decision = decide_audit_recovery(payload)
     if decision.get("terminal"):
         write_audit_terminal(decision)
@@ -1932,15 +2401,27 @@ def execute_audit_recovery(payload: object) -> dict[str, Any]:
         root=artifact_repo_root / "build",
         code="RECOVERY_AUTHORITY_INVALID",
     )
-    runner_path = CANONICAL_REPO_ROOT / "scripts" / "ops" / "news-grasp-runner.ps1"
+    live_bin_root = CANONICAL_LIVE_BIN_ROOT
+    runner_path = live_bin_root / "news-grasp-runner.ps1"
     if not runner_path.is_file() or runner_path.is_symlink():
         raise ValueError("RECOVERY_RUNNER_INVALID")
     runner_sha256 = _file_sha256(runner_path)
-    canonical_python = Path(
-        str(payload.get("recoveryPythonExe") or CANONICAL_REPO_ROOT / ".venv" / "Scripts" / "python.exe")
-    ).resolve()
+    canonical_python = (CANONICAL_REPO_ROOT / ".venv" / "Scripts" / "python.exe").resolve()
     if not canonical_python.is_file() or canonical_python.is_symlink():
         raise ValueError("RECOVERY_RUNTIME_INTERPRETER_INVALID")
+    production_runtime_root = Path.home() / ".news-grasp-runtime" / "production-runtime"
+    publish_complete_manifest = (
+        artifact_repo_root / "build" / "publish-complete" / f"{issue_date}.json"
+    )
+    typed_manifest_candidate = _is_typed_recovery_manifest_candidate(
+        publish_complete_manifest,
+        issue_date,
+        artifact_root=artifact_repo_root,
+    )
+    public_green_reached = typed_manifest_candidate or _has_verified_public_green_proof(
+        artifact_root=artifact_repo_root,
+        issue_date=issue_date,
+    )
     validate_recovery_execution_manifest(
         payload.get("recoveryExecution"),
         issue_date=issue_date,
@@ -1950,6 +2431,115 @@ def execute_audit_recovery(payload: object) -> dict[str, Any]:
         artifact_repo_head=artifact_repo_head,
         runner_sha256=runner_sha256,
     )
+    control_plane = news_grasp_control_plane.verify_control_plane(
+        artifact_root=artifact_repo_root,
+        ops_root=CANONICAL_REPO_ROOT,
+        production_runtime_root=production_runtime_root,
+        live_bin_root=live_bin_root,
+        issue_date=issue_date,
+        run_intent="ScheduledRecoveryFull",
+    )
+    initial_control_plane = control_plane
+    if (
+        not control_plane.get("ok")
+        and not public_green_reached
+        and control_plane.get("reasonCode")
+        in {"PRODUCTION_RUNTIME_DRIFT", "LIVE_BIN_DRIFT"}
+    ):
+        bootstrap_path = live_bin_root / "news-grasp-bootstrap.ps1"
+        if not bootstrap_path.is_file() or bootstrap_path.is_symlink():
+            raise ValueError("CONTROL_PLANE_REPAIR_ENTRYPOINT_INVALID")
+        repair_authority_path = _issue_control_plane_repair_receipt(
+            payload=payload,
+            decision=decision,
+            issue_date=issue_date,
+            artifact_repo_root=artifact_repo_root,
+            production_runtime_root=production_runtime_root,
+            live_bin_root=live_bin_root,
+            preflight=control_plane,
+        )
+        repair_command = [
+            "powershell.exe",
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(bootstrap_path),
+            "-UseProductionRuntime",
+            "-ControlPlaneRepairOnly",
+            "-RecoverOnly",
+            "-ControlPlaneRepairAuthorityPath",
+            str(repair_authority_path),
+            "-ControlPlaneRepairArtifactRoot",
+            str(artifact_repo_root),
+            "-RepoDir",
+            str(CANONICAL_REPO_ROOT),
+            "-EvidenceRepoDir",
+            str(CANONICAL_REPO_ROOT),
+            "-PythonExe",
+            str(canonical_python),
+            "-BinDir",
+            str(live_bin_root),
+            "-DateStamp",
+            issue_date,
+        ]
+        repair_return_code, _ = _run_bounded(
+            repair_command,
+            cwd=CANONICAL_REPO_ROOT,
+            timeout=900,
+        )
+        if repair_return_code == 0:
+            control_plane = news_grasp_control_plane.verify_control_plane(
+                artifact_root=artifact_repo_root,
+                ops_root=CANONICAL_REPO_ROOT,
+                production_runtime_root=production_runtime_root,
+                live_bin_root=live_bin_root,
+                issue_date=issue_date,
+                run_intent="ScheduledRecoveryFull",
+            )
+        else:
+            control_plane = {
+                **control_plane,
+                "reasonCode": f"CONTROL_PLANE_BOUNDED_REPAIR_FAILED_{repair_return_code}",
+                "repairReturnCode": repair_return_code,
+            }
+    if not control_plane.get("ok") and not public_green_reached:
+        incident = _incident(
+            issue_date=issue_date,
+            scheduled_status="failed",
+            recovery_status=str(
+                decision.get("recoveryAttemptStatus") or "not_started"
+            ),
+            reason_code=str(
+                control_plane.get("reasonCode")
+                or "NEWS_GRASP_CONTROL_PLANE_PREFLIGHT_FAILED"
+            ),
+        )
+        incident["initialControlPlanePreflight"] = initial_control_plane
+        incident["controlPlanePreflight"] = control_plane
+        write_audit_terminal(incident)
+        return incident
+    try:
+        execution_receipt = _issue_recovery_execution_receipt(
+            payload=payload,
+            decision=decision,
+            issue_date=issue_date,
+            audit_accepted_at=audit_accepted_at,
+            artifact_repo_root=artifact_repo_root,
+            production_runtime_root=production_runtime_root,
+            live_bin_root=live_bin_root,
+            runner_path=runner_path,
+        )
+    except (OSError, ValueError, RuntimeError) as error:
+        incident = _incident(
+            issue_date=issue_date,
+            scheduled_status="failed",
+            recovery_status=str(decision.get("recoveryAttemptStatus") or "not_started"),
+            reason_code=f"RECOVERY_EXECUTION_RECEIPT_FAILED_{type(error).__name__}",
+        )
+        write_audit_terminal(incident)
+        return incident
     high_cost_workspace = CANONICAL_REPO_ROOT.parent
     state_path = Path.home() / "bin" / "news-grasp-runner-state.json"
     log_dir = Path.home() / "bin" / "news-grasp-logs"
@@ -1981,7 +2571,40 @@ def execute_audit_recovery(payload: object) -> dict[str, Any]:
         str(CANONICAL_BROKER_PATH),
         "-ScheduledAuthorityEvidencePath",
         str(authority_path),
+        "-RecoveryExecutionReceiptPath",
+        str(execution_receipt),
     ]
+    if public_green_reached:
+        try:
+            finalization_receipt = _fresh_reverify_and_issue_finalization(
+                payload=payload,
+                decision=decision,
+                issue_date=issue_date,
+                audit_accepted_at=audit_accepted_at,
+                artifact_repo_root=artifact_repo_root,
+                production_runtime_root=production_runtime_root,
+                live_bin_root=live_bin_root,
+                runner_path=runner_path,
+                manifest_path=publish_complete_manifest,
+                execution_receipt_path=execution_receipt,
+            )
+        except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
+            incident = _incident(
+                issue_date=issue_date,
+                scheduled_status="failed",
+                recovery_status=str(decision.get("recoveryAttemptStatus") or "not_started"),
+                reason_code=f"FINALIZATION_REVERIFICATION_FAILED_{type(error).__name__}",
+            )
+            write_audit_terminal(incident)
+            return incident
+        command.extend(
+            [
+                "-FinalizeVerifiedPublishManifest",
+                str(publish_complete_manifest),
+                "-RecoveryFinalizationReceiptPath",
+                str(finalization_receipt),
+            ]
+        )
     return_code, _ = _run_bounded(command, cwd=artifact_repo_root, timeout=10800)
     if return_code != 0:
         incident = _incident(

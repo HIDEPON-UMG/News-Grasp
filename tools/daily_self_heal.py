@@ -21,6 +21,11 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import quote, urlencode, urljoin, urlparse
 
+if __package__ in {None, ""}:
+    # Recovery verification runs as ``python -I <absolute-script>`` so an
+    # ambient PYTHONPATH/sitecustomize cannot replace trusted ops modules.
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from tools import deepdive_quality
 from tools.publish_inventory import (
     CATEGORY_PATHS,
@@ -1365,7 +1370,7 @@ def verify_live_runner_readiness(
 
     if run_canary:
         canary = _run_live_startup_canary(
-            repo_root=ops_repo_root,
+            repo_root=repo_root,
             startup_path=live_bootstrap_path
             if (
                 runner_targets_bootstrap
@@ -2991,7 +2996,7 @@ def _producer_lineage_expected(
 
 
 def _load_producer_lineage(
-    *, repo_root: Path, state_path: Path, date: str
+    *, repo_root: Path, ops_root: Path, state_path: Path, date: str
 ) -> dict[str, str] | None:
     if not state_path.is_file() or state_path.is_symlink():
         return None
@@ -3007,7 +3012,7 @@ def _load_producer_lineage(
         return None
     expected = _producer_lineage_expected(
         repo_root=repo_root,
-        ops_root=state_path.parent,
+        ops_root=ops_root,
         date=date,
         run_intent=run_intent,
         run_id=run_id,
@@ -3046,6 +3051,7 @@ def verify_publish_complete(
     readiness_date = _current_jst_date()
     distribution = _distribution_artifact_manifest(repo_root, date)
     base = {
+        "schemaVersion": "NEWS_GRASP_PUBLISH_COMPLETE_V2",
         "ok": False,
         "reason": "",
         "public_status": "red",
@@ -3067,6 +3073,7 @@ def verify_publish_complete(
     )
     producer_lineage = _load_producer_lineage(
         repo_root=repo_root,
+        ops_root=(ops_repo_root or repo_root).resolve(),
         state_path=state_path,
         date=date,
     )
@@ -3221,6 +3228,7 @@ def verify_publish_complete(
         **manifest,
         "ok": True,
         "reason": "",
+        "verified_at": datetime.now(timezone(timedelta(hours=9))).isoformat(),
         "public_status": "green",
         "scheduled_attempt_status": scheduled_attempt_status,
         "recovery_attempt_status": recovery_attempt_status,

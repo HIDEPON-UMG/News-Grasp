@@ -686,6 +686,8 @@ function Assert-NewsGraspRecoveryJournal {
         'news-grasp-deadman-launcher.pyw',
         'news-grasp-task-launcher.pyw',
         'news-grasp-runtime-root-v1.json',
+        'news-grasp-recovery-runtime-binding-v1.json',
+        'news-grasp-stable-task-authority-v1.json',
         'audit-mission-authority-v1.json'
     )
     $seenFiles = @{}
@@ -727,8 +729,15 @@ function Assert-NewsGraspRecoveryJournal {
             ) {
                 throw 'NEWS_GRASP_INSTALL_JOURNAL_SOURCE_INVALID'
             }
-        } elseif ($fileName -eq 'news-grasp-runtime-root-v1.json') {
-            if ([string]$row.source -ne 'generated:runtime-root' -or $sourceSha256) {
+        } elseif ($fileName -in @('news-grasp-runtime-root-v1.json', 'news-grasp-recovery-runtime-binding-v1.json', 'news-grasp-stable-task-authority-v1.json')) {
+            $expectedGeneratedSource = if ($fileName -eq 'news-grasp-runtime-root-v1.json') {
+                'generated:runtime-root'
+            } elseif ($fileName -eq 'news-grasp-stable-task-authority-v1.json') {
+                'generated:StableTaskAuthorityV1'
+            } else {
+                'generated:recovery-runtime-binding'
+            }
+            if ([string]$row.source -ne $expectedGeneratedSource -or $sourceSha256) {
                 throw 'NEWS_GRASP_INSTALL_JOURNAL_SOURCE_INVALID'
             }
         } else {

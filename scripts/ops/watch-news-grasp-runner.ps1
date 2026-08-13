@@ -20,6 +20,7 @@ param(
     [string] $LogDir = (Join-Path $env:USERPROFILE 'bin\news-grasp-logs'),
     [string] $DateStamp = (Get-Date -Format 'yyyy-MM-dd'),
     [string] $RepoDir = '',
+    [string] $OpsRepoRoot = '',
     [string] $PyExeOverride = '',
     [string] $BinDir = '',
     [string] $HighCostAdmissionPath = $env:NEWS_GRASP_HIGH_COST_ADMISSION_PATH,
@@ -62,6 +63,8 @@ if (-not $BinDir) {
     $BinDir = Split-Path -Parent $RunnerPath
 }
 $RepoDir = Resolve-NewsGraspRepoDir -Override $RepoDir
+if (-not $OpsRepoRoot) { $OpsRepoRoot = $RepoDir }
+$OpsRepoRoot = (Resolve-Path -LiteralPath $OpsRepoRoot).Path
 $BootstrapLog = Join-Path $LogDir "bootstrap-$DateStamp.log"
 $script:RunnerJobHandles = @{}
 
@@ -697,6 +700,7 @@ function Start-RunnerProcess {
         LogDirOverride = $LogDir
         StateFileOverride = $StateFile
         RepoDirOverride = $RepoDir
+        OpsRepoRootOverride = $OpsRepoRoot
     }
     if ($SmokeTest) { $runnerParameters.SmokeTest = $true }
     if ($SkipSourceSync) { $runnerParameters.SkipSourceSync = $true }

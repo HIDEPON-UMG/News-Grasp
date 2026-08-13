@@ -197,7 +197,12 @@ def _audit_decision() -> dict[str, Any]:
             "issueDate": "2026-08-11",
             "terminal": "audit_observation_unverified",
             "publicStatus": "green",
-            "workPriority": "root_cause_after_public_green",
+            "workPriority": "runner_finalization_only",
+            "allowedAfterPublicGreen": (
+                "manifest_reverification",
+                "typed_runner_finalizer",
+                "completion_guard",
+            ),
             "action": "verify_public_completion",
             "reasonCode": "PRIMARY_VERIFIER_UNAVAILABLE",
             "completionAuthorityId": "authority-matrix",

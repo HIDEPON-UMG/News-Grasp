@@ -1,9 +1,47 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 2486,
-  "collectedNodeSetSha256": "73cbf06b2742c391f4a74dee6141ad67891d1af8b69f0ffb91cb5b857f88b750",
+  "collectedNodeCount": 2544,
+  "collectedNodeSetSha256": "e92097494c8b461586c64eb248d4e08fe9e40d412dc0d2806c0f590bde8d5ed2",
   "files": [
+    {
+      "path": "tests/test_20260813_control_plane_repair.py",
+      "sha256": "a528dad01e50494bfa5384d063a8ca9afd9f27a5ba81825c0cde6e276a876b3b",
+      "nodeCount": 27,
+      "nodeIds": [
+        "tests/test_20260813_control_plane_repair.py::test_ng813_bootstrap_and_watcher_propagate_explicit_ops_root_before_runner",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_canary_uses_artifact_root_when_ops_root_is_different",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_control_plane_repair_only_exits_before_broker_and_watcher",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_control_plane_repair_requires_one_shot_sealed_authority",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_empty_broker_path_is_typed_without_literal_path_secondary_failure",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_finalizer_marks_state_applied_before_completion_guard",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_four_root_preflight_accepts_role_separated_matching_roots",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_four_root_preflight_recovers_after_bounded_convergence",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_four_root_preflight_rejects_drift_before_high_cost_work[live-LIVE_BIN_DRIFT]",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_four_root_preflight_rejects_drift_before_high_cost_work[runtime-PRODUCTION_RUNTIME_DRIFT]",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_four_root_preflight_rejects_same_date_runner_state_root_drift",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_four_root_preflight_rejects_scheduled_task_action_drift",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_isolated_recovery_entrypoints_ignore_ambient_sitecustomize[tools/daily_self_heal.py]",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_isolated_recovery_entrypoints_ignore_ambient_sitecustomize[tools/news_grasp_completion_guard.py]",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_isolated_recovery_entrypoints_ignore_ambient_sitecustomize[tools/news_grasp_recovery_receipts.py]",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_preflight_preserves_failed_bootstrap_history_without_permanent_block",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_producer_lineage_uses_explicit_ops_root_not_state_parent",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_production_recovery_uses_installed_binding_not_caller_root",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_public_green_contract_allows_only_finalization_critical_path",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_publish_complete_manifest_is_typed_even_when_red",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_recovery_preflight_runs_before_runner_spawn",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_recovery_python_entrypoints_are_isolated_direct_scripts",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_runner_finalizer_consumes_only_typed_top_level_publish_commit",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_runner_passes_real_state_file_and_ops_root",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_typed_finalizer_preserves_scheduled_failure_provenance",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_typed_finalizer_requires_sealed_receipt_before_state_mutation",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_typed_finalizer_skips_global_high_cost_reentry_and_runs_guard"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
     {
       "path": "tests/test_all_article_urls_live.py",
       "sha256": "a94d2a838da6d161d1444ca6fe2dd4f7f269d7568d2845d33c9a043bb88ad029",
@@ -93,8 +131,8 @@
     },
     {
       "path": "tests/test_audit_recovery_control.py",
-      "sha256": "f5f54226db511eabdf0c2a9be707c4be0775699845866c1522779c13f9bbac5d",
-      "nodeCount": 60,
+      "sha256": "9ee660e69f3f479d25c08e4b9f96940735412838af6baba8ed30f8e499db3364",
+      "nodeCount": 70,
       "nodeIds": [
         "tests/test_audit_recovery_control.py::test_actual_completion_verifier_owns_all_required_gates",
         "tests/test_audit_recovery_control.py::test_artifact_executable_tree_accepts_windows_crlf_but_rejects_content_drift",
@@ -112,10 +150,18 @@
         "tests/test_audit_recovery_control.py::test_bounded_subprocess_rejects_stderr_over_budget",
         "tests/test_audit_recovery_control.py::test_bounded_subprocess_uses_creation_time_owned_job",
         "tests/test_audit_recovery_control.py::test_caller_boolean_or_url_200_cannot_produce_green",
+        "tests/test_audit_recovery_control.py::test_execute_rejects_caller_override_of_production_identity[auditAcceptedAt]",
+        "tests/test_audit_recovery_control.py::test_execute_rejects_caller_override_of_production_identity[liveBinRoot]",
+        "tests/test_audit_recovery_control.py::test_execute_rejects_caller_override_of_production_identity[productionRuntimeRoot]",
+        "tests/test_audit_recovery_control.py::test_execute_rejects_caller_override_of_production_identity[recoveryPythonExe]",
+        "tests/test_audit_recovery_control.py::test_execute_repairs_control_plane_once_then_reverifies_before_runner",
         "tests/test_audit_recovery_control.py::test_execute_runs_one_typed_recovery_then_writes_recovered_terminal",
+        "tests/test_audit_recovery_control.py::test_execute_stops_after_one_control_plane_repair_if_drift_remains",
+        "tests/test_audit_recovery_control.py::test_execute_uses_typed_finalizer_when_public_manifest_is_already_green",
         "tests/test_audit_recovery_control.py::test_external_readiness_reopens_typed_recovery",
         "tests/test_audit_recovery_control.py::test_failed_schedule_recovered_keeps_failed_history",
-        "tests/test_audit_recovery_control.py::test_green_public_surface_releases_root_cause_work_only_after_recovery",
+        "tests/test_audit_recovery_control.py::test_finalization_reverification_rejects_mismatched_producer_lineage",
+        "tests/test_audit_recovery_control.py::test_green_public_surface_releases_only_runner_finalization_after_recovery",
         "tests/test_audit_recovery_control.py::test_incomplete_public_surface_seals_same_day_recovery_as_first_priority",
         "tests/test_audit_recovery_control.py::test_invalid_issue_date_is_rejected_before_decision",
         "tests/test_audit_recovery_control.py::test_isolated_verifier_does_not_execute_artifact_sitecustomize",
@@ -128,7 +174,9 @@
         "tests/test_audit_recovery_control.py::test_ng_red_17_authority_is_immutable_and_history_rejects_49th_event",
         "tests/test_audit_recovery_control.py::test_ng_red_18_unverified_sentinel_allows_first_verified_lineage_only",
         "tests/test_audit_recovery_control.py::test_output_overflow_terminates_owned_grandchild",
+        "tests/test_audit_recovery_control.py::test_post_green_runtime_drift_never_reenters_broad_repair",
         "tests/test_audit_recovery_control.py::test_product_constitution_makes_same_day_public_recovery_preemptive",
+        "tests/test_audit_recovery_control.py::test_public_surface_proof_enforces_complete_bundle_before_post_green",
         "tests/test_audit_recovery_control.py::test_recover_only_is_not_the_all_artifacts_missing_recovery_path",
         "tests/test_audit_recovery_control.py::test_recoverable_failure_uses_ledger_backed_authority_not_deferred",
         "tests/test_audit_recovery_control.py::test_recovery_execution_manifest_rejects_cross_date_and_substitution",
@@ -577,7 +625,7 @@
     },
     {
       "path": "tests/test_daily_self_heal.py",
-      "sha256": "bcd28a514165520eadafac09d72e2e43317ec73177ce5c056c1be160b4a08b27",
+      "sha256": "79abe1ae1daabbfa753853583b5756e92517ec85dd3cce820ae913ead44e6778",
       "nodeCount": 92,
       "nodeIds": [
         "tests/test_daily_self_heal.py::test_compare_files_detects_drift",
@@ -1091,8 +1139,8 @@
     },
     {
       "path": "tests/test_e2e_final_admission_bridge.py",
-      "sha256": "4fd0a6fc3e41cc3b5d03f41ea40d53194712bea665ebbbfdcc504277919e8efe",
-      "nodeCount": 62,
+      "sha256": "ede6adcff7f7120d16f31878177185b9018338141b96e3c75242de0940c15267",
+      "nodeCount": 64,
       "nodeIds": [
         "tests/test_e2e_final_admission_bridge.py::test_admission_is_consumed_once_across_worktree_and_receipt_paths",
         "tests/test_e2e_final_admission_bridge.py::test_admission_rejects_evidence_and_runner_drift",
@@ -1101,6 +1149,7 @@
         "tests/test_e2e_final_admission_bridge.py::test_admission_rejects_resume_and_publish_arguments",
         "tests/test_e2e_final_admission_bridge.py::test_admission_rejects_runner_drift",
         "tests/test_e2e_final_admission_bridge.py::test_admission_requires_isolation_evidence",
+        "tests/test_e2e_final_admission_bridge.py::test_attempt_ledger_accepts_only_explicit_prestart_generation_rebind_marker",
         "tests/test_e2e_final_admission_bridge.py::test_bridge_has_read_only_validate_issued_and_one_shot_claim_runner",
         "tests/test_e2e_final_admission_bridge.py::test_caller_supplied_red_suite_execution_is_rejected",
         "tests/test_e2e_final_admission_bridge.py::test_causal_replacement_ledger_preserves_original_row_and_rejects_tamper",
@@ -1138,6 +1187,7 @@
         "tests/test_e2e_final_admission_bridge.py::test_parallel_consume_has_exactly_one_winner",
         "tests/test_e2e_final_admission_bridge.py::test_parallel_issue_runs_red_suite_only_once",
         "tests/test_e2e_final_admission_bridge.py::test_parent_remains_canonically_valid_after_bridge_reservation",
+        "tests/test_e2e_final_admission_bridge.py::test_prestart_generation_rebind_requires_fresh_manifest_and_three_runner_hashes",
         "tests/test_e2e_final_admission_bridge.py::test_product_identity_cannot_be_aliased",
         "tests/test_e2e_final_admission_bridge.py::test_red_suite_coverage_is_mandatory_upstream_evidence",
         "tests/test_e2e_final_admission_bridge.py::test_red_suite_execution_receipt_rejects_invalid_outcome_map_type",
@@ -1570,11 +1620,12 @@
     },
     {
       "path": "tests/test_high_cost_operation_admission_contract.py",
-      "sha256": "ba6286d92f5614fa8b3983805e05d7a1408d1ad965b649592d4805ed365df0ba",
-      "nodeCount": 25,
+      "sha256": "506cba51324d6f41a6cc7532ff4f9a8532681876355eae9083182f9b15bd1415",
+      "nodeCount": 26,
       "nodeIds": [
         "tests/test_high_cost_operation_admission_contract.py::test_every_full_e2e_model_process_issues_exact_child_immediately_before_start",
         "tests/test_high_cost_operation_admission_contract.py::test_immutable_admission_bytes_and_typed_reservation_rejections",
+        "tests/test_high_cost_operation_admission_contract.py::test_nopublish_wrapper_allows_only_typed_reclaimed_parent_marker",
         "tests/test_high_cost_operation_admission_contract.py::test_nopublish_wrapper_authorizes_and_activates_parent_before_runner_launch",
         "tests/test_high_cost_operation_admission_contract.py::test_nopublish_wrapper_binds_authority_and_runner_to_isolated_repo",
         "tests/test_high_cost_operation_admission_contract.py::test_nopublish_wrapper_propagates_parent_authority_not_shared_child_receipt",
@@ -1606,9 +1657,10 @@
     },
     {
       "path": "tests/test_historical_failure_scenarios.py",
-      "sha256": "4edc993feaef96f6865035de061894035423c1370b603c20cca46e82abd76fb9",
-      "nodeCount": 36,
+      "sha256": "f9ff09b39c5c63eb7359b32160b3acc766abd7f6cc04849d9e9e83b883ac7bab",
+      "nodeCount": 37,
       "nodeIds": [
+        "tests/test_historical_failure_scenarios.py::test_20260813_control_plane_incident_is_registered_without_publishing_report",
         "tests/test_historical_failure_scenarios.py::test_2026_07_11_editor_repair_routing_incident_is_registered",
         "tests/test_historical_failure_scenarios.py::test_2026_07_12_editor_materialization_incident_is_registered",
         "tests/test_historical_failure_scenarios.py::test_2026_07_13_daily_batch_repair_path_incident_is_registered",
@@ -1923,6 +1975,24 @@
         "tests/test_nested_worktree_harness_resolution.py::test_harness_namespace_uses_same_explicit_workspace_root",
         "tests/test_nested_worktree_harness_resolution.py::test_missing_explicit_workspace_broker_fails_closed",
         "tests/test_nested_worktree_harness_resolution.py::test_workspace_broker_uses_explicit_environment_root"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
+      "path": "tests/test_news_grasp_completion_guard.py",
+      "sha256": "56f2699d7be3347109f1807d72c61151646e029045e0e034e25589dbe272d139",
+      "nodeCount": 7,
+      "nodeIds": [
+        "tests/test_news_grasp_completion_guard.py::test_20260813_historical_four_hour_shape_fails_and_repaired_replay_passes",
+        "tests/test_news_grasp_completion_guard.py::test_completion_guard_accepts_distinct_commit_roles_and_exact_slo_boundary",
+        "tests/test_news_grasp_completion_guard.py::test_completion_guard_rejects_clock_reversal_and_missing_clock",
+        "tests/test_news_grasp_completion_guard.py::test_completion_guard_rejects_future_self_reported_clocks",
+        "tests/test_news_grasp_completion_guard.py::test_completion_guard_rejects_legacy_manifest_and_commit_role_substitution",
+        "tests/test_news_grasp_completion_guard.py::test_completion_guard_rejects_post_green_and_overall_slo_overrun",
+        "tests/test_news_grasp_completion_guard.py::test_failed_guard_replaces_stale_green_output"
       ],
       "clauseIds": [
         "NGC-C06",
@@ -2330,6 +2400,24 @@
       ]
     },
     {
+      "path": "tests/test_news_grasp_recovery_receipts.py",
+      "sha256": "c2ad8deaa5047c1326243912e9fbcb6c4b96c2622d21d01864938c28ad81e93b",
+      "nodeCount": 7,
+      "nodeIds": [
+        "tests/test_news_grasp_recovery_receipts.py::test_control_plane_repair_receipt_is_consumed_by_drift_change",
+        "tests/test_news_grasp_recovery_receipts.py::test_finalization_parent_is_unique_but_exact_retry_is_idempotent",
+        "tests/test_news_grasp_recovery_receipts.py::test_finalization_receipt_rejects_manifest_mutation",
+        "tests/test_news_grasp_recovery_receipts.py::test_producer_lineage_validator_rejects_wrong_run_intent",
+        "tests/test_news_grasp_recovery_receipts.py::test_receipt_copy_cannot_replay_canonical_consumption",
+        "tests/test_news_grasp_recovery_receipts.py::test_self_sealed_authority_is_rejected_without_broker_ledger",
+        "tests/test_news_grasp_recovery_receipts.py::test_semantic_execution_reissue_is_rejected"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
       "path": "tests/test_news_grasp_skill_cross_layer_graph.py",
       "sha256": "a711c1bc5397c4fb30636cf4b673cb642aae8c9510cdfaa6d5d668381b7334fd",
       "nodeCount": 5,
@@ -2538,7 +2626,7 @@
     },
     {
       "path": "tests/test_operational_redesign_matrix.py",
-      "sha256": "8d9938b8a180ecd5d46cc54e529f036dfd73c84a4ae6ddca6a4e05a8d791b989",
+      "sha256": "bd1722f19a1a14973b171ed24fef7769b5b3def2ba268ff1db80799d0a05e522",
       "nodeCount": 43,
       "nodeIds": [
         "tests/test_operational_redesign_matrix.py::test_ng2_wp02_matrix_matches_declared_nodes",
@@ -3314,8 +3402,8 @@
     },
     {
       "path": "tests/test_runner_convergence_contract.py",
-      "sha256": "ffce6e9738af81a0a8a4947f10edc2e7a8cbb8e50c79aa5c747efe8ab6c57811",
-      "nodeCount": 189,
+      "sha256": "854e8f856853feade8db1f75c462fec84cb56329279cf24aeaa064044a0787bf",
+      "nodeCount": 192,
       "nodeIds": [
         "tests/test_runner_convergence_contract.py::test_atomic_install_failure_preserves_old_destination",
         "tests/test_runner_convergence_contract.py::test_atomic_install_replaces_hardlink_entry_without_mutating_sibling",
@@ -3356,6 +3444,7 @@
         "tests/test_runner_convergence_contract.py::test_generation_readiness_uses_external_boundary_with_missing_paths",
         "tests/test_runner_convergence_contract.py::test_git_add_retries_transient_index_lock_before_publish_commits",
         "tests/test_runner_convergence_contract.py::test_install_and_rollback_use_one_verified_atomic_file_boundary",
+        "tests/test_runner_convergence_contract.py::test_install_guard_accepts_clean_generation_with_non_ascii_tracked_path",
         "tests/test_runner_convergence_contract.py::test_install_guard_accepts_clean_origin_main_sibling_worktree_promotion",
         "tests/test_runner_convergence_contract.py::test_install_guard_bounds_promotable_source_tree_scan",
         "tests/test_runner_convergence_contract.py::test_install_guard_dynamically_rejects_noncanonical_runtime_root_source",
@@ -3375,6 +3464,7 @@
         "tests/test_runner_convergence_contract.py::test_install_guard_rejects_unrelated_repo_recreated_at_canonical_runtime_path",
         "tests/test_runner_convergence_contract.py::test_install_guard_rejects_working_payload_hidden_by_inherited_global_clean_filter",
         "tests/test_runner_convergence_contract.py::test_install_guard_revalidates_generation_after_runtime_root_path_migration",
+        "tests/test_runner_convergence_contract.py::test_installed_launcher_resolves_policy_consumer_from_execution_repo",
         "tests/test_runner_convergence_contract.py::test_installed_nopublish_launcher_accepts_only_same_generation_isolation",
         "tests/test_runner_convergence_contract.py::test_installed_nopublish_launcher_rejects_cross_generation_isolation",
         "tests/test_runner_convergence_contract.py::test_installed_nopublish_launcher_runs_same_generation_isolation",
@@ -3434,6 +3524,7 @@
         "tests/test_runner_convergence_contract.py::test_runner_derives_reporter_categories_from_publish_inventory",
         "tests/test_runner_convergence_contract.py::test_runner_distribution_failures_use_autonomous_policy",
         "tests/test_runner_convergence_contract.py::test_runner_does_not_report_registry_noop_as_repair_success",
+        "tests/test_runner_convergence_contract.py::test_runner_does_not_shadow_external_authority_hash_parameter",
         "tests/test_runner_convergence_contract.py::test_runner_does_not_surface_retry_budget_as_repair_cause",
         "tests/test_runner_convergence_contract.py::test_runner_executes_compound_repair_plan_before_single_gate_reverify",
         "tests/test_runner_convergence_contract.py::test_runner_exposes_no_push_dry_run_switch",

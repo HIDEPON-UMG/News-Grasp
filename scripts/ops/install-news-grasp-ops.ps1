@@ -416,6 +416,30 @@ function Assert-NewsGraspInstalledState {
     ) {
         throw 'runtime root binding mismatch'
     }
+    $recoveryBindingFile = Read-NewsGraspVerifiedFile `
+        -Path $recoveryRuntimeBindingPath `
+        -TrustedBoundary $canonicalBinDir `
+        -RequireSingleLink
+    $recoveryBinding = [Text.Encoding]::UTF8.GetString($recoveryBindingFile.Bytes) | ConvertFrom-Json
+    if (
+        [string]$recoveryBinding.schemaVersion -ne 'NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1' -or
+        -not (Test-NewsGraspSamePath -Left ([string]$recoveryBinding.opsRepoRoot) -Right $runtimeEvidenceRepoDir) -or
+        -not (Test-NewsGraspSamePath -Left ([string]$recoveryBinding.productionRuntimeRoot) -Right $productionRuntimePath) -or
+        -not (Test-NewsGraspSamePath -Left ([string]$recoveryBinding.pythonExe) -Right $runtimePythonPath)
+    ) {
+        throw 'recovery runtime binding mismatch'
+    }
+    foreach ($bindingHash in @(
+        [string]$recoveryBinding.pythonExeSha256,
+        [string]$recoveryBinding.receiptToolSha256,
+        [string]$recoveryBinding.controlPlaneToolSha256,
+        [string]$recoveryBinding.completionGuardToolSha256,
+        [string]$recoveryBinding.dailySelfHealSha256,
+        [string]$recoveryBinding.bootstrapSha256,
+        [string]$recoveryBinding.runnerSha256
+    )) {
+        if ($bindingHash -notmatch '^[0-9a-f]{64}$') { throw 'recovery runtime binding hash invalid' }
+    }
     if ($SkipTaskRegistration) { return }
     $expected = @(
         [ordered]@{ name = $RunnerTaskName; execute = $pythonw; arguments = $runnerArgs; working = $BinDir; start = 'T06:00'; interval = ''; duration = '' },
@@ -786,6 +810,30 @@ $runtimeRootRow = [ordered]@{
     after_sha256 = ''
 }
 $manifestFiles += $runtimeRootRow
+$recoveryRuntimeBindingPath = Join-Path $BinDir 'news-grasp-recovery-runtime-binding-v1.json'
+$recoveryRuntimeBindingBackup = Join-Path $BackupDir 'news-grasp-recovery-runtime-binding-v1.json'
+$recoveryRuntimeBindingBeforeHash = ''
+if (Test-Path -LiteralPath $recoveryRuntimeBindingPath -PathType Leaf) {
+    $recoveryRuntimeBindingSnapshot = Read-NewsGraspVerifiedFile `
+        -Path $recoveryRuntimeBindingPath `
+        -TrustedBoundary $canonicalBinDir `
+        -RequireSingleLink
+    Write-NewsGraspAtomicFile `
+        -Path $recoveryRuntimeBindingBackup `
+        -TrustedBoundary $BackupDir `
+        -Bytes $recoveryRuntimeBindingSnapshot.Bytes | Out-Null
+    $recoveryRuntimeBindingBeforeHash = [string]$recoveryRuntimeBindingSnapshot.Sha256
+}
+$recoveryRuntimeBindingRow = [ordered]@{
+    file = 'news-grasp-recovery-runtime-binding-v1.json'
+    source = 'generated:recovery-runtime-binding'
+    destination = $recoveryRuntimeBindingPath
+    backup = if ($recoveryRuntimeBindingBeforeHash) { $recoveryRuntimeBindingBackup } else { '' }
+    before_sha256 = $recoveryRuntimeBindingBeforeHash
+    source_sha256 = ''
+    after_sha256 = ''
+}
+$manifestFiles += $recoveryRuntimeBindingRow
 $stableTaskAuthorityPath = Join-Path $BinDir 'news-grasp-stable-task-authority-v1.json'
 $stableTaskAuthorityBackup = Join-Path $BackupDir 'news-grasp-stable-task-authority-v1.json'
 $stableTaskAuthorityBeforeHash = ''
@@ -869,6 +917,80 @@ $runtimeRootInstalled = Read-NewsGraspVerifiedFile `
     -RequireSingleLink
 $runtimeRootRow['after_sha256'] = [string]$runtimeRootInstalled.Sha256
 $runtimeRootAuthoritySha = [string]$runtimeRootInstalled.Sha256
+$pythonSnapshot = Read-NewsGraspVerifiedFile `
+    -Path $runtimePythonPath `
+    -TrustedBoundary $installTrustedBoundary `
+    -RequireSingleLink
+$receiptToolSnapshot = Read-NewsGraspVerifiedFile `
+    -Path (Join-Path $runtimeEvidenceRepoDir 'tools\news_grasp_recovery_receipts.py') `
+    -TrustedBoundary $installTrustedBoundary `
+    -RequireSingleLink
+$controlPlaneToolSnapshot = Read-NewsGraspVerifiedFile `
+    -Path (Join-Path $runtimeEvidenceRepoDir 'tools\news_grasp_control_plane.py') `
+    -TrustedBoundary $installTrustedBoundary `
+    -RequireSingleLink
+$completionGuardToolSnapshot = Read-NewsGraspVerifiedFile `
+    -Path (Join-Path $runtimeEvidenceRepoDir 'tools\news_grasp_completion_guard.py') `
+    -TrustedBoundary $installTrustedBoundary `
+    -RequireSingleLink
+$dailySelfHealSnapshot = Read-NewsGraspVerifiedFile `
+    -Path (Join-Path $runtimeEvidenceRepoDir 'tools\daily_self_heal.py') `
+    -TrustedBoundary $installTrustedBoundary `
+    -RequireSingleLink
+$startupCustomizationPresent = (
+    (Test-Path -LiteralPath (Join-Path $runtimeEvidenceRepoDir 'sitecustomize.py')) -or
+    (Test-Path -LiteralPath (Join-Path $runtimeEvidenceRepoDir 'usercustomize.py'))
+)
+if ($startupCustomizationPresent) { throw 'NEWS_GRASP_RECOVERY_OPS_STARTUP_CUSTOMIZATION_FORBIDDEN' }
+$trustedGitRemote = 'https://github.com/HIDEPON-UMG/News-Grasp.git'
+$recoveryGitExe = 'C:\Program Files\Git\cmd\git.exe'
+$recoveryGitSafeArgs = @('-c', 'core.hooksPath=NUL', '-c', 'core.fsmonitor=false', '-c', 'core.attributesFile=NUL')
+$opsHead = (& $recoveryGitExe @recoveryGitSafeArgs -C $runtimeEvidenceRepoDir rev-parse HEAD 2>$null | Out-String).Trim().ToLowerInvariant()
+$trustedRemoteHeadLine = (& $recoveryGitExe @recoveryGitSafeArgs ls-remote $trustedGitRemote refs/heads/main 2>$null | Out-String).Trim()
+$trustedRemoteHead = if ($trustedRemoteHeadLine) { ($trustedRemoteHeadLine -split '\s+')[0].ToLowerInvariant() } else { '' }
+$opsDirty = (& $recoveryGitExe @recoveryGitSafeArgs -C $runtimeEvidenceRepoDir status --porcelain --untracked-files=all 2>$null | Out-String).Trim()
+$opsIgnored = (& $recoveryGitExe @recoveryGitSafeArgs -C $runtimeEvidenceRepoDir ls-files --others --ignored --exclude-standard 2>$null | Out-String).Trim()
+if ($LASTEXITCODE -ne 0 -or $opsHead -notmatch '^[0-9a-f]{40}$' -or $opsHead -ne $trustedRemoteHead -or $opsDirty -or $opsIgnored) {
+    throw 'NEWS_GRASP_RECOVERY_OPS_GENERATION_INVALID'
+}
+$pythonSignature = Get-AuthenticodeSignature -LiteralPath $runtimePythonPath
+$pythonSignerSubject = [string]$pythonSignature.SignerCertificate.Subject
+$pythonSignerThumbprint = ([string]$pythonSignature.SignerCertificate.Thumbprint).ToLowerInvariant()
+if (
+    [string]$pythonSignature.Status -cne 'Valid' -or
+    $pythonSignerSubject -notlike 'CN=Python Software Foundation, O=Python Software Foundation,*' -or
+    $pythonSignerThumbprint -notmatch '^[0-9a-f]{40}$'
+) { throw 'NEWS_GRASP_RECOVERY_PYTHON_TRUST_ANCHOR_INVALID' }
+$recoveryRuntimeBinding = [ordered]@{
+    schemaVersion = 'NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1'
+    opsRepoRoot = $runtimeEvidenceRepoDir
+    opsHead = $opsHead
+    trustedRemote = $trustedGitRemote
+    productionRuntimeRoot = $productionRuntimePath
+    pythonExe = $runtimePythonPath
+    pythonExeSha256 = ([string]$pythonSnapshot.Sha256).ToLowerInvariant()
+    pythonTrustAnchor = 'authenticode:python-software-foundation'
+    pythonSignerSubject = $pythonSignerSubject
+    pythonSignerThumbprint = $pythonSignerThumbprint
+    receiptToolPath = (Join-Path $runtimeEvidenceRepoDir 'tools\news_grasp_recovery_receipts.py')
+    receiptToolSha256 = ([string]$receiptToolSnapshot.Sha256).ToLowerInvariant()
+    controlPlaneToolPath = (Join-Path $runtimeEvidenceRepoDir 'tools\news_grasp_control_plane.py')
+    controlPlaneToolSha256 = ([string]$controlPlaneToolSnapshot.Sha256).ToLowerInvariant()
+    completionGuardToolPath = (Join-Path $runtimeEvidenceRepoDir 'tools\news_grasp_completion_guard.py')
+    completionGuardToolSha256 = ([string]$completionGuardToolSnapshot.Sha256).ToLowerInvariant()
+    dailySelfHealPath = (Join-Path $runtimeEvidenceRepoDir 'tools\daily_self_heal.py')
+    dailySelfHealSha256 = ([string]$dailySelfHealSnapshot.Sha256).ToLowerInvariant()
+    bootstrapPath = (Join-Path $BinDir 'news-grasp-bootstrap.ps1')
+    bootstrapSha256 = ([string]$sourceSnapshots['news-grasp-bootstrap.ps1'].Sha256).ToLowerInvariant()
+    runnerPath = (Join-Path $BinDir 'news-grasp-runner.ps1')
+    runnerSha256 = ([string]$sourceSnapshots['news-grasp-runner.ps1'].Sha256).ToLowerInvariant()
+}
+Write-AtomicUtf8Text -Path $recoveryRuntimeBindingPath -Text (($recoveryRuntimeBinding | ConvertTo-Json -Depth 4) + [Environment]::NewLine)
+$recoveryRuntimeBindingInstalled = Read-NewsGraspVerifiedFile `
+    -Path $recoveryRuntimeBindingPath `
+    -TrustedBoundary $canonicalBinDir `
+    -RequireSingleLink
+$recoveryRuntimeBindingRow['after_sha256'] = [string]$recoveryRuntimeBindingInstalled.Sha256
 $stableTaskAuthority = [ordered]@{
     schemaVersion = 'STABLE_TASK_AUTHORITY_V1'
     taskName = $RunnerTaskName

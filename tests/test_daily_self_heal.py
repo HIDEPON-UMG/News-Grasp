@@ -2268,7 +2268,7 @@ def _write_publish_complete_inventory(
     run_intent = "ScheduledProduction"
     lineage = dsh._producer_lineage_expected(
         repo_root=repo_root,
-        ops_root=state_path.parent,
+        ops_root=repo_root,
         date=date,
         run_intent=run_intent,
         run_id=run_id,

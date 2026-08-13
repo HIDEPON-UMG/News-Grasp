@@ -60,8 +60,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
-import certifi
-
 _PKG_ROOT = Path(__file__).resolve().parent.parent
 if str(_PKG_ROOT) not in sys.path:
     sys.path.insert(0, str(_PKG_ROOT))
@@ -218,7 +216,12 @@ def _probe(
         headers["Range"] = "bytes=0-4095"
     try:
         req = urllib.request.Request(url, method=method, headers=headers)
-        context = ssl.create_default_context(cafile=certifi.where())
+        try:
+            import certifi
+        except ModuleNotFoundError:
+            context = ssl.create_default_context()
+        else:
+            context = ssl.create_default_context(cafile=certifi.where())
         with urllib.request.urlopen(req, timeout=timeout, context=context) as resp:
             return int(resp.status), f"{method}[{ua_tag}] {resp.status}"
     except urllib.error.HTTPError as e:

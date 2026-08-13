@@ -1812,7 +1812,7 @@ def test_runner_has_typed_verified_publish_finalize_path() -> None:
     assert "FinalizeVerifiedPublishManifest" in text
     assert "failed_then_recovered" in text
     assert "recovery_attempt_status" in text
-    assert "publish_complete manifest is not Green" in text
+    assert "FINALIZATION_MANIFEST_NOT_GREEN" in text
     assert "Set-RunnerState -Status 'publish_complete'" in text
     assert "OpsRepoRootOverride" in text
     assert "--ops-repo-root" in text
@@ -3068,7 +3068,8 @@ def test_runner_verifies_publish_complete_manifest_before_success() -> None:
     assert "build\\notification\\$DateStamp.json" in runner
     assert "'--notification-state'" in block
     assert "'--producer-state'" in block
-    assert "$StateFilePath" in block
+    assert "$StateFile" in block
+    assert "$StateFilePath" not in block
     assert "Invoke-AutonomousCompletionPolicy" in block
     assert "-FailureKind 'publish'" in block
     assert "-GateId 'publish-complete'" in block

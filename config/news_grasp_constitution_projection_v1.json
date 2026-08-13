@@ -2,7 +2,7 @@
   "schemaVersion": "NEWS_GRASP_CONSTITUTION_PROJECTION_V1",
   "constitutionVersion": "2026-08-12",
   "generator": "tools/news_grasp_constitution.py",
-  "constitutionSha256": "6b7a309000a76f8c7e34dad96299a59320e7bdcae2eb847a63520147e17c19e8",
+  "constitutionSha256": "e269741567be83cebe9a269b1fb487809ccc5fee52d67ed280a97ff2afb6c0ed",
   "traceSha256": "e101f7c0c95fa7952c4d85258fb3eaf5495abf5c69b8f1f222576689e990dd1e",
   "projectionSha256": "691cc6ae3de9fa93e550490aa9f9c4ee07824eb2a8caa296163798a2b5f32418",
   "mermaidDiagramCount": 3,
@@ -129,7 +129,7 @@
     },
     {
       "path": "docs/specs/2026-08-12_news-grasp-product-constitution.html",
-      "sha256": "dcfa35311e830c9113bd49eb11a9f498f0408b44350af8cad31fd0562a8fb15e",
+      "sha256": "45c3b67385ac0504cb3945ef4a09b56fce441d52a613a0049d82fe3b90834505",
       "lineCount": 882
     }
   ]

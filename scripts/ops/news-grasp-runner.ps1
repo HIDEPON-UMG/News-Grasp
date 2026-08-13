@@ -80,6 +80,8 @@ param(
     [string] $ScheduledFailureReceiptRootOverride = '',
     [string] $LegacyTaskReceiptPathOverride = '',
     [string] $FinalizeVerifiedPublishManifest = '',
+    [string] $RecoveryExecutionReceiptPath = '',
+    [string] $RecoveryFinalizationReceiptPath = '',
     [string] $RecoveryDecisionPath = '',
     [int] $PublishVerifyWaitSec = 600,
     [int] $PublishVerifyPollSec = 30,
@@ -224,8 +226,87 @@ function Resolve-CodexCliExe {
     throw "codex.exe not found under: $extensionRoot. Set NEWS_GRASP_CODEX_EXE or pass -CodexExeOverride."
 }
 
+function Get-NewsGraspRecoveryRuntimeBinding {
+    $profileRoot = [Environment]::GetFolderPath([Environment+SpecialFolder]::UserProfile)
+    $canonicalBin = Join-Path $profileRoot 'bin'
+    $bindingPath = Join-Path $canonicalBin 'news-grasp-recovery-runtime-binding-v1.json'
+    try {
+        $binding = Get-Content -LiteralPath $bindingPath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+        if ([string]$binding.schemaVersion -cne 'NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1') { throw 'schema mismatch' }
+        $ops = (Resolve-Path -LiteralPath ([string]$binding.opsRepoRoot) -ErrorAction Stop).Path
+        $python = (Resolve-Path -LiteralPath ([string]$binding.pythonExe) -ErrorAction Stop).Path
+        $runner = (Resolve-Path -LiteralPath ([string]$binding.runnerPath) -ErrorAction Stop).Path
+        $expectedPython = (Resolve-Path -LiteralPath (Join-Path $profileRoot 'OneDrive\ドキュメント\ProjectFolders\News-Grasp\.venv\Scripts\python.exe') -ErrorAction Stop).Path
+        $expectedRuntime = (Resolve-Path -LiteralPath (Join-Path $profileRoot '.news-grasp-runtime\production-runtime') -ErrorAction Stop).Path
+        $gitExe = 'C:\Program Files\Git\cmd\git.exe'
+        $gitSafeArgs = @('-c', 'core.hooksPath=NUL', '-c', 'core.fsmonitor=false', '-c', 'core.attributesFile=NUL')
+        $trustedRemote = 'https://github.com/HIDEPON-UMG/News-Grasp.git'
+        $opsHead = (& $gitExe @gitSafeArgs -C $ops rev-parse HEAD 2>$null | Out-String).Trim().ToLowerInvariant()
+        $remoteLine = (& $gitExe @gitSafeArgs ls-remote $trustedRemote refs/heads/main 2>$null | Out-String).Trim()
+        $remoteHead = if ($remoteLine) { ($remoteLine -split '\s+')[0].ToLowerInvariant() } else { '' }
+        $opsDirty = (& $gitExe @gitSafeArgs -C $ops status --porcelain --untracked-files=all 2>$null | Out-String).Trim()
+        $opsIgnored = (& $gitExe @gitSafeArgs -C $ops ls-files --others --ignored --exclude-standard 2>$null | Out-String).Trim()
+        $startupCustomizationPresent = (
+            (Test-Path -LiteralPath (Join-Path $ops 'sitecustomize.py')) -or
+            (Test-Path -LiteralPath (Join-Path $ops 'usercustomize.py'))
+        )
+        $pythonSignature = Get-AuthenticodeSignature -LiteralPath $python
+        $pythonSignerSubject = [string]$pythonSignature.SignerCertificate.Subject
+        $pythonSignerThumbprint = ([string]$pythonSignature.SignerCertificate.Thumbprint).ToLowerInvariant()
+        if (
+            -not [string]::Equals($python, $expectedPython, [StringComparison]::OrdinalIgnoreCase) -or
+            -not [string]::Equals((Resolve-Path -LiteralPath ([string]$binding.productionRuntimeRoot) -ErrorAction Stop).Path, $expectedRuntime, [StringComparison]::OrdinalIgnoreCase) -or
+            [string]$binding.trustedRemote -cne $trustedRemote -or
+            [string]$binding.opsHead -cne $opsHead -or
+            $opsHead -notmatch '^[0-9a-f]{40}$' -or
+            $opsHead -cne $remoteHead -or
+            $opsDirty -or
+            $opsIgnored -or
+            $startupCustomizationPresent -or
+            -not [string]::Equals($runner, (Resolve-Path -LiteralPath $PSCommandPath).Path, [StringComparison]::OrdinalIgnoreCase) -or
+            -not [string]::Equals((Split-Path -Parent $runner), $canonicalBin, [StringComparison]::OrdinalIgnoreCase) -or
+            -not [string]::Equals((Get-FileHash -Algorithm SHA256 -LiteralPath $runner).Hash.ToLowerInvariant(), [string]$binding.runnerSha256, [StringComparison]::Ordinal) -or
+            -not [string]::Equals((Get-FileHash -Algorithm SHA256 -LiteralPath $python).Hash.ToLowerInvariant(), [string]$binding.pythonExeSha256, [StringComparison]::Ordinal) -or
+            [string]$pythonSignature.Status -cne 'Valid' -or
+            $pythonSignerSubject -notlike 'CN=Python Software Foundation, O=Python Software Foundation,*' -or
+            [string]$binding.pythonTrustAnchor -cne 'authenticode:python-software-foundation' -or
+            [string]$binding.pythonSignerSubject -cne $pythonSignerSubject -or
+            [string]$binding.pythonSignerThumbprint -cne $pythonSignerThumbprint
+        ) { throw 'entrypoint hash mismatch' }
+        foreach ($tool in @(
+            @('receiptToolPath', 'receiptToolSha256'),
+            @('controlPlaneToolPath', 'controlPlaneToolSha256'),
+            @('completionGuardToolPath', 'completionGuardToolSha256'),
+            @('dailySelfHealPath', 'dailySelfHealSha256')
+        )) {
+            $toolPath = (Resolve-Path -LiteralPath ([string]$binding.($tool[0])) -ErrorAction Stop).Path
+            $expectedToolPath = (Resolve-Path -LiteralPath (Join-Path $ops ('tools\' + [IO.Path]::GetFileName($toolPath))) -ErrorAction Stop).Path
+            if (
+                -not [string]::Equals($toolPath, $expectedToolPath, [StringComparison]::OrdinalIgnoreCase) -or
+                -not [string]::Equals((Get-FileHash -Algorithm SHA256 -LiteralPath $toolPath).Hash.ToLowerInvariant(), [string]$binding.($tool[1]), [StringComparison]::Ordinal)
+            ) { throw 'tool hash mismatch' }
+        }
+        return [pscustomobject]@{
+            OpsRepoRoot = $ops
+            PythonExe = $python
+            ProductionRuntimeRoot = (Resolve-Path -LiteralPath ([string]$binding.productionRuntimeRoot) -ErrorAction Stop).Path
+            LiveBinRoot = $canonicalBin
+            ReceiptToolPath = (Resolve-Path -LiteralPath ([string]$binding.receiptToolPath) -ErrorAction Stop).Path
+            CompletionGuardToolPath = (Resolve-Path -LiteralPath ([string]$binding.completionGuardToolPath) -ErrorAction Stop).Path
+            DailySelfHealPath = (Resolve-Path -LiteralPath ([string]$binding.dailySelfHealPath) -ErrorAction Stop).Path
+        }
+    } catch {
+        throw 'RECOVERY_RUNTIME_BINDING_INVALID'
+    }
+}
+
 $RepoDir   = Resolve-NewsGraspRepoDir -Override $RepoDirOverride
-$OpsRepoRoot = if ($OpsRepoRootOverride) {
+$RecoveryRuntimeBinding = if ($RunIntent -eq 'ScheduledRecoveryFull') {
+    Get-NewsGraspRecoveryRuntimeBinding
+} else { $null }
+$OpsRepoRoot = if ($null -ne $RecoveryRuntimeBinding) {
+    [string]$RecoveryRuntimeBinding.OpsRepoRoot
+} elseif ($OpsRepoRootOverride) {
     (Resolve-Path -LiteralPath $OpsRepoRootOverride).Path
 } elseif ($env:NEWS_GRASP_OPS_REPO_ROOT) {
     (Resolve-Path -LiteralPath $env:NEWS_GRASP_OPS_REPO_ROOT).Path
@@ -252,6 +333,8 @@ $PublicBaseUrl = 'https://hidepon-umg.github.io/News-Grasp/'
 $InvokedLog = Join-Path $env:USERPROFILE 'bin\news-grasp-invoked.log'
 $StateFile  = Join-Path $env:USERPROFILE 'bin\news-grasp-runner-state.json'
 $LiveBinDir = if ($PSCommandPath) { Split-Path -Parent $PSCommandPath } else { Join-Path $env:USERPROFILE 'bin' }
+$TrustedProductionRuntimeRoot = if ($null -ne $RecoveryRuntimeBinding) { [string]$RecoveryRuntimeBinding.ProductionRuntimeRoot } else { Join-Path $env:USERPROFILE '.news-grasp-runtime\production-runtime' }
+$TrustedRecoveryLiveBinRoot = if ($null -ne $RecoveryRuntimeBinding) { [string]$RecoveryRuntimeBinding.LiveBinRoot } else { $LiveBinDir }
 $BootstrapSmokeStateFile = Join-Path $LiveBinDir 'ng-smoke-state.json'
 $BootstrapSmokeLogDir = Join-Path $LiveBinDir 'ng-smoke-logs'
 $BootstrapSmokeEarliestMinutes = 5 * 60 + 55
@@ -261,6 +344,14 @@ $MaxParallelReporterJobs = 7
 
 if ($CodexWrapperOverride) { $CodexWrapper = $CodexWrapperOverride }
 if ($PyExeOverride) { $PyExe = $PyExeOverride }
+if ($null -ne $RecoveryRuntimeBinding) {
+    if (
+        ($OpsRepoRootOverride -and -not [string]::Equals((Resolve-Path -LiteralPath $OpsRepoRootOverride).Path, [string]$RecoveryRuntimeBinding.OpsRepoRoot, [StringComparison]::OrdinalIgnoreCase)) -or
+        ($env:NEWS_GRASP_OPS_REPO_ROOT -and -not [string]::Equals((Resolve-Path -LiteralPath $env:NEWS_GRASP_OPS_REPO_ROOT).Path, [string]$RecoveryRuntimeBinding.OpsRepoRoot, [StringComparison]::OrdinalIgnoreCase)) -or
+        ($PyExeOverride -and -not [string]::Equals((Resolve-Path -LiteralPath $PyExeOverride).Path, [string]$RecoveryRuntimeBinding.PythonExe, [StringComparison]::OrdinalIgnoreCase))
+    ) { throw 'RECOVERY_RUNTIME_BINDING_INVALID' }
+    $PyExe = [string]$RecoveryRuntimeBinding.PythonExe
+}
 if ($LogDirOverride) { $LogDir = $LogDirOverride }
 if ($StateFileOverride) { $StateFile = $StateFileOverride }
 if (-not $HighCostAdmissionPath -and $env:NEWS_GRASP_HIGH_COST_ADMISSION_PATH) {
@@ -423,6 +514,39 @@ function Assert-GlobalHarnessGenerationManifest {
     } catch {
         throw "NEWS_GRASP_GLOBAL_GENERATION_MANIFEST_INVALID: $($_.Exception.Message)"
     }
+}
+
+function Resolve-NewsGraspContainedRegularFile {
+    param(
+        [Parameter(Mandatory = $true)][string] $Path,
+        [Parameter(Mandatory = $true)][string] $ExpectedPath,
+        [int64] $MaxBytes = 1048576
+    )
+    $candidate = [System.IO.Path]::GetFullPath($Path)
+    $expected = [System.IO.Path]::GetFullPath($ExpectedPath)
+    if (-not [string]::Equals($candidate, $expected, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw 'contained file identity mismatch'
+    }
+    $repoBoundary = [System.IO.Path]::GetFullPath((Resolve-Path -LiteralPath $RepoDir -ErrorAction Stop).Path).TrimEnd('\')
+    if (-not $candidate.StartsWith($repoBoundary + '\', [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw 'contained file outside RepoDir'
+    }
+    $cursor = $candidate
+    while ($cursor) {
+        $item = Get-Item -LiteralPath $cursor -Force -ErrorAction Stop
+        if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw 'contained file traversal contains reparse point'
+        }
+        if ([string]::Equals($cursor, $repoBoundary, [System.StringComparison]::OrdinalIgnoreCase)) { break }
+        $parent = Split-Path -Parent $cursor
+        if (-not $parent -or $parent -eq $cursor) { throw 'contained file boundary failed' }
+        $cursor = $parent
+    }
+    $leaf = Get-Item -LiteralPath $candidate -Force -ErrorAction Stop
+    if ($leaf.PSIsContainer -or [int64]$leaf.Length -gt $MaxBytes) {
+        throw 'contained file is invalid'
+    }
+    return $candidate
 }
 
 $script:GlobalHarnessGenerationManifest = $null
@@ -768,6 +892,10 @@ function Set-RunnerState {
         [string] $PublishCommit = '',
         [string] $ScheduledAttemptStatus = '',
         [string] $RecoveryAttemptStatus = '',
+        [string] $PreservedScheduledFailureReceiptPath = '',
+        [string] $PreservedScheduledFailureReceiptSha256 = '',
+        [string] $FinalizationReceiptPath = '',
+        [string] $FinalizationReceiptSha256 = '',
         [string] $ExternalKind = '',
         [string] $ExternalSystem = '',
         [string] $ExternalStatus = '',
@@ -867,7 +995,7 @@ function Set-RunnerState {
             # producer runner.  They are not allowed to manufacture it later.
             $lineage = New-NewsGraspProducerLineage `
                 -ArtifactRoot $RepoDir `
-                -OpsRoot (Split-Path -Parent $StateFile) `
+                -OpsRoot $OpsRepoRoot `
                 -IssueDate $DateStamp `
                 -RunIntent $RunIntent `
                 -RunId $RunId
@@ -902,7 +1030,12 @@ function Set-RunnerState {
             if ($PublishCommit) { $state.publish_commit = $PublishCommit }
             if ($ScheduledAttemptStatus) { $state.scheduled_attempt_status = $ScheduledAttemptStatus }
             if ($RecoveryAttemptStatus) { $state.recovery_attempt_status = $RecoveryAttemptStatus }
+            if ($PreservedScheduledFailureReceiptPath) { $state.scheduled_failure_receipt_path = $PreservedScheduledFailureReceiptPath }
+            if ($PreservedScheduledFailureReceiptSha256) { $state.scheduled_failure_receipt_sha256 = $PreservedScheduledFailureReceiptSha256 }
+            if ($FinalizationReceiptPath) { $state.recovery_finalization_receipt_path = $FinalizationReceiptPath }
+            if ($FinalizationReceiptSha256) { $state.recovery_finalization_receipt_sha256 = $FinalizationReceiptSha256 }
             if ($scheduledFailureReceiptPath) { $state.scheduled_failure_receipt_path = $scheduledFailureReceiptPath }
+            if ($previousControlEvents.Count -gt 0) { $state.immutableControlEvents = @($previousControlEvents) }
             if ($ExternalKind -or $ExternalSystem -or $ExternalStatus -or $ExternalStderr -or $ExternalDetail) {
                 $state.external_readiness = [ordered]@{
                     kind = $ExternalKind
@@ -1088,6 +1221,7 @@ function Invoke-ScheduledFailureTerminalizer {
         $broker = $HighCostBudgetToolPath
         $terminalInputPath = $script:ScheduledFailureTerminalInputPath
         if (
+            (-not $broker) -or
             (-not (Test-Path -LiteralPath $broker -PathType Leaf)) -or
             (-not $terminalInputPath) -or
             (-not (Test-Path -LiteralPath $terminalInputPath -PathType Leaf))
@@ -1149,7 +1283,19 @@ function Write-Log {
         }
         Set-RunnerState -Status 'error' -Message $Text -ExitCode 1
     } elseif ($Text -eq 'news-grasp-runner.ps1 OK') {
-        Set-RunnerState -Status 'publish_complete' -Message $Text -ExitCode 0 -PublishManifestPath $script:PublishCompleteManifestPath -PublishCommit $script:PublishCompleteCommit
+        if ($RunIntent -eq 'ScheduledRecoveryFull') {
+            Set-RunnerState -Status 'publish_complete' -Message $Text -ExitCode 0 `
+                -PublishManifestPath $script:PublishCompleteManifestPath `
+                -PublishCommit $script:PublishCompleteCommit `
+                -ScheduledAttemptStatus 'failed_then_recovered' `
+                -RecoveryAttemptStatus 'succeeded' `
+                -PreservedScheduledFailureReceiptPath ([string]$script:ValidatedFinalizationReceipt.scheduledFailureReceiptPath) `
+                -PreservedScheduledFailureReceiptSha256 ([string]$script:ValidatedFinalizationReceipt.scheduledFailureReceiptSha256) `
+                -FinalizationReceiptPath ([string]$script:IssuedFinalizationReceiptPath) `
+                -FinalizationReceiptSha256 ([string]$script:ValidatedFinalizationReceipt.receiptSha256)
+        } else {
+            Set-RunnerState -Status 'publish_complete' -Message $Text -ExitCode 0 -PublishManifestPath $script:PublishCompleteManifestPath -PublishCommit $script:PublishCompleteCommit -ScheduledAttemptStatus 'succeeded' -RecoveryAttemptStatus 'not_required'
+        }
     } elseif ($Text -eq 'news-grasp-runner.ps1 SMOKE OK') {
         Set-RunnerState -Status 'smoke_ok' -Message $Text -ExitCode 0
     } elseif ($Text -eq 'news-grasp-runner.ps1 PRE DEEPDIVE E2E OK') {
@@ -1157,6 +1303,71 @@ function Write-Log {
     } elseif ($Text -eq 'news-grasp-runner.ps1 PUBLISH DRY RUN OK') {
         Set-RunnerState -Status 'publish_dry_run_ok' -Message $Text -ExitCode 0
     }
+}
+
+function Invoke-NewsGraspCompletionGuard {
+    param([Parameter(Mandatory = $true)][string] $FinalizationReceiptPath)
+    if ($RunIntent -ne 'ScheduledRecoveryFull') { return $true }
+    $guardOutput = Join-Path $RepoDir "build\publish-complete\$DateStamp.automation-guard.json"
+    $completionGuardTool = [string]$RecoveryRuntimeBinding.CompletionGuardToolPath
+    & $PyExe '-I' '-S' '-B' $completionGuardTool `
+        '--finalization-receipt' $FinalizationReceiptPath `
+        '--artifact-root' $RepoDir `
+        '--ops-root' $OpsRepoRoot `
+        '--production-runtime-root' $TrustedProductionRuntimeRoot `
+        '--live-bin-root' $TrustedRecoveryLiveBinRoot `
+        '--runner-state' $StateFile `
+        '--runner-script' $PSCommandPath | ForEach-Object { Add-RunnerLogLine -Text ([string]$_) }
+    $guardRc = $LASTEXITCODE
+    if ($guardRc -ne 0 -or (-not (Test-Path -LiteralPath $guardOutput -PathType Leaf))) {
+        Add-RunnerLogLine -Text "ERROR: NEWS_GRASP_640_COMPLETION_GUARD_FAILED rc=$guardRc output=$guardOutput"
+        return $false
+    }
+    try {
+        $guard = Get-Content -LiteralPath $guardOutput -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+        if ($guard.schemaVersion -ne 'NEWS_GRASP_640_COMPLETION_GUARD_V1' -or $guard.ok -ne $true) {
+            throw 'completion guard is not Green'
+        }
+    } catch {
+        Add-RunnerLogLine -Text "ERROR: NEWS_GRASP_640_COMPLETION_GUARD_INVALID reason=$($_.Exception.Message)"
+        return $false
+    }
+    Add-RunnerLogLine -Text "NEWS_GRASP_640_COMPLETION_GUARD_OK output=$guardOutput"
+    return $true
+}
+
+function New-NewsGraspFinalizationReceipt {
+    param([Parameter(Mandatory = $true)][string] $ManifestPath)
+    if ($RunIntent -ne 'ScheduledRecoveryFull' -or (-not $RecoveryExecutionReceiptPath)) {
+        return ''
+    }
+    $receiptOutput = Join-Path $RepoDir "build\publish-complete\$DateStamp.finalization-receipt.json"
+    $recoveryReceiptTool = [string]$RecoveryRuntimeBinding.ReceiptToolPath
+    $receiptJson = (& $PyExe '-I' '-S' '-B' $recoveryReceiptTool `
+        'issue-finalization' `
+        '--receipt' $RecoveryExecutionReceiptPath `
+        '--issue-date' $DateStamp `
+        '--artifact-root' $RepoDir `
+        '--ops-root' $OpsRepoRoot `
+        '--production-runtime-root' $TrustedProductionRuntimeRoot `
+        '--live-bin-root' $TrustedRecoveryLiveBinRoot `
+        '--runner-state' $StateFile `
+        '--runner-script' $PSCommandPath `
+        '--manifest' $ManifestPath `
+        '--output' $receiptOutput 2>&1 | Out-String).Trim()
+    $receiptRc = $LASTEXITCODE
+    if ($receiptRc -ne 0 -or (-not (Test-Path -LiteralPath $receiptOutput -PathType Leaf))) {
+        Add-RunnerLogLine -Text "ERROR: RECOVERY_FINALIZATION_RECEIPT_ISSUE_FAILED rc=$receiptRc detail=$receiptJson"
+        return ''
+    }
+    try {
+        $script:ValidatedFinalizationReceipt = $receiptJson | ConvertFrom-Json -ErrorAction Stop
+        $script:IssuedFinalizationReceiptPath = $receiptOutput
+    } catch {
+        Add-RunnerLogLine -Text 'ERROR: RECOVERY_FINALIZATION_RECEIPT_OUTPUT_INVALID'
+        return ''
+    }
+    return $receiptOutput
 }
 
 function Test-PreRunBootstrapSmokeMarker {
@@ -1511,6 +1722,8 @@ function Get-RunnerScriptArguments {
         )
     }
     if ($ScheduledAuthorityEvidencePath) { $runnerArgs += @('-ScheduledAuthorityEvidencePath', $ScheduledAuthorityEvidencePath) }
+    if ($RecoveryExecutionReceiptPath) { $runnerArgs += @('-RecoveryExecutionReceiptPath', $RecoveryExecutionReceiptPath) }
+    if ($RecoveryFinalizationReceiptPath) { $runnerArgs += @('-RecoveryFinalizationReceiptPath', $RecoveryFinalizationReceiptPath) }
     if ($PublishVerifyWaitSec -ne 600) { $runnerArgs += @('-PublishVerifyWaitSec', [string]$PublishVerifyWaitSec) }
     if ($PublishVerifyPollSec -ne 30) { $runnerArgs += @('-PublishVerifyPollSec', [string]$PublishVerifyPollSec) }
     return $runnerArgs
@@ -3419,59 +3632,180 @@ if ($RepoDirOverride -or $SmokeTest) {
         exit 78
     }
 }
-$externalReadiness = Get-NewsGraspExternalControlPlaneReadiness
-if ([string]$externalReadiness.status -cne 'ready') {
-    $externalReason = [string]$externalReadiness.reasonCode
-    Add-RunnerLogLine -Text "external control plane unavailable; deterministic product path deferred reason=$externalReason authority=$script:ExternalHealthAuthorityPath"
-    Set-RunnerState -Status 'external_control_plane_unavailable' -Message 'operation_deferred_external_dependency' -ExitCode 74
-    exit 74
+$script:ValidatedRecoveryExecutionReceipt = $null
+$script:ValidatedFinalizationReceipt = $null
+$script:IssuedFinalizationReceiptPath = ''
+function Invoke-RecoveryReceiptValidation {
+    param(
+        [Parameter(Mandatory = $true)][ValidateSet('validate-execution', 'consume-execution', 'mark-execution-applied', 'validate-finalization', 'consume-finalization', 'mark-finalization-state-applied')][string] $Command,
+        [Parameter(Mandatory = $true)][string] $ReceiptPath
+    )
+    if (-not $ReceiptPath) { return $null }
+    $recoveryReceiptTool = [string]$RecoveryRuntimeBinding.ReceiptToolPath
+    $receiptJson = (& $PyExe '-I' '-S' '-B' $recoveryReceiptTool $Command `
+        '--receipt' $ReceiptPath `
+        '--issue-date' $DateStamp `
+        '--artifact-root' $RepoDir `
+        '--ops-root' $OpsRepoRoot `
+        '--production-runtime-root' $TrustedProductionRuntimeRoot `
+        '--live-bin-root' $TrustedRecoveryLiveBinRoot `
+        '--runner-state' $StateFile `
+        '--runner-script' $PSCommandPath 2>&1 | Out-String).Trim()
+    $receiptRc = $LASTEXITCODE
+    if ($receiptRc -ne 0) { return $null }
+    try { return $receiptJson | ConvertFrom-Json -ErrorAction Stop } catch { return $null }
 }
-Assert-HighCostOperationAdmission
+if ($RunIntent -eq 'ScheduledRecoveryFull') {
+    try {
+        $trustedRecoveryPython = (Resolve-Path -LiteralPath ([string]$RecoveryRuntimeBinding.PythonExe) -ErrorAction Stop).Path
+        $trustedLiveState = Join-Path ([string]$RecoveryRuntimeBinding.LiveBinRoot) 'news-grasp-runner-state.json'
+    } catch {
+        Add-RunnerLogLine -Text 'ERROR: RECOVERY_RUNTIME_BINDING_INVALID'
+        exit 76
+    }
+    if (
+        -not [string]::Equals($PyExe, $trustedRecoveryPython, [StringComparison]::OrdinalIgnoreCase) -or
+        -not [string]::Equals([IO.Path]::GetFullPath($StateFile), [IO.Path]::GetFullPath($trustedLiveState), [StringComparison]::OrdinalIgnoreCase)
+    ) {
+        Add-RunnerLogLine -Text 'ERROR: RECOVERY_RUNTIME_BINDING_INVALID'
+        exit 76
+    }
+    if (-not $RecoveryExecutionReceiptPath) {
+        Add-RunnerLogLine -Text 'ERROR: RECOVERY_EXECUTION_RECEIPT_REQUIRED'
+        exit 76
+    }
+    $script:ValidatedRecoveryExecutionReceipt = Invoke-RecoveryReceiptValidation `
+        -Command $(if ($FinalizeVerifiedPublishManifest) { 'validate-execution' } else { 'consume-execution' }) `
+        -ReceiptPath $RecoveryExecutionReceiptPath
+    if ($null -eq $script:ValidatedRecoveryExecutionReceipt) {
+        Add-RunnerLogLine -Text 'ERROR: RECOVERY_EXECUTION_RECEIPT_INVALID'
+        exit 76
+    }
+}
+if ($FinalizeVerifiedPublishManifest) {
+    if (-not $RecoveryFinalizationReceiptPath) {
+        Add-RunnerLogLine -Text 'ERROR: RECOVERY_FINALIZATION_RECEIPT_REQUIRED'
+        exit 76
+    }
+    $script:ValidatedFinalizationReceipt = Invoke-RecoveryReceiptValidation `
+        -Command 'validate-finalization' `
+        -ReceiptPath $RecoveryFinalizationReceiptPath
+    if ($null -eq $script:ValidatedFinalizationReceipt) {
+        Add-RunnerLogLine -Text 'ERROR: RECOVERY_FINALIZATION_RECEIPT_INVALID'
+        exit 76
+    }
+}
+$externalReadiness = $null
+if (-not $FinalizeVerifiedPublishManifest) {
+    $externalReadiness = Get-NewsGraspExternalControlPlaneReadiness
+    if ([string]$externalReadiness.status -cne 'ready') {
+        $externalReason = [string]$externalReadiness.reasonCode
+        Add-RunnerLogLine -Text "external control plane unavailable; deterministic product path deferred reason=$externalReason authority=$script:ExternalHealthAuthorityPath"
+        Set-RunnerState -Status 'external_control_plane_unavailable' -Message 'operation_deferred_external_dependency' -ExitCode 74
+        exit 74
+    }
+    Assert-HighCostOperationAdmission
+}
 $pidStamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss.fff'
 Add-Content -Path $InvokedLog -Value "[$pidStamp] runner-invoked pid=$PID ps1 smoke=$SmokeTest recover=$RecoverOnly run_intent=$RunIntent no_publish=$NoPublish resume_from_stage=$ResumeFromStage" -Encoding UTF8
 
 Add-RunnerLogLine -Text ''
 Add-RunnerLogLine -Text '=========================================='
-Set-RunnerState -Status 'running' -Message 'runner started' -ExitCode -1 -ResetStartedAt
-Write-Log "news-grasp-runner.ps1 start (run_id=$RunId, smoke=$SmokeTest, recover=$RecoverOnly, run_intent=$RunIntent, no_publish=$NoPublish, resume_from_stage=$ResumeFromStage, pid=$PID)"
+if (-not $FinalizeVerifiedPublishManifest) {
+    Set-RunnerState -Status 'running' -Message 'runner started' -ExitCode -1 -ResetStartedAt
+    Write-Log "news-grasp-runner.ps1 start (run_id=$RunId, smoke=$SmokeTest, recover=$RecoverOnly, run_intent=$RunIntent, no_publish=$NoPublish, resume_from_stage=$ResumeFromStage, pid=$PID)"
+} else {
+    Add-RunnerLogLine -Text "typed recovery finalizer start run_id=$RunId pid=$PID"
+}
 
 if ($FinalizeVerifiedPublishManifest) {
     $expectedManifest = [System.IO.Path]::GetFullPath((Join-Path $RepoDir "build\publish-complete\$DateStamp.json"))
-    $actualManifest = [System.IO.Path]::GetFullPath($FinalizeVerifiedPublishManifest)
-    if ($RunIntent -ne 'ScheduledRecoveryFull' -or $actualManifest -ne $expectedManifest -or (-not (Test-Path -LiteralPath $actualManifest -PathType Leaf))) {
-        Write-Log 'ERROR: publish_complete manifest identity is invalid for typed recovery finalize'
-        Set-RunnerState -Status 'publish_failed' -Message 'publish_complete manifest identity invalid' -ExitCode 1
-        exit 1
-    }
     try {
-        $verified = Get-Content -LiteralPath $actualManifest -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+        $actualManifest = Resolve-NewsGraspContainedRegularFile -Path $FinalizeVerifiedPublishManifest -ExpectedPath $expectedManifest
     } catch {
-        Write-Log "ERROR: publish_complete manifest parse failed: $($_.Exception.Message)"
-        Set-RunnerState -Status 'publish_failed' -Message 'publish_complete manifest parse failed' -ExitCode 1
-        exit 1
+        $actualManifest = ''
     }
-    $publishCommit = [string]$verified.publish.local_head
-    $manifestGreen = (
-        $verified.ok -eq $true -and
-        [string]$verified.date -eq $DateStamp -and
-        [string]$verified.public_status -eq 'green' -and
-        [string]$verified.scheduled_attempt_status -eq 'failed_then_recovered' -and
-        [string]$verified.recovery_attempt_status -eq 'succeeded' -and
-        $verified.live_runner_readiness.ok -eq $true -and
-        $verified.live_runner_readiness.next_run_readiness.ok -eq $true -and
-        $verified.notification.ok -eq $true -and
-        $verified.podcasts.primary.ok -eq $true -and
-        $verified.podcasts.deepdive.ok -eq $true -and
-        $publishCommit -and
-        $publishCommit -eq [string]$verified.publish.remote_head
-    )
-    if (-not $manifestGreen) {
-        Write-Log 'ERROR: publish_complete manifest is not Green for typed recovery finalize'
-        Set-RunnerState -Status 'publish_failed' -Message 'publish_complete manifest is not Green' -ExitCode 1
-        exit 1
+    if ($RunIntent -ne 'ScheduledRecoveryFull' -or (-not $actualManifest)) {
+        Add-RunnerLogLine -Text 'ERROR: publish_complete manifest identity is invalid for typed recovery finalize'
+        exit 76
     }
-    Write-Log "typed recovery finalize accepted manifest=$actualManifest publish_commit=$publishCommit"
-    Set-RunnerState -Status 'publish_complete' -Message 'verified recovery publish complete' -ExitCode 0 -PublishManifestPath $actualManifest -PublishCommit $publishCommit -ScheduledAttemptStatus 'failed_then_recovered' -RecoveryAttemptStatus 'succeeded'
+    $manifestStream = $null
+    try {
+        # FileShare.Read keeps the exact bytes stable through hash, parse,
+        # one-shot consumption, state mutation and completion guard.
+        $manifestStream = [IO.File]::Open(
+            $actualManifest,
+            [IO.FileMode]::Open,
+            [IO.FileAccess]::Read,
+            [IO.FileShare]::Read
+        )
+        $memory = [IO.MemoryStream]::new()
+        $manifestStream.CopyTo($memory)
+        $manifestBytes = $memory.ToArray()
+        $memory.Dispose()
+        $manifestText = [Text.UTF8Encoding]::new($false, $true).GetString($manifestBytes)
+        $verified = $manifestText | ConvertFrom-Json -ErrorAction Stop
+        $sha256 = [Security.Cryptography.SHA256]::Create()
+        try {
+            $manifestSha256 = ([BitConverter]::ToString($sha256.ComputeHash($manifestBytes))).Replace('-', '').ToLowerInvariant()
+        } finally {
+            $sha256.Dispose()
+        }
+        $publishCommit = [string]$verified.publish_commit
+        $manifestGreen = (
+            [string]$verified.schemaVersion -eq 'NEWS_GRASP_PUBLISH_COMPLETE_V2' -and
+            $verified.ok -eq $true -and
+            [string]$verified.date -eq $DateStamp -and
+            [string]$verified.public_status -eq 'green' -and
+            [string]$verified.scheduled_attempt_status -eq 'failed_then_recovered' -and
+            [string]$verified.recovery_attempt_status -eq 'succeeded' -and
+            [string]$verified.source_commit -match '^[0-9a-f]{40}$' -and
+            [string]$verified.artifact_commit -match '^[0-9a-f]{40}$' -and
+            [string]$verified.publish_commit -match '^[0-9a-f]{40}$' -and
+            $verified.publish.ok -eq $true -and
+            $null -ne $verified.distribution_artifacts -and
+            @($verified.distribution_artifacts.missing).Count -eq 0 -and
+            $verified.live_runner_readiness.ok -eq $true -and
+            $verified.live_runner_readiness.next_run_readiness.ok -eq $true -and
+            $verified.notification.ok -eq $true -and
+            $verified.podcasts.primary.ok -eq $true -and
+            $verified.podcasts.deepdive.ok -eq $true -and
+            $publishCommit -and
+            $publishCommit -eq [string]$verified.publish.deploy_head
+        )
+        if (-not $manifestGreen) { throw 'FINALIZATION_MANIFEST_NOT_GREEN' }
+        if ($manifestSha256 -ne [string]$script:ValidatedFinalizationReceipt.manifestSha256) {
+            throw 'FINALIZATION_MANIFEST_DRIFT'
+        }
+        $consumedFinalization = Invoke-RecoveryReceiptValidation `
+            -Command 'consume-finalization' `
+            -ReceiptPath $RecoveryFinalizationReceiptPath
+        if ($null -eq $consumedFinalization) { throw 'RECOVERY_FINALIZATION_RECEIPT_ALREADY_CONSUMED' }
+        Add-RunnerLogLine -Text "typed recovery finalize accepted manifest=$actualManifest publish_commit=$publishCommit"
+        Set-RunnerState -Status 'publish_complete' -Message 'verified recovery publish complete' -ExitCode 0 `
+            -PublishManifestPath $actualManifest -PublishCommit $publishCommit `
+            -ScheduledAttemptStatus 'failed_then_recovered' -RecoveryAttemptStatus 'succeeded' `
+            -PreservedScheduledFailureReceiptPath ([string]$script:ValidatedFinalizationReceipt.scheduledFailureReceiptPath) `
+            -PreservedScheduledFailureReceiptSha256 ([string]$script:ValidatedFinalizationReceipt.scheduledFailureReceiptSha256) `
+            -FinalizationReceiptPath $RecoveryFinalizationReceiptPath `
+            -FinalizationReceiptSha256 ([string]$script:ValidatedFinalizationReceipt.receiptSha256)
+        $stateAppliedJournal = Invoke-RecoveryReceiptValidation `
+            -Command 'mark-finalization-state-applied' `
+            -ReceiptPath $RecoveryFinalizationReceiptPath
+        if ($null -eq $stateAppliedJournal) { throw 'RECOVERY_FINALIZATION_STATE_JOURNAL_INVALID' }
+        if (-not (Invoke-NewsGraspCompletionGuard -FinalizationReceiptPath $RecoveryFinalizationReceiptPath)) {
+            exit 2
+        }
+        $executionAppliedJournal = Invoke-RecoveryReceiptValidation `
+            -Command 'mark-execution-applied' `
+            -ReceiptPath $RecoveryExecutionReceiptPath
+        if ($null -eq $executionAppliedJournal) { throw 'RECOVERY_EXECUTION_JOURNAL_INVALID' }
+    } catch {
+        Add-RunnerLogLine -Text "ERROR: typed recovery finalizer failed reason=$($_.Exception.Message)"
+        exit 76
+    } finally {
+        if ($null -ne $manifestStream) { $manifestStream.Dispose() }
+    }
     exit 0
 }
 
@@ -5380,7 +5714,12 @@ if ($NoPush) {
     $publishCompleteManifest = Join-Path $RepoDir "build\publish-complete\$DateStamp.json"
     Push-Location $RepoDir
     try {
-        Invoke-Logged { & $PyExe '-m' 'tools.daily_self_heal' 'verify-publish-complete' '--repo-root' $RepoDir '--ops-repo-root' $OpsRepoRoot '--date' $DateStamp '--remote' 'origin' '--branch' 'main' '--public-base-url' $PublicBaseUrl '--wait-sec' '0' '--poll-sec' $PublishVerifyPollSec '--notification-state' $NotificationStatePath '--producer-state' $StateFilePath '--output' $publishCompleteManifest }
+        $dailySelfHealTool = if ($null -ne $RecoveryRuntimeBinding) {
+            [string]$RecoveryRuntimeBinding.DailySelfHealPath
+        } else {
+            Join-Path $OpsRepoRoot 'tools\daily_self_heal.py'
+        }
+        Invoke-Logged { & $PyExe '-I' '-S' '-B' $dailySelfHealTool 'verify-publish-complete' '--repo-root' $RepoDir '--ops-repo-root' $OpsRepoRoot '--date' $DateStamp '--remote' 'origin' '--branch' 'main' '--public-base-url' $PublicBaseUrl '--wait-sec' '0' '--poll-sec' $PublishVerifyPollSec '--notification-state' $NotificationStatePath '--producer-state' $StateFile '--output' $publishCompleteManifest }
         $publishCompleteRc = $LASTEXITCODE
     } finally {
         Pop-Location
@@ -5410,6 +5749,30 @@ if ($NoPublish) {
 } elseif ($NoPush) {
     Write-Log 'news-grasp-runner.ps1 SMOKE OK'
 } else {
+    $normalFinalizationReceipt = ''
+    if ($RunIntent -eq 'ScheduledRecoveryFull') {
+        $normalFinalizationReceipt = New-NewsGraspFinalizationReceipt -ManifestPath $script:PublishCompleteManifestPath
+        if (-not $normalFinalizationReceipt) { exit 2 }
+        $consumedNormalFinalization = Invoke-RecoveryReceiptValidation `
+            -Command 'consume-finalization' `
+            -ReceiptPath $normalFinalizationReceipt
+        if ($null -eq $consumedNormalFinalization) { exit 2 }
+    }
     Write-Log 'news-grasp-runner.ps1 OK'
+    if ($RunIntent -eq 'ScheduledRecoveryFull') {
+        $normalStateAppliedJournal = Invoke-RecoveryReceiptValidation `
+            -Command 'mark-finalization-state-applied' `
+            -ReceiptPath $normalFinalizationReceipt
+        if ($null -eq $normalStateAppliedJournal) { exit 2 }
+    }
+    if ($RunIntent -eq 'ScheduledRecoveryFull' -and (-not (Invoke-NewsGraspCompletionGuard -FinalizationReceiptPath $normalFinalizationReceipt))) {
+        exit 2
+    }
+    if ($RunIntent -eq 'ScheduledRecoveryFull') {
+        $normalExecutionAppliedJournal = Invoke-RecoveryReceiptValidation `
+            -Command 'mark-execution-applied' `
+            -ReceiptPath $RecoveryExecutionReceiptPath
+        if ($null -eq $normalExecutionAppliedJournal) { exit 2 }
+    }
 }
 exit 0

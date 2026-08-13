@@ -156,6 +156,9 @@ LOCAL_ONLY_EVIDENCE_SHA256: dict[str, str] = {
     "build/repair-review/2026-08-03-startup-self-repair-tdd-impact.json": (
         "980b6732639dcd8287d8d83875d7685acbdb4fa4ca3fa48188d3da3b07cbc83f"
     ),
+    "build/incidents/2026-08-13-daily-batch-and-recovery-delay-report.html": (
+        "50ee3e4427ce6d6acf82c649c7a0288f0a751bb42e65ad3dcc3debe84bd72286"
+    ),
 }
 
 
@@ -779,6 +782,16 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "artifact checkpoints, daily lineage, public authority, readiness, and external state must remain separately bound through recovery",
         "docs/incidents/2026-08-01-daily-batch-editor-contract-cwd-report.html",
         "fixture_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-08-13",
+        "scheduled production / workspace binding / four-root preflight / readiness canary / typed finalizer / completion guard",
+        "the 06:00 scheduled attempt failed before production completion, then artifact, ops, runtime, and live root drift plus canary/finalizer contract defects extended audit recovery to roughly four hours",
+        "News-Grasp control-plane root roles and post-public-Green finalization boundary",
+        "scheduled failure must remain immutable while bootstrap-to-runner ops binding is explicit, four-root drift fails before high-cost work, canary uses the artifact root, commit roles remain typed, and finalization reaches the guard within 15/60 minutes",
+        "role-separated four-root preflight fixtures, artifact-root canary fixture, V2 three-commit manifest/finalizer fixture, empty-broker terminalizer fixture, post-Green operation allowlist, and 15/60-minute SLO replay",
+        "build/incidents/2026-08-13-daily-batch-and-recovery-delay-report.html",
+        "runtime_e2e_required",
     ),
 )
 

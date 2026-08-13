@@ -56,6 +56,7 @@ def test_historical_failure_matrix_covers_lifecycle_incident_corpus() -> None:
         "2026-07-22",
         "2026-07-23",
         "2026-07-24",
+        "2026-08-13",
     }
     incident_files = {
         f"docs/incidents/{path.name}"
@@ -262,6 +263,20 @@ def test_historical_failure_matrix_marks_runtime_e2e_rows() -> None:
     assert {scenario.issue_date for scenario in runtime_rows} >= {"2026-06-12", "2026-06-19", "2026-06-25"}
     assert any("same gate" in scenario.missing_invariant for scenario in runtime_rows)
     assert any("NoPublish" in scenario.cheapest_e2e_or_fixture for scenario in runtime_rows)
+
+
+def test_20260813_control_plane_incident_is_registered_without_publishing_report() -> None:
+    scenario = next(
+        item for item in historical_failure_scenarios() if item.issue_date == "2026-08-13"
+    )
+
+    assert "four-root preflight" in scenario.stage
+    assert "roughly four hours" in scenario.direct_cause
+    assert "15/60-minute SLO replay" in scenario.cheapest_e2e_or_fixture
+    assert scenario.evidence_path == (
+        "build/incidents/2026-08-13-daily-batch-and-recovery-delay-report.html"
+    )
+    assert scenario.evidence_path in LOCAL_ONLY_EVIDENCE_SHA256
 
 
 def test_historical_failure_matrix_covers_codex_residual_work_public_reflection() -> None:

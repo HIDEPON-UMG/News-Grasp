@@ -1291,6 +1291,7 @@ def _audit_green_terminal(
             "publicStatus": "green",
             "operationState": "complete",
             "workPriority": audit_recovery_control.PUBLIC_GREEN_FOLLOWUP_PRIORITY,
+            "allowedAfterPublicGreen": audit_recovery_control.PUBLIC_GREEN_ALLOWED_OPERATIONS,
             "publicRecoveryStarted": False,
             "recoveryStarted": False,
             "completionEvidenceSha256": completion["receiptSha256"],
@@ -1320,6 +1321,7 @@ def _audit_observation_terminal(
             "publicStatus": "green",
             "operationState": "observation_unverified",
             "workPriority": audit_recovery_control.PUBLIC_GREEN_FOLLOWUP_PRIORITY,
+            "allowedAfterPublicGreen": audit_recovery_control.PUBLIC_GREEN_ALLOWED_OPERATIONS,
             "exitCode": 2,
             "completionAuthorityId": str(
                 decision.get("completionAuthorityId") or ""

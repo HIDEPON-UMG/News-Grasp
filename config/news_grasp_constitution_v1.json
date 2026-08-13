@@ -5,7 +5,7 @@
   "primaryUser": "ITコンサルタントとしてNews-Graspを利用するユーザー",
   "naturalRunEvidenceAllowed": false,
   "sharedGlobalHarnessMutationAllowed": false,
-  "specSha256": "7d9012569ce614b606887dac173e44efa7ed2e13f7d305c1d057c002f6ecbd91",
+  "specSha256": "6f7edf37b644bb0af90a632dbdd40a22768d566f06cfb77c63c2e1c745cc3fb9",
   "userProvenance": {
     "sourceType": "user_confirmed_plan",
     "confirmedAt": "2026-08-12",
