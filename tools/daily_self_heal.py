@@ -10,6 +10,8 @@ import io
 import json
 import os
 import re
+import shlex
+import stat
 import subprocess
 import sys
 import tarfile
@@ -301,6 +303,402 @@ def _default_live_task_launcher_path() -> Path:
 
 def _command_path_text(value: Path | str) -> str:
     return str(value).strip().strip('"').replace("/", "\\").lower()
+
+
+def _task_action_records(details: dict) -> list[dict[str, str]]:
+    actions = details.get("actions")
+    if isinstance(actions, dict):
+        actions = [actions]
+    if not isinstance(actions, list):
+        return []
+    records: list[dict[str, str]] = []
+    for action in actions:
+        if not isinstance(action, dict):
+            return []
+        execute = str(action.get("execute") or "")
+        arguments = str(action.get("arguments") or "")
+        if not execute:
+            return []
+        records.append({"execute": execute, "arguments": arguments})
+    return records
+
+
+def _windows_action_arguments(arguments: str) -> list[str]:
+    try:
+        values = shlex.split(arguments, posix=False)
+    except ValueError:
+        return []
+    normalized: list[str] = []
+    for value in values:
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
+            value = value[1:-1]
+        if not value or '"' in value or "'" in value:
+            return []
+        normalized.append(value)
+    return normalized
+
+
+def _ancestor_identities(path: Path) -> tuple[tuple[str, int, int, int], ...]:
+    """leaf readの前後で全ancestorの差替えとreparse化を検知する。"""
+    reparse_flag = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+    identities: list[tuple[str, int, int, int]] = []
+    current = path.parent
+    while True:
+        metadata = os.lstat(current)
+        attributes = int(getattr(metadata, "st_file_attributes", 0))
+        if attributes & reparse_flag:
+            raise ValueError("ancestor reparse point")
+        identities.append((os.path.normcase(str(current)), metadata.st_dev, metadata.st_ino, attributes))
+        if current.parent == current:
+            break
+        current = current.parent
+    return tuple(identities)
+
+
+def _canonical_file_bytes(path: Path, *, expected: Path, max_bytes: int) -> bytes:
+    try:
+        candidate = Path(os.path.abspath(path))
+        expected_path = Path(os.path.abspath(expected))
+        if os.path.normcase(str(candidate)) != os.path.normcase(str(expected_path)):
+            raise ValueError("path mismatch")
+        reparse_flag = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+        ancestors_before = _ancestor_identities(candidate)
+        before = os.lstat(candidate)
+        file_attributes = int(getattr(before, "st_file_attributes", 0))
+        if (
+            not stat.S_ISREG(before.st_mode)
+            or stat.S_ISLNK(before.st_mode)
+            or file_attributes & reparse_flag
+            or before.st_nlink != 1
+        ):
+            raise ValueError("non-regular file")
+        if before.st_size <= 0 or before.st_size > max_bytes:
+            raise ValueError("bounded size invalid")
+        flags = os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0)
+        descriptor = os.open(candidate, flags)
+        try:
+            opened = os.fstat(descriptor)
+            if (
+                opened.st_dev != before.st_dev
+                or opened.st_ino != before.st_ino
+                or opened.st_nlink != 1
+                or opened.st_size != before.st_size
+            ):
+                raise ValueError("file identity drift")
+            chunks: list[bytes] = []
+            remaining = max_bytes + 1
+            while remaining > 0:
+                chunk = os.read(descriptor, min(65536, remaining))
+                if not chunk:
+                    break
+                chunks.append(chunk)
+                remaining -= len(chunk)
+            raw = b"".join(chunks)
+            after_handle = os.fstat(descriptor)
+        finally:
+            os.close(descriptor)
+        after_path = os.lstat(candidate)
+        ancestors_after = _ancestor_identities(candidate)
+        if (
+            len(raw) != before.st_size
+            or after_handle.st_dev != before.st_dev
+            or after_handle.st_ino != before.st_ino
+            or after_handle.st_size != before.st_size
+            or after_handle.st_mtime_ns != before.st_mtime_ns
+            or after_path.st_dev != before.st_dev
+            or after_path.st_ino != before.st_ino
+            or after_path.st_nlink != 1
+            or after_path.st_size != before.st_size
+            or after_path.st_mtime_ns != before.st_mtime_ns
+            or ancestors_after != ancestors_before
+        ):
+            raise ValueError("file changed during read")
+        return raw
+    except (OSError, ValueError) as error:
+        raise ValueError("high_cost_binding_authority_invalid") from error
+
+
+def _canonical_live_json(path: Path, *, expected: Path, max_bytes: int = 65536) -> tuple[dict, bytes]:
+    try:
+        raw = _canonical_file_bytes(path, expected=expected, max_bytes=max_bytes)
+        value = json.loads(raw.decode("utf-8-sig"))
+        if not isinstance(value, dict):
+            raise ValueError("JSON object required")
+        return value, raw
+    except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as error:
+        raise ValueError("high_cost_binding_authority_invalid") from error
+
+
+def _authenticode_identity(path: Path) -> dict[str, str]:
+    """Windows trust storeで実ファイルの署名を検証し、JSON自己申告と分離する。"""
+    script = (
+        "$s=Get-AuthenticodeSignature -LiteralPath $args[0];"
+        "$v=[ordered]@{status=[string]$s.Status;subject=[string]$s.SignerCertificate.Subject;"
+        "thumbprint=([string]$s.SignerCertificate.Thumbprint).ToLowerInvariant()};"
+        "$v|ConvertTo-Json -Compress"
+    )
+    creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+    try:
+        completed = subprocess.run(
+            ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", script, str(path)],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=15,
+            check=False,
+            creationflags=creationflags,
+        )
+    except (OSError, subprocess.SubprocessError) as error:
+        raise ValueError("authenticode verification unavailable") from error
+    if completed.returncode != 0:
+        raise ValueError("authenticode verification failed")
+    value = json.loads(completed.stdout.lstrip("\ufeff").strip())
+    if not isinstance(value, dict):
+        raise ValueError("authenticode identity invalid")
+    return {str(key): str(item or "") for key, item in value.items()}
+
+
+def _safe_ops_git_output(ops_repo_root: Path, args: list[str]) -> str:
+    """検証対象repoのhook/fsmonitor/attributesを実行せずboundedにGitを読む。"""
+    creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+    try:
+        completed = subprocess.run(
+            [
+                "git",
+                "-c",
+                "core.hooksPath=NUL",
+                "-c",
+                "core.fsmonitor=false",
+                "-c",
+                "core.attributesFile=NUL",
+                "-C",
+                str(ops_repo_root),
+                *args,
+            ],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=15,
+            check=False,
+            creationflags=creationflags,
+        )
+    except (OSError, subprocess.SubprocessError) as error:
+        raise RuntimeError("safe ops git unavailable") from error
+    if completed.returncode != 0:
+        raise RuntimeError((completed.stderr or completed.stdout).strip())
+    return completed.stdout.strip()
+
+
+def _trusted_ops_generation(ops_repo_root: Path) -> dict[str, str]:
+    """cleanなcanonical ops generationをlive自己申告から独立して導出する。"""
+    root = ops_repo_root.resolve(strict=True)
+    head = _safe_ops_git_output(root, ["rev-parse", "HEAD"]).lower()
+    remote = _safe_ops_git_output(root, ["remote", "get-url", "origin"])
+    dirty = _safe_ops_git_output(root, ["status", "--porcelain", "--untracked-files=all"])
+    ignored = _safe_ops_git_output(
+        root, ["ls-files", "--others", "--ignored", "--exclude-standard"]
+    )
+    daily_self_heal = (root / "tools" / "daily_self_heal.py").resolve(strict=True)
+    if dirty or ignored or not re.fullmatch(r"[0-9a-f]{40}", head):
+        raise ValueError("ops generation invalid")
+    return {
+        "root": str(root),
+        "head": head,
+        "remote": remote,
+        "daily_self_heal_path": str(daily_self_heal),
+        "daily_self_heal_sha256": sha256_file(daily_self_heal),
+    }
+
+
+def _validate_live_high_cost_binding_files(
+    *,
+    live_bin_root: Path,
+    binding_path: Path,
+    binding_receipt_sha256: str,
+    ops_repo_root: Path | None = None,
+) -> dict:
+    try:
+        live_bin = live_bin_root.resolve(strict=True)
+        expected_binding = live_bin / "news-grasp-high-cost-binding-v1.json"
+        expected_recovery = live_bin / "news-grasp-recovery-runtime-binding-v1.json"
+        binding, binding_raw = _canonical_live_json(binding_path, expected=expected_binding)
+        recovery, _ = _canonical_live_json(expected_recovery, expected=expected_recovery)
+        receipt = binding_receipt_sha256.lower()
+        binding_file_sha256 = hashlib.sha256(binding_raw).hexdigest()
+        python_exe = Path(str(recovery.get("pythonExe") or ""))
+        task_pythonw = Path(str(recovery.get("taskPythonwPath") or ""))
+        expected_pythonw = python_exe.with_name("pythonw.exe")
+        python_raw = _canonical_file_bytes(
+            python_exe,
+            expected=python_exe,
+            max_bytes=64 * 1024 * 1024,
+        )
+        pythonw_raw = _canonical_file_bytes(
+            task_pythonw,
+            expected=expected_pythonw,
+            max_bytes=64 * 1024 * 1024,
+        )
+        python_sha256 = hashlib.sha256(python_raw).hexdigest()
+        pythonw_sha256 = hashlib.sha256(pythonw_raw).hexdigest()
+        python_signature = _authenticode_identity(python_exe)
+        pythonw_signature = _authenticode_identity(task_pythonw)
+        trusted_ops = _trusted_ops_generation(ops_repo_root) if ops_repo_root is not None else None
+        trusted_remote = "https://github.com/HIDEPON-UMG/News-Grasp.git"
+        if (
+            not re.fullmatch(r"[0-9a-f]{64}", receipt)
+            or binding.get("schemaVersion") != "NEWS_GRASP_HIGH_COST_BINDING_V1"
+            or str(binding.get("bindingReceiptSha256") or "").lower() != receipt
+            or recovery.get("schemaVersion") != "NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1"
+            or os.path.normcase(str(Path(str(recovery.get("highCostBindingPath") or "")).resolve(strict=True)))
+            != os.path.normcase(str(expected_binding.resolve(strict=True)))
+            or str(recovery.get("highCostBindingReceiptSha256") or "").lower() != receipt
+            or str(recovery.get("highCostBindingFileSha256") or "").lower() != binding_file_sha256
+            or python_exe.name.lower() != "python.exe"
+            or str(recovery.get("pythonExeSha256") or "").lower() != python_sha256
+            or str(recovery.get("taskPythonwSha256") or "").lower() != pythonw_sha256
+            or recovery.get("pythonTrustAnchor") != "authenticode:python-software-foundation"
+            or not str(recovery.get("pythonSignerSubject") or "").startswith(
+                "CN=Python Software Foundation, O=Python Software Foundation,"
+            )
+            or not re.fullmatch(
+                r"[0-9a-f]{40}",
+                str(recovery.get("pythonSignerThumbprint") or "").lower(),
+            )
+            or python_signature.get("status") != "Valid"
+            or python_signature.get("subject") != recovery.get("pythonSignerSubject")
+            or python_signature.get("thumbprint", "").lower()
+            != str(recovery.get("pythonSignerThumbprint") or "").lower()
+            or recovery.get("pythonwTrustAnchor") != "authenticode:python-software-foundation"
+            or pythonw_signature.get("status") != "Valid"
+            or pythonw_signature.get("subject") != recovery.get("pythonwSignerSubject")
+            or pythonw_signature.get("thumbprint", "").lower()
+            != str(recovery.get("pythonwSignerThumbprint") or "").lower()
+            or not str(pythonw_signature.get("subject") or "").startswith(
+                "CN=Python Software Foundation, O=Python Software Foundation,"
+            )
+            or pythonw_signature.get("thumbprint", "").lower()
+            != python_signature.get("thumbprint", "").lower()
+            or (
+                trusted_ops is not None
+                and (
+                    os.path.normcase(str(Path(str(recovery.get("opsRepoRoot") or "")).resolve()))
+                    != os.path.normcase(trusted_ops["root"])
+                    or str(recovery.get("opsHead") or "").lower() != trusted_ops["head"]
+                    or str(recovery.get("trustedRemote") or "") != trusted_remote
+                    or trusted_ops["remote"].removesuffix(".git") != trusted_remote.removesuffix(".git")
+                    or os.path.normcase(str(Path(str(recovery.get("dailySelfHealPath") or "")).resolve()))
+                    != os.path.normcase(trusted_ops["daily_self_heal_path"])
+                    or str(recovery.get("dailySelfHealSha256") or "").lower()
+                    != trusted_ops["daily_self_heal_sha256"]
+                )
+            )
+        ):
+            raise ValueError("binding identity mismatch")
+        return {
+            "ok": True,
+            "reason": "",
+            "binding_path": str(expected_binding.resolve(strict=True)),
+            "binding_receipt_sha256": receipt,
+            "binding_file_sha256": binding_file_sha256,
+            "task_pythonw_path": str(expected_pythonw),
+            "task_pythonw_sha256": pythonw_sha256,
+        }
+    except (OSError, RuntimeError, ValueError):
+        return {"ok": False, "reason": "high_cost_binding_authority_invalid"}
+
+
+def _validate_live_high_cost_binding_authority(
+    *,
+    task_details: dict,
+    bootstrap_details: dict,
+    live_task_launcher_path: Path,
+    task_name: str,
+    bootstrap_task_name: str,
+    ops_repo_root: Path,
+) -> dict:
+    runner_actions = _task_action_records(task_details)
+    bootstrap_actions = _task_action_records(bootstrap_details)
+    if len(runner_actions) != 1 or len(bootstrap_actions) != 1:
+        return {"ok": False, "reason": "high_cost_binding_action_invalid"}
+    live_bin = live_task_launcher_path.resolve(strict=True).parent
+    expected_authority = live_bin / "news-grasp-stable-task-authority-v1.json"
+    try:
+        authority, _ = _canonical_live_json(expected_authority, expected=expected_authority)
+        if authority.get("schemaVersion") != "STABLE_TASK_AUTHORITY_V1":
+            raise ValueError("authority schema mismatch")
+        declared_authority_sha256 = str(authority.get("authoritySha256") or "").lower()
+        authority_body = dict(authority)
+        authority_body.pop("authoritySha256", None)
+        calculated_authority_sha256 = hashlib.sha256(
+            json.dumps(
+                authority_body,
+                ensure_ascii=False,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+        if (
+            not re.fullmatch(r"[0-9a-f]{64}", declared_authority_sha256)
+            or declared_authority_sha256 != calculated_authority_sha256
+        ):
+            raise ValueError("authority hash mismatch")
+        authority_action = authority.get("action")
+        if not isinstance(authority_action, list) or not all(isinstance(item, str) for item in authority_action):
+            raise ValueError("authority action invalid")
+        runner_action = runner_actions[0]
+        runner_argv = [runner_action["execute"], *_windows_action_arguments(runner_action["arguments"])]
+        if runner_argv != authority_action:
+            raise ValueError("runner action mismatch")
+        if len(authority_action) != 9:
+            raise ValueError("runner action length invalid")
+        expected_binding_path = live_bin / "news-grasp-high-cost-binding-v1.json"
+        expected_runner = [
+            authority_action[0],
+            str(live_task_launcher_path.resolve(strict=True)),
+            "runner",
+            "--scheduled-task-name",
+            task_name,
+            "--high-cost-binding-path",
+            str(expected_binding_path.resolve(strict=True)),
+            "--high-cost-binding-sha256",
+            authority_action[8],
+        ]
+        if authority_action != expected_runner:
+            raise ValueError("runner authority mismatch")
+        bootstrap_action = bootstrap_actions[0]
+        bootstrap_argv = [
+            bootstrap_action["execute"],
+            *_windows_action_arguments(bootstrap_action["arguments"]),
+        ]
+        expected_bootstrap = [
+            authority_action[0],
+            str(live_task_launcher_path.resolve(strict=True)),
+            "bootstrap",
+            "--scheduled-task-name",
+            bootstrap_task_name,
+            "--high-cost-binding-path",
+            str(expected_binding_path.resolve(strict=True)),
+            "--high-cost-binding-sha256",
+            authority_action[8],
+        ]
+        if bootstrap_argv != expected_bootstrap:
+            raise ValueError("bootstrap action mismatch")
+        files = _validate_live_high_cost_binding_files(
+            live_bin_root=live_bin,
+            binding_path=expected_binding_path,
+            binding_receipt_sha256=authority_action[8],
+            ops_repo_root=ops_repo_root,
+        )
+        if not files.get("ok"):
+            return files
+        if os.path.normcase(authority_action[0]) != os.path.normcase(
+            str(files.get("task_pythonw_path") or "")
+        ):
+            raise ValueError("task pythonw authority mismatch")
+        return files
+    except (OSError, ValueError):
+        return {"ok": False, "reason": "high_cost_binding_action_invalid"}
 
 
 def _safe_int(value: object) -> int | None:
@@ -849,6 +1247,9 @@ def _scheduled_task_details(
         "$actions=(@($task.Actions) | ForEach-Object { "
         "(([string]$_.Execute + ' ' + [string]$_.Arguments).Trim()) "
         "}) -join ' ; '; "
+        "$actionRecords=@($task.Actions) | ForEach-Object { "
+        "[ordered]@{ execute=[string]$_.Execute; arguments=[string]$_.Arguments } "
+        "}; "
         "$triggers=@($task.Triggers) | ForEach-Object { "
         "[ordered]@{ start_boundary=[string]$_.StartBoundary; enabled=[bool]$_.Enabled } "
         "}; "
@@ -857,6 +1258,7 @@ def _scheduled_task_details(
         "task_name=[string]$task.TaskName; "
         "state=[string]$task.State; "
         "action_summary=$actions; "
+        "actions=$actionRecords; "
         "triggers=$triggers; "
         "last_run_time=[string]$info.LastRunTime; "
         "last_task_result=[int]$info.LastTaskResult; "
@@ -913,6 +1315,8 @@ def _run_live_startup_canary(
     startup_path: Path,
     date: str,
     live_runner_path: Path | None = None,
+    high_cost_binding_path: Path | None = None,
+    high_cost_binding_receipt_sha256: str = "",
     timeout_sec: int = 60,
     powershell_exe: str = "powershell.exe",
 ) -> dict:
@@ -960,12 +1364,39 @@ def _run_live_startup_canary(
         command += [
             "-UseProductionRuntime",
             "-RepoDir",
-            str(resolved_ops_root),
+            str(repo_root),
             "-EvidenceRepoDir",
             str(resolved_ops_root),
         ]
     else:
         command += ["-RepoDir", str(repo_root)]
+    if bool(high_cost_binding_path) != bool(high_cost_binding_receipt_sha256):
+        return {
+            "ok": False,
+            "reason": "canary_binding_incomplete",
+            "state_file": str(state_file),
+            "log_file": str(log_file),
+        }
+    if high_cost_binding_path is not None:
+        binding_authority = _validate_live_high_cost_binding_files(
+            live_bin_root=startup_path.resolve(strict=True).parent,
+            binding_path=high_cost_binding_path,
+            binding_receipt_sha256=high_cost_binding_receipt_sha256,
+            ops_repo_root=resolved_ops_root,
+        )
+        if not binding_authority.get("ok"):
+            return {
+                "ok": False,
+                "reason": "canary_binding_authority_invalid",
+                "state_file": str(state_file),
+                "log_file": str(log_file),
+            }
+        command += [
+            "-HighCostBindingPath",
+            str(high_cost_binding_path),
+            "-HighCostBindingReceiptSha256",
+            high_cost_binding_receipt_sha256,
+        ]
     try:
         proc = subprocess.run(
             command,
@@ -1204,6 +1635,14 @@ def verify_live_runner_readiness(
         and not bootstrap_summary.startswith("unavailable:")
         and task_launcher_path_text in bootstrap_text
     )
+    binding_authority = _validate_live_high_cost_binding_authority(
+        task_details=task_details,
+        bootstrap_details=bootstrap_details,
+        live_task_launcher_path=live_task_launcher_path,
+        task_name=task_name,
+        bootstrap_task_name=bootstrap_task_name,
+        ops_repo_root=ops_repo_root,
+    )
     runner_state_ok = str(task_details.get("state") or "") in {"Ready", "Running"}
     bootstrap_state_ok = str(bootstrap_details.get("state") or "") in {"Ready", "Running"}
     bootstrap_last_result_ok = bootstrap_details.get("last_task_result") == 0
@@ -1255,6 +1694,7 @@ def verify_live_runner_readiness(
         runner_schedule_ok
         and runner_action_contract["is_production_start"]
         and bootstrap_definition_ok
+        and binding_authority.get("ok") is True
         and (launcher_runner_ready or legacy_direct_runner_ready)
     )
     task_ok = bool(task_definition_ok and bootstrap_last_result_ok)
@@ -1282,6 +1722,12 @@ def verify_live_runner_readiness(
         "targets_live_task_launcher": runner_targets_task_launcher,
         "task_launcher_mode_ok": runner_task_launcher_mode_ok,
         "task_launcher_ready": task_launcher_ready,
+        "high_cost_binding_action_ok": binding_authority.get("ok") is True,
+        "high_cost_binding_path": binding_authority.get("binding_path", ""),
+        "high_cost_binding_receipt_sha256": binding_authority.get(
+            "binding_receipt_sha256", ""
+        ),
+        "high_cost_binding_file_sha256": binding_authority.get("binding_file_sha256", ""),
         "direct_runner_pre_run_interlock": direct_runner_pre_run_interlock,
         "direct_runner_pre_run_reexec": direct_runner_pre_run_reexec,
         "legacy_direct_clean_runtime_trampoline": legacy_direct_clean_runtime_trampoline,
@@ -1369,6 +1815,8 @@ def verify_live_runner_readiness(
             reason = "bootstrap_task_not_before_runner"
         elif not runner_targets_task_launcher:
             reason = "scheduled_task_launcher_required"
+        elif not binding_authority.get("ok"):
+            reason = str(binding_authority.get("reason") or "high_cost_binding_action_invalid")
         else:
             reason = "scheduled_task_target_mismatch"
         result["next_run_readiness"] = {
@@ -1392,6 +1840,10 @@ def verify_live_runner_readiness(
             )
             else live_watcher_path,
             live_runner_path=live_runner_path,
+            high_cost_binding_path=Path(str(binding_authority["binding_path"])),
+            high_cost_binding_receipt_sha256=str(
+                binding_authority["binding_receipt_sha256"]
+            ),
             date=date,
             timeout_sec=canary_timeout_sec,
             powershell_exe=powershell_exe,

@@ -83,6 +83,17 @@ def test_ng813_canary_uses_artifact_root_when_ops_root_is_different(
             task_name=str(kwargs["task_name"]), live_launcher=live_launcher
         ),
     )
+    monkeypatch.setattr(
+        dsh,
+        "_validate_live_high_cost_binding_authority",
+        lambda **_kwargs: {
+            "ok": True,
+            "reason": "",
+            "binding_path": str(live_bin / "news-grasp-high-cost-binding-v1.json"),
+            "binding_receipt_sha256": "b" * 64,
+            "binding_file_sha256": "c" * 64,
+        },
+    )
     observed: dict = {}
 
     def fake_canary(**kwargs):
@@ -106,10 +117,10 @@ def test_ng813_canary_uses_artifact_root_when_ops_root_is_different(
     assert observed["ops_repo_root"] == ops_root.resolve()
 
 
-def test_ng813_canary_executes_from_ops_root_but_writes_under_artifact_root(
+def test_ng813_canary_executes_artifact_root_with_separate_ops_evidence_root(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """operational recovery: canaryの実行正本と成果物rootを引数でも分離する。"""
+    """operational recovery: artifact実行rootとops evidence rootを引数でも分離する。"""
     artifact_root = tmp_path / "artifact"
     ops_root = tmp_path / "ops"
     live_bin = tmp_path / "live"
@@ -128,7 +139,7 @@ def test_ng813_canary_executes_from_ops_root_but_writes_under_artifact_root(
     def fake_run(command, **kwargs):
         assert kwargs["cwd"] == artifact_root.resolve()
         assert "-UseProductionRuntime" in command
-        assert Path(command[command.index("-RepoDir") + 1]) == ops_root.resolve()
+        assert Path(command[command.index("-RepoDir") + 1]) == artifact_root.resolve()
         assert Path(command[command.index("-EvidenceRepoDir") + 1]) == ops_root.resolve()
         state_file = Path(command[command.index("-StateFile") + 1])
         log_dir = Path(command[command.index("-LogDir") + 1])
@@ -404,6 +415,9 @@ def test_ng813_production_recovery_uses_installed_binding_not_caller_root() -> N
     assert "opsRepoRoot" in installer
     assert "pythonExeSha256" in installer
     assert "pythonTrustAnchor" in installer
+    assert "pythonwTrustAnchor" in installer
+    assert "$pythonwSignature = Get-AuthenticodeSignature -LiteralPath $TaskPythonwPath" in installer
+    assert "NEWS_GRASP_RECOVERY_PYTHONW_TRUST_ANCHOR_INVALID" in installer
     assert "Get-AuthenticodeSignature" in installer
     assert "--untracked-files=all" in installer
     assert "ls-files --others --ignored --exclude-standard" in installer

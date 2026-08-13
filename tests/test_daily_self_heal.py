@@ -2,7 +2,9 @@
 """tools.daily_self_heal の契約テスト。"""
 from __future__ import annotations
 
+import hashlib
 import json
+import os
 import subprocess
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -2580,6 +2582,99 @@ def test_verify_live_runner_readiness_rejects_direct_bootstrap_without_task_laun
     assert result["scheduled_task"]["runner_action_is_production_start"] is True
 
 
+def _write_live_binding_authority_fixture(
+    live_bin: Path,
+    launcher: Path,
+    *,
+    task_name: str = "News-Grasp Production",
+    bootstrap_task_name: str = "News-Grasp Bootstrap",
+) -> tuple[dict[str, object], dict[str, object], Path, str]:
+    receipt = "b" * 64
+    binding = live_bin / "news-grasp-high-cost-binding-v1.json"
+    binding.write_text(
+        json.dumps(
+            {
+                "schemaVersion": "NEWS_GRASP_HIGH_COST_BINDING_V1",
+                "bindingReceiptSha256": receipt,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    python_exe = live_bin / "python.exe"
+    pythonw_exe = live_bin / "pythonw.exe"
+    python_exe.write_bytes(b"python-fixture")
+    pythonw_exe.write_bytes(b"pythonw-fixture")
+    recovery = {
+        "schemaVersion": "NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1",
+        "highCostBindingPath": str(binding.resolve()),
+        "highCostBindingReceiptSha256": receipt,
+        "highCostBindingFileSha256": hashlib.sha256(binding.read_bytes()).hexdigest(),
+        "pythonExe": str(python_exe.resolve()),
+        "pythonExeSha256": hashlib.sha256(python_exe.read_bytes()).hexdigest(),
+        "taskPythonwPath": str(pythonw_exe.resolve()),
+        "taskPythonwSha256": hashlib.sha256(pythonw_exe.read_bytes()).hexdigest(),
+        "pythonTrustAnchor": "authenticode:python-software-foundation",
+        "pythonSignerSubject": "CN=Python Software Foundation, O=Python Software Foundation, fixture",
+        "pythonSignerThumbprint": "d" * 40,
+        "pythonwTrustAnchor": "authenticode:python-software-foundation",
+        "pythonwSignerSubject": "CN=Python Software Foundation, O=Python Software Foundation, fixture",
+        "pythonwSignerThumbprint": "d" * 40,
+        "opsRepoRoot": str(live_bin.parent.resolve()),
+        "opsHead": "a" * 40,
+        "trustedRemote": "https://github.com/HIDEPON-UMG/News-Grasp.git",
+        "dailySelfHealPath": str((live_bin.parent / "tools" / "daily_self_heal.py").resolve()),
+        "dailySelfHealSha256": "c" * 64,
+    }
+    (live_bin / "news-grasp-recovery-runtime-binding-v1.json").write_text(
+        json.dumps(recovery) + "\n", encoding="utf-8"
+    )
+    executable = str(pythonw_exe.resolve())
+    runner_action = [
+        executable,
+        str(launcher.resolve()),
+        "runner",
+        "--scheduled-task-name",
+        task_name,
+        "--high-cost-binding-path",
+        str(binding.resolve()),
+        "--high-cost-binding-sha256",
+        receipt,
+    ]
+    bootstrap_action = [
+        executable,
+        str(launcher.resolve()),
+        "bootstrap",
+        "--scheduled-task-name",
+        bootstrap_task_name,
+        "--high-cost-binding-path",
+        str(binding.resolve()),
+        "--high-cost-binding-sha256",
+        receipt,
+    ]
+    authority = {
+        "schemaVersion": "STABLE_TASK_AUTHORITY_V1",
+        "action": runner_action,
+    }
+    authority["authoritySha256"] = hashlib.sha256(
+        json.dumps(authority, ensure_ascii=False, separators=(",", ":")).encode(
+            "utf-8"
+        )
+    ).hexdigest()
+    (live_bin / "news-grasp-stable-task-authority-v1.json").write_text(
+        json.dumps(authority, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+
+    def details(action: list[str]) -> dict[str, object]:
+        arguments = subprocess.list2cmdline(action[1:])
+        return {
+            "action_summary": f"{action[0]} {arguments}",
+            "actions": [{"execute": action[0], "arguments": arguments}],
+        }
+
+    return details(runner_action), details(bootstrap_action), binding, receipt
+
+
 @pytest.mark.parametrize(
     ("bootstrap_last_result", "expected_ok", "expected_reason"),
     [
@@ -2631,6 +2726,29 @@ creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
         (live_bin / name).write_text(source, encoding="utf-8")
 
     live_launcher = live_bin / "news-grasp-task-launcher.pyw"
+    runner_action, bootstrap_action, live_binding, binding_receipt_sha256 = (
+        _write_live_binding_authority_fixture(live_bin, live_launcher)
+    )
+    monkeypatch.setattr(
+        dsh,
+        "_authenticode_identity",
+        lambda _path: {
+            "status": "Valid",
+            "subject": "CN=Python Software Foundation, O=Python Software Foundation, fixture",
+            "thumbprint": "d" * 40,
+        },
+    )
+    monkeypatch.setattr(
+        dsh,
+        "_trusted_ops_generation",
+        lambda _root: {
+            "root": str(tmp_path.resolve()),
+            "head": "a" * 40,
+            "remote": "https://github.com/HIDEPON-UMG/News-Grasp.git",
+            "daily_self_heal_path": str((tmp_path / "tools" / "daily_self_heal.py").resolve()),
+            "daily_self_heal_sha256": "c" * 64,
+        },
+    )
 
     def fake_task_details(**kwargs):
         mode = "bootstrap" if kwargs.get("task_name") == "News-Grasp Bootstrap" else "runner"
@@ -2638,7 +2756,7 @@ creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
         return {
             "ok": True,
             "state": "Ready",
-            "action_summary": f'pythonw.exe "{live_launcher}" {mode}',
+            **(bootstrap_action if mode == "bootstrap" else runner_action),
             "triggers": [{"enabled": True, "start_boundary": f"2026-06-20T{start}"}],
             "last_task_result": bootstrap_last_result if mode == "bootstrap" else 0,
             "next_run_time": f"2026-06-21T{start}",
@@ -2646,7 +2764,13 @@ creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
         }
 
     monkeypatch.setattr(dsh, "_scheduled_task_details", fake_task_details)
-    monkeypatch.setattr(dsh, "_run_live_startup_canary", lambda **_kwargs: {"ok": True, "status": "smoke_ok"})
+    captured_canary: dict[str, object] = {}
+
+    def fake_canary(**kwargs):
+        captured_canary.update(kwargs)
+        return {"ok": True, "status": "smoke_ok"}
+
+    monkeypatch.setattr(dsh, "_run_live_startup_canary", fake_canary)
 
     result = dsh.verify_live_runner_readiness(
         repo_root=tmp_path,
@@ -2667,6 +2791,10 @@ creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
     assert result["scheduled_task"]["targets_live_task_launcher"] is True
     assert result["scheduled_task"]["bootstrap_targets_live_task_launcher"] is True
     assert result["scheduled_task"]["bootstrap_action_is_smoke_test"] is True
+    assert result["scheduled_task"]["high_cost_binding_action_ok"] is True
+    if expected_ok:
+        assert captured_canary["high_cost_binding_path"] == live_binding
+        assert captured_canary["high_cost_binding_receipt_sha256"] == binding_receipt_sha256
 
 
 def test_task_launcher_contract_accepts_current_registered_multimode_launcher() -> None:
@@ -3451,6 +3579,386 @@ def test_live_runner_canary_rejects_command_not_found_stderr(monkeypatch, tmp_pa
 
     assert result["ok"] is False
     assert result["reason"] == "canary_stderr_error"
+
+
+def test_live_startup_canary_propagates_explicit_high_cost_binding(monkeypatch, tmp_path: Path) -> None:
+    """production canary は Task Action と同じ binding identity を bootstrap へ渡す。"""
+    startup = tmp_path / "bin" / "news-grasp-bootstrap.ps1"
+    binding = startup.parent / "news-grasp-high-cost-binding-v1.json"
+    startup.parent.mkdir(parents=True)
+    startup.write_text("bootstrap", encoding="utf-8")
+    launcher = startup.parent / "news-grasp-task-launcher.pyw"
+    launcher.write_text("launcher", encoding="utf-8")
+    _, _, binding, receipt_sha256 = _write_live_binding_authority_fixture(
+        startup.parent, launcher
+    )
+    monkeypatch.setattr(
+        dsh,
+        "_authenticode_identity",
+        lambda _path: {
+            "status": "Valid",
+            "subject": "CN=Python Software Foundation, O=Python Software Foundation, fixture",
+            "thumbprint": "d" * 40,
+        },
+    )
+    monkeypatch.setattr(
+        dsh,
+        "_trusted_ops_generation",
+        lambda _root: {
+            "root": str(tmp_path.resolve()),
+            "head": "a" * 40,
+            "remote": "https://github.com/HIDEPON-UMG/News-Grasp.git",
+            "daily_self_heal_path": str((tmp_path / "tools" / "daily_self_heal.py").resolve()),
+            "daily_self_heal_sha256": "c" * 64,
+        },
+    )
+
+    class Proc:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+
+    def fake_run(command, **_kwargs):
+        assert command[command.index("-HighCostBindingPath") + 1] == str(binding)
+        assert command[command.index("-HighCostBindingReceiptSha256") + 1] == receipt_sha256
+        state_file = Path(command[command.index("-StateFile") + 1])
+        log_dir = Path(command[command.index("-LogDir") + 1])
+        state_file.write_text(json.dumps({"status": "smoke_ok"}), encoding="utf-8")
+        (log_dir / "2026-06-20.log").write_text(
+            "news-grasp-runner.ps1 SMOKE OK\n", encoding="utf-8"
+        )
+        return Proc()
+
+    monkeypatch.setattr(dsh.subprocess, "run", fake_run)
+
+    result = dsh._run_live_startup_canary(
+        repo_root=tmp_path,
+        startup_path=startup,
+        date="2026-06-20",
+        high_cost_binding_path=binding,
+        high_cost_binding_receipt_sha256=receipt_sha256,
+        ops_repo_root=tmp_path,
+    )
+
+    assert result["ok"] is True
+
+
+def test_live_startup_canary_rejects_ops_provenance_drift_before_launch(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """canary単体でもrecovery bindingとcanonical ops generationのずれを拒否する。"""
+    startup = tmp_path / "bin" / "news-grasp-bootstrap.ps1"
+    startup.parent.mkdir(parents=True)
+    startup.write_text("bootstrap", encoding="utf-8")
+    launcher = startup.parent / "news-grasp-task-launcher.pyw"
+    launcher.write_text("launcher", encoding="utf-8")
+    _, _, binding, receipt_sha256 = _write_live_binding_authority_fixture(
+        startup.parent, launcher
+    )
+    monkeypatch.setattr(
+        dsh,
+        "_authenticode_identity",
+        lambda _path: {
+            "status": "Valid",
+            "subject": "CN=Python Software Foundation, O=Python Software Foundation, fixture",
+            "thumbprint": "d" * 40,
+        },
+    )
+    monkeypatch.setattr(
+        dsh,
+        "_trusted_ops_generation",
+        lambda _root: {
+            "root": str(tmp_path.resolve()),
+            "head": "e" * 40,
+            "remote": "https://github.com/HIDEPON-UMG/News-Grasp.git",
+            "daily_self_heal_path": str((tmp_path / "tools" / "daily_self_heal.py").resolve()),
+            "daily_self_heal_sha256": "c" * 64,
+        },
+    )
+    launched = False
+
+    def fake_run(*_args, **_kwargs):
+        nonlocal launched
+        launched = True
+        raise AssertionError("canary must fail before launch")
+
+    monkeypatch.setattr(dsh.subprocess, "run", fake_run)
+    result = dsh._run_live_startup_canary(
+        repo_root=tmp_path,
+        ops_repo_root=tmp_path,
+        startup_path=startup,
+        date="2026-06-20",
+        high_cost_binding_path=binding,
+        high_cost_binding_receipt_sha256=receipt_sha256,
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "canary_binding_authority_invalid"
+    assert launched is False
+
+
+def test_live_startup_canary_rejects_partial_high_cost_binding_before_launch(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """binding path/hash の片側だけでは subprocess を開始しない。"""
+    startup = tmp_path / "bin" / "news-grasp-bootstrap.ps1"
+    startup.parent.mkdir(parents=True)
+    startup.write_text("bootstrap", encoding="utf-8")
+    launched = False
+
+    def fake_run(*_args, **_kwargs):
+        nonlocal launched
+        launched = True
+        raise AssertionError("subprocess must not start")
+
+    monkeypatch.setattr(dsh.subprocess, "run", fake_run)
+    result = dsh._run_live_startup_canary(
+        repo_root=tmp_path,
+        startup_path=startup,
+        date="2026-06-20",
+        high_cost_binding_path=startup.parent / "binding.json",
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "canary_binding_incomplete"
+    assert launched is False
+
+
+@pytest.mark.parametrize(
+    ("mutation", "expected_reason"),
+    [
+        ("missing_binding", "high_cost_binding_action_invalid"),
+        ("duplicate_option", "high_cost_binding_action_invalid"),
+        ("multiple_actions", "high_cost_binding_action_invalid"),
+        ("out_of_bin", "high_cost_binding_action_invalid"),
+        ("malformed_receipt", "high_cost_binding_authority_invalid"),
+        ("recovery_mismatch", "high_cost_binding_authority_invalid"),
+        ("ops_git_failure", "high_cost_binding_authority_invalid"),
+    ],
+)
+def test_live_high_cost_binding_authority_fails_closed(
+    monkeypatch, tmp_path: Path, mutation: str, expected_reason: str
+) -> None:
+    """Task文字列だけをauthorityにせず、stable/live binding三者照合でfail-closedにする。"""
+    live_bin = tmp_path / "bin"
+    live_bin.mkdir()
+    launcher = live_bin / "news-grasp-task-launcher.pyw"
+    launcher.write_text("launcher", encoding="utf-8")
+    runner, bootstrap, binding, _ = _write_live_binding_authority_fixture(
+        live_bin, launcher
+    )
+    monkeypatch.setattr(
+        dsh,
+        "_authenticode_identity",
+        lambda _path: {
+            "status": "Valid",
+            "subject": "CN=Python Software Foundation, O=Python Software Foundation, fixture",
+            "thumbprint": "d" * 40,
+        },
+    )
+    monkeypatch.setattr(
+        dsh,
+        "_trusted_ops_generation",
+        lambda _root: {
+            "root": str(tmp_path.resolve()),
+            "head": "a" * 40,
+            "remote": "https://github.com/HIDEPON-UMG/News-Grasp.git",
+            "daily_self_heal_path": str((tmp_path / "tools" / "daily_self_heal.py").resolve()),
+            "daily_self_heal_sha256": "c" * 64,
+        },
+    )
+    authority_path = live_bin / "news-grasp-stable-task-authority-v1.json"
+    authority = json.loads(authority_path.read_text(encoding="utf-8"))
+
+    def reseal_authority() -> None:
+        authority.pop("authoritySha256", None)
+        authority["authoritySha256"] = hashlib.sha256(
+            json.dumps(
+                authority, ensure_ascii=False, separators=(",", ":")
+            ).encode("utf-8")
+        ).hexdigest()
+        authority_path.write_text(
+            json.dumps(authority, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
+
+    def bind_task_actions_to_authority() -> None:
+        runner_action = list(authority["action"])
+        bootstrap_action = list(runner_action)
+        bootstrap_action[2] = "bootstrap"
+        bootstrap_action[4] = "News-Grasp Bootstrap"
+        for details, action in ((runner, runner_action), (bootstrap, bootstrap_action)):
+            details["actions"] = [
+                {
+                    "execute": action[0],
+                    "arguments": subprocess.list2cmdline(action[1:]),
+                }
+            ]
+
+    if mutation == "missing_binding":
+        for details in (runner, bootstrap):
+            values = dsh._windows_action_arguments(details["actions"][0]["arguments"])
+            values = values[:4]
+            details["actions"][0]["arguments"] = subprocess.list2cmdline(values)
+    elif mutation == "duplicate_option":
+        runner["actions"][0]["arguments"] += " --high-cost-binding-sha256 " + "d" * 64
+    elif mutation == "multiple_actions":
+        runner["actions"].append(dict(runner["actions"][0]))
+    elif mutation == "out_of_bin":
+        authority["action"][0] = str((tmp_path / "evil.exe").resolve())
+        bind_task_actions_to_authority()
+        reseal_authority()
+    elif mutation == "malformed_receipt":
+        authority["action"][8] = "not-a-sha"
+        bind_task_actions_to_authority()
+        reseal_authority()
+    elif mutation == "recovery_mismatch":
+        recovery_path = live_bin / "news-grasp-recovery-runtime-binding-v1.json"
+        recovery = json.loads(recovery_path.read_text(encoding="utf-8"))
+        recovery["highCostBindingFileSha256"] = "0" * 64
+        recovery_path.write_text(json.dumps(recovery) + "\n", encoding="utf-8")
+    elif mutation == "ops_git_failure":
+        def fail_ops_generation(_root):
+            raise RuntimeError("bounded git failure")
+
+        monkeypatch.setattr(dsh, "_trusted_ops_generation", fail_ops_generation)
+
+    result = dsh._validate_live_high_cost_binding_authority(
+        task_details=runner,
+        bootstrap_details=bootstrap,
+        live_task_launcher_path=launcher,
+        task_name="News-Grasp Production",
+        bootstrap_task_name="News-Grasp Bootstrap",
+        ops_repo_root=tmp_path,
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == expected_reason
+    assert binding.is_file()
+
+
+def test_safe_ops_git_disables_repo_controlled_execution_and_has_timeout(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """operational recovery: trusted ops判定はrepoのhook/fsmonitorを起動しない。"""
+    captured: dict[str, object] = {}
+
+    class Proc:
+        returncode = 0
+        stdout = "ok\n"
+        stderr = ""
+
+    def fake_run(command, **kwargs):
+        captured["command"] = command
+        captured.update(kwargs)
+        return Proc()
+
+    monkeypatch.setattr(dsh.subprocess, "run", fake_run)
+    assert dsh._safe_ops_git_output(tmp_path, ["status", "--porcelain"]) == "ok"
+    command = captured["command"]
+    assert "core.hooksPath=NUL" in command
+    assert "core.fsmonitor=false" in command
+    assert "core.attributesFile=NUL" in command
+    assert captured["timeout"] == 15
+    assert captured["check"] is False
+
+
+def test_authenticode_timeout_is_typed_failure(monkeypatch, tmp_path: Path) -> None:
+    """operational recovery: trust store停滞はtracebackでなくtyped authority failureにする。"""
+    executable = tmp_path / "python.exe"
+    executable.write_bytes(b"fixture")
+
+    def timeout(*_args, **_kwargs):
+        raise subprocess.TimeoutExpired(cmd="powershell.exe", timeout=15)
+
+    monkeypatch.setattr(dsh.subprocess, "run", timeout)
+    with pytest.raises(ValueError, match="authenticode verification unavailable"):
+        dsh._authenticode_identity(executable)
+
+
+def test_live_high_cost_binding_authority_rejects_coordinated_recovery_rewrite(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """adversarial: Task/authority/recoveryを同時再sealしてもunsigned executableはGreenにしない。"""
+    live_bin = tmp_path / "bin"
+    live_bin.mkdir()
+    launcher = live_bin / "news-grasp-task-launcher.pyw"
+    launcher.write_text("launcher", encoding="utf-8")
+    runner, bootstrap, _, _ = _write_live_binding_authority_fixture(live_bin, launcher)
+    recovery_path = live_bin / "news-grasp-recovery-runtime-binding-v1.json"
+    recovery = json.loads(recovery_path.read_text(encoding="utf-8"))
+    rogue_dir = tmp_path / "rogue"
+    rogue_dir.mkdir()
+    rogue_python = rogue_dir / "python.exe"
+    rogue_pythonw = rogue_dir / "pythonw.exe"
+    rogue_python.write_bytes(b"rogue-python")
+    rogue_pythonw.write_bytes(b"rogue-pythonw")
+    recovery.update(
+        {
+            "pythonExe": str(rogue_python.resolve()),
+            "pythonExeSha256": hashlib.sha256(rogue_python.read_bytes()).hexdigest(),
+            "taskPythonwPath": str(rogue_pythonw.resolve()),
+            "taskPythonwSha256": hashlib.sha256(rogue_pythonw.read_bytes()).hexdigest(),
+            "pythonSignerSubject": "CN=Python Software Foundation, O=Python Software Foundation, forged",
+            "pythonSignerThumbprint": "f" * 40,
+            "pythonwSignerSubject": "CN=Python Software Foundation, O=Python Software Foundation, forged",
+            "pythonwSignerThumbprint": "f" * 40,
+        }
+    )
+    recovery_path.write_text(json.dumps(recovery) + "\n", encoding="utf-8")
+    authority_path = live_bin / "news-grasp-stable-task-authority-v1.json"
+    authority = json.loads(authority_path.read_text(encoding="utf-8"))
+    authority["action"][0] = str(rogue_pythonw.resolve())
+    authority.pop("authoritySha256", None)
+    authority["authoritySha256"] = hashlib.sha256(
+        json.dumps(authority, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    authority_path.write_text(json.dumps(authority) + "\n", encoding="utf-8")
+    runner_action = list(authority["action"])
+    bootstrap_action = list(runner_action)
+    bootstrap_action[2] = "bootstrap"
+    bootstrap_action[4] = "News-Grasp Bootstrap"
+    for details, action in ((runner, runner_action), (bootstrap, bootstrap_action)):
+        details["actions"] = [
+            {"execute": action[0], "arguments": subprocess.list2cmdline(action[1:])}
+        ]
+    monkeypatch.setattr(
+        dsh,
+        "_authenticode_identity",
+        lambda _path: {"status": "NotSigned", "subject": "", "thumbprint": ""},
+    )
+    monkeypatch.setattr(
+        dsh,
+        "_trusted_ops_generation",
+        lambda _root: {
+            "root": str(tmp_path.resolve()),
+            "head": "a" * 40,
+            "remote": "https://github.com/HIDEPON-UMG/News-Grasp.git",
+            "daily_self_heal_path": str((tmp_path / "tools" / "daily_self_heal.py").resolve()),
+            "daily_self_heal_sha256": "c" * 64,
+        },
+    )
+
+    result = dsh._validate_live_high_cost_binding_authority(
+        task_details=runner,
+        bootstrap_details=bootstrap,
+        live_task_launcher_path=launcher,
+        task_name="News-Grasp Production",
+        bootstrap_task_name="News-Grasp Bootstrap",
+        ops_repo_root=tmp_path,
+    )
+
+    assert result == {"ok": False, "reason": "high_cost_binding_authority_invalid"}
+
+
+def test_canonical_live_json_rejects_hardlink_alias(tmp_path: Path) -> None:
+    """canonical leafと同一inodeでも複数linkを持つaliasはauthorityとして受理しない。"""
+    original = tmp_path / "original.json"
+    hardlink = tmp_path / "authority.json"
+    original.write_text('{"ok":true}\n', encoding="utf-8")
+    os.link(original, hardlink)
+
+    with pytest.raises(ValueError, match="high_cost_binding_authority_invalid"):
+        dsh._canonical_live_json(hardlink, expected=hardlink)
 
 
 def test_live_startup_canary_removes_stale_log_before_run(monkeypatch, tmp_path: Path) -> None:

@@ -169,7 +169,13 @@ def _fake_codex_capture_ps1(tmp_path: Path) -> Path:
     return fake
 
 
-def _high_cost_binding_args(tmp_path: Path, workspace: Path, broker: Path) -> list[str]:
+def _high_cost_binding_args(
+    tmp_path: Path,
+    workspace: Path,
+    broker: Path,
+    *,
+    wrapper_path: Path,
+) -> list[str]:
     """isolated wrapper fixtureをNEWS_GRASP_HIGH_COST_BINDING_V1へ束縛する。"""
 
     source_broker = workspace / "tools" / "harness" / "model_spawn_broker.py"
@@ -209,21 +215,32 @@ def _high_cost_binding_args(tmp_path: Path, workspace: Path, broker: Path) -> li
         descriptor_path=descriptor,
         output_path=binding_path,
     )
+    source_resolver = (ROOT / "tools" / "news_grasp_high_cost_binding.py").resolve()
+    installed_resolver = (wrapper_path.parent / "news_grasp_high_cost_binding.py").resolve()
+    resolver = (
+        source_resolver
+        if wrapper_path.parent.name.lower() == "ops"
+        else installed_resolver
+    )
     return [
         "-HighCostBindingPath",
         str(binding_path),
         "-HighCostBindingReceiptSha256",
         str(value["bindingReceiptSha256"]),
         "-HighCostBindingResolverPath",
-        str((ROOT / "tools" / "news_grasp_high_cost_binding.py").resolve()),
+        str(resolver),
         "-HighCostBindingResolverSha256",
         hashlib.sha256(
-            (ROOT / "tools" / "news_grasp_high_cost_binding.py").read_bytes()
+            resolver.read_bytes()
         ).hexdigest(),
     ]
 
 
-def _canonical_test_broker(tmp_path: Path) -> tuple[list[str], dict[str, str]]:
+def _canonical_test_broker(
+    tmp_path: Path,
+    *,
+    wrapper_path: Path = WRAPPER,
+) -> tuple[list[str], dict[str, str]]:
     """本番と同じ必須broker境界を、外部modelなしで通す隔離fixtureを返す。"""
     # USERPROFILEそのものを隔離rootにして、broker正本照合とログ秘匿を同時に再演する。
     profile = tmp_path
@@ -262,7 +279,12 @@ def _canonical_test_broker(tmp_path: Path) -> tuple[list[str], dict[str, str]]:
     env["USERPROFILE"] = str(profile)
     _write_external_health_authority(profile, broker)
     args = [
-        *_high_cost_binding_args(tmp_path, workspace, broker),
+        *_high_cost_binding_args(
+            tmp_path,
+            workspace,
+            broker,
+            wrapper_path=wrapper_path,
+        ),
         "-HighCostPythonExe", sys.executable,
         "-HighCostCallId", f"test-{tmp_path.name}",
         "-HighCostAdmissionPath", str(admission),
@@ -339,7 +361,12 @@ def _full_e2e_claim_fixture(tmp_path: Path, claim_mode: str) -> tuple[list[str],
     )
     env["MODEL_SENTINEL"] = str(model_sentinel)
     args = [
-        *_high_cost_binding_args(tmp_path, workspace, broker),
+        *_high_cost_binding_args(
+            tmp_path,
+            workspace,
+            broker,
+            wrapper_path=REPO_WRAPPER,
+        ),
         "-HighCostPythonExe", sys.executable,
         "-HighCostCallId", f"claim-{claim_mode}",
         "-HighCostExpectedOperationKind", "full_e2e",
@@ -526,7 +553,12 @@ def _composed_claim_witness_fixture(
     )
     _write_external_health_authority(profile, broker)
     args = [
-        *_high_cost_binding_args(tmp_path, workspace, broker),
+        *_high_cost_binding_args(
+            tmp_path,
+            workspace,
+            broker,
+            wrapper_path=REPO_WRAPPER,
+        ),
         "-HighCostPythonExe", sys.executable,
         "-HighCostCallId", "claim-composition",
         "-HighCostExpectedOperationKind", "full_e2e",
@@ -654,7 +686,9 @@ def test_codex_wrapper_rejects_direct_cross_mode_inputs_before_model_start(tmp_p
     prompt_file.write_text("cross-mode rejection\n", encoding="utf-8")
     sentinel = tmp_path / "model-started.txt"
 
-    scheduled_args, scheduled_env = _canonical_test_broker(tmp_path / "scheduled")
+    scheduled_args, scheduled_env = _canonical_test_broker(
+        tmp_path / "scheduled", wrapper_path=REPO_WRAPPER
+    )
     scheduled_args = list(scheduled_args)
     scheduled_args += ["-HighCostParentAuthorityPath", str(tmp_path / "scheduled-parent.json")]
     scheduled_result = subprocess.run(
@@ -681,7 +715,9 @@ def test_codex_wrapper_rejects_direct_cross_mode_inputs_before_model_start(tmp_p
         tmp_path / "scheduled.log"
     ).read_text(encoding="utf-8", errors="replace")
 
-    full_args, full_env = _canonical_test_broker(tmp_path / "full")
+    full_args, full_env = _canonical_test_broker(
+        tmp_path / "full", wrapper_path=REPO_WRAPPER
+    )
     full_args = list(full_args)
     full_args[full_args.index("-HighCostExpectedOperationKind") + 1] = "full_e2e"
     full_result = subprocess.run(
@@ -899,7 +935,9 @@ def test_codex_wrapper_never_overrides_success_rc_from_quoted_quota_terms(tmp_pa
     log_file = tmp_path / "wrapper.log"
     usage_log = tmp_path / "usage.jsonl"
     prompt_file.write_text("quoted quota terms smoke\n", encoding="utf-8")
-    high_cost_args, env = _canonical_test_broker(tmp_path)
+    high_cost_args, env = _canonical_test_broker(
+        tmp_path, wrapper_path=REPO_WRAPPER
+    )
 
     result = subprocess.run(
         [

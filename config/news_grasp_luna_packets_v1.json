@@ -87,7 +87,7 @@
         "tools/operational_recovery_registry.py": "afdfdfec2600fc4244ea2aa63c558400a325eb8ba2ecfee78e7dbd6d53485499",
         "tools/news_grasp_daily_control.py": "50403f360494ee8851ec45657b0cfacaa6dcc97f465b34f616decf7bf1b15849",
         "tools/audit_recovery_control.py": "e8f906fa46994932a295517ded82fe417f5894b47004061a2294168b82f3b3fd",
-        "tools/daily_self_heal.py": "09669333ed04120225f86a3c039b5f8078cb12da79635385a4545875fd9ebc34",
+        "tools/daily_self_heal.py": "abec33c618ecce16d2664292f7bd97707e35522daa1f7322d196726f204df761",
         "config/operational_recovery_registry_v1.json": "84810a8f9d6f99a269f418941311f41381582ccda7e941ec1f627035bd9db98f",
         "tools/news_grasp_constitution.py": "d34e2a152523c0b30961e907c0e90b0eb63a44b84c8c46da0ca57cf8bb49741a"
       },
@@ -376,15 +376,15 @@
         "tests/test_runner_convergence_contract.py"
       ],
       "targetSourceHashes": {
-        "scripts/ops/install-news-grasp-ops.ps1": "bb74bb91ba02852b6ba9ffc6334fe400a0bd37eb53cc23bc4648b6fff2c83c7a",
+        "scripts/ops/install-news-grasp-ops.ps1": "8fefce32df00246b72d19c4f70991b991c1de6a9dfbc67195831883c96cbacb3",
         "scripts/ops/news-grasp-task-launcher.pyw": "9adbbfdd484bbc43f9b79c973da7ecf1ad8d0a060473012bfcc25bed291cebe3",
         "config/news_grasp_skill_binding_v1.json": "f1453dc95ce71a16441efe6947d26cfba16eff897d25e8bd1fe9ac7a3fd85f1e",
         "config/news_grasp_automation_assets_v2.json": "275a6f4217db6d064cb9c378541fcab0412d086415ff4043744b816de1d45f70",
         "tools/news_grasp_generation.py": "04c6fd4c736bc3c2e0f0024a873996a45a5ba75c1e616b1f8379141036a96b16",
         "tools/news_grasp_constitution.py": "d34e2a152523c0b30961e907c0e90b0eb63a44b84c8c46da0ca57cf8bb49741a",
-        "config/news_grasp_active_object_catalog_v1.json": "e6b1f96e3f97de7af24023464c32add07297c155355dc3995069325d4316a776",
-        "config/news_grasp_test_constitution_map_v1.json": "c4643aff3b2353b51b796525f5a84b14c5f8a4dde1ab6d76692e7f989c3dcf6d",
-        "config/news_grasp_spec_disposition_v1.json": "df0f8a474f4e7de0cbdec18323a1754ba098820e1aba48d6d6dd8fcd6174a66e",
+        "config/news_grasp_active_object_catalog_v1.json": "b7b6adff8259c96af1094faed591cd0549158667429de7f4e4ac868c5f64a56b",
+        "config/news_grasp_test_constitution_map_v1.json": "d20464975716a26781163e74e75f8efed3bc3beb5b657c9b7aee602790d916e8",
+        "config/news_grasp_spec_disposition_v1.json": "17a1132e86b029ae56ba92881a74eb01c0e09f1f831a96d67e0edfa8b83fafe5",
         "tests/test_runner_convergence_contract.py": "833af3f78cc8cd0627d726e18df5e6924e784f16c88433f8851f4ad5d585c928"
       },
       "constitutionClauses": [
@@ -965,7 +965,7 @@
         "automation/skills/news-grasp-e2e-discipline/SKILL.md": "31514db9592e81e8350d790c7a7a45da28500a1e0e159a8ee42c13dca0ab3da3",
         "config/news_grasp_skill_binding_v1.json": "f1453dc95ce71a16441efe6947d26cfba16eff897d25e8bd1fe9ac7a3fd85f1e",
         "config/news_grasp_skill_cross_layer_graph_v1.json": "402cfaee75923837b3ce12ca842d868bfff6681c26f235a10cefaa79992f982c",
-        "scripts/ops/install-news-grasp-ops.ps1": "bb74bb91ba02852b6ba9ffc6334fe400a0bd37eb53cc23bc4648b6fff2c83c7a",
+        "scripts/ops/install-news-grasp-ops.ps1": "8fefce32df00246b72d19c4f70991b991c1de6a9dfbc67195831883c96cbacb3",
         "tests/test_news_grasp_luna_packets.py": "3b99e881de9127ae7f435c5f6fef61c9def0eb5010e323846b17a44281cd3749",
         "tests/test_news_grasp_operational_skill_contract.py": "b5829482e365cfa453babcef028c7969a922302bff06c7825780710fe171465f",
         "tests/test_news_grasp_skill_cross_layer_graph.py": "a711c1bc5397c4fb30636cf4b673cb642aae8c9510cdfaa6d5d668381b7334fd",
@@ -1401,7 +1401,7 @@
         "tests/test_news_grasp_luna_packets.py"
       ],
       "targetSourceHashes": {
-        "scripts/ops/install-news-grasp-ops.ps1": "bb74bb91ba02852b6ba9ffc6334fe400a0bd37eb53cc23bc4648b6fff2c83c7a",
+        "scripts/ops/install-news-grasp-ops.ps1": "8fefce32df00246b72d19c4f70991b991c1de6a9dfbc67195831883c96cbacb3",
         "scripts/ops/install-news-grasp-verified-file-boundary.ps1": "d9d1258c89e040a093d1ba2593787cb7a0cb8e400ea5a9c5a217800bf9728a56",
         "tests/test_runner_convergence_contract.py": "833af3f78cc8cd0627d726e18df5e6924e784f16c88433f8851f4ad5d585c928",
         "tests/test_news_grasp_luna_packets.py": "3b99e881de9127ae7f435c5f6fef61c9def0eb5010e323846b17a44281cd3749"

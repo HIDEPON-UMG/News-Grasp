@@ -1008,6 +1008,10 @@ $pythonSnapshot = Read-NewsGraspVerifiedFile `
     -Path $runtimePythonPath `
     -TrustedBoundary $installTrustedBoundary `
     -RequireSingleLink
+$pythonwSnapshot = Read-NewsGraspVerifiedFile `
+    -Path $TaskPythonwPath `
+    -TrustedBoundary $installTrustedBoundary `
+    -RequireSingleLink
 $receiptToolSnapshot = Read-NewsGraspVerifiedFile `
     -Path (Join-Path $runtimeEvidenceRepoDir 'tools\news_grasp_recovery_receipts.py') `
     -TrustedBoundary $installTrustedBoundary `
@@ -1048,6 +1052,15 @@ if (
     $pythonSignerSubject -notlike 'CN=Python Software Foundation, O=Python Software Foundation,*' -or
     $pythonSignerThumbprint -notmatch '^[0-9a-f]{40}$'
 ) { throw 'NEWS_GRASP_RECOVERY_PYTHON_TRUST_ANCHOR_INVALID' }
+$pythonwSignature = Get-AuthenticodeSignature -LiteralPath $TaskPythonwPath
+$pythonwSignerSubject = [string]$pythonwSignature.SignerCertificate.Subject
+$pythonwSignerThumbprint = ([string]$pythonwSignature.SignerCertificate.Thumbprint).ToLowerInvariant()
+if (
+    [string]$pythonwSignature.Status -cne 'Valid' -or
+    $pythonwSignerSubject -notlike 'CN=Python Software Foundation, O=Python Software Foundation,*' -or
+    $pythonwSignerThumbprint -notmatch '^[0-9a-f]{40}$' -or
+    $pythonwSignerThumbprint -cne $pythonSignerThumbprint
+) { throw 'NEWS_GRASP_RECOVERY_PYTHONW_TRUST_ANCHOR_INVALID' }
 $recoveryRuntimeBinding = [ordered]@{
     schemaVersion = 'NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1'
     opsRepoRoot = $runtimeEvidenceRepoDir
@@ -1056,9 +1069,14 @@ $recoveryRuntimeBinding = [ordered]@{
     productionRuntimeRoot = $productionRuntimePath
     pythonExe = $runtimePythonPath
     pythonExeSha256 = ([string]$pythonSnapshot.Sha256).ToLowerInvariant()
+    taskPythonwPath = $TaskPythonwPath
+    taskPythonwSha256 = ([string]$pythonwSnapshot.Sha256).ToLowerInvariant()
     pythonTrustAnchor = 'authenticode:python-software-foundation'
     pythonSignerSubject = $pythonSignerSubject
     pythonSignerThumbprint = $pythonSignerThumbprint
+    pythonwTrustAnchor = 'authenticode:python-software-foundation'
+    pythonwSignerSubject = $pythonwSignerSubject
+    pythonwSignerThumbprint = $pythonwSignerThumbprint
     receiptToolPath = (Join-Path $runtimeEvidenceRepoDir 'tools\news_grasp_recovery_receipts.py')
     receiptToolSha256 = ([string]$receiptToolSnapshot.Sha256).ToLowerInvariant()
     controlPlaneToolPath = (Join-Path $runtimeEvidenceRepoDir 'tools\news_grasp_control_plane.py')
