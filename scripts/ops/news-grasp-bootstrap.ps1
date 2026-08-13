@@ -21,7 +21,9 @@
     [string] $ControlPlaneRepairAuthorityPath = '',
     [string] $ControlPlaneRepairArtifactRoot = '',
     [string] $ScheduledTaskName = '',
-    [string] $ProductionTaskName = 'News-Grasp Production'
+    [string] $ProductionTaskName = 'News-Grasp Production',
+    [string] $HighCostBindingPath = '',
+    [string] $HighCostBindingReceiptSha256 = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -55,6 +57,31 @@ function Write-AtomicUtf8Text {
         if (Test-Path -LiteralPath $temporary) { Remove-Item -LiteralPath $temporary -Force }
         if (Test-Path -LiteralPath $replacementBackup) { Remove-Item -LiteralPath $replacementBackup -Force }
     }
+}
+
+function Resolve-NewsGraspHighCostBinding {
+    param(
+        [Parameter(Mandatory=$true)][string] $OpsRoot,
+        [Parameter(Mandatory=$true)][string] $PythonPath,
+        [Parameter(Mandatory=$true)][string] $BindingPath,
+        [Parameter(Mandatory=$true)][string] $BindingReceiptSha256
+    )
+    $tool = Join-Path $OpsRoot 'tools\news_grasp_high_cost_binding.py'
+    if (-not (Test-Path -LiteralPath $tool -PathType Leaf)) {
+        throw 'HIGH_COST_WORKSPACE_BINDING_MISSING'
+    }
+    $json = (& $PythonPath '-I' '-S' '-B' $tool 'resolve' '--binding' $BindingPath '--expected-receipt-sha256' $BindingReceiptSha256 2>&1 | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) {
+        throw "HIGH_COST_WORKSPACE_BINDING_MISSING detail=$json"
+    }
+    try { $resolved = $json | ConvertFrom-Json -ErrorAction Stop } catch { throw 'HIGH_COST_WORKSPACE_BINDING_MISSING' }
+    if (
+        [string]$resolved.bindingSchemaVersion -cne 'NEWS_GRASP_HIGH_COST_BINDING_V1' -or
+        [string]$resolved.bindingReceiptSha256 -cne $BindingReceiptSha256.ToLowerInvariant() -or
+        [string]$resolved.status -cne 'available' -or
+        -not (Test-Path -LiteralPath ([string]$resolved.brokerInstalledPath) -PathType Leaf)
+    ) { throw 'HIGH_COST_IDENTITY_DRIFT' }
+    return $resolved
 }
 
 function Get-NewsGraspRecoveryRuntimeBinding {
@@ -119,12 +146,20 @@ function Get-NewsGraspRecoveryRuntimeBinding {
                 -not [string]::Equals((Get-FileHash -Algorithm SHA256 -LiteralPath $toolPath).Hash.ToLowerInvariant(), [string]$binding.($tool[1]), [StringComparison]::Ordinal)
             ) { throw 'tool hash mismatch' }
         }
+        $highCostBinding = (Resolve-Path -LiteralPath ([string]$binding.highCostBindingPath) -ErrorAction Stop).Path
+        if (
+            -not [string]::Equals($highCostBinding, (Join-Path $canonicalBin 'news-grasp-high-cost-binding-v1.json'), [StringComparison]::OrdinalIgnoreCase) -or
+            -not [string]::Equals((Get-FileHash -Algorithm SHA256 -LiteralPath $highCostBinding).Hash.ToLowerInvariant(), [string]$binding.highCostBindingFileSha256, [StringComparison]::Ordinal) -or
+            [string]$binding.highCostBindingReceiptSha256 -notmatch '^[0-9a-f]{64}$'
+        ) { throw 'high-cost binding mismatch' }
         return [pscustomobject]@{
             OpsRepoRoot = $ops
             PythonExe = $python
             ProductionRuntimeRoot = (Resolve-Path -LiteralPath ([string]$binding.productionRuntimeRoot) -ErrorAction Stop).Path
             ReceiptToolPath = (Resolve-Path -LiteralPath ([string]$binding.receiptToolPath) -ErrorAction Stop).Path
             ControlPlaneToolPath = (Resolve-Path -LiteralPath ([string]$binding.controlPlaneToolPath) -ErrorAction Stop).Path
+            HighCostBindingPath = $highCostBinding
+            HighCostBindingReceiptSha256 = [string]$binding.highCostBindingReceiptSha256
         }
     } catch {
         throw 'RECOVERY_RUNTIME_BINDING_INVALID'
@@ -376,9 +411,10 @@ function Write-PreliminaryLaunchPermit {
         [string] $SourceRepoDir,
         [string] $BinDir,
         [string] $IssueDate,
-        [string] $PythonExe
+        [string] $PythonExe,
+        [string] $BrokerPath
     )
-    $broker = Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py'
+    $broker = $BrokerPath
     $python = $PythonExe
     $liveRunner = Join-Path $BinDir 'news-grasp-runner.ps1'
     if (
@@ -473,12 +509,21 @@ $OpsRepoRoot = if ($EvidenceRepoDir) {
 if ($EvidenceRepoDir) { $env:NEWS_GRASP_EVIDENCE_REPO_DIR = $OpsRepoRoot }
 if (-not $DateStamp) { $DateStamp = Get-Date -Format 'yyyy-MM-dd' }
 New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
+$highCostBinding = $null
+if ($HighCostBindingPath -or $HighCostBindingReceiptSha256) {
+    if ((-not $HighCostBindingPath) -or (-not $HighCostBindingReceiptSha256)) { throw 'HIGH_COST_WORKSPACE_BINDING_MISSING' }
+    $highCostBinding = Resolve-NewsGraspHighCostBinding -OpsRoot $OpsRepoRoot -PythonPath $PythonExe -BindingPath $HighCostBindingPath -BindingReceiptSha256 $HighCostBindingReceiptSha256
+} elseif ($UseProductionRuntime) {
+    throw 'HIGH_COST_WORKSPACE_BINDING_MISSING'
+}
 $expectedProductionRuntimeRoot = Join-Path $env:USERPROFILE '.news-grasp-runtime\production-runtime'
 if ($ControlPlaneRepairOnly) {
     $recoveryBinding = Get-NewsGraspRecoveryRuntimeBinding
     if (
         -not [string]::Equals($OpsRepoRoot, [string]$recoveryBinding.OpsRepoRoot, [StringComparison]::OrdinalIgnoreCase) -or
-        -not [string]::Equals($PythonExe, [string]$recoveryBinding.PythonExe, [StringComparison]::OrdinalIgnoreCase)
+        -not [string]::Equals($PythonExe, [string]$recoveryBinding.PythonExe, [StringComparison]::OrdinalIgnoreCase) -or
+        ($HighCostBindingPath -and -not [string]::Equals((Resolve-Path -LiteralPath $HighCostBindingPath).Path, [string]$recoveryBinding.HighCostBindingPath, [StringComparison]::OrdinalIgnoreCase)) -or
+        ($HighCostBindingReceiptSha256 -and [string]$HighCostBindingReceiptSha256 -cne [string]$recoveryBinding.HighCostBindingReceiptSha256)
     ) {
         throw 'CONTROL_PLANE_REPAIR_INTERPRETER_INVALID'
     }
@@ -487,6 +532,8 @@ if ($ControlPlaneRepairOnly) {
     $expectedProductionRuntimeRoot = [string]$recoveryBinding.ProductionRuntimeRoot
     $RecoveryReceiptTool = [string]$recoveryBinding.ReceiptToolPath
     $ControlPlaneVerifier = [string]$recoveryBinding.ControlPlaneToolPath
+    if (-not $HighCostBindingPath) { $HighCostBindingPath = [string]$recoveryBinding.HighCostBindingPath }
+    if (-not $HighCostBindingReceiptSha256) { $HighCostBindingReceiptSha256 = [string]$recoveryBinding.HighCostBindingReceiptSha256 }
     $repairAuthorityJson = (& $PythonExe '-I' '-S' '-B' $RecoveryReceiptTool `
         'consume-control-plane-repair' `
         '--receipt' $ControlPlaneRepairAuthorityPath `
@@ -561,7 +608,7 @@ if ($UseProductionRuntime) {
 }
 try {
 if ($UseProductionRuntime -and (-not $SmokeTest) -and (-not $ControlPlaneRepairOnly)) {
-    $preliminaryAuthority = Write-PreliminaryLaunchPermit -SourceRepoDir $SourceRepoDir -BinDir $BinDir -IssueDate $DateStamp -PythonExe $PythonExe
+    $preliminaryAuthority = Write-PreliminaryLaunchPermit -SourceRepoDir $SourceRepoDir -BinDir $BinDir -IssueDate $DateStamp -PythonExe $PythonExe -BrokerPath ([string]$highCostBinding.brokerInstalledPath)
 }
 try {
     $RepoDir = if ($UseProductionRuntime) {
@@ -672,6 +719,9 @@ try {
         throw 'NEWS_GRASP_CONTROL_PLANE_PREFLIGHT_MISSING'
     }
     $controlPlaneArgs = @('-I', '-S', '-B', $controlPlaneVerifier, '--artifact-root', $RepoDir, '--ops-root', $OpsRepoRoot, '--production-runtime-root', $RepoDir, '--live-bin-root', $BinDir, '--issue-date', $DateStamp, '--run-intent', $controlPlaneRunIntent)
+    if ($highCostBinding) {
+        $controlPlaneArgs += @('--high-cost-binding', $HighCostBindingPath, '--high-cost-binding-receipt-sha256', $HighCostBindingReceiptSha256)
+    }
     if ($SmokeTest) {
         $controlPlaneArgs += @('--runner-state', $StateFile)
     }
@@ -718,7 +768,7 @@ if ($ControlPlaneRepairOnly) {
     exit 0
 }
 
-$broker = Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py'
+$broker = if ($highCostBinding) { [string]$highCostBinding.brokerInstalledPath } else { Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py' }
 $python = $PythonExe
 $liveRunner = Join-Path $BinDir 'news-grasp-runner.ps1'
 $authorityDir = Join-Path $BinDir 'news-grasp-authority'
@@ -759,6 +809,9 @@ if ($LogDir) { $args += @('-LogDir', $LogDir) }
 if ($DateStamp) { $args += @('-DateStamp', $DateStamp) }
 $args += @('-RepoDir', $RepoDir, '-OpsRepoRoot', $OpsRepoRoot, '-BinDir', $BinDir)
 $args += @('-PyExeOverride', $PythonExe)
+if ($highCostBinding) {
+    $args += @('-HighCostBindingPath', $HighCostBindingPath, '-HighCostBindingReceiptSha256', $HighCostBindingReceiptSha256)
+}
 
 & powershell.exe @args
 $watcherExit = $LASTEXITCODE

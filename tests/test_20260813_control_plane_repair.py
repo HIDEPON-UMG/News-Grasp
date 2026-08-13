@@ -292,7 +292,7 @@ def test_ng813_control_plane_repair_only_exits_before_broker_and_watcher() -> No
     assert "[switch] $ControlPlaneRepairOnly" in bootstrap
     assert repair_terminal in bootstrap
     assert bootstrap.index(repair_terminal) < bootstrap.rindex(
-        "$broker = Join-Path $env:USERPROFILE"
+        "$broker = if ($highCostBinding)"
     )
     assert bootstrap.index(repair_terminal) < bootstrap.index("& powershell.exe @args")
 
@@ -542,6 +542,7 @@ def test_ng813_four_root_preflight_accepts_role_separated_matching_roots(
         issue_date="2026-08-13",
         run_intent="ScheduledProduction",
         runner_readiness=_control_readiness(),
+        allow_isolated_high_cost_fixture=True,
     )
 
     assert result["schemaVersion"] == "NEWS_GRASP_CONTROL_PLANE_PREFLIGHT_V1"
@@ -584,6 +585,7 @@ def test_ng813_four_root_preflight_rejects_drift_before_high_cost_work(
         issue_date="2026-08-13",
         run_intent="ScheduledRecoveryFull",
         runner_readiness=_control_readiness(),
+        allow_isolated_high_cost_fixture=True,
     )
 
     assert result["ok"] is False
@@ -612,6 +614,7 @@ def test_ng813_four_root_preflight_recovers_after_bounded_convergence(
         issue_date="2026-08-13",
         run_intent="ScheduledRecoveryFull",
         runner_readiness=_control_readiness(),
+        allow_isolated_high_cost_fixture=True,
     )
     _write_managed_surface(runtime)
     second = control_plane.verify_control_plane(
@@ -622,6 +625,7 @@ def test_ng813_four_root_preflight_recovers_after_bounded_convergence(
         issue_date="2026-08-13",
         run_intent="ScheduledRecoveryFull",
         runner_readiness=_control_readiness(),
+        allow_isolated_high_cost_fixture=True,
     )
 
     assert first["reasonCode"] == "PRODUCTION_RUNTIME_DRIFT"
@@ -652,6 +656,7 @@ def test_ng813_four_root_preflight_rejects_scheduled_task_action_drift(
         runner_readiness=_control_readiness(
             ok=False, reason="scheduled_task_target_mismatch"
         ),
+        allow_isolated_high_cost_fixture=True,
     )
 
     assert result["ok"] is False
@@ -692,6 +697,7 @@ def test_ng813_four_root_preflight_rejects_same_date_runner_state_root_drift(
         issue_date="2026-08-13",
         run_intent="ScheduledRecoveryFull",
         runner_readiness=_control_readiness(),
+        allow_isolated_high_cost_fixture=True,
     )
 
     assert result["ok"] is False
@@ -737,6 +743,7 @@ def test_ng813_four_root_preflight_honors_explicit_isolated_runner_state(
         run_intent="StartupCanary",
         runner_readiness=_control_readiness(),
         runner_state_path=isolated_state,
+        allow_isolated_high_cost_fixture=True,
     )
 
     assert result["ok"] is True
@@ -801,6 +808,7 @@ def test_ng813_production_intents_reject_noncanonical_runner_state_path(
         run_intent=run_intent,
         runner_readiness=_control_readiness(),
         runner_state_path=alternate_state,
+        allow_isolated_high_cost_fixture=True,
     )
 
     assert result["ok"] is False
@@ -834,6 +842,7 @@ def test_ng813_preflight_preserves_failed_bootstrap_history_without_permanent_bl
         issue_date="2026-08-13",
         run_intent="ScheduledRecoveryFull",
         runner_readiness=readiness,
+        allow_isolated_high_cost_fixture=True,
     )
 
     assert result["ok"] is True

@@ -394,6 +394,17 @@ function Assert-NewsGraspInstalledState {
         $installedSha = [string]$installedFile.Sha256
         if ($sourceSha -ne $installedSha) { throw "installed file hash mismatch: $file" }
     }
+    $resolverSource = Read-NewsGraspVerifiedFile `
+        -Path $highCostBindingToolPath `
+        -TrustedBoundary $RepoDir `
+        -RequireSingleLink
+    $resolverInstalled = Read-NewsGraspVerifiedFile `
+        -Path $highCostBindingResolverDestination `
+        -TrustedBoundary $BinDir `
+        -RequireSingleLink
+    if ([string]$resolverSource.Sha256 -ne [string]$resolverInstalled.Sha256) {
+        throw 'installed high-cost binding resolver hash mismatch'
+    }
     $missionFile = Read-NewsGraspVerifiedFile `
         -Path $missionAuthorityPath `
         -TrustedBoundary $BinDir `
@@ -425,7 +436,10 @@ function Assert-NewsGraspInstalledState {
         [string]$recoveryBinding.schemaVersion -ne 'NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1' -or
         -not (Test-NewsGraspSamePath -Left ([string]$recoveryBinding.opsRepoRoot) -Right $runtimeEvidenceRepoDir) -or
         -not (Test-NewsGraspSamePath -Left ([string]$recoveryBinding.productionRuntimeRoot) -Right $productionRuntimePath) -or
-        -not (Test-NewsGraspSamePath -Left ([string]$recoveryBinding.pythonExe) -Right $runtimePythonPath)
+        -not (Test-NewsGraspSamePath -Left ([string]$recoveryBinding.pythonExe) -Right $runtimePythonPath) -or
+        -not (Test-NewsGraspSamePath -Left ([string]$recoveryBinding.highCostBindingPath) -Right $highCostBindingPath) -or
+        -not (Test-NewsGraspSamePath -Left ([string]$recoveryBinding.highCostBindingResolverPath) -Right $highCostBindingResolverDestination) -or
+        [string]$recoveryBinding.highCostBindingReceiptSha256 -cne $highCostBindingReceiptSha256
     ) {
         throw 'recovery runtime binding mismatch'
     }
@@ -435,6 +449,9 @@ function Assert-NewsGraspInstalledState {
         [string]$recoveryBinding.controlPlaneToolSha256,
         [string]$recoveryBinding.completionGuardToolSha256,
         [string]$recoveryBinding.dailySelfHealSha256,
+        [string]$recoveryBinding.highCostBindingReceiptSha256,
+        [string]$recoveryBinding.highCostBindingFileSha256,
+        [string]$recoveryBinding.highCostBindingResolverSha256,
         [string]$recoveryBinding.bootstrapSha256,
         [string]$recoveryBinding.runnerSha256
     )) {
@@ -674,6 +691,66 @@ foreach ($asset in $automationAssetRows) {
 }
 New-Item -ItemType Directory -Force -Path $BackupDir | Out-Null
 
+# Global側のside-effect-free adapterをinstall時に解決し、product-local bindingを
+# live mutationより先に生成・検証する。authority/budget/terminal stateは複製しない。
+$workspaceHarnessRoot = Resolve-NewsGraspWorkspaceHarnessRoot -StartPath $RepoDir
+$highCostAdapterPath = Join-Path $workspaceHarnessRoot 'tools\harness\high_cost_capability_adapter.py'
+$highCostDescriptorPath = Join-Path $env:USERPROFILE '.codex\state\high-cost-operation\capability-v1.json'
+$highCostBindingToolPath = Join-Path $RepoDir 'tools\news_grasp_high_cost_binding.py'
+$highCostBindingResolverDestination = Join-Path $BinDir 'news_grasp_high_cost_binding.py'
+$highCostBindingCandidatePath = Join-Path $BackupDir 'news-grasp-high-cost-binding-v1.candidate.json'
+$installerPythonPath = Join-Path (Split-Path -Parent $TaskPythonwPath) 'python.exe'
+foreach ($requiredHighCostFile in @($highCostAdapterPath, $highCostDescriptorPath, $highCostBindingToolPath, $installerPythonPath)) {
+    if (-not (Test-Path -LiteralPath $requiredHighCostFile -PathType Leaf)) {
+        throw 'HIGH_COST_WORKSPACE_BINDING_MISSING'
+    }
+}
+$highCostBindingJson = (& $installerPythonPath '-I' '-S' '-B' $highCostBindingToolPath 'create' '--adapter' $highCostAdapterPath '--descriptor' $highCostDescriptorPath '--output' $highCostBindingCandidatePath 2>&1 | Out-String).Trim()
+if ($LASTEXITCODE -ne 0) { throw "HIGH_COST_WORKSPACE_BINDING_MISSING detail=$highCostBindingJson" }
+try { $highCostBinding = $highCostBindingJson | ConvertFrom-Json -ErrorAction Stop } catch { throw 'HIGH_COST_WORKSPACE_BINDING_MISSING' }
+if (
+    [string]$highCostBinding.schemaVersion -cne 'NEWS_GRASP_HIGH_COST_BINDING_V1' -or
+    [string]$highCostBinding.bindingReceiptSha256 -notmatch '^[0-9a-f]{64}$'
+) { throw 'HIGH_COST_WORKSPACE_BINDING_MISSING' }
+$highCostBindingReceiptSha256 = [string]$highCostBinding.bindingReceiptSha256
+$highCostBindingResolverSource = Read-NewsGraspVerifiedFile -Path $highCostBindingToolPath -TrustedBoundary $RepoDir -RequireSingleLink
+$highCostBindingResolverBackup = Join-Path $BackupDir 'news_grasp_high_cost_binding.py.before'
+$highCostBindingResolverBeforeHash = ''
+if (Test-Path -LiteralPath $highCostBindingResolverDestination -PathType Leaf) {
+    $highCostBindingResolverBefore = Read-NewsGraspVerifiedFile -Path $highCostBindingResolverDestination -TrustedBoundary $canonicalBinDir -RequireSingleLink
+    Write-NewsGraspAtomicFile -Path $highCostBindingResolverBackup -TrustedBoundary $BackupDir -Bytes $highCostBindingResolverBefore.Bytes | Out-Null
+    $highCostBindingResolverBeforeHash = [string]$highCostBindingResolverBefore.Sha256
+}
+$highCostBindingResolverRow = [ordered]@{
+    file = 'news_grasp_high_cost_binding.py'
+    source = $highCostBindingToolPath
+    destination = $highCostBindingResolverDestination
+    backup = if ($highCostBindingResolverBeforeHash) { $highCostBindingResolverBackup } else { '' }
+    before_sha256 = $highCostBindingResolverBeforeHash
+    source_sha256 = [string]$highCostBindingResolverSource.Sha256
+    after_sha256 = ''
+}
+$manifestFiles += $highCostBindingResolverRow
+$highCostBindingPath = Join-Path $BinDir 'news-grasp-high-cost-binding-v1.json'
+$highCostBindingBackup = Join-Path $BackupDir 'news-grasp-high-cost-binding-v1.before.json'
+$highCostBindingBeforeHash = ''
+if (Test-Path -LiteralPath $highCostBindingPath -PathType Leaf) {
+    $highCostBindingBefore = Read-NewsGraspVerifiedFile -Path $highCostBindingPath -TrustedBoundary $canonicalBinDir -RequireSingleLink
+    Write-NewsGraspAtomicFile -Path $highCostBindingBackup -TrustedBoundary $BackupDir -Bytes $highCostBindingBefore.Bytes | Out-Null
+    $highCostBindingBeforeHash = [string]$highCostBindingBefore.Sha256
+}
+$highCostBindingCandidate = Read-NewsGraspVerifiedFile -Path $highCostBindingCandidatePath -TrustedBoundary $BackupDir -RequireSingleLink
+$highCostBindingRow = [ordered]@{
+    file = 'news-grasp-high-cost-binding-v1.json'
+    source = $highCostBindingCandidatePath
+    destination = $highCostBindingPath
+    backup = if ($highCostBindingBeforeHash) { $highCostBindingBackup } else { '' }
+    before_sha256 = $highCostBindingBeforeHash
+    source_sha256 = [string]$highCostBindingCandidate.Sha256
+    after_sha256 = ''
+}
+$manifestFiles += $highCostBindingRow
+
 if (-not $SkipTaskRegistration) {
     foreach ($taskName in @($RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName, $LegacyRunnerTaskName)) {
         $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
@@ -895,6 +972,16 @@ foreach ($asset in $automationAssetRows) {
     $row = @($manifestFiles | Where-Object { $_.file -eq ('asset:' + $assetId) })[0]
     $row['after_sha256'] = $afterHash
 }
+$highCostBindingResolverAfterHash = Write-NewsGraspAtomicFile `
+    -Path $highCostBindingResolverDestination `
+    -TrustedBoundary $canonicalBinDir `
+    -Bytes $highCostBindingResolverSource.Bytes
+$highCostBindingResolverRow['after_sha256'] = $highCostBindingResolverAfterHash
+$highCostBindingAfterHash = Write-NewsGraspAtomicFile `
+    -Path $highCostBindingPath `
+    -TrustedBoundary $canonicalBinDir `
+    -Bytes $highCostBindingCandidate.Bytes
+$highCostBindingRow['after_sha256'] = $highCostBindingAfterHash
 $runtimePythonPath = Join-Path (Split-Path -Parent $TaskPythonwPath) 'python.exe'
 $productionRuntimePath = Join-Path $env:USERPROFILE '.news-grasp-runtime\production-runtime'
 $runtimeRoot = [ordered]@{
@@ -980,6 +1067,11 @@ $recoveryRuntimeBinding = [ordered]@{
     completionGuardToolSha256 = ([string]$completionGuardToolSnapshot.Sha256).ToLowerInvariant()
     dailySelfHealPath = (Join-Path $runtimeEvidenceRepoDir 'tools\daily_self_heal.py')
     dailySelfHealSha256 = ([string]$dailySelfHealSnapshot.Sha256).ToLowerInvariant()
+    highCostBindingPath = $highCostBindingPath
+    highCostBindingReceiptSha256 = $highCostBindingReceiptSha256
+    highCostBindingFileSha256 = ([string]$highCostBindingAfterHash).ToLowerInvariant()
+    highCostBindingResolverPath = $highCostBindingResolverDestination
+    highCostBindingResolverSha256 = ([string]$highCostBindingResolverAfterHash).ToLowerInvariant()
     bootstrapPath = (Join-Path $BinDir 'news-grasp-bootstrap.ps1')
     bootstrapSha256 = ([string]$sourceSnapshots['news-grasp-bootstrap.ps1'].Sha256).ToLowerInvariant()
     runnerPath = (Join-Path $BinDir 'news-grasp-runner.ps1')
@@ -998,7 +1090,7 @@ $stableTaskAuthority = [ordered]@{
     stableLauncherSha256 = [string]$sourceSnapshots['news-grasp-task-launcher.pyw'].Sha256
     bootstrapPath = (Join-Path $BinDir 'news-grasp-bootstrap.ps1')
     bootstrapSha256 = [string]$sourceSnapshots['news-grasp-bootstrap.ps1'].Sha256
-    action = @($TaskPythonwPath, (Join-Path $BinDir 'news-grasp-task-launcher.pyw'), 'runner', '--scheduled-task-name', $RunnerTaskName)
+    action = @($TaskPythonwPath, (Join-Path $BinDir 'news-grasp-task-launcher.pyw'), 'runner', '--scheduled-task-name', $RunnerTaskName, '--high-cost-binding-path', $highCostBindingPath, '--high-cost-binding-sha256', $highCostBindingReceiptSha256)
     trigger = @{ daily = '06:00' }
     repoArgumentCount = 0
 }
@@ -1070,7 +1162,7 @@ if (-not $SkipTaskRegistration) {
     $pythonw = $TaskPythonwPath
     if (-not (Test-Path -LiteralPath $pythonw)) { throw 'News-Grasp .venv pythonw.exe が見つかりません。' }
     # Scheduled Taskはstable installed launcherだけを指す。source worktreeのpathをtask定義へ封印しない。
-    $runnerArgs = "`"$taskLauncherPath`" runner --scheduled-task-name `"$RunnerTaskName`""
+    $runnerArgs = "`"$taskLauncherPath`" runner --scheduled-task-name `"$RunnerTaskName`" --high-cost-binding-path `"$highCostBindingPath`" --high-cost-binding-sha256 $highCostBindingReceiptSha256"
     $runnerAction = New-ScheduledTaskAction -Execute $pythonw -Argument $runnerArgs -WorkingDirectory $BinDir
     $runnerTrigger = New-ScheduledTaskTrigger -Daily -At 6:00am
     $runnerSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew
@@ -1099,7 +1191,7 @@ if (-not $SkipTaskRegistration) {
         }
     }
 
-    $bootstrapArgs = "`"$taskLauncherPath`" bootstrap --scheduled-task-name `"$BootstrapTaskName`""
+    $bootstrapArgs = "`"$taskLauncherPath`" bootstrap --scheduled-task-name `"$BootstrapTaskName`" --high-cost-binding-path `"$highCostBindingPath`" --high-cost-binding-sha256 $highCostBindingReceiptSha256"
     $bootstrapAction = New-ScheduledTaskAction -Execute $pythonw -Argument $bootstrapArgs -WorkingDirectory $BinDir
     $bootstrapTrigger = New-ScheduledTaskTrigger -Daily -At 5:55am
     $bootstrapSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew

@@ -83,9 +83,11 @@ param(
     [string] $Model = '',
     [string] $FlowName = 'unknown',
     [string] $UsageLog = '',
-    [string] $HighCostWorkspaceRoot = '',
+    [string] $HighCostBindingPath = '',
+    [string] $HighCostBindingReceiptSha256 = '',
+    [string] $HighCostBindingResolverPath = '',
+    [string] $HighCostBindingResolverSha256 = '',
     [string] $HighCostAdmissionPath = '',
-    [string] $HighCostBudgetToolPath = '',
     [string] $HighCostPythonExe = '',
     [string] $HighCostCallId = ''
 )
@@ -300,6 +302,8 @@ def test_stage2_parallel_reporters_finish_and_editor_reads_all_artifacts(
                 "-NoPush",
                 "-RepoDirOverride",
                 str(repo),
+                "-OpsRepoRootOverride",
+                str(ROOT),
                 "-CodexWrapperOverride",
                 str(wrapper),
                 "-CodexExeOverride",
@@ -316,10 +320,10 @@ def test_stage2_parallel_reporters_finish_and_editor_reads_all_artifacts(
                 str(scheduled_authority),
                 "-IdleTimeoutSec",
                 "30",
-                "-HighCostWorkspaceRoot",
-                high_cost["-HighCostWorkspaceRoot"],
-                "-HighCostBudgetToolPath",
-                high_cost["-HighCostBudgetToolPath"],
+                "-HighCostBindingPath",
+                high_cost["-HighCostBindingPath"],
+                "-HighCostBindingReceiptSha256",
+                high_cost["-HighCostBindingReceiptSha256"],
             ],
             cwd=repo,
             env=env,
@@ -341,6 +345,7 @@ def test_stage2_parallel_reporters_finish_and_editor_reads_all_artifacts(
     assert trace_text.count("wrapper START reporter:") == expected_count
     assert trace_text.count("wrapper END reporter:") == expected_count
     assert "wrapper START newsroom_editor" in trace_text
+    assert "reporter job END" in result.stdout, result.stdout + result.stderr
     first_parent_end = result.stdout.index("reporter job END")
     assert result.stdout[:first_parent_end].count("reporter job START") == expected_count
 

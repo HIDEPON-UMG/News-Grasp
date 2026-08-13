@@ -72,6 +72,8 @@ param(
     [string] $HighCostAttemptId = '',
     [string] $HighCostBudgetToolPath = '',
     [string] $HighCostWorkspaceRoot = '',
+    [string] $HighCostBindingPath = '',
+    [string] $HighCostBindingReceiptSha256 = '',
     [string] $GlobalHarnessGenerationManifestPath = '',
     [string] $ExternalHealthAuthorityPathOverride = '',
     [string] $ExternalHealthAuthorityExpectedSha256 = '',
@@ -94,6 +96,24 @@ param(
 $ErrorActionPreference = 'Continue'
 $OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
+function Get-NewsGraspFileSha256Hex {
+    param([Parameter(Mandatory = $true)][string] $Path)
+    $resolved = (Resolve-Path -LiteralPath $Path -ErrorAction Stop).Path
+    $stream = [IO.File]::Open(
+        $resolved,
+        [IO.FileMode]::Open,
+        [IO.FileAccess]::Read,
+        [IO.FileShare]::Read
+    )
+    $sha = [Security.Cryptography.SHA256]::Create()
+    try {
+        return (([BitConverter]::ToString($sha.ComputeHash($stream))) -replace '-', '').ToLowerInvariant()
+    } finally {
+        $sha.Dispose()
+        $stream.Dispose()
+    }
+}
 
 function Invoke-LegacyScheduledProductionTrampoline {
     if (
@@ -265,8 +285,8 @@ function Get-NewsGraspRecoveryRuntimeBinding {
             $startupCustomizationPresent -or
             -not [string]::Equals($runner, (Resolve-Path -LiteralPath $PSCommandPath).Path, [StringComparison]::OrdinalIgnoreCase) -or
             -not [string]::Equals((Split-Path -Parent $runner), $canonicalBin, [StringComparison]::OrdinalIgnoreCase) -or
-            -not [string]::Equals((Get-FileHash -Algorithm SHA256 -LiteralPath $runner).Hash.ToLowerInvariant(), [string]$binding.runnerSha256, [StringComparison]::Ordinal) -or
-            -not [string]::Equals((Get-FileHash -Algorithm SHA256 -LiteralPath $python).Hash.ToLowerInvariant(), [string]$binding.pythonExeSha256, [StringComparison]::Ordinal) -or
+            -not [string]::Equals((Get-NewsGraspFileSha256Hex -Path $runner), [string]$binding.runnerSha256, [StringComparison]::Ordinal) -or
+            -not [string]::Equals((Get-NewsGraspFileSha256Hex -Path $python), [string]$binding.pythonExeSha256, [StringComparison]::Ordinal) -or
             [string]$pythonSignature.Status -cne 'Valid' -or
             $pythonSignerSubject -notlike 'CN=Python Software Foundation, O=Python Software Foundation,*' -or
             [string]$binding.pythonTrustAnchor -cne 'authenticode:python-software-foundation' -or
@@ -283,9 +303,15 @@ function Get-NewsGraspRecoveryRuntimeBinding {
             $expectedToolPath = (Resolve-Path -LiteralPath (Join-Path $ops ('tools\' + [IO.Path]::GetFileName($toolPath))) -ErrorAction Stop).Path
             if (
                 -not [string]::Equals($toolPath, $expectedToolPath, [StringComparison]::OrdinalIgnoreCase) -or
-                -not [string]::Equals((Get-FileHash -Algorithm SHA256 -LiteralPath $toolPath).Hash.ToLowerInvariant(), [string]$binding.($tool[1]), [StringComparison]::Ordinal)
+                -not [string]::Equals((Get-NewsGraspFileSha256Hex -Path $toolPath), [string]$binding.($tool[1]), [StringComparison]::Ordinal)
             ) { throw 'tool hash mismatch' }
         }
+        $highCostBinding = (Resolve-Path -LiteralPath ([string]$binding.highCostBindingPath) -ErrorAction Stop).Path
+        if (
+            -not [string]::Equals($highCostBinding, (Join-Path $canonicalBin 'news-grasp-high-cost-binding-v1.json'), [StringComparison]::OrdinalIgnoreCase) -or
+            -not [string]::Equals((Get-NewsGraspFileSha256Hex -Path $highCostBinding), [string]$binding.highCostBindingFileSha256, [StringComparison]::Ordinal) -or
+            [string]$binding.highCostBindingReceiptSha256 -notmatch '^[0-9a-f]{64}$'
+        ) { throw 'high-cost binding mismatch' }
         return [pscustomobject]@{
             OpsRepoRoot = $ops
             PythonExe = $python
@@ -294,6 +320,8 @@ function Get-NewsGraspRecoveryRuntimeBinding {
             ReceiptToolPath = (Resolve-Path -LiteralPath ([string]$binding.receiptToolPath) -ErrorAction Stop).Path
             CompletionGuardToolPath = (Resolve-Path -LiteralPath ([string]$binding.completionGuardToolPath) -ErrorAction Stop).Path
             DailySelfHealPath = (Resolve-Path -LiteralPath ([string]$binding.dailySelfHealPath) -ErrorAction Stop).Path
+            HighCostBindingPath = $highCostBinding
+            HighCostBindingReceiptSha256 = [string]$binding.highCostBindingReceiptSha256
         }
     } catch {
         throw 'RECOVERY_RUNTIME_BINDING_INVALID'
@@ -348,39 +376,57 @@ if ($null -ne $RecoveryRuntimeBinding) {
     if (
         ($OpsRepoRootOverride -and -not [string]::Equals((Resolve-Path -LiteralPath $OpsRepoRootOverride).Path, [string]$RecoveryRuntimeBinding.OpsRepoRoot, [StringComparison]::OrdinalIgnoreCase)) -or
         ($env:NEWS_GRASP_OPS_REPO_ROOT -and -not [string]::Equals((Resolve-Path -LiteralPath $env:NEWS_GRASP_OPS_REPO_ROOT).Path, [string]$RecoveryRuntimeBinding.OpsRepoRoot, [StringComparison]::OrdinalIgnoreCase)) -or
-        ($PyExeOverride -and -not [string]::Equals((Resolve-Path -LiteralPath $PyExeOverride).Path, [string]$RecoveryRuntimeBinding.PythonExe, [StringComparison]::OrdinalIgnoreCase))
+        ($PyExeOverride -and -not [string]::Equals((Resolve-Path -LiteralPath $PyExeOverride).Path, [string]$RecoveryRuntimeBinding.PythonExe, [StringComparison]::OrdinalIgnoreCase)) -or
+        ($HighCostBindingPath -and -not [string]::Equals((Resolve-Path -LiteralPath $HighCostBindingPath).Path, [string]$RecoveryRuntimeBinding.HighCostBindingPath, [StringComparison]::OrdinalIgnoreCase)) -or
+        ($HighCostBindingReceiptSha256 -and [string]$HighCostBindingReceiptSha256 -cne [string]$RecoveryRuntimeBinding.HighCostBindingReceiptSha256)
     ) { throw 'RECOVERY_RUNTIME_BINDING_INVALID' }
     $PyExe = [string]$RecoveryRuntimeBinding.PythonExe
+    if (-not $HighCostBindingPath) { $HighCostBindingPath = [string]$RecoveryRuntimeBinding.HighCostBindingPath }
+    if (-not $HighCostBindingReceiptSha256) { $HighCostBindingReceiptSha256 = [string]$RecoveryRuntimeBinding.HighCostBindingReceiptSha256 }
 }
 if ($LogDirOverride) { $LogDir = $LogDirOverride }
 if ($StateFileOverride) { $StateFile = $StateFileOverride }
 if (-not $HighCostAdmissionPath -and $env:NEWS_GRASP_HIGH_COST_ADMISSION_PATH) {
     $HighCostAdmissionPath = $env:NEWS_GRASP_HIGH_COST_ADMISSION_PATH
 }
-if (-not $HighCostBudgetToolPath -and $env:NEWS_GRASP_HIGH_COST_BUDGET_TOOL_PATH) {
-    $HighCostBudgetToolPath = $env:NEWS_GRASP_HIGH_COST_BUDGET_TOOL_PATH
+if ($HighCostBudgetToolPath -or $HighCostWorkspaceRoot) {
+    throw 'HIGH_COST_LEGACY_ROOT_ARGUMENT_FORBIDDEN'
 }
-if (-not $HighCostWorkspaceRoot -and $env:NEWS_GRASP_HIGH_COST_WORKSPACE_ROOT) {
-    $HighCostWorkspaceRoot = $env:NEWS_GRASP_HIGH_COST_WORKSPACE_ROOT
+if ((-not $HighCostBindingPath) -or (-not $HighCostBindingReceiptSha256)) {
+    throw 'HIGH_COST_WORKSPACE_BINDING_MISSING'
 }
-if (-not $HighCostWorkspaceRoot) {
-    $candidateRoot = $RepoDir
-    while ($candidateRoot) {
-        if (Test-Path -LiteralPath (Join-Path $candidateRoot 'tools\harness\model_spawn_broker.py') -PathType Leaf) {
-            $HighCostWorkspaceRoot = $candidateRoot
-            break
-        }
-        $parentRoot = Split-Path -Parent $candidateRoot
-        if (-not $parentRoot -or $parentRoot -eq $candidateRoot) { break }
-        $candidateRoot = $parentRoot
-    }
+$highCostBindingTool = Join-Path $OpsRepoRoot 'tools\news_grasp_high_cost_binding.py'
+if (-not (Test-Path -LiteralPath $highCostBindingTool -PathType Leaf)) {
+    throw 'HIGH_COST_WORKSPACE_BINDING_MISSING'
 }
-if (-not $HighCostBudgetToolPath) {
-    if ($HighCostWorkspaceRoot) {
-        $HighCostBudgetToolPath = Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py'
-    }
+$highCostBindingJson = (& $PyExe '-I' '-S' '-B' $highCostBindingTool 'resolve' '--binding' $HighCostBindingPath '--expected-receipt-sha256' $HighCostBindingReceiptSha256 2>&1 | Out-String).Trim()
+if ($LASTEXITCODE -ne 0) {
+    try {
+        $highCostBindingFailure = $highCostBindingJson | ConvertFrom-Json -ErrorAction Stop
+        $highCostBindingReason = [string]$highCostBindingFailure.reason
+    } catch { $highCostBindingReason = 'HIGH_COST_WORKSPACE_BINDING_MISSING' }
+    if ($highCostBindingReason -notin @(
+        'HIGH_COST_WORKSPACE_BINDING_MISSING',
+        'HIGH_COST_BROKER_UNAVAILABLE',
+        'HIGH_COST_OPERATION_ADMISSION_REQUIRED',
+        'HIGH_COST_AUTHORITY_INVALID',
+        'HIGH_COST_BUDGET_EXHAUSTED',
+        'HIGH_COST_IDENTITY_DRIFT'
+    )) { $highCostBindingReason = 'HIGH_COST_WORKSPACE_BINDING_MISSING' }
+    throw $highCostBindingReason
 }
-$env:NEWS_GRASP_HIGH_COST_WORKSPACE_ROOT = $HighCostWorkspaceRoot
+try { $highCostBinding = $highCostBindingJson | ConvertFrom-Json -ErrorAction Stop } catch { throw 'HIGH_COST_WORKSPACE_BINDING_MISSING' }
+if (
+    [string]$highCostBinding.bindingSchemaVersion -cne 'NEWS_GRASP_HIGH_COST_BINDING_V1' -or
+    [string]$highCostBinding.bindingReceiptSha256 -cne $HighCostBindingReceiptSha256.ToLowerInvariant() -or
+    [string]$highCostBinding.status -cne 'available'
+) { throw 'HIGH_COST_IDENTITY_DRIFT' }
+$HighCostWorkspaceRoot = [string]$highCostBinding.workspaceRoot
+$HighCostBudgetToolPath = [string]$highCostBinding.brokerInstalledPath
+$HighCostBindingResolverPath = $highCostBindingTool
+$HighCostBindingResolverSha256 = Get-NewsGraspFileSha256Hex -Path $highCostBindingTool
+$env:NEWS_GRASP_HIGH_COST_BINDING_PATH = (Resolve-Path -LiteralPath $HighCostBindingPath).Path
+$env:NEWS_GRASP_HIGH_COST_BINDING_RECEIPT_SHA256 = $HighCostBindingReceiptSha256.ToLowerInvariant()
 if (-not $PyExeOverride) { $PyExe = Join-Path $OpsRepoRoot '.venv\Scripts\python.exe' }
 $env:PYTHONSAFEPATH = '1'
 $env:PYTHONNOUSERSITE = '1'
@@ -464,7 +510,7 @@ if ($ExternalHealthAuthorityPathOverride) {
         if (-not (Test-Path -LiteralPath $fixtureAuthorityPath -PathType Leaf)) {
             throw 'fixture authority is not a regular file'
         }
-        $observedFixtureSha256 = (Get-FileHash -LiteralPath $fixtureAuthorityPath -Algorithm SHA256).Hash.ToLowerInvariant()
+        $observedFixtureSha256 = Get-NewsGraspFileSha256Hex -Path $fixtureAuthorityPath
         if (-not [string]::Equals($observedFixtureSha256, $ExternalHealthAuthorityExpectedSha256, [System.StringComparison]::Ordinal)) {
             throw 'EXTERNAL_AUTHORITY_FIXTURE_HASH_DRIFT'
         }
@@ -494,7 +540,7 @@ function Assert-GlobalHarnessGenerationManifest {
             if (-not $parent -or $parent -eq $cursor) { throw 'manifest boundary failed' }
             $cursor = $parent
         }
-        $manifestSha = (Get-FileHash -LiteralPath $resolved -Algorithm SHA256).Hash.ToLowerInvariant()
+        $manifestSha = Get-NewsGraspFileSha256Hex -Path $resolved
         $value = Get-Content -LiteralPath $resolved -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
         $required = @('schemaVersion','generationId','ownerRepo','ownerCommit','sourceSnapshotPath','sourceSnapshotSha256','installedRuntimePath','installedRuntimeSha256','ownerAuthorityReceiptPath','ownerAuthorityReceiptSha256','validForGoalId')
         $observed = @($value.PSObject.Properties.Name)
@@ -507,7 +553,7 @@ function Assert-GlobalHarnessGenerationManifest {
             if (-not $payloadPath.StartsWith($repoBoundary + '\', [System.StringComparison]::OrdinalIgnoreCase)) { throw 'manifest payload outside RepoDir' }
             $payload = Get-Item -LiteralPath $payloadPath -Force -ErrorAction Stop
             if (($payload.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0 -or -not $payload.PSIsContainer -and [int64]$payload.Length -gt 67108864) { throw 'manifest payload invalid' }
-            $payloadSha = (Get-FileHash -LiteralPath $payloadPath -Algorithm SHA256).Hash.ToLowerInvariant()
+            $payloadSha = Get-NewsGraspFileSha256Hex -Path $payloadPath
             if ($payloadSha -cne [string]$value.($pair[1])) { throw 'manifest payload drift' }
         }
         return [pscustomobject]@{ path = $resolved; sha256 = $manifestSha; generationId = [string]$value.generationId; goalId = [string]$value.validForGoalId }
@@ -1010,6 +1056,8 @@ function Set-RunnerState {
                 $state.highCostAdmissionSha256 = Get-FileSha256Hex -Path $script:HighCostAdmissionPath
             }
             $state.highCostAttemptId = [string]$script:HighCostAttemptId
+            $state.highCostBindingPath = [string]$env:NEWS_GRASP_HIGH_COST_BINDING_PATH
+            $state.highCostBindingReceiptSha256 = [string]$env:NEWS_GRASP_HIGH_COST_BINDING_RECEIPT_SHA256
             $state.highCostParentAuthorityPath = [string]$script:HighCostParentAuthorityPath
             if ($script:HighCostParentAuthorityPath -and (Test-Path -LiteralPath $script:HighCostParentAuthorityPath -PathType Leaf)) {
                 $state.highCostParentAuthoritySha256 = Get-FileSha256Hex -Path $script:HighCostParentAuthorityPath
@@ -1458,7 +1506,11 @@ function Assert-PreRunBootstrapInterlock {
         '-BinDir',
         $LiveBinDir,
         '-PythonExe',
-        $PyExe
+        $PyExe,
+        '-HighCostBindingPath',
+        $HighCostBindingPath,
+        '-HighCostBindingReceiptSha256',
+        $HighCostBindingReceiptSha256
     )
     try {
         $proc = Start-Process -FilePath 'powershell' -ArgumentList $bootstrapArgs -WindowStyle Hidden -PassThru -Wait
@@ -1657,25 +1709,7 @@ function Get-FileSha256Hex {
         return ''
     }
     try {
-        if (Get-Command Get-FileHash -ErrorAction SilentlyContinue) {
-            return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
-        }
-    } catch {
-        Write-Log "WARN: Get-FileHash failed path=$Path reason=$($_.Exception.Message)"
-    }
-    try {
-        $stream = [System.IO.File]::OpenRead($Path)
-        try {
-            $sha = [System.Security.Cryptography.SHA256]::Create()
-            try {
-                $bytes = $sha.ComputeHash($stream)
-                return ([System.BitConverter]::ToString($bytes) -replace '-', '').ToLowerInvariant()
-            } finally {
-                $sha.Dispose()
-            }
-        } finally {
-            $stream.Dispose()
-        }
+        return Get-NewsGraspFileSha256Hex -Path $Path
     } catch {
         Write-Log "ERROR: sha256 calculation failed path=$Path reason=$($_.Exception.Message)"
         return ''
@@ -2107,7 +2141,9 @@ function Invoke-CodexWrapper {
         'OutputLastMessage' = $OutputLastMessage
         'FlowName' = $FlowName
         'UsageLog' = $CodexUsageLog
-        'HighCostWorkspaceRoot' = $HighCostWorkspaceRoot
+        'HighCostBindingPath' = $HighCostBindingPath
+        'HighCostBindingReceiptSha256' = $HighCostBindingReceiptSha256
+        'HighCostBindingResolverSha256' = $HighCostBindingResolverSha256
         'HighCostAdmissionPath' = [string]$script:HighCostAdmissionPath
         'HighCostParentAuthorityPath' = [string]$script:HighCostParentAuthorityPath
         'E2EFinalAdmissionPath' = [string]$script:E2EFinalAdmissionPath
@@ -2120,7 +2156,6 @@ function Invoke-CodexWrapper {
         'HighCostAttemptId' = [string]$script:HighCostAttemptId
         'HighCostExpectedOperationKind' = $script:HighCostExpectedOperationKind
         'HighCostExpectedIssueDate' = $script:HighCostExpectedIssueDate
-        'HighCostBudgetToolPath' = $HighCostBudgetToolPath
         'HighCostPythonExe' = $PyExe
         'HighCostCallId' = $highCostCallId
         'HighCostCallReceiptPath' = $highCostCallReceipt
@@ -2609,13 +2644,13 @@ function Get-RepairArtifactHash {
     }
     $item = Get-Item -LiteralPath $FullPath
     if (-not $item.PSIsContainer) {
-        return (Get-FileHash -LiteralPath $FullPath -Algorithm SHA256).Hash
+        return (Get-NewsGraspFileSha256Hex -Path $FullPath).ToUpperInvariant()
     }
     $parts = New-Object System.Collections.Generic.List[string]
     $files = @(Get-ChildItem -LiteralPath $FullPath -Recurse -File | Sort-Object FullName)
     foreach ($file in $files) {
         $rel = $file.FullName.Substring($FullPath.Length).TrimStart('\', '/')
-        $hash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash
+        $hash = (Get-NewsGraspFileSha256Hex -Path $file.FullName).ToUpperInvariant()
         [void]$parts.Add("$rel=$hash")
     }
     return (($parts.ToArray() -join "`n") | ConvertTo-Json -Compress)
@@ -3602,7 +3637,7 @@ function Get-NewsGraspExternalControlPlaneReadiness {
     }
     $probeArgs = @('probe')
     if ($script:ExternalHealthAuthorityFixtureMode) {
-        $observedFixtureSha256 = (Get-FileHash -LiteralPath $script:ExternalHealthAuthorityPath -Algorithm SHA256).Hash.ToLowerInvariant()
+        $observedFixtureSha256 = Get-NewsGraspFileSha256Hex -Path $script:ExternalHealthAuthorityPath
         if (-not [string]::Equals($observedFixtureSha256, $script:ExternalHealthAuthorityExpectedSha256, [System.StringComparison]::Ordinal)) {
             throw 'EXTERNAL_AUTHORITY_FIXTURE_HASH_DRIFT'
         }
@@ -4218,11 +4253,14 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
             [string[]]$WaveCategories
         )
 
-        $ReporterPollSeconds = 30
+        # 短時間で完了したjobを30秒単位でしか回収しないと、retry waveだけで
+        # recovery SLOを消費する。通常運用は5秒、隔離smokeは1秒で回収する。
+        $ReporterPollSeconds = if ($Stage2EditorSmokeOnly) { 1 } else { 5 }
         $ReporterHeartbeatSeconds = 60
-        $ReporterJobTimeoutSec = $TimeoutSec + 120
+        $ReporterJobTimeoutSec = if ($Stage2EditorSmokeOnly) { 30 } else { $TimeoutSec + 120 }
         $wrapper_log_offsets = @{}
         $jobs = @()
+        try {
         foreach ($waveCat in $WaveCategories) {
             if ($Attempt -gt 1) {
                 Clear-ReporterCategoryArtifacts -Category $waveCat
@@ -4235,7 +4273,7 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
             $highCostCallReceipt = Join-Path $HighCostCallReceiptDir ("reporter-{0}-attempt-{1}.json" -f $waveCat, $Attempt)
             New-ReporterPrompt -Category $waveCat -PromptFile $promptFile
 
-            while (@($jobs | Where-Object { $_.State -eq 'Running' }).Count -ge $MaxParallelReporterJobs) {
+            while (@($jobs | Where-Object { $_.JobStateInfo.State -eq 'Running' }).Count -ge $MaxParallelReporterJobs) {
                 Start-Sleep -Seconds 1
             }
 
@@ -4255,7 +4293,10 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                 $ReporterModel,
                 $ReporterReasoningEffort,
                 $usageLog,
-                $HighCostWorkspaceRoot,
+                $HighCostBindingPath,
+                $HighCostBindingReceiptSha256,
+                '',
+                $HighCostBindingResolverSha256,
                 $script:HighCostAdmissionPath,
                 $script:HighCostParentAuthorityPath,
                 $script:E2EFinalAdmissionPath,
@@ -4268,7 +4309,6 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                 $script:HighCostAttemptId,
                 $script:HighCostExpectedOperationKind,
                 $script:HighCostExpectedIssueDate,
-                $HighCostBudgetToolPath,
                 $PyExe,
                 $highCostCallId,
                 $highCostCallReceipt,
@@ -4289,7 +4329,10 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                     [string]$Model,
                     [string]$ReasoningEffort,
                     [string]$UsageLog,
-                    [string]$HighCostWorkspaceRoot,
+                    [string]$HighCostBindingPath,
+                    [string]$HighCostBindingReceiptSha256,
+                    [string]$HighCostBindingResolverPath,
+                    [string]$HighCostBindingResolverSha256,
                     [string]$HighCostAdmissionPath,
                     [string]$HighCostParentAuthorityPath,
                     [string]$E2EFinalAdmissionPath,
@@ -4302,7 +4345,6 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                     [string]$HighCostAttemptId,
                     [string]$HighCostExpectedOperationKind,
                     [string]$HighCostExpectedIssueDate,
-                    [string]$HighCostBudgetToolPath,
                     [string]$HighCostPythonExe,
                     [string]$HighCostCallId,
                     [string]$HighCostCallReceiptPath,
@@ -4323,7 +4365,10 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                     -ReasoningEffort $ReasoningEffort `
                     -FlowName "reporter:$Category" `
                     -UsageLog $UsageLog `
-                    -HighCostWorkspaceRoot $HighCostWorkspaceRoot `
+                    -HighCostBindingPath $HighCostBindingPath `
+                    -HighCostBindingReceiptSha256 $HighCostBindingReceiptSha256 `
+                    -HighCostBindingResolverPath $HighCostBindingResolverPath `
+                    -HighCostBindingResolverSha256 $HighCostBindingResolverSha256 `
                     -HighCostAdmissionPath $HighCostAdmissionPath `
                     -HighCostParentAuthorityPath $HighCostParentAuthorityPath `
                     -E2EFinalAdmissionPath $E2EFinalAdmissionPath `
@@ -4336,7 +4381,6 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                     -HighCostAttemptId $HighCostAttemptId `
                     -HighCostExpectedOperationKind $HighCostExpectedOperationKind `
                     -HighCostExpectedIssueDate $HighCostExpectedIssueDate `
-                    -HighCostBudgetToolPath $HighCostBudgetToolPath `
                     -HighCostPythonExe $HighCostPythonExe `
                     -HighCostCallId $HighCostCallId `
                     -HighCostCallReceiptPath $HighCostCallReceiptPath `
@@ -4356,6 +4400,9 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                     usage_log = $UsageLog
                     last_message = $OutputLastMessage
                 }
+            }
+            if ($null -eq $job) {
+                throw "REPORTER_JOB_START_FAILED category=$waveCat attempt=$Attempt"
             }
             $job | Add-Member -NotePropertyName Category -NotePropertyValue $waveCat
             $job | Add-Member -NotePropertyName Attempt -NotePropertyValue $Attempt
@@ -4385,9 +4432,17 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
         $lastHeartbeat = (Get-Date).AddSeconds(-1 * $ReporterHeartbeatSeconds)
         while ($pending.Count -gt 0) {
             $now = Get-Date
+            $jobStates = @(
+                $pending | ForEach-Object {
+                    [pscustomobject]@{
+                        category = [string]$_.Category
+                        state = [string]$_.JobStateInfo.State
+                    }
+                }
+            )
             $activeJobs = @(
-                $pending | Where-Object { $_.State -eq 'Running' } | ForEach-Object {
-                    [ordered]@{
+                $pending | Where-Object { $_.JobStateInfo.State -eq 'Running' } | ForEach-Object {
+                    [pscustomobject]@{
                         category = [string]$_.Category
                         attempt = [int]$_.Attempt
                         elapsed_sec = [int]($now - $_.StartedAt).TotalSeconds
@@ -4398,18 +4453,20 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                 Append-ReporterWrapperLog -Path $job.WrapperLog
             }
             if (($now - $lastHeartbeat).TotalSeconds -ge $ReporterHeartbeatSeconds) {
-                Write-Log "reporter supervisor heartbeat attempt=$Attempt active_jobs=$($activeJobs.Count)"
-                Update-RunnerProgress -Phase 'reporter' -Step "reporter wave attempt=$Attempt active_jobs=$($activeJobs.Count)" -Attempt $Attempt -ActiveJobs $activeJobs
+                $stateText = @($jobStates | ForEach-Object { "$($_.category):$($_.state)" }) -join ','
+                Write-Log "reporter supervisor heartbeat attempt=$Attempt active_jobs=$($activeJobs.Count) job_states=$stateText"
+                Update-RunnerProgress -Phase 'reporter' -Step "reporter wave attempt=$Attempt active_jobs=$($activeJobs.Count) job_states=$stateText" -Attempt $Attempt -ActiveJobs $activeJobs
                 $lastHeartbeat = $now
             }
 
             foreach ($job in @($pending)) {
                 $elapsed = [int]((Get-Date) - $job.StartedAt).TotalSeconds
-                if ($job.State -eq 'Running' -and $elapsed -gt $ReporterJobTimeoutSec) {
+                $jobState = [string]$job.JobStateInfo.State
+                if ($jobState -in @('Running', 'NotStarted') -and $elapsed -gt $ReporterJobTimeoutSec) {
                     Write-Log "ERROR: reporter job timeout category=$($job.Category) attempt=$Attempt elapsed_sec=$elapsed limit_sec=$ReporterJobTimeoutSec"
                     Append-ReporterWrapperLog -Path $job.WrapperLog
                     Stop-Job -Job $job -Force -ErrorAction SilentlyContinue
-                    $partial = @($job | Receive-Job -ErrorAction SilentlyContinue)
+                    $partial = @(Receive-Job -Id $job.Id -ErrorAction SilentlyContinue)
                     Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
                     $timeoutResult = [pscustomobject]@{
                         category = [string]$job.Category
@@ -4428,9 +4485,9 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                     continue
                 }
 
-                if ($job.State -ne 'Running') {
+                if ($jobState -notin @('Running', 'NotStarted')) {
                     Append-ReporterWrapperLog -Path $job.WrapperLog
-                    $received = @($job | Receive-Job -ErrorAction SilentlyContinue)
+                    $received = @(Receive-Job -Id $job.Id -ErrorAction SilentlyContinue)
                     Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
                     if ($received.Count -eq 0) {
                         $received = @([pscustomobject]@{
@@ -4463,6 +4520,19 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
         }
 
         return @($results)
+        } finally {
+            # このwaveが所有するjobだけを例外時にも必ず回収する。生PID/process名は使わない。
+            foreach ($ownedJob in @($jobs)) {
+                $liveOwnedJob = Get-Job -Id $ownedJob.Id -ErrorAction SilentlyContinue
+                if ($null -eq $liveOwnedJob) { continue }
+                if ([string]$liveOwnedJob.JobStateInfo.State -in @('Running', 'NotStarted')) {
+                    Write-Log "reporter job CLEANUP category=$($ownedJob.Category) attempt=$($ownedJob.Attempt)"
+                    Stop-Job -Job $liveOwnedJob -Force -ErrorAction SilentlyContinue
+                }
+                Receive-Job -Id $liveOwnedJob.Id -ErrorAction SilentlyContinue | Out-Null
+                Remove-Job -Job $liveOwnedJob -Force -ErrorAction SilentlyContinue
+            }
+        }
     }
 
     $retryCategories = @($Categories)
@@ -4649,7 +4719,7 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
 
     function Get-EditorSnapshotSha256 {
         param([Parameter(Mandatory=$true)][string] $Path)
-        return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
+        return Get-NewsGraspFileSha256Hex -Path $Path
     }
 
     function New-EditorAttemptSnapshot {

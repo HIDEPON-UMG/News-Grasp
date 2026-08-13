@@ -13,6 +13,24 @@ from pathlib import Path
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def _isolated_high_cost_binding(monkeypatch, tmp_path: Path) -> None:
+    """audit unit fixturesはGlobal runtimeではなく明示binding adapterへ束縛する。"""
+
+    control = _control("isolated high-cost binding fixture")
+    binding_path = tmp_path / "news-grasp-high-cost-binding-v1.json"
+    binding_path.write_text("{}\n", encoding="utf-8")
+    monkeypatch.setattr(
+        control,
+        "resolve_live_high_cost_binding",
+        lambda _root: {
+            "bindingPath": str(binding_path),
+            "bindingReceiptSha256": "a" * 64,
+            "brokerInstalledPath": str(tmp_path / "ai-model-spawn-broker.py"),
+        },
+    )
+
+
 def _control(failure_signature: str):
     try:
         return importlib.import_module("tools.audit_recovery_control")

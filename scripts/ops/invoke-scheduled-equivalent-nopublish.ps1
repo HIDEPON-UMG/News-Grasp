@@ -16,6 +16,8 @@ param(
     [Parameter(Mandatory=$true)][string] $StaticReceiptPath,
     [Parameter(Mandatory=$true)][string] $SimulationReceiptPath,
     [Parameter(Mandatory=$true)][string] $E2EAdmissionPath,
+    [string] $HighCostBindingPath = '',
+    [string] $HighCostBindingReceiptSha256 = '',
     [string] $E2EAttemptPolicyPath = '',
     [ValidateRange(1,2)][int] $E2ELogicalAttempt = 0,
     [string] $CausalReplacementProofPath = '',
@@ -366,6 +368,23 @@ try {
     $e2eAdmissionBridgePath = Get-CanonicalExistingFile -Path $e2eAdmissionBridgePath -Label 'E2E admission bridge' -Boundary $runtimeRepoPath -MaxBytes 67108864
     $highCostOperationBudgetPath = Get-CanonicalExistingFile -Path $highCostOperationBudgetPath -Label 'high-cost operation budget' -Boundary $workspacePath -MaxBytes 67108864
     $highCostModelBrokerPath = Get-CanonicalExistingFile -Path $highCostModelBrokerPath -Label 'installed model broker' -MaxBytes 67108864
+    if ((-not $HighCostBindingPath) -or (-not $HighCostBindingReceiptSha256)) {
+        $runtimeBindingPath = Join-Path $env:USERPROFILE 'bin\news-grasp-recovery-runtime-binding-v1.json'
+        $runtimeBindingPath = Get-CanonicalExistingFile -Path $runtimeBindingPath -Label 'recovery runtime binding' -MaxBytes 1048576
+        $runtimeBinding = Get-Content -LiteralPath $runtimeBindingPath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+        if ([string]$runtimeBinding.schemaVersion -cne 'NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1') { throw 'HIGH_COST_WORKSPACE_BINDING_MISSING' }
+        $HighCostBindingPath = [string]$runtimeBinding.highCostBindingPath
+        $HighCostBindingReceiptSha256 = [string]$runtimeBinding.highCostBindingReceiptSha256
+    }
+    $highCostBindingResolverPath = Join-Path $repoPath 'tools\news_grasp_high_cost_binding.py'
+    $bindingJson = (& $pythonCanonicalPath '-I' '-S' '-B' $highCostBindingResolverPath 'resolve' '--binding' $HighCostBindingPath '--expected-receipt-sha256' $HighCostBindingReceiptSha256 2>&1 | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) { throw "HIGH_COST_WORKSPACE_BINDING_MISSING detail=$bindingJson" }
+    $resolvedBinding = $bindingJson | ConvertFrom-Json -ErrorAction Stop
+    if (
+        [string]$resolvedBinding.bindingSchemaVersion -cne 'NEWS_GRASP_HIGH_COST_BINDING_V1' -or
+        -not [string]::Equals([string]$resolvedBinding.workspaceRoot, $workspacePath, [StringComparison]::OrdinalIgnoreCase) -or
+        -not [string]::Equals([string]$resolvedBinding.brokerInstalledPath, $highCostModelBrokerPath, [StringComparison]::OrdinalIgnoreCase)
+    ) { throw 'HIGH_COST_IDENTITY_DRIFT' }
     $pythonSha256 = (Get-FileHash -LiteralPath $pythonCanonicalPath -Algorithm SHA256).Hash.ToLowerInvariant()
     $powerShellSha256 = (Get-FileHash -LiteralPath $powerShellCanonicalPath -Algorithm SHA256).Hash.ToLowerInvariant()
     $runtimeRepoCommit = (& git -C $runtimeRepoPath rev-parse HEAD 2>$null).Trim().ToLowerInvariant()
@@ -488,8 +507,8 @@ $runnerArguments = @(
     '-LogDirOverride', $logPath,
     '-PyExeOverride', $pythonCanonicalPath,
     '-PowerShellExe', $powerShellCanonicalPath,
-    '-HighCostWorkspaceRoot', $workspacePath,
-    '-HighCostBudgetToolPath', $highCostModelBrokerPath,
+    '-HighCostBindingPath', $HighCostBindingPath,
+    '-HighCostBindingReceiptSha256', $HighCostBindingReceiptSha256,
     '-HighCostParentAuthorityPath', $parentAuthorityFullPath,
     '-E2EFinalAdmissionPath', $E2EAdmissionPath,
     '-E2EFinalRunnerArgumentsPath', $runnerArgumentsPath,

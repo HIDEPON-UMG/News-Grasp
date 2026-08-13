@@ -169,6 +169,60 @@ def _fake_codex_capture_ps1(tmp_path: Path) -> Path:
     return fake
 
 
+def _high_cost_binding_args(tmp_path: Path, workspace: Path, broker: Path) -> list[str]:
+    """isolated wrapper fixtureをNEWS_GRASP_HIGH_COST_BINDING_V1へ束縛する。"""
+
+    source_broker = workspace / "tools" / "harness" / "model_spawn_broker.py"
+    adapter = workspace / "tools" / "harness" / "high_cost_capability_adapter.py"
+    descriptor = tmp_path / "high-cost-capability-v1.json"
+    source_broker.parent.mkdir(parents=True, exist_ok=True)
+    source_broker.write_bytes(broker.read_bytes())
+    descriptor.write_text(
+        json.dumps(
+            {
+                "schemaVersion": "HIGH_COST_CAPABILITY_DESCRIPTOR_V1",
+                "workspaceRoot": str(workspace.resolve()),
+                "brokerSourcePath": str(source_broker.resolve()),
+                "brokerSourceSha256": hashlib.sha256(source_broker.read_bytes()).hexdigest(),
+                "brokerInstalledPath": str(broker.resolve()),
+                "brokerInstalledSha256": hashlib.sha256(broker.read_bytes()).hexdigest(),
+                "reasonSchemaVersion": "HIGH_COST_TYPED_REASON_V1",
+                "generation": 1,
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    adapter.write_text(
+        "import argparse,json\n"
+        "from pathlib import Path\n"
+        "p=argparse.ArgumentParser();p.add_argument('command');p.add_argument('--descriptor',type=Path,required=True)\n"
+        "a=p.parse_args();v=json.loads(a.descriptor.read_text(encoding='utf-8'));v.update({'descriptorPath':str(a.descriptor.resolve()),'status':'available'});print(json.dumps(v,sort_keys=True))\n",
+        encoding="utf-8",
+    )
+    from tools.news_grasp_high_cost_binding import create_binding
+
+    binding_path = tmp_path / "news-grasp-high-cost-binding-v1.json"
+    value = create_binding(
+        adapter_path=adapter,
+        descriptor_path=descriptor,
+        output_path=binding_path,
+    )
+    return [
+        "-HighCostBindingPath",
+        str(binding_path),
+        "-HighCostBindingReceiptSha256",
+        str(value["bindingReceiptSha256"]),
+        "-HighCostBindingResolverPath",
+        str((ROOT / "tools" / "news_grasp_high_cost_binding.py").resolve()),
+        "-HighCostBindingResolverSha256",
+        hashlib.sha256(
+            (ROOT / "tools" / "news_grasp_high_cost_binding.py").read_bytes()
+        ).hexdigest(),
+    ]
+
+
 def _canonical_test_broker(tmp_path: Path) -> tuple[list[str], dict[str, str]]:
     """本番と同じ必須broker境界を、外部modelなしで通す隔離fixtureを返す。"""
     # USERPROFILEそのものを隔離rootにして、broker正本照合とログ秘匿を同時に再演する。
@@ -208,8 +262,7 @@ def _canonical_test_broker(tmp_path: Path) -> tuple[list[str], dict[str, str]]:
     env["USERPROFILE"] = str(profile)
     _write_external_health_authority(profile, broker)
     args = [
-        "-HighCostWorkspaceRoot", str(workspace),
-        "-HighCostBudgetToolPath", str(broker),
+        *_high_cost_binding_args(tmp_path, workspace, broker),
         "-HighCostPythonExe", sys.executable,
         "-HighCostCallId", f"test-{tmp_path.name}",
         "-HighCostAdmissionPath", str(admission),
@@ -286,8 +339,7 @@ def _full_e2e_claim_fixture(tmp_path: Path, claim_mode: str) -> tuple[list[str],
     )
     env["MODEL_SENTINEL"] = str(model_sentinel)
     args = [
-        "-HighCostWorkspaceRoot", str(workspace),
-        "-HighCostBudgetToolPath", str(broker),
+        *_high_cost_binding_args(tmp_path, workspace, broker),
         "-HighCostPythonExe", sys.executable,
         "-HighCostCallId", f"claim-{claim_mode}",
         "-HighCostExpectedOperationKind", "full_e2e",
@@ -474,8 +526,7 @@ def _composed_claim_witness_fixture(
     )
     _write_external_health_authority(profile, broker)
     args = [
-        "-HighCostWorkspaceRoot", str(workspace),
-        "-HighCostBudgetToolPath", str(broker),
+        *_high_cost_binding_args(tmp_path, workspace, broker),
         "-HighCostPythonExe", sys.executable,
         "-HighCostCallId", "claim-composition",
         "-HighCostExpectedOperationKind", "full_e2e",

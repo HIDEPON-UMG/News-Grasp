@@ -189,7 +189,10 @@ def test_audit_resume_branch_is_executed_before_same_date_green(monkeypatch) -> 
         backend=SimpleNamespace(
             repo_root=REPO,
             runner_path=REPO / "scripts/ops/news-grasp-runner.ps1",
-            broker_path=Path("C:/fixed/broker.py"),
+            resolve_high_cost_binding=lambda: {
+                "bindingPath": "C:/fixed/news-grasp-high-cost-binding-v1.json",
+                "bindingReceiptSha256": "a" * 64,
+            },
         ),
         command_runner=lambda command, **_: commands.append(command) or 0,
         completion_verifier=lambda *_: {"receiptSha256": "3" * 64},
@@ -209,7 +212,10 @@ def test_audit_recovery_exit_zero_with_incomplete_public_surface_is_major_incide
         backend=SimpleNamespace(
             repo_root=REPO,
             runner_path=REPO / "scripts/ops/news-grasp-runner.ps1",
-            broker_path=Path("C:/fixed/broker.py"),
+            resolve_high_cost_binding=lambda: {
+                "bindingPath": "C:/fixed/news-grasp-high-cost-binding-v1.json",
+                "bindingReceiptSha256": "a" * 64,
+            },
         ),
         command_runner=lambda *_args, **_kwargs: 0,
         completion_verifier=lambda *_: {"receiptSha256": "4" * 64},

@@ -460,13 +460,15 @@ class ProductionBackend:
         self.state_path = self.bin_dir / "news-grasp-runner-state.json"
         self.log_dir = self.bin_dir / "news-grasp-logs"
         self.runner_path = self.bin_dir / "news-grasp-runner.ps1"
-        self.broker_path = self.bin_dir / "ai-model-spawn-broker.py"
         self.authority_dir = self.bin_dir / "news-grasp-authority"
         self.mission_path = self.authority_dir / "audit-mission-authority-v1.json"
 
     def probe_external_control_plane(self) -> dict[str, Any]:
         """固定global authorityのpure probe。product側からglobalを修復しない。"""
         return external_control.probe_external_readiness()
+
+    def resolve_high_cost_binding(self) -> dict[str, Any]:
+        return audit_recovery_control.resolve_live_high_cost_binding(self.bin_dir)
 
     def resolve_failure_receipt(self, issue_date: str, receipt_sha256: str) -> Path:
         issue_date = _validate_date(issue_date)
@@ -506,10 +508,10 @@ class ProductionBackend:
         raise ValueError("SCHEDULED_FAILURE_RECEIPT_MISSING")
 
     def _run_broker(self, *args: str) -> dict[str, Any]:
-        if not self.broker_path.is_file():
-            raise ValueError("RECOVERY_AUTHORITY_BROKER_UNAVAILABLE")
+        binding = audit_recovery_control.resolve_live_high_cost_binding(self.bin_dir)
+        broker_path = Path(str(binding["brokerInstalledPath"])).resolve(strict=True)
         completed = subprocess.run(
-            [sys.executable, str(self.broker_path), *args],
+            [sys.executable, str(broker_path), *args],
             cwd=self.repo_root,
             capture_output=True,
             check=False,
@@ -1532,6 +1534,7 @@ def execute_audit_0640(
         if action == "launch_minimal_unblocker":
             execute_minimal(Path(str(decision["decisionPath"])))
         elif action == "launch_recovery":
+            high_cost_binding = actual.resolve_high_cost_binding()
             command = [
                 "powershell.exe",
                 "-NoProfile",
@@ -1546,8 +1549,10 @@ def execute_audit_0640(
                 issue_date,
                 "-RepoDirOverride",
                 str(actual.repo_root),
-                "-HighCostBudgetToolPath",
-                str(actual.broker_path),
+                "-HighCostBindingPath",
+                str(high_cost_binding["bindingPath"]),
+                "-HighCostBindingReceiptSha256",
+                str(high_cost_binding["bindingReceiptSha256"]),
                 "-ScheduledAuthorityEvidencePath",
                 str(decision["scheduledAuthorityEvidencePath"]),
                 "-RecoveryDecisionPath",

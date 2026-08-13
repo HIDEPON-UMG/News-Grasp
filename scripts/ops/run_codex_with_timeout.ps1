@@ -45,7 +45,11 @@ param(
     [int] $SuccessProbeIntervalSec = 30,
     [int] $SuccessProbeMinElapsedSec = 0,
     [int64] $MaxCapturedOutputBytes = 52428800,
-    [Parameter(Mandatory=$true)] [string] $HighCostWorkspaceRoot,
+    [string] $HighCostWorkspaceRoot = '',
+    [string] $HighCostBindingPath = '',
+    [string] $HighCostBindingReceiptSha256 = '',
+    [string] $HighCostBindingResolverPath = '',
+    [string] $HighCostBindingResolverSha256 = '',
     [string] $HighCostAdmissionPath = '',
     [string] $HighCostParentAuthorityPath = '',
     [string] $HighCostAttemptId = '',
@@ -88,6 +92,104 @@ function Add-WrapperLog {
         Write-Host "[run_codex_with_timeout] FATAL: cannot write wrapper log: $($_.Exception.GetType().Name)"
         exit 125
     }
+}
+
+function Resolve-NewsGraspHighCostBinding {
+    if ($HighCostWorkspaceRoot -or $HighCostBudgetToolPath) {
+        Add-WrapperLog 'HIGH_COST_LEGACY_ROOT_ARGUMENT_FORBIDDEN'
+        exit 126
+    }
+    $installedResolver = Join-Path $PSScriptRoot 'news_grasp_high_cost_binding.py'
+    $sourceResolver = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\tools\news_grasp_high_cost_binding.py'))
+    $derivedResolver = if (
+        (Split-Path -Leaf $PSScriptRoot) -eq 'ops' -and
+        (Test-Path -LiteralPath $sourceResolver -PathType Leaf)
+    ) { $sourceResolver } elseif (Test-Path -LiteralPath $installedResolver -PathType Leaf) {
+        (Resolve-Path -LiteralPath $installedResolver).Path
+    } else { '' }
+    $resolverItem = if ($derivedResolver) { Get-Item -LiteralPath $derivedResolver -Force -ErrorAction SilentlyContinue } else { $null }
+    $suppliedResolverValid = $true
+    if ($HighCostBindingResolverPath) {
+        try {
+            $suppliedResolverValid = [string]::Equals(
+                (Resolve-Path -LiteralPath $HighCostBindingResolverPath -ErrorAction Stop).Path,
+                $derivedResolver,
+                [StringComparison]::OrdinalIgnoreCase
+            )
+        } catch { $suppliedResolverValid = $false }
+    }
+    if (
+        (-not $derivedResolver) -or
+        (-not $suppliedResolverValid) -or
+        $HighCostBindingResolverSha256 -notmatch '^[0-9a-f]{64}$' -or
+        $null -eq $resolverItem -or
+        ($resolverItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or
+        [int64]$resolverItem.Length -gt 1048576 -or
+        (-not (Test-Path -LiteralPath $HighCostPythonExe -PathType Leaf))
+    ) {
+        Add-WrapperLog 'HIGH_COST_WORKSPACE_BINDING_MISSING'
+        exit 126
+    }
+    $resolverStream = $null
+    try {
+        # FileShare.Readでhandleを保持し、hash確認からPython open完了までの
+        # resolver差替え/write/deleteを拒否する。
+        $resolverStream = [IO.File]::Open(
+            $derivedResolver,
+            [IO.FileMode]::Open,
+            [IO.FileAccess]::Read,
+            [IO.FileShare]::Read
+        )
+        $hasher = [Security.Cryptography.SHA256]::Create()
+        try {
+            $actualResolverSha256 = ([BitConverter]::ToString(
+                $hasher.ComputeHash($resolverStream)
+            ) -replace '-', '').ToLowerInvariant()
+        } finally { $hasher.Dispose() }
+        if (-not [string]::Equals($actualResolverSha256, $HighCostBindingResolverSha256.ToLowerInvariant(), [StringComparison]::Ordinal)) {
+            Add-WrapperLog 'HIGH_COST_IDENTITY_DRIFT'
+            exit 126
+        }
+        $bindingJson = (& $HighCostPythonExe '-I' '-S' '-B' $derivedResolver 'resolve' '--binding' $HighCostBindingPath '--expected-receipt-sha256' $HighCostBindingReceiptSha256 2>&1 | Out-String).Trim()
+    } finally {
+        if ($null -ne $resolverStream) { $resolverStream.Dispose() }
+    }
+    if ($LASTEXITCODE -ne 0) {
+        $bindingExitCode = $LASTEXITCODE
+        try {
+            $bindingFailure = $bindingJson | ConvertFrom-Json -ErrorAction Stop
+            $bindingReason = [string]$bindingFailure.reason
+        } catch { $bindingReason = 'HIGH_COST_WORKSPACE_BINDING_MISSING' }
+        if ($bindingReason -notin @(
+            'HIGH_COST_WORKSPACE_BINDING_MISSING',
+            'HIGH_COST_BROKER_UNAVAILABLE',
+            'HIGH_COST_OPERATION_ADMISSION_REQUIRED',
+            'HIGH_COST_AUTHORITY_INVALID',
+            'HIGH_COST_BUDGET_EXHAUSTED',
+            'HIGH_COST_IDENTITY_DRIFT'
+        )) {
+            $bindingReason = 'HIGH_COST_WORKSPACE_BINDING_MISSING'
+            $bindingExitCode = 72
+        }
+        Add-WrapperLog $bindingReason
+        exit $bindingExitCode
+    }
+    try { $binding = $bindingJson | ConvertFrom-Json -ErrorAction Stop } catch {
+        Add-WrapperLog 'HIGH_COST_WORKSPACE_BINDING_MISSING'
+        exit 126
+    }
+    if (
+        [string]$binding.bindingSchemaVersion -cne 'NEWS_GRASP_HIGH_COST_BINDING_V1' -or
+        [string]$binding.bindingReceiptSha256 -cne $HighCostBindingReceiptSha256.ToLowerInvariant() -or
+        [string]$binding.status -cne 'available'
+    ) {
+        Add-WrapperLog 'HIGH_COST_IDENTITY_DRIFT'
+        exit 126
+    }
+    $script:HighCostWorkspaceRoot = [string]$binding.workspaceRoot
+    $script:HighCostBudgetToolPath = [string]$binding.brokerInstalledPath
+    $env:NEWS_GRASP_HIGH_COST_BINDING_PATH = (Resolve-Path -LiteralPath $HighCostBindingPath).Path
+    $env:NEWS_GRASP_HIGH_COST_BINDING_RECEIPT_SHA256 = $HighCostBindingReceiptSha256.ToLowerInvariant()
 }
 
 function Get-CanonicalFutureLeafPath {
@@ -714,6 +816,7 @@ if ($ExtraArgs) {
     $argList += $ExtraArgs
 }
 
+Resolve-NewsGraspHighCostBinding
 Assert-CanonicalModelBroker
 
 if ($HighCostExpectedOperationKind -eq 'full_e2e') {

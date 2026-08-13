@@ -20,6 +20,8 @@ from typing import Any, Iterable
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from tools import news_grasp_high_cost_binding
+
 
 SCHEMA_VERSION = "NEWS_GRASP_CONTROL_PLANE_PREFLIGHT_V1"
 ISSUE_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -148,7 +150,7 @@ def _base_result(
             "sha256": "",
         },
         "globalBinding": {
-            "status": "deferred_global_wp03a",
+            "status": "not_verified",
             "authorityReplicated": False,
             "budgetReplicated": False,
             "terminalStateReplicated": False,
@@ -167,6 +169,9 @@ def verify_control_plane(
     managed_files: Iterable[str] = MANAGED_OPS_FILES,
     runner_readiness: dict[str, Any] | None = None,
     runner_state_path: Path | None = None,
+    high_cost_binding_path: Path | None = None,
+    high_cost_binding_receipt_sha256: str = "",
+    allow_isolated_high_cost_fixture: bool = False,
 ) -> dict:
     """4 root を副作用なしで検証し、最初の drift を typed reason で返す。"""
     raw_roots = {
@@ -198,6 +203,36 @@ def verify_control_plane(
             return {**result, "reasonCode": root_reason[role]}
         roots[role] = resolved
         result["roots"][role]["path"] = str(resolved)
+    if high_cost_binding_path is not None or high_cost_binding_receipt_sha256:
+        if high_cost_binding_path is None or not high_cost_binding_receipt_sha256:
+            return {**result, "reasonCode": "HIGH_COST_WORKSPACE_BINDING_MISSING"}
+        try:
+            resolved_binding = news_grasp_high_cost_binding.resolve_binding(
+                binding_path=Path(high_cost_binding_path),
+                expected_receipt_sha256=high_cost_binding_receipt_sha256,
+            )
+            binding_path = Path(str(resolved_binding["bindingPath"])).resolve(strict=True)
+        except (OSError, news_grasp_high_cost_binding.HighCostBindingError) as error:
+            reason = getattr(error, "reason", "HIGH_COST_WORKSPACE_BINDING_MISSING")
+            return {**result, "reasonCode": str(reason)}
+        if binding_path.parent != roots["live_bin_root"]:
+            return {**result, "reasonCode": "HIGH_COST_IDENTITY_DRIFT"}
+        result["globalBinding"] = {
+            "status": "available",
+            "schemaVersion": str(resolved_binding["bindingSchemaVersion"]),
+            "path": str(binding_path),
+            "receiptSha256": str(resolved_binding["bindingReceiptSha256"]),
+            "descriptorSha256": str(resolved_binding["descriptorSha256"]),
+            "adapterSha256": str(resolved_binding["adapterSha256"]),
+            "generation": int(resolved_binding["generation"]),
+            "authorityReplicated": False,
+            "budgetReplicated": False,
+            "terminalStateReplicated": False,
+        }
+    elif allow_isolated_high_cost_fixture:
+        result["globalBinding"]["status"] = "not_supplied_isolated_fixture"
+    else:
+        return {**result, "reasonCode": "HIGH_COST_WORKSPACE_BINDING_MISSING"}
     for role in ("artifact_root", "ops_root", "production_runtime_root"):
         result["roots"][role]["head"] = _git_head(roots[role])
     ops_head = result["roots"]["ops_root"]["head"]
@@ -375,6 +410,8 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--issue-date", required=True)
     parser.add_argument("--run-intent", required=True, choices=sorted(ALLOWED_RUN_INTENTS))
     parser.add_argument("--runner-state", type=Path, default=None)
+    parser.add_argument("--high-cost-binding", type=Path, default=None)
+    parser.add_argument("--high-cost-binding-receipt-sha256", default="")
     parser.add_argument("--output", type=Path)
     return parser
 
@@ -389,6 +426,8 @@ def main(argv: list[str] | None = None) -> int:
         issue_date=args.issue_date,
         run_intent=args.run_intent,
         runner_state_path=args.runner_state,
+        high_cost_binding_path=args.high_cost_binding,
+        high_cost_binding_receipt_sha256=args.high_cost_binding_receipt_sha256,
     )
     payload = json.dumps(result, ensure_ascii=False, indent=2) + "\n"
     if args.output is not None:

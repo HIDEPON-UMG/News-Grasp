@@ -24,8 +24,8 @@ param(
     [string] $PyExeOverride = '',
     [string] $BinDir = '',
     [string] $HighCostAdmissionPath = $env:NEWS_GRASP_HIGH_COST_ADMISSION_PATH,
-    [string] $HighCostBudgetToolPath = $env:NEWS_GRASP_HIGH_COST_BUDGET_TOOL_PATH,
-    [string] $HighCostWorkspaceRoot = $env:NEWS_GRASP_HIGH_COST_WORKSPACE_ROOT,
+    [string] $HighCostBindingPath = '',
+    [string] $HighCostBindingReceiptSha256 = '',
     [string] $RecoveryDecisionPath = ''
 )
 
@@ -709,11 +709,11 @@ function Start-RunnerProcess {
     if ($HighCostAdmissionPath) {
         $runnerParameters.HighCostAdmissionPath = $HighCostAdmissionPath
     }
-    if ($HighCostBudgetToolPath) {
-        $runnerParameters.HighCostBudgetToolPath = $HighCostBudgetToolPath
+    if ($HighCostBindingPath) {
+        $runnerParameters.HighCostBindingPath = $HighCostBindingPath
     }
-    if ($HighCostWorkspaceRoot) {
-        $runnerParameters.HighCostWorkspaceRoot = $HighCostWorkspaceRoot
+    if ($HighCostBindingReceiptSha256) {
+        $runnerParameters.HighCostBindingReceiptSha256 = $HighCostBindingReceiptSha256
     }
     if ($RecoveryDecision) {
         $runnerParameters.RunIntent = 'ScheduledRecoveryFull'

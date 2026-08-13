@@ -4,9 +4,44 @@ import os
 import sys
 import hashlib
 import json
+import atexit
+import shutil
+import tempfile
 from pathlib import Path
 
 import pytest
+
+
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+_SESSION_BINDING_ROOT: Path | None = None
+for _candidate in _REPO_ROOT.parents:
+    _adapter = _candidate / "tools" / "harness" / "high_cost_capability_adapter.py"
+    _descriptor = (
+        Path.home()
+        / ".codex"
+        / "state"
+        / "high-cost-operation"
+        / "capability-v1.json"
+    )
+    if _adapter.is_file() and _descriptor.is_file():
+        from tools.news_grasp_high_cost_binding import create_binding
+
+        _SESSION_BINDING_ROOT = Path(
+            tempfile.mkdtemp(prefix="news-grasp-test-high-cost-binding-")
+        )
+        _binding_path = _SESSION_BINDING_ROOT / "binding.json"
+        _binding = create_binding(
+            adapter_path=_adapter,
+            descriptor_path=_descriptor,
+            output_path=_binding_path,
+        )
+        os.environ.setdefault("NEWS_GRASP_HIGH_COST_BINDING_PATH", str(_binding_path))
+        os.environ.setdefault(
+            "NEWS_GRASP_HIGH_COST_BINDING_RECEIPT_SHA256",
+            str(_binding["bindingReceiptSha256"]),
+        )
+        atexit.register(shutil.rmtree, _SESSION_BINDING_ROOT, ignore_errors=True)
+        break
 
 
 def _write_external_health_authority(profile: Path, *, installed_broker: Path | None = None) -> None:
@@ -76,6 +111,43 @@ def canonical_model_broker(tmp_path: Path) -> tuple[list[str], dict[str, str]]:
         "raise SystemExit(subprocess.run([executable, *args[separator + 1:]]).returncode)\n",
         encoding="utf-8",
     )
+    broker_source = workspace / "tools" / "harness" / "model_spawn_broker.py"
+    broker_source.write_bytes(broker.read_bytes())
+    adapter = workspace / "tools" / "harness" / "high_cost_capability_adapter.py"
+    descriptor = tmp_path / "descriptor.json"
+    descriptor.write_text(
+        json.dumps(
+            {
+                "schemaVersion": "HIGH_COST_CAPABILITY_DESCRIPTOR_V1",
+                "workspaceRoot": str(workspace.resolve()),
+                "brokerSourcePath": str(broker_source.resolve()),
+                "brokerSourceSha256": hashlib.sha256(broker_source.read_bytes()).hexdigest(),
+                "brokerInstalledPath": str(broker.resolve()),
+                "brokerInstalledSha256": hashlib.sha256(broker.read_bytes()).hexdigest(),
+                "reasonSchemaVersion": "HIGH_COST_TYPED_REASON_V1",
+                "generation": 1,
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    adapter.write_text(
+        "from __future__ import annotations\n"
+        "import argparse, json\n"
+        "from pathlib import Path\n"
+        "p=argparse.ArgumentParser(); p.add_argument('command'); p.add_argument('--descriptor', type=Path, required=True)\n"
+        "a=p.parse_args(); v=json.loads(a.descriptor.read_text(encoding='utf-8')); v.update({'descriptorPath': str(a.descriptor.resolve()), 'status': 'available'}); print(json.dumps(v, sort_keys=True))\n",
+        encoding="utf-8",
+    )
+    from tools.news_grasp_high_cost_binding import create_binding
+
+    binding_path = tmp_path / "news-grasp-high-cost-binding-v1.json"
+    binding_value = create_binding(
+        adapter_path=adapter,
+        descriptor_path=descriptor,
+        output_path=binding_path,
+    )
     registry.write_text("{}\n", encoding="utf-8")
     budget_validator.write_text("# fixture sentinel\n", encoding="utf-8")
     (workspace / "tools" / "news_grasp_external_control.py").write_text(
@@ -87,8 +159,12 @@ def canonical_model_broker(tmp_path: Path) -> tuple[list[str], dict[str, str]]:
     env["USERPROFILE"] = str(tmp_path)
     _write_external_health_authority(tmp_path, installed_broker=broker)
     args = [
-        "-HighCostWorkspaceRoot", str(workspace),
-        "-HighCostBudgetToolPath", str(broker),
+        "-HighCostBindingPath", str(binding_path),
+        "-HighCostBindingReceiptSha256", binding_value["bindingReceiptSha256"],
+        "-HighCostBindingResolverPath", str((_REPO_ROOT / "tools" / "news_grasp_high_cost_binding.py").resolve()),
+        "-HighCostBindingResolverSha256", hashlib.sha256(
+            (_REPO_ROOT / "tools" / "news_grasp_high_cost_binding.py").read_bytes()
+        ).hexdigest(),
         "-HighCostPythonExe", sys.executable,
         "-HighCostCallId", f"test-{tmp_path.name}",
         "-HighCostAdmissionPath", str(admission),

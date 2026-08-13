@@ -1467,6 +1467,15 @@ def test_reporter_wave_uses_supervisor_loop_instead_of_blind_wait_job() -> None:
     assert "Wait-Job -Job @($jobs | Where-Object { $_.State -eq 'Running' }) -Any" not in reporter_body
     assert "ReporterPollSeconds" in reporter_body
     assert "ReporterHeartbeatSeconds" in reporter_body
+    assert "job_states=" in reporter_body
+    assert "REPORTER_JOB_START_FAILED" in reporter_body
+    assert "if ($Stage2EditorSmokeOnly) { 1 } else { 5 }" in reporter_body
+    assert "finally" in reporter_body
+    assert "Get-Job -Id $ownedJob.Id" in reporter_body
+    assert "reporter job CLEANUP" in reporter_body
+    assert "Stop-Job -Job $liveOwnedJob" in reporter_body
+    assert "Receive-Job -Id $liveOwnedJob.Id -ErrorAction SilentlyContinue" in reporter_body
+    assert "Remove-Job -Job $liveOwnedJob" in reporter_body
     assert "Update-RunnerProgress -Phase 'reporter'" in reporter_body
     assert "active_jobs" in reporter_body
     assert "Append-ReporterWrapperLog" in reporter_body
@@ -1665,8 +1674,8 @@ def test_runner_and_bootstrap_tasks_use_pythonw_no_console_launcher() -> None:
     assert "news-grasp-task-launcher.pyw" in installer_text
     assert 'parser.add_argument("--repo-dir", type=Path)' in launcher_text
     assert 'extra.extend(["-RepoDir", str(repo_dir)])' in launcher_text
-    assert '$runnerArgs = "`"$taskLauncherPath`" runner --scheduled-task-name `"$RunnerTaskName`""' in installer_text
-    assert '$bootstrapArgs = "`"$taskLauncherPath`" bootstrap --scheduled-task-name `"$BootstrapTaskName`""' in installer_text
+    assert '$runnerArgs = "`"$taskLauncherPath`" runner --scheduled-task-name `"$RunnerTaskName`" --high-cost-binding-path' in installer_text
+    assert '$bootstrapArgs = "`"$taskLauncherPath`" bootstrap --scheduled-task-name `"$BootstrapTaskName`" --high-cost-binding-path' in installer_text
     assert '--repo-dir `"$RepoDir`"' not in installer_text
     assert 'news-grasp-runtime-root-v1.json' in launcher_text
     assert '{"schemaVersion", "repoDir", "pythonExe", "evidenceRepoDir"}' in launcher_text
@@ -2284,13 +2293,18 @@ def test_runner_smoke_test_writes_terminal_smoke_ok_state() -> None:
 
 
 def test_runner_sha256_helper_has_dotnet_fallback() -> None:
-    """PowerShell 環境で Get-FileHash が欠けても runner drift guard を fail-open させない。"""
+    """隔離PowerShellでもautoloadに頼らずrunner drift guardをfail-closedにする。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    canonical_hash_body = runner.split("function Get-NewsGraspFileSha256Hex", 1)[1].split(
+        "function Invoke-LegacyScheduledProductionTrampoline", 1
+    )[0]
     hash_body = runner.split("function Get-FileSha256Hex", 1)[1].split("function Get-ScheduledTaskActionSummary", 1)[0]
 
-    assert "Get-Command Get-FileHash" in hash_body
-    assert "[System.Security.Cryptography.SHA256]::Create()" in hash_body
-    assert "[System.BitConverter]::ToString" in hash_body
+    assert "[Security.Cryptography.SHA256]::Create()" in canonical_hash_body
+    assert "[BitConverter]::ToString" in canonical_hash_body
+    assert "[IO.FileShare]::Read" in canonical_hash_body
+    assert "Get-NewsGraspFileSha256Hex -Path $Path" in hash_body
+    assert "Get-FileHash" not in runner
 
 
 def test_watcher_closes_only_verified_owned_job_and_writes_typed_watchdog_state() -> None:
@@ -3161,7 +3175,7 @@ def test_installed_nopublish_runner_revalidates_external_authority_hash() -> Non
     assert "'-ExternalHealthAuthorityExpectedSha256'" in wrapper
     assert "[string] $ExternalHealthAuthorityExpectedSha256" in runner
     assert "EXTERNAL_AUTHORITY_FIXTURE_HASH_DRIFT" in runner
-    assert "Get-FileHash -LiteralPath $script:ExternalHealthAuthorityPath" in runner
+    assert "Get-NewsGraspFileSha256Hex -Path $script:ExternalHealthAuthorityPath" in runner
 
 
 def test_runner_does_not_shadow_external_authority_hash_parameter() -> None:

@@ -1,32 +1,17 @@
 """workspace-global harness を product-local import 面へ接続する薄いadapter。"""
 from __future__ import annotations
 
-import os
 from pathlib import Path
+
+from tools.news_grasp_high_cost_binding import resolve_binding_from_environment
 
 
 def resolve_workspace_harness_path() -> Path:
-    workspace = os.environ.get("NEWS_GRASP_HIGH_COST_WORKSPACE_ROOT", "").strip()
-    if workspace:
-        candidate = Path(workspace).resolve() / "tools" / "harness"
-        if candidate.is_dir():
-            return candidate
+    resolved = resolve_binding_from_environment()
+    candidate = Path(str(resolved["workspaceRoot"])).resolve() / "tools" / "harness"
+    if not candidate.is_dir():
         raise RuntimeError(f"WORKSPACE_HARNESS_UNAVAILABLE: {candidate}")
-
-    source = Path(__file__).resolve()
-    checked: list[Path] = []
-    for ancestor in source.parents:
-        candidate = ancestor / "tools" / "harness"
-        checked.append(candidate)
-        if (
-            candidate.is_dir()
-            and (candidate / "model_spawn_broker.py").is_file()
-        ):
-            return candidate.resolve()
-    raise RuntimeError(
-        "WORKSPACE_HARNESS_UNAVAILABLE: "
-        + ", ".join(str(path) for path in checked)
-    )
+    return candidate
 
 
 _WORKSPACE_HARNESS = resolve_workspace_harness_path()

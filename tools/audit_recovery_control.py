@@ -30,7 +30,11 @@ from tools.news_grasp_operational_contract import (
     validate_operational_truth_receipt,
 )
 from tools.news_grasp_owned_process import run_owned_bounded
-from tools import news_grasp_control_plane, news_grasp_recovery_receipts
+from tools import (
+    news_grasp_control_plane,
+    news_grasp_recovery_receipts,
+    news_grasp_high_cost_binding,
+)
 
 
 AUDIT_TERMINALS = {
@@ -122,6 +126,45 @@ def _sealed(value: dict[str, Any]) -> dict[str, Any]:
 
 def _valid_sha256(value: object) -> bool:
     return SHA256_PATTERN.fullmatch(str(value or "")) is not None
+
+
+def resolve_live_high_cost_binding(live_bin_root: Path) -> dict[str, Any]:
+    """installed recovery bindingからGlobal capabilityを再解決する。"""
+
+    live_root = live_bin_root.resolve(strict=True)
+    runtime_binding_path = live_root / "news-grasp-recovery-runtime-binding-v1.json"
+    if (
+        not runtime_binding_path.is_file()
+        or runtime_binding_path.is_symlink()
+        or runtime_binding_path.stat().st_size > MAX_JSON_BYTES
+    ):
+        raise ValueError("HIGH_COST_WORKSPACE_BINDING_MISSING")
+    try:
+        runtime_binding = json.loads(
+            runtime_binding_path.read_text(encoding="utf-8-sig")
+        )
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError("HIGH_COST_WORKSPACE_BINDING_MISSING") from error
+    if runtime_binding.get("schemaVersion") != "NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1":
+        raise ValueError("HIGH_COST_WORKSPACE_BINDING_MISSING")
+    binding_path = Path(str(runtime_binding.get("highCostBindingPath") or ""))
+    try:
+        binding_path = binding_path.resolve(strict=True)
+    except OSError as error:
+        raise ValueError("HIGH_COST_WORKSPACE_BINDING_MISSING") from error
+    if binding_path.parent != live_root or binding_path.name != "news-grasp-high-cost-binding-v1.json":
+        raise ValueError("HIGH_COST_IDENTITY_DRIFT")
+    expected_file_sha = str(runtime_binding.get("highCostBindingFileSha256") or "")
+    if not _valid_sha256(expected_file_sha) or _file_sha256(binding_path) != expected_file_sha:
+        raise ValueError("HIGH_COST_IDENTITY_DRIFT")
+    receipt = str(runtime_binding.get("highCostBindingReceiptSha256") or "")
+    try:
+        return news_grasp_high_cost_binding.resolve_binding(
+            binding_path=binding_path,
+            expected_receipt_sha256=receipt,
+        )
+    except news_grasp_high_cost_binding.HighCostBindingError as error:
+        raise ValueError(error.reason) from error
 
 
 def _cause_inputs(value: object) -> dict[str, str]:
@@ -2410,6 +2453,17 @@ def execute_audit_recovery(payload: object) -> dict[str, Any]:
     if not canonical_python.is_file() or canonical_python.is_symlink():
         raise ValueError("RECOVERY_RUNTIME_INTERPRETER_INVALID")
     production_runtime_root = Path.home() / ".news-grasp-runtime" / "production-runtime"
+    try:
+        high_cost_binding = resolve_live_high_cost_binding(live_bin_root)
+    except (OSError, ValueError) as error:
+        incident = _incident(
+            issue_date=issue_date,
+            scheduled_status="failed",
+            recovery_status="not_started",
+            reason_code=str(error),
+        )
+        write_audit_terminal(incident)
+        return incident
     publish_complete_manifest = (
         artifact_repo_root / "build" / "publish-complete" / f"{issue_date}.json"
     )
@@ -2438,6 +2492,10 @@ def execute_audit_recovery(payload: object) -> dict[str, Any]:
         live_bin_root=live_bin_root,
         issue_date=issue_date,
         run_intent="ScheduledRecoveryFull",
+        high_cost_binding_path=Path(str(high_cost_binding["bindingPath"])),
+        high_cost_binding_receipt_sha256=str(
+            high_cost_binding["bindingReceiptSha256"]
+        ),
     )
     initial_control_plane = control_plane
     if (
@@ -2483,6 +2541,10 @@ def execute_audit_recovery(payload: object) -> dict[str, Any]:
             str(live_bin_root),
             "-DateStamp",
             issue_date,
+            "-HighCostBindingPath",
+            str(high_cost_binding["bindingPath"]),
+            "-HighCostBindingReceiptSha256",
+            str(high_cost_binding["bindingReceiptSha256"]),
         ]
         repair_return_code, _ = _run_bounded(
             repair_command,
@@ -2497,6 +2559,10 @@ def execute_audit_recovery(payload: object) -> dict[str, Any]:
                 live_bin_root=live_bin_root,
                 issue_date=issue_date,
                 run_intent="ScheduledRecoveryFull",
+                high_cost_binding_path=Path(str(high_cost_binding["bindingPath"])),
+                high_cost_binding_receipt_sha256=str(
+                    high_cost_binding["bindingReceiptSha256"]
+                ),
             )
         else:
             control_plane = {
@@ -2540,7 +2606,6 @@ def execute_audit_recovery(payload: object) -> dict[str, Any]:
         )
         write_audit_terminal(incident)
         return incident
-    high_cost_workspace = CANONICAL_REPO_ROOT.parent
     state_path = Path.home() / "bin" / "news-grasp-runner-state.json"
     log_dir = Path.home() / "bin" / "news-grasp-logs"
     command = [
@@ -2565,10 +2630,10 @@ def execute_audit_recovery(payload: object) -> dict[str, Any]:
         str(state_path),
         "-LogDirOverride",
         str(log_dir),
-        "-HighCostWorkspaceRoot",
-        str(high_cost_workspace),
-        "-HighCostBudgetToolPath",
-        str(CANONICAL_BROKER_PATH),
+        "-HighCostBindingPath",
+        str(high_cost_binding["bindingPath"]),
+        "-HighCostBindingReceiptSha256",
+        str(high_cost_binding["bindingReceiptSha256"]),
         "-ScheduledAuthorityEvidencePath",
         str(authority_path),
         "-RecoveryExecutionReceiptPath",

@@ -1,22 +1,16 @@
 from __future__ import annotations
 
 import importlib.util
-import os
 from pathlib import Path
 from types import ModuleType
 from typing import Any
 
-
-_BROKER_PATH = Path(__file__).resolve().parents[2] / "tools" / "harness" / "model_spawn_broker.py"
+from tools.news_grasp_high_cost_binding import resolve_binding_from_environment
 
 
 def resolve_broker_path() -> Path:
-    workspace = os.environ.get("NEWS_GRASP_HIGH_COST_WORKSPACE_ROOT", "").strip()
-    candidate = (
-        Path(workspace).resolve() / "tools" / "harness" / "model_spawn_broker.py"
-        if workspace
-        else _BROKER_PATH.resolve()
-    )
+    resolved = resolve_binding_from_environment()
+    candidate = Path(str(resolved["brokerInstalledPath"])).resolve()
     if not candidate.is_file():
         raise RuntimeError("MODEL_SPAWN_BROKER_UNAVAILABLE")
     return candidate

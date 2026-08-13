@@ -762,6 +762,16 @@ def _load_stable_launcher_identity(*, bin_dir: Path) -> dict[str, object]:
     }
 
 
+def _stable_authority_option(identity: dict[str, object], option: str) -> str:
+    action = identity.get("action")
+    if not isinstance(action, list) or action.count(option) != 1:
+        raise RuntimeError("NEWS_GRASP_STABLE_TASK_AUTHORITY_INVALID")
+    index = action.index(option)
+    if index + 1 >= len(action) or not isinstance(action[index + 1], str):
+        raise RuntimeError("NEWS_GRASP_STABLE_TASK_AUTHORITY_INVALID")
+    return str(action[index + 1])
+
+
 def _validate_active_production_generation(
     *, runtime_repo: Path, launcher_identity: dict[str, object]
 ) -> dict[str, object]:
@@ -3311,6 +3321,8 @@ def main() -> int:
     parser.add_argument("--runtime-root", type=Path)
     parser.add_argument("--scheduled-task-name", required=False)
     parser.add_argument("--launch-authority", type=Path)
+    parser.add_argument("--high-cost-binding-path", type=Path)
+    parser.add_argument("--high-cost-binding-sha256")
     args = parser.parse_args()
     bin_dir = Path.home() / "bin"
     if args.mode == "maintain-runtime":
@@ -3380,6 +3392,24 @@ def main() -> int:
             file=sys.stderr,
         )
         return 66
+    if args.mode in {"runner", "bootstrap"}:
+        try:
+            bound_path = _stable_authority_option(
+                launcher_identity, "--high-cost-binding-path"
+            )
+            bound_sha256 = _stable_authority_option(
+                launcher_identity, "--high-cost-binding-sha256"
+            )
+            if (
+                args.high_cost_binding_path is None
+                or not args.high_cost_binding_sha256
+                or args.high_cost_binding_path.resolve(strict=True)
+                != Path(bound_path).resolve(strict=True)
+                or str(args.high_cost_binding_sha256).lower() != bound_sha256.lower()
+            ):
+                raise RuntimeError("HIGH_COST_IDENTITY_DRIFT")
+        except (OSError, RuntimeError, ValueError):
+            return 66
     if args.mode == "scheduled-equivalent-nopublish":
         if args.launch_authority is None:
             return 66
@@ -3468,6 +3498,54 @@ def main() -> int:
         except OSError:
             return 66
         extra.extend(["-EvidenceRepoDir", str(evidence_repo)])
+        if args.mode in {"runner", "bootstrap"}:
+            if (
+                args.high_cost_binding_path is None
+                or not args.high_cost_binding_sha256
+            ):
+                return 66
+            binding_tool = evidence_repo / "tools" / "news_grasp_high_cost_binding.py"
+            if not binding_tool.is_file():
+                return 66
+            try:
+                binding_path = args.high_cost_binding_path.resolve(strict=True)
+                validation = subprocess.run(
+                    [
+                        str(python_exe),
+                        "-I",
+                        "-S",
+                        "-B",
+                        str(binding_tool),
+                        "resolve",
+                        "--binding",
+                        str(binding_path),
+                        "--expected-receipt-sha256",
+                        str(args.high_cost_binding_sha256),
+                    ],
+                    cwd=str(evidence_repo),
+                    stdin=subprocess.DEVNULL,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="backslashreplace",
+                    timeout=20,
+                    check=False,
+                    creationflags=(
+                        subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+                    ),
+                )
+            except (OSError, subprocess.SubprocessError):
+                return 66
+            if validation.returncode != 0:
+                return int(validation.returncode)
+            extra.extend(
+                [
+                    "-HighCostBindingPath",
+                    str(binding_path),
+                    "-HighCostBindingReceiptSha256",
+                    str(args.high_cost_binding_sha256).lower(),
+                ]
+            )
     powershell = Path(r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe")
     issue_date = date.today().isoformat()
     failure_state = bin_dir / (

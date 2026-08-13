@@ -478,8 +478,8 @@ def test_ng2_a02_recovery_rollback_previous_generation(tmp_path: Path) -> None:
 def test_ng2_wp03_installer_tasks_bind_stable_launcher_without_worktree_path() -> None:
     repo = Path(__file__).resolve().parents[1]
     installer = (repo / "scripts/ops/install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
-    assert '$runnerArgs = "`"$taskLauncherPath`" runner --scheduled-task-name `"$RunnerTaskName`""' in installer
-    assert '$bootstrapArgs = "`"$taskLauncherPath`" bootstrap --scheduled-task-name `"$BootstrapTaskName`""' in installer
+    assert '$runnerArgs = "`"$taskLauncherPath`" runner --scheduled-task-name `"$RunnerTaskName`" --high-cost-binding-path' in installer
+    assert '$bootstrapArgs = "`"$taskLauncherPath`" bootstrap --scheduled-task-name `"$BootstrapTaskName`" --high-cost-binding-path' in installer
     assert '$deadmanArgs = "`"$deadmanLauncherPath`""' in installer
     assert '--repo-dir `"$RepoDir`"' not in installer
 

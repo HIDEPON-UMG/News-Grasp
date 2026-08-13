@@ -35,7 +35,8 @@ def test_nopublish_wrapper_authorizes_and_activates_parent_before_runner_launch(
     assert "resume_model" not in text
     assert "-ResumeFromStage" not in text
     assert "HIGH_COST_CANONICAL_FILE_INVALID" in text
-    assert "-HighCostWorkspaceRoot" in text
+    assert "-HighCostBindingPath" in text
+    assert "-HighCostBindingReceiptSha256" in text
     assert "$attemptId = \"nopublish:$DateStamp\"" in text
     assert "Get-Content -LiteralPath $E2EAdmissionPath" not in text
     assert "'--reservation-output' $reservationReceiptPath" in text
@@ -133,7 +134,7 @@ def test_runner_requires_activated_parent_before_any_reporter_fanout() -> None:
     reporter = text.index("reporter job START")
     assert consume < invoked < reporter
     assert "HIGH_COST_OPERATION_ADMISSION_REQUIRED" in text
-    assert "model_spawn_broker.py" in text
+    assert "news_grasp_high_cost_binding.py" in text
     gate = text.split("function Assert-HighCostOperationAdmission", 1)[1].split("# ===== sentinel", 1)[0]
     assert "'admit'" in gate or '"admit"' in gate
     assert "blocked_high_cost" not in gate
@@ -255,7 +256,8 @@ def test_runner_passes_parent_authority_to_sequential_and_parallel_calls() -> No
     helper = text.split("function Invoke-CodexWrapper", 1)[1].split("function ", 1)[0]
     reporter = text.split("function Invoke-ReporterWave", 1)[1].split("function ", 1)[0]
     for source in (helper, reporter):
-        assert "HighCostWorkspaceRoot" in source
+        assert "HighCostBindingPath" in source
+        assert "HighCostBindingReceiptSha256" in source
         assert "HighCostCallId" in source
         assert "HighCostParentAuthorityPath" in source
         assert "HighCostAttemptId" in source
