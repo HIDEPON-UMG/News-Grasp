@@ -1414,9 +1414,12 @@ def _run_live_startup_canary(
             high_cost_binding_receipt_sha256,
         ]
     try:
+        canary_env = os.environ.copy()
+        canary_env["PYTHONDONTWRITEBYTECODE"] = "1"
         proc = subprocess.run(
             command,
             cwd=repo_root,
+            env=canary_env,
             capture_output=True,
             text=True,
             encoding="utf-8",

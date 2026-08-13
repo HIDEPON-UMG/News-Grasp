@@ -3618,9 +3618,10 @@ def test_live_startup_canary_propagates_explicit_high_cost_binding(monkeypatch, 
         stdout = ""
         stderr = ""
 
-    def fake_run(command, **_kwargs):
+    def fake_run(command, **kwargs):
         assert command[command.index("-HighCostBindingPath") + 1] == str(binding)
         assert command[command.index("-HighCostBindingReceiptSha256") + 1] == receipt_sha256
+        assert kwargs["env"]["PYTHONDONTWRITEBYTECODE"] == "1"
         state_file = Path(command[command.index("-StateFile") + 1])
         log_dir = Path(command[command.index("-LogDir") + 1])
         state_file.write_text(json.dumps({"status": "smoke_ok"}), encoding="utf-8")

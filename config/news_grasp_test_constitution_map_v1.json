@@ -634,7 +634,7 @@
     },
     {
       "path": "tests/test_daily_self_heal.py",
-      "sha256": "391ac7b3648c4be43c5253eeca91a68652212f926e38ee58696c11d21f34b231",
+      "sha256": "5f8e7a48b349391c7c17d257a75ede7cb9d94b34cae47ea50ec30f7857e95aa9",
       "nodeCount": 107,
       "nodeIds": [
         "tests/test_daily_self_heal.py::test_authenticode_identity_uses_tracked_powershell_helper",
