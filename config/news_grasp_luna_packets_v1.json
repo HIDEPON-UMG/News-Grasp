@@ -382,9 +382,9 @@
         "config/news_grasp_automation_assets_v2.json": "275a6f4217db6d064cb9c378541fcab0412d086415ff4043744b816de1d45f70",
         "tools/news_grasp_generation.py": "04c6fd4c736bc3c2e0f0024a873996a45a5ba75c1e616b1f8379141036a96b16",
         "tools/news_grasp_constitution.py": "d34e2a152523c0b30961e907c0e90b0eb63a44b84c8c46da0ca57cf8bb49741a",
-        "config/news_grasp_active_object_catalog_v1.json": "da72fdd21f198012b5a494b023f59909619a34fc6963a3b79eed9447c1640a8d",
-        "config/news_grasp_test_constitution_map_v1.json": "e1289dd4486b3e7ead8038ddc9a4b3f9cd76503f957a91dfd06732548027f863",
-        "config/news_grasp_spec_disposition_v1.json": "1fff5969bc3dfe4dc88d095a28cca8388c3f7b4e917f6051efc8fc343de71d55",
+        "config/news_grasp_active_object_catalog_v1.json": "7b2a9da9603a9ac630d46a1652a2914127ed4f2a80c9ce4c65af05935149f5f6",
+        "config/news_grasp_test_constitution_map_v1.json": "19397458890326f49abe679c0cc68f693ef97b1e4ffe230056768719a838864a",
+        "config/news_grasp_spec_disposition_v1.json": "5f9a1db76b217fb24c19c1dbf11548c738d09b3c5c88cfb5b75d404743af64f7",
         "tests/test_runner_convergence_contract.py": "854e8f856853feade8db1f75c462fec84cb56329279cf24aeaa064044a0787bf"
       },
       "constitutionClauses": [
@@ -865,8 +865,8 @@
       ],
       "targetSourceHashes": {
         "config/news_grasp_skill_cross_layer_graph_v1.json": "402cfaee75923837b3ce12ca842d868bfff6681c26f235a10cefaa79992f982c",
-        "config/news_grasp_constitution_projection_v1.json": "54f9b39ce2d65a85640f595f05036fb98d2d958e48ea9d638611c6a4b7efa6f0",
-        "docs/specs/2026-08-12_news-grasp-product-constitution.html": "45c3b67385ac0504cb3945ef4a09b56fce441d52a613a0049d82fe3b90834505",
+        "config/news_grasp_constitution_projection_v1.json": "d8f17c03059f6bda5df491a931ae6fc408814b8ea5923a43fc99f66b91e135b6",
+        "docs/specs/2026-08-12_news-grasp-product-constitution.html": "5158cd411110cc9c458515d0293c18a0cdd95713d335d3536c0d8382ac67384c",
         "tools/news_grasp_constitution.py": "d34e2a152523c0b30961e907c0e90b0eb63a44b84c8c46da0ca57cf8bb49741a",
         "AGENTS.md": "abcc60545a27dcd152b73529a435b6c0b9020cd0c029c4e828c2728299d371a5",
         "CLAUDE.md": "abcc60545a27dcd152b73529a435b6c0b9020cd0c029c4e828c2728299d371a5"

@@ -371,7 +371,8 @@ def test_ng813_recovery_python_entrypoints_are_isolated_direct_scripts() -> None
     runner = RUNNER.read_text(encoding="utf-8-sig")
 
     assert "& $PythonExe '-I' '-S' '-B' $RecoveryReceiptTool" in bootstrap
-    assert "& $PythonExe '-I' '-S' '-B' $controlPlaneVerifier" in bootstrap
+    assert "$controlPlaneArgs = @('-I', '-S', '-B', $controlPlaneVerifier" in bootstrap
+    assert "& $PythonExe @controlPlaneArgs" in bootstrap
     assert "& $PyExe '-I' '-S' '-B' $recoveryReceiptTool" in runner
     assert "& $PyExe '-I' '-S' '-B' $completionGuardTool" in runner
     assert "& $PyExe '-I' '-S' '-B' $dailySelfHealTool" in runner
@@ -648,6 +649,114 @@ def test_ng813_four_root_preflight_rejects_same_date_runner_state_root_drift(
     assert result["ok"] is False
     assert result["reasonCode"] == "RUNNER_STATE_ROOT_DRIFT"
     assert result["runnerState"]["opsRoot"] == str(live)
+
+
+def test_ng813_four_root_preflight_honors_explicit_isolated_runner_state(
+    tmp_path: Path,
+) -> None:
+    """primary: canaryの明示stateはlive production stateから完全分離する。"""
+    control_plane = _load_control_plane_module()
+    artifact = tmp_path / "artifact"
+    ops = tmp_path / "ops"
+    runtime = tmp_path / "runtime"
+    live = tmp_path / "live"
+    artifact.mkdir()
+    _write_managed_surface(ops)
+    _write_managed_surface(runtime)
+    _copy_to_live(ops, live)
+    (live / "news-grasp-runner-state.json").write_text(
+        json.dumps(
+            {
+                "date": "2026-08-13",
+                "artifactRoot": str(live),
+                "opsRoot": str(live),
+            }
+        ),
+        encoding="utf-8",
+    )
+    isolated_state = live / "ng-smoke-state.json"
+    isolated_state.write_text(
+        json.dumps({"date": "2026-08-13", "status": "smoke_ok"}),
+        encoding="utf-8",
+    )
+
+    result = control_plane.verify_control_plane(
+        artifact_root=artifact,
+        ops_root=ops,
+        production_runtime_root=runtime,
+        live_bin_root=live,
+        issue_date="2026-08-13",
+        run_intent="StartupCanary",
+        runner_readiness=_control_readiness(),
+        runner_state_path=isolated_state,
+    )
+
+    assert result["ok"] is True
+    assert result["runnerState"]["path"] == str(isolated_state)
+
+
+def test_ng813_bootstrap_preflight_uses_the_selected_isolated_state_path() -> None:
+    """recovery: smoke/canaryはlive production stateを現在のbindingに読み替えない。"""
+    bootstrap = (
+        REPO_ROOT / "scripts" / "ops" / "news-grasp-bootstrap.ps1"
+    ).read_text(encoding="utf-8-sig")
+    assert "$controlPlaneRunIntent = if ($SmokeTest)" in bootstrap
+    assert "'StartupCanary'" in bootstrap
+    assert "if ($SmokeTest) {\n        $controlPlaneArgs += @('--runner-state', $StateFile)" in bootstrap
+    assert "$controlPlaneStatePath = if ($StateFile)" not in bootstrap
+
+
+@pytest.mark.parametrize(
+    "run_intent",
+    ["ScheduledProduction", "ScheduledRecoveryFull"],
+)
+@pytest.mark.parametrize("state_variant", ["arbitrary", "missing", "minimal"])
+def test_ng813_production_intents_reject_noncanonical_runner_state_path(
+    tmp_path: Path,
+    run_intent: str,
+    state_variant: str,
+) -> None:
+    """adversarial: production/recoveryはisolated stateでroot driftを迂回できない。"""
+    control_plane = _load_control_plane_module()
+    artifact = tmp_path / "artifact"
+    ops = tmp_path / "ops"
+    runtime = tmp_path / "runtime"
+    live = tmp_path / "live"
+    artifact.mkdir()
+    _write_managed_surface(ops)
+    _write_managed_surface(runtime)
+    _copy_to_live(ops, live)
+    alternate_state = live / f"{state_variant}-state.json"
+    if state_variant == "arbitrary":
+        alternate_state.write_text(
+            json.dumps(
+                {
+                    "date": "2026-08-13",
+                    "artifactRoot": str(artifact),
+                    "opsRoot": str(ops),
+                }
+            ),
+            encoding="utf-8",
+        )
+    elif state_variant == "minimal":
+        alternate_state.write_text(
+            json.dumps({"date": "2026-08-13", "status": "smoke_ok"}),
+            encoding="utf-8",
+        )
+
+    result = control_plane.verify_control_plane(
+        artifact_root=artifact,
+        ops_root=ops,
+        production_runtime_root=runtime,
+        live_bin_root=live,
+        issue_date="2026-08-13",
+        run_intent=run_intent,
+        runner_readiness=_control_readiness(),
+        runner_state_path=alternate_state,
+    )
+
+    assert result["ok"] is False
+    assert result["reasonCode"] == "RUNNER_STATE_PATH_NOT_ALLOWED"
 
 
 def test_ng813_preflight_preserves_failed_bootstrap_history_without_permanent_block(

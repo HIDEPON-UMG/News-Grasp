@@ -660,12 +660,22 @@ $controlPlaneVerifier = if ($ControlPlaneRepairOnly) {
 } else {
     Join-Path $OpsRepoRoot 'tools\news_grasp_control_plane.py'
 }
-$controlPlaneRunIntent = if ($RecoverOnly) { 'ScheduledRecoveryFull' } else { 'ScheduledProduction' }
+$controlPlaneRunIntent = if ($SmokeTest) {
+    'StartupCanary'
+} elseif ($RecoverOnly) {
+    'ScheduledRecoveryFull'
+} else {
+    'ScheduledProduction'
+}
 try {
     if (-not (Test-Path -LiteralPath $controlPlaneVerifier -PathType Leaf)) {
         throw 'NEWS_GRASP_CONTROL_PLANE_PREFLIGHT_MISSING'
     }
-    $controlPlaneJson = (& $PythonExe '-I' '-S' '-B' $controlPlaneVerifier '--artifact-root' $RepoDir '--ops-root' $OpsRepoRoot '--production-runtime-root' $RepoDir '--live-bin-root' $BinDir '--issue-date' $DateStamp '--run-intent' $controlPlaneRunIntent 2>&1 | Out-String).Trim()
+    $controlPlaneArgs = @('-I', '-S', '-B', $controlPlaneVerifier, '--artifact-root', $RepoDir, '--ops-root', $OpsRepoRoot, '--production-runtime-root', $RepoDir, '--live-bin-root', $BinDir, '--issue-date', $DateStamp, '--run-intent', $controlPlaneRunIntent)
+    if ($SmokeTest) {
+        $controlPlaneArgs += @('--runner-state', $StateFile)
+    }
+    $controlPlaneJson = (& $PythonExe @controlPlaneArgs 2>&1 | Out-String).Trim()
     $controlPlaneRc = $LASTEXITCODE
     if ($controlPlaneRc -ne 0) {
         throw "NEWS_GRASP_CONTROL_PLANE_PREFLIGHT_FAILED detail=$controlPlaneJson"

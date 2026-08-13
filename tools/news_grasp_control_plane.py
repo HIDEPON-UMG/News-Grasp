@@ -27,7 +27,9 @@ ALLOWED_RUN_INTENTS = {
     "ScheduledProduction",
     "ScheduledRecoveryFull",
     "ScheduledEquivalentNoPublish",
+    "StartupCanary",
 }
+ISOLATED_RUNNER_STATE_INTENTS = {"StartupCanary"}
 MANAGED_OPS_FILES = (
     "news-grasp-task-launcher.pyw",
     "news-grasp-bootstrap.ps1",
@@ -298,10 +300,25 @@ def verify_control_plane(
                 "readinessReason": readiness_reason,
             }
 
-    state_path = Path(
-        runner_state_path
-        or (roots["live_bin_root"] / "news-grasp-runner-state.json")
-    )
+    canonical_state_path = (
+        roots["live_bin_root"] / "news-grasp-runner-state.json"
+    ).resolve(strict=False)
+    if run_intent in ISOLATED_RUNNER_STATE_INTENTS:
+        if runner_state_path is None:
+            return {**result, "reasonCode": "ISOLATED_RUNNER_STATE_REQUIRED"}
+        state_path = Path(runner_state_path).resolve(strict=False)
+        if os.path.normcase(str(state_path)) == os.path.normcase(
+            str(canonical_state_path)
+        ):
+            return {**result, "reasonCode": "ISOLATED_RUNNER_STATE_REQUIRED"}
+    else:
+        state_path = Path(
+            runner_state_path or canonical_state_path
+        ).resolve(strict=False)
+        if os.path.normcase(str(state_path)) != os.path.normcase(
+            str(canonical_state_path)
+        ):
+            return {**result, "reasonCode": "RUNNER_STATE_PATH_NOT_ALLOWED"}
     result["runnerState"]["path"] = str(state_path)
     if state_path.exists() or state_path.is_symlink():
         if not state_path.is_file() or _is_reparse_or_symlink(state_path):
@@ -357,6 +374,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--live-bin-root", type=Path, required=True)
     parser.add_argument("--issue-date", required=True)
     parser.add_argument("--run-intent", required=True, choices=sorted(ALLOWED_RUN_INTENTS))
+    parser.add_argument("--runner-state", type=Path, default=None)
     parser.add_argument("--output", type=Path)
     return parser
 
@@ -370,6 +388,7 @@ def main(argv: list[str] | None = None) -> int:
         live_bin_root=args.live_bin_root,
         issue_date=args.issue_date,
         run_intent=args.run_intent,
+        runner_state_path=args.runner_state,
     )
     payload = json.dumps(result, ensure_ascii=False, indent=2) + "\n"
     if args.output is not None:
