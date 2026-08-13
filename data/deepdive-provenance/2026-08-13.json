@@ -2,13 +2,13 @@
   "articlePath": "digest/DeepDive/2026-08-13-DeepDive.md",
   "articleSha256": "7af3b6eb4da3bc3cda12d18aada1b1210e63c858c13214abdb0250fa2bfe0e45",
   "issueDate": "2026-08-13",
-  "manifestSha256": "2cd372d0647f0b367cd1555d170e8a8eea82a79806b231ef2d8673db817d4aa0",
+  "manifestSha256": "fc6ce15521332be4e9d17082e2d9f9a3ba47f072d4336c0c027af0dd472b2bb6",
   "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
-  "sourceSetSha256": "fd3abfb7e5de5bd09aebfa818b8d3abc6ef42c2a7209cb4f17a6c4725d196fdf",
+  "sourceSetSha256": "4bd39c0a104d62c8cf93eb550f7211fa342234efcf411b404f282ebf871466e3",
   "sources": [
     {
-      "contentSha256": "2d262947235e9dc15d6c331856838dd5e488cc5cae4446a40a4311acb6133bd5",
-      "fetchedAt": "2026-08-13T00:50:02.756238+00:00",
+      "contentSha256": "540773a00cf9d42b60da03b1bb5b4cafe85868003f2dfc2744c96b229d0d0516",
+      "fetchedAt": "2026-08-13T00:59:16.272210+00:00",
       "finalUrl": "https://gigazine.net/news/20260812-anthropic-claude-digital-watermark/",
       "httpStatus": 200,
       "locations": [
@@ -22,8 +22,8 @@
       "url": "https://gigazine.net/news/20260812-anthropic-claude-digital-watermark/"
     },
     {
-      "contentSha256": "ac5cf5af8a9d0c1fe346961928f040a6ba0e5808f91c99f46146a84ee05373c7",
-      "fetchedAt": "2026-08-13T00:50:02.962121+00:00",
+      "contentSha256": "f184be240451bf53c04a4c72b4eba71a0798aa15c7defc89558cd379bf5eb122",
+      "fetchedAt": "2026-08-13T00:59:16.904412+00:00",
       "finalUrl": "https://reseed.resemom.jp/article/2026/08/12/13897.html",
       "httpStatus": 200,
       "locations": [
@@ -38,7 +38,7 @@
     },
     {
       "contentSha256": "579a4da5ff4ecdbc49a4a18048167b60d61b5b5abdc7c6428fb42fbec07351d7",
-      "fetchedAt": "2026-08-13T00:50:03.178680+00:00",
+      "fetchedAt": "2026-08-13T00:59:17.106636+00:00",
       "finalUrl": "https://www.itmedia.co.jp/news/article/2608/12/2000000500/",
       "httpStatus": 200,
       "locations": [
