@@ -3283,7 +3283,52 @@ function Record-HighCostClaimFailure {
     }
 }
 
+function Clear-ScheduledHighCostAuthorityEnvironment {
+    foreach ($name in @(
+        'AIHARNESS_SCHEDULED_NEWS_GRASP_AUTHORITY',
+        'AIHARNESS_SCHEDULED_TASK_IDENTITY',
+        'AIHARNESS_SCHEDULED_ACTUAL_EVENT_HASH',
+        'AIHARNESS_SCHEDULED_ISSUE_DATE',
+        'AIHARNESS_SCHEDULED_OPERATION_KIND'
+    )) {
+        Remove-Item -LiteralPath "Env:$name" -ErrorAction SilentlyContinue
+    }
+}
+
+function Set-ScheduledHighCostAuthorityEnvironment {
+    param(
+        [Parameter(Mandatory=$true)] [object] $Admission,
+        [Parameter(Mandatory=$true)] [string] $ExpectedOperationKind,
+        [Parameter(Mandatory=$true)] [string] $ExpectedIssueDate
+    )
+    $taskIdentity = [string]$Admission.taskIdentity
+    $actualEventHash = [string]$Admission.latestActualUserEventHash
+    $admissionIssueDate = [string]$Admission.issueDate
+    $admissionOperationKind = [string]$Admission.operationKind
+    if (
+        $ExpectedOperationKind -notin @('scheduled_production', 'scheduled_recovery') -or
+        $admissionOperationKind -cne $ExpectedOperationKind -or
+        $admissionIssueDate -cne $ExpectedIssueDate -or
+        $taskIdentity -notmatch '^[0-9a-f]{64}$' -or
+        $actualEventHash -notmatch '^[0-9a-f]{64}$'
+    ) {
+        Add-RunnerLogLine -Text 'ERROR: HIGH_COST_SCHEDULED_AUTHORITY_ENV_INVALID'
+        Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_SCHEDULED_AUTHORITY_ENV_INVALID' -ExitCode 76
+        exit 76
+    }
+    # 子のmodel wrapperでも high_cost_control_v2.resolve_canonical_authority()
+    # が再評価されるため、封印済みscheduled identityを明示伝播する。
+    # 伝播しない場合、子が対話用durable-goal DBへフォールバックし、正当な
+    # ScheduledProduction/ScheduledRecoveryまで拒否してしまう。
+    $env:AIHARNESS_SCHEDULED_NEWS_GRASP_AUTHORITY = '1'
+    $env:AIHARNESS_SCHEDULED_TASK_IDENTITY = $taskIdentity
+    $env:AIHARNESS_SCHEDULED_ACTUAL_EVENT_HASH = $actualEventHash
+    $env:AIHARNESS_SCHEDULED_ISSUE_DATE = $admissionIssueDate
+    $env:AIHARNESS_SCHEDULED_OPERATION_KIND = $admissionOperationKind
+}
+
 function Assert-HighCostOperationAdmission {
+    Clear-ScheduledHighCostAuthorityEnvironment
     if ($SmokeTest -or $PreflightOnly -or $FinalizeVerifiedPublishManifest) { return }
     $modelSpawnBroker = [System.IO.Path]::GetFullPath($HighCostBudgetToolPath)
     if ((-not $HighCostWorkspaceRoot) -or (-not (Test-Path -LiteralPath $modelSpawnBroker -PathType Leaf))) {
@@ -3535,6 +3580,7 @@ function Assert-HighCostOperationAdmission {
                 Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_INVALID' -ExitCode 76
                 exit 76
             }
+            Set-ScheduledHighCostAuthorityEnvironment -Admission $continuationAdmission -ExpectedOperationKind $operationKind -ExpectedIssueDate $DateStamp
             $script:UsesHighCostContinuationAdmission = $true
             $script:HighCostExpectedOperationKind = $operationKind
             $script:HighCostExpectedIssueDate = $DateStamp
@@ -3622,6 +3668,7 @@ function Assert-HighCostOperationAdmission {
         $script:HighCostAdmissionPath = $admissionReceipt
         $script:HighCostExpectedOperationKind = $operationKind
         $script:HighCostExpectedIssueDate = $DateStamp
+        Set-ScheduledHighCostAuthorityEnvironment -Admission $admission -ExpectedOperationKind $operationKind -ExpectedIssueDate $DateStamp
     } catch {
         Add-RunnerLogLine -Text "ERROR: HIGH_COST_SCHEDULED_ADMISSION_INVALID reason=$($_.Exception.Message)"
         Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_SCHEDULED_ADMISSION_INVALID' -ExitCode 76
