@@ -39,6 +39,8 @@ def _copy_minimal_repo(dst: Path) -> None:
         "verify_reporter_output.py",
         "prepare_editor_workspace.py",
         "materialize_editor_output.py",
+        "news_grasp_operational_contract.py",
+        "news_grasp_recovery_transaction.py",
     ]:
         shutil.copy2(ROOT / "tools" / name, dst / "tools" / name)
     shutil.copy2(

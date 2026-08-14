@@ -572,6 +572,18 @@ production runtime recoveryでは、`~/.news-grasp-runtime`配下の`authorities
 
 historyと互換terminalの2-file更新はsealed WALで束縛する。recovery時はlive historyとjournal historyのevent hash列を比較し、liveがjournalを包含するstale WALは破棄、journalがliveを包含する場合だけ前進適用、divergeはfail-closedとする。Windows productionでは検証済みmanaged rootと固定pin fileのhandleを`FILE_SHARE_DELETE`なしでlock全期間保持し、第二root検証後のrename／junction swapをOS境界で拒否する。goal実行証拠`build/goal-control/`はmachine pathとthread lineageを含むためgit公開境界から除外する。
 
+## 2026-08-14 Issue-date Recovery Transaction And SLO Commitment
+
+06:40 recoveryのrunner起動ownerは`tools.audit_recovery_control ensure-0640 --issue-date <date>`だけとする。Deadman、automation、watcher、`news_grasp_daily_control execute-audit-0640`互換入口は、`AUDIT_RECOVERY_TRANSACTION_V2`のissue-date lease、fencing token、phase journalへacquire-or-attachする。既存terminalは投影だけを返し、fresh ownerへ二重起動せず、stale owner回収後に古いfencing tokenから完了を書けない。canonical transactionへattachしない`execute --input`はrunnerを起動しない。
+
+runner起動前にroot、Python、live binding、Task action、checkpoint、branch、high-cost reservation、deadlineを`RECOVERY_EXECUTION_RECEIPT_V2`一枚へsealする。artifact deltaがあるのにcontiguous checkpointを証明できない場合はFullへ丸めず`major_incident_fail_closed`とする。Fullは成果物がなくrunner前停止が証明された場合だけ、Resumeはhighest contiguous checkpointとexact stageが一致する場合だけ許可する。runnerはreceiptのbranch、stage、Python、capability binding、06:40 JST固定deadlineが一致しなければ起動しない。
+
+監査terminalの正本は`audit_normal_green|audit_recovered_green|audit_observation_unverified|audit_major_incident_open`の4値、decisionは`AUDIT_RECOVERY_DECISION_V2`、public authorityは`COMPLETION_AUTHORITY_V2`とする。`COMPLETION_STATE_VECTOR_V3`の8 fieldは変更せず、SLO、automation outcome、readiness debtは`COMPLETION_OUTCOME_ENVELOPE_V1` sidecarへ置く。public Green後のmissed runsや次回readiness Redはpublic authorityを後退させないが、debtを保持してprocess exit 2とする。
+
+SLO anchorは対象日06:40 JSTでcallerから上書きできない。06:40前にpublic Greenと共通finalizerが完了した場合は`not_applicable_pre_audit_green`、未完了ならoverall 60分かつpost-Green 15分以内をtarget、実recovery operationがありoverall 60分超90分以内かつpost-Green 15分以内をrepair budgetとする。recoveryなしの61〜90分、overall 90分超、post-Green 15分超はmajor incidentである。45分でcloseout reserve、75分で新規high-cost stage拒否、90分で新規operationを拒否し、停止はowner receipt、job object、fencing tokenで所有を証明したchildだけに限定する。
+
+notificationの成功は`sent|already_sent`にsealed delivery receiptがある場合、または`no_subscribers`にsealed audience-resolution receiptがある場合だけとし、`skipped_not_normal`を成功へ昇格しない。`SUMMARY_AUDIO_SCRIPT_MISSING`はimmutable Summaryの内容を決定論的に選択・整形して実ファイルへ原子的にmaterializeし、通常生成と同じTTS quality gateを通す。情報量不足を定型文反復や文字数水増しで補わずfail-closedとする。
+
 retryは回数ではなく因果で許可する。同一cause fingerprintかつsource、runtime、config、authority、external evidence hashが不変ならretryしない。前回原因へ作用するhashが変化した場合だけ一回再許可し、command名、output cap、出力形式だけの変更をcause changeにしない。
 
 実装generationは`origin/main`起点のclean worktree、単一writer、固定source/config/task hashを使用し、dirty canonical WIPとproduction runtimeを直接編集しない。正規installerは全Git境界で継承`GIT_*`を一時除去してfinallyで復元し、system/global config、system attributes、fsmonitor、hook、replace-refの実行面を固定した上で、既存runtime-rootと別pathでも同一Git common-dir、`HEAD == origin/main`、tracked clean、index flagが通常状態、`git hash-object --no-filters --stdin-paths`によるHEAD blobとworking raw bytesの直接一致、未追跡／ignoredがreparseを含まない`build/`内だけのsibling worktreeを次のcanonical source generationとして受理する。working-tree diffは実行せずraw hash照合へ一本化し、残るcached diffも`--no-ext-diff --no-textconv`で外部helper・textconvを実行しない。runtime-root移行後を含む各mutation境界で同じpredicateを再評価し、それ以外のpath／HEAD／index／payload／dirty drift、継承global clean filterによるpayload隠蔽、repo-local external diff helper起動、replace-ref迂回をmutation前に拒否する。commit、fast-forward push、remote HEAD、正規installer、installed runtime byte parity、Scheduled Task定義、rollback receiptを同じgenerationへ束縛する。completion guard、deadman、runner、audit CLI、incident evidenceは同じ型付きconsumer契約を読む。

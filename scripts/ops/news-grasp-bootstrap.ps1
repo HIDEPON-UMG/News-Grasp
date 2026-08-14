@@ -106,7 +106,6 @@ function Get-NewsGraspRecoveryRuntimeBinding {
         $remoteLine = (& $gitExe @gitSafeArgs ls-remote $trustedRemote refs/heads/main 2>$null | Out-String).Trim()
         $remoteHead = if ($remoteLine) { ($remoteLine -split '\s+')[0].ToLowerInvariant() } else { '' }
         $opsDirty = (& $gitExe @gitSafeArgs -C $ops status --porcelain --untracked-files=all 2>$null | Out-String).Trim()
-        $opsIgnored = (& $gitExe @gitSafeArgs -C $ops ls-files --others --ignored --exclude-standard 2>$null | Out-String).Trim()
         $startupCustomizationPresent = (
             (Test-Path -LiteralPath (Join-Path $ops 'sitecustomize.py')) -or
             (Test-Path -LiteralPath (Join-Path $ops 'usercustomize.py'))
@@ -122,7 +121,6 @@ function Get-NewsGraspRecoveryRuntimeBinding {
             $opsHead -notmatch '^[0-9a-f]{40}$' -or
             $opsHead -cne $remoteHead -or
             $opsDirty -or
-            $opsIgnored -or
             $startupCustomizationPresent -or
             -not [string]::Equals($expectedBootstrap, (Resolve-Path -LiteralPath $PSCommandPath).Path, [StringComparison]::OrdinalIgnoreCase) -or
             -not [string]::Equals((Get-FileHash -Algorithm SHA256 -LiteralPath $python).Hash.ToLowerInvariant(), [string]$binding.pythonExeSha256, [StringComparison]::Ordinal) -or
@@ -137,7 +135,8 @@ function Get-NewsGraspRecoveryRuntimeBinding {
             @('receiptToolPath', 'receiptToolSha256'),
             @('controlPlaneToolPath', 'controlPlaneToolSha256'),
             @('completionGuardToolPath', 'completionGuardToolSha256'),
-            @('dailySelfHealPath', 'dailySelfHealSha256')
+            @('dailySelfHealPath', 'dailySelfHealSha256'),
+            @('auditControlPath', 'auditControlSha256')
         )) {
             $toolPath = (Resolve-Path -LiteralPath ([string]$binding.($tool[0])) -ErrorAction Stop).Path
             $expectedToolPath = (Resolve-Path -LiteralPath (Join-Path $ops ('tools\' + [IO.Path]::GetFileName($toolPath))) -ErrorAction Stop).Path

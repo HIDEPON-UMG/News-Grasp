@@ -40,10 +40,67 @@ function Resolve-NewsGraspRepoDir {
 
 $RepoDir = Resolve-NewsGraspRepoDir -Override $RepoDir
 if ($EvidenceRepoDir) { $env:NEWS_GRASP_EVIDENCE_REPO_DIR = (Resolve-Path -LiteralPath $EvidenceRepoDir).Path }
-$PyExe = if ($PythonExe) { $PythonExe } else { Join-Path $RepoDir '.venv\Scripts\python.exe' }
-if (-not (Test-Path -LiteralPath $PyExe -PathType Leaf)) {
-    $PyExe = 'python'
+function Get-CanonicalRecoveryControlBinding {
+    $profileRoot = [Environment]::GetFolderPath([Environment+SpecialFolder]::UserProfile)
+    $canonicalOps = Join-Path $profileRoot 'OneDrive\ドキュメント\ProjectFolders\News-Grasp'
+    $canonicalPython = Join-Path $canonicalOps '.venv\Scripts\python.exe'
+    $canonicalRuntime = Join-Path $profileRoot '.news-grasp-runtime\production-runtime'
+    $trustedRemote = 'https://github.com/HIDEPON-UMG/News-Grasp.git'
+    $gitExe = 'C:\Program Files\Git\cmd\git.exe'
+    $gitSafeArgs = @('-c', 'core.hooksPath=NUL', '-c', 'core.fsmonitor=false', '-c', 'core.attributesFile=NUL')
+    $bindingPath = Join-Path $env:USERPROFILE 'bin\news-grasp-recovery-runtime-binding-v1.json'
+    try {
+        $bindingItem = Get-Item -LiteralPath $bindingPath -Force -ErrorAction Stop
+        if (($bindingItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -or $bindingItem.LinkType) { throw 'binding path' }
+        $binding = Get-Content -LiteralPath $bindingPath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+        if ([string]$binding.schemaVersion -cne 'NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1') { throw 'schema' }
+        $ops = (Resolve-Path -LiteralPath ([string]$binding.opsRepoRoot) -ErrorAction Stop).Path
+        $python = (Resolve-Path -LiteralPath ([string]$binding.pythonExe) -ErrorAction Stop).Path
+        $audit = (Resolve-Path -LiteralPath ([string]$binding.auditControlPath) -ErrorAction Stop).Path
+        $daily = (Resolve-Path -LiteralPath ([string]$binding.dailySelfHealPath) -ErrorAction Stop).Path
+        $expectedOps = (Resolve-Path -LiteralPath $canonicalOps -ErrorAction Stop).Path
+        $expectedPython = (Resolve-Path -LiteralPath $canonicalPython -ErrorAction Stop).Path
+        $expectedRuntime = (Resolve-Path -LiteralPath $canonicalRuntime -ErrorAction Stop).Path
+        $opsHead = (& $gitExe @gitSafeArgs -C $ops rev-parse HEAD 2>$null | Out-String).Trim().ToLowerInvariant()
+        $remoteLine = (& $gitExe @gitSafeArgs ls-remote $trustedRemote refs/heads/main 2>$null | Out-String).Trim()
+        $remoteHead = if ($remoteLine) { ($remoteLine -split '\s+')[0].ToLowerInvariant() } else { '' }
+        $opsDirty = (& $gitExe @gitSafeArgs -C $ops status --porcelain --untracked-files=all 2>$null | Out-String).Trim()
+        $pythonSignature = Get-AuthenticodeSignature -LiteralPath $python
+        $pythonSignerSubject = [string]$pythonSignature.SignerCertificate.Subject
+        $pythonSignerThumbprint = ([string]$pythonSignature.SignerCertificate.Thumbprint).ToLowerInvariant()
+        if (
+            -not [string]::Equals($ops, $expectedOps, [StringComparison]::OrdinalIgnoreCase) -or
+            -not [string]::Equals($python, $expectedPython, [StringComparison]::OrdinalIgnoreCase) -or
+            -not [string]::Equals((Resolve-Path -LiteralPath ([string]$binding.productionRuntimeRoot) -ErrorAction Stop).Path, $expectedRuntime, [StringComparison]::OrdinalIgnoreCase) -or
+            [string]$binding.trustedRemote -cne $trustedRemote -or
+            [string]$binding.opsHead -cne $opsHead -or
+            $opsHead -notmatch '^[0-9a-f]{40}$' -or
+            $opsHead -cne $remoteHead -or
+            $opsDirty -or
+            (Test-Path -LiteralPath (Join-Path $ops 'sitecustomize.py')) -or
+            (Test-Path -LiteralPath (Join-Path $ops 'usercustomize.py')) -or
+            -not [string]::Equals($audit, (Join-Path $ops 'tools\audit_recovery_control.py'), [StringComparison]::OrdinalIgnoreCase) -or
+            -not [string]::Equals($daily, (Join-Path $ops 'tools\daily_self_heal.py'), [StringComparison]::OrdinalIgnoreCase) -or
+            -not [string]::Equals((Get-FileHash -LiteralPath $python -Algorithm SHA256).Hash.ToLowerInvariant(), [string]$binding.pythonExeSha256, [StringComparison]::Ordinal) -or
+            -not [string]::Equals((Get-FileHash -LiteralPath $audit -Algorithm SHA256).Hash.ToLowerInvariant(), [string]$binding.auditControlSha256, [StringComparison]::Ordinal) -or
+            -not [string]::Equals((Get-FileHash -LiteralPath $daily -Algorithm SHA256).Hash.ToLowerInvariant(), [string]$binding.dailySelfHealSha256, [StringComparison]::Ordinal) -or
+            [string]$pythonSignature.Status -cne 'Valid' -or
+            $pythonSignerSubject -notlike 'CN=Python Software Foundation, O=Python Software Foundation,*' -or
+            [string]$binding.pythonTrustAnchor -cne 'authenticode:python-software-foundation' -or
+            [string]$binding.pythonSignerSubject -cne $pythonSignerSubject -or
+            [string]$binding.pythonSignerThumbprint -cne $pythonSignerThumbprint
+        ) { throw 'hash/path' }
+        if ($PythonExe -and -not [string]::Equals((Resolve-Path -LiteralPath $PythonExe).Path, $python, [StringComparison]::OrdinalIgnoreCase)) { throw 'override' }
+        return [pscustomobject]@{ PythonExe = $python; AuditControlPath = $audit; DailySelfHealPath = $daily }
+    } catch {
+        throw 'RECOVERY_RUNTIME_BINDING_INVALID'
+    }
 }
+
+$controlBinding = Get-CanonicalRecoveryControlBinding
+$PyExe = [string]$controlBinding.PythonExe
+$AuditControlPath = [string]$controlBinding.AuditControlPath
+$DailySelfHealPath = [string]$controlBinding.DailySelfHealPath
 
 $alertLog = Join-Path $AlertDir 'deadman-alerts.jsonl'
 $marker = Join-Path $AlertDir 'deadman-last-alert.json'
@@ -57,10 +114,14 @@ function Write-SupervisorLog {
 }
 
 function Invoke-Audit0640Control {
-    $terminalJson = (& $PyExe '-B' '-m' 'tools.news_grasp_daily_control' 'execute-audit-0640' '--issue-date' $DateStamp 2>&1 | Out-String).Trim()
+    $terminalJson = (& $PyExe '-I' '-S' '-B' $AuditControlPath 'ensure-0640' '--issue-date' $DateStamp '--trigger' 'deadman_0640' 2>&1 | Out-String).Trim()
     $executorExitCode = $LASTEXITCODE
-    Write-SupervisorLog "audit canonical executor: exit=$executorExitCode terminal=$terminalJson"
-    if ($executorExitCode -notin @(0, 2)) {
+    try {
+        $terminal = $terminalJson | ConvertFrom-Json -ErrorAction Stop
+        $summary = "terminal=$([string]$terminal.terminal) reason=$([string]$terminal.reasonCode)"
+    } catch { $summary = 'terminal=unparseable' }
+    Write-SupervisorLog "audit canonical executor: exit=$executorExitCode $summary"
+    if ($executorExitCode -notin @(0, 2, 3)) {
         return 2
     }
     return $executorExitCode
@@ -68,7 +129,7 @@ function Invoke-Audit0640Control {
 
 Push-Location $RepoDir
 try {
-    & $PyExe '-B' '-m' 'tools.daily_self_heal' 'deadman' `
+    & $PyExe '-I' '-S' '-B' $DailySelfHealPath 'deadman' `
         '--state-file' $StateFile `
         '--date' $DateStamp `
         '--max-ok-age-hours' $MaxOkAgeHours `

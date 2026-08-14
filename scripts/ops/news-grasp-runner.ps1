@@ -265,7 +265,6 @@ function Get-NewsGraspRecoveryRuntimeBinding {
         $remoteLine = (& $gitExe @gitSafeArgs ls-remote $trustedRemote refs/heads/main 2>$null | Out-String).Trim()
         $remoteHead = if ($remoteLine) { ($remoteLine -split '\s+')[0].ToLowerInvariant() } else { '' }
         $opsDirty = (& $gitExe @gitSafeArgs -C $ops status --porcelain --untracked-files=all 2>$null | Out-String).Trim()
-        $opsIgnored = (& $gitExe @gitSafeArgs -C $ops ls-files --others --ignored --exclude-standard 2>$null | Out-String).Trim()
         $startupCustomizationPresent = (
             (Test-Path -LiteralPath (Join-Path $ops 'sitecustomize.py')) -or
             (Test-Path -LiteralPath (Join-Path $ops 'usercustomize.py'))
@@ -281,7 +280,6 @@ function Get-NewsGraspRecoveryRuntimeBinding {
             $opsHead -notmatch '^[0-9a-f]{40}$' -or
             $opsHead -cne $remoteHead -or
             $opsDirty -or
-            $opsIgnored -or
             $startupCustomizationPresent -or
             -not [string]::Equals($runner, (Resolve-Path -LiteralPath $PSCommandPath).Path, [StringComparison]::OrdinalIgnoreCase) -or
             -not [string]::Equals((Split-Path -Parent $runner), $canonicalBin, [StringComparison]::OrdinalIgnoreCase) -or
@@ -297,7 +295,8 @@ function Get-NewsGraspRecoveryRuntimeBinding {
             @('receiptToolPath', 'receiptToolSha256'),
             @('controlPlaneToolPath', 'controlPlaneToolSha256'),
             @('completionGuardToolPath', 'completionGuardToolSha256'),
-            @('dailySelfHealPath', 'dailySelfHealSha256')
+            @('dailySelfHealPath', 'dailySelfHealSha256'),
+            @('auditControlPath', 'auditControlSha256')
         )) {
             $toolPath = (Resolve-Path -LiteralPath ([string]$binding.($tool[0])) -ErrorAction Stop).Path
             $expectedToolPath = (Resolve-Path -LiteralPath (Join-Path $ops ('tools\' + [IO.Path]::GetFileName($toolPath))) -ErrorAction Stop).Path
@@ -461,6 +460,9 @@ $CodexUsageWindowLog = Join-Path $RepoDir "build\codex-usage\$DateStamp.windows.
 $script:CodexUsageEndSnapshotWritten = $false
 $RunId = [guid]::NewGuid().ToString('N')
 $script:HighCostCallSequence = 0
+$script:RecoveryHighCostCutoff = $null
+$script:RecoveryHardDeadline = $null
+$script:RecoveryMaxExternalModelCalls = 0
 $script:HighCostExpectedOperationKind = ''
 $script:HighCostExpectedIssueDate = ''
 $script:HighCostAdmissionPath = $HighCostAdmissionPath
@@ -1198,6 +1200,7 @@ function Update-RunnerProgress {
         [ValidateSet('', 'post-reporter', 'editor', 'deepdive', 'post-daily-quality', 'post-deepdive', 'generation-quality-repair')]
         [string] $ResumeStageCheckpoint = ''
     )
+    Assert-RecoveryOperationDeadline -Stage "progress:$Phase/$Step"
     Set-RunnerState -Status 'running' -Message $Step -ExitCode -1 -Phase $Phase -Step $Step -GateId $GateId -Category $Category -Attempt $Attempt -ActiveJobs $ActiveJobs -DeadlineAt $DeadlineAt -ResumeStageCheckpoint $ResumeStageCheckpoint
     try {
         $requiredArtifacts = @($DailyDigestArtifacts)
@@ -1624,7 +1627,8 @@ function Test-PublishExternalReadiness {
 }
 
 function Should-SendNormalBatchNotification {
-    return ((-not $NoPush) -and (-not $RecoverOnly) -and $NormalPublishVerified)
+    # recoveryも公開bundleを閉じる必要がある。NoPushだけは明示的test profile。
+    return ((-not $NoPush) -and $NormalPublishVerified)
 }
 
 function Write-CodexUsageWindowSnapshot {
@@ -1840,9 +1844,11 @@ function Invoke-Logged {
     # 例外と UTF-16 で append される副作用があるため、明示的に pipe で書き出す。
     # 引数の Block で外部コマンドを呼び出すだけにする (sub-process 化はしない)。
     param([scriptblock] $Block)
+    Assert-RecoveryOperationDeadline -Stage 'external-command:before'
     & $Block 2>&1 | ForEach-Object {
         Add-RunnerLogLine -Text $_.ToString()
     }
+    Assert-RecoveryOperationDeadline -Stage 'external-command:after'
 }
 
 function Invoke-LoggedCapture {
@@ -1850,12 +1856,14 @@ function Invoke-LoggedCapture {
         [scriptblock] $Block,
         [string] $CapturePath
     )
+    Assert-RecoveryOperationDeadline -Stage 'external-command-capture:before'
     if (Test-Path $CapturePath) { Remove-Item -LiteralPath $CapturePath -Force -ErrorAction SilentlyContinue }
     & $Block 2>&1 | ForEach-Object {
         $line = $_.ToString()
         Add-RunnerLogLine -Text $line
         Add-Content -Path $CapturePath -Value $line -Encoding UTF8
     }
+    Assert-RecoveryOperationDeadline -Stage 'external-command-capture:after'
 }
 
 function Get-ScheduledTaskActionSha256 {
@@ -2112,6 +2120,56 @@ function Test-ArtifactExecutableTreeIntegrity {
     return $true
 }
 
+function Assert-RecoveryOperationDeadline {
+    param(
+        [switch] $HighCost,
+        [string] $Stage = 'operation'
+    )
+    if (
+        $RunIntent -ne 'ScheduledRecoveryFull' -or
+        $FinalizeVerifiedPublishManifest -or
+        $null -eq $script:RecoveryHardDeadline
+    ) {
+        return
+    }
+    $now = [DateTimeOffset]::Now
+    if ($now -ge [DateTimeOffset]$script:RecoveryHardDeadline) {
+        Add-RunnerLogLine -Text "ERROR: RECOVERY_EXECUTION_HARD_DEADLINE_EXCEEDED stage=$Stage"
+        Exit-Runner -Status 'blocked_recovery_hard_deadline' -Message 'RECOVERY_EXECUTION_HARD_DEADLINE_EXCEEDED' -ExitCode 78
+    }
+    if ($HighCost -and $now -ge [DateTimeOffset]$script:RecoveryHighCostCutoff) {
+        Add-RunnerLogLine -Text "ERROR: RECOVERY_EXECUTION_HIGH_COST_CUTOFF_EXCEEDED stage=$Stage"
+        Exit-Runner -Status 'blocked_recovery_high_cost_cutoff' -Message 'RECOVERY_EXECUTION_HIGH_COST_CUTOFF_EXCEEDED' -ExitCode 78
+    }
+}
+
+function Acquire-RecoveryHighCostBudget {
+    param([string] $Stage)
+    Assert-RecoveryOperationDeadline -HighCost -Stage $Stage
+    if ($RunIntent -ne 'ScheduledRecoveryFull' -or $FinalizeVerifiedPublishManifest) {
+        $script:HighCostCallSequence += 1
+        return $script:HighCostCallSequence
+    }
+    $mutex = [System.Threading.Mutex]::new($false, "Local\NewsGraspRecoveryBudget-$RunId")
+    $held = $false
+    try {
+        $held = $mutex.WaitOne(5000)
+        if (-not $held) {
+            Exit-Runner -Status 'blocked_recovery_budget_lock' -Message 'RECOVERY_EXECUTION_BUDGET_LOCK_TIMEOUT' -ExitCode 78
+        }
+        Assert-RecoveryOperationDeadline -HighCost -Stage $Stage
+        if ($script:HighCostCallSequence -ge $script:RecoveryMaxExternalModelCalls) {
+            Add-RunnerLogLine -Text "ERROR: RECOVERY_EXECUTION_MODEL_BUDGET_EXHAUSTED stage=$Stage used=$script:HighCostCallSequence max=$script:RecoveryMaxExternalModelCalls"
+            Exit-Runner -Status 'blocked_recovery_model_budget' -Message 'RECOVERY_EXECUTION_MODEL_BUDGET_EXHAUSTED' -ExitCode 78
+        }
+        $script:HighCostCallSequence += 1
+        return $script:HighCostCallSequence
+    } finally {
+        if ($held) { $mutex.ReleaseMutex() }
+        $mutex.Dispose()
+    }
+}
+
 function Invoke-CodexWrapper {
     param(
         [string] $PromptFile,
@@ -2126,10 +2184,18 @@ function Invoke-CodexWrapper {
         [int] $SuccessProbeIntervalSec = 30,
         [int] $SuccessProbeMinElapsedSec = 0
     )
-    $script:HighCostCallSequence += 1
+    $callSequence = Acquire-RecoveryHighCostBudget -Stage "model:$FlowName"
+    if ($RunIntent -eq 'ScheduledRecoveryFull' -and -not $FinalizeVerifiedPublishManifest) {
+        $remainingSeconds = [int][Math]::Floor((([DateTimeOffset]$script:RecoveryHardDeadline) - [DateTimeOffset]::Now).TotalSeconds)
+        if ($remainingSeconds -le 0) {
+            Assert-RecoveryOperationDeadline -HighCost -Stage "model:$FlowName"
+        }
+        $TimeoutSec = [Math]::Max(1, [Math]::Min($TimeoutSec, $remainingSeconds))
+        $IdleTimeoutSec = [Math]::Max(1, [Math]::Min($IdleTimeoutSec, $remainingSeconds))
+    }
     $safeFlowName = $FlowName -replace '[^A-Za-z0-9._-]', '_'
-    $highCostCallId = "$RunId`:$FlowName`:$($script:HighCostCallSequence)"
-    $highCostCallReceipt = Join-Path $HighCostCallReceiptDir ("{0:D3}-{1}.json" -f $script:HighCostCallSequence, $safeFlowName)
+    $highCostCallId = "$RunId`:$FlowName`:$callSequence"
+    $highCostCallReceipt = Join-Path $HighCostCallReceiptDir ("{0:D3}-{1}.json" -f $callSequence, $safeFlowName)
     $codexArgs = @{
         'CodexExe' = $CodexExe
         'PromptFile' = $PromptFile
@@ -2179,6 +2245,7 @@ function Invoke-CodexWrapper {
     if ($FlowName -notlike 'reporter:*') {
         if (-not (Test-ArtifactExecutableTreeIntegrity)) { return 126 }
     }
+    Assert-RecoveryOperationDeadline -Stage "model-complete:$FlowName"
     return $wrapperRc
 }
 
@@ -3763,6 +3830,55 @@ if ($RunIntent -eq 'ScheduledRecoveryFull') {
         Add-RunnerLogLine -Text 'ERROR: RECOVERY_EXECUTION_RECEIPT_INVALID'
         exit 76
     }
+    $expectedRecoveryBranch = if ($ResumeFromStage) { 'ResumeFromStage' } else { 'ScheduledRecoveryFull' }
+    $expectedResumeStage = if ($ResumeFromStage) { [string]$ResumeFromStage } else { '' }
+    if (
+        [string]$script:ValidatedRecoveryExecutionReceipt.schemaVersion -ne 'RECOVERY_EXECUTION_RECEIPT_V2' -or
+        [string]$script:ValidatedRecoveryExecutionReceipt.recoveryBranch -ne $expectedRecoveryBranch -or
+        [string]$script:ValidatedRecoveryExecutionReceipt.resumeStage -ne $expectedResumeStage
+    ) {
+        Add-RunnerLogLine -Text 'ERROR: RECOVERY_EXECUTION_BRANCH_MISMATCH'
+        exit 76
+    }
+    if (-not [string]::Equals(
+        [IO.Path]::GetFullPath([string]$script:ValidatedRecoveryExecutionReceipt.pythonExecutablePath),
+        [IO.Path]::GetFullPath($PyExe),
+        [StringComparison]::OrdinalIgnoreCase
+    )) {
+        Add-RunnerLogLine -Text 'ERROR: RECOVERY_EXECUTION_PYTHON_MISMATCH'
+        exit 76
+    }
+    if (
+        -not [string]::Equals(
+            [IO.Path]::GetFullPath([string]$script:ValidatedRecoveryExecutionReceipt.capabilityReservationPath),
+            [IO.Path]::GetFullPath($HighCostBindingPath),
+            [StringComparison]::OrdinalIgnoreCase
+        ) -or
+        [string]$script:ValidatedRecoveryExecutionReceipt.capabilityReservationReceiptSha256 -ne $HighCostBindingReceiptSha256
+    ) {
+        Add-RunnerLogLine -Text 'ERROR: RECOVERY_EXECUTION_CAPABILITY_RESERVATION_MISMATCH'
+        exit 76
+    }
+    $script:RecoveryHardDeadline = [DateTimeOffset]::Parse([string]$script:ValidatedRecoveryExecutionReceipt.hardDeadlineAt)
+    if ([DateTimeOffset]::Now -gt [DateTimeOffset]$script:RecoveryHardDeadline) {
+        Add-RunnerLogLine -Text 'ERROR: RECOVERY_EXECUTION_HARD_DEADLINE_EXCEEDED'
+        exit 78
+    }
+    $script:RecoveryHighCostCutoff = [DateTimeOffset]::Parse([string]$script:ValidatedRecoveryExecutionReceipt.highCostCutoffAt)
+    try {
+        $script:RecoveryMaxExternalModelCalls = [int]$script:ValidatedRecoveryExecutionReceipt.reservedMaxExternalModelCalls
+    } catch {
+        Add-RunnerLogLine -Text 'ERROR: RECOVERY_EXECUTION_MODEL_BUDGET_INVALID'
+        exit 76
+    }
+    if ($script:RecoveryMaxExternalModelCalls -lt 0 -or $script:RecoveryMaxExternalModelCalls -gt 64) {
+        Add-RunnerLogLine -Text 'ERROR: RECOVERY_EXECUTION_MODEL_BUDGET_INVALID'
+        exit 76
+    }
+    if ((-not $FinalizeVerifiedPublishManifest) -and [DateTimeOffset]::Now -gt [DateTimeOffset]$script:RecoveryHighCostCutoff) {
+        Add-RunnerLogLine -Text 'ERROR: RECOVERY_EXECUTION_HIGH_COST_CUTOFF_EXCEEDED'
+        exit 78
+    }
 }
 if ($FinalizeVerifiedPublishManifest) {
     if (-not $RecoveryFinalizationReceiptPath) {
@@ -4316,6 +4432,13 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
         $ReporterPollSeconds = if ($Stage2EditorSmokeOnly) { 1 } else { 5 }
         $ReporterHeartbeatSeconds = 60
         $ReporterJobTimeoutSec = if ($Stage2EditorSmokeOnly) { 30 } else { $TimeoutSec + 120 }
+        if ($RunIntent -eq 'ScheduledRecoveryFull' -and -not $FinalizeVerifiedPublishManifest) {
+            $recoveryRemainingSeconds = [int][Math]::Floor((([DateTimeOffset]$script:RecoveryHardDeadline) - [DateTimeOffset]::Now).TotalSeconds)
+            if ($recoveryRemainingSeconds -le 0) {
+                Assert-RecoveryOperationDeadline -HighCost -Stage 'reporter-wave:start'
+            }
+            $ReporterJobTimeoutSec = [Math]::Max(1, [Math]::Min($ReporterJobTimeoutSec, $recoveryRemainingSeconds))
+        }
         $wrapper_log_offsets = @{}
         $jobs = @()
         try {
@@ -4327,15 +4450,28 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
             $lastMessage = Join-Path $ReporterArtifactDir "$waveCat.codex-last-message.json"
             $wrapperLog = Join-Path $ReporterArtifactDir "$waveCat.wrapper-attempt$Attempt.log"
             $usageLog = Join-Path $RepoDir "build\codex-usage\$DateStamp.reporter-$waveCat-attempt$Attempt.jsonl"
-            $highCostCallId = "$RunId`:reporter`:$waveCat`:$Attempt"
-            $highCostCallReceipt = Join-Path $HighCostCallReceiptDir ("reporter-{0}-attempt-{1}.json" -f $waveCat, $Attempt)
             New-ReporterPrompt -Category $waveCat -PromptFile $promptFile
 
             while (@($jobs | Where-Object { $_.JobStateInfo.State -eq 'Running' }).Count -ge $MaxParallelReporterJobs) {
                 Start-Sleep -Seconds 1
+                Assert-RecoveryOperationDeadline -HighCost -Stage "reporter:$waveCat:parallel-wait"
             }
 
-            Write-Log "reporter job START (agent=codex, role=reporter, category=$waveCat, attempt=$Attempt/$ReporterMaxAttempts, Wrapper=$CodexWrapper, Model=$ReporterModel, ReasoningEffort=$ReporterReasoningEffort, TimeoutSec=$TimeoutSec, IdleTimeoutSec=$IdleTimeoutSec)"
+            $reporterCallSequence = Acquire-RecoveryHighCostBudget -Stage "model:reporter:$waveCat:attempt:$Attempt"
+            $reporterTimeoutSec = $TimeoutSec
+            $reporterIdleTimeoutSec = $IdleTimeoutSec
+            if ($RunIntent -eq 'ScheduledRecoveryFull' -and -not $FinalizeVerifiedPublishManifest) {
+                $remainingSeconds = [int][Math]::Floor((([DateTimeOffset]$script:RecoveryHardDeadline) - [DateTimeOffset]::Now).TotalSeconds)
+                if ($remainingSeconds -le 0) {
+                    Assert-RecoveryOperationDeadline -HighCost -Stage "model:reporter:$waveCat:attempt:$Attempt"
+                }
+                $reporterTimeoutSec = [Math]::Max(1, [Math]::Min($TimeoutSec, $remainingSeconds))
+                $reporterIdleTimeoutSec = [Math]::Max(1, [Math]::Min($IdleTimeoutSec, $remainingSeconds))
+                $ReporterJobTimeoutSec = [Math]::Max(1, [Math]::Min($ReporterJobTimeoutSec, $remainingSeconds))
+            }
+            $highCostCallId = "$RunId`:reporter`:$waveCat`:$Attempt`:$reporterCallSequence"
+            $highCostCallReceipt = Join-Path $HighCostCallReceiptDir ("{0:D3}-reporter-{1}-attempt-{2}.json" -f $reporterCallSequence, $waveCat, $Attempt)
+            Write-Log "reporter job START (agent=codex, role=reporter, category=$waveCat, attempt=$Attempt/$ReporterMaxAttempts, Wrapper=$CodexWrapper, Model=$ReporterModel, ReasoningEffort=$ReporterReasoningEffort, TimeoutSec=$reporterTimeoutSec, IdleTimeoutSec=$reporterIdleTimeoutSec, BudgetSequence=$reporterCallSequence)"
             $job = Start-Job -ArgumentList @(
                 $waveCat,
                 $Attempt,
@@ -4343,8 +4479,8 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                 $CodexExe,
                 $promptFile,
                 $wrapperLog,
-                $TimeoutSec,
-                $IdleTimeoutSec,
+                $reporterTimeoutSec,
+                $reporterIdleTimeoutSec,
                 $RepoDir,
                 $ReporterFanoutSchema,
                 $lastMessage,
@@ -5841,7 +5977,7 @@ if ($NoPush) {
         [ordered]@{
             date = $DateStamp
             status = 'skipped_not_normal'
-            ok = $true
+            ok = $false
             source = 'runner'
             subscription_count = 0
             sent_count = 0

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -67,6 +68,8 @@ def test_finalization_receipt_rejects_manifest_mutation(
     )
     runner = live / "news-grasp-runner.ps1"
     runner.write_text("runner", encoding="utf-8")
+    capability = live / "capability-reservation.json"
+    capability.write_text("reservation", encoding="utf-8")
     now = datetime.now(timezone.utc)
     manifest_value = {
         "schemaVersion": "NEWS_GRASP_PUBLISH_COMPLETE_V2",
@@ -103,6 +106,12 @@ def test_finalization_receipt_rejects_manifest_mutation(
         scheduled_failure_receipt=failure,
         authority_ledger_witness=witness,
         audit_accepted_at=(now - timedelta(minutes=10)).isoformat(),
+        recovery_branch="ScheduledRecoveryFull",
+        resume_stage=None,
+        python_executable_path=Path(sys.executable),
+        capability_reservation_path=capability,
+        capability_reservation_receipt_sha256="f" * 64,
+        reserved_max_external_model_calls=9,
     )
     execution_path = artifact / "build" / "recovery-authority" / "execution.json"
     execution_path.parent.mkdir(parents=True)
@@ -196,7 +205,8 @@ def test_finalization_receipt_rejects_manifest_mutation(
         runner_state_path=live / "news-grasp-runner-state.json",
         runner_script_path=runner,
     )
-    assert guard["ok"] is True
+    assert guard["ok"] is False
+    assert "overall_slo_exceeded" in guard["failures"]
     assert guard_receipt["receiptSha256"] == receipt["receiptSha256"]
     manifest.write_text('{"ok":false}', encoding="utf-8")
 
@@ -493,3 +503,41 @@ def test_self_sealed_authority_is_rejected_without_broker_ledger(
             live_bin_root=live,
             current_preflight=drift,
         )
+
+
+def test_authority_json_reader_uses_one_bounded_handle(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    root = tmp_path / "root"
+    path = root / "build" / "receipt.json"
+    path.parent.mkdir(parents=True)
+    raw = b'{"schemaVersion":"fixture"}'
+    path.write_bytes(raw)
+    monkeypatch.setattr(
+        Path,
+        "read_bytes",
+        lambda _self: (_ for _ in ()).throw(AssertionError("path reopen forbidden")),
+    )
+
+    value, observed_sha = receipts._read_json_with_sha(
+        path, root=root, code="FIXTURE_INVALID"
+    )
+
+    assert value == {"schemaVersion": "fixture"}
+    assert observed_sha == hashlib.sha256(raw).hexdigest()
+
+
+def test_authority_json_reader_rejects_opened_path_outside_root(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    root = tmp_path / "root"
+    path = root / "build" / "receipt.json"
+    outside = tmp_path / "outside" / "receipt.json"
+    path.parent.mkdir(parents=True)
+    outside.parent.mkdir(parents=True)
+    path.write_text("{}", encoding="utf-8")
+    outside.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(receipts, "_opened_path", lambda *_args: outside)
+
+    with pytest.raises(ValueError, match="FIXTURE_INVALID"):
+        receipts._read_json_with_sha(path, root=root, code="FIXTURE_INVALID")

@@ -3670,7 +3670,9 @@ def verify_publish_complete(
         return {**manifest, "reason": "deepdive_podcast_missing"}
 
     if notification_state_path is not None:
-        notification = _load_notification_state(notification_state_path, date)
+        notification = _load_notification_state(
+            notification_state_path, date, repo_root=repo_root
+        )
         manifest["notification"] = notification.get("state", {})
         if notification.get("reason"):
             return {**manifest, "reason": notification["reason"], "notification": notification}
@@ -3998,6 +4000,7 @@ def complete_readiness_repair(
 
 _KNOWN_NOTIFICATION_STATUSES = {
     "sent",
+    "already_sent",
     "send_failed",
     "no_subscribers",
     "dry_run",
@@ -4005,14 +4008,27 @@ _KNOWN_NOTIFICATION_STATUSES = {
     "skipped_not_normal",
     "config_error",
     "external_error",
+    "partial_failure",
+    "delivery_ledger_invalid",
+    "delivery_ledger_conflict",
 }
 
 
-def _load_notification_state(path: Path, date: str) -> dict:
+def _load_notification_state(
+    path: Path, date: str, *, repo_root: Path | None = None
+) -> dict:
     if not path.exists():
         return {"path": str(path), "state": {}, "reason": "notification_state_missing"}
     try:
-        payload = json.loads(path.read_text(encoding="utf-8-sig"))
+        expected_state = (
+            Path(repo_root) / "build" / "notification" / f"{date}.json"
+            if repo_root is not None
+            else Path(path)
+        )
+        state_raw = _canonical_file_bytes(
+            Path(path), expected=expected_state, max_bytes=1024 * 1024
+        )
+        payload = json.loads(state_raw.decode("utf-8-sig"))
     except (json.JSONDecodeError, OSError, UnicodeDecodeError, ValueError) as exc:
         return {"path": str(path), "state": {}, "reason": "notification_state_invalid", "detail": str(exc)}
     if not isinstance(payload, dict):
@@ -4032,6 +4048,251 @@ def _load_notification_state(path: Path, date: str) -> dict:
             "state": payload,
             "reason": "notification_state_mismatch",
             "detail": f"date:{payload_date}",
+        }
+    if payload.get("ok") is not True:
+        return {
+            "path": str(path),
+            "state": payload,
+            "reason": "notification_delivery_unverified",
+            "detail": f"status:{status}",
+        }
+    if status not in {"sent", "already_sent", "no_subscribers"}:
+        return {
+            "path": str(path),
+            "state": payload,
+            "reason": "notification_delivery_unverified",
+            "detail": f"status:{status}",
+        }
+    source = str(payload.get("source") or "")
+    subscription_count = payload.get("subscription_count")
+    sent_count = payload.get("sent_count")
+    payload_sha = str(payload.get("payload_sha256") or "")
+    audience_sha = str(payload.get("audience_set_sha256") or "")
+    producer_sha = str(payload.get("producer_sha256") or "")
+    producer_run_id = str(payload.get("producer_run_id") or "")
+    try:
+        recorded_at = datetime.fromisoformat(
+            str(payload.get("recorded_at") or "").replace("Z", "+00:00")
+        )
+    except ValueError:
+        recorded_at = datetime.min
+    if (
+        source not in {"worker", "file"}
+        or not isinstance(subscription_count, int)
+        or not isinstance(sent_count, int)
+        or subscription_count < 0
+        or sent_count < 0
+        or re.fullmatch(r"[0-9a-f]{64}", payload_sha) is None
+        or re.fullmatch(r"[0-9a-f]{64}", audience_sha) is None
+        or re.fullmatch(r"[0-9a-f]{64}", producer_sha) is None
+        or payload.get("producer") != "tools.send_push"
+        or re.fullmatch(r"[0-9a-f]{32}", producer_run_id) is None
+        or recorded_at.tzinfo is None
+    ):
+        return {
+            "path": str(path),
+            "state": payload,
+            "reason": "notification_semantics_invalid",
+        }
+    try:
+        from zoneinfo import ZoneInfo
+
+        recorded_date = recorded_at.astimezone(ZoneInfo("Asia/Tokyo")).date().isoformat()
+    except (ValueError, OSError):
+        recorded_date = ""
+    producer_path = Path(__file__).with_name("send_push.py")
+    if (
+        recorded_date != date
+        or hashlib.sha256(producer_path.read_bytes()).hexdigest() != producer_sha
+    ):
+        return {
+            "path": str(path),
+            "state": payload,
+            "reason": "notification_lineage_invalid",
+        }
+    if status in {"sent", "already_sent"}:
+        receipt = payload.get("deliveryReceipt")
+        receipt_sha = str(payload.get("deliveryReceiptSha256") or "")
+        expected_schema = "NEWS_GRASP_NOTIFICATION_DELIVERY_RECEIPT_V1"
+    elif status == "no_subscribers":
+        receipt = payload.get("audienceResolutionReceipt")
+        receipt_sha = str(payload.get("audienceResolutionReceiptSha256") or "")
+        expected_schema = "NEWS_GRASP_NOTIFICATION_AUDIENCE_RESOLUTION_V1"
+    else:
+        raise AssertionError("unreachable notification status")
+    if not isinstance(receipt, dict):
+        return {
+            "path": str(path),
+            "state": payload,
+            "reason": "notification_receipt_missing",
+        }
+    body = {key: item for key, item in receipt.items() if key != "receiptSha256"}
+    expected_sha = hashlib.sha256(
+        json.dumps(
+            body, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+    ).hexdigest()
+    if (
+        receipt.get("schemaVersion") != expected_schema
+        or receipt.get("date") != date
+        or receipt.get("receiptSha256") != expected_sha
+        or receipt_sha != expected_sha
+    ):
+        return {
+            "path": str(path),
+            "state": payload,
+            "reason": "notification_receipt_invalid",
+        }
+    common_invalid = (
+        receipt.get("source") != source
+        or receipt.get("subscriptionCount") != subscription_count
+        or receipt.get("audienceSetSha256") != audience_sha
+        or receipt.get("producer") != "tools.send_push"
+        or receipt.get("producerSha256") != producer_sha
+        or receipt.get("producerRunId") != producer_run_id
+    )
+    prior_receipt: dict | None = None
+    prior_raw = b""
+    if status == "sent":
+        semantic_invalid = (
+            subscription_count <= 0
+            or sent_count != subscription_count
+            or receipt.get("sentCount") != sent_count
+            or receipt.get("payloadSha256") != payload_sha
+        )
+    elif status == "already_sent":
+        expected_prior_path = Path(
+            os.path.abspath(path.with_name(f"{date}.delivery.json"))
+        )
+        observed_prior_path = Path(
+            str(receipt.get("priorDeliveryReceiptPath") or "")
+        )
+        try:
+            prior_raw = _canonical_file_bytes(
+                observed_prior_path,
+                expected=expected_prior_path,
+                max_bytes=65536,
+            )
+            prior_receipt = json.loads(prior_raw.decode("utf-8-sig"))
+        except (ValueError, UnicodeDecodeError, json.JSONDecodeError, OSError):
+            prior_receipt = None
+            prior_raw = b""
+        if isinstance(prior_receipt, dict):
+            prior_body = {
+                key: item
+                for key, item in prior_receipt.items()
+                if key != "receiptSha256"
+            }
+            prior_self_sha = hashlib.sha256(
+                json.dumps(
+                    prior_body,
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+            ).hexdigest()
+        else:
+            prior_self_sha = ""
+        semantic_invalid = (
+            subscription_count <= 0
+            or sent_count != subscription_count
+            or receipt.get("sentCount") != sent_count
+            or receipt.get("payloadSha256") != payload_sha
+            or re.fullmatch(
+                r"[0-9a-f]{64}", str(receipt.get("priorDeliveryReceiptSha256") or "")
+            )
+            is None
+            or not isinstance(prior_receipt, dict)
+            or prior_receipt.get("schemaVersion")
+            != "NEWS_GRASP_NOTIFICATION_DELIVERY_RECEIPT_V1"
+            or prior_receipt.get("receiptSha256") != prior_self_sha
+            or receipt.get("priorDeliveryReceiptSha256") != prior_self_sha
+            or receipt.get("priorDeliveryReceiptFileSha256")
+            != hashlib.sha256(prior_raw).hexdigest()
+            or prior_receipt.get("date") != date
+            or prior_receipt.get("source") != source
+            or prior_receipt.get("subscriptionCount") != subscription_count
+            or prior_receipt.get("sentCount") != sent_count
+            or prior_receipt.get("payloadSha256") != payload_sha
+            or prior_receipt.get("audienceSetSha256") != audience_sha
+            or prior_receipt.get("producer") != "tools.send_push"
+            or prior_receipt.get("producerSha256") != producer_sha
+            or re.fullmatch(
+                r"[0-9a-f]{32}", str(prior_receipt.get("producerRunId") or "")
+            )
+            is None
+        )
+    else:
+        semantic_invalid = (
+            subscription_count != 0
+            or sent_count != 0
+            or receipt.get("subscriptionCount") != 0
+        )
+    if common_invalid or semantic_invalid:
+        return {
+            "path": str(path),
+            "state": payload,
+            "reason": "notification_semantics_invalid",
+        }
+    ledger_suffix = "delivery" if status in {"sent", "already_sent"} else "audience"
+    expected_ledger_path = Path(
+        os.path.abspath(Path(path).with_name(f"{date}.{ledger_suffix}.json"))
+    )
+    observed_ledger_path = Path(str(payload.get("evidenceLedgerPath") or ""))
+    try:
+        ledger_raw = _canonical_file_bytes(
+            observed_ledger_path,
+            expected=expected_ledger_path,
+            max_bytes=65536,
+        )
+        ledger_receipt = json.loads(ledger_raw.decode("utf-8-sig"))
+    except (ValueError, UnicodeDecodeError, json.JSONDecodeError, OSError):
+        ledger_raw = b""
+        ledger_receipt = None
+    if isinstance(ledger_receipt, dict):
+        ledger_body = {
+            key: item for key, item in ledger_receipt.items() if key != "receiptSha256"
+        }
+        ledger_self_sha = hashlib.sha256(
+            json.dumps(
+                ledger_body,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+    else:
+        ledger_self_sha = ""
+    expected_ledger_receipt = prior_receipt if status == "already_sent" else receipt
+    if (
+        not isinstance(ledger_receipt, dict)
+        or ledger_receipt != expected_ledger_receipt
+        or ledger_receipt.get("receiptSha256") != ledger_self_sha
+        or payload.get("evidenceLedgerReceiptSha256") != ledger_self_sha
+        or payload.get("evidenceLedgerFileSha256")
+        != hashlib.sha256(ledger_raw).hexdigest()
+        or ledger_receipt.get("date") != date
+        or ledger_receipt.get("source") != source
+        or ledger_receipt.get("subscriptionCount") != subscription_count
+        or ledger_receipt.get("audienceSetSha256") != audience_sha
+        or ledger_receipt.get("producer") != "tools.send_push"
+        or ledger_receipt.get("producerSha256") != producer_sha
+        or re.fullmatch(
+            r"[0-9a-f]{32}", str(ledger_receipt.get("producerRunId") or "")
+        )
+        is None
+        or (
+            status in {"sent", "already_sent"}
+            and (
+                ledger_receipt.get("sentCount") != sent_count
+                or ledger_receipt.get("payloadSha256") != payload_sha
+            )
+        )
+    ):
+        return {
+            "path": str(path),
+            "state": payload,
+            "reason": "notification_evidence_ledger_invalid",
         }
     return {"path": str(path), "state": payload, "reason": ""}
 

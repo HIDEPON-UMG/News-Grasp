@@ -7,11 +7,13 @@ News-Grasp が所有する root・artifact・clock を改ざん検知可能な�
 from __future__ import annotations
 
 import argparse
+import ctypes
 import hashlib
 import json
 import os
 import re
 import sqlite3
+import stat
 import subprocess
 import sys
 import tempfile
@@ -31,7 +33,8 @@ MAX_JSON_BYTES = 1024 * 1024
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 GIT_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 REPAIR_SCHEMA = "NEWS_GRASP_CONTROL_PLANE_REPAIR_RECEIPT_V1"
-EXECUTION_SCHEMA = "NEWS_GRASP_RECOVERY_EXECUTION_RECEIPT_V1"
+EXECUTION_SCHEMA_V1 = "NEWS_GRASP_RECOVERY_EXECUTION_RECEIPT_V1"
+EXECUTION_SCHEMA = "RECOVERY_EXECUTION_RECEIPT_V2"
 FINALIZATION_SCHEMA = "NEWS_GRASP_RECOVERY_FINALIZATION_RECEIPT_V1"
 ALLOWED_REPAIR_REASONS = {"PRODUCTION_RUNTIME_DRIFT", "LIVE_BIN_DRIFT"}
 FUTURE_TOLERANCE = timedelta(minutes=5)
@@ -39,6 +42,19 @@ RECEIPT_MAX_AGE = timedelta(hours=2)
 CANONICAL_BROKER_PATH = Path.home() / "bin" / "ai-model-spawn-broker.py"
 CONSUMPTION_LEDGER_NAME = "news-grasp-recovery-consumption-v1.sqlite3"
 CONSUMPTION_TABLE = "receipt_consumptions_v2"
+
+
+def _validate_execution_seal(value: object, *, code: str) -> dict[str, Any]:
+    if not isinstance(value, dict) or value.get("schemaVersion") not in {
+        EXECUTION_SCHEMA_V1,
+        EXECUTION_SCHEMA,
+    }:
+        raise ValueError(code)
+    return _validate_seal(
+        value,
+        schema=str(value["schemaVersion"]),
+        code=code,
+    )
 
 
 def canonical_bytes(value: object) -> bytes:
@@ -128,9 +144,98 @@ def _contained_regular_file(path: Path, *, root: Path, code: str) -> Path:
     return candidate
 
 
-def _read_json(path: Path, *, root: Path, code: str) -> dict[str, Any]:
+def _opened_path(descriptor: int, fallback: Path) -> Path:
+    if os.name != "nt":
+        return Path(os.path.realpath(fallback))
+    import msvcrt
+
+    handle = msvcrt.get_osfhandle(descriptor)
+    buffer = ctypes.create_unicode_buffer(32768)
+    length = ctypes.windll.kernel32.GetFinalPathNameByHandleW(
+        ctypes.c_void_p(handle), buffer, len(buffer), 0
+    )
+    if length <= 0 or length >= len(buffer):
+        raise OSError("opened path unavailable")
+    value = buffer.value
+    if value.startswith("\\\\?\\UNC\\"):
+        value = "\\\\" + value[8:]
+    elif value.startswith("\\\\?\\"):
+        value = value[4:]
+    return Path(value)
+
+
+def _ancestor_identities(path: Path, root: Path) -> tuple[tuple[str, int, int, int], ...]:
+    identities: list[tuple[str, int, int, int]] = []
+    cursor = path.parent
+    lexical_root = Path(os.path.abspath(root))
+    while True:
+        metadata = os.lstat(cursor)
+        attributes = int(getattr(metadata, "st_file_attributes", 0))
+        if attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400):
+            raise OSError("reparse ancestor")
+        identities.append(
+            (os.path.normcase(str(cursor)), metadata.st_dev, metadata.st_ino, attributes)
+        )
+        if os.path.normcase(str(cursor)) == os.path.normcase(str(lexical_root)):
+            break
+        if cursor.parent == cursor:
+            raise OSError("root not reached")
+        cursor = cursor.parent
+    return tuple(identities)
+
+
+def _read_regular_bytes(path: Path, *, root: Path, code: str) -> tuple[Path, bytes]:
     candidate = _contained_regular_file(path, root=root, code=code)
-    raw = candidate.read_bytes()
+    try:
+        boundary = _resolved(root)
+        ancestors_before = _ancestor_identities(candidate, boundary)
+        before = os.lstat(candidate)
+        flags = os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(
+            os, "O_NOFOLLOW", 0
+        )
+        descriptor = os.open(candidate, flags)
+        try:
+            opened = os.fstat(descriptor)
+            opened_path = _opened_path(descriptor, candidate).resolve(strict=True)
+            if (
+                boundary not in opened_path.parents
+                or (opened.st_dev, opened.st_ino, opened.st_size, opened.st_nlink)
+                != (before.st_dev, before.st_ino, before.st_size, 1)
+            ):
+                raise OSError("file identity drift")
+            chunks: list[bytes] = []
+            remaining = MAX_JSON_BYTES + 1
+            while remaining > 0:
+                chunk = os.read(descriptor, min(65536, remaining))
+                if not chunk:
+                    break
+                chunks.append(chunk)
+                remaining -= len(chunk)
+            after_handle = os.fstat(descriptor)
+        finally:
+            os.close(descriptor)
+        raw = b"".join(chunks)
+        after_path = os.lstat(candidate)
+        ancestors_after = _ancestor_identities(candidate, boundary)
+        if (
+            len(raw) != before.st_size
+            or len(raw) > MAX_JSON_BYTES
+            or (after_handle.st_dev, after_handle.st_ino, after_handle.st_size, after_handle.st_mtime_ns)
+            != (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns)
+            or (after_path.st_dev, after_path.st_ino, after_path.st_size, after_path.st_mtime_ns, after_path.st_nlink)
+            != (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns, 1)
+            or ancestors_after != ancestors_before
+        ):
+            raise OSError("file changed during read")
+    except OSError as error:
+        raise ValueError(code) from error
+    return candidate, raw
+
+
+def _read_json_with_sha(
+    path: Path, *, root: Path, code: str
+) -> tuple[dict[str, Any], str]:
+    _, raw = _read_regular_bytes(path, root=root, code=code)
     if len(raw) > MAX_JSON_BYTES:
         raise ValueError(code)
     try:
@@ -139,6 +244,11 @@ def _read_json(path: Path, *, root: Path, code: str) -> dict[str, Any]:
         raise ValueError(code) from error
     if not isinstance(value, dict):
         raise ValueError(code)
+    return value, hashlib.sha256(raw).hexdigest()
+
+
+def _read_json(path: Path, *, root: Path, code: str) -> dict[str, Any]:
+    value, _ = _read_json_with_sha(path, root=root, code=code)
     return value
 
 
@@ -908,7 +1018,7 @@ def validate_control_plane_repair_receipt(
         root=_resolved(artifact_root) / "build",
         code="CONTROL_PLANE_REPAIR_AUTHORITY_INVALID",
     )
-    authority = _read_json(
+    authority, authority_file_sha = _read_json_with_sha(
         authority_path,
         root=_resolved(artifact_root) / "build",
         code="CONTROL_PLANE_REPAIR_AUTHORITY_INVALID",
@@ -920,7 +1030,7 @@ def validate_control_plane_repair_receipt(
         code="CONTROL_PLANE_REPAIR_AUTHORITY_INVALID",
     )
     if (
-        file_sha256(authority_path) != value.get("recoveryAuthorityFileSha256")
+        authority_file_sha != value.get("recoveryAuthorityFileSha256")
         or authority.get("receiptSha256") != value.get("recoveryAuthorityReceiptSha256")
     ):
         raise ValueError("CONTROL_PLANE_REPAIR_AUTHORITY_INVALID")
@@ -950,6 +1060,12 @@ def create_recovery_execution_receipt(
     scheduled_failure_receipt: dict[str, Any],
     authority_ledger_witness: dict[str, Any],
     audit_accepted_at: str,
+    recovery_branch: str,
+    resume_stage: str | None,
+    python_executable_path: Path,
+    capability_reservation_path: Path,
+    capability_reservation_receipt_sha256: str,
+    reserved_max_external_model_calls: int,
 ) -> dict[str, Any]:
     artifact = _resolved(artifact_root)
     ops = _resolved(ops_root)
@@ -996,6 +1112,25 @@ def create_recovery_execution_receipt(
     runner_file = _contained_regular_file(
         runner_script_path, root=live, code="RECOVERY_EXECUTION_RUNNER_INVALID"
     )
+    python_file = _resolved(python_executable_path)
+    capability_file = _resolved(capability_reservation_path)
+    if not python_file.is_file() or python_file.is_symlink():
+        raise ValueError("RECOVERY_EXECUTION_PYTHON_INVALID")
+    if not capability_file.is_file() or capability_file.is_symlink():
+        raise ValueError("RECOVERY_EXECUTION_CAPABILITY_RESERVATION_INVALID")
+    if not SHA256_RE.fullmatch(capability_reservation_receipt_sha256):
+        raise ValueError("RECOVERY_EXECUTION_CAPABILITY_RESERVATION_INVALID")
+    if recovery_branch not in {"ScheduledRecoveryFull", "ResumeFromStage"}:
+        raise ValueError("RECOVERY_EXECUTION_BRANCH_INVALID")
+    if recovery_branch == "ResumeFromStage":
+        if not isinstance(resume_stage, str) or not resume_stage.strip():
+            raise ValueError("RECOVERY_EXECUTION_BRANCH_INVALID")
+    elif resume_stage not in {None, ""}:
+        raise ValueError("RECOVERY_EXECUTION_BRANCH_INVALID")
+    if not isinstance(reserved_max_external_model_calls, int) or not (
+        0 <= reserved_max_external_model_calls <= 64
+    ):
+        raise ValueError("RECOVERY_EXECUTION_CAPABILITY_RESERVATION_INVALID")
     expected_state = live / "news-grasp-runner-state.json"
     if not _same_lexical_path(runner_state_path, expected_state):
         raise ValueError("RECOVERY_EXECUTION_STATE_INVALID")
@@ -1003,6 +1138,9 @@ def create_recovery_execution_receipt(
     issued = datetime.now(timezone.utc)
     if t0 > issued + FUTURE_TOLERANCE:
         raise ValueError("RECOVERY_EXECUTION_CLOCK_INVALID")
+    from tools.news_grasp_recovery_transaction import audit_deadlines
+
+    deadlines = audit_deadlines(issue_date)
     return _seal(
         {
             "schemaVersion": EXECUTION_SCHEMA,
@@ -1016,6 +1154,14 @@ def create_recovery_execution_receipt(
             "runnerStatePath": str(expected_state),
             "runnerScriptPath": str(runner_file),
             "runnerSha256": file_sha256(runner_file),
+            "recoveryBranch": recovery_branch,
+            "resumeStage": resume_stage or None,
+            "pythonExecutablePath": str(python_file),
+            "pythonExecutableSha256": file_sha256(python_file),
+            "capabilityReservationPath": str(capability_file),
+            "capabilityReservationFileSha256": file_sha256(capability_file),
+            "capabilityReservationReceiptSha256": capability_reservation_receipt_sha256,
+            "reservedMaxExternalModelCalls": reserved_max_external_model_calls,
             "recoveryAuthorityPath": str(authority_file),
             "recoveryAuthorityFileSha256": file_sha256(authority_file),
             "recoveryAuthorityReceiptSha256": recovery_authority["receiptSha256"],
@@ -1024,6 +1170,7 @@ def create_recovery_execution_receipt(
             "scheduledFailureReceiptSha256": scheduled_failure_receipt["receiptSha256"],
             **_broker_binding(authority_ledger_witness),
             "auditAcceptedAt": audit_accepted_at,
+            **deadlines,
             "issuedAt": issued.isoformat(),
             "nonce": uuid.uuid4().hex,
         }
@@ -1040,18 +1187,19 @@ def validate_recovery_execution_receipt(
     live_bin_root: Path,
     runner_state_path: Path,
     runner_script_path: Path,
-) -> dict[str, Any]:
+    _return_file_sha256: bool = False,
+) -> Any:
     artifact = _resolved(artifact_root)
     ops = _resolved(ops_root)
     runtime = _resolved(production_runtime_root)
     live = _resolved(live_bin_root)
-    value = _validate_seal(
-        _read_json(
-            receipt_path,
-            root=artifact / "build",
-            code="RECOVERY_EXECUTION_RECEIPT_INVALID",
-        ),
-        schema=EXECUTION_SCHEMA,
+    unsealed, receipt_file_sha256 = _read_json_with_sha(
+        receipt_path,
+        root=artifact / "build",
+        code="RECOVERY_EXECUTION_RECEIPT_INVALID",
+    )
+    value = _validate_execution_seal(
+        unsealed,
         code="RECOVERY_EXECUTION_RECEIPT_INVALID",
     )
     if value.get("issueDate") != issue_date:
@@ -1077,6 +1225,41 @@ def validate_recovery_execution_receipt(
         raise ValueError("RECOVERY_EXECUTION_IDENTITY_DRIFT")
     if file_sha256(_resolved(runner_script_path)) != value.get("runnerSha256"):
         raise ValueError("RECOVERY_EXECUTION_RUNNER_DRIFT")
+    if value.get("schemaVersion") == EXECUTION_SCHEMA:
+        branch = str(value.get("recoveryBranch") or "")
+        resume_stage = value.get("resumeStage")
+        if branch not in {"ScheduledRecoveryFull", "ResumeFromStage"} or (
+            branch == "ResumeFromStage" and not str(resume_stage or "").strip()
+        ) or (branch == "ScheduledRecoveryFull" and resume_stage not in {None, ""}):
+            raise ValueError("RECOVERY_EXECUTION_BRANCH_INVALID")
+        python_path = _resolved(Path(str(value.get("pythonExecutablePath") or "")))
+        if (
+            not python_path.is_file()
+            or python_path.is_symlink()
+            or file_sha256(python_path) != value.get("pythonExecutableSha256")
+        ):
+            raise ValueError("RECOVERY_EXECUTION_PYTHON_DRIFT")
+        capability_path = _resolved(
+            Path(str(value.get("capabilityReservationPath") or ""))
+        )
+        if (
+            not capability_path.is_file()
+            or capability_path.is_symlink()
+            or file_sha256(capability_path)
+            != value.get("capabilityReservationFileSha256")
+            or not SHA256_RE.fullmatch(
+                str(value.get("capabilityReservationReceiptSha256") or "")
+            )
+            or not isinstance(value.get("reservedMaxExternalModelCalls"), int)
+            or not 0 <= int(value["reservedMaxExternalModelCalls"]) <= 64
+        ):
+            raise ValueError("RECOVERY_EXECUTION_CAPABILITY_RESERVATION_DRIFT")
+        from tools.news_grasp_recovery_transaction import audit_deadlines
+
+        if any(value.get(field) != expected for field, expected in audit_deadlines(issue_date).items()):
+            raise ValueError("RECOVERY_EXECUTION_DEADLINE_DRIFT")
+    authority: dict[str, Any] | None = None
+    authority_path = Path(str(value.get("recoveryAuthorityPath") or ""))
     for prefix, schemas, code in (
         ("recoveryAuthority", {"SCHEDULED_RECOVERY_AUTHORITY_V1"}, "RECOVERY_EXECUTION_AUTHORITY_INVALID"),
         ("scheduledFailureReceipt", {"SCHEDULED_FAILURE_RECEIPT_V1", "SCHEDULED_FAILURE_RECEIPT_V2"}, "RECOVERY_EXECUTION_FAILURE_INVALID"),
@@ -1086,7 +1269,9 @@ def validate_recovery_execution_receipt(
             root=artifact / "build",
             code=code,
         )
-        evidence = _read_json(evidence_path, root=artifact / "build", code=code)
+        evidence, evidence_file_sha = _read_json_with_sha(
+            evidence_path, root=artifact / "build", code=code
+        )
         _validate_embedded_receipt(
             evidence, issue_date=issue_date, allowed_schemas=schemas, code=code
         )
@@ -1097,14 +1282,14 @@ def validate_recovery_execution_receipt(
             else "scheduledFailureReceiptSha256"
         )
         if (
-            file_sha256(evidence_path) != value.get(file_field)
+            evidence_file_sha != value.get(file_field)
             or evidence.get("receiptSha256") != value.get(receipt_field)
         ):
             raise ValueError(code)
-    authority_path = Path(str(value.get("recoveryAuthorityPath") or ""))
-    authority = _read_json(
-        authority_path, root=artifact / "build", code="RECOVERY_EXECUTION_AUTHORITY_INVALID"
-    )
+        if prefix == "recoveryAuthority":
+            authority = evidence
+    if authority is None:
+        raise ValueError("RECOVERY_EXECUTION_AUTHORITY_INVALID")
     witness = _validate_authority_via_broker(
         issue_date=issue_date,
         authority_path=authority_path,
@@ -1117,7 +1302,7 @@ def validate_recovery_execution_receipt(
     if not (t0 <= issued <= datetime.now(timezone.utc) + FUTURE_TOLERANCE):
         raise ValueError("RECOVERY_EXECUTION_CLOCK_INVALID")
     _assert_fresh(value.get("issuedAt"), code="RECOVERY_EXECUTION_CLOCK_INVALID")
-    return value
+    return (value, receipt_file_sha256) if _return_file_sha256 else value
 
 
 def create_finalization_receipt(
@@ -1211,9 +1396,8 @@ def create_finalization_receipt(
         root=artifact / "build",
         code="FINALIZATION_EXECUTION_RECEIPT_INVALID",
     )
-    execution = _validate_seal(
+    execution = _validate_execution_seal(
         execution_receipt,
-        schema=EXECUTION_SCHEMA,
         code="FINALIZATION_EXECUTION_RECEIPT_INVALID",
     )
     if (
@@ -1232,18 +1416,14 @@ def create_finalization_receipt(
         )
     ):
         raise ValueError("FINALIZATION_EXECUTION_RECEIPT_INVALID")
-    producer_file = _contained_regular_file(
-        producer_state_path,
-        root=artifact / "build",
-        code="FINALIZATION_PRODUCER_STATE_INVALID",
-    )
-    if file_sha256(producer_file) != producer_state_sha256:
-        raise ValueError("FINALIZATION_PRODUCER_STATE_INVALID")
-    producer_state = _read_json(
+    producer_file = Path(producer_state_path)
+    producer_state, producer_file_sha = _read_json_with_sha(
         producer_file,
         root=artifact / "build",
         code="FINALIZATION_PRODUCER_STATE_INVALID",
     )
+    if producer_file_sha != producer_state_sha256:
+        raise ValueError("FINALIZATION_PRODUCER_STATE_INVALID")
     validate_producer_lineage(
         producer_state=producer_state,
         issue_date=issue_date,
@@ -1291,6 +1471,7 @@ def create_finalization_receipt(
             "artifactCommit": manifest["artifact_commit"],
             "publishCommit": manifest["publish_commit"],
             "auditAcceptedAt": audit_accepted_at,
+            "auditSloAnchor": execution.get("auditSloAnchor", audit_accepted_at),
             "publicGreenAt": tgreen_text,
             "completionGuardOutputPath": str(
                 artifact / "build" / "publish-complete" / f"{issue_date}.automation-guard.json"
@@ -1352,16 +1533,14 @@ def validate_finalization_receipt(
         raise ValueError("FINALIZATION_IDENTITY_DRIFT")
     if file_sha256(_resolved(runner_script_path)) != value.get("runnerSha256"):
         raise ValueError("FINALIZATION_RUNNER_DRIFT")
-    manifest_path = _contained_regular_file(
-        Path(str(value.get("manifestPath") or "")),
+    manifest_path = Path(str(value.get("manifestPath") or ""))
+    manifest, manifest_file_sha = _read_json_with_sha(
+        manifest_path,
         root=artifact / "build",
         code="FINALIZATION_MANIFEST_INVALID",
     )
-    if file_sha256(manifest_path) != value.get("manifestSha256"):
+    if manifest_file_sha != value.get("manifestSha256"):
         raise ValueError("FINALIZATION_MANIFEST_DRIFT")
-    manifest = _read_json(
-        manifest_path, root=artifact / "build", code="FINALIZATION_MANIFEST_INVALID"
-    )
     for source, target in (
         ("source_commit", "sourceCommit"),
         ("artifact_commit", "artifactCommit"),
@@ -1378,6 +1557,8 @@ def validate_finalization_receipt(
         or manifest.get("recovery_attempt_status") != "succeeded"
     ):
         raise ValueError("FINALIZATION_MANIFEST_INVALID")
+    authority: dict[str, Any] | None = None
+    authority_path = Path(str(value.get("recoveryAuthorityPath") or ""))
     for prefix, schemas, code in (
         (
             "recoveryAuthority",
@@ -1395,7 +1576,9 @@ def validate_finalization_receipt(
             root=artifact / "build",
             code=code,
         )
-        evidence = _read_json(evidence_path, root=artifact / "build", code=code)
+        evidence, evidence_file_sha = _read_json_with_sha(
+            evidence_path, root=artifact / "build", code=code
+        )
         _validate_embedded_receipt(
             evidence, issue_date=issue_date, allowed_schemas=schemas, code=code
         )
@@ -1406,14 +1589,14 @@ def validate_finalization_receipt(
             else "scheduledFailureReceiptSha256"
         )
         if (
-            file_sha256(evidence_path) != value.get(file_field)
+            evidence_file_sha != value.get(file_field)
             or evidence.get("receiptSha256") != value.get(receipt_field)
         ):
             raise ValueError(code)
-    authority_path = Path(str(value.get("recoveryAuthorityPath") or ""))
-    authority = _read_json(
-        authority_path, root=artifact / "build", code="FINALIZATION_RECOVERY_AUTHORITY_INVALID"
-    )
+        if prefix == "recoveryAuthority":
+            authority = evidence
+    if authority is None:
+        raise ValueError("FINALIZATION_RECOVERY_AUTHORITY_INVALID")
     witness = _validate_authority_via_broker(
         issue_date=issue_date,
         authority_path=authority_path,
@@ -1421,12 +1604,8 @@ def validate_finalization_receipt(
         failure_receipt_sha256=str(value.get("scheduledFailureReceiptSha256") or ""),
     )
     _assert_broker_binding(value, witness, code="FINALIZATION_RECOVERY_AUTHORITY_INVALID")
-    execution_path = _contained_regular_file(
-        Path(str(value.get("executionReceiptPath") or "")),
-        root=artifact / "build",
-        code="FINALIZATION_EXECUTION_RECEIPT_INVALID",
-    )
-    execution = validate_recovery_execution_receipt(
+    execution_path = Path(str(value.get("executionReceiptPath") or ""))
+    execution, execution_file_sha = validate_recovery_execution_receipt(
         receipt_path=execution_path,
         issue_date=issue_date,
         artifact_root=artifact,
@@ -1435,9 +1614,10 @@ def validate_finalization_receipt(
         live_bin_root=Path(str(value["liveBinRoot"])),
         runner_state_path=runner_state_path,
         runner_script_path=runner_script_path,
+        _return_file_sha256=True,
     )
     if (
-        file_sha256(execution_path) != value.get("executionReceiptFileSha256")
+        execution_file_sha != value.get("executionReceiptFileSha256")
         or execution.get("receiptSha256") != value.get("executionReceiptSha256")
         or execution.get("nonce") != value.get("executionReceiptNonce")
         or (
@@ -1450,18 +1630,14 @@ def validate_finalization_receipt(
         )
     ):
         raise ValueError("FINALIZATION_EXECUTION_RECEIPT_INVALID")
-    producer_path = _contained_regular_file(
-        Path(str(value.get("producerStatePath") or "")),
-        root=artifact / "build",
-        code="FINALIZATION_PRODUCER_STATE_INVALID",
-    )
-    if file_sha256(producer_path) != value.get("producerStateSha256"):
-        raise ValueError("FINALIZATION_PRODUCER_STATE_INVALID")
-    producer_state = _read_json(
+    producer_path = Path(str(value.get("producerStatePath") or ""))
+    producer_state, producer_file_sha = _read_json_with_sha(
         producer_path,
         root=artifact / "build",
         code="FINALIZATION_PRODUCER_STATE_INVALID",
     )
+    if producer_file_sha != value.get("producerStateSha256"):
+        raise ValueError("FINALIZATION_PRODUCER_STATE_INVALID")
     validate_producer_lineage(
         producer_state=producer_state,
         issue_date=issue_date,
@@ -1608,13 +1784,12 @@ def main(argv: list[str] | None = None) -> int:
             require_execution_consumed=args.command == "mark-finalization-state-applied",
         )
         if args.command == "consume-finalization":
-            execution = _validate_seal(
+            execution = _validate_execution_seal(
                 _read_json(
                     Path(str(value["executionReceiptPath"])),
                     root=_resolved(args.artifact_root) / "build",
                     code="FINALIZATION_EXECUTION_RECEIPT_INVALID",
                 ),
-                schema=EXECUTION_SCHEMA,
                 code="FINALIZATION_EXECUTION_RECEIPT_INVALID",
             )
             value = consume_finalization_chain(

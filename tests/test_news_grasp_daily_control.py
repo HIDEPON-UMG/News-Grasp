@@ -244,9 +244,40 @@ def test_audit_controller_failure_writes_owned_major_incident(monkeypatch) -> No
     assert terminals == [result]
 
 
+def test_default_command_runner_uses_owned_job_and_bounded_results(monkeypatch) -> None:
+    control = _control()
+    calls: list[dict[str, object]] = []
+
+    def fake_owned(command, **kwargs):
+        calls.append({"command": command, **kwargs})
+        return SimpleNamespace(
+            returncode=7, timed_out=False, output_exceeded=False
+        )
+
+    monkeypatch.setattr(control, "run_owned_bounded", fake_owned)
+    result = control._run_owned_command(
+        ["powershell.exe", "-NoProfile"], cwd=REPO, timeout_seconds=17
+    )
+
+    assert result == 7
+    assert calls == [
+        {
+            "command": ["powershell.exe", "-NoProfile"],
+            "cwd": REPO,
+            "timeout": 17,
+            "max_output_bytes": control.OWNED_COMMAND_MAX_OUTPUT_BYTES,
+        }
+    ]
+    source = inspect.getsource(control._execute_audit_0640_owned)
+    assert "subprocess.run" not in source
+    assert "_recovery_remaining_seconds(issue_date)" in source
+
+
 def test_deadman_delegates_to_single_canonical_audit_executor() -> None:
     source = (REPO / "scripts/ops/news-grasp-deadman.ps1").read_text(encoding="utf-8-sig")
-    assert "'execute-audit-0640'" in source
+    assert "audit_recovery_control.py" in source
+    assert "'-I' '-S' '-B' $AuditControlPath" in source
+    assert "'ensure-0640'" in source
     assert "launch_minimal_unblocker" not in source
     assert "Start -RecoveryDecisionPath" not in source
     registry = json.loads(
@@ -257,8 +288,8 @@ def test_deadman_delegates_to_single_canonical_audit_executor() -> None:
     route = next(
         row for row in registry["routes"] if row["routeId"] == "audit_0640_control"
     )
-    assert route["consumerSymbol"] == "execute_audit_0640"
-    assert route["productionCallSymbol"] == "execute-audit-0640"
+    assert route["consumerSymbol"] == "ensure_audit_0640"
+    assert route["productionCallSymbol"] == "ensure-0640"
 
 
 def test_failure_classification_is_derived_from_observed_state_only() -> None:
@@ -345,15 +376,15 @@ def test_second_recovery_attempt_becomes_major_incident_not_loop() -> None:
     assert plan["completion"] is False
 
 
-def test_watcher_executes_controller_after_failure_and_rewatches_once() -> None:
+def test_watcher_attaches_failed_production_to_canonical_recovery_owner() -> None:
     source = (REPO / "scripts" / "ops" / "watch-news-grasp-runner.ps1").read_text(
         encoding="utf-8-sig"
     )
-    assert "tools.news_grasp_daily_control" in source, "PRODUCTION_FAILURE_CONTROLLER_MISSING"
-    assert "production_failure" in source
-    assert "maxAutomaticRecoveryAttempts" in source
-    assert "Start-RecoveryFromDecision" in source
-    assert source.count("Start-RecoveryFromDecision") == 3
+    assert "audit_recovery_control.py" in source, "PRODUCTION_FAILURE_CONTROLLER_MISSING"
+    assert "'-I' '-S' '-B' ([string]$binding.AuditControlPath)" in source
+    assert "ensure-0640" in source
+    assert "watcher_failure" in source
+    assert "Start-RecoveryFromDecision" not in source
 
 
 def test_runner_serializes_daily_log_append_and_hash_at_one_boundary() -> None:
@@ -391,8 +422,9 @@ def test_deadman_calls_same_controller_for_public_incomplete() -> None:
     source = (REPO / "scripts" / "ops" / "news-grasp-deadman.ps1").read_text(
         encoding="utf-8-sig"
     )
-    assert "tools.news_grasp_daily_control" in source, "AUDIT_0640_CONTROLLER_MISSING"
-    assert "execute-audit-0640" in source
+    assert "audit_recovery_control.py" in source, "AUDIT_0640_CONTROLLER_MISSING"
+    assert "'-I' '-S' '-B' $AuditControlPath" in source
+    assert "ensure-0640" in source
     assert "Invoke-RecoverOnlyIfStaleDeadPid" not in source
     assert "audit canonical executor" in source
 
@@ -407,7 +439,7 @@ def test_resume_branch_consumes_recovery_authority_not_failed_production_admissi
     assert "[string] $RecoveryDecisionPath" in runner
     assert "validate-decision" in runner
     assert "RECOVERY_DECISION_BRANCH_MISMATCH" in runner
-    assert "RecoveryDecisionPath" in watcher
+    assert "RecoveryDecisionPath" not in watcher
     resume_block = runner[
         runner.index("if ($ResumeFromStage)") : runner.index(
             "if ($HighCostAdmissionPath)", runner.index("if ($ResumeFromStage)")
@@ -423,7 +455,7 @@ def test_resume_branch_consumes_recovery_authority_not_failed_production_admissi
     assert "sourceAdmissionReceipt" not in resume_block
 
 
-def test_resume_plan_without_broker_ledger_decision_falls_back_to_full_recovery() -> None:
+def test_resume_plan_without_broker_ledger_decision_fails_closed() -> None:
     control = _control()
     plan = control.build_recovery_plan(
         issue_date="2026-08-05",
@@ -437,8 +469,9 @@ def test_resume_plan_without_broker_ledger_decision_falls_back_to_full_recovery(
         source_admission_path="C:/evidence/source-production-admission.json",
         source_admission_sha256="c" * 64,
     )
-    assert plan["recoveryBranch"] == "ScheduledRecoveryFull"
-    assert plan["resumeStage"] is None
+    assert plan["action"] == "major_incident_continuation"
+    assert plan["terminal"] == "production_major_incident_open"
+    assert plan["reasonCode"] == "RECOVERY_RESUME_EVIDENCE_INVALID"
 
 
 def test_resume_plan_binds_broker_ledger_decision() -> None:

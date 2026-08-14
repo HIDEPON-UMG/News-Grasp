@@ -175,8 +175,12 @@ def test_ng813_smoke_inventory_probe_cannot_write_ops_bytecode() -> None:
     deadman = (REPO_ROOT / "scripts" / "ops" / "news-grasp-deadman.ps1").read_text(
         encoding="utf-8-sig"
     )
-    assert "& $PyExe '-B' '-m' 'tools.daily_self_heal'" in deadman
-    assert "& $PyExe '-B' '-m' 'tools.news_grasp_daily_control'" in deadman
+    assert "& $PyExe '-I' '-S' '-B' $DailySelfHealPath" in deadman
+    assert "& $PyExe '-I' '-S' '-B' $AuditControlPath" in deadman
+    assert "'-m' 'tools.daily_self_heal'" not in deadman
+    assert "'-m' 'tools.audit_recovery_control'" not in deadman
+    assert "'ensure-0640'" in deadman
+    assert "'--trigger' 'deadman_0640'" in deadman
     assert "if ((Get-Date).Hour -eq 6)" in deadman
     assert "exit (Invoke-Audit0640Control)" in deadman
 
@@ -420,7 +424,7 @@ def test_ng813_production_recovery_uses_installed_binding_not_caller_root() -> N
         assert "trustedRemote" in source
         assert "dailySelfHealSha256" in source
         assert "--untracked-files=all" in source
-        assert "ls-files --others --ignored --exclude-standard" in source
+        assert "status --porcelain --untracked-files=all" in source
         assert "core.fsmonitor=false" in source
         assert "core.hooksPath=NUL" in source
         assert "core.attributesFile=NUL" in source
@@ -437,7 +441,7 @@ def test_ng813_production_recovery_uses_installed_binding_not_caller_root() -> N
     assert "NEWS_GRASP_RECOVERY_PYTHONW_TRUST_ANCHOR_INVALID" in installer
     assert "Get-AuthenticodeSignature" in installer
     assert "--untracked-files=all" in installer
-    assert "ls-files --others --ignored --exclude-standard" in installer
+    assert "status --porcelain --untracked-files=all" in installer
     assert "NEWS_GRASP_RECOVERY_OPS_STARTUP_CUSTOMIZATION_FORBIDDEN" in installer
     assert "NEWS_GRASP_RECOVERY_OPS_GENERATION_INVALID" in installer
 

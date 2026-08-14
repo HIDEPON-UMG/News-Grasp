@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
 import subprocess
 import sys
 from importlib.machinery import SourceFileLoader
@@ -309,8 +310,14 @@ def test_ng2_wp06_default_registry_handlers_are_registered_and_typed() -> None:
     assert result.result["mutationCount"] == 0
 
 
-def test_ng2_wp06_all_registered_reason_codes_dispatch_once() -> None:
-    repo = Path(__file__).resolve().parents[1]
+def test_ng2_wp06_all_registered_reason_codes_dispatch_once(tmp_path: Path) -> None:
+    source_repo = Path(__file__).resolve().parents[1]
+    repo = tmp_path / "repo"
+    (repo / "config").mkdir(parents=True)
+    shutil.copy2(
+        source_repo / "config/operational_recovery_registry_v1.json",
+        repo / "config/operational_recovery_registry_v1.json",
+    )
     handlers = recovery_registry.default_handlers()
     registry = json.loads((repo / "config/operational_recovery_registry_v1.json").read_text(encoding="utf-8"))
     for entry in registry["handlers"]:
@@ -318,7 +325,36 @@ def test_ng2_wp06_all_registered_reason_codes_dispatch_once() -> None:
         reason_code = entry["reasonCodes"][0]
         context: dict[str, Any] = {"reasonCode": reason_code, "dailyOperationLineageId": "lineage-1"}
         if handler_id == "summary_audio_script_builder":
-            context["summary"] = {"issueDate": "2026-08-11", "title": "焦点", "sections": ["第一論点"]}
+            context["artifactRoot"] = str(tmp_path / "outside-must-not-be-used")
+            summary = {
+                "issueDate": "2026-08-11",
+                "title": "焦点",
+                "sections": [
+                    (
+                        f"第{section_number}論点では、確認済みの事実と前提条件を区別する。"
+                        "現場への影響は費用、供給能力、責任分界の順に確認し、"
+                        "一方で残るリスクと未確定事項を明示する。"
+                        "次の観測点は契約条件、価格、制度適用、実装時期であり、続報を追う。"
+                    )
+                    * 6
+                    for section_number in range(1, 8)
+                ],
+            }
+            source = repo / "digest" / "Summary" / "2026-08-11.md"
+            source.parent.mkdir(parents=True)
+            source.write_text(
+                "---\n"
+                "title: '焦点'\n"
+                "theme: '焦点'\n"
+                "date: 2026-08-11\n"
+                "---\n\n"
+                + "\n\n".join(str(item) for item in summary["sections"]),
+                encoding="utf-8",
+            )
+            context["issueDate"] = "2026-08-11"
+            context["summarySourceSha256"] = hashlib.sha256(
+                source.read_bytes()
+            ).hexdigest()
         elif handler_id == "deepdive_dialogue_builder":
             context["article"] = {"issueDate": "2026-08-11", "title": "記事", "body": "根拠", "provenanceHash": "p"}
         elif handler_id == "deepdive_audio_builder":

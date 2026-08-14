@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "NEWS_GRASP_RECOVERY_REPLAY_FIXTURE_V1",
+  "issueDate": "2026-08-14",
+  "events": [
+    {
+      "observed": "RECOVERY_EXECUTION_RECEIPT_REQUIRED",
+      "expectedStop": "execution_receipt_v2_not_sealed"
+    },
+    {
+      "observed": "HIGH_COST_OPERATION_ADMISSION_REJECTED",
+      "expectedStop": "capability_reservation_preflight"
+    },
+    {
+      "observed": "RECOVERY_RUNTIME_BINDING_INVALID",
+      "expectedStop": "single_reconcile_then_no_restart"
+    },
+    {
+      "observed": "FULL_WITH_ARTIFACT_DELTA",
+      "expectedStop": "checkpoint_branch_gate"
+    },
+    {
+      "observed": "CONTINUATION_ADMISSION_REPEATED",
+      "expectedStop": "issue_date_single_flight"
+    },
+    {
+      "observed": "SUMMARY_AUDIO_SCRIPT_MISSING",
+      "expectedStop": "deterministic_materialization_quality_gate"
+    },
+    {
+      "observed": "SCHEDULED_TASK_MISSED_RUNS",
+      "expectedStop": "readiness_debt_sidecar"
+    },
+    {
+      "observed": "POST_GREEN_30_26_MINUTES",
+      "expectedStop": "common_finalizer_post_green_15_minute_gate"
+    }
+  ]
+}

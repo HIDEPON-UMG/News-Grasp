@@ -127,7 +127,10 @@ def dispatch(
     handler = handlers.get(selected)
     if handler is None:
         raise OperationalRecoveryRegistryError("NG_RECOVERY_HANDLER_NOT_REGISTERED")
-    result = handler(context)
+    handler_context = dict(context)
+    if selected == "summary_audio_script_builder":
+        handler_context["_repoRoot"] = str(Path(repo_root).resolve())
+    result = handler(handler_context)
     if not isinstance(result, Mapping):
         raise OperationalRecoveryRegistryError("NG_RECOVERY_HANDLER_RESULT_INVALID")
     return RecoveryDispatch("dispatched", selected, reason_code, result)
@@ -153,7 +156,20 @@ def default_handlers() -> dict[str, Handler]:
         return handler
 
     def _summary(context: Mapping[str, Any]) -> Mapping[str, Any]:
-        return builders.build_summary_audio_script(context["summary"])
+        summary = context.get("summary")
+        summary_issue_date = (
+            summary.get("issueDate") if isinstance(summary, Mapping) else None
+        )
+        issue_date = str(context.get("issueDate") or summary_issue_date or "")
+        return builders.materialize_summary_audio_script(
+            repo_root=Path(str(context["_repoRoot"])),
+            issue_date=issue_date,
+            expected_source_sha256=(
+                str(context["summarySourceSha256"])
+                if context.get("summarySourceSha256") is not None
+                else None
+            ),
+        )
 
     def _dialogue(context: Mapping[str, Any]) -> Mapping[str, Any]:
         return builders.build_deepdive_dialogue(context["article"])

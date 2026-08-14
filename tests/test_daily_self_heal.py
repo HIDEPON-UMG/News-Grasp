@@ -4448,17 +4448,52 @@ def test_verify_publish_complete_records_notification_state(monkeypatch, tmp_pat
     _write_publish_complete_inventory(tmp_path)
     notification = tmp_path / "build" / "notification" / "2026-06-20.json"
     notification.parent.mkdir(parents=True)
-    notification.write_text(
+    audience_sha = hashlib.sha256(b"[]").hexdigest()
+    producer_sha = hashlib.sha256(
+        (Path(dsh.__file__).with_name("send_push.py")).read_bytes()
+    ).hexdigest()
+    producer_run_id = "1" * 32
+    audience_receipt = {
+        "schemaVersion": "NEWS_GRASP_NOTIFICATION_AUDIENCE_RESOLUTION_V1",
+        "date": "2026-06-20",
+        "source": "file",
+        "subscriptionCount": 0,
+        "audienceSetSha256": audience_sha,
+        "producer": "tools.send_push",
+        "producerSha256": producer_sha,
+        "producerRunId": producer_run_id,
+        "resolvedAt": "2026-06-20T06:30:00+09:00",
+    }
+    audience_receipt["receiptSha256"] = hashlib.sha256(
         json.dumps(
-            {
+            audience_receipt,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    notification_payload = {
                 "status": "no_subscribers",
                 "ok": True,
                 "date": "2026-06-20",
                 "subscription_count": 0,
                 "sent_count": 0,
+                "source": "file",
+                "recorded_at": "2026-06-20T06:30:00+09:00",
+                "payload_sha256": hashlib.sha256(b"").hexdigest(),
+                "audience_set_sha256": audience_sha,
+                "producer": "tools.send_push",
+                "producer_sha256": producer_sha,
+                "producer_run_id": producer_run_id,
+                "audienceResolutionReceipt": audience_receipt,
+                "audienceResolutionReceiptSha256": audience_receipt[
+                    "receiptSha256"
+                ],
             }
-        ),
-        encoding="utf-8",
+    from tools import send_push as push_sender
+
+    push_sender._write_notification_state(
+        str(notification), notification_payload
     )
     monkeypatch.setattr(
         dsh,

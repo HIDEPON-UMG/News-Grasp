@@ -7,6 +7,7 @@ import json
 import os
 import re
 import sys
+import hashlib
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -21,6 +22,91 @@ PUBLISH_SCHEMA_VERSION = "NEWS_GRASP_PUBLISH_COMPLETE_V2"
 GIT_COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 MAX_JSON_BYTES = 1024 * 1024
 FUTURE_TOLERANCE = timedelta(minutes=5)
+OUTCOME_ENVELOPE_SCHEMA = "COMPLETION_OUTCOME_ENVELOPE_V1"
+
+
+def _canonical_bytes(value: object) -> bytes:
+    return json.dumps(
+        value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+
+
+def build_completion_outcome_envelope(
+    *,
+    issue_date: str,
+    completion_state_vector: dict[str, Any],
+    public_green_at: str,
+    done_at: str,
+    recovery_operation_count: int,
+    readiness_debt: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """V3 public stateを変えず、SLOとreadinessを一つのsidecarに分離する。"""
+
+    if completion_state_vector.get("schemaVersion") != "COMPLETION_STATE_VECTOR_V3":
+        raise ValueError("COMPLETION_STATE_VECTOR_SCHEMA_DRIFT")
+    try:
+        issue = datetime.strptime(issue_date, "%Y-%m-%d")
+    except ValueError as error:
+        raise ValueError("ISSUE_DATE_INVALID") from error
+    anchor = issue.replace(hour=6, minute=40, tzinfo=timezone(timedelta(hours=9)))
+    public_green = _parse_clock(public_green_at)
+    done = _parse_clock(done_at)
+    if public_green is None or done is None or public_green > done:
+        raise ValueError("COMPLETION_OUTCOME_CLOCK_INVALID")
+    post_green_minutes = (done - public_green).total_seconds() / 60
+    overall_minutes = (done - anchor).total_seconds() / 60
+    pre_audit_green = done < anchor
+    target_met = (
+        not pre_audit_green
+        and overall_minutes <= 60
+        and post_green_minutes <= 15
+    )
+    repair_budget_met = (
+        not pre_audit_green
+        and recovery_operation_count > 0
+        and 60 < overall_minutes <= 90
+        and post_green_minutes <= 15
+    )
+    slo_status = (
+        "not_applicable_pre_audit_green"
+        if pre_audit_green
+        else "target_met"
+        if target_met
+        else "repair_budget_met"
+        if repair_budget_met
+        else "slo_failed"
+    )
+    slo_ok = pre_audit_green or target_met or repair_budget_met
+    automation_outcome = (
+        "audit_recovered_green"
+        if slo_ok and recovery_operation_count > 0
+        else "audit_normal_green"
+        if slo_ok
+        else "audit_major_incident_open"
+    )
+    body: dict[str, Any] = {
+        "schemaVersion": OUTCOME_ENVELOPE_SCHEMA,
+        "issueDate": issue_date,
+        "completionStateVectorSha256": hashlib.sha256(
+            _canonical_bytes(completion_state_vector)
+        ).hexdigest(),
+        "auditSloAnchor": anchor.isoformat(),
+        "publicGreenAt": public_green_at,
+        "doneAt": done_at,
+        "overallMinutes": overall_minutes,
+        "postGreenMinutes": post_green_minutes,
+        "recoveryOperationCount": recovery_operation_count,
+        "sloStatus": slo_status,
+        "targetMet": target_met,
+        "repairBudgetMet": repair_budget_met,
+        "readinessDebt": readiness_debt,
+        "publicAuthorityPreserved": True,
+        "guardOk": slo_ok,
+        "automationOutcome": automation_outcome,
+        "processExitCode": 2 if readiness_debt or not slo_ok else 0,
+    }
+    body["receiptSha256"] = hashlib.sha256(_canonical_bytes(body)).hexdigest()
+    return body
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -86,6 +172,7 @@ def evaluate(
     audit_accepted_at: str | None = None,
     public_green_at: str | None = None,
     done_at: str | None = None,
+    audit_slo_anchor: str | None = None,
 ) -> dict[str, Any]:
     failures: list[str] = []
     if manifest.get("_missing"):
@@ -180,8 +267,9 @@ def evaluate(
         ).resolve():
             failures.append("runner_state_manifest_path_mismatch")
 
+    effective_anchor = audit_slo_anchor or audit_accepted_at
     clocks = {
-        "T0": _parse_clock(audit_accepted_at),
+        "T0": _parse_clock(effective_anchor),
         "Tgreen": _parse_clock(public_green_at),
         "Tdone": _parse_clock(done_at),
     }
@@ -204,7 +292,13 @@ def evaluate(
             overall_minutes = (tdone - t0).total_seconds() / 60
             if post_green_minutes > 15:
                 failures.append("post_green_slo_exceeded")
-            if overall_minutes > 60:
+            recovery_performed = recovery_status == "succeeded"
+            repair_budget_met = (
+                recovery_performed
+                and 60 < overall_minutes <= 90
+                and post_green_minutes <= 15
+            )
+            if overall_minutes > 60 and not repair_budget_met:
                 failures.append("overall_slo_exceeded")
 
     return {
@@ -220,13 +314,21 @@ def evaluate(
         "artifact_commit": artifact_commit,
         "publish_commit": publish_commit,
         "slo": {
-            "T0": audit_accepted_at or "",
+            "T0": effective_anchor or "",
             "Tgreen": public_green_at or "",
             "Tdone": done_at or "",
             "postGreenMinutes": post_green_minutes,
             "overallMinutes": overall_minutes,
             "postGreenLimitMinutes": 15,
             "overallLimitMinutes": 60,
+            "repairBudgetLimitMinutes": 90,
+            "repairBudgetMet": (
+                recovery_status == "succeeded"
+                and overall_minutes is not None
+                and 60 < overall_minutes <= 90
+                and post_green_minutes is not None
+                and post_green_minutes <= 15
+            ),
         },
     }
 
@@ -267,9 +369,19 @@ def evaluate_finalization_receipt(
         runner_script_path=runner_script_path,
     )
     issue_date = str(receipt["issueDate"])
-    manifest = _load_json(Path(str(receipt["manifestPath"])))
-    state = _load_json(Path(str(receipt["runnerStatePath"])))
+    manifest, manifest_file_sha = news_grasp_recovery_receipts._read_json_with_sha(
+        Path(str(receipt["manifestPath"])),
+        root=trusted_artifact_root / "build",
+        code="FINALIZATION_MANIFEST_INVALID",
+    )
+    state, _ = news_grasp_recovery_receipts._read_json_with_sha(
+        Path(str(receipt["runnerStatePath"])),
+        root=live_bin_root,
+        code="FINALIZATION_STATE_BINDING_INVALID",
+    )
     if (
+        manifest_file_sha != receipt.get("manifestSha256")
+        or
         os.path.normcase(str(Path(str(state.get("recovery_finalization_receipt_path") or "")).resolve()))
         != os.path.normcase(str(resolved_receipt))
         or state.get("recovery_finalization_receipt_sha256") != receipt.get("receiptSha256")
@@ -287,10 +399,14 @@ def evaluate_finalization_receipt(
         audit_accepted_at=str(receipt["auditAcceptedAt"]),
         public_green_at=str(receipt["publicGreenAt"]),
         done_at=str(state.get("updated_at") or ""),
+        audit_slo_anchor=str(receipt.get("auditSloAnchor") or receipt["auditAcceptedAt"]),
     )
     result["finalizationReceiptPath"] = str(resolved_receipt)
     result["finalizationReceiptSha256"] = str(receipt["receiptSha256"])
-    return result, receipt
+    receipt_with_snapshots = dict(receipt)
+    receipt_with_snapshots["_validatedManifestSnapshot"] = manifest
+    receipt_with_snapshots["_validatedRunnerStateSnapshot"] = state
+    return result, receipt_with_snapshots
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -314,6 +430,51 @@ def main(argv: list[str] | None = None) -> int:
     )
     issue_date = str(receipt["issueDate"])
     artifact_root = args.artifact_root.resolve(strict=True)
+    envelope: dict[str, Any] | None = None
+    manifest_path = str(receipt.get("manifestPath") or "")
+    public_green_at = str(receipt.get("publicGreenAt") or "")
+    validated_state = receipt.pop("_validatedRunnerStateSnapshot", {})
+    validated_manifest = receipt.pop("_validatedManifestSnapshot", {})
+    state_updated_at = str(validated_state.get("updated_at") or "")
+    if manifest_path and public_green_at and state_updated_at:
+        from tools.news_grasp_operational_contract import evaluate_completion_v3
+
+        manifest_readiness = validated_manifest.get("live_runner_readiness")
+        readiness_ok = (
+            isinstance(manifest_readiness, dict)
+            and manifest_readiness.get("ok") is True
+        )
+        readiness_debt = None if readiness_ok else {
+            "reasonCode": str(
+                (manifest_readiness or {}).get("reason")
+                if isinstance(manifest_readiness, dict)
+                else "readiness_unverified"
+            )
+        }
+        state_vector = evaluate_completion_v3(
+            scheduled_attempt={"status": result["scheduled_attempt_status"]},
+            recovery_attempt={"status": result["recovery_attempt_status"]},
+            public_receipt={
+                "status": "verified_green",
+                "authorityId": receipt["receiptSha256"],
+            },
+            readiness_probe={"status": "green" if readiness_ok else "red"},
+            audit_observation={"status": "verified"},
+            external_dependency={"status": "ready"},
+            constitution_admission={"status": "green"},
+        )
+        envelope = build_completion_outcome_envelope(
+            issue_date=issue_date,
+            completion_state_vector=state_vector,
+            public_green_at=public_green_at,
+            done_at=state_updated_at,
+            recovery_operation_count=(
+                1 if result["recovery_attempt_status"] == "succeeded" else 0
+            ),
+            readiness_debt=readiness_debt,
+        )
+        result["completionStateVector"] = state_vector
+        result["outcomeEnvelope"] = envelope
     text = json.dumps(result, ensure_ascii=False, indent=2) + "\n"
     output = Path(str(receipt["completionGuardOutputPath"]))
     expected_output = artifact_root / "build" / "publish-complete" / f"{issue_date}.automation-guard.json"
@@ -328,8 +489,18 @@ def main(argv: list[str] | None = None) -> int:
     news_grasp_recovery_receipts.write_atomic_json(
         output, result, root=artifact_root
     )
+    if envelope is not None:
+        outcome_output = output.with_name(f"{issue_date}.completion-outcome.json")
+        news_grasp_recovery_receipts.write_atomic_json(
+            outcome_output, envelope, root=artifact_root
+        )
     print(text, end="")
-    return 0 if result["ok"] else 2
+    return (
+        0
+        if result["ok"]
+        and (envelope is None or envelope["processExitCode"] == 0)
+        else 2
+    )
 
 
 if __name__ == "__main__":

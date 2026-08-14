@@ -25,8 +25,7 @@ param(
     [string] $BinDir = '',
     [string] $HighCostAdmissionPath = $env:NEWS_GRASP_HIGH_COST_ADMISSION_PATH,
     [string] $HighCostBindingPath = '',
-    [string] $HighCostBindingReceiptSha256 = '',
-    [string] $RecoveryDecisionPath = ''
+    [string] $HighCostBindingReceiptSha256 = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -691,7 +690,6 @@ function Write-StartedJson {
 }
 
 function Start-RunnerProcess {
-    param([object] $RecoveryDecision = $null)
     if (-not (Test-Path $RunnerPath)) {
         throw "runner not found: $RunnerPath"
     }
@@ -714,15 +712,6 @@ function Start-RunnerProcess {
     }
     if ($HighCostBindingReceiptSha256) {
         $runnerParameters.HighCostBindingReceiptSha256 = $HighCostBindingReceiptSha256
-    }
-    if ($RecoveryDecision) {
-        $runnerParameters.RunIntent = 'ScheduledRecoveryFull'
-        $runnerParameters.ScheduledAuthorityEvidencePath = [string]$RecoveryDecision.scheduledAuthorityEvidencePath
-        if ([string]$RecoveryDecision.recoveryBranch -eq 'ResumeFromStage') {
-            $runnerParameters.ResumeFromStage = [string]$RecoveryDecision.resumeStage
-            $runnerParameters.HighCostAdmissionPath = [string]$RecoveryDecision.sourceAdmissionPath
-        }
-        $runnerParameters.RecoveryDecisionPath = [string]$RecoveryDecision.decisionPath
     }
     $quote = {
         param([string]$Value)
@@ -775,52 +764,73 @@ function Start-RunnerProcess {
     }
 }
 
-function Get-DailyControlPython {
-    if ($PyExeOverride -and (Test-Path -LiteralPath $PyExeOverride -PathType Leaf)) { return $PyExeOverride }
-    $candidate = Join-Path $RepoDir '.venv\Scripts\python.exe'
-    if (Test-Path -LiteralPath $candidate -PathType Leaf) { return $candidate }
-    return 'python'
-}
-
-function Get-RecoveryDecision {
-    param(
-        [string] $Trigger,
-        [int] $ProcessExitCode,
-        [int] $RecoveryAttemptNumber = 0
-    )
-    $python = Get-DailyControlPython
-    Push-Location $RepoDir
+function Get-CanonicalRecoveryControlBinding {
+    $profileRoot = [Environment]::GetFolderPath([Environment+SpecialFolder]::UserProfile)
+    $canonicalOps = Join-Path $profileRoot 'OneDrive\ドキュメント\ProjectFolders\News-Grasp'
+    $canonicalPython = Join-Path $canonicalOps '.venv\Scripts\python.exe'
+    $canonicalRuntime = Join-Path $profileRoot '.news-grasp-runtime\production-runtime'
+    $trustedRemote = 'https://github.com/HIDEPON-UMG/News-Grasp.git'
+    $gitExe = 'C:\Program Files\Git\cmd\git.exe'
+    $gitSafeArgs = @('-c', 'core.hooksPath=NUL', '-c', 'core.fsmonitor=false', '-c', 'core.attributesFile=NUL')
+    $bindingPath = Join-Path $env:USERPROFILE 'bin\news-grasp-recovery-runtime-binding-v1.json'
     try {
-        $json = (& $python '-m' 'tools.news_grasp_daily_control' 'prepare' '--issue-date' $DateStamp '--trigger' $Trigger '--process-exit-code' $ProcessExitCode '--recovery-attempt-number' $RecoveryAttemptNumber 2>&1 | Out-String).Trim()
-        if ($LASTEXITCODE -ne 0) {
-            Write-BootstrapLog "daily control failed trigger=$Trigger exit=$LASTEXITCODE detail=$json"
-            return $null
-        }
-        return $json | ConvertFrom-Json -ErrorAction Stop
-    } finally {
-        Pop-Location
+        $bindingItem = Get-Item -LiteralPath $bindingPath -Force -ErrorAction Stop
+        if (($bindingItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -or $bindingItem.LinkType) { throw 'binding path' }
+        $binding = Get-Content -LiteralPath $bindingPath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+        if ([string]$binding.schemaVersion -cne 'NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1') { throw 'schema' }
+        $ops = (Resolve-Path -LiteralPath ([string]$binding.opsRepoRoot) -ErrorAction Stop).Path
+        $python = (Resolve-Path -LiteralPath ([string]$binding.pythonExe) -ErrorAction Stop).Path
+        $audit = (Resolve-Path -LiteralPath ([string]$binding.auditControlPath) -ErrorAction Stop).Path
+        $daily = (Resolve-Path -LiteralPath ([string]$binding.dailySelfHealPath) -ErrorAction Stop).Path
+        $expectedOps = (Resolve-Path -LiteralPath $canonicalOps -ErrorAction Stop).Path
+        $expectedPython = (Resolve-Path -LiteralPath $canonicalPython -ErrorAction Stop).Path
+        $expectedRuntime = (Resolve-Path -LiteralPath $canonicalRuntime -ErrorAction Stop).Path
+        $opsHead = (& $gitExe @gitSafeArgs -C $ops rev-parse HEAD 2>$null | Out-String).Trim().ToLowerInvariant()
+        $remoteLine = (& $gitExe @gitSafeArgs ls-remote $trustedRemote refs/heads/main 2>$null | Out-String).Trim()
+        $remoteHead = if ($remoteLine) { ($remoteLine -split '\s+')[0].ToLowerInvariant() } else { '' }
+        $opsDirty = (& $gitExe @gitSafeArgs -C $ops status --porcelain --untracked-files=all 2>$null | Out-String).Trim()
+        $pythonSignature = Get-AuthenticodeSignature -LiteralPath $python
+        $pythonSignerSubject = [string]$pythonSignature.SignerCertificate.Subject
+        $pythonSignerThumbprint = ([string]$pythonSignature.SignerCertificate.Thumbprint).ToLowerInvariant()
+        if (
+            -not [string]::Equals($ops, $expectedOps, [StringComparison]::OrdinalIgnoreCase) -or
+            -not [string]::Equals($python, $expectedPython, [StringComparison]::OrdinalIgnoreCase) -or
+            -not [string]::Equals((Resolve-Path -LiteralPath ([string]$binding.productionRuntimeRoot) -ErrorAction Stop).Path, $expectedRuntime, [StringComparison]::OrdinalIgnoreCase) -or
+            [string]$binding.trustedRemote -cne $trustedRemote -or
+            [string]$binding.opsHead -cne $opsHead -or
+            $opsHead -notmatch '^[0-9a-f]{40}$' -or
+            $opsHead -cne $remoteHead -or
+            $opsDirty -or
+            (Test-Path -LiteralPath (Join-Path $ops 'sitecustomize.py')) -or
+            (Test-Path -LiteralPath (Join-Path $ops 'usercustomize.py')) -or
+            -not [string]::Equals($audit, (Join-Path $ops 'tools\audit_recovery_control.py'), [StringComparison]::OrdinalIgnoreCase) -or
+            -not [string]::Equals($daily, (Join-Path $ops 'tools\daily_self_heal.py'), [StringComparison]::OrdinalIgnoreCase) -or
+            -not [string]::Equals((Get-FileHash -LiteralPath $python -Algorithm SHA256).Hash.ToLowerInvariant(), [string]$binding.pythonExeSha256, [StringComparison]::Ordinal) -or
+            -not [string]::Equals((Get-FileHash -LiteralPath $audit -Algorithm SHA256).Hash.ToLowerInvariant(), [string]$binding.auditControlSha256, [StringComparison]::Ordinal) -or
+            -not [string]::Equals((Get-FileHash -LiteralPath $daily -Algorithm SHA256).Hash.ToLowerInvariant(), [string]$binding.dailySelfHealSha256, [StringComparison]::Ordinal) -or
+            [string]$pythonSignature.Status -cne 'Valid' -or
+            $pythonSignerSubject -notlike 'CN=Python Software Foundation, O=Python Software Foundation,*' -or
+            [string]$binding.pythonTrustAnchor -cne 'authenticode:python-software-foundation' -or
+            [string]$binding.pythonSignerSubject -cne $pythonSignerSubject -or
+            [string]$binding.pythonSignerThumbprint -cne $pythonSignerThumbprint
+        ) { throw 'hash/path' }
+        if ($PyExeOverride -and -not [string]::Equals((Resolve-Path -LiteralPath $PyExeOverride).Path, $python, [StringComparison]::OrdinalIgnoreCase)) { throw 'override' }
+        return [pscustomobject]@{ PythonExe = $python; AuditControlPath = $audit }
+    } catch {
+        throw 'RECOVERY_RUNTIME_BINDING_INVALID'
     }
 }
 
-function Read-ValidatedRecoveryDecision {
-    param([string] $Path)
-    $python = Get-DailyControlPython
-    Push-Location $RepoDir
+function Invoke-CanonicalRecoveryEnsure {
+    $binding = Get-CanonicalRecoveryControlBinding
+    $json = (& ([string]$binding.PythonExe) '-I' '-S' '-B' ([string]$binding.AuditControlPath) 'ensure-0640' '--issue-date' $DateStamp '--trigger' 'watcher_failure' 2>&1 | Out-String).Trim()
+    $exitCode = $LASTEXITCODE
     try {
-        $json = (& $python '-m' 'tools.news_grasp_daily_control' 'validate-decision' '--path' $Path 2>&1 | Out-String).Trim()
-        if ($LASTEXITCODE -ne 0) { throw "recovery decision invalid: $json" }
-        return $json | ConvertFrom-Json -ErrorAction Stop
-    } finally {
-        Pop-Location
-    }
-}
-
-function Start-RecoveryFromDecision {
-    param([Parameter(Mandatory=$true)][object] $Decision)
-    if ([string]$Decision.action -ne 'launch_recovery' -or [int]$Decision.maxAutomaticRecoveryAttempts -ne 1) {
-        throw "typed recovery launch not admitted: action=$($Decision.action)"
-    }
-    return Start-RunnerProcess -RecoveryDecision $Decision
+        $terminal = $json | ConvertFrom-Json -ErrorAction Stop
+        $detail = "terminal=$([string]$terminal.terminal) reason=$([string]$terminal.reasonCode)"
+    } catch { $detail = 'terminal=unparseable' }
+    Write-BootstrapLog "canonical recovery ensure exit=$exitCode $detail"
+    return [ordered]@{ exitCode = $exitCode; detail = $detail }
 }
 
 function Test-TerminalState {
@@ -1007,11 +1017,7 @@ if ($PSCmdlet.ParameterSetName -eq 'Status') {
 }
 
 Repair-LiveOpsFromRepo
-$decision = $null
-if ($RecoveryDecisionPath) {
-    $decision = Read-ValidatedRecoveryDecision -Path $RecoveryDecisionPath
-}
-$proc = if ($decision) { Start-RecoveryFromDecision -Decision $decision } else { Start-RunnerProcess }
+$proc = Start-RunnerProcess
 if ($PSCmdlet.ParameterSetName -eq 'StartOnly') {
     # Job handleはこのwatcherが保持する。ここで終了するとKILL_ON_JOB_CLOSEにより
     # runnerも終了し、started receiptだけが残るため、StartOnlyも所有watchまで継続する。
@@ -1019,14 +1025,8 @@ if ($PSCmdlet.ParameterSetName -eq 'StartOnly') {
 }
 
 Watch-Runner -Process $proc
-if ($script:WatchExitCode -ne 0 -and (-not $decision) -and (-not $SmokeTest) -and (-not $RecoverOnly)) {
-    $decision = Get-RecoveryDecision -Trigger 'production_failure' -ProcessExitCode $script:WatchExitCode
-    if ($decision -and [string]$decision.action -eq 'launch_recovery') {
-        $recoveryProcess = Start-RecoveryFromDecision -Decision $decision
-        Watch-Runner -Process $recoveryProcess
-        if ($script:WatchExitCode -ne 0) {
-            $null = Get-RecoveryDecision -Trigger 'production_failure' -ProcessExitCode $script:WatchExitCode -RecoveryAttemptNumber 1
-        }
-    }
+if ($script:WatchExitCode -ne 0 -and (-not $SmokeTest) -and (-not $RecoverOnly)) {
+    $ensure = Invoke-CanonicalRecoveryEnsure
+    $script:WatchExitCode = if ([int]$ensure.exitCode -in @(0, 2, 3)) { [int]$ensure.exitCode } else { 2 }
 }
 exit $script:WatchExitCode

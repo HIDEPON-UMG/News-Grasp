@@ -4,7 +4,7 @@
   "trigger": "06:00 scheduled production and 06:40 audit recovery",
   "actor": "launcher, runner, broker, audit controller, completion verifier",
   "entryGate": "typed scheduled authority plus immutable attempt witness",
-  "executionPath": "launcher -> runner -> broker -> artifacts -> completion; audit -> observer -> recovery",
+  "executionPath": "launcher -> runner -> broker -> artifacts -> completion; all recovery triggers -> canonical ensure -> transaction -> observer -> recovery",
   "states": ["reserved", "running", "failed", "recovery_required", "recovered", "public_green", "incident_open"],
   "statePredicate": "scheduled, recovery, and public state are independently materialized",
   "outcomes": ["same_day_public_green", "scheduled_failure_retained", "major_incident_continuation"],
@@ -52,8 +52,8 @@
   "routes": [
     {"routeId": "scheduled_runner", "consumerPath": "scripts/ops/news-grasp-runner.ps1", "consumerSymbol": "Set-RunnerState", "productionCallerPath": "scripts/ops/news-grasp-runner.ps1", "productionCallSymbol": "Set-RunnerState"},
     {"routeId": "producer_lineage", "consumerPath": "scripts/ops/news-grasp-lineage.ps1", "consumerSymbol": "New-NewsGraspProducerLineage", "productionCallerPath": "scripts/ops/news-grasp-runner.ps1", "productionCallSymbol": "New-NewsGraspProducerLineage"},
-    {"routeId": "production_self_heal", "consumerPath": "tools/news_grasp_daily_control.py", "consumerSymbol": "prepare_recovery", "productionCallerPath": "scripts/ops/watch-news-grasp-runner.ps1", "productionCallSymbol": "tools.news_grasp_daily_control"},
-    {"routeId": "audit_0640_control", "consumerPath": "tools/news_grasp_daily_control.py", "consumerSymbol": "execute_audit_0640", "productionCallerPath": "scripts/ops/news-grasp-deadman.ps1", "productionCallSymbol": "execute-audit-0640"},
+    {"routeId": "production_self_heal", "consumerPath": "tools/audit_recovery_control.py", "consumerSymbol": "ensure_audit_0640", "productionCallerPath": "scripts/ops/watch-news-grasp-runner.ps1", "productionCallSymbol": "ensure-0640"},
+    {"routeId": "audit_0640_control", "consumerPath": "tools/audit_recovery_control.py", "consumerSymbol": "ensure_audit_0640", "productionCallerPath": "scripts/ops/news-grasp-deadman.ps1", "productionCallSymbol": "ensure-0640"},
     {"routeId": "audit_observer", "consumerPath": "tools/audit_recovery_control.py", "consumerSymbol": "_observe_operational_truth", "productionCallerPath": "tools/news_grasp_daily_control.py", "productionCallSymbol": "_observe_operational_truth"},
     {"routeId": "audit_decision", "consumerPath": "tools/audit_recovery_control.py", "consumerSymbol": "decide_audit_recovery", "productionCallerPath": "tools/news_grasp_daily_control.py", "productionCallSymbol": "decide_audit_recovery"},
     {"routeId": "completion_verifier", "consumerPath": "tools/daily_self_heal.py", "consumerSymbol": "verify_publish_complete", "productionCallerPath": "tools/audit_recovery_control.py", "productionCallSymbol": "verify_publish_complete"}

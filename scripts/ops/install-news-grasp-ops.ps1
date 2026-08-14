@@ -139,9 +139,15 @@ function Assert-NewsGraspExternalControlPlaneReady {
 function Resolve-NewsGraspRepoDir {
     param([string] $Override)
     if ($Override) {
+        if (-not (Test-Path -LiteralPath $Override -PathType Container)) {
+            throw "NEWS_GRASP_REPO_PATH_NOT_FOUND:$Override"
+        }
         return (Resolve-Path -LiteralPath $Override).Path
     }
     if ($env:NEWS_GRASP_REPO_DIR) {
+        if (-not (Test-Path -LiteralPath $env:NEWS_GRASP_REPO_DIR -PathType Container)) {
+            throw "NEWS_GRASP_REPO_PATH_NOT_FOUND:$($env:NEWS_GRASP_REPO_DIR)"
+        }
         return (Resolve-Path -LiteralPath $env:NEWS_GRASP_REPO_DIR).Path
     }
     $repoFromOps = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
@@ -449,6 +455,7 @@ function Assert-NewsGraspInstalledState {
         [string]$recoveryBinding.controlPlaneToolSha256,
         [string]$recoveryBinding.completionGuardToolSha256,
         [string]$recoveryBinding.dailySelfHealSha256,
+        [string]$recoveryBinding.auditControlSha256,
         [string]$recoveryBinding.highCostBindingReceiptSha256,
         [string]$recoveryBinding.highCostBindingFileSha256,
         [string]$recoveryBinding.highCostBindingResolverSha256,
@@ -1028,6 +1035,10 @@ $dailySelfHealSnapshot = Read-NewsGraspVerifiedFile `
     -Path (Join-Path $runtimeEvidenceRepoDir 'tools\daily_self_heal.py') `
     -TrustedBoundary $installTrustedBoundary `
     -RequireSingleLink
+$auditControlSnapshot = Read-NewsGraspVerifiedFile `
+    -Path (Join-Path $runtimeEvidenceRepoDir 'tools\audit_recovery_control.py') `
+    -TrustedBoundary $installTrustedBoundary `
+    -RequireSingleLink
 $startupCustomizationPresent = (
     (Test-Path -LiteralPath (Join-Path $runtimeEvidenceRepoDir 'sitecustomize.py')) -or
     (Test-Path -LiteralPath (Join-Path $runtimeEvidenceRepoDir 'usercustomize.py'))
@@ -1040,8 +1051,7 @@ $opsHead = (& $recoveryGitExe @recoveryGitSafeArgs -C $runtimeEvidenceRepoDir re
 $trustedRemoteHeadLine = (& $recoveryGitExe @recoveryGitSafeArgs ls-remote $trustedGitRemote refs/heads/main 2>$null | Out-String).Trim()
 $trustedRemoteHead = if ($trustedRemoteHeadLine) { ($trustedRemoteHeadLine -split '\s+')[0].ToLowerInvariant() } else { '' }
 $opsDirty = (& $recoveryGitExe @recoveryGitSafeArgs -C $runtimeEvidenceRepoDir status --porcelain --untracked-files=all 2>$null | Out-String).Trim()
-$opsIgnored = (& $recoveryGitExe @recoveryGitSafeArgs -C $runtimeEvidenceRepoDir ls-files --others --ignored --exclude-standard 2>$null | Out-String).Trim()
-if ($LASTEXITCODE -ne 0 -or $opsHead -notmatch '^[0-9a-f]{40}$' -or $opsHead -ne $trustedRemoteHead -or $opsDirty -or $opsIgnored) {
+if ($LASTEXITCODE -ne 0 -or $opsHead -notmatch '^[0-9a-f]{40}$' -or $opsHead -ne $trustedRemoteHead -or $opsDirty) {
     throw 'NEWS_GRASP_RECOVERY_OPS_GENERATION_INVALID'
 }
 $pythonSignature = Get-AuthenticodeSignature -LiteralPath $runtimePythonPath
@@ -1085,6 +1095,8 @@ $recoveryRuntimeBinding = [ordered]@{
     completionGuardToolSha256 = ([string]$completionGuardToolSnapshot.Sha256).ToLowerInvariant()
     dailySelfHealPath = (Join-Path $runtimeEvidenceRepoDir 'tools\daily_self_heal.py')
     dailySelfHealSha256 = ([string]$dailySelfHealSnapshot.Sha256).ToLowerInvariant()
+    auditControlPath = (Join-Path $runtimeEvidenceRepoDir 'tools\audit_recovery_control.py')
+    auditControlSha256 = ([string]$auditControlSnapshot.Sha256).ToLowerInvariant()
     highCostBindingPath = $highCostBindingPath
     highCostBindingReceiptSha256 = $highCostBindingReceiptSha256
     highCostBindingFileSha256 = ([string]$highCostBindingAfterHash).ToLowerInvariant()

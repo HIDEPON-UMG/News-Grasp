@@ -1079,8 +1079,8 @@ def test_disabled_runner_fallback_publish_never_sends_web_push() -> None:
     assert "git push origin main" not in fallback_body
 
 
-def test_send_push_requires_normal_batch_publish_verification() -> None:
-    """通知は通常バッチの公開反映確認が通った後だけ実行する。"""
+def test_send_push_requires_publish_verification_for_normal_or_recovery() -> None:
+    """通知は通常/recoveryとも公開反映確認後だけ実行し、NoPushでは送らない。"""
     runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
     notify_gate = runner.split("function Should-SendNormalBatchNotification", 1)[1].split("# ===== sentinel", 1)[0]
     send_block = runner.split("# ===== 6. Web Push", 1)[1].split("Write-CodexUsageWindowSnapshot -Phase 'end'", 1)[0]
@@ -1089,7 +1089,7 @@ def test_send_push_requires_normal_batch_publish_verification() -> None:
     assert "$NormalPublishVerified = $true" in runner
     assert "$NormalPublishVerified" in notify_gate
     assert "-not $NoPush" in notify_gate
-    assert "-not $RecoverOnly" in notify_gate
+    assert "-not $RecoverOnly" not in notify_gate
     assert "Should-SendNormalBatchNotification" in send_block
     assert "RecoverOnly mode: skipping send_push (not a normal batch)" in send_block
     assert runner.index("publish verification OK") < runner.index("send_push start")
@@ -1631,16 +1631,18 @@ def test_deadman_wrapper_exists_and_uses_non_webpush_alert_log() -> None:
     text = script.read_text(encoding="utf-8-sig")
     forbidden_local_user_path = "C:" + "\\Users\\" + "hide" + "k"
     assert forbidden_local_user_path not in text
-    assert "tools.daily_self_heal" in text
+    assert "daily_self_heal.py" in text
+    assert "'-I' '-S' '-B' $DailySelfHealPath" in text
     assert "deadman" in text
     assert "news-grasp-alerts" in text
     assert "Invoke-Audit0640Control" in text
-    assert "tools.news_grasp_daily_control" in text
-    assert "execute-audit-0640" in text
+    assert "audit_recovery_control.py" in text
+    assert "'-I' '-S' '-B' $AuditControlPath" in text
+    assert "ensure-0640" in text
     assert "audit controller remains authoritative" in text
     assert "exit (Invoke-Audit0640Control)" in text
     assert "$terminalJson" in text
-    assert "$executorExitCode -notin @(0, 2)" in text
+    assert "$executorExitCode -notin @(0, 2, 3)" in text
     assert "Invoke-RecoverOnlyIfStaleDeadPid" not in text
     assert "-RecoveryDecisionPath" not in text
     assert "watch-news-grasp-runner.ps1" not in text
@@ -1916,7 +1918,7 @@ def test_ops_installer_preserves_pre_mutation_error_without_rollback_masking(tmp
 
     diagnostic = completed.stdout + completed.stderr
     assert completed.returncode != 0
-    assert "Cannot find path" in diagnostic or "パス" in diagnostic
+    assert "NEWS_GRASP_REPO_PATH_NOT_FOUND" in diagnostic
     assert "Invoke-NewsGraspInstallRollback" not in diagnostic
     assert not bin_dir.exists()
 

@@ -15,6 +15,7 @@ RECOVERY_BRANCHES = {
     "ResumeFromStage",
     "ScheduledRecoveryFull",
     "minimal_unblocker",
+    "major_incident_fail_closed",
 }
 OPERATIONAL_DESIGN_FIELDS = (
     "owner",
@@ -116,7 +117,8 @@ def validate_completion_authority_receipt(
     checks = completion_body.get("checks")
     evidence = completion_body.get("evidenceSha256")
     if (
-        authority_body.get("schemaVersion") != "COMPLETION_AUTHORITY_V1"
+        authority_body.get("schemaVersion")
+        not in {"COMPLETION_AUTHORITY_V1", "COMPLETION_AUTHORITY_V2"}
         or authority_body.get("issuer") != COMPLETION_AUTHORITY_ISSUER
         or authority_body.get("issueDate") != issue_date
         or value.get("receiptSha256") != _sha(authority_body)
@@ -141,7 +143,10 @@ def validate_completion_authority_receipt(
         or completion.get("receiptSha256") != _sha(completion_body)
         or completion_body.get("verificationStatus") not in {None, "verified_green"}
         or completion_body.get("publicCompletionStatus") not in {None, "green"}
-        or completion_body.get("nextRunReadinessStatus") not in {None, "green"}
+        or (
+            authority_body.get("schemaVersion") == "COMPLETION_AUTHORITY_V1"
+            and completion_body.get("nextRunReadinessStatus") not in {None, "green"}
+        )
         or not isinstance(checks, dict)
         or not isinstance(evidence, dict)
         or not all(
@@ -200,17 +205,21 @@ def validate_completion_authority_receipt(
 
 def select_recovery_branch_from_truth(value: object) -> str:
     truth = validate_operational_truth_receipt(value)
+    delta = truth["artifactDelta"]
     if not truth["stopPointKnown"]:
+        if truth["scheduledAttemptReachedRunner"] or delta["exists"] is True:
+            return "major_incident_fail_closed"
         return "ScheduledRecoveryFull"
     if truth.get("minimalUnblockerReceiptSha256"):
         if len(str(truth["minimalUnblockerReceiptSha256"])) != 64:
             raise ValueError("MINIMAL_UNBLOCKER_RECEIPT_INVALID")
         return "minimal_unblocker"
-    delta = truth["artifactDelta"]
     if delta["exists"] is True and truth.get("stageCheckpointReceiptSha256"):
         if len(str(truth["stageCheckpointReceiptSha256"])) != 64:
             raise ValueError("STAGE_CHECKPOINT_RECEIPT_INVALID")
         return "ResumeFromStage"
+    if delta["exists"] is True:
+        return "major_incident_fail_closed"
     return "ScheduledRecoveryFull"
 
 

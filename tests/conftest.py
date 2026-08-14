@@ -16,12 +16,19 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 _SESSION_BINDING_ROOT: Path | None = None
 for _candidate in _REPO_ROOT.parents:
     _adapter = _candidate / "tools" / "harness" / "high_cost_capability_adapter.py"
+    _descriptor_override = os.environ.get(
+        "NEWS_GRASP_TEST_HIGH_COST_DESCRIPTOR_PATH", ""
+    ).strip()
     _descriptor = (
-        Path.home()
-        / ".codex"
-        / "state"
-        / "high-cost-operation"
-        / "capability-v1.json"
+        Path(_descriptor_override)
+        if _descriptor_override
+        else (
+            Path.home()
+            / ".codex"
+            / "state"
+            / "high-cost-operation"
+            / "capability-v1.json"
+        )
     )
     if _adapter.is_file() and _descriptor.is_file():
         from tools.news_grasp_high_cost_binding import create_binding
@@ -99,7 +106,7 @@ def canonical_model_broker(tmp_path: Path) -> tuple[list[str], dict[str, str]]:
         "    issue_date = args[args.index('--issue-date') + 1]\n"
         "    authority_path = args[args.index('--authority-evidence') + 1]\n"
         "    with open(authority_path, encoding='utf-8-sig') as stream: authority = json.load(stream)\n"
-        "    print(json.dumps({'schemaVersion': 'HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1', 'operationKind': operation_kind, 'issueDate': issue_date, 'operationAuthoritySha256': authority['receiptSha256']}))\n"
+        "    print(json.dumps({'schemaVersion': 'HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1', 'operationKind': operation_kind, 'issueDate': issue_date, 'operationAuthoritySha256': authority['receiptSha256'], 'taskIdentity': '5' * 64, 'latestActualUserEventHash': '6' * 64}))\n"
         "    raise SystemExit(0)\n"
         "if not args or args[0] != 'exec':\n"
         "    raise SystemExit(97)\n"

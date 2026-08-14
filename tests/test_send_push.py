@@ -16,6 +16,7 @@ send_one の戻り値契約 (ok, gone, detail) を直接検証する。
 from __future__ import annotations
 
 import json
+import hashlib
 import sys
 from pathlib import Path
 
@@ -368,3 +369,184 @@ def test_main_prefers_worker_when_configured(tmp_path, monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "取得元:   worker" in out
     assert "購読者:   1 件" in out
+
+
+def test_delivery_ledger_prevents_duplicate_send_and_seals_prior_chain(
+    tmp_path, monkeypatch, capsys
+):
+    from tools import daily_self_heal
+
+    subscriptions = tmp_path / "subs.json"
+    subscriptions.write_text(json.dumps([SAMPLE_SUB]), encoding="utf-8")
+    token = tmp_path / "missing-token.txt"
+    key = tmp_path / "vapid.pem"
+    key.write_text("fixture", encoding="utf-8")
+    state_path = tmp_path / "notification.json"
+    calls = {"count": 0}
+
+    def send_success(*_args, **_kwargs):
+        calls["count"] += 1
+        return True, False, "ok"
+
+    monkeypatch.setattr(sp, "send_one", send_success)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "send_push.py",
+            "--subscriptions-file",
+            str(subscriptions),
+            "--token-file",
+            str(token),
+            "--vapid-key-file",
+            str(key),
+            "--record-state",
+            str(state_path),
+        ],
+    )
+
+    assert main() == 0
+    assert main() == 0
+    capsys.readouterr()
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    verified = daily_self_heal._load_notification_state(
+        state_path, sp._today_jst_str()
+    )
+
+    assert calls["count"] == 1
+    assert state["status"] == "already_sent"
+    assert verified["reason"] == ""
+
+
+def test_sent_state_without_canonical_delivery_ledger_is_rejected(tmp_path):
+    from tools import daily_self_heal
+
+    issue_date = sp._today_jst_str()
+    state = sp._notification_state(
+        status="sent",
+        ok=True,
+        source="file",
+        subscription_count=1,
+        sent_count=1,
+        payload_sha256="a" * 64,
+        audience_set_sha256="b" * 64,
+    )
+    state_path = tmp_path / f"{issue_date}.json"
+    state_path.write_text(json.dumps(state), encoding="utf-8")
+
+    verified = daily_self_heal._load_notification_state(state_path, issue_date)
+
+    assert verified["reason"] == "notification_evidence_ledger_invalid"
+    assert not (tmp_path / f"{issue_date}.delivery.json").exists()
+
+
+@pytest.mark.parametrize(
+    ("status", "ledger_suffix"),
+    [("sent", "delivery"), ("already_sent", "delivery"), ("no_subscribers", "audience")],
+)
+def test_notification_evidence_ledger_rejects_leaf_symlink(
+    tmp_path, status, ledger_suffix
+):
+    from tools import daily_self_heal
+
+    issue_date = sp._today_jst_str()
+    state_path = tmp_path / f"{issue_date}.json"
+    common = {
+        "source": "file",
+        "payload_sha256": "a" * 64,
+        "audience_set_sha256": "b" * 64,
+    }
+    if status == "no_subscribers":
+        state = sp._notification_state(
+            status=status,
+            ok=True,
+            subscription_count=0,
+            sent_count=0,
+            **common,
+        )
+    else:
+        sent = sp._notification_state(
+            status="sent",
+            ok=True,
+            subscription_count=1,
+            sent_count=1,
+            **common,
+        )
+        sp._write_notification_state(str(state_path), sent)
+        if status == "sent":
+            state = sent
+        else:
+            ledger_path = tmp_path / f"{issue_date}.delivery.json"
+            ledger_raw = ledger_path.read_bytes()
+            prior = json.loads(ledger_raw.decode("utf-8"))
+            state = sp._notification_state(
+                status="already_sent",
+                ok=True,
+                subscription_count=1,
+                sent_count=1,
+                prior_delivery_receipt_sha256=prior["receiptSha256"],
+                prior_delivery_receipt_file_sha256=hashlib.sha256(
+                    ledger_raw
+                ).hexdigest(),
+                prior_delivery_receipt_path=str(ledger_path.absolute()),
+                **common,
+            )
+    sp._write_notification_state(str(state_path), state)
+    ledger_path = tmp_path / f"{issue_date}.{ledger_suffix}.json"
+    external = tmp_path / f"external-{status}.json"
+    external.write_bytes(ledger_path.read_bytes())
+    ledger_path.unlink()
+    try:
+        ledger_path.symlink_to(external)
+    except OSError:
+        pytest.skip("file symlink creation is unavailable")
+
+    verified = daily_self_heal._load_notification_state(state_path, issue_date)
+
+    assert verified["reason"] == "notification_evidence_ledger_invalid"
+
+
+@pytest.mark.parametrize("invalid_kind", ["directory", "dangling_symlink"])
+def test_invalid_prior_delivery_ledger_blocks_duplicate_send(
+    tmp_path, monkeypatch, invalid_kind
+):
+    issue_date = sp._today_jst_str()
+    subscriptions = tmp_path / "subs.json"
+    subscriptions.write_text(json.dumps([SAMPLE_SUB]), encoding="utf-8")
+    key = tmp_path / "vapid.pem"
+    key.write_text("fixture", encoding="utf-8")
+    state_path = tmp_path / f"{issue_date}.json"
+    ledger_path = tmp_path / f"{issue_date}.delivery.json"
+    if invalid_kind == "directory":
+        ledger_path.mkdir()
+    else:
+        try:
+            ledger_path.symlink_to(tmp_path / "missing-ledger.json")
+        except OSError:
+            pytest.skip("file symlink creation is unavailable")
+    send_count = {"value": 0}
+
+    def unexpected_send(*_args, **_kwargs):
+        send_count["value"] += 1
+        return True, False, "ok"
+
+    monkeypatch.setattr(sp, "send_one", unexpected_send)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "send_push.py",
+            "--subscriptions-file",
+            str(subscriptions),
+            "--token-file",
+            str(tmp_path / "missing-token.txt"),
+            "--vapid-key-file",
+            str(key),
+            "--record-state",
+            str(state_path),
+        ],
+    )
+
+    assert main() == 1
+    assert send_count["value"] == 0
+    assert json.loads(state_path.read_text(encoding="utf-8"))["status"] == "delivery_ledger_invalid"

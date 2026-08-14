@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import argparse
 import re
 from dataclasses import dataclass
 import hashlib
 import json
+import os
+import tempfile
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -114,6 +117,68 @@ def _canonical_sha256(value: object) -> str:
         separators=(",", ":"),
     ).encode("utf-8")
     return hashlib.sha256(payload).hexdigest()
+
+
+def reseal_packet_set(repo_root: Path | str) -> dict[str, Any]:
+    """正本source bytesに対するLuna packet hashを決定論的に再sealする。"""
+
+    root = Path(repo_root).resolve()
+    packet_path = root / PACKET_SET_RELATIVE_PATH
+    value = json.loads(packet_path.read_text(encoding="utf-8"))
+    if value.get("schemaVersion") != "NEWS_GRASP_LUNA_PACKET_SET_V1":
+        raise ValueError("LUNA_PACKET_SET_SCHEMA_INVALID")
+    binding = value.get("operationalImprovementBinding")
+    packets = value.get("packets")
+    if not isinstance(binding, dict) or not isinstance(packets, list) or not packets:
+        raise ValueError("LUNA_PACKET_SET_INVALID")
+    binding_sha256 = _canonical_sha256(binding)
+    resealed_paths: set[str] = set()
+    for packet in packets:
+        if not isinstance(packet, dict):
+            raise ValueError("LUNA_PACKET_SET_INVALID")
+        write_set = packet.get("writeSet")
+        if not isinstance(write_set, list):
+            raise ValueError("LUNA_PACKET_NONEMPTY_LIST_REQUIRED:writeSet")
+        hashes: dict[str, str] = {}
+        for relative_value in write_set:
+            relative = str(relative_value).replace("\\", "/")
+            candidate = _resolved_product_path(root, relative)
+            hashes[relative] = (
+                _file_sha256(candidate) if candidate.is_file() else "ABSENT"
+            )
+            resealed_paths.add(relative)
+        packet["targetSourceHashes"] = hashes
+        packet["taskConstitutionBindingSha256"] = binding_sha256
+        for authority in packet.get("derivedWriteAuthorities", []):
+            if not isinstance(authority, dict):
+                raise ValueError("LUNA_PACKET_DERIVED_WRITE_AUTHORITY_INVALID")
+            generator_path = str(authority.get("generatorPath") or "")
+            if generator_path not in hashes:
+                raise ValueError("LUNA_PACKET_DERIVED_WRITE_AUTHORITY_INVALID")
+            authority["generatorSha256"] = hashes[generator_path]
+
+    encoded = (
+        json.dumps(value, ensure_ascii=False, indent=2) + "\n"
+    ).encode("utf-8")
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{packet_path.name}.", suffix=".tmp", dir=packet_path.parent
+    )
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "wb") as stream:
+            stream.write(encoded)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, packet_path)
+    finally:
+        temporary.unlink(missing_ok=True)
+    return {
+        "schemaVersion": "NEWS_GRASP_LUNA_PACKET_RESEAL_RECEIPT_V1",
+        "packetCount": len(packets),
+        "targetPathCount": len(resealed_paths),
+        "packetSetSha256": _file_sha256(packet_path),
+        "status": "resealed",
+    }
 
 
 def todo_definition_set_sha256(entries: list[dict[str, Any]]) -> str:
@@ -527,3 +592,19 @@ def validate_packet(
         return_to_sol_conditions=strict["return_conditions"] if strict else (),
         task_constitution_admission_sha256=task_constitution_admission_sha256,
     )
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="News-Grasp Luna execution packetを検証・再sealします。"
+    )
+    parser.add_argument("command", choices=("reseal",))
+    parser.add_argument("--repo-root", type=Path, default=Path.cwd())
+    args = parser.parse_args(argv)
+    result = reseal_packet_set(args.repo_root)
+    print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

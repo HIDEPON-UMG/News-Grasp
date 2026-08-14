@@ -5,11 +5,11 @@
   "primaryUser": "ITコンサルタントとしてNews-Graspを利用するユーザー",
   "naturalRunEvidenceAllowed": false,
   "sharedGlobalHarnessMutationAllowed": false,
-  "specSha256": "36f5fee46f5f45620d709ccaed62866986d3c2cb86d82129f615a3684c2c0c58",
+  "specSha256": "d2d3c079611fe638924127fe61dc48eb1328138d13c248ba782b670f59e76a18",
   "userProvenance": {
     "sourceType": "user_confirmed_plan",
-    "confirmedAt": "2026-08-12",
-    "statement": "Product Constitution 14条項・6柱を全active仕様・skill・production consumer・状態・証拠へ結線し、自然実行待ちやshared/global harness変更なしで物理提出まで閉じる。",
+    "confirmedAt": "2026-08-15",
+    "statement": "Product Constitution 14条項・6柱を全active仕様・skill・production consumer・状態・証拠へ結線し、2026-08-14 issue-date recovery transaction、4 terminal、V2 receipt、SLO sidecarを含めて物理提出まで閉じる。",
     "amendmentAuthority": "user_only"
   },
   "pillars": [

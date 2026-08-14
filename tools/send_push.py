@@ -27,13 +27,19 @@ VAPID 秘密鍵は ~/.secrets/news-grasp-vapid.pem（tools/gen_vapid_keys.py で
     python tools/send_push.py --url https://... # 遷移先(タップで開く URL)を上書き
 """
 import argparse
+import ctypes
+import hashlib
 import json
+import os
+import stat
 import sys
+import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime
 from pathlib import Path
+import uuid
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -70,6 +76,75 @@ DEFAULT_TTL_SECONDS = 12 * 60 * 60
 # アクティブなので即表示される → これが「手動は届くが毎朝来ない」の非対称性）。
 # "high" は FCM 優先度 high / apns-priority 10 にマップされ Doze を貫通して即時配信する。
 DEFAULT_URGENCY = "high"
+
+
+def _opened_path(descriptor: int, fallback: Path) -> Path:
+    if os.name != "nt":
+        return Path(os.path.realpath(fallback))
+    import msvcrt
+
+    handle = msvcrt.get_osfhandle(descriptor)
+    buffer = ctypes.create_unicode_buffer(32768)
+    length = ctypes.windll.kernel32.GetFinalPathNameByHandleW(
+        ctypes.c_void_p(handle), buffer, len(buffer), 0
+    )
+    if length <= 0 or length >= len(buffer):
+        raise OSError("opened path unavailable")
+    value = buffer.value
+    if value.startswith("\\\\?\\UNC\\"):
+        value = "\\\\" + value[8:]
+    elif value.startswith("\\\\?\\"):
+        value = value[4:]
+    return Path(value)
+
+
+def _safe_regular_bytes(path: Path, *, max_bytes: int) -> bytes:
+    candidate = Path(os.path.abspath(path))
+    before = os.lstat(candidate)
+    attributes = int(getattr(before, "st_file_attributes", 0))
+    if (
+        not stat.S_ISREG(before.st_mode)
+        or stat.S_ISLNK(before.st_mode)
+        or attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+        or before.st_nlink != 1
+        or before.st_size <= 0
+        or before.st_size > max_bytes
+    ):
+        raise OSError("unsafe evidence file")
+    descriptor = os.open(
+        candidate,
+        os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0),
+    )
+    try:
+        opened = os.fstat(descriptor)
+        opened_path = _opened_path(descriptor, candidate)
+        if (
+            os.path.normcase(os.path.abspath(opened_path))
+            != os.path.normcase(os.path.abspath(candidate))
+            or (opened.st_dev, opened.st_ino, opened.st_size, opened.st_nlink)
+            != (before.st_dev, before.st_ino, before.st_size, 1)
+        ):
+            raise OSError("evidence identity drift")
+        chunks: list[bytes] = []
+        remaining = max_bytes + 1
+        while remaining > 0:
+            chunk = os.read(descriptor, min(65536, remaining))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        after = os.fstat(descriptor)
+    finally:
+        os.close(descriptor)
+    raw = b"".join(chunks)
+    if (
+        len(raw) != before.st_size
+        or len(raw) > max_bytes
+        or (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns)
+        != (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns)
+    ):
+        raise OSError("evidence changed during read")
+    return raw
 
 def categories_for_weekday(weekday: int) -> list[str]:
     """その曜日に配信されるカテゴリ表示名を、配信順で返す。"""
@@ -121,7 +196,48 @@ def _write_notification_state(path: str | None, payload: dict) -> None:
         return
     out = Path(path)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    state = dict(payload)
+    status = str(state.get("status") or "")
+    if status in {"sent", "already_sent"}:
+        ledger_path = out.with_name(f"{state['date']}.delivery.json")
+        if status == "sent" and isinstance(state.get("deliveryReceipt"), dict):
+            _write_atomic_json(ledger_path, state["deliveryReceipt"])
+        ledger_raw = _safe_regular_bytes(ledger_path, max_bytes=65536)
+        ledger = json.loads(ledger_raw.decode("utf-8-sig"))
+        state["evidenceLedgerPath"] = os.path.abspath(ledger_path)
+        state["evidenceLedgerFileSha256"] = hashlib.sha256(ledger_raw).hexdigest()
+        state["evidenceLedgerReceiptSha256"] = str(
+            ledger.get("receiptSha256") or ""
+        )
+    elif status == "no_subscribers" and isinstance(
+        state.get("audienceResolutionReceipt"), dict
+    ):
+        ledger_path = out.with_name(f"{state['date']}.audience.json")
+        _write_atomic_json(ledger_path, state["audienceResolutionReceipt"])
+        ledger_raw = _safe_regular_bytes(ledger_path, max_bytes=65536)
+        ledger = json.loads(ledger_raw.decode("utf-8-sig"))
+        state["evidenceLedgerPath"] = os.path.abspath(ledger_path)
+        state["evidenceLedgerFileSha256"] = hashlib.sha256(ledger_raw).hexdigest()
+        state["evidenceLedgerReceiptSha256"] = str(
+            ledger.get("receiptSha256") or ""
+        )
+    _write_atomic_json(out, state)
+
+
+def _write_atomic_json(path: Path, payload: dict) -> None:
+    encoded = (json.dumps(payload, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
+    )
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "wb") as stream:
+            stream.write(encoded)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def _notification_state(
@@ -132,8 +248,19 @@ def _notification_state(
     subscription_count: int = 0,
     sent_count: int = 0,
     detail: str = "",
+    payload_sha256: str = "",
+    audience_set_sha256: str = "",
+    prior_delivery_receipt_sha256: str = "",
+    prior_delivery_receipt_file_sha256: str = "",
+    prior_delivery_receipt_path: str = "",
 ) -> dict:
-    return {
+    producer_sha256 = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+    if not payload_sha256:
+        payload_sha256 = hashlib.sha256(b"").hexdigest()
+    if not audience_set_sha256:
+        audience_set_sha256 = hashlib.sha256(b"[]").hexdigest()
+    producer_run_id = uuid.uuid4().hex
+    state = {
         "date": _today_jst_str(),
         "status": status,
         "ok": ok,
@@ -141,8 +268,58 @@ def _notification_state(
         "subscription_count": subscription_count,
         "sent_count": sent_count,
         "detail": detail,
-        "recorded_at": datetime.now().isoformat(),
+        "recorded_at": datetime.now().astimezone().isoformat(),
+        "payload_sha256": payload_sha256,
+        "audience_set_sha256": audience_set_sha256,
+        "producer": "tools.send_push",
+        "producer_sha256": producer_sha256,
+        "producer_run_id": producer_run_id,
     }
+    if status == "no_subscribers":
+        receipt = {
+            "schemaVersion": "NEWS_GRASP_NOTIFICATION_AUDIENCE_RESOLUTION_V1",
+            "date": state["date"],
+            "source": source,
+            "subscriptionCount": subscription_count,
+            "audienceSetSha256": audience_set_sha256,
+            "producer": state["producer"],
+            "producerSha256": producer_sha256,
+            "producerRunId": producer_run_id,
+            "resolvedAt": state["recorded_at"],
+        }
+        receipt["receiptSha256"] = hashlib.sha256(
+            json.dumps(
+                receipt, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+            ).encode("utf-8")
+        ).hexdigest()
+        state["audienceResolutionReceipt"] = receipt
+        state["audienceResolutionReceiptSha256"] = receipt["receiptSha256"]
+    elif status in {"sent", "already_sent"}:
+        receipt = {
+            "schemaVersion": "NEWS_GRASP_NOTIFICATION_DELIVERY_RECEIPT_V1",
+            "date": state["date"],
+            "source": source,
+            "subscriptionCount": subscription_count,
+            "sentCount": sent_count,
+            "payloadSha256": payload_sha256,
+            "audienceSetSha256": audience_set_sha256,
+            "producer": state["producer"],
+            "producerSha256": producer_sha256,
+            "producerRunId": producer_run_id,
+            "deliveredAt": state["recorded_at"],
+        }
+        if status == "already_sent":
+            receipt["priorDeliveryReceiptSha256"] = prior_delivery_receipt_sha256
+            receipt["priorDeliveryReceiptFileSha256"] = prior_delivery_receipt_file_sha256
+            receipt["priorDeliveryReceiptPath"] = prior_delivery_receipt_path
+        receipt["receiptSha256"] = hashlib.sha256(
+            json.dumps(
+                receipt, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+            ).encode("utf-8")
+        ).hexdigest()
+        state["deliveryReceipt"] = receipt
+        state["deliveryReceiptSha256"] = receipt["receiptSha256"]
+    return state
 
 
 # ---------------------------------------------------------------------------
@@ -226,6 +403,33 @@ def resolve_token(token_file: str) -> str | None:
 def build_payload(title: str, body: str, url: str) -> str:
     """SW の push ハンドラが解釈する JSON 文字列を作る。"""
     return json.dumps({"title": title, "body": body, "url": url}, ensure_ascii=False)
+
+
+def _audience_set_sha256(subscriptions: list[dict]) -> str:
+    canonical = json.dumps(
+        sorted(subscriptions, key=lambda item: str(item.get("endpoint") or "")),
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(canonical).hexdigest()
+
+
+def _load_prior_delivery_receipt(path: Path) -> tuple[dict, str] | None:
+    try:
+        raw = _safe_regular_bytes(path, max_bytes=65536)
+        value = json.loads(raw.decode("utf-8-sig"))
+        if not isinstance(value, dict):
+            return None
+        body = {key: item for key, item in value.items() if key != "receiptSha256"}
+        expected = hashlib.sha256(
+            json.dumps(body, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+        if value.get("receiptSha256") != expected:
+            return None
+        return value, hashlib.sha256(raw).hexdigest()
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return None
 
 
 def _today_jst_str() -> str:
@@ -332,6 +536,74 @@ def main() -> int:
 
     body = args.body if args.body is not None else default_body_for_today()
     payload = build_payload(args.title, body, args.url)
+    payload_sha256 = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    audience_set_sha256 = _audience_set_sha256(subs)
+
+    if args.record_state and subs and not args.dry_run:
+        delivery_path = Path(args.record_state).with_name(
+            f"{_today_jst_str()}.delivery.json"
+        )
+        try:
+            os.lstat(delivery_path)
+            delivery_ledger_present = True
+        except FileNotFoundError:
+            delivery_ledger_present = False
+        except OSError:
+            delivery_ledger_present = True
+        if delivery_ledger_present:
+            prior = _load_prior_delivery_receipt(delivery_path)
+            if prior is None:
+                _write_notification_state(
+                    args.record_state,
+                    _notification_state(
+                        status="delivery_ledger_invalid",
+                        ok=False,
+                        source=source,
+                        subscription_count=len(subs),
+                        sent_count=0,
+                        payload_sha256=payload_sha256,
+                        audience_set_sha256=audience_set_sha256,
+                    ),
+                )
+                return 1
+            prior_receipt, prior_file_sha = prior
+            if (
+                prior_receipt.get("date") == _today_jst_str()
+                and prior_receipt.get("source") == source
+                and prior_receipt.get("subscriptionCount") == len(subs)
+                and prior_receipt.get("sentCount") == len(subs)
+                and prior_receipt.get("payloadSha256") == payload_sha256
+                and prior_receipt.get("audienceSetSha256") == audience_set_sha256
+            ):
+                _write_notification_state(
+                    args.record_state,
+                    _notification_state(
+                        status="already_sent",
+                        ok=True,
+                        source=source,
+                        subscription_count=len(subs),
+                        sent_count=len(subs),
+                        payload_sha256=payload_sha256,
+                        audience_set_sha256=audience_set_sha256,
+                        prior_delivery_receipt_sha256=str(prior_receipt["receiptSha256"]),
+                        prior_delivery_receipt_file_sha256=prior_file_sha,
+                        prior_delivery_receipt_path=os.path.abspath(delivery_path),
+                    ),
+                )
+                return 0
+            _write_notification_state(
+                args.record_state,
+                _notification_state(
+                    status="delivery_ledger_conflict",
+                    ok=False,
+                    source=source,
+                    subscription_count=len(subs),
+                    sent_count=0,
+                    payload_sha256=payload_sha256,
+                    audience_set_sha256=audience_set_sha256,
+                ),
+            )
+            return 1
 
     print(f"取得元:   {source}" + (f" ({worker_url})" if source == "worker" else ""))
     print(f"購読者:   {len(subs)} 件")
@@ -347,6 +619,8 @@ def main() -> int:
                 source=source,
                 subscription_count=0,
                 sent_count=0,
+                payload_sha256=payload_sha256,
+                audience_set_sha256=audience_set_sha256,
             ),
         )
         return 0
@@ -419,11 +693,13 @@ def main() -> int:
     _write_notification_state(
         args.record_state,
         _notification_state(
-            status="sent" if ok else "send_failed",
-            ok=ok > 0,
+            status="sent" if ok == len(subs) else "partial_failure",
+            ok=ok == len(subs),
             source=source,
             subscription_count=len(subs),
             sent_count=ok,
+            payload_sha256=payload_sha256,
+            audience_set_sha256=audience_set_sha256,
         ),
     )
 
@@ -440,7 +716,7 @@ def main() -> int:
             )
         print(f"失効購読 {len(stale_endpoints)} 件を除去しました")
 
-    return 0
+    return 0 if ok == len(subs) else 1
 
 
 def _force_utf8_stdio() -> None:

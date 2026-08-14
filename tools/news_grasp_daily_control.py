@@ -7,6 +7,7 @@ import os
 import re
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
@@ -15,6 +16,42 @@ from tools import news_grasp_external_control as external_control
 from tools import news_grasp_convergence as convergence
 from tools import operational_recovery_registry
 from tools.news_grasp_operational_contract import evaluate_completion_v3, select_recovery_branch_from_truth
+from tools.news_grasp_owned_process import OwnedProcessError, run_owned_bounded
+
+
+OWNED_COMMAND_MAX_OUTPUT_BYTES = 4 * 1024 * 1024
+
+
+def _run_owned_command(
+    command: list[str], *, cwd: Path, timeout_seconds: int | float
+) -> int:
+    """既定の外部commandを生成時からJob Objectへ所属させて実行する。"""
+
+    if timeout_seconds <= 0:
+        return 78
+    try:
+        result = run_owned_bounded(
+            command,
+            cwd=cwd,
+            timeout=timeout_seconds,
+            max_output_bytes=OWNED_COMMAND_MAX_OUTPUT_BYTES,
+        )
+    except OwnedProcessError:
+        return 126
+    if result.timed_out:
+        return 124
+    if result.output_exceeded:
+        return 125
+    return int(result.returncode)
+
+
+def _recovery_remaining_seconds(issue_date: str) -> int:
+    """固定06:40 anchorのhard deadlineまでの残時間を返す。"""
+
+    from tools.news_grasp_recovery_transaction import audit_deadlines
+
+    hard_deadline = datetime.fromisoformat(audit_deadlines(issue_date)["hardDeadlineAt"])
+    return max(0, int((hard_deadline - datetime.now().astimezone()).total_seconds()))
 
 
 SCHEMA = "NEWS_GRASP_DAILY_RECOVERY_PLAN_V1"
@@ -400,6 +437,16 @@ def build_recovery_plan(
                 "reasonCode": "BOUNDED_RECOVERY_ATTEMPT_EXHAUSTED",
             }
         )
+    if branch == "major_incident_fail_closed":
+        return _sealed(
+            {
+                **common,
+                "action": "major_incident_continuation",
+                "terminal": "production_major_incident_open",
+                "reasonCode": "RECOVERY_CHECKPOINT_REQUIRED_FOR_ARTIFACT_DELTA",
+                "recoveryBranch": branch,
+            }
+        )
     if branch not in {"ScheduledRecoveryFull", "ResumeFromStage", "minimal_unblocker"}:
         raise ValueError("RECOVERY_BRANCH_INVALID")
     if branch == "ResumeFromStage" and (
@@ -412,13 +459,16 @@ def build_recovery_plan(
             r"[0-9a-f]{64}", broker_stage_decision_receipt_sha256
         )
     ):
-        branch = "ScheduledRecoveryFull"
-        resume_stage = ""
-        source_admission_path = ""
-        source_admission_sha256 = ""
-        broker_stage_decision_path = ""
-        broker_stage_decision_sha256 = ""
-        broker_stage_decision_receipt_sha256 = ""
+        return _sealed(
+            {
+                **common,
+                "action": "major_incident_continuation",
+                "terminal": "production_major_incident_open",
+                "reasonCode": "RECOVERY_RESUME_EVIDENCE_INVALID",
+                "recoveryBranch": "ResumeFromStage",
+                "resumeStage": resume_stage or None,
+            }
+        )
     action = "launch_minimal_unblocker" if branch == "minimal_unblocker" else "launch_recovery"
     return _sealed(
         {
@@ -1114,9 +1164,7 @@ def prepare_recovery(
         _atomic_json(truth_path, truth)
         source_path = Path(source_admission_path)
         if not source_path.is_file():
-            branch = "ScheduledRecoveryFull"
-            resume_stage = ""
-            source_admission_path = ""
+            branch = "major_incident_fail_closed"
         else:
             stage_decision, stage_decision_path = actual.issue_stage_decision(
                 issue_date=issue_date,
@@ -1151,6 +1199,13 @@ def prepare_recovery(
         minimal_public_proof_sha256=str(
             truth.get("minimalUnblockerPublicProofSha256") or ""
         ),
+    )
+    plan = _sealed(
+        {
+            **{key: value for key, value in plan.items() if key != "receiptSha256"},
+            "scheduledFailureReceiptPath": str(failure_path.resolve()),
+            "recoveryAuthorityPath": str(authority_path.resolve()),
+        }
     )
     output = actual.repo_root / "build" / "recovery" / "control" / f"{issue_date}-{trigger}.json"
     _atomic_json(output, plan)
@@ -1347,7 +1402,7 @@ def _audit_observation_terminal(
     )
 
 
-def execute_audit_0640(
+def _execute_audit_0640_owned(
     *,
     issue_date: str,
     backend: ProductionBackend | None = None,
@@ -1368,18 +1423,7 @@ def execute_audit_0640(
         )
     )
     execute_minimal = minimal_executor or execute_minimal_unblocker
-    run_command = command_runner or (
-        lambda command, **kwargs: subprocess.run(
-            command,
-            **kwargs,
-            capture_output=True,
-            check=False,
-            timeout=10800,
-            creationflags=(
-                getattr(subprocess, "CREATE_NO_WINDOW", 0) if os.name == "nt" else 0
-            ),
-        ).returncode
-    )
+    run_command = command_runner or _run_owned_command
     decision: dict[str, Any] | None = None
     try:
         decision = prepare_recovery(
@@ -1461,7 +1505,11 @@ def execute_audit_0640(
             def _execute_registered_reconcile(
                 context: Mapping[str, Any],
             ) -> Mapping[str, Any]:
-                return_code = int(run_command(command, cwd=actual.repo_root))
+                return_code = int(
+                    run_command(
+                        command, cwd=actual.repo_root, timeout_seconds=300
+                    )
+                )
                 return {
                     "status": "command_completed",
                     "returnCode": return_code,
@@ -1535,6 +1583,50 @@ def execute_audit_0640(
             execute_minimal(Path(str(decision["decisionPath"])))
         elif action == "launch_recovery":
             high_cost_binding = actual.resolve_high_cost_binding()
+            execution_receipt: Path | None = None
+            if isinstance(actual, ProductionBackend):
+                receipt_payload = {
+                    "issueDate": issue_date,
+                    "scheduledFailureReceiptPath": str(
+                        decision["scheduledFailureReceiptPath"]
+                    ),
+                    "recoveryAuthorityPath": str(decision["recoveryAuthorityPath"]),
+                }
+                receipt_authority_decision = (
+                    audit_recovery_control.decide_audit_recovery(receipt_payload)
+                )
+                execution_receipt = (
+                    audit_recovery_control._issue_recovery_execution_receipt(
+                        payload=receipt_payload,
+                        decision=receipt_authority_decision,
+                        issue_date=issue_date,
+                        audit_accepted_at=audit_recovery_control.datetime.now()
+                        .astimezone()
+                        .isoformat(),
+                        artifact_repo_root=actual.repo_root,
+                        production_runtime_root=(
+                            Path.home()
+                            / ".news-grasp-runtime"
+                            / "production-runtime"
+                        ),
+                        live_bin_root=actual.bin_dir,
+                        runner_path=actual.runner_path,
+                        recovery_branch=str(decision["recoveryBranch"]),
+                        resume_stage=(
+                            str(decision["resumeStage"])
+                            if decision.get("resumeStage")
+                            else None
+                        ),
+                        python_executable_path=Path(sys.executable),
+                        capability_reservation_path=Path(
+                            str(high_cost_binding["bindingPath"])
+                        ),
+                        capability_reservation_receipt_sha256=str(
+                            high_cost_binding["bindingReceiptSha256"]
+                        ),
+                        reserved_max_external_model_calls=9,
+                    )
+                )
             command = [
                 "powershell.exe",
                 "-NoProfile",
@@ -1558,6 +1650,10 @@ def execute_audit_0640(
                 "-RecoveryDecisionPath",
                 str(decision["decisionPath"]),
             ]
+            if execution_receipt is not None:
+                command.extend(
+                    ["-RecoveryExecutionReceiptPath", str(execution_receipt)]
+                )
             if decision.get("recoveryBranch") == "ResumeFromStage":
                 command.extend(
                     [
@@ -1567,7 +1663,13 @@ def execute_audit_0640(
                         str(decision["sourceAdmissionPath"]),
                     ]
                 )
-            return_code = int(run_command(command, cwd=actual.repo_root))
+            return_code = int(
+                run_command(
+                    command,
+                    cwd=actual.repo_root,
+                    timeout_seconds=_recovery_remaining_seconds(issue_date),
+                )
+            )
             if return_code != 0:
                 terminal = _audit_incident_terminal(
                     issue_date=issue_date,
@@ -1623,6 +1725,42 @@ def execute_audit_0640(
             )
         write_terminal(terminal)
         return terminal
+
+
+def execute_audit_0640(
+    *,
+    issue_date: str,
+    backend: ProductionBackend | None = None,
+    command_runner: Any | None = None,
+    minimal_executor: Any | None = None,
+    completion_verifier: Any | None = None,
+    terminal_writer: Any | None = None,
+) -> dict[str, Any]:
+    """互換adapter。production callerはcanonical transaction ownerへ接続する。"""
+
+    if any(
+        value is not None
+        for value in (
+            backend,
+            command_runner,
+            minimal_executor,
+            completion_verifier,
+            terminal_writer,
+        )
+    ):
+        # 明示的dependency injectionは外部副作用を持たないcontract test seam。
+        return _execute_audit_0640_owned(
+            issue_date=issue_date,
+            backend=backend,
+            command_runner=command_runner,
+            minimal_executor=minimal_executor,
+            completion_verifier=completion_verifier,
+            terminal_writer=terminal_writer,
+        )
+    return audit_recovery_control.ensure_audit_0640(
+        issue_date=issue_date,
+        trigger="daily_compatibility_adapter",
+    )
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -35,6 +35,10 @@ from tools import (
     news_grasp_recovery_receipts,
     news_grasp_high_cost_binding,
 )
+from tools.news_grasp_recovery_transaction import (
+    RecoveryTransactionStore,
+    TRANSACTION_SCHEMA,
+)
 
 
 AUDIT_TERMINALS = {
@@ -43,6 +47,8 @@ AUDIT_TERMINALS = {
     "audit_observation_unverified",
     "audit_major_incident_open",
 }
+AUDIT_DECISION_SCHEMA = "AUDIT_RECOVERY_DECISION_V2"
+LEGACY_AUDIT_DECISION_SCHEMA = "AUDIT_RECOVERY_DECISION_V1"
 SAME_DAY_PUBLIC_RECOVERY_PRIORITY = "same_day_public_recovery_first"
 PUBLIC_GREEN_FOLLOWUP_PRIORITY = "runner_finalization_only"
 PUBLIC_GREEN_ALLOWED_OPERATIONS = (
@@ -232,7 +238,10 @@ def _validate_sealed(value: object, *, schema_version: str, code: str) -> dict[s
 
 
 def seal_audit_decision(decision: object) -> dict[str, Any]:
-    if not isinstance(decision, dict) or decision.get("schemaVersion") != "AUDIT_RECOVERY_DECISION_V1":
+    if not isinstance(decision, dict) or decision.get("schemaVersion") not in {
+        LEGACY_AUDIT_DECISION_SCHEMA,
+        AUDIT_DECISION_SCHEMA,
+    }:
         raise ValueError("AUDIT_DECISION_RECEIPT_INVALID")
     terminal = decision.get("terminal")
     if terminal is not None and terminal not in AUDIT_TERMINALS:
@@ -1506,7 +1515,7 @@ def _incident(
     reason_code: str,
 ) -> dict[str, Any]:
     return seal_audit_decision({
-        "schemaVersion": "AUDIT_RECOVERY_DECISION_V1",
+        "schemaVersion": AUDIT_DECISION_SCHEMA,
         "issueDate": issue_date,
         "classification": "incident_required",
         "action": "escalate_major_incident",
@@ -1905,7 +1914,7 @@ def decide_audit_recovery(payload: object) -> dict[str, Any]:
             completion = None
         if same_date_completion_green(issue_date, completion):
             return finish(seal_audit_decision({
-                "schemaVersion": "AUDIT_RECOVERY_DECISION_V1",
+                "schemaVersion": AUDIT_DECISION_SCHEMA,
                 "issueDate": issue_date,
                 "classification": "normal",
                 "action": "none",
@@ -1966,7 +1975,7 @@ def decide_audit_recovery(payload: object) -> dict[str, Any]:
             completion = None
         if same_date_completion_green(issue_date, completion):
             return finish(seal_audit_decision({
-                "schemaVersion": "AUDIT_RECOVERY_DECISION_V1",
+                "schemaVersion": AUDIT_DECISION_SCHEMA,
                 "issueDate": issue_date,
                 "classification": "recoverable",
                 "action": "none",
@@ -1987,7 +1996,7 @@ def decide_audit_recovery(payload: object) -> dict[str, Any]:
             }))
         if classification == "recoverable" and authority and recovery_status == "not_started":
             return finish(seal_audit_decision({
-                "schemaVersion": "AUDIT_RECOVERY_DECISION_V1",
+                "schemaVersion": AUDIT_DECISION_SCHEMA,
                 "issueDate": issue_date,
                 "classification": "recoverable",
                 "action": "scheduled_recovery",
@@ -2239,6 +2248,12 @@ def _issue_recovery_execution_receipt(
     production_runtime_root: Path,
     live_bin_root: Path,
     runner_path: Path,
+    recovery_branch: str = "ScheduledRecoveryFull",
+    resume_stage: str | None = None,
+    python_executable_path: Path | None = None,
+    capability_reservation_path: Path | None = None,
+    capability_reservation_receipt_sha256: str | None = None,
+    reserved_max_external_model_calls: int = 0,
 ) -> Path:
     failure_path, failure, authority_path, authority, authority_witness = _load_recovery_evidence_for_receipt(
         payload=payload,
@@ -2254,7 +2269,7 @@ def _issue_recovery_execution_receipt(
     )
     if receipt_path.is_file() and not receipt_path.is_symlink():
         try:
-            news_grasp_recovery_receipts.validate_recovery_execution_receipt(
+            existing = news_grasp_recovery_receipts.validate_recovery_execution_receipt(
                 receipt_path=receipt_path,
                 issue_date=issue_date,
                 artifact_root=artifact_repo_root,
@@ -2264,7 +2279,13 @@ def _issue_recovery_execution_receipt(
                 runner_state_path=CANONICAL_RUNNER_STATE_PATH,
                 runner_script_path=runner_path,
             )
-            return receipt_path
+            if (
+                existing.get("schemaVersion")
+                == news_grasp_recovery_receipts.EXECUTION_SCHEMA
+                and existing.get("recoveryBranch") == recovery_branch
+                and (existing.get("resumeStage") or None) == (resume_stage or None)
+            ):
+                return receipt_path
         except (OSError, ValueError):
             pass
     receipt = news_grasp_recovery_receipts.create_recovery_execution_receipt(
@@ -2281,6 +2302,20 @@ def _issue_recovery_execution_receipt(
         scheduled_failure_receipt=failure,
         authority_ledger_witness=authority_witness,
         audit_accepted_at=audit_accepted_at,
+        recovery_branch=recovery_branch,
+        resume_stage=resume_stage,
+        python_executable_path=(
+            python_executable_path
+            or (CANONICAL_REPO_ROOT / ".venv" / "Scripts" / "python.exe")
+        ),
+        capability_reservation_path=(
+            capability_reservation_path or authority_path
+        ),
+        capability_reservation_receipt_sha256=(
+            capability_reservation_receipt_sha256
+            or str(authority.get("receiptSha256") or "")
+        ),
+        reserved_max_external_model_calls=reserved_max_external_model_calls,
     )
     news_grasp_recovery_receipts.write_atomic_json(
         receipt_path, receipt, root=artifact_repo_root
@@ -2596,6 +2631,17 @@ def execute_audit_recovery(payload: object) -> dict[str, Any]:
             production_runtime_root=production_runtime_root,
             live_bin_root=live_bin_root,
             runner_path=runner_path,
+            recovery_branch="ScheduledRecoveryFull",
+            python_executable_path=canonical_python,
+            capability_reservation_path=Path(str(high_cost_binding["bindingPath"])),
+            capability_reservation_receipt_sha256=str(
+                high_cost_binding["bindingReceiptSha256"]
+            ),
+            reserved_max_external_model_calls=int(
+                (payload.get("recoveryExecution") or {}).get(
+                    "maxExternalModelCalls", 0
+                )
+            ),
         )
     except (OSError, ValueError, RuntimeError) as error:
         incident = _incident(
@@ -2670,7 +2716,7 @@ def execute_audit_recovery(payload: object) -> dict[str, Any]:
                 str(finalization_receipt),
             ]
         )
-    return_code, _ = _run_bounded(command, cwd=artifact_repo_root, timeout=10800)
+    return_code, _ = _run_bounded(command, cwd=artifact_repo_root, timeout=5400)
     if return_code != 0:
         incident = _incident(
             issue_date=issue_date,
@@ -2870,7 +2916,7 @@ def _completion_authority_receipt(
         return None
     return _sealed(
         {
-            "schemaVersion": "COMPLETION_AUTHORITY_V1",
+            "schemaVersion": "COMPLETION_AUTHORITY_V2",
             "issuer": DECISION_ISSUER,
             "issueDate": decision.get("issueDate"),
             "completionAuthorityId": authority_id,
@@ -3154,9 +3200,14 @@ def _recover_audit_transaction(root: Path, issue_date: str) -> None:
 
 def write_audit_terminal(decision: object) -> dict[str, Any]:
     try:
+        if not isinstance(decision, dict) or decision.get("schemaVersion") not in {
+            LEGACY_AUDIT_DECISION_SCHEMA,
+            AUDIT_DECISION_SCHEMA,
+        }:
+            raise ValueError("AUDIT_DECISION_RECEIPT_INVALID")
         decision_value = _validate_sealed(
             decision,
-            schema_version="AUDIT_RECOVERY_DECISION_V1",
+            schema_version=str(decision["schemaVersion"]),
             code="AUDIT_DECISION_RECEIPT_INVALID",
         )
     except ValueError as error:
@@ -3348,6 +3399,157 @@ def _load(path: Path, *, expected_root: Path | None = None) -> dict[str, Any]:
     return value
 
 
+def _default_recovery_transaction_root() -> Path:
+    override = os.environ.get("NEWS_GRASP_RECOVERY_TRANSACTION_ROOT", "").strip()
+    if override:
+        return Path(override)
+    return Path.home() / ".news-grasp-runtime" / "audit-recovery" / "transactions"
+
+
+def ensure_audit_0640(
+    *,
+    issue_date: str,
+    trigger: str = "automation_0640",
+    transaction_root: Path | None = None,
+    executor: Any | None = None,
+    heartbeat_interval_seconds: float = 60,
+) -> dict[str, Any]:
+    """全triggerを一つのissue-date transactionへacquire-or-attachする。"""
+
+    if re.fullmatch(r"20\d{2}-\d{2}-\d{2}", issue_date) is None:
+        raise ValueError("ISSUE_DATE_INVALID")
+    if trigger not in {
+        "deadman_0640",
+        "automation_0640",
+        "watcher_failure",
+        "daily_compatibility_adapter",
+        "direct_cli",
+    }:
+        raise ValueError("AUDIT_RECOVERY_TRIGGER_INVALID")
+    store = RecoveryTransactionStore(
+        transaction_root or _default_recovery_transaction_root()
+    )
+    owner_id = f"{trigger}:{os.getpid()}:{threading.get_ident()}"
+    acquired = store.acquire(
+        issue_date=issue_date,
+        trigger=trigger,
+        owner_id=owner_id,
+        owner_pid=os.getpid(),
+    )
+    acquisition_status = str(acquired.get("status") or "")
+    if acquisition_status == "terminal_projection":
+        terminal = dict(acquired.get("terminal") or {})
+        terminal.update(
+            {
+                "transactionStatus": acquisition_status,
+                "transactionId": acquired.get("transactionId"),
+                "fencingToken": acquired.get("fencingToken"),
+                "processExitCode": acquired.get("processExitCode", 0),
+            }
+        )
+        return terminal
+    if acquisition_status in {"attached", "attached_pending", "attached_owner_alive"}:
+        return {
+            "schemaVersion": TRANSACTION_SCHEMA,
+            "issueDate": issue_date,
+            "transactionStatus": acquisition_status,
+            "transactionId": acquired.get("transactionId"),
+            "fencingToken": acquired.get("fencingToken"),
+            "terminal": "audit_observation_unverified",
+            "reasonCode": "AUDIT_RECOVERY_TRANSACTION_ATTACHED",
+            "processExitCode": 3,
+        }
+    if acquisition_status not in {"acquired", "recovered_stale_owner"}:
+        raise ValueError("AUDIT_RECOVERY_TRANSACTION_ACQUIRE_INVALID")
+
+    fencing_token = int(acquired["fencingToken"])
+    stop_heartbeat = threading.Event()
+    heartbeat_lost = threading.Event()
+
+    def _heartbeat() -> None:
+        interval = max(0.01, float(heartbeat_interval_seconds))
+        while not stop_heartbeat.wait(interval):
+            try:
+                store.renew(
+                    issue_date=issue_date,
+                    owner_id=owner_id,
+                    fencing_token=fencing_token,
+                )
+            except ValueError as error:
+                if str(error) == "AUDIT_RECOVERY_TRANSACTION_BUSY":
+                    continue
+                heartbeat_lost.set()
+                return
+
+    heartbeat = threading.Thread(
+        target=_heartbeat,
+        name=f"news-grasp-recovery-heartbeat-{issue_date}",
+        daemon=True,
+    )
+    heartbeat.start()
+    try:
+        if executor is None:
+            from tools import news_grasp_daily_control
+
+            execute = news_grasp_daily_control._execute_audit_0640_owned
+        else:
+            execute = executor
+        result = dict(execute(issue_date=issue_date))
+    except (OSError, ValueError, subprocess.SubprocessError) as error:
+        result = {
+            "terminal": "audit_major_incident_open",
+            "reasonCode": "AUDIT_RECOVERY_OWNER_FAILED_" + type(error).__name__.upper(),
+            "issueDate": issue_date,
+            "exitCode": 2,
+        }
+    finally:
+        stop_heartbeat.set()
+        heartbeat.join(timeout=2)
+
+    terminal_name = str(result.get("terminal") or "")
+    if heartbeat_lost.is_set():
+        result = {
+            "terminal": "audit_major_incident_open",
+            "reasonCode": "AUDIT_RECOVERY_OWNER_LEASE_LOST",
+            "issueDate": issue_date,
+            "exitCode": 2,
+        }
+        terminal_name = result["terminal"]
+    if terminal_name not in AUDIT_TERMINALS:
+        result = {
+            "terminal": "audit_major_incident_open",
+            "reasonCode": "AUDIT_RECOVERY_OWNER_TERMINAL_INVALID",
+            "issueDate": issue_date,
+            "exitCode": 2,
+        }
+    exit_code = int(
+        result.get("exitCode")
+        if result.get("exitCode") is not None
+        else 2
+        if result["terminal"]
+        in {"audit_major_incident_open", "audit_observation_unverified"}
+        else 0
+    )
+    result["exitCode"] = exit_code
+    completed = store.complete(
+        issue_date=issue_date,
+        owner_id=owner_id,
+        fencing_token=fencing_token,
+        terminal=result,
+    )
+    result.update(
+        {
+            "transactionSchemaVersion": TRANSACTION_SCHEMA,
+            "transactionStatus": "terminal",
+            "transactionId": completed.get("transactionId"),
+            "fencingToken": fencing_token,
+            "transactionReceiptSha256": completed.get("receiptSha256"),
+            "processExitCode": exit_code,
+        }
+    )
+    return result
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="command", required=True)
@@ -3359,13 +3561,34 @@ def main() -> int:
     classify.add_argument("--input", type=Path, required=True)
     verify_tree = sub.add_parser("verify-artifact-tree")
     verify_tree.add_argument("--artifact-root", type=Path, required=True)
+    ensure = sub.add_parser("ensure-0640")
+    ensure.add_argument("--issue-date", required=True)
+    ensure.add_argument(
+        "--trigger",
+        choices=(
+            "deadman_0640",
+            "automation_0640",
+            "watcher_failure",
+            "daily_compatibility_adapter",
+            "direct_cli",
+        ),
+        default="automation_0640",
+    )
     args = parser.parse_args()
     if args.command == "decide":
         result = decide_audit_recovery(_load(args.input))
         if result.get("terminal"):
             write_audit_terminal(result)
     elif args.command == "execute":
-        result = execute_audit_recovery(_load(args.input))
+        untrusted = _load(args.input)
+        result = {
+            "schemaVersion": TRANSACTION_SCHEMA,
+            "issueDate": str(untrusted.get("issueDate") or ""),
+            "terminal": "audit_major_incident_open",
+            "reasonCode": "AUDIT_RECOVERY_DIRECT_EXECUTE_REQUIRES_CANONICAL_ENSURE",
+            "nextAction": "invoke_ensure_0640",
+            "processExitCode": 2,
+        }
     elif args.command == "classify-repair":
         result = {"classification": classify_repair_payload(_load(args.input))}
     elif args.command == "verify-artifact-tree":
@@ -3377,6 +3600,8 @@ def main() -> int:
             "artifactRepoHead": _validate_artifact_executable_tree(artifact_root),
             "status": "trusted_tree_bytes_match",
         }
+    elif args.command == "ensure-0640":
+        result = ensure_audit_0640(issue_date=args.issue_date, trigger=args.trigger)
     else:
         raise ValueError("AUDIT_RECOVERY_COMMAND_INVALID")
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))
