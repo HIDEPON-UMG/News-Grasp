@@ -49,6 +49,35 @@ def _parse_clock(value: str | None) -> datetime | None:
     return parsed if parsed.tzinfo is not None else None
 
 
+def _historical_scheduled_failure_is_recovered(
+    readiness: object,
+    *,
+    scheduled_status: str,
+    recovery_status: str,
+) -> bool:
+    """過去のScheduled失敗を、同日公開の現行readiness失敗と混同しない。
+
+    Scheduled TaskのLastTaskResult/ missed-runs は不変の履歴であり、復旧成功後に
+    `succeeded` へ書き換えてはならない。一方、同日公開・runner finalization の
+    完了判定はこの履歴を理由に再度ブロックしない。ここでは監査された failure
+    shape (`scheduled_task_missed_runs`) に限定して例外化し、未知のreadiness理由は
+    従来どおりfail-closedにする。
+    """
+    if scheduled_status != "failed_then_recovered" or recovery_status != "succeeded":
+        return False
+    if not isinstance(readiness, dict):
+        return False
+    if str(readiness.get("reason") or "") != "scheduled_task_missed_runs":
+        return False
+    last_attempt = readiness.get("last_scheduled_attempt")
+    next_run = readiness.get("next_run_readiness")
+    if not isinstance(last_attempt, dict) or last_attempt.get("status") != "failed":
+        return False
+    if last_attempt.get("last_task_result") != 1:
+        return False
+    return isinstance(next_run, dict) and str(next_run.get("reasonCode") or "") == "scheduled_task_missed_runs"
+
+
 def evaluate(
     manifest: dict[str, Any],
     runner_state: dict[str, Any],
@@ -107,9 +136,20 @@ def evaluate(
                 failures.append(f"{kind}_podcast_not_ok")
     readiness = manifest.get("live_runner_readiness")
     next_run = readiness.get("next_run_readiness") if isinstance(readiness, dict) else {}
-    if not isinstance(readiness, dict) or readiness.get("ok") is not True:
+    historical_failure_recovered = _historical_scheduled_failure_is_recovered(
+        readiness,
+        scheduled_status=scheduled_status,
+        recovery_status=recovery_status,
+    )
+    if (
+        (not isinstance(readiness, dict) or readiness.get("ok") is not True)
+        and not historical_failure_recovered
+    ):
         failures.append("live_runner_readiness_not_ok")
-    if not isinstance(next_run, dict) or next_run.get("ok") is not True:
+    if (
+        (not isinstance(next_run, dict) or next_run.get("ok") is not True)
+        and not historical_failure_recovered
+    ):
         failures.append("next_run_readiness_not_ok")
 
     source_commit = str(manifest.get("source_commit") or "")
