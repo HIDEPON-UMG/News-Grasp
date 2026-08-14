@@ -50,7 +50,7 @@ param(
     [switch] $Stage2EditorSmokeOnly,
     [switch] $StopAfterEditorStart,
     [switch] $StopBeforeDeepDive,
-    [ValidateSet('', 'post-reporter', 'editor', 'deepdive', 'post-daily-quality', 'post-deepdive', 'generation-quality-repair')]
+    [ValidateSet('', 'post-reporter', 'post-daily-quality', 'post-deepdive', 'generation-quality-repair')]
     [string] $ResumeFromStage = '',
     [string] $RepoDirOverride = '',
     [string] $OpsRepoRootOverride = '',
@@ -84,7 +84,6 @@ param(
     [string] $FinalizeVerifiedPublishManifest = '',
     [string] $RecoveryExecutionReceiptPath = '',
     [string] $RecoveryFinalizationReceiptPath = '',
-    [string] $RecoveryDecisionPath = '',
     [int] $PublishVerifyWaitSec = 600,
     [int] $PublishVerifyPollSec = 30,
     [switch] $ForceFullRerun
@@ -180,10 +179,10 @@ if ($NoPublish) { $NoPush = $true }
 if ($NoPublish -and (-not $E2EAttemptPolicyPath -or $E2ELogicalAttempt -notin @(1,2))) {
     throw 'NEWS_GRASP_E2E_ATTEMPT_POLICY_REQUIRED'
 }
-$ResumeFromPostDailyQuality = $ResumeFromStage -in @('deepdive', 'post-daily-quality')
+$ResumeFromPostDailyQuality = $ResumeFromStage -eq 'post-daily-quality'
 $ResumeAfterDeepDive = $ResumeFromStage -in @('post-deepdive')
 $ResumeGenerationQualityRepair = $ResumeFromStage -eq 'generation-quality-repair'
-$ResumeAfterReporter = $ResumeFromStage -in @('post-reporter', 'editor')
+$ResumeAfterReporter = $ResumeFromStage -eq 'post-reporter'
 # 子 Python の stdin/stdout/stderr を UTF-8 に固定 (境界 1 箇所集約)。日本語版 Windows
 # では子 Python の stderr が pipe 出力時 locale (CP932) になり、[Console]::OutputEncoding
 # = UTF8 の reader が誤デコード → repair プロンプトへ渡る gate stderr が文字化けしていた
@@ -300,7 +299,11 @@ function Get-NewsGraspRecoveryRuntimeBinding {
             @('dailySelfHealPath', 'dailySelfHealSha256')
         )) {
             $toolPath = (Resolve-Path -LiteralPath ([string]$binding.($tool[0])) -ErrorAction Stop).Path
-            $expectedToolPath = (Resolve-Path -LiteralPath (Join-Path $ops ('tools\' + [IO.Path]::GetFileName($toolPath))) -ErrorAction Stop).Path
+            $expectedToolPath = if ([string]$tool[0] -eq 'completionGuardToolPath') {
+                (Resolve-Path -LiteralPath (Join-Path $canonicalBin 'news-grasp-assets\guards\news-grasp-finalization-guard-v2.py') -ErrorAction Stop).Path
+            } else {
+                (Resolve-Path -LiteralPath (Join-Path $ops ('tools\' + [IO.Path]::GetFileName($toolPath))) -ErrorAction Stop).Path
+            }
             if (
                 -not [string]::Equals($toolPath, $expectedToolPath, [StringComparison]::OrdinalIgnoreCase) -or
                 -not [string]::Equals((Get-NewsGraspFileSha256Hex -Path $toolPath), [string]$binding.($tool[1]), [StringComparison]::Ordinal)
@@ -349,7 +352,7 @@ $env:GIT_ATTR_NOSYSTEM = '1'
 $CodexExe  = Resolve-CodexCliExe -Override $CodexExeOverride
 $PyExe     = Join-Path $OpsRepoRoot '.venv\Scripts\python.exe'
 $CodexWrapper = Join-Path $env:USERPROFILE 'bin\run_codex_with_timeout.ps1'
-$TimeoutSec = 4800  # 2026-06-12: 3600→4800。日次 digest の wall-clock timeout を 80 分へ延長。真の暴走は IdleTimeoutSec 900 が先に検知する
+$TimeoutSec = 2700  # 2026-08-14: 45分で生成処理を閉じ、60分targetの残り15分を共通finalizerへ予約する
 $PromptFile = Join-Path $RepoDir 'prompts\runner-prompt.md'
 $CodexOutputSchema = Join-Path $RepoDir 'schemas\model_eval_output.schema.json'
 $CodexLastMessage = Join-Path $RepoDir 'build\codex-last-message.txt'
@@ -357,6 +360,8 @@ $RepoManagedRunner = Join-Path $RepoDir 'scripts\ops\news-grasp-runner.ps1'
 $RepoManagedWatcher = Join-Path $RepoDir 'scripts\ops\watch-news-grasp-runner.ps1'
 $E2EFinalAdmissionBridge = Join-Path $RepoDir 'tools\e2e_final_admission_bridge.py'
 $canonicalMaterializer = Join-Path $OpsRepoRoot 'tools\materialize_editor_output.py'
+$DeterministicBuilderTool = Join-Path $OpsRepoRoot 'tools\news_grasp_deterministic_builders.py'
+$FinalizationCoordinatorTool = Join-Path $OpsRepoRoot 'tools\news_grasp_finalization.py'
 $PublicBaseUrl = 'https://hidepon-umg.github.io/News-Grasp/'
 $InvokedLog = Join-Path $env:USERPROFILE 'bin\news-grasp-invoked.log'
 $StateFile  = Join-Path $env:USERPROFILE 'bin\news-grasp-runner-state.json'
@@ -478,6 +483,8 @@ $script:RunnerCommandLineFingerprint = ''
 $script:RunnerProcessCreationTime = ''
 $script:PublishCompleteManifestPath = ''
 $script:PublishCompleteCommit = ''
+$script:ActualLaunchIdentityReceiptPath = ''
+$script:ActualLaunchIdentityReceiptSha256 = ''
 $script:ScheduledFailureTerminalized = $false
 $script:ScheduledFailureTerminalInputPath = ''
 $script:ExternalHealthAuthorityPath = Join-Path $env:USERPROFILE '.codex\state\high-cost-operation\external-health-authority-v1.json'
@@ -640,6 +647,10 @@ Initialize-RunnerIdentity
 $NormalPublishVerified = $false
 $NotificationStatePath = ''
 $script:RunnerStartedAt = Get-Date
+$script:CommonFinalizationResult = $null
+$script:CommonFinalizationResultPath = ''
+$script:CommonFinalizationExitCode = 0
+$script:CommonFinalizationGenerationId = ''
 
 function Convert-PublishInventoryJson {
     param([string[]] $Json)
@@ -947,7 +958,7 @@ function Set-RunnerState {
         [string] $ExternalStatus = '',
         [string] $ExternalStderr = '',
         [string] $ExternalDetail = '',
-        [ValidateSet('', 'post-reporter', 'editor', 'deepdive', 'post-daily-quality', 'post-deepdive', 'generation-quality-repair')]
+        [ValidateSet('', 'post-reporter', 'post-daily-quality', 'post-deepdive', 'generation-quality-repair')]
         [string] $ResumeStageCheckpoint = ''
     )
     $now = Get-Date -Format 'yyyy-MM-ddTHH:mm:ss.fffK'
@@ -1058,6 +1069,8 @@ function Set-RunnerState {
             $state.highCostAttemptId = [string]$script:HighCostAttemptId
             $state.highCostBindingPath = [string]$env:NEWS_GRASP_HIGH_COST_BINDING_PATH
             $state.highCostBindingReceiptSha256 = [string]$env:NEWS_GRASP_HIGH_COST_BINDING_RECEIPT_SHA256
+            $state.actualLaunchIdentityReceiptPath = [string]$script:ActualLaunchIdentityReceiptPath
+            $state.actualLaunchIdentityReceiptSha256 = [string]$script:ActualLaunchIdentityReceiptSha256
             $state.highCostParentAuthorityPath = [string]$script:HighCostParentAuthorityPath
             if ($script:HighCostParentAuthorityPath -and (Test-Path -LiteralPath $script:HighCostParentAuthorityPath -PathType Leaf)) {
                 $state.highCostParentAuthoritySha256 = Get-FileSha256Hex -Path $script:HighCostParentAuthorityPath
@@ -1195,7 +1208,7 @@ function Update-RunnerProgress {
         [string] $DeadlineAt = '',
         [string] $RepairSignature = '',
         [bool] $ArtifactProgress = $false,
-        [ValidateSet('', 'post-reporter', 'editor', 'deepdive', 'post-daily-quality', 'post-deepdive', 'generation-quality-repair')]
+        [ValidateSet('', 'post-reporter', 'post-daily-quality', 'post-deepdive', 'generation-quality-repair')]
         [string] $ResumeStageCheckpoint = ''
     )
     Set-RunnerState -Status 'running' -Message $Step -ExitCode -1 -Phase $Phase -Step $Step -GateId $GateId -Category $Category -Attempt $Attempt -ActiveJobs $ActiveJobs -DeadlineAt $DeadlineAt -ResumeStageCheckpoint $ResumeStageCheckpoint
@@ -1330,7 +1343,7 @@ function Write-Log {
             Write-CodexUsageWindowSnapshot -Phase 'error'
         }
         Set-RunnerState -Status 'error' -Message $Text -ExitCode 1
-    } elseif ($Text -eq 'news-grasp-runner.ps1 OK') {
+    } elseif ($Text -in @('news-grasp-runner.ps1 PUBLIC GREEN', 'news-grasp-runner.ps1 OK')) {
         if ($RunIntent -eq 'ScheduledRecoveryFull') {
             Set-RunnerState -Status 'publish_complete' -Message $Text -ExitCode 0 `
                 -PublishManifestPath $script:PublishCompleteManifestPath `
@@ -1356,31 +1369,47 @@ function Write-Log {
 function Invoke-NewsGraspCompletionGuard {
     param([Parameter(Mandatory = $true)][string] $FinalizationReceiptPath)
     if ($RunIntent -ne 'ScheduledRecoveryFull') { return $true }
-    $guardOutput = Join-Path $RepoDir "build\publish-complete\$DateStamp.automation-guard.json"
-    $completionGuardTool = [string]$RecoveryRuntimeBinding.CompletionGuardToolPath
-    & $PyExe '-I' '-S' '-B' $completionGuardTool `
-        '--finalization-receipt' $FinalizationReceiptPath `
+    if (-not $script:CommonFinalizationGenerationId -or -not $script:PublishCompleteCommit) {
+        Add-RunnerLogLine -Text 'ERROR: COMMON_FINALIZATION_IDENTITY_MISSING'
+        return $false
+    }
+    if (
+        -not $script:ExpectedFinalizationReceiptSha256 -or
+        -not $script:ExpectedFinalizationReceiptFileSha256 -or
+        -not $script:ExpectedCommonFinalizationResultReceiptSha256
+    ) {
+        Add-RunnerLogLine -Text 'ERROR: FINALIZATION_RECEIPT_CONSUMPTION_BINDING_MISSING'
+        return $false
+    }
+    $guardTool = [string]$RecoveryRuntimeBinding.CompletionGuardToolPath
+    $guardJson = (& $PyExe '-I' '-S' '-B' $guardTool `
+        '--result' $script:CommonFinalizationResultPath `
+        '--receipt' $FinalizationReceiptPath `
         '--artifact-root' $RepoDir `
-        '--ops-root' $OpsRepoRoot `
-        '--production-runtime-root' $TrustedProductionRuntimeRoot `
-        '--live-bin-root' $TrustedRecoveryLiveBinRoot `
-        '--runner-state' $StateFile `
-        '--runner-script' $PSCommandPath | ForEach-Object { Add-RunnerLogLine -Text ([string]$_) }
+        '--expected-issue-date' $DateStamp `
+        '--expected-generation-id' $script:CommonFinalizationGenerationId `
+        '--expected-publish-commit' $script:PublishCompleteCommit `
+        '--expected-finalization-receipt-sha256' $script:ExpectedFinalizationReceiptSha256 `
+        '--expected-finalization-receipt-file-sha256' $script:ExpectedFinalizationReceiptFileSha256 `
+        '--expected-result-sha256' $script:ExpectedCommonFinalizationResultReceiptSha256 2>&1 | Out-String).Trim()
     $guardRc = $LASTEXITCODE
-    if ($guardRc -ne 0 -or (-not (Test-Path -LiteralPath $guardOutput -PathType Leaf))) {
-        Add-RunnerLogLine -Text "ERROR: NEWS_GRASP_640_COMPLETION_GUARD_FAILED rc=$guardRc output=$guardOutput"
+    if ($guardRc -notin @(0, 2)) {
+        Add-RunnerLogLine -Text "ERROR: NEWS_GRASP_COMMON_FINALIZATION_LOAD_FAILED rc=$guardRc"
         return $false
     }
     try {
-        $guard = Get-Content -LiteralPath $guardOutput -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
-        if ($guard.schemaVersion -ne 'NEWS_GRASP_640_COMPLETION_GUARD_V1' -or $guard.ok -ne $true) {
-            throw 'completion guard is not Green'
+        $guard = $guardJson | ConvertFrom-Json -ErrorAction Stop
+        if ($guard.schemaVersion -ne 'NEWS_GRASP_INSTALLED_FINALIZATION_GUARD_V2' -or $guard.publicStatus -ne 'green') {
+            throw 'common finalization result is invalid'
         }
+        $script:CommonFinalizationResult = $guard
+        $script:CommonFinalizationExitCode = [int]$guard.automationExitCode
+        if ($guard.ok -ne $true) { return $false }
     } catch {
-        Add-RunnerLogLine -Text "ERROR: NEWS_GRASP_640_COMPLETION_GUARD_INVALID reason=$($_.Exception.Message)"
+        Add-RunnerLogLine -Text "ERROR: NEWS_GRASP_COMMON_FINALIZATION_INVALID reason=$($_.Exception.Message)"
         return $false
     }
-    Add-RunnerLogLine -Text "NEWS_GRASP_640_COMPLETION_GUARD_OK output=$guardOutput"
+    Add-RunnerLogLine -Text "NEWS_GRASP_COMMON_FINALIZATION_GUARD_OK result=$script:CommonFinalizationResultPath"
     return $true
 }
 
@@ -2112,6 +2141,68 @@ function Test-ArtifactExecutableTreeIntegrity {
     return $true
 }
 
+$script:RecoveryHardDeadlineAt = $null
+$script:RecoveryHighCostCutoffAt = $null
+$script:RecoveryTargetCloseoutAt = $null
+$script:ScheduledProductionHighCostDeadlineAt = [DateTimeOffset]::UtcNow.AddSeconds($TimeoutSec)
+
+function Get-NewsGraspRecoveryBoundedTimeoutSec {
+    param(
+        [Parameter(Mandatory = $true)][int] $RequestedSec,
+        [ValidateSet('ControllerBudget', 'NewHighCost', 'SealedHighCostContinuation', 'Closeout')]
+        [string] $OperationClass = 'ControllerBudget'
+    )
+    if ($RequestedSec -lt 1) { throw 'RECOVERY_TIMEOUT_REQUEST_INVALID' }
+    $now = [DateTimeOffset]::UtcNow
+    if ($RunIntent -ne 'ScheduledRecoveryFull' -or $null -eq $script:RecoveryHardDeadlineAt) {
+        if (
+            $OperationClass -eq 'NewHighCost' -and
+            $RunIntent -eq 'ScheduledProduction' -and
+            $null -ne $script:ScheduledProductionHighCostDeadlineAt
+        ) {
+            if ($now -ge $script:ScheduledProductionHighCostDeadlineAt) {
+                throw 'SCHEDULED_PRODUCTION_TARGET_CLOSEOUT_RESERVE_ACTIVE'
+            }
+            $productionRemaining = [Math]::Max(
+                1,
+                [int][Math]::Floor(($script:ScheduledProductionHighCostDeadlineAt - $now).TotalSeconds)
+            )
+            return [Math]::Min($RequestedSec, $productionRemaining)
+        }
+        return $RequestedSec
+    }
+    if ($now -ge $script:RecoveryHardDeadlineAt) {
+        throw 'RECOVERY_HARD_DEADLINE_EXCEEDED'
+    }
+    if (
+        $OperationClass -eq 'SealedHighCostContinuation' -and
+        $null -ne $script:RecoveryHighCostCutoffAt -and
+        $now -ge $script:RecoveryHighCostCutoffAt
+    ) {
+        throw 'RECOVERY_HIGH_COST_CUTOFF_EXCEEDED'
+    }
+    if (
+        $OperationClass -eq 'NewHighCost' -and
+        $null -ne $script:RecoveryTargetCloseoutAt -and
+        $now -ge $script:RecoveryTargetCloseoutAt
+    ) {
+        throw 'RECOVERY_TARGET_CLOSEOUT_RESERVE_ACTIVE'
+    }
+    $effectiveDeadline = $script:RecoveryHardDeadlineAt
+    if (
+        $OperationClass -in @('NewHighCost', 'SealedHighCostContinuation') -and
+        $null -ne $script:RecoveryHighCostCutoffAt -and
+        $script:RecoveryHighCostCutoffAt -lt $effectiveDeadline
+    ) {
+        $effectiveDeadline = $script:RecoveryHighCostCutoffAt
+    }
+    $remaining = [Math]::Max(
+        1,
+        [int][Math]::Floor(($effectiveDeadline - $now).TotalSeconds)
+    )
+    return [Math]::Min($RequestedSec, $remaining)
+}
+
 function Invoke-CodexWrapper {
     param(
         [string] $PromptFile,
@@ -2126,6 +2217,13 @@ function Invoke-CodexWrapper {
         [int] $SuccessProbeIntervalSec = 30,
         [int] $SuccessProbeMinElapsedSec = 0
     )
+    try {
+        $TimeoutSec = Get-NewsGraspRecoveryBoundedTimeoutSec -RequestedSec $TimeoutSec -OperationClass 'NewHighCost'
+        $IdleTimeoutSec = [Math]::Min($IdleTimeoutSec, $TimeoutSec)
+    } catch {
+        Write-Log "ERROR: $($_.Exception.Message) flow=$FlowName"
+        return 76
+    }
     $script:HighCostCallSequence += 1
     $safeFlowName = $FlowName -replace '[^A-Za-z0-9._-]', '_'
     $highCostCallId = "$RunId`:$FlowName`:$($script:HighCostCallSequence)"
@@ -3219,23 +3317,17 @@ function Write-DistributionManifest {
         Invoke-AutonomousCompletionPolicy -FailureKind 'distribution' -GateId 'distribution-manifest' -Reason 'distribution manifest pre_publish_commit unavailable' -ExitCode 1
     }
 
-    $distributionDir = Join-Path $RepoDir 'data\distribution'
-    New-Item -ItemType Directory -Path $distributionDir -Force | Out-Null
-    $distributionSummary = Join-Path $distributionDir "$DateStamp.json"
-    $distributionJson = [ordered]@{
-        date = $DateStamp
-        pre_publish_commit = $prePublishCommit
-        publish_commit = ''
-        publish_commit_resolution = 'post_push_verify'
-        same_publish_contract = 'pre_publish_commit_must_equal_verified_publish_commit'
-        primary_podcast_state = 'build/youtube-podcast/uploads.json'
-        deepdive_podcast_state = 'build/youtube-podcast-deepdive/uploads.json'
-        latest_audio_state = 'build/tts/latest_audio.json'
-        deepdive_audio_state = 'build/tts/deepdive/latest_audio.json'
-        generated_at = (Get-Date -Format 'yyyy-MM-ddTHH:mm:ss.fffK')
-    } | ConvertTo-Json -Depth 4
-    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-    [System.IO.File]::WriteAllText($distributionSummary, ($distributionJson + [Environment]::NewLine), $utf8NoBom)
+    $generationId = if ($RunId) { [string]$RunId } else { "generation-$DateStamp" }
+    $builderOutput = & $PyExe '-I' '-S' '-B' $DeterministicBuilderTool `
+        'materialize-distribution' '--repo-root' $RepoDir '--date' $DateStamp `
+        '--generation-id' $generationId '--pre-publish-commit' $prePublishCommit
+    if ($LASTEXITCODE -ne 0) {
+        Invoke-AutonomousCompletionPolicy -FailureKind 'distribution' -GateId 'distribution-manifest' -Reason 'deterministic distribution materialization failed' -ExitCode $LASTEXITCODE
+    }
+    $distributionSummary = Join-Path $RepoDir "data\distribution\$DateStamp.json"
+    if (-not (Test-Path -LiteralPath $distributionSummary -PathType Leaf)) {
+        Invoke-AutonomousCompletionPolicy -FailureKind 'distribution' -GateId 'distribution-manifest' -Reason 'deterministic distribution manifest missing' -ExitCode 1
+    }
     return $distributionSummary
 }
 
@@ -3325,6 +3417,41 @@ function Set-ScheduledHighCostAuthorityEnvironment {
     $env:AIHARNESS_SCHEDULED_ACTUAL_EVENT_HASH = $actualEventHash
     $env:AIHARNESS_SCHEDULED_ISSUE_DATE = $admissionIssueDate
     $env:AIHARNESS_SCHEDULED_OPERATION_KIND = $admissionOperationKind
+}
+
+function Write-ActualScheduledLaunchIdentityReceipt {
+    param([Parameter(Mandatory=$true)][string] $LaunchAuthorityPath)
+    if (
+        $RunIntent -ne 'ScheduledProduction' -or $SmokeTest -or $PreflightOnly -or
+        $RecoverOnly -or $NoPublish -or $NoPush -or $FinalizeVerifiedPublishManifest
+    ) { return }
+    $transactionTool = Join-Path $OpsRepoRoot 'tools\news_grasp_recovery_transaction.py'
+    $identityPath = Join-Path $RepoDir "build\recovery\launch-identities\$DateStamp\$RunId.json"
+    $identityJson = (& $PyExe '-I' '-S' '-B' $transactionTool 'issue-launch-identity' `
+        '--output' $identityPath '--issue-date' $DateStamp '--run-id' $RunId `
+        '--run-intent' $RunIntent '--process-id' ([string]$PID) '--runner' $PSCommandPath `
+        '--artifact-root' $RepoDir '--ops-root' $OpsRepoRoot '--python' $PyExe `
+        '--high-cost-binding-receipt' $HighCostBindingPath `
+        '--expected-high-cost-binding-receipt-sha256' $HighCostBindingReceiptSha256 `
+        '--launch-authority' $LaunchAuthorityPath 2>&1 | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) {
+        throw "NEWS_GRASP_ACTUAL_LAUNCH_IDENTITY_INVALID detail=$identityJson"
+    }
+    try {
+        $identity = $identityJson | ConvertFrom-Json -ErrorAction Stop
+        if (
+            [string]$identity.schemaVersion -cne 'NEWS_GRASP_ACTUAL_LAUNCH_IDENTITY_V1' -or
+            [string]$identity.issueDate -cne $DateStamp -or
+            [string]$identity.runId -cne $RunId -or
+            [int]$identity.process.processId -ne $PID -or
+            [string]$identity.receiptPath -cne [System.IO.Path]::GetFullPath($identityPath) -or
+            [string]$identity.receiptSha256 -notmatch '^[0-9a-f]{64}$'
+        ) { throw 'identity output mismatch' }
+        $script:ActualLaunchIdentityReceiptPath = [string]$identity.receiptPath
+        $script:ActualLaunchIdentityReceiptSha256 = [string]$identity.receiptSha256
+    } catch {
+        throw "NEWS_GRASP_ACTUAL_LAUNCH_IDENTITY_INVALID detail=$($_.Exception.Message)"
+    }
 }
 
 function Assert-HighCostOperationAdmission {
@@ -3559,7 +3686,6 @@ function Assert-HighCostOperationAdmission {
         $script:HighCostAdmissionPath = $HighCostAdmissionPath
     }
 
-    $stageDecisionReceipt = ''
     $script:UsesHighCostContinuationAdmission = $false
     if ($ResumeFromStage) {
         if ($HighCostAdmissionPath) {
@@ -3586,37 +3712,9 @@ function Assert-HighCostOperationAdmission {
             $script:HighCostExpectedIssueDate = $DateStamp
             return
         }
-        if ($RunIntent -ne 'ScheduledRecoveryFull' -or (-not $RecoveryDecisionPath) -or (-not $ScheduledAuthorityEvidencePath)) {
-            Add-RunnerLogLine -Text 'ERROR: SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_REQUIRED'
-            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_REQUIRED' -ExitCode 76
-            exit 76
-        }
-        $decisionJson = (& $PyExe '-m' 'tools.news_grasp_daily_control' 'validate-decision' '--path' $RecoveryDecisionPath 2>&1 | Out-String).Trim()
-        if ($LASTEXITCODE -ne 0) {
-            Add-RunnerLogLine -Text "ERROR: RECOVERY_DECISION_INVALID exit=$LASTEXITCODE"
-            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'RECOVERY_DECISION_INVALID' -ExitCode 76
-            exit 76
-        }
-        try {
-            $decision = $decisionJson | ConvertFrom-Json -ErrorAction Stop
-            $stageDecisionReceipt = [System.IO.Path]::GetFullPath([string]$decision.brokerStageDecisionPath)
-            if (
-                [string]$decision.issueDate -ne $DateStamp -or
-                [string]$decision.runIntent -ne 'ScheduledRecoveryFull' -or
-                [string]$decision.recoveryBranch -ne 'ResumeFromStage' -or
-                [string]$decision.resumeStage -ne $ResumeFromStage -or
-                [System.IO.Path]::GetFullPath([string]$decision.scheduledAuthorityEvidencePath) -ne [System.IO.Path]::GetFullPath($ScheduledAuthorityEvidencePath) -or
-                (-not (Test-Path -LiteralPath $stageDecisionReceipt -PathType Leaf)) -or
-                (Get-FileSha256Hex -Path $stageDecisionReceipt) -ne [string]$decision.brokerStageDecisionSha256
-            ) {
-                throw 'RECOVERY_DECISION_BRANCH_MISMATCH'
-            }
-            $HighCostAdmissionPath = ''
-        } catch {
-            Add-RunnerLogLine -Text "ERROR: RECOVERY_DECISION_BRANCH_MISMATCH reason=$($_.Exception.Message)"
-            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'RECOVERY_DECISION_BRANCH_MISMATCH' -ExitCode 76
-            exit 76
-        }
+        Add-RunnerLogLine -Text 'ERROR: SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_REQUIRED'
+        Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_REQUIRED' -ExitCode 76
+        exit 76
     }
 
     if (-not $ScheduledAuthorityEvidencePath) {
@@ -3638,6 +3736,31 @@ function Assert-HighCostOperationAdmission {
     $admissionDir = Join-Path $RepoDir "build\high-cost-operation-admissions\$DateStamp"
     New-Item -ItemType Directory -Path $admissionDir -Force | Out-Null
     $admissionReceipt = Join-Path $admissionDir "$RunId-$operationKind.json"
+    $brokerAuthorityEvidencePath = $ScheduledAuthorityEvidencePath
+    if ($operationKind -eq 'scheduled_production') {
+        $transactionTool = Join-Path $OpsRepoRoot 'tools\news_grasp_recovery_transaction.py'
+        if (-not (Test-Path -LiteralPath $transactionTool -PathType Leaf)) {
+            Add-RunnerLogLine -Text 'ERROR: SCHEDULED_PRODUCTION_LAUNCH_PERMIT_V2_INVALID'
+            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'SCHEDULED_PRODUCTION_LAUNCH_PERMIT_V2_INVALID' -ExitCode 76
+            exit 76
+        }
+        $missionAuthorityV2Path = Join-Path $LiveBinDir 'news-grasp-authority\audit-mission-authority-v2.json'
+        $brokerAuthorityJson = (& $PyExe '-I' '-S' '-B' $transactionTool 'extract-broker-authority' '--permit' $ScheduledAuthorityEvidencePath '--mission-authority-v2' $missionAuthorityV2Path '--issue-date' $DateStamp '--task-action-sha256' $taskActionSha256 '--runner-sha256' $runnerSha256 2>&1 | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0) {
+            Add-RunnerLogLine -Text "ERROR: SCHEDULED_PRODUCTION_LAUNCH_PERMIT_V2_INVALID exit=$LASTEXITCODE"
+            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'SCHEDULED_PRODUCTION_LAUNCH_PERMIT_V2_INVALID' -ExitCode 76
+            exit 76
+        }
+        $brokerAuthorityEvidencePath = Join-Path $admissionDir "$RunId-broker-launch-permit-v1.json"
+        [System.IO.File]::WriteAllText($brokerAuthorityEvidencePath, ($brokerAuthorityJson + [Environment]::NewLine), [System.Text.UTF8Encoding]::new($false))
+        try {
+            Write-ActualScheduledLaunchIdentityReceipt -LaunchAuthorityPath $ScheduledAuthorityEvidencePath
+        } catch {
+            Add-RunnerLogLine -Text "ERROR: $($_.Exception.Message)"
+            Set-RunnerState -Status 'operation_rejected_launch_identity' -Message 'NEWS_GRASP_ACTUAL_LAUNCH_IDENTITY_INVALID' -ExitCode 76
+            exit 76
+        }
+    }
     if ($HighCostAdmissionPath) {
         if (-not (Test-Path -LiteralPath $HighCostAdmissionPath -PathType Leaf)) {
             Add-RunnerLogLine -Text 'ERROR: HIGH_COST_SCHEDULED_CALLER_RECEIPT_MISSING'
@@ -3646,7 +3769,7 @@ function Assert-HighCostOperationAdmission {
         }
         $admissionJson = (Get-Content -LiteralPath $HighCostAdmissionPath -Raw -Encoding UTF8).Trim()
     } else {
-        $admissionJson = (& $PyExe -I $modelSpawnBroker 'admit' '--operation-kind' $operationKind '--attempt-id' $DateStamp '--issue-date' $DateStamp '--authority-evidence' $ScheduledAuthorityEvidencePath '--expected-task-action-sha256' $taskActionSha256 '--expected-runner-sha256' $runnerSha256 2>&1 | Out-String).Trim()
+        $admissionJson = (& $PyExe -I $modelSpawnBroker 'admit' '--operation-kind' $operationKind '--attempt-id' $DateStamp '--issue-date' $DateStamp '--authority-evidence' $brokerAuthorityEvidencePath '--expected-task-action-sha256' $taskActionSha256 '--expected-runner-sha256' $runnerSha256 2>&1 | Out-String).Trim()
         if ($LASTEXITCODE -ne 0) {
             Add-RunnerLogLine -Text "ERROR: HIGH_COST_OPERATION_ADMISSION_REJECTED exit=$LASTEXITCODE"
             Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_OPERATION_ADMISSION_REJECTED; local critical path remains available' -ExitCode 76
@@ -3655,7 +3778,7 @@ function Assert-HighCostOperationAdmission {
     }
     try {
         $admission = $admissionJson | ConvertFrom-Json -ErrorAction Stop
-        $authority = Get-Content -LiteralPath $ScheduledAuthorityEvidencePath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+        $authority = Get-Content -LiteralPath $brokerAuthorityEvidencePath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
         if (
             $admission.schemaVersion -ne 'HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1' -or
             $admission.operationKind -ne $operationKind -or
@@ -3717,6 +3840,9 @@ if ($RepoDirOverride -or $SmokeTest) {
 $script:ValidatedRecoveryExecutionReceipt = $null
 $script:ValidatedFinalizationReceipt = $null
 $script:IssuedFinalizationReceiptPath = ''
+$script:ExpectedFinalizationReceiptSha256 = ''
+$script:ExpectedFinalizationReceiptFileSha256 = ''
+$script:ExpectedCommonFinalizationResultReceiptSha256 = ''
 function Invoke-RecoveryReceiptValidation {
     param(
         [Parameter(Mandatory = $true)][ValidateSet('validate-execution', 'consume-execution', 'mark-execution-applied', 'validate-finalization', 'consume-finalization', 'mark-finalization-state-applied')][string] $Command,
@@ -3763,6 +3889,52 @@ if ($RunIntent -eq 'ScheduledRecoveryFull') {
         Add-RunnerLogLine -Text 'ERROR: RECOVERY_EXECUTION_RECEIPT_INVALID'
         exit 76
     }
+    try {
+        $script:RecoveryHardDeadlineAt = [DateTimeOffset]::Parse(
+            [string]$script:ValidatedRecoveryExecutionReceipt.deadline.hardDeadline,
+            [Globalization.CultureInfo]::InvariantCulture
+        ).ToUniversalTime()
+        $script:RecoveryHighCostCutoffAt = [DateTimeOffset]::Parse(
+            [string]$script:ValidatedRecoveryExecutionReceipt.deadline.highCostCutoff,
+            [Globalization.CultureInfo]::InvariantCulture
+        ).ToUniversalTime()
+        $recoveryTargetDeadline = [DateTimeOffset]::Parse(
+            [string]$script:ValidatedRecoveryExecutionReceipt.deadline.targetDeadline,
+            [Globalization.CultureInfo]::InvariantCulture
+        ).ToUniversalTime()
+        $recoveryPostGreenMinutes = [double]$script:ValidatedRecoveryExecutionReceipt.deadline.postGreenMinutes
+        if ($recoveryPostGreenMinutes -le 0) { throw 'RECOVERY_DEADLINE_INVALID' }
+        $script:RecoveryTargetCloseoutAt = $recoveryTargetDeadline.AddMinutes(-$recoveryPostGreenMinutes)
+        if (
+            $script:RecoveryTargetCloseoutAt -ge $recoveryTargetDeadline -or
+            $recoveryTargetDeadline -gt $script:RecoveryHighCostCutoffAt -or
+            $script:RecoveryHighCostCutoffAt -gt $script:RecoveryHardDeadlineAt
+        ) { throw 'RECOVERY_DEADLINE_INVALID' }
+        $TimeoutSec = Get-NewsGraspRecoveryBoundedTimeoutSec -RequestedSec $TimeoutSec
+        $IdleTimeoutSec = [Math]::Min($IdleTimeoutSec, $TimeoutSec)
+        $PublishVerifyWaitSec = Get-NewsGraspRecoveryBoundedTimeoutSec -RequestedSec $PublishVerifyWaitSec
+    } catch {
+        Add-RunnerLogLine -Text "ERROR: $($_.Exception.Message)"
+        exit 76
+    }
+    $receiptBranch = [string]$script:ValidatedRecoveryExecutionReceipt.branch
+    $receiptStage = [string]$script:ValidatedRecoveryExecutionReceipt.resumeFromStage
+    if (
+        ($ResumeFromStage -and ($receiptBranch -ne 'ResumeFromStage' -or $receiptStage -ne $ResumeFromStage)) -or
+        ((-not $ResumeFromStage) -and ($receiptBranch -ne 'ScheduledRecoveryFull' -or $receiptStage))
+    ) {
+        Add-RunnerLogLine -Text 'ERROR: RECOVERY_EXECUTION_RECEIPT_BRANCH_MISMATCH'
+        exit 76
+    }
+    if ($HighCostAdmissionPath) {
+        Add-RunnerLogLine -Text 'ERROR: RECOVERY_CAPABILITY_CALLER_OVERRIDE_FORBIDDEN'
+        exit 76
+    }
+    $HighCostAdmissionPath = [string]$script:ValidatedRecoveryExecutionReceipt.capabilityReservation.receiptPath
+    if (-not $HighCostAdmissionPath) {
+        Add-RunnerLogLine -Text 'ERROR: RECOVERY_CAPABILITY_RESERVATION_INVALID'
+        exit 76
+    }
 }
 if ($FinalizeVerifiedPublishManifest) {
     if (-not $RecoveryFinalizationReceiptPath) {
@@ -3778,7 +3950,7 @@ if ($FinalizeVerifiedPublishManifest) {
     }
 }
 $externalReadiness = $null
-if (-not $FinalizeVerifiedPublishManifest) {
+if ((-not $FinalizeVerifiedPublishManifest) -and (-not $SmokeTest) -and (-not $PreflightOnly)) {
     $externalReadiness = Get-NewsGraspExternalControlPlaneReadiness
     if ([string]$externalReadiness.status -cne 'ready') {
         $externalReason = [string]$externalReadiness.reasonCode
@@ -3834,6 +4006,10 @@ if ($FinalizeVerifiedPublishManifest) {
             $sha256.Dispose()
         }
         $publishCommit = [string]$verified.publish_commit
+        $script:PublishCompleteManifestPath = $actualManifest
+        $script:PublishCompleteCommit = $publishCommit
+        $script:CommonFinalizationResultPath = [string]$verified.commonFinalizationResultPath
+        $script:CommonFinalizationGenerationId = [string]$verified.runId
         $historicalScheduledFailureRecovered = (
             [string]$verified.live_runner_readiness.reason -eq 'scheduled_task_missed_runs' -and
             [string]$verified.live_runner_readiness.last_scheduled_attempt.status -eq 'failed' -and
@@ -3853,13 +4029,6 @@ if ($FinalizeVerifiedPublishManifest) {
             $verified.publish.ok -eq $true -and
             $null -ne $verified.distribution_artifacts -and
             @($verified.distribution_artifacts.missing).Count -eq 0 -and
-            (
-                (
-                    $verified.live_runner_readiness.ok -eq $true -and
-                    $verified.live_runner_readiness.next_run_readiness.ok -eq $true
-                ) -or
-                $historicalScheduledFailureRecovered
-            ) -and
             $verified.notification.ok -eq $true -and
             $verified.podcasts.primary.ok -eq $true -and
             $verified.podcasts.deepdive.ok -eq $true -and
@@ -3874,6 +4043,9 @@ if ($FinalizeVerifiedPublishManifest) {
             -Command 'consume-finalization' `
             -ReceiptPath $RecoveryFinalizationReceiptPath
         if ($null -eq $consumedFinalization) { throw 'RECOVERY_FINALIZATION_RECEIPT_ALREADY_CONSUMED' }
+        $script:ExpectedFinalizationReceiptSha256 = [string]$consumedFinalization.finalizationReceiptSha256
+        $script:ExpectedFinalizationReceiptFileSha256 = [string]$consumedFinalization.finalizationReceiptFileSha256
+        $script:ExpectedCommonFinalizationResultReceiptSha256 = [string]$consumedFinalization.commonFinalizationResultReceiptSha256
         Add-RunnerLogLine -Text "typed recovery finalize accepted manifest=$actualManifest publish_commit=$publishCommit"
         Set-RunnerState -Status 'publish_complete' -Message 'verified recovery publish complete' -ExitCode 0 `
             -PublishManifestPath $actualManifest -PublishCommit $publishCommit `
@@ -3893,6 +4065,7 @@ if ($FinalizeVerifiedPublishManifest) {
             -Command 'mark-execution-applied' `
             -ReceiptPath $RecoveryExecutionReceiptPath
         if ($null -eq $executionAppliedJournal) { throw 'RECOVERY_EXECUTION_JOURNAL_INVALID' }
+        if ($script:CommonFinalizationExitCode -ne 0) { exit 2 }
     } catch {
         Add-RunnerLogLine -Text "ERROR: typed recovery finalizer failed reason=$($_.Exception.Message)"
         exit 76
@@ -3937,7 +4110,7 @@ Assert-PreRunBootstrapInterlock
 Assert-RunnerBinaryInSync
 $IsE2EOrDryRun = $NoPublish -or $NoPush -or $StopBeforeDeepDive
 if ($IsE2EOrDryRun -and (-not $SmokeTest) -and (-not $PreflightOnly) -and (-not $RecoverOnly) -and (-not $Stage2EditorSmokeOnly) -and (-not $ResumeAfterReporter) -and (-not $ResumeFromPostDailyQuality) -and (-not $ResumeAfterDeepDive) -and (-not $ResumeGenerationQualityRepair) -and (Test-DailyArtifactsExist -TargetDate $DateStamp)) {
-    Write-Log "ERROR: E2E full rerun forbidden after existing artifacts date=$DateStamp. Use -ResumeFromStage deepdive, post-daily-quality, post-deepdive, or generation-quality-repair."
+    Write-Log "ERROR: E2E full rerun forbidden after existing artifacts date=$DateStamp. Use -ResumeFromStage post-reporter, post-daily-quality, post-deepdive, or generation-quality-repair."
     Set-RunnerState -Status 'blocked_e2e_full_rerun_forbidden' -Message 'E2E full rerun forbidden after existing artifacts' -ExitCode 65
     exit 65
 }
@@ -4039,30 +4212,12 @@ if ($RecoverOnly) {
     # 事前admissionではdecisionを消費しない。ここが実際のResume stage開始境界であり、
     # このstate書込より前のcrashでは同じdecisionを未開始として安全に再利用できる。
     Set-RunnerState -Status 'running' -Message 'scheduled recovery stage start boundary' -ExitCode -1 -Phase 'resume' -Step 'stage-start-boundary' -ResumeStageCheckpoint $ResumeFromStage
-    if ($script:UsesHighCostContinuationAdmission) {
-        Write-Log "scheduled recovery stage start boundary satisfied by HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1 for ResumeFromStage=$ResumeFromStage"
-    } else {
-        try {
-            $stageWitnessJson = (& $PyExe -I $modelSpawnBroker 'start-news-grasp-recovery-stage' '--decision' $stageDecisionReceipt '--recovery-authority' $ScheduledAuthorityEvidencePath '--consumer-run-id' $RunId 2>&1 | Out-String).Trim()
-            if ($LASTEXITCODE -ne 0) {
-                throw "SCHEDULED_RECOVERY_STAGE_START_FAILED exit=$LASTEXITCODE"
-            }
-            $stageWitness = $stageWitnessJson | ConvertFrom-Json -ErrorAction Stop
-            if (
-                [string]$stageWitness.schemaVersion -ne 'SCHEDULED_RECOVERY_STAGE_STARTED_V1' -or
-                [string]$stageWitness.issueDate -ne $DateStamp -or
-                [string]$stageWitness.resumeStage -ne $ResumeFromStage -or
-                [string]$stageWitness.consumerRunId -ne $RunId -or
-                [string]$stageWitness.decisionReceiptSha256 -ne [string]$decision.brokerStageDecisionReceiptSha256
-            ) {
-                throw 'SCHEDULED_RECOVERY_STAGE_START_WITNESS_INVALID'
-            }
-        } catch {
-            Write-Log "ERROR: scheduled recovery stage start boundary failed: $($_.Exception.Message)"
-            Set-RunnerState -Status 'failed' -Message 'scheduled recovery stage start boundary failed' -ExitCode 76 -Phase 'resume' -Step 'stage-start-boundary'
-            exit 76
-        }
+    if (-not $script:UsesHighCostContinuationAdmission) {
+        Write-Log 'ERROR: scheduled recovery stage start boundary has no V2-bound capability reservation'
+        Set-RunnerState -Status 'failed' -Message 'RECOVERY_CAPABILITY_RESERVATION_INVALID' -ExitCode 76 -Phase 'resume' -Step 'stage-start-boundary'
+        exit 76
     }
+    Write-Log "scheduled recovery stage start boundary satisfied by receipt-V2 bound HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1 for ResumeFromStage=$ResumeFromStage"
     if ($ResumeGenerationQualityRepair) {
         Write-Log "ResumeFromStage=${ResumeFromStage}: reusing Stage0/Reporter/Editor/daily-quality; starting at missing-artifact generation repair"
     } elseif ($ResumeAfterDeepDive) {
@@ -4690,6 +4845,7 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
     if (-not (Test-ArtifactExecutableTreeIntegrity)) {
         Exit-Runner -Status 'blocked_artifact_executable_tree_invalid' -Message 'ARTIFACT_EXECUTABLE_TREE_INVALID after reporter fan-out' -ExitCode 126
     }
+    Update-RunnerProgress -Phase 'checkpoint' -Step 'reporter artifacts checkpoint committed' -ResumeStageCheckpoint 'post-reporter'
 
     Push-Location $RepoDir
     try {
@@ -5006,6 +5162,22 @@ if ($summaryReflectionRc -ne 0) {
 }
 Write-Log 'summary reflection gate OK'
 
+$SummaryAudioScriptPath = Join-Path $RepoDir "digest\Summary\$DateStamp-audio-script.md"
+if (-not (Test-Path -LiteralPath $SummaryAudioScriptPath -PathType Leaf)) {
+    Write-Log 'summary audio script missing; deterministic materialization start'
+    Push-Location $RepoDir
+    try {
+        Invoke-Logged { & $PyExe '-I' '-S' '-B' $DeterministicBuilderTool 'materialize-summary-audio' '--repo-root' $RepoDir '--date' $DateStamp }
+        $summaryAudioMaterializeRc = $LASTEXITCODE
+    } finally {
+        Pop-Location
+    }
+    if ($summaryAudioMaterializeRc -ne 0 -or -not (Test-Path -LiteralPath $SummaryAudioScriptPath -PathType Leaf)) {
+        Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'summary-audio-materialization' -Reason 'deterministic Summary audio script materialization or quality gate failed' -ExitCode $(if ($summaryAudioMaterializeRc) { $summaryAudioMaterializeRc } else { 1 })
+    }
+    Write-Log 'summary audio script deterministic materialization and quality gate OK'
+}
+
 # ===== 2.2 daily quality gate (hero fallback / stale source URL date) =====
 # 2026-06-08: Summary の reflection は存在していても frontmatter hero_left / hero_right
 # が欠落し、LP TODAY'S THEME がブランド fallback「時勢を掴み、日々に新たに。」へ
@@ -5071,14 +5243,14 @@ if ($StopBeforeDeepDive) {
     exit 0
 }
 
-# ===== Stage4: Codex DeepDive 生成 + commit (テーマゲート式日次・非致命) =====
+# ===== Stage4: Codex DeepDive 生成 + commit (最終公開DoD必須・失敗時は型付きrepairへ) =====
 # 2026-06-01: 旧 news-grasp-weekly-runner.ps1 (毎週日曜 23:00 の別タスク) を日次に統合した step。
 #   - digest とは別の agent プロセスで走らせ、コンテキスト/トークン予算を完全に分離する
 #     (1 セッション統合は 2026-05 の 415 万トークン破綻の再来リスクがあるため採らない)。
 #   - テーマが立たない日は prompts/deepdive-runner-prompt.md 側のテーマゲートで休載 (commit しない)。
 #     = コストは「出す価値がある日だけ」に自己制御される。
-#   - DeepDive は付随機能なので非致命: 失敗 / timeout / 休載でも digest の公開は絶対に止めない
-#     (digest が主、DeepDive は additive)。エラーは WARN ログのみで step 3 以降に進む。
+#   - 生成attemptの失敗 / timeoutは直後に即終了せず型付きrepairと共通quality gateへ渡す。
+#     ただしDeepDive未成立を公開完了へ昇格せず、最終Definition of Doneでは必須とする。
 $DeepDivePromptFile = Join-Path $RepoDir 'prompts\deepdive-runner-prompt.md'
 $DeepDiveContextPack = Join-Path $RepoDir ("build\deepdive-context\$DateStamp.json")
 $DeepDiveTimeoutSec = 1800
@@ -5112,7 +5284,7 @@ if ($RecoverOnly) {
 } else {
     Write-Log "deepdive wrapper invoke START (agent=codex, Model=$DeepDiveModel, ReasoningEffort=$DeepDiveReasoningEffort, TimeoutSec=$DeepDiveTimeoutSec, IdleTimeoutSec=$IdleTimeoutSec)"
     # 2026-06-10: IdleTimeoutSec 0 → 900 (digest 側と同じ理由。stream-json 既定化で
-    # 15 分無出力 = 真のハング検知が成立。DeepDive は非致命なので誤検知しても digest は止まらない)
+    # 15 分無出力 = 真のハング検知。失敗は型付きrepairへ渡し、最終DoDでは必ず再検証する。
     $ddRc = Invoke-CodexWrapper -PromptFile $DeepDivePromptFile -TimeoutSec $DeepDiveTimeoutSec -IdleTimeoutSec $IdleTimeoutSec -Model $DeepDiveModel -ReasoningEffort $DeepDiveReasoningEffort -FlowName 'deepdive'
     Write-Log "deepdive wrapper invoke END (agent=codex, rc=$ddRc)"
     if ($ddRc -eq 124) {
@@ -5132,6 +5304,7 @@ if (-not $generationReadiness.ok) {
     Stop-ExternalReadiness -Reason 'generation external readiness failed' -Kind 'generation_input_missing' -System 'local_artifact_inventory' -ExternalStatus $generationReadiness.status -ExternalStderr $generationReadiness.stderr -ExternalDetail $generationReadiness.detail
 }
 Write-Log 'generation external readiness gate OK'
+Update-RunnerProgress -Phase 'checkpoint' -Step 'deepdive artifact checkpoint committed' -ResumeStageCheckpoint 'post-deepdive'
 
 Write-Log 'generation artifact normalize start (normalize_generated_artifacts)'
 Push-Location $RepoDir
@@ -5770,9 +5943,10 @@ if ($NoPush) {
 
     Write-Log 'podcast verification start (public podcast sentinel)'
     Update-RunnerProgress -Phase 'podcast-verify' -Step 'podcast verification start'
+    $PodcastVerifyWaitSec = Get-NewsGraspRecoveryBoundedTimeoutSec -RequestedSec 1200 -OperationClass 'Closeout'
     Push-Location $RepoDir
     try {
-        Invoke-Logged { & $PyExe '-m' 'tools.daily_self_heal' 'verify-podcast' '--date' $DateStamp '--state' (Join-Path $RepoDir 'build\youtube-podcast\uploads.json') '--wait-sec' '1200' '--poll-sec' '30' }
+        Invoke-Logged { & $PyExe '-m' 'tools.daily_self_heal' 'verify-podcast' '--date' $DateStamp '--state' (Join-Path $RepoDir 'build\youtube-podcast\uploads.json') '--wait-sec' $PodcastVerifyWaitSec '--poll-sec' '30' }
         $podcastVerifyRc = $LASTEXITCODE
     } finally {
         Pop-Location
@@ -5785,9 +5959,10 @@ if ($NoPush) {
 
     Write-Log 'deepdive podcast verification start (public podcast sentinel)'
     Update-RunnerProgress -Phase 'deepdive-podcast-verify' -Step 'deepdive podcast verification start'
+    $DeepDivePodcastVerifyWaitSec = Get-NewsGraspRecoveryBoundedTimeoutSec -RequestedSec 1200 -OperationClass 'Closeout'
     Push-Location $RepoDir
     try {
-        Invoke-Logged { & $PyExe '-m' 'tools.daily_self_heal' 'verify-podcast' '--date' $DateStamp '--state' (Join-Path $RepoDir 'build\youtube-podcast-deepdive\uploads.json') '--expected-title' "News-Grasp DeepDive Dialogue $DateStamp" '--wait-sec' '1200' '--poll-sec' '30' }
+        Invoke-Logged { & $PyExe '-m' 'tools.daily_self_heal' 'verify-podcast' '--date' $DateStamp '--state' (Join-Path $RepoDir 'build\youtube-podcast-deepdive\uploads.json') '--expected-title' "News-Grasp DeepDive Dialogue $DateStamp" '--wait-sec' $DeepDivePodcastVerifyWaitSec '--poll-sec' '30' }
         $deepDivePodcastVerifyRc = $LASTEXITCODE
     } finally {
         Pop-Location
@@ -5814,19 +5989,21 @@ if ($NoPush) {
     Write-Log 'podcast playlist audit OK'
 
     # ===== 6. Web Push 通知（docs 公開後・publish-complete 前に state 化） =====
-    # 通知自体は付随機能として非致命だが、System Integrity 上は notification の結果も
-    # completion proof に含める。send_push は --record-state で machine-readable JSON を残す。
+    # sent/already_sent はdelivery receipt、no_subscribersはaudience-resolution receiptが
+    # 成立した場合だけGreenとする。単なるskipは公開DoDの成功に昇格させない。
     $NotificationStatePath = Join-Path $RepoDir "build\notification\$DateStamp.json"
     if (Should-SendNormalBatchNotification) {
         Write-Log 'send_push start'
         Push-Location $RepoDir
         try {
-            Invoke-Logged { & $PyExe 'tools\send_push.py' '--record-state' $NotificationStatePath }
+            Invoke-Logged { & $PyExe 'tools\send_push.py' '--record-state' $NotificationStatePath '--issue-date' $DateStamp }
             $pushRc = $LASTEXITCODE
         } finally {
             Pop-Location
         }
-        if ($pushRc -ne 0) { Write-Log "WARN: send_push exited $pushRc (non-fatal)" }
+        if ($pushRc -ne 0) {
+            Invoke-AutonomousCompletionPolicy -FailureKind 'distribution' -GateId 'notification-delivery' -Reason 'send_push failed before delivery receipt' -ExitCode $pushRc
+        }
         Write-Log "send_push done rc=$pushRc"
     } else {
         if ($RecoverOnly) {
@@ -5841,7 +6018,8 @@ if ($NoPush) {
         [ordered]@{
             date = $DateStamp
             status = 'skipped_not_normal'
-            ok = $true
+            ok = $false
+            schemaVersion = 'NEWS_GRASP_NOTIFICATION_OUTCOME_V2'
             source = 'runner'
             subscription_count = 0
             sent_count = 0
@@ -5852,26 +6030,41 @@ if ($NoPush) {
 
     Write-Log 'publish-complete manifest verification start'
     $publishCompleteManifest = Join-Path $RepoDir "build\publish-complete\$DateStamp.json"
+    $actualRecoveryOperationCount = if ($RunIntent -eq 'ScheduledRecoveryFull') { 1 } else { 0 }
     Push-Location $RepoDir
     try {
-        $dailySelfHealTool = if ($null -ne $RecoveryRuntimeBinding) {
-            [string]$RecoveryRuntimeBinding.DailySelfHealPath
-        } else {
-            Join-Path $OpsRepoRoot 'tools\daily_self_heal.py'
-        }
-        Invoke-Logged { & $PyExe '-I' '-S' '-B' $dailySelfHealTool 'verify-publish-complete' '--repo-root' $RepoDir '--ops-repo-root' $OpsRepoRoot '--date' $DateStamp '--remote' 'origin' '--branch' 'main' '--public-base-url' $PublicBaseUrl '--wait-sec' '0' '--poll-sec' $PublishVerifyPollSec '--notification-state' $NotificationStatePath '--producer-state' $StateFile '--output' $publishCompleteManifest }
+        $coordinatedJson = (& $PyExe '-I' '-S' '-B' $FinalizationCoordinatorTool `
+            'coordinate-publish' '--repo-root' $RepoDir '--ops-repo-root' $OpsRepoRoot `
+            '--date' $DateStamp '--run-id' $RunId '--run-intent' $RunIntent `
+            '--transaction-started-at' $script:RunnerStartedAt.ToString('o') `
+            '--actual-recovery-operation-count' ([string]$actualRecoveryOperationCount) `
+            '--remote' 'origin' '--branch' 'main' '--public-base-url' $PublicBaseUrl `
+            '--wait-sec' '0' '--poll-sec' $PublishVerifyPollSec `
+            '--notification-state' $NotificationStatePath '--producer-state' $StateFile 2>&1 | Out-String).Trim()
         $publishCompleteRc = $LASTEXITCODE
     } finally {
         Pop-Location
     }
-    if ($publishCompleteRc -ne 0) {
+    if ($publishCompleteRc -notin @(0, 2)) {
         Write-Log "ERROR: publish-complete manifest verification failed (rc=$publishCompleteRc)."
         Invoke-AutonomousCompletionPolicy -FailureKind 'publish' -GateId 'publish-complete' -Reason 'publish-complete manifest verification failed' -ExitCode $publishCompleteRc
     }
     try {
+        $coordinated = $coordinatedJson | ConvertFrom-Json -ErrorAction Stop
+        if (
+            [string]$coordinated.schemaVersion -ne 'NEWS_GRASP_COORDINATED_PUBLISH_RESULT_V1' -or
+            [string]$coordinated.commonFinalization.publicStatus -ne 'green'
+        ) {
+            throw 'coordinated publish result is not public Green'
+        }
+        $publishCompleteManifest = [string]$coordinated.legacyManifestPath
         $publishComplete = Get-Content -LiteralPath $publishCompleteManifest -Raw -Encoding UTF8 | ConvertFrom-Json
         $script:PublishCompleteManifestPath = $publishCompleteManifest
         $script:PublishCompleteCommit = [string]$publishComplete.publish_commit
+        $script:CommonFinalizationResult = $coordinated.commonFinalization
+        $script:CommonFinalizationResultPath = [string]$coordinated.commonFinalizationResultPath
+        $script:CommonFinalizationExitCode = [int]$coordinated.commonFinalization.exitCode
+        $script:CommonFinalizationGenerationId = [string]$publishComplete.runId
     } catch {
         Write-Log "ERROR: publish-complete manifest parse failed: $($_.Exception.Message)"
         Invoke-AutonomousCompletionPolicy -FailureKind 'publish' -GateId 'publish-complete' -Reason 'publish-complete manifest parse failed' -ExitCode 1
@@ -5880,7 +6073,7 @@ if ($NoPush) {
         Write-Log 'ERROR: publish-complete manifest missing publish_commit'
         Invoke-AutonomousCompletionPolicy -FailureKind 'publish' -GateId 'publish-complete' -Reason 'publish-complete manifest missing publish_commit' -ExitCode 1
     }
-    Write-Log 'publish-complete manifest verification OK'
+    Write-Log "publish-complete manifest verification OK common_finalizer_exit=$script:CommonFinalizationExitCode"
 }
 
 Write-CodexUsageWindowSnapshot -Phase 'end'
@@ -5897,8 +6090,20 @@ if ($NoPublish) {
             -Command 'consume-finalization' `
             -ReceiptPath $normalFinalizationReceipt
         if ($null -eq $consumedNormalFinalization) { exit 2 }
+        $script:ExpectedFinalizationReceiptSha256 = [string]$consumedNormalFinalization.finalizationReceiptSha256
+        $script:ExpectedFinalizationReceiptFileSha256 = [string]$consumedNormalFinalization.finalizationReceiptFileSha256
+        $script:ExpectedCommonFinalizationResultReceiptSha256 = [string]$consumedNormalFinalization.commonFinalizationResultReceiptSha256
     }
-    Write-Log 'news-grasp-runner.ps1 OK'
+    # public authorityとautomation outcomeを分離する。ここでpublic terminalを
+    # 先に物理化し、後続guard/readiness/SLOのexit 2でも公開済み事実を後退させない。
+    Write-Log 'news-grasp-runner.ps1 PUBLIC GREEN'
+    if ($RunIntent -eq 'ScheduledProduction' -and (
+        $null -eq $script:CommonFinalizationResult -or
+        $script:CommonFinalizationResult.guardOk -ne $true
+    )) {
+        Add-RunnerLogLine -Text 'ERROR: COMMON_FINALIZATION_GUARD_NOT_GREEN'
+        exit 2
+    }
     if ($RunIntent -eq 'ScheduledRecoveryFull') {
         $normalStateAppliedJournal = Invoke-RecoveryReceiptValidation `
             -Command 'mark-finalization-state-applied' `
@@ -5914,5 +6119,10 @@ if ($NoPublish) {
             -ReceiptPath $RecoveryExecutionReceiptPath
         if ($null -eq $normalExecutionAppliedJournal) { exit 2 }
     }
+    if ($script:CommonFinalizationExitCode -ne 0) {
+        Add-RunnerLogLine -Text "COMMON_FINALIZATION_DEGRADED exit=$script:CommonFinalizationExitCode public_status=green"
+        exit 2
+    }
+    Write-Log 'news-grasp-runner.ps1 OK'
 }
 exit 0

@@ -688,7 +688,8 @@ function Assert-NewsGraspRecoveryJournal {
         'news-grasp-runtime-root-v1.json',
         'news-grasp-recovery-runtime-binding-v1.json',
         'news-grasp-stable-task-authority-v1.json',
-        'audit-mission-authority-v1.json'
+        'audit-mission-authority-v2.json',
+        'broker-audit-mission-authority-v1.json'
     )
     $seenFiles = @{}
     foreach ($row in @($Journal.files)) {
@@ -701,7 +702,7 @@ function Assert-NewsGraspRecoveryJournal {
             throw 'NEWS_GRASP_INSTALL_JOURNAL_FILE_NOT_ALLOWED'
         }
         $seenFiles[$fileName] = $true
-        if ($fileName -eq 'audit-mission-authority-v1.json') {
+        if ($fileName -in @('audit-mission-authority-v2.json', 'broker-audit-mission-authority-v1.json')) {
             $expectedDestination = Join-Path (Join-Path $ExpectedBinDir 'news-grasp-authority') $fileName
         } else {
             $expectedDestination = Join-Path $ExpectedBinDir $fileName
@@ -718,15 +719,19 @@ function Assert-NewsGraspRecoveryJournal {
                 throw 'NEWS_GRASP_INSTALL_JOURNAL_HASH_INVALID'
             }
         }
-        if ($fileName -eq 'audit-mission-authority-v1.json') {
+        if ($fileName -eq 'audit-mission-authority-v2.json') {
             $missionSource = [string]$row.source
             if (
-                $missionSource -notin @('broker:issue-news-grasp-audit-mission', 'existing:validated-audit-mission') -or
+                $missionSource -notin @('broker:wrap-legacy-audit-mission', 'existing:validated-audit-mission') -or
                 $sourceSha256 -or
                 ($missionSource -eq 'existing:validated-audit-mission' -and (
                     -not $beforeSha256 -or ($afterSha256 -and $afterSha256 -ne $beforeSha256)
                 ))
             ) {
+                throw 'NEWS_GRASP_INSTALL_JOURNAL_SOURCE_INVALID'
+            }
+        } elseif ($fileName -eq 'broker-audit-mission-authority-v1.json') {
+            if ($row.source -ne 'broker:issue-news-grasp-audit-mission' -or $sourceSha256) {
                 throw 'NEWS_GRASP_INSTALL_JOURNAL_SOURCE_INVALID'
             }
         } elseif ($fileName -in @('news-grasp-runtime-root-v1.json', 'news-grasp-recovery-runtime-binding-v1.json', 'news-grasp-stable-task-authority-v1.json')) {

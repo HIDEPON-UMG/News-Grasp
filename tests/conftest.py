@@ -24,17 +24,25 @@ for _candidate in _REPO_ROOT.parents:
         / "capability-v1.json"
     )
     if _adapter.is_file() and _descriptor.is_file():
-        from tools.news_grasp_high_cost_binding import create_binding
+        from tools.news_grasp_high_cost_binding import HighCostBindingError, create_binding
 
         _SESSION_BINDING_ROOT = Path(
             tempfile.mkdtemp(prefix="news-grasp-test-high-cost-binding-")
         )
         _binding_path = _SESSION_BINDING_ROOT / "binding.json"
-        _binding = create_binding(
-            adapter_path=_adapter,
-            descriptor_path=_descriptor,
-            output_path=_binding_path,
-        )
+        try:
+            _binding = create_binding(
+                adapter_path=_adapter,
+                descriptor_path=_descriptor,
+                output_path=_binding_path,
+            )
+        except HighCostBindingError:
+            # test collection / constitution projection は live broker の可用性を
+            # production admission として消費しない。high-cost 経路の各fixtureが
+            # 明示的な adapter/descriptor/binding を所有する。
+            shutil.rmtree(_SESSION_BINDING_ROOT, ignore_errors=True)
+            _SESSION_BINDING_ROOT = None
+            continue
         os.environ.setdefault("NEWS_GRASP_HIGH_COST_BINDING_PATH", str(_binding_path))
         os.environ.setdefault(
             "NEWS_GRASP_HIGH_COST_BINDING_RECEIPT_SHA256",

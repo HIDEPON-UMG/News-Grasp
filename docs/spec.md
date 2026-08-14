@@ -580,6 +580,108 @@ retryは回数ではなく因果で許可する。同一cause fingerprintかつs
 
 本commitmentの正本要件は`NG-R01`〜`NG-R12`、Acceptanceは`NG-A01`〜`NG-A08`であり、goal-controlのrequirement contract、generation manifest、TDD impact receipt、HumanImpactContractと同じgenerationへ束縛する。
 
+## 2026-08-14 日次運用全体最適化と Recovery SLO Commitment
+
+2026-08-14 の実ユーザー承認計画を正本とし、06:40 recovery owner、branch選択、execution receipt、verifier、finalizer、SLO、readinessを単一の全体フローへ再結線する。本commitmentは、2026-08-02 commitmentの「3値terminal」「既存verifierの直接再実行」「Full既定」を上書きし、2026-08-10 commitmentの当該改修に対するNoPublish E2E要求を、歴史event replay・targeted contract/integration・installer dry-run・no-side-effect smokeへ置換する。2026-08-14公開成果物の再生成・再公開、Full E2E、public incident reportは本改修の検証経路から到達不能にする。
+
+### 実行正本
+
+```mermaid
+flowchart TD
+    B0555[05:55 bounded convergence] --> RS[Reusable Readiness Snapshot V2]
+    RS --> LP[06:00 single-use Launch Permit V2]
+    LP --> PROD[Scheduled Production]
+    PROD -->|manifest Green| LEASE[Lineage manifest lease]
+    LEASE --> FINAL[Common Finalization Coordinator]
+    FINAL --> NORMAL[Scheduled terminal without 06:40 wait]
+    PROD -->|typed failure + checkpoint| ENSURE[Canonical ensure-0640]
+    DEAD[06:40 Deadman] --> ENSURE
+    AUTO[06:40 Codex automation] --> ENSURE
+    WATCH[Watcher terminal failure] --> ENSURE
+    ENSURE --> TX[Issue-date transaction + fencing + crash journal]
+    TX --> CASE{Observed state}
+    CASE -->|terminal| PROJECT[Projection only]
+    CASE -->|finalizer pending| FINAL
+    CASE -->|healthy owned runner| OBS[Bounded observation]
+    CASE -->|stale or failed| PREF[5 minute safety preflight]
+    PREF --> BRANCH{Sealed checkpoint}
+    BRANCH -->|no artifact delta| FULL[ScheduledRecoveryFull]
+    BRANCH -->|highest contiguous checkpoint| RESUME[Exact ResumeFromStage]
+    BRANCH -->|unknown or unsafe delta| INCIDENT[Typed major incident]
+    FULL --> RRUN[Receipt V2 constrained runner]
+    RESUME --> RRUN
+    RRUN --> LEASE
+    FINAL --> AUTH[Completion Authority V2]
+    FINAL --> OUT[Outcome Envelope V1]
+    FINAL --> DEBT[Readiness observation or debt]
+```
+
+```mermaid
+sequenceDiagram
+    participant B as 05:55 Bootstrap
+    participant S as 06:00 Scheduler/Runner
+    participant A as Audit Recovery Coordinator
+    participant R as Recovery Runner
+    participant M as Manifest Lease
+    participant F as Common Finalizer
+    participant Q as Readiness Ledger
+    B-->>S: reusable snapshot SHA
+    S->>S: consume Launch Permit V2 once
+    S->>S: issue actual PID/runtime identity before model admission
+    alt scheduled Green
+        S->>M: get-or-produce(issueDate,generationId,publishCommit)
+        M-->>S: one sealed manifest
+        S->>F: finalize immediately
+    else scheduled typed failure
+        S-->>A: failure + checkpoint evidence
+    end
+    par simultaneous ensure callers
+        S->>A: watcher ensure(issueDate)
+        A->>A: deadman or automation attach
+    end
+    A->>A: acquire-or-attach + fencing
+    alt terminal or finalizer pending
+        A->>F: project or forward finalize
+    else healthy owner
+        A->>A: bounded observation
+    else exact recovery admitted
+        A->>R: one Receipt V2 + shared deadline
+        R->>M: get-or-produce
+        R->>F: finalize once
+    end
+    F->>Q: readiness as a separate receipt
+    F-->>A: public, SLO, readiness outcome
+```
+
+### 所有権・gate・時間の不変条件
+
+| 境界 | 正本predicate | 禁止する抜け道 |
+|---|---|---|
+| 05:55 | readiness snapshotは再利用可能な観測であり実行authorityではない | snapshotだけでproductionを起動しない |
+| 06:00 | snapshot SHAを参照するsingle-use Launch Permit V2を消費する | ambient root/runtime/task状態をauthorityにしない |
+| actual launch | `NEWS_GRASP_ACTUAL_LAUNCH_IDENTITY_V1`がPID creation token、runner/Python、artifact/ops roots、binding、Launch Permit V2を同一receiptへ封印する | permit発行だけを実process起動証明へ読み替えない |
+| 06:40 | `audit_recovery_control ensure-0640 --issue-date`だけがrunner起動owner | Deadman、automation、watcher、direct CLIからrunnerを直接起動しない |
+| transaction | issue-date lease、fencing token、owner identity、phase journalを持つ | stale owner、ABA、毎時再発火で二重実行しない |
+| preflight | root、Python、installed/live binding、Task action/hashをrunner前に一回probeし、allowlist repair後に一回だけ再probeする | 同じbinding failureでrunnerを反復しない |
+| branch | no-deltaだけFull、sealed highest-contiguous checkpointだけResume、unknownはmajor incident | artifact deltaやunknownをFullへ丸めない |
+| high-cost | branch確定後に最大必要量を予約し、stage直前はfreshness確認とconsumeだけ行う | runner起動後の初回admissionを禁止する |
+| public quality | DeepDive md/HTML/音声、Daily/DeepDive Podcast、playlist、notificationを既存DoDのまま必須にする | optional、WARN、文字数水増し、`skipped_not_normal`をGreenにしない |
+| manifest | `(issueDate,generationId,publishCommit)`ごとに同時producer一つ、成功manifest一つ | public surface oracleからpublish verifierを再帰実行しない |
+| finalizer | normal/recovery共通coordinatorが一回だけAuthority V2、V3、Envelopeを確定する | runner/audit/automationが別finalizerを書くことを禁止する |
+| readiness | public authorityと別receipt/debtにする | missed runs、LastTaskResult、NextRunTimeで既存public Greenを失効させない |
+| notification | `sent|already_sent`はdelivery receipt、`no_subscribers`はsealed audience-resolution receiptを必須にする | `skipped`や未通知を成功へ読み替えない |
+| unknown | typed `audit_major_incident_open`へfail-closed | fallback Full、ad hoc repair、無制限retryを禁止する |
+
+`auditSloAnchor`は対象日06:40 JSTでcaller上書き不可とする。06:40前にpublic Greenとfinalizerが完了した場合だけ`not_applicable_pre_audit_green`、未完了なら06:40をT0とする。`targetMet = overallMinutes <= 60 && postGreenMinutes <= 15`、`repairBudgetMet = actualRecoveryOperationCount > 0 && 60 < overallMinutes <= 90 && postGreenMinutes <= 15`とし、recoveryなしの61〜90分を成功にしない。通常productionの全high-cost childはrunner開始から45分の共通deadlineを共有する。recoveryでは06:40から45分で新規high-cost開始を拒否し、開始済みかつsealed receiptに束縛されたhigh-cost childだけを75分まで限定継続できる。closeoutは90分まで許可し、75分でsealed high-cost継続を停止、90分で新規operationを全面拒否する。scheduled productionはwatcher所有Job、recoveryはcanonical controller所有Jobへ全child treeを束縛し、停止対象はowner receipt、job object、fencing tokenが一致するchildだけとしてunowned processへ干渉しない。
+
+監査terminalは`audit_normal_green|audit_recovered_green|audit_observation_unverified|audit_major_incident_open`の4値を正本とする。`public_green_but_slo_failed`はCompletion Authority V2を保持するが`guardOk=false`、terminalはmajor incident、automation exit codeは2とする。readiness debtだけの場合はpublic terminalとguardを後退させず、Outcome Envelopeとautomation exit code 2で別管理する。`COMPLETION_STATE_VECTOR_V3`の既存8 fieldは変更せず、SLO、automation outcome、readiness debtは`COMPLETION_OUTCOME_ENVELOPE_V1`へsidecar化する。
+
+source release、installed generation、`NEWS_GRASP_NO_SIDE_EFFECT_LOADED_SMOKE_V1`、`NEWS_GRASP_ACTUAL_LAUNCH_IDENTITY_V1`は交換不能な4証明とする。loaded smokeは公開remoteと一致するinstalled generationからoperational contract、recovery transaction、common finalizer、installed guard entrypointを実loadし、source bytes、versioned asset、route、UserConfirmed Full policyをread-onlyで照合する。file mutation、network、Scheduled Task観測・更新は一切行わず、receiptをinstall journalへ束縛する。installerは公開済みsource generationだけをconsumeし、push権限を持たない。source/installed parity失敗時はrollback snapshotから旧generationを維持する。hidden launcher、lifecycle mutex、job objectを再利用し、新しい常駐service/poller、focus theft、auto-open、user monitoring、生PID/process名killを追加しない。
+
+## Finalization / mission authority migration
+
+現行実装の正本は `NEWS_GRASP_RECOVERY_FINALIZATION_RECEIPT_V2` と `audit-mission-authority-v2.json` である。旧 V1 finalization receipt と broker mission authority V1 は履歴・broker専用の read-only 入力として扱い、product current authorityへ上書きしない。
+
 ## Acceptance Scenarios
 
 | Scenario | Given | When | Then |

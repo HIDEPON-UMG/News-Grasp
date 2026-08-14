@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import hashlib
 import importlib
+import inspect
 import json
 import os
 import subprocess
 import sys
 import threading
 import time
+import ctypes
 from pathlib import Path
 
 import pytest
@@ -40,6 +42,17 @@ def _control(failure_signature: str):
         )
 
 
+def _current_process_executable() -> str:
+    """Windows Store aliasではなく、現在ロード済みPythonの実体を返す。"""
+    if sys.platform != "win32":
+        return sys.executable
+    buffer = ctypes.create_unicode_buffer(32768)
+    length = ctypes.windll.kernel32.GetModuleFileNameW(None, buffer, len(buffer))
+    if length <= 0 or length >= len(buffer):
+        raise RuntimeError("TEST_PYTHON_EXECUTABLE_UNAVAILABLE")
+    return buffer.value
+
+
 def _seal(value: dict[str, object]) -> dict[str, object]:
     body = dict(value)
     encoded = json.dumps(
@@ -64,6 +77,7 @@ def _green_completion(control, run_intent: str) -> dict[str, object]:
             "runIntent": run_intent,
             "runId": "test-run",
             **lineage,
+            "publishCommit": "a" * 40,
             "checks": {field: True for field in control.COMPLETION_FIELDS},
             "evidenceSha256": {
                 field: "9" * 64 for field in control.COMPLETION_FIELDS
@@ -159,6 +173,19 @@ def _failure_context(control, monkeypatch, tmp_path: Path):
             failure_sha=str(failure["receiptSha256"]),
         ),
     )
+    operational_truth = _seal(
+        {
+            "schemaVersion": "NEWS_GRASP_OPERATIONAL_TRUTH_V1",
+            "issuer": "tools.audit_recovery_control.actual_observer",
+            "issueDate": "2026-08-02",
+            "stopPointKnown": True,
+            "scheduledAttemptReachedRunner": False,
+            "artifactDelta": {"exists": False, "manifestSha256": "c" * 64},
+        }
+    )
+    monkeypatch.setattr(
+        control, "_observe_operational_truth", lambda **_: operational_truth
+    )
     return failure_path, authority_path
 
 
@@ -169,6 +196,15 @@ def _terminal_test_root(control, monkeypatch, tmp_path: Path, name: str) -> Path
     monkeypatch.setattr(control, "CANONICAL_REPO_ROOT", repo)
     monkeypatch.setattr(control, "CANONICAL_TERMINAL_ROOT", root)
     return root
+
+
+def _mock_execution_receipt(path: Path, *, branch: str = "ScheduledRecoveryFull") -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps({"branch": branch, "resumeFromStage": None}),
+        encoding="utf-8",
+    )
+    return path
 
 
 def test_audit_normal_requires_actual_same_date_public_green(monkeypatch) -> None:
@@ -264,7 +300,19 @@ def test_external_readiness_reopens_typed_recovery(monkeypatch, tmp_path: Path) 
         "validate_canonical_operational_registry",
         lambda _root: {"status": "Green"},
     )
-    monkeypatch.setattr(control, "_observe_operational_truth", lambda **_: None)
+    operational_truth = _seal(
+        {
+            "schemaVersion": "NEWS_GRASP_OPERATIONAL_TRUTH_V1",
+            "issuer": "tools.audit_recovery_control.actual_observer",
+            "issueDate": "2026-08-02",
+            "stopPointKnown": True,
+            "scheduledAttemptReachedRunner": False,
+            "artifactDelta": {"exists": False, "manifestSha256": "c" * 64},
+        }
+    )
+    monkeypatch.setattr(
+        control, "_observe_operational_truth", lambda **_: operational_truth
+    )
     monkeypatch.setattr(
         control,
         "_inspect_attempt_via_broker",
@@ -346,7 +394,7 @@ def test_sealer_rejects_incomplete_public_decision_without_recovery_priority() -
     with pytest.raises(ValueError, match="AUDIT_DECISION_RECEIPT_INVALID"):
         control.seal_audit_decision(
             {
-                "schemaVersion": "AUDIT_RECOVERY_DECISION_V1",
+                "schemaVersion": "AUDIT_RECOVERY_DECISION_V2",
                 "issueDate": "2026-08-02",
                 "classification": "incident_required",
                 "action": "escalate_major_incident",
@@ -486,7 +534,7 @@ def test_failed_schedule_recovered_keeps_failed_history(
     assert decision["recoveryAttemptStatus"] == "succeeded"
 
 
-def test_terminal_writer_has_internal_root_and_only_three_terminals(
+def test_terminal_writer_has_internal_root_and_only_four_terminals(
     monkeypatch, tmp_path: Path
 ) -> None:
     control = _control("RED_TYPED_TERMINAL_WRITER_MISSING")
@@ -495,7 +543,7 @@ def test_terminal_writer_has_internal_root_and_only_three_terminals(
     )
     invalid = _seal(
         {
-            "schemaVersion": "AUDIT_RECOVERY_DECISION_V1",
+            "schemaVersion": "AUDIT_RECOVERY_DECISION_V2",
             "issuer": control.DECISION_ISSUER,
             "terminal": "operation_deferred",
             "issueDate": "2026-08-02",
@@ -545,10 +593,21 @@ def test_terminal_writer_has_internal_root_and_only_three_terminals(
 def test_actual_completion_verifier_owns_all_required_gates() -> None:
     control = _control("RED_ACTUAL_COMPLETION_VERIFIER_MISSING")
     source = Path(control.__file__).read_text(encoding="utf-8-sig")
-    assert '"tools.validate_daily_quality"' in source
-    assert '"--require-deepdive"' in source
-    assert "from tools.daily_self_heal import verify_publish_complete" in source
-    assert "publish = verify_publish_complete(" in source
+    finalizer = Path(control.__file__).with_name("news_grasp_finalization.py").read_text(
+        encoding="utf-8-sig"
+    )
+    verifier = source[
+        source.index("def _verify_same_date_completion(") : source.index(
+            "def classify_repair_payload(",
+            source.index("def _verify_same_date_completion("),
+        )
+    ]
+    assert "_fresh_reverify_publish_manifest" in verifier
+    assert "verify_publish_complete(" not in verifier
+    assert "get_or_produce_manifest" in finalizer
+    assert "verify_public_completion" in finalizer
+    assert "build_public_manifest_v2" in finalizer
+    assert "finalize_common" in finalizer
     assert 'child_env["PYTHONUTF8"] = "1"' in source
     assert 'child_env["PYTHONIOENCODING"] = "utf-8"' in source
     assert 'runner_state.get("run_intent") != expected_run_intent' in source
@@ -614,7 +673,7 @@ def test_bounded_subprocess_rejects_stderr_over_budget(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="BOUNDED_SUBPROCESS_OUTPUT_EXCEEDED"):
         control._run_bounded(
             [
-                sys.executable,
+                _current_process_executable(),
                 "-c",
                 "import sys; sys.stderr.buffer.write(b'x' * (1024 * 1024 + 1))",
             ],
@@ -665,7 +724,7 @@ def test_output_overflow_terminates_owned_grandchild(tmp_path: Path) -> None:
     )
     with pytest.raises(ValueError, match="BOUNDED_SUBPROCESS_OUTPUT_EXCEEDED"):
         control._run_bounded(
-            [sys.executable, "-c", parent], cwd=tmp_path, timeout=30
+            [_current_process_executable(), "-c", parent], cwd=tmp_path, timeout=30
         )
     import time
 
@@ -842,31 +901,16 @@ def test_artifact_repo_rejects_unregistered_same_origin_clone(
 def test_same_date_completion_separates_artifact_data_from_trusted_ops_code(
     monkeypatch, tmp_path: Path
 ) -> None:
-    """復旧artifactのbuild証跡は保持しつつ、検証codeはcleanな現行ops treeだけを使う。"""
+    """共通finalizerはartifact rootへattachし、lineageはclean ops rootへ束縛する。"""
     control = _control("RED_ARTIFACT_AND_OPS_ROOT_CONFLATED")
-    from tools import daily_self_heal
+    from tools import news_grasp_finalization
+    from tools.news_grasp_operational_contract import PUBLIC_COMPLETION_FIELDS
 
     artifact = tmp_path / "artifact"
     ops = tmp_path / "ops"
     state_path = tmp_path / "bin" / "news-grasp-runner-state.json"
     artifact.mkdir()
     ops.mkdir()
-    guard_path = artifact / "build" / "publish-complete" / "2026-08-09.automation-guard.json"
-    guard_path.parent.mkdir(parents=True)
-    guard_path.write_text(
-        json.dumps(
-            {
-                "schemaVersion": "NEWS_GRASP_640_COMPLETION_GUARD_V1",
-                "ok": True,
-                "issueDate": "2026-08-09",
-                "scheduled_attempt_status": "failed_then_recovered",
-                "recovery_attempt_status": "succeeded",
-                "public_status": "green",
-                "runner_status": "publish_complete",
-            }
-        ),
-        encoding="utf-8",
-    )
     state_path.parent.mkdir()
     state_path.write_text(
         json.dumps(
@@ -885,45 +929,49 @@ def test_same_date_completion_separates_artifact_data_from_trusted_ops_code(
     monkeypatch.setattr(control, "CANONICAL_RUNNER_STATE_PATH", state_path)
 
     resolved_payloads: list[dict[str, object]] = []
-    validated_roots: list[Path] = []
-    publish_calls: list[dict[str, object]] = []
+    coordinated_roots: list[Path] = []
 
     def resolve(payload: dict[str, object]) -> Path:
         resolved_payloads.append(payload)
         return artifact
 
-    def validate(root: Path) -> str:
-        validated_roots.append(root)
-        return "b" * 40
+    public_manifest = news_grasp_finalization.build_public_manifest_v2(
+        issue_date="2026-08-09",
+        generation_id="generation-1",
+        publish_commit="b" * 40,
+        producer_operation_id="c" * 64,
+        evidence={field: {"ok": True, "field": field} for field in PUBLIC_COMPLETION_FIELDS},
+    )
+    common = news_grasp_finalization.finalize_common(
+        repo_root=artifact,
+        public_manifest=public_manifest,
+        run_intent="ScheduledRecoveryFull",
+        transaction_started_at="2026-08-09T06:40:00+09:00",
+        public_green_at="2026-08-09T06:45:00+09:00",
+        done_at="2026-08-09T06:46:00+09:00",
+        readiness={"ok": True},
+        actual_recovery_operation_count=1,
+    )
+    common_path = news_grasp_finalization.common_finalization_path(
+        artifact,
+        issue_date="2026-08-09",
+        generation_id="generation-1",
+        publish_commit="b" * 40,
+    )
 
-    def run_bounded(command, *, cwd, timeout, env_overrides=None):
-        assert command[1:3] == ["-P", "-m"]
-        assert cwd == artifact
-        assert env_overrides == {
-            "PYTHONPATH": str(ops),
-            "PYTHONNOUSERSITE": "1",
-        }
-        return 0, b'{"ok": true}'
-
-    def verify_publish_complete(**kwargs):
-        publish_calls.append(kwargs)
-        lineage = control._completion_lineage(
-            issue_date="2026-08-09",
-            run_intent="ScheduledRecoveryFull",
-            run_id="a" * 32,
-            artifact_root=artifact,
-            ops_root=ops,
+    def attach_common(**kwargs):
+        coordinated_roots.append(kwargs["artifact_repo_root"])
+        return (
+            {
+                "commonFinalizationResultPath": str(common_path),
+                "commonFinalizationReceiptSha256": common["receiptSha256"],
+            },
+            state_path,
+            "d" * 64,
         )
-        return {
-            "ok": True,
-            "date": "2026-08-09",
-            **lineage,
-        }
 
     monkeypatch.setattr(control, "_resolve_artifact_repo_root", resolve)
-    monkeypatch.setattr(control, "_validate_artifact_executable_tree", validate)
-    monkeypatch.setattr(control, "_run_bounded", run_bounded)
-    monkeypatch.setattr(daily_self_heal, "verify_publish_complete", verify_publish_complete)
+    monkeypatch.setattr(control, "_fresh_reverify_publish_manifest", attach_common)
 
     completion = control._verify_same_date_completion(
         issue_date="2026-08-09",
@@ -936,9 +984,9 @@ def test_same_date_completion_separates_artifact_data_from_trusted_ops_code(
     assert resolved_payloads == [
         {"artifactRepoRoot": str(artifact), "opsRepoRoot": str(ops)}
     ]
-    assert validated_roots == [ops]
-    assert publish_calls[0]["repo_root"] == artifact
-    assert publish_calls[0]["ops_repo_root"] == ops
+    assert coordinated_roots == [artifact]
+    assert completion["artifactRoot"] == str(artifact.resolve())
+    assert completion["opsRoot"] == str(ops.resolve())
 
 
 def test_artifact_tree_rejects_assume_unchanged_byte_substitution(
@@ -1161,521 +1209,71 @@ def test_artifact_tree_rejects_filter_from_included_local_config_without_executi
     assert '"--includes",' in filter_query
 
 
-def test_execute_runs_one_typed_recovery_then_writes_recovered_terminal(
-    monkeypatch, tmp_path: Path
+def test_execute_compatibility_adapter_requires_existing_transaction(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    control = _control("RED_AUDIT_EXECUTOR_MISSING")
-    repo = tmp_path / "recovery-repo"
-    runner = repo / "scripts" / "ops" / "news-grasp-runner.ps1"
-    runner.parent.mkdir(parents=True)
-    runner.write_text("# test runner\n", encoding="utf-8")
-    canonical_repo = tmp_path / "canonical-repo"
-    canonical_runner = canonical_repo / "scripts" / "ops" / "news-grasp-runner.ps1"
-    canonical_runner.parent.mkdir(parents=True)
-    canonical_runner.write_text("# canonical test runner\n", encoding="utf-8")
-    python = canonical_repo / ".venv" / "Scripts" / "python.exe"
-    python.parent.mkdir(parents=True)
-    python.write_bytes(b"test-python")
-    authority = tmp_path / "authority.json"
-    authority.write_text("{}", encoding="utf-8")
-    decisions = iter(
-        [
-            {
-                "action": "scheduled_recovery",
-                "terminal": None,
-                "scheduledAttemptStatus": "failed",
-                "recoveryAttemptStatus": "not_started",
-                "recoveryAuthorityReceiptSha256": "a" * 64,
-            },
-            {
-                "action": "none",
-                "terminal": "audit_recovered_green",
-                "scheduledAttemptStatus": "failed",
-                "recoveryAttemptStatus": "succeeded",
-            },
-        ]
-    )
-    commands: list[list[str]] = []
-    terminals: list[dict[str, object]] = []
-    monkeypatch.setattr(control, "decide_audit_recovery", lambda _payload: next(decisions))
-    monkeypatch.setattr(control, "CANONICAL_REPO_ROOT", canonical_repo)
-    monkeypatch.setattr(control, "CANONICAL_LIVE_BIN_ROOT", canonical_runner.parent)
-    monkeypatch.setattr(control, "_resolve_artifact_repo_root", lambda _payload: repo)
-    monkeypatch.setattr(control, "_contained_file", lambda *args, **kwargs: authority)
-    monkeypatch.setattr(control, "_git_text", lambda *args, **kwargs: "b" * 40)
-    monkeypatch.setattr(control, "_file_sha256", lambda _path: "c" * 64)
+    control = _control("CANONICAL_ATTACH_REQUIRED")
+    monkeypatch.setattr(control, "_resolve_artifact_repo_root", lambda _payload: tmp_path)
+
+    with pytest.raises(ValueError, match="AUDIT_RECOVERY_TRANSACTION_ATTACH_REQUIRED"):
+        control.execute_audit_recovery({"issueDate": "2026-08-13"})
+
+
+def test_execute_compatibility_adapter_delegates_only_to_canonical_ensure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    control = _control("CANONICAL_ATTACH_ONLY")
+    transaction_path = tmp_path / "build" / "recovery" / "transaction.json"
+    calls: list[tuple[str, object]] = []
+    monkeypatch.setattr(control, "_resolve_artifact_repo_root", lambda _payload: tmp_path)
     monkeypatch.setattr(
-        control, "_validate_artifact_executable_tree", lambda _root: "b" * 40
-    )
-    monkeypatch.setattr(
-        control.news_grasp_control_plane,
-        "verify_control_plane",
-        lambda **_kwargs: {
-            "schemaVersion": "NEWS_GRASP_CONTROL_PLANE_PREFLIGHT_V1",
-            "ok": True,
-            "status": "ready",
-            "reasonCode": "CONTROL_PLANE_READY",
-        },
+        control.news_grasp_recovery_transaction,
+        "validate_transaction_reference",
+        lambda **kwargs: calls.append(("validate", kwargs)) or {"phase": "owned_preflight"},
     )
     monkeypatch.setattr(
         control,
-        "_run_bounded",
-        lambda command, **kwargs: (commands.append(command) or 0, b""),
-    )
-    monkeypatch.setattr(control, "write_audit_terminal", lambda value: terminals.append(value))
-    monkeypatch.setattr(
-        control,
-        "_issue_recovery_execution_receipt",
-        lambda **_kwargs: repo / "build" / "recovery-execution.json",
+        "ensure_0640",
+        lambda **kwargs: calls.append(("ensure", kwargs))
+        or {"schemaVersion": "AUDIT_RECOVERY_ENSURE_RESULT_V2", "processExitCode": 3},
     )
 
     result = control.execute_audit_recovery(
         {
-            "issueDate": "2026-08-02",
-            "recoveryAuthorityPath": str(authority),
-            "recoveryExecution": {
-                "issueDate": "2026-08-02",
-                "runIntent": "ScheduledRecoveryFull",
-                "maxExternalModelCalls": 9,
-                "maxFullE2EAttempts": 0,
-                "noFocusTheft": True,
-                "noUserMonitoring": True,
-                "noAutoOpen": True,
-                "recoveryAuthorityReceiptSha256": "a" * 64,
-                "artifactRepoHead": "b" * 40,
-                "runnerSha256": "c" * 64,
-            },
+            "issueDate": "2026-08-13",
+            "transactionReceiptPath": str(transaction_path),
         }
     )
 
-    assert result["terminal"] == "audit_recovered_green"
-    assert len(commands) == 1
-    assert "ScheduledRecoveryFull" in commands[0]
-    assert "-ScheduledAuthorityEvidencePath" in commands[0]
-    assert "-AuditAcceptedAtOverride" not in commands[0]
-    assert "-PyExeOverride" in commands[0]
-    python_arg = Path(commands[0][commands[0].index("-PyExeOverride") + 1]).resolve()
-    assert python_arg == (
-        control.CANONICAL_REPO_ROOT / ".venv" / "Scripts" / "python.exe"
-    ).resolve()
-    runner_arg = Path(commands[0][commands[0].index("-File") + 1]).resolve()
-    assert runner_arg == (
-        control.CANONICAL_REPO_ROOT / "scripts" / "ops" / "news-grasp-runner.ps1"
-    ).resolve()
-    assert runner_arg != runner.resolve()
-    assert terminals == [result]
-
-
-def test_execute_uses_typed_finalizer_when_public_manifest_is_already_green(
-    monkeypatch, tmp_path: Path
-) -> None:
-    control = _control("POST_GREEN_FULL_RECOVERY_REENTRY")
-    artifact = tmp_path / "artifact"
-    manifest = artifact / "build" / "publish-complete" / "2026-08-13.json"
-    manifest.parent.mkdir(parents=True)
-    manifest.write_text(
-        json.dumps(
+    assert result["processExitCode"] == 3
+    assert calls == [
+        (
+            "validate",
             {
-                "schemaVersion": "NEWS_GRASP_PUBLISH_COMPLETE_V2",
-                "date": "2026-08-13",
-                "ok": True,
-                "public_status": "green",
-                "scheduled_attempt_status": "failed_then_recovered",
-                "recovery_attempt_status": "succeeded",
-                "source_commit": "a" * 40,
-                "artifact_commit": "b" * 40,
-                "publish_commit": "c" * 40,
-                "publish": {"ok": True, "deploy_head": "c" * 40},
-                "distribution_artifacts": {"missing": []},
-                "notification": {"ok": True},
-                "podcasts": {
-                    "primary": {"ok": True},
-                    "deepdive": {"ok": True},
-                },
-                "live_runner_readiness": {
-                    "ok": True,
-                    "next_run_readiness": {"ok": True},
-                },
-            }
+                "repo_root": tmp_path,
+                "issue_date": "2026-08-13",
+                "path": transaction_path,
+            },
         ),
-        encoding="utf-8",
-    )
-    canonical = tmp_path / "canonical"
-    runner = canonical / "scripts" / "ops" / "news-grasp-runner.ps1"
-    runner.parent.mkdir(parents=True)
-    runner.write_text("# runner", encoding="utf-8")
-    python = canonical / ".venv" / "Scripts" / "python.exe"
-    python.parent.mkdir(parents=True)
-    python.write_bytes(b"python")
-    authority = artifact / "build" / "authority.json"
-    authority.write_text("{}", encoding="utf-8")
-    decisions = iter(
-        [
+        (
+            "ensure",
             {
-                "action": "scheduled_recovery",
-                "terminal": None,
-                "scheduledAttemptStatus": "failed",
-                "recoveryAttemptStatus": "not_started",
-                "recoveryAuthorityReceiptSha256": "a" * 64,
+                "issue_date": "2026-08-13",
+                "trigger": "direct_cli",
+                "repo_root": tmp_path,
             },
-            {
-                "action": "none",
-                "terminal": "audit_recovered_green",
-                "scheduledAttemptStatus": "failed",
-                "recoveryAttemptStatus": "succeeded",
-            },
-        ]
-    )
-    commands: list[list[str]] = []
-    monkeypatch.setattr(control, "CANONICAL_REPO_ROOT", canonical)
-    monkeypatch.setattr(control, "CANONICAL_LIVE_BIN_ROOT", runner.parent)
-    monkeypatch.setattr(control, "decide_audit_recovery", lambda _payload: next(decisions))
-    monkeypatch.setattr(control, "_resolve_artifact_repo_root", lambda _payload: artifact)
-    monkeypatch.setattr(control, "_validate_artifact_executable_tree", lambda _root: "b" * 40)
-    monkeypatch.setattr(control, "_contained_file", lambda *args, **kwargs: authority)
-    monkeypatch.setattr(control, "_file_sha256", lambda _path: "c" * 64)
-    monkeypatch.setattr(
-        control, "validate_recovery_execution_manifest", lambda *args, **kwargs: None
-    )
-    monkeypatch.setattr(
-        control.news_grasp_control_plane,
-        "verify_control_plane",
-        lambda **_kwargs: {
-            "ok": False,
-            "status": "not_ready",
-            "reasonCode": "RUNNER_STATE_ROOT_DRIFT",
-        },
-    )
-    monkeypatch.setattr(
-        control,
-        "_run_bounded",
-        lambda command, **kwargs: (commands.append(command) or 0, b""),
-    )
-    finalization_receipt = manifest.with_name("2026-08-13.finalization-receipt.json")
-    finalization_receipt.write_text("{}", encoding="utf-8")
-    monkeypatch.setattr(
-        control,
-        "_fresh_reverify_and_issue_finalization",
-        lambda **_kwargs: finalization_receipt,
-    )
-    monkeypatch.setattr(control, "write_audit_terminal", lambda _value: None)
-    monkeypatch.setattr(
-        control,
-        "_issue_recovery_execution_receipt",
-        lambda **_kwargs: artifact / "build" / "recovery-execution.json",
-    )
-
-    result = control.execute_audit_recovery(
-        {
-            "issueDate": "2026-08-13",
-            "recoveryAuthorityPath": str(authority),
-            "recoveryExecution": {},
-        }
-    )
-
-    assert result["terminal"] == "audit_recovered_green"
-    assert len(commands) == 1
-    assert "-FinalizeVerifiedPublishManifest" in commands[0]
-    assert commands[0][commands[0].index("-FinalizeVerifiedPublishManifest") + 1] == str(
-        manifest
-    )
-    assert commands[0][commands[0].index("-RecoveryFinalizationReceiptPath") + 1] == str(
-        finalization_receipt
-    )
-
-
-def test_execute_repairs_control_plane_once_then_reverifies_before_runner(
-    monkeypatch, tmp_path: Path
-) -> None:
-    control = _control("CONTROL_PLANE_REPAIR_PATH_MISSING")
-    artifact = tmp_path / "artifact"
-    artifact.mkdir()
-    canonical = tmp_path / "canonical"
-    runner = canonical / "scripts" / "ops" / "news-grasp-runner.ps1"
-    bootstrap = canonical / "scripts" / "ops" / "news-grasp-bootstrap.ps1"
-    runner.parent.mkdir(parents=True)
-    runner.write_text("# runner", encoding="utf-8")
-    bootstrap.write_text("# bootstrap", encoding="utf-8")
-    python = canonical / ".venv" / "Scripts" / "python.exe"
-    python.parent.mkdir(parents=True)
-    python.write_bytes(b"python")
-    authority = artifact / "build" / "authority.json"
-    authority.parent.mkdir()
-    authority.write_text("{}", encoding="utf-8")
-    decisions = iter(
-        [
-            {
-                "action": "scheduled_recovery",
-                "terminal": None,
-                "scheduledAttemptStatus": "failed",
-                "recoveryAttemptStatus": "not_started",
-                "recoveryAuthorityReceiptSha256": "a" * 64,
-            },
-            {"terminal": "audit_recovered_green"},
-        ]
-    )
-    preflights = iter(
-        [
-            {"ok": False, "reasonCode": "PRODUCTION_RUNTIME_DRIFT"},
-            {"ok": True, "reasonCode": "CONTROL_PLANE_READY"},
-        ]
-    )
-    commands: list[list[str]] = []
-    monkeypatch.setattr(control, "CANONICAL_REPO_ROOT", canonical)
-    monkeypatch.setattr(control, "CANONICAL_LIVE_BIN_ROOT", runner.parent)
-    monkeypatch.setattr(control, "decide_audit_recovery", lambda _payload: next(decisions))
-    monkeypatch.setattr(control, "_resolve_artifact_repo_root", lambda _payload: artifact)
-    monkeypatch.setattr(control, "_validate_artifact_executable_tree", lambda _root: "b" * 40)
-    monkeypatch.setattr(control, "_contained_file", lambda *args, **kwargs: authority)
-    monkeypatch.setattr(control, "_file_sha256", lambda _path: "c" * 64)
-    monkeypatch.setattr(
-        control.news_grasp_control_plane,
-        "verify_control_plane",
-        lambda **_kwargs: next(preflights),
-    )
-    monkeypatch.setattr(
-        control, "validate_recovery_execution_manifest", lambda *args, **kwargs: None
-    )
-    monkeypatch.setattr(
-        control,
-        "_run_bounded",
-        lambda command, **kwargs: (commands.append(command) or 0, b""),
-    )
-    repair_receipt = artifact / "build" / "control-plane" / "repair.json"
-    monkeypatch.setattr(
-        control, "_issue_control_plane_repair_receipt", lambda **_kwargs: repair_receipt
-    )
-    monkeypatch.setattr(control, "write_audit_terminal", lambda _value: None)
-    monkeypatch.setattr(
-        control,
-        "_issue_recovery_execution_receipt",
-        lambda **_kwargs: artifact / "build" / "recovery-execution.json",
-    )
-
-    result = control.execute_audit_recovery(
-        {
-            "issueDate": "2026-08-13",
-            "recoveryAuthorityPath": str(authority),
-            "recoveryExecution": {},
-        }
-    )
-
-    assert result["terminal"] == "audit_recovered_green"
-    assert len(commands) == 2
-    assert "-ControlPlaneRepairOnly" in commands[0]
-    assert "ScheduledRecoveryFull" in commands[1]
-
-
-def test_execute_stops_after_one_control_plane_repair_if_drift_remains(
-    monkeypatch, tmp_path: Path
-) -> None:
-    control = _control("CONTROL_PLANE_REPAIR_UNBOUNDED")
-    artifact = tmp_path / "artifact"
-    artifact.mkdir()
-    canonical = tmp_path / "canonical"
-    runner = canonical / "scripts" / "ops" / "news-grasp-runner.ps1"
-    bootstrap = canonical / "scripts" / "ops" / "news-grasp-bootstrap.ps1"
-    runner.parent.mkdir(parents=True)
-    runner.write_text("# runner", encoding="utf-8")
-    bootstrap.write_text("# bootstrap", encoding="utf-8")
-    python = canonical / ".venv" / "Scripts" / "python.exe"
-    python.parent.mkdir(parents=True)
-    python.write_bytes(b"python")
-    authority = artifact / "build" / "authority.json"
-    authority.parent.mkdir()
-    authority.write_text("{}", encoding="utf-8")
-    commands: list[list[str]] = []
-    terminals: list[dict[str, object]] = []
-    monkeypatch.setattr(
-        control,
-        "decide_audit_recovery",
-        lambda _payload: {
-            "action": "scheduled_recovery",
-            "terminal": None,
-            "scheduledAttemptStatus": "failed",
-            "recoveryAttemptStatus": "not_started",
-            "recoveryAuthorityReceiptSha256": "a" * 64,
-        },
-    )
-    monkeypatch.setattr(control, "CANONICAL_REPO_ROOT", canonical)
-    monkeypatch.setattr(control, "CANONICAL_LIVE_BIN_ROOT", runner.parent)
-    monkeypatch.setattr(control, "_resolve_artifact_repo_root", lambda _payload: artifact)
-    monkeypatch.setattr(control, "_validate_artifact_executable_tree", lambda _root: "b" * 40)
-    monkeypatch.setattr(control, "_contained_file", lambda *args, **kwargs: authority)
-    monkeypatch.setattr(control, "_file_sha256", lambda _path: "c" * 64)
-    monkeypatch.setattr(
-        control, "validate_recovery_execution_manifest", lambda *args, **kwargs: None
-    )
-    monkeypatch.setattr(
-        control.news_grasp_control_plane,
-        "verify_control_plane",
-        lambda **_kwargs: {"ok": False, "reasonCode": "LIVE_BIN_DRIFT"},
-    )
-    monkeypatch.setattr(
-        control,
-        "_run_bounded",
-        lambda command, **kwargs: (commands.append(command) or 0, b""),
-    )
-    repair_receipt = artifact / "build" / "control-plane" / "repair.json"
-    monkeypatch.setattr(
-        control, "_issue_control_plane_repair_receipt", lambda **_kwargs: repair_receipt
-    )
-    monkeypatch.setattr(control, "write_audit_terminal", lambda value: terminals.append(value))
-
-    result = control.execute_audit_recovery(
-        {
-            "issueDate": "2026-08-13",
-            "recoveryAuthorityPath": str(authority),
-            "recoveryExecution": {},
-        }
-    )
-
-    assert result["terminal"] == "audit_major_incident_open"
-    assert result["reasonCode"] == "LIVE_BIN_DRIFT"
-    assert len(commands) == 1
-    assert "-ControlPlaneRepairOnly" in commands[0]
-    assert terminals == [result]
-
-
-def test_post_green_runtime_drift_never_reenters_broad_repair(
-    monkeypatch, tmp_path: Path
-) -> None:
-    control = _control("POST_GREEN_BROAD_REPAIR_FORBIDDEN")
-    artifact = tmp_path / "artifact"
-    manifest = artifact / "build" / "publish-complete" / "2026-08-13.json"
-    manifest.parent.mkdir(parents=True)
-    manifest.write_text(
-        json.dumps(
-            {
-                "schemaVersion": "NEWS_GRASP_PUBLISH_COMPLETE_V2",
-                "date": "2026-08-13",
-                "ok": True,
-                "public_status": "green",
-                "scheduled_attempt_status": "failed_then_recovered",
-                "recovery_attempt_status": "succeeded",
-                "source_commit": "a" * 40,
-                "artifact_commit": "b" * 40,
-                "publish_commit": "c" * 40,
-                "publish": {"ok": True, "deploy_head": "c" * 40},
-                "distribution_artifacts": {"missing": []},
-                "notification": {"ok": True},
-                "podcasts": {"primary": {"ok": True}, "deepdive": {"ok": True}},
-                "live_runner_readiness": {
-                    "ok": True,
-                    "next_run_readiness": {"ok": True},
-                },
-            }
         ),
-        encoding="utf-8",
-    )
-    canonical = tmp_path / "canonical"
-    runner = canonical / "scripts" / "ops" / "news-grasp-runner.ps1"
-    runner.parent.mkdir(parents=True)
-    runner.write_text("# runner", encoding="utf-8")
-    python = canonical / ".venv" / "Scripts" / "python.exe"
-    python.parent.mkdir(parents=True)
-    python.write_bytes(b"python")
-    commands: list[list[str]] = []
-    decisions = iter(
-        [
-            {
-                "action": "scheduled_recovery",
-                "terminal": None,
-                "scheduledAttemptStatus": "failed",
-                "recoveryAttemptStatus": "not_started",
-                "recoveryAuthorityReceiptSha256": "a" * 64,
-            },
-            {
-                "action": "none",
-                "terminal": "audit_recovered_green",
-                "scheduledAttemptStatus": "failed",
-                "recoveryAttemptStatus": "succeeded",
-            },
-        ]
-    )
-    monkeypatch.setattr(control, "decide_audit_recovery", lambda _payload: next(decisions))
-    monkeypatch.setattr(control, "CANONICAL_REPO_ROOT", canonical)
-    monkeypatch.setattr(control, "CANONICAL_LIVE_BIN_ROOT", runner.parent)
-    monkeypatch.setattr(control, "_resolve_artifact_repo_root", lambda _p: artifact)
-    monkeypatch.setattr(control, "_validate_artifact_executable_tree", lambda _r: "b" * 40)
-    monkeypatch.setattr(control, "_contained_file", lambda *args, **kwargs: manifest)
-    monkeypatch.setattr(control, "_file_sha256", lambda _p: "c" * 64)
-    monkeypatch.setattr(control, "validate_recovery_execution_manifest", lambda *a, **k: {})
-    monkeypatch.setattr(
-        control.news_grasp_control_plane,
-        "verify_control_plane",
-        lambda **_k: {"ok": False, "reasonCode": "LIVE_BIN_DRIFT"},
-    )
-    monkeypatch.setattr(
-        control, "_run_bounded", lambda command, **_k: (commands.append(command) or 0, b"")
-    )
-    finalization_receipt = manifest.with_name("2026-08-13.finalization-receipt.json")
-    finalization_receipt.write_text("{}", encoding="utf-8")
-    monkeypatch.setattr(
-        control,
-        "_fresh_reverify_and_issue_finalization",
-        lambda **_kwargs: finalization_receipt,
-    )
-    monkeypatch.setattr(
-        control,
-        "_issue_recovery_execution_receipt",
-        lambda **_kwargs: artifact / "build" / "recovery-execution.json",
-    )
-    monkeypatch.setattr(control, "write_audit_terminal", lambda _v: None)
-
-    result = control.execute_audit_recovery(
-        {
-            "issueDate": "2026-08-13",
-            "recoveryAuthorityPath": str(manifest),
-            "recoveryExecution": {},
-        }
-    )
-
-    assert result["terminal"] == "audit_recovered_green"
-    assert len(commands) == 1
-    assert "-ControlPlaneRepairOnly" not in commands[0]
-    assert "-FinalizeVerifiedPublishManifest" in commands[0]
+    ]
 
 
-def test_public_surface_proof_enforces_complete_bundle_before_post_green(
-    tmp_path: Path,
-) -> None:
-    control = _control("PUBLIC_GREEN_PROOF_BOUNDARY")
-    artifact = tmp_path / "artifact"
-    proof = (
-        artifact
-        / "build"
-        / "recovery"
-        / "proofs"
-        / "2026-08-13-public-surface-final.json"
-    )
-    proof.parent.mkdir(parents=True)
-    complete = {
-        "schema_version": 1,
-        "issue_date": "2026-08-13",
-        "overall_status": "green",
-        "errors": [],
-        "publish_complete_manifest": {
-            "ok": True,
-            "public_status": "green",
-            "scheduled_attempt_status": "failed_then_recovered",
-            "recovery_attempt_status": "succeeded",
-            "publish": {"ok": True},
-            "distribution_artifacts": {"missing": []},
-            "notification": {"ok": True},
-            "podcasts": {"primary": {"ok": True}, "deepdive": {"ok": True}},
-        },
-    }
-    proof.write_text(json.dumps(complete), encoding="utf-8")
-
-    assert control._has_verified_public_green_proof(
-        artifact_root=artifact, issue_date="2026-08-13"
-    )
-    complete["publish_complete_manifest"]["podcasts"]["deepdive"]["ok"] = False
-    proof.write_text(json.dumps(complete), encoding="utf-8")
-    assert not control._has_verified_public_green_proof(
-        artifact_root=artifact, issue_date="2026-08-13"
-    )
+def test_execute_compatibility_adapter_contains_no_runner_or_finalizer_path() -> None:
+    control = _control("CANONICAL_ATTACH_SOURCE")
+    source = inspect.getsource(control.execute_audit_recovery)
+    assert "ensure_0640(" in source
+    assert "_run_bounded(" not in source
+    assert "_issue_recovery_execution_receipt(" not in source
+    assert "_fresh_reverify_and_issue_finalization(" not in source
+    assert "news-grasp-runner.ps1" not in source
 
 
 @pytest.mark.parametrize(
@@ -1735,6 +1333,7 @@ def test_finalization_reverification_rejects_mismatched_producer_lineage(
             issue_date="2026-08-13",
             artifact_repo_root=artifact,
             manifest_path=artifact / "build" / "publish-complete" / "2026-08-13.json",
+            expected_run_intent="ScheduledRecoveryFull",
         )
         assert "incident_report_polish" in source
         assert "root_cause_hardening" in source
@@ -1839,8 +1438,8 @@ def test_ng_red_02_typed_completion_exception_is_not_collapsed_to_none(
 
     assert isinstance(result, dict), "VERIFICATION_EXCEPTION_COLLAPSED_TO_NONE"
     assert result["verificationStatus"] == "verification_unavailable"
-    assert result["publicCompletionStatus"] == "green"
-    assert result["reasonCode"] == "PRIMARY_VERIFIER_EXCEPTION"
+    assert result["publicCompletionStatus"] == "unverified"
+    assert result["reasonCode"] == "COMMON_FINALIZER_OBSERVATION_UNAVAILABLE"
     assert result["failedGateIds"]
 
 
@@ -1924,7 +1523,7 @@ def test_ng_red_08_audit_monotonic_history_rejects_replay_and_cross_lineage(
         pytest.fail("AUDIT_EVENT_REPLAY_OR_CROSS_LINEAGE_ACCEPTED")
 
 
-def test_ng_red_15_completion_state_vector_preserves_six_independent_states() -> None:
+def test_ng_red_15_completion_state_vector_preserves_eight_independent_states() -> None:
     from tools import news_grasp_operational_contract as operational
 
     result = operational.finalize_audit_decision(
@@ -1946,9 +1545,11 @@ def test_ng_red_15_completion_state_vector_preserves_six_independent_states() ->
     assert result["stateVector"] == {
         "scheduledAttemptStatus": "failed",
         "recoveryAttemptStatus": "succeeded",
-        "publicStatus": "green",
-        "auditObservationStatus": "unverified",
+        "publicCompletionStatus": "green",
         "nextRunReadinessStatus": "red",
+        "auditObservationStatus": "unverified",
+        "externalDependencyStatus": "unverified",
+        "constitutionStatus": "unverified",
         "operationalStatus": "degraded",
     }, "COMPLETION_STATE_VECTOR_COLLAPSED"
 

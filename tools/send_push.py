@@ -27,6 +27,7 @@ VAPID 秘密鍵は ~/.secrets/news-grasp-vapid.pem（tools/gen_vapid_keys.py で
     python tools/send_push.py --url https://... # 遷移先(タップで開く URL)を上書き
 """
 import argparse
+import hashlib
 import json
 import sys
 import urllib.error
@@ -39,6 +40,9 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from tools.config import BASE_URL, CATEGORIES, PUSH_WORKER_URL  # noqa: E402  URL の単一ソース
+from tools.news_grasp_deterministic_builders import (  # noqa: E402
+    build_notification_outcome_v2,
+)
 from tools.publish_inventory import CATEGORY_ORDER, PUBLICATION_SCHEDULE  # noqa: E402
 
 DEFAULT_VAPID_KEY_FILE = Path.home() / ".secrets" / "news-grasp-vapid.pem"
@@ -113,6 +117,8 @@ def parse_args() -> argparse.Namespace:
                    help="送信せず、取得元・対象数・payload だけ表示")
     p.add_argument("--record-state", default=None,
                    help="通知結果を publish-complete 用 JSON として保存するパス")
+    p.add_argument("--issue-date", default=None,
+                   help="通知receiptの対象日（既定: JST当日）")
     return p.parse_args()
 
 
@@ -132,17 +138,45 @@ def _notification_state(
     subscription_count: int = 0,
     sent_count: int = 0,
     detail: str = "",
+    issue_date: str | None = None,
+    audience_sha256: str = "",
+    payload_sha256: str = "",
 ) -> dict:
-    return {
-        "date": _today_jst_str(),
-        "status": status,
-        "ok": ok,
-        "source": source,
-        "subscription_count": subscription_count,
-        "sent_count": sent_count,
-        "detail": detail,
-        "recorded_at": datetime.now().isoformat(),
-    }
+    # ok はcaller申告ではなく、sealed delivery/audience receiptの成立結果で決める。
+    outcome = build_notification_outcome_v2(
+        issue_date=issue_date or _today_jst_str(),
+        status=status,
+        source=source or "unknown",
+        subscription_count=subscription_count,
+        sent_count=sent_count,
+        evidence={
+            "audienceSha256": audience_sha256,
+            "payloadSha256": payload_sha256,
+        },
+    )
+    if detail:
+        outcome["detail"] = detail
+    return outcome
+
+
+def _sha256_json(value: object) -> str:
+    encoded = json.dumps(
+        value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _audience_sha256(subscriptions: list[dict]) -> str:
+    # endpointや鍵そのものはreceiptへ出さず、取得時点の集合だけをhashで束縛する。
+    normalized = sorted(
+        hashlib.sha256(
+            json.dumps(
+                item, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+            ).encode("utf-8")
+        ).hexdigest()
+        for item in subscriptions
+    )
+    return _sha256_json(normalized)
 
 
 # ---------------------------------------------------------------------------
@@ -288,6 +322,7 @@ def send_one(subscription: dict, payload: str, vapid_key_file: str, claims_sub: 
 
 def main() -> int:
     args = parse_args()
+    issue_date = args.issue_date or _today_jst_str()
 
     # 取得元の決定: Worker URL + token が揃えば Worker、無ければローカルファイル。
     # URL は --worker-url > config.PUSH_WORKER_URL（環境変数で上書き可）の順。
@@ -307,7 +342,7 @@ def main() -> int:
                 )
                 _write_notification_state(
                     args.record_state,
-                    _notification_state(status="config_error", ok=False, source="worker", detail="worker_list_401"),
+                    _notification_state(status="config_error", ok=False, source="worker", detail="worker_list_401", issue_date=issue_date),
                 )
                 return 1
             # その他の HTTP エラーは付随機能として今朝はスキップ（Runner を止めない）
@@ -315,7 +350,7 @@ def main() -> int:
                   file=sys.stderr)
             _write_notification_state(
                 args.record_state,
-                _notification_state(status="external_error", ok=False, source="worker", detail=f"http_{e.code}"),
+                _notification_state(status="external_error", ok=False, source="worker", detail=f"http_{e.code}", issue_date=issue_date),
             )
             return 0
         except urllib.error.URLError as e:
@@ -323,7 +358,7 @@ def main() -> int:
                   file=sys.stderr)
             _write_notification_state(
                 args.record_state,
-                _notification_state(status="external_error", ok=False, source="worker", detail=str(e.reason)),
+                _notification_state(status="external_error", ok=False, source="worker", detail=str(e.reason), issue_date=issue_date),
             )
             return 0
     else:
@@ -347,6 +382,8 @@ def main() -> int:
                 source=source,
                 subscription_count=0,
                 sent_count=0,
+                issue_date=issue_date,
+                audience_sha256=_audience_sha256(subs),
             ),
         )
         return 0
@@ -361,6 +398,9 @@ def main() -> int:
                 source=source,
                 subscription_count=len(subs),
                 sent_count=0,
+                issue_date=issue_date,
+                audience_sha256=_audience_sha256(subs),
+                payload_sha256=_sha256_json(json.loads(payload)),
             ),
         )
         return 0
@@ -379,6 +419,9 @@ def main() -> int:
                 source=source,
                 subscription_count=len(subs),
                 sent_count=0,
+                issue_date=issue_date,
+                audience_sha256=_audience_sha256(subs),
+                payload_sha256=_sha256_json(json.loads(payload)),
             ),
         )
         return 0
@@ -400,6 +443,9 @@ def main() -> int:
                 subscription_count=len(subs),
                 sent_count=0,
                 detail=f"missing_vapid_key:{key_file}",
+                issue_date=issue_date,
+                audience_sha256=_audience_sha256(subs),
+                payload_sha256=_sha256_json(json.loads(payload)),
             ),
         )
         return 1
@@ -419,11 +465,14 @@ def main() -> int:
     _write_notification_state(
         args.record_state,
         _notification_state(
-            status="sent" if ok else "send_failed",
-            ok=ok > 0,
+            status="sent" if ok == len(subs) else "send_failed",
+            ok=ok == len(subs),
             source=source,
             subscription_count=len(subs),
             sent_count=ok,
+            issue_date=issue_date,
+            audience_sha256=_audience_sha256(subs),
+            payload_sha256=_sha256_json(json.loads(payload)),
         ),
     )
 

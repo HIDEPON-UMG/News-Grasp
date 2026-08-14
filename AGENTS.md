@@ -38,5 +38,5 @@ This is the root routing contract for Claude Code and Codex.
 - The closed-world proof contains 17 Acceptance items, 51 core nodes, 32 daily replays, and 5 compound replays; natural scheduled execution is not completion evidence.
 - Shared/global harness, broker, routing, hooks, and other product repositories are read-only boundaries for this product-local contract.
 - Completion keeps implementation, test, commit, push, install, runtime freshness, task parity, rollback, public authority, readiness, and one isolated NoPublish E2E as separate fields.
-- Projection SHA-256: `691cc6ae3de9fa93e550490aa9f9c4ee07824eb2a8caa296163798a2b5f32418`; product asset set SHA-256: `67fa74d9a4d8eb1e5d3ec4587a9f884a0429a3360d15d540f5c1b707c24d512a`.
+- Projection SHA-256: `691cc6ae3de9fa93e550490aa9f9c4ee07824eb2a8caa296163798a2b5f32418`; product asset set SHA-256: `689ae2e48093cd94419937d4dabca2d405a6e11e96e87648bbd504ea5a81d680`.
 <!-- NEWS_GRASP_CONSTITUTION_PROJECTION_V1_END -->

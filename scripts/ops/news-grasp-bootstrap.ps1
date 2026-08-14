@@ -9,7 +9,7 @@
     [switch] $RecoverOnly,
     [int] $PollSeconds = 30,
     [int] $StaleMinutes = 15,
-    [int] $TimeoutMinutes = 120,
+    [int] $TimeoutMinutes = 90,
     [string] $RunnerPath = '',
     [string] $StateFile = '',
     [string] $LogDir = '',
@@ -425,22 +425,31 @@ function Write-PreliminaryLaunchPermit {
         throw 'PRELIMINARY_LAUNCH_AUTHORITY_INPUT_MISSING'
     }
     $authorityDir = Join-Path $BinDir 'news-grasp-authority'
-    $missionPath = Join-Path $authorityDir 'audit-mission-authority-v1.json'
+    $brokerMissionPath = Join-Path $authorityDir 'broker-audit-mission-authority-v1.json'
+    $missionPath = Join-Path $authorityDir 'audit-mission-authority-v2.json'
+    $missionValidator = Join-Path $SourceRepoDir 'tools\news_grasp_mission_authority.py'
     $launchPermitPath = Join-Path $authorityDir "$IssueDate-launch-permit.json"
+    if (-not (Test-Path -LiteralPath $missionValidator -PathType Leaf)) {
+        throw 'PRELIMINARY_MISSION_AUTHORITY_VALIDATOR_MISSING'
+    }
     New-Item -ItemType Directory -Force -Path $authorityDir | Out-Null
     $missionJson = (& $python $broker 'issue-news-grasp-audit-mission' 2>&1 | Out-String).Trim()
     if ($LASTEXITCODE -ne 0) { throw "audit mission authority issuance failed exit=$LASTEXITCODE" }
-    Write-AtomicUtf8Text -Path $missionPath -Text ($missionJson + [Environment]::NewLine)
+    Write-AtomicUtf8Text -Path $brokerMissionPath -Text ($missionJson + [Environment]::NewLine)
+    $missionV2Json = (& $python '-I' '-S' '-B' $missionValidator 'wrap-legacy' '--path' $brokerMissionPath 2>&1 | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) { throw "preliminary audit mission authority V2 wrapping failed exit=$LASTEXITCODE" }
+    Write-AtomicUtf8Text -Path $missionPath -Text ($missionV2Json + [Environment]::NewLine)
     $taskActionSha256 = Get-ScheduledTaskActionSha256 -TaskName $ProductionTaskName
     $runnerSha256 = Get-FileSha256Hex -Path $liveRunner
     $launchNonce = "bootstrap-preliminary-$IssueDate-$([Guid]::NewGuid().ToString('N'))"
-    $permitJson = (& $python $broker 'issue-news-grasp-launch-permit' '--issue-date' $IssueDate '--task-action-sha256' $taskActionSha256 '--runner-sha256' $runnerSha256 '--launch-nonce' $launchNonce '--mission-authority' $missionPath 2>&1 | Out-String).Trim()
+    $permitJson = (& $python $broker 'issue-news-grasp-launch-permit' '--issue-date' $IssueDate '--task-action-sha256' $taskActionSha256 '--runner-sha256' $runnerSha256 '--launch-nonce' $launchNonce '--mission-authority' $brokerMissionPath 2>&1 | Out-String).Trim()
     if ($LASTEXITCODE -ne 0) { throw "preliminary scheduled launch permit issuance failed exit=$LASTEXITCODE" }
     Write-AtomicUtf8Text -Path $launchPermitPath -Text ($permitJson + [Environment]::NewLine)
     return [ordered]@{
         broker = $broker
         python = $python
         live_runner = $liveRunner
+        broker_mission_path = $brokerMissionPath
         mission_path = $missionPath
         launch_permit_path = $launchPermitPath
         task_action_sha256 = $taskActionSha256
@@ -772,21 +781,49 @@ $broker = if ($highCostBinding) { [string]$highCostBinding.brokerInstalledPath }
 $python = $PythonExe
 $liveRunner = Join-Path $BinDir 'news-grasp-runner.ps1'
 $authorityDir = Join-Path $BinDir 'news-grasp-authority'
-$missionPath = Join-Path $authorityDir 'audit-mission-authority-v1.json'
+$brokerMissionPath = Join-Path $authorityDir 'broker-audit-mission-authority-v1.json'
+$missionPath = Join-Path $authorityDir 'audit-mission-authority-v2.json'
 $launchPermitPath = Join-Path $authorityDir "$DateStamp-launch-permit.json"
+$brokerLaunchPermitPath = Join-Path $authorityDir "$DateStamp-launch-permit-v1.json"
+$readinessObservationPath = Join-Path $authorityDir "$DateStamp-readiness-observations.json"
+$readinessSnapshotPath = Join-Path $authorityDir "$DateStamp-readiness-snapshot-v2.json"
+$recoveryTransactionTool = Join-Path $OpsRepoRoot 'tools\news_grasp_recovery_transaction.py'
 if ((-not (Test-Path -LiteralPath $broker -PathType Leaf)) -or (-not (Test-Path -LiteralPath $python -PathType Leaf))) {
     throw 'News-Grasp authority broker or Python runtime is missing.'
+}
+if (-not (Test-Path -LiteralPath $recoveryTransactionTool -PathType Leaf)) {
+    throw 'News-Grasp recovery transaction tool is missing.'
 }
 New-Item -ItemType Directory -Force -Path $authorityDir | Out-Null
 $missionJson = (& $python $broker 'issue-news-grasp-audit-mission' 2>&1 | Out-String).Trim()
 if ($LASTEXITCODE -ne 0) { throw "audit mission authority issuance failed exit=$LASTEXITCODE" }
-Write-AtomicUtf8Text -Path $missionPath -Text ($missionJson + [Environment]::NewLine)
+Write-AtomicUtf8Text -Path $brokerMissionPath -Text ($missionJson + [Environment]::NewLine)
+$missionValidatorPath = Join-Path $RepoDir 'tools\news_grasp_mission_authority.py'
+if (-not (Test-Path -LiteralPath $missionValidatorPath -PathType Leaf)) {
+    throw 'NEWS_GRASP_MISSION_AUTHORITY_VALIDATOR_MISSING'
+}
+$missionV2Json = (& $python '-I' '-S' '-B' $missionValidatorPath 'wrap-legacy' '--path' $brokerMissionPath 2>&1 | Out-String).Trim()
+if ($LASTEXITCODE -ne 0) { throw "audit mission authority V2 wrapping failed exit=$LASTEXITCODE" }
+Write-AtomicUtf8Text -Path $missionPath -Text ($missionV2Json + [Environment]::NewLine)
 $taskActionSha256 = Get-ScheduledTaskActionSha256 -TaskName $ProductionTaskName
 $runnerSha256 = Get-FileSha256Hex -Path $liveRunner
 $launchNonce = "bootstrap-$DateStamp-$([Guid]::NewGuid().ToString('N'))"
-$permitJson = (& $python $broker 'issue-news-grasp-launch-permit' '--issue-date' $DateStamp '--task-action-sha256' $taskActionSha256 '--runner-sha256' $runnerSha256 '--launch-nonce' $launchNonce '--mission-authority' $missionPath 2>&1 | Out-String).Trim()
+$readinessObservations = [ordered]@{
+    taskActionSha256 = $taskActionSha256
+    runnerSha256 = $runnerSha256
+    pythonSha256 = Get-FileSha256Hex -Path $python
+    brokerSha256 = Get-FileSha256Hex -Path $broker
+}
+Write-AtomicUtf8Text -Path $readinessObservationPath -Text (($readinessObservations | ConvertTo-Json -Depth 4) + [Environment]::NewLine)
+$snapshotJson = (& $python '-I' '-S' '-B' $recoveryTransactionTool 'build-readiness-snapshot-v2' '--issue-date' $DateStamp '--observed-at' ((Get-Date).ToString('yyyy-MM-ddTHH:mm:ss.fffK')) '--observations' $readinessObservationPath 2>&1 | Out-String).Trim()
+if ($LASTEXITCODE -ne 0) { throw "readiness snapshot V2 creation failed exit=$LASTEXITCODE detail=$snapshotJson" }
+Write-AtomicUtf8Text -Path $readinessSnapshotPath -Text ($snapshotJson + [Environment]::NewLine)
+$permitJson = (& $python $broker 'issue-news-grasp-launch-permit' '--issue-date' $DateStamp '--task-action-sha256' $taskActionSha256 '--runner-sha256' $runnerSha256 '--launch-nonce' $launchNonce '--mission-authority' $brokerMissionPath 2>&1 | Out-String).Trim()
 if ($LASTEXITCODE -ne 0) { throw "scheduled launch permit issuance failed exit=$LASTEXITCODE" }
-Write-AtomicUtf8Text -Path $launchPermitPath -Text ($permitJson + [Environment]::NewLine)
+Write-AtomicUtf8Text -Path $brokerLaunchPermitPath -Text ($permitJson + [Environment]::NewLine)
+$permitV2Json = (& $python '-I' '-S' '-B' $recoveryTransactionTool 'wrap-launch-permit-v2' '--issue-date' $DateStamp '--snapshot' $readinessSnapshotPath '--broker-authority' $brokerLaunchPermitPath '--mission-authority-v2' $missionPath '--task-action-sha256' $taskActionSha256 '--runner-sha256' $runnerSha256 '--launch-nonce' $launchNonce 2>&1 | Out-String).Trim()
+if ($LASTEXITCODE -ne 0) { throw "scheduled launch permit V2 wrapping failed exit=$LASTEXITCODE detail=$permitV2Json" }
+Write-AtomicUtf8Text -Path $launchPermitPath -Text ($permitV2Json + [Environment]::NewLine)
 
 $watcherPath = Join-Path $BinDir 'watch-news-grasp-runner.ps1'
 $args = @('-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass', '-File', $watcherPath)
@@ -800,7 +837,7 @@ if ($SkipSourceSync) { $args += '-SkipSourceSync' }
 if ($RecoverOnly) { $args += '-RecoverOnly' }
 if ($PollSeconds -ne 30) { $args += @('-PollSeconds', [string]$PollSeconds) }
 if ($StaleMinutes -ne 15) { $args += @('-StaleMinutes', [string]$StaleMinutes) }
-if ($TimeoutMinutes -ne 120) { $args += @('-TimeoutMinutes', [string]$TimeoutMinutes) }
+if ($TimeoutMinutes -ne 90) { $args += @('-TimeoutMinutes', [string]$TimeoutMinutes) }
 if ($UseProductionRuntime) {
     $args += @('-RunnerPath', (Join-Path $RepoDir 'scripts\ops\news-grasp-runner.ps1'))
 } elseif ($RunnerPath) { $args += @('-RunnerPath', $RunnerPath) }

@@ -230,6 +230,6 @@ digest md（各カテゴリ + Summary）+ articles.jsonl append + （成功時�
 - [ ] Summary digest を γ schema で執筆し、**`categoryId` を欠落させていない**か
 - [ ] **md カード数 == records 件数 == append 件数** が一致してから append したか
 - [ ] articles.jsonl への append は **あなた 1 人** が `append_after_dedup.py` 経由で行ったか
-- [ ] エース記者（codex-deepdive）を 1 回 spawn したか（失敗は非致命）
+- [ ] エース記者（codex-deepdive）を 1 回 spawn したか（単発失敗は後続の型付きrepairへ渡すが、最終公開DoDではDeepDive必須）
 - [ ] **commit / push / docs 生成 / publish gate / `_status.md` 成功行 / Web Push を一切していない**か
 - [ ] articles.jsonl / digest md の全文を Read していない（文脈予算規律）か

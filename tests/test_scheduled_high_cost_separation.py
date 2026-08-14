@@ -14,13 +14,26 @@ from importlib.machinery import SourceFileLoader
 from importlib.util import module_from_spec, spec_from_loader
 
 import pytest
-from tools import harness as workspace_harness
-import tools.harness.high_cost_control_v2 as high_cost
+from tools.news_grasp_high_cost_binding import HighCostBindingError
+
+try:
+    from tools import harness as workspace_harness
+    import tools.harness.high_cost_control_v2 as high_cost
+except HighCostBindingError:
+    workspace_harness = None
+    high_cost = None
+
+
+pytestmark = pytest.mark.skipif(
+    workspace_harness is None,
+    reason="live workspace high-cost binding is unavailable; product-local contract tests remain active",
+)
 
 
 BROKER_PATH = (
-    workspace_harness.resolve_workspace_harness_path()
-    / "model_spawn_broker.py"
+    workspace_harness.resolve_workspace_harness_path() / "model_spawn_broker.py"
+    if workspace_harness is not None
+    else Path("__unavailable_high_cost_broker__")
 )
 
 
@@ -2389,9 +2402,10 @@ def test_installer_seals_recurring_audit_mission_authority() -> None:
         encoding="utf-8-sig"
     )
     assert "issue-news-grasp-audit-mission" in installer
-    assert "audit-mission-authority-v1.json" in installer
+    assert "audit-mission-authority-v2.json" in installer
+    assert "broker-audit-mission-authority-v1.json" in installer
     assert "mission_authority = [ordered]@{" in installer
-    assert "schema = 'AUDIT_MISSION_AUTHORITY_V1'" in installer
+    assert "schema = 'AUDIT_MISSION_AUTHORITY_V2'" in installer
 
 
 def test_recovery_authority_must_exist_in_canonical_ledger(tmp_path) -> None:

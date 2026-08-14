@@ -362,11 +362,26 @@ def _mock_distribution_manifest(tmp_path: Path) -> dict:
         encoding="utf-8",
         errors="replace",
     ).strip()
+    for relative in (
+        "build/tts/latest_audio.json",
+        "build/youtube-podcast/2026-06-23.mp4",
+        "build/youtube-podcast/uploads.json",
+        "build/tts/deepdive/latest_audio.json",
+        "build/youtube-podcast-deepdive/2026-06-23.mp4",
+        "build/youtube-podcast-deepdive/uploads.json",
+    ):
+        artifact = tmp_path / relative
+        artifact.parent.mkdir(parents=True, exist_ok=True)
+        artifact.write_bytes((relative + "\n").encode("utf-8"))
     script = r"""
 $RepoDir = $env:NEWS_GRASP_REPO_DIR
 $DateStamp = '2026-06-23'
 $GitExe = 'git'
+$PyExe = $env:NEWS_GRASP_PYTHON
+$DeterministicBuilderTool = $env:NEWS_GRASP_DETERMINISTIC_BUILDER
+$RunId = 'test-generation'
 function Write-Log { param([string]$Text) }
+function Invoke-AutonomousCompletionPolicy { param([string]$FailureKind,[string]$GateId,[string]$Reason,[int]$ExitCode); throw $Reason }
 $runner = Get-Content -LiteralPath $env:NEWS_GRASP_RUNNER_PATH -Raw -Encoding UTF8
 $start = $runner.IndexOf('function Write-DistributionManifest')
 if ($start -lt 0) { Write-Error 'Write-DistributionManifest missing'; exit 2 }
@@ -379,6 +394,8 @@ Get-Content -LiteralPath $path -Raw -Encoding UTF8
     env = os.environ.copy()
     env["NEWS_GRASP_RUNNER_PATH"] = str(OPS_DIR / "news-grasp-runner.ps1")
     env["NEWS_GRASP_REPO_DIR"] = str(tmp_path)
+    env["NEWS_GRASP_PYTHON"] = sys.executable
+    env["NEWS_GRASP_DETERMINISTIC_BUILDER"] = str(ROOT / "tools" / "news_grasp_deterministic_builders.py")
     result = subprocess.run(
         [POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script],
         capture_output=True,
@@ -1116,12 +1133,19 @@ def test_runner_stage0_uses_auth_doctor_before_podcast_work() -> None:
     assert runner.index("tools.youtube_podcast.auth_doctor") < runner.index("tools.youtube_podcast.upload_episode")
 
 
-def test_daily_runner_timeout_is_80_minutes() -> None:
-    """日次 digest 本体の wall-clock timeout は 80 分、idle 既定は 15 分に固定する。"""
+def test_daily_runner_reserves_15_minutes_for_target_closeout() -> None:
+    """生成処理は45分で閉じ、60分targetの残り15分を共通finalizerへ残す。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
 
-    assert "$TimeoutSec = 4800" in runner
+    assert "$TimeoutSec = 2700" in runner
     assert "[int] $IdleTimeoutSec = 900" in runner
+    assert "SCHEDULED_PRODUCTION_TARGET_CLOSEOUT_RESERVE_ACTIVE" in runner
+    assert "$script:ScheduledProductionHighCostDeadlineAt" in runner
+    assert "RECOVERY_TARGET_CLOSEOUT_RESERVE_ACTIVE" in runner
+    assert "-OperationClass 'NewHighCost'" in runner
+    assert "-OperationClass 'Closeout'" in runner
+    assert "RECOVERY_HIGH_COST_CUTOFF_EXCEEDED" in runner
+    assert "$script:RecoveryTargetCloseoutAt" in runner
 
 
 def test_runner_exposes_no_push_dry_run_switch() -> None:
@@ -1168,9 +1192,9 @@ def test_runner_exposes_resume_from_deepdive_without_reharvest() -> None:
     _assert_runner_powershell_parses()
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
 
-    assert "[ValidateSet('', 'post-reporter', 'editor', 'deepdive', 'post-daily-quality', 'post-deepdive', 'generation-quality-repair')]" in runner
+    assert "[ValidateSet('', 'post-reporter', 'post-daily-quality', 'post-deepdive', 'generation-quality-repair')]" in runner
     assert "[string] $ResumeFromStage = ''" in runner
-    assert "$ResumeFromPostDailyQuality = $ResumeFromStage -in @('deepdive', 'post-daily-quality')" in runner
+    assert "$ResumeFromPostDailyQuality = $ResumeFromStage -eq 'post-daily-quality'" in runner
     assert "$ResumeAfterDeepDive = $ResumeFromStage -in @('post-deepdive')" in runner
     assert "ResumeFromStage=${ResumeFromStage}: reusing Stage0/Reporter/Editor/daily-quality artifacts; starting at DeepDive" in runner
     assert "ResumeFromStage mode: skipping net reachability wait and git sync" in runner
@@ -1206,7 +1230,7 @@ def test_no_publish_e2e_forbids_force_full_rerun_after_artifacts_exist() -> None
 
     assert "$IsE2EOrDryRun = $NoPublish -or $NoPush -or $StopBeforeDeepDive" in guard
     assert "E2E full rerun forbidden after existing artifacts" in guard
-    assert "Use -ResumeFromStage deepdive, post-daily-quality, post-deepdive, or generation-quality-repair" in guard
+    assert "Use -ResumeFromStage post-reporter, post-daily-quality, post-deepdive, or generation-quality-repair" in guard
     assert guard.index("E2E full rerun forbidden after existing artifacts") < guard.index("existing daily artifacts detected")
     assert "-not $ForceFullRerun" not in guard.split("E2E full rerun forbidden after existing artifacts", 1)[0]
 
@@ -1289,6 +1313,7 @@ def test_autonomous_completion_policy_call_sites_are_covered_by_no_publish_contr
             ("content", "newsroom-editor-transaction-recovery"),
         ("content", "newsroom-editor-workspace"),
         ("content", "summary-reflection"),
+        ("content", "summary-audio-materialization"),
         ("content", "daily-quality"),
         ("artifact", "generation-normalize"),
         ("content", "generation-quality"),
@@ -1310,6 +1335,7 @@ def test_autonomous_completion_policy_call_sites_are_covered_by_no_publish_contr
         ("distribution", "podcast-verify"),
         ("distribution", "deepdive-podcast-verify"),
         ("distribution", "podcast-playlist-audit"),
+        ("distribution", "notification-delivery"),
         ("publish", "publish-verify"),
         ("publish", "publish-complete"),
     }
@@ -1552,7 +1578,7 @@ def test_post_reporter_resume_reuses_verified_reporter_artifacts_without_refanou
         1,
     )[0]
 
-    assert "$ResumeAfterReporter = $ResumeFromStage -in @('post-reporter', 'editor')" in runner
+    assert "$ResumeAfterReporter = $ResumeFromStage -eq 'post-reporter'" in runner
     assert "(-not $ResumeAfterReporter)" in runner
     assert "ResumeFromStage=${ResumeFromStage}: skipping Stage0/Stage1/Stage1.5" in runner
     assert "if ($ResumeAfterReporter) {" in reporter_body
@@ -1565,7 +1591,7 @@ def test_post_reporter_resume_reuses_verified_reporter_artifacts_without_refanou
 def test_recovery_continuation_admission_covers_deepdive_resume_boundary() -> None:
     """DeepDive resume も broker-issued continuation admission で再開できる。"""
     runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
-    admission_block = runner.split("$stageDecisionReceipt = ''", 1)[1].split(
+    admission_block = runner.split("$script:UsesHighCostContinuationAdmission = $false", 1)[1].split(
         "if (-not $ScheduledAuthorityEvidencePath)",
         1,
     )[0]
@@ -1577,8 +1603,8 @@ def test_recovery_continuation_admission_covers_deepdive_resume_boundary() -> No
     assert "if ($HighCostAdmissionPath)" in admission_block
     assert "[string]$continuationAdmission.resumeStage -ne $ResumeFromStage" in admission_block
     assert "$script:UsesHighCostContinuationAdmission = $true" in admission_block
-    assert "scheduled recovery stage start boundary satisfied by HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1" in resume_block
-    assert "start-news-grasp-recovery-stage" in resume_block
+    assert "receipt-V2 bound HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1" in resume_block
+    assert "start-news-grasp-recovery-stage" not in resume_block
 
 
 def test_scheduled_recovery_resume_never_converts_pytest_failure_to_success() -> None:
@@ -1635,12 +1661,12 @@ def test_deadman_wrapper_exists_and_uses_non_webpush_alert_log() -> None:
     assert "deadman" in text
     assert "news-grasp-alerts" in text
     assert "Invoke-Audit0640Control" in text
-    assert "tools.news_grasp_daily_control" in text
-    assert "execute-audit-0640" in text
+    assert "tools.audit_recovery_control" in text
+    assert "ensure-0640" in text
     assert "audit controller remains authoritative" in text
     assert "exit (Invoke-Audit0640Control)" in text
     assert "$terminalJson" in text
-    assert "$executorExitCode -notin @(0, 2)" in text
+    assert "$executorExitCode -notin @(0, 2, 3)" in text
     assert "Invoke-RecoverOnlyIfStaleDeadPid" not in text
     assert "-RecoveryDecisionPath" not in text
     assert "watch-news-grasp-runner.ps1" not in text
@@ -2162,7 +2188,7 @@ def test_runner_watcher_uses_hidden_start_and_event_driven_terminal_state() -> N
     assert "[switch] $StartOnly" in watcher
     assert "[switch] $Status" in watcher
     assert "[int] $StaleMinutes = 15" in watcher
-    assert "[int] $TimeoutMinutes = 120" in watcher
+    assert "[int] $TimeoutMinutes = 90" in watcher
     assert "Start-Process -FilePath 'powershell'" not in watcher
     assert "CreateSuspendedJobProcess" in watcher
     assert "CREATE_NO_WINDOW" in watcher
@@ -2190,7 +2216,7 @@ def test_start_only_keeps_owned_job_watcher_alive_until_terminal() -> None:
     assert "fallback_ok" not in watcher.split("function Test-TerminalState", 1)[1].split("function", 1)[0]
     assert "runner process exited without publish_complete marker" in watcher
     assert "log has not changed for" in watcher
-    assert "watch timeout after" in watcher
+    assert "watch hard deadline reached at" in watcher
 
 
 def test_direct_runner_has_pre_run_bootstrap_interlock_before_generation() -> None:
@@ -2638,6 +2664,105 @@ def test_runner_and_watcher_retry_transient_state_reads_before_declaring_corrupt
         assert body.index("for ($attempt = 1; $attempt -le 3; $attempt++)") < body.index("corrupt_backup")
 
 
+def test_watcher_preserves_public_terminal_but_propagates_degraded_child_exit(
+    tmp_path: Path,
+) -> None:
+    fixture_runner = tmp_path / "public-green-degraded-runner.ps1"
+    state_file = tmp_path / "runner-state.json"
+    log_dir = tmp_path / "logs"
+    bin_dir = tmp_path / "bin"
+    log_dir.mkdir()
+    bin_dir.mkdir()
+    fixture_runner.write_text(
+        r"""
+param(
+[string] $DateStampOverride,
+[string] $LogDirOverride,
+[string] $StateFileOverride,
+[string] $RepoDirOverride,
+[string] $OpsRepoRootOverride,
+[string] $PyExeOverride,
+[string] $HighCostAdmissionPath,
+[string] $HighCostBindingPath,
+[string] $HighCostBindingReceiptSha256,
+[switch] $SmokeTest,
+[switch] $SkipSourceSync,
+[switch] $RecoverOnly
+)
+$now = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss.fffK')
+$payload = [ordered]@{
+    status = 'publish_complete'
+    message = 'public authority sealed; readiness debt remains'
+    exit_code = 0
+    updated_at = $now
+    heartbeat_at = $now
+    run_id = 'public-green-degraded'
+    pid = [int]$PID
+    repo_dir = [string]$RepoDirOverride
+    runner_path = [string]$PSCommandPath
+    process_creation_time = [Diagnostics.Process]::GetCurrentProcess().StartTime.ToString('o')
+    command_line_fingerprint = 'fixture'
+}
+[IO.File]::WriteAllText(
+    $StateFileOverride,
+    (($payload | ConvertTo-Json -Depth 6) + [Environment]::NewLine),
+    [Text.UTF8Encoding]::new($false)
+)
+Start-Sleep -Milliseconds 300
+exit 2
+""",
+        encoding="utf-8-sig",
+    )
+    completed = subprocess.run(
+        [
+            POWERSHELL,
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(WATCHER_PS1),
+            "-Start",
+            "-SmokeTest",
+            "-SkipSourceSync",
+            "-TimeoutMinutes",
+            "1",
+            "-RunnerPath",
+            str(fixture_runner),
+            "-StateFile",
+            str(state_file),
+            "-LogDir",
+            str(log_dir),
+            "-DateStamp",
+            "2026-08-14",
+            "-RepoDir",
+            str(ROOT),
+            "-BinDir",
+            str(bin_dir),
+            "-PyExeOverride",
+            sys.executable,
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=30,
+        check=False,
+    )
+    assert completed.returncode == 2, completed.stdout + completed.stderr
+    state = json.loads(state_file.read_text(encoding="utf-8-sig"))
+    assert state["status"] == "publish_complete"
+    assert state["exit_code"] == 0
+    evidence = json.loads(
+        (log_dir / "runner-launch-evidence-2026-08-14.json").read_text(
+            encoding="utf-8-sig"
+        )
+    )
+    assert evidence["status"] == "terminal_state_reached"
+    assert evidence["reasonCode"] == "RUNNER_PUBLIC_TERMINAL_WITH_DEGRADED_AUTOMATION"
+    assert evidence["childExitCode"] == 2
+
+
 def test_watcher_status_reports_stale_when_running_pid_is_dead(tmp_path: Path) -> None:
     """Status 表示は stale running を「まだ実行中」と誤表示しない。"""
     state_file = tmp_path / "state.json"
@@ -3073,11 +3198,11 @@ def test_runner_verifies_publish_complete_manifest_before_success() -> None:
     """publish_complete 前に unified manifest verifier を通す。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
 
-    assert "verify-publish-complete" in runner
-    assert runner.index("deepdive podcast verification OK") < runner.index("verify-publish-complete")
-    assert runner.index("podcast playlist audit OK") < runner.index("verify-publish-complete")
-    assert runner.index("send_push start") < runner.index("verify-publish-complete")
-    assert runner.index("verify-publish-complete") < runner.rindex("news-grasp-runner.ps1 OK")
+    assert "coordinate-publish" in runner
+    assert runner.index("deepdive podcast verification OK") < runner.index("coordinate-publish")
+    assert runner.index("podcast playlist audit OK") < runner.index("coordinate-publish")
+    assert runner.index("send_push start") < runner.index("coordinate-publish")
+    assert runner.index("coordinate-publish") < runner.rindex("news-grasp-runner.ps1 OK")
     block = runner.split("publish-complete manifest verification start", 1)[1].split("news-grasp-runner.ps1 OK", 1)[0]
     before_block = runner.split("$distributionSummary = Write-DistributionManifest", 1)[1].split(
         "# ===== 5. digest + docs",
@@ -3125,10 +3250,11 @@ def test_runner_writes_distribution_manifest_with_commit_anchor(tmp_path: Path) 
     )[0]
 
     assert manifest["date"] == "2026-06-23"
+    assert manifest["schemaVersion"] == "NEWS_GRASP_DISTRIBUTION_MANIFEST_V2"
     assert manifest["pre_publish_commit"] == manifest["_expected_head"]
     assert manifest["publish_commit"] == ""
     assert manifest["publish_commit_resolution"] == "post_push_verify"
-    assert manifest["same_publish_contract"] == "pre_publish_commit_must_equal_verified_publish_commit"
+    assert manifest["same_publish_contract"] == "pre_publish_commit_must_be_ancestor_of_verified_publish_commit"
     assert not Path(manifest["_manifest_path"]).read_bytes().startswith(b"\xef\xbb\xbf")
     assert manifest["primary_podcast_state"] == "build/youtube-podcast/uploads.json"
     assert manifest["deepdive_podcast_state"] == "build/youtube-podcast-deepdive/uploads.json"

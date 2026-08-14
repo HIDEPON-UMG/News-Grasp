@@ -176,7 +176,7 @@ def test_ng813_smoke_inventory_probe_cannot_write_ops_bytecode() -> None:
         encoding="utf-8-sig"
     )
     assert "& $PyExe '-B' '-m' 'tools.daily_self_heal'" in deadman
-    assert "& $PyExe '-B' '-m' 'tools.news_grasp_daily_control'" in deadman
+    assert "& $PyExe '-B' '-m' 'tools.audit_recovery_control' 'ensure-0640'" in deadman
     assert "if ((Get-Date).Hour -eq 6)" in deadman
     assert "exit (Invoke-Audit0640Control)" in deadman
 
@@ -263,8 +263,8 @@ def test_ng813_runner_passes_real_state_file_and_ops_root() -> None:
 
     assert "'--producer-state' $StateFile" in verify_block
     assert "$StateFilePath" not in verify_block
-    assert "RecoveryRuntimeBinding.DailySelfHealPath" in verify_block
-    assert "& $PyExe '-I' '-S' '-B' $dailySelfHealTool" in verify_block
+    assert "$FinalizationCoordinatorTool" in verify_block
+    assert "'--ops-repo-root' $OpsRepoRoot" in verify_block
     assert "'-P' '-m' 'tools.daily_self_heal'" not in verify_block
     assert "-OpsRoot $OpsRepoRoot" in lineage_block
 
@@ -327,17 +327,26 @@ def test_ng813_control_plane_repair_only_exits_before_broker_and_watcher() -> No
 
 def test_ng813_recovery_preflight_runs_before_runner_spawn() -> None:
     """adversarial: authority検証後の4-root Redはrunner/modelへ到達しない。"""
-    source = (REPO_ROOT / "tools" / "audit_recovery_control.py").read_text(
+    source = (REPO_ROOT / "tools" / "news_grasp_daily_control.py").read_text(
         encoding="utf-8-sig"
     )
-    execute = source.split("def execute_audit_recovery", 1)[1].split(
-        "def _audit_event_history_path", 1
+    receipt = source.split("def issue_recovery_execution_receipt_v2", 1)[1].split(
+        "def _execute_audit_0640_owned", 1
     )[0]
+    execute = source.split("def _execute_audit_0640_owned", 1)[1].split(
+        "def execute_audit_0640", 1
+    )[0]
+    recovery_launch = execute.split('elif action == "launch_recovery":', 1)[1]
 
-    assert execute.index("validate_recovery_execution_manifest(") < execute.index(
-        "verify_control_plane("
+    assert receipt.index("_load_recovery_evidence_for_receipt(") < receipt.index(
+        "_ensure_control_plane_preflight_once("
     )
-    assert execute.index("verify_control_plane(") < execute.index("_run_bounded(")
+    assert receipt.index("_ensure_control_plane_preflight_once(") < receipt.index(
+        "create_recovery_execution_receipt_v2("
+    )
+    assert recovery_launch.index("issue_execution_receipt(") < recovery_launch.index(
+        "run_command("
+    )
 
 
 def test_ng813_typed_finalizer_skips_global_high_cost_reentry_and_runs_guard() -> None:
@@ -350,7 +359,7 @@ def test_ng813_typed_finalizer_skips_global_high_cost_reentry_and_runs_guard() -
         "# 前回 crash の WAL", 1
     )[0]
 
-    assert "if (-not $FinalizeVerifiedPublishManifest)" in external_block
+    assert "if ((-not $FinalizeVerifiedPublishManifest)" in external_block
     assert "Invoke-NewsGraspCompletionGuard" in finalizer
     assert "Get-NewsGraspExternalControlPlaneReadiness" not in finalizer
     assert "Assert-HighCostOperationAdmission" not in finalizer
@@ -453,8 +462,8 @@ def test_ng813_recovery_python_entrypoints_are_isolated_direct_scripts() -> None
     assert "$controlPlaneArgs = @('-I', '-S', '-B', $controlPlaneVerifier" in bootstrap
     assert "& $PythonExe @controlPlaneArgs" in bootstrap
     assert "& $PyExe '-I' '-S' '-B' $recoveryReceiptTool" in runner
-    assert "& $PyExe '-I' '-S' '-B' $completionGuardTool" in runner
-    assert "& $PyExe '-I' '-S' '-B' $dailySelfHealTool" in runner
+    assert "$guardTool = [string]$RecoveryRuntimeBinding.CompletionGuardToolPath" in runner
+    assert "& $PyExe '-I' '-S' '-B' $guardTool" in runner
     assert "'-P' '-m' 'tools.news_grasp_recovery_receipts'" not in bootstrap
     assert "'-P' '-m' 'tools.news_grasp_recovery_receipts'" not in runner
     assert "'-P' '-m' 'tools.news_grasp_completion_guard'" not in runner

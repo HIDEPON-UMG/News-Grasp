@@ -91,23 +91,23 @@ Do not call the repair complete if any lane is uninspected. New or reclassified 
 
 ## Executable Audit Recovery Decision
 
-このskillはauthorityを発行せず、terminalを自由文で決めない。repair matrix / `tools.auto_repair_orchestrator` の構造化出力をrepo-local canonical consumer `tools.audit_recovery_control`へ渡し、次の3分類だけを使う。
+このskillはauthorityを発行せず、terminalを自由文で決めない。Deadman、watcher、Codex automation、direct CLIは、repo-local canonical consumer `tools.audit_recovery_control ensure-0640` のissue-date transactionへacquire-or-attachする。runnerやverifierを直接起動しない。
 
 - `normal`: scheduled attempt自体とsame-date completionがGreen。
 - `recoverable`: 登録済みrepair classで、broker-issued recovery authorityと共有budgetが利用可能。
 - `incident_required`: unknown class、authority unavailable、budget/receipt/date/lineage不整合、外部認証判断、same-date public incomplete。
 
-`AUDIT_RECOVERY_DECISION_V1`のterminalは`audit_normal_green`、`audit_recovered_green`、`audit_major_incident_open`だけである。`operation_deferred is not a terminal`。子operationが延期されても当日公開面が不完全なら`audit_major_incident_open`へ上げる。全成果物欠落時は`ScheduledRecoveryFull`を使い、生成済みartifact前提の`RecoverOnly`を選ばない。
+`AUDIT_RECOVERY_DECISION_V2`のterminalは`audit_normal_green`、`audit_recovered_green`、`audit_observation_unverified`、`audit_major_incident_open`だけである。`operation_deferred is not a terminal`。既存public authorityを再観測できない場合はauthorityを保持した`audit_observation_unverified`とし、public incomplete、SLO失敗、unknown routeは`audit_major_incident_open`へ上げる。Fullはartifact deltaがなくrunner前停止の場合だけ許可し、deltaがある場合はsealed checkpointから`ResumeFromStage`、登録済みreconcile、またはmajor incidentを選ぶ。
 
 監査入力は次の実行契約に従う。callerはauthority、completion Green、terminal出力先を自己申告しない。
 
 - `python -m tools.audit_recovery_control classify-repair --input <repair-payload.json>` でrepair classをtyped化する。
-- `python -m tools.audit_recovery_control decide --input <audit-input.json>` を呼ぶ。`--terminal-output`は存在せず、terminalはconsumerがrepo-local `build/incidents/<issue-date>-audit-terminal.json`へatomicに書く。
-- 復旧またはterminal確定は `python -m tools.audit_recovery_control execute --input <audit-input.json>` を1回だけ呼んで閉じる。audit agent は runner を直接起動しない。executorだけがledger-backed authorityを再検証し、production recoveryを1回起動し、same-gate再検証から`audit_recovered_green`または`audit_major_incident_open`を発行する。
+- 通常運用は `python -I -B -m tools.audit_recovery_control ensure-0640 --issue-date <YYYY-MM-DD> --trigger <deadman|watcher|automation|direct_cli>` だけを呼ぶ。`decide` / `execute --input` はtransaction owner内部の互換surfaceであり、automationから直接呼ばない。
+- `--terminal-output`は存在せず、terminalはconsumerがrepo-local `build/incidents/<issue-date>-audit-terminal.json`へatomicに書く。issue-date lease、fencing token、phase journal、shared hard deadlineがないdirect runner起動を拒否する。
 - `<audit-input.json>` は `artifactRepoRoot`、canonical `opsRepoRoot`、`recoveryExecution` を必須にする。`recoveryExecution` は `issueDate`、`recoveryAuthorityReceiptSha256`、`artifactRepoHead`、canonical `runnerSha256` へexact bindingし、`runIntent=ScheduledRecoveryFull`、`maxExternalModelCalls=9`、`maxFullE2EAttempts=0`、`noFocusTheft=true`、`noUserMonitoring=true`、`noAutoOpen=true` を持つ。executorはartifact repoのorigin identity、ops root、authority、HEAD、canonical runner bytesを実行直前に検証し、artifact repo内のrunnerを実行しない。
 - `<audit-input.json>` は `issueDate`、`repairDecision.classification`、`humanImpact` を持つ。scheduled failureでは `scheduledFailureReceiptPath` と `recoveryAuthorityPath` をrepo-local `build/**`配下の実ファイルへ束縛する。scheduled/recovery attempt statusとrunner state pathはcallerに指定させない。
 - consumerは固定installed brokerの `inspect-news-grasp-attempt` でscheduled reservation、immutable failure、recovery admission eventをdurable ledgerから導出する。recovery authorityも同じledgerと照合し、callerが作ったJSONやSHA整合だけでは受理しない。
-- Green判定はconsumerが固定 `%USERPROFILE%\bin\news-grasp-runner-state.json`、`validate_daily_quality --require-deepdive`、`verify_publish_complete`を実行して再構成する。callerのboolean、前日publish-status、unkeyed receiptを読むだけの`check-completion`は証拠にしない。
+- Green判定はlineage単位のmanifest leaseとcommon finalization coordinatorが一度だけ生成したsealed public-only V3 manifestから再構成する。public surface oracleはmanifestを読むだけでproducerを再帰実行しない。callerのboolean、前日publish-status、unkeyed receiptを読むだけの`check-completion`は証拠にしない。
 
 ## DeepDive Shared Quality Repair
 
@@ -127,13 +127,13 @@ DeepDive記事とPodcast対談は別々に修復しない。production runner、
 - 正規entrypointは05:55/06:00の`pythonw news-grasp-task-launcher.pyw`からclean production runtime bootstrapへ入る一経路とする。direct runnerは防御interlockがあってもnext-run readyの正規証拠にしない。bootstrap self-repairはlauncher自身も同期し、次回起動へsource変更を反映する。
 - `production_recovery_run`: 不変の`SCHEDULED_FAILURE_RECEIPT_V1`から派生した`SCHEDULED_RECOVERY_AUTHORITY_V1`で一度だけ起動する。productionと同じissue-date ledgerの残予算を共有し、run ID・workspace・receipt名を変えて予算をresetしない。full E2E budgetは0。
 - `audit_run`: `AUDIT_MISSION_AUTHORITY_V1`でread-only分類、typed recovery起動、same-gate再検証、major incident terminal発行を所有する。通常budgetはexternal model 0 / full E2E 0。audit自身がproduction model call権限を持つのではなく、brokerが発行したrecovery authorityをproduction recoveryへ渡す。
-- audit agent 自身はrunnerの起動・retry・再開を所有しない。repo-local `tools.audit_recovery_control execute` が唯一の起動consumerであり、one-shot recovery後に必ずtyped terminalまで到達する。これにより自由文の「deferred」や、判断後に実行を忘れる状態を作らない。
+- audit agent 自身はrunnerの起動・retry・再開を所有しない。repo-local `tools.audit_recovery_control ensure-0640` のissue-date transactionだけが起動ownerを獲得でき、one-shot recovery後に必ずtyped terminalまで到達する。これにより自由文の「deferred」や、判断後に実行を忘れる状態を作らない。
 
 ### Recovery Workspace And Live Ops Root
 
 - dirty canonical repoを保護するためclean recovery workspaceを使ってよいが、`artifact_repo_root`と`ops_repo_root`を混同しない。artifact rootは当日生成物・git HEAD・distribution・publish manifest、ops rootはScheduled Task・live runner・bootstrap・watcherの正本である。
 - recovery runnerは`-OpsRepoRootOverride <canonical-repo>`、completion verifierは`--repo-root <artifact-recovery-workspace> --ops-repo-root <canonical-repo>`を使う。recovery cloneのcheckout改行差をlive runner driftと誤認したり、clone bytesをcanonical live sourceへ昇格したりしない。
-- `verify-publish-complete` Green後にrunner stateだけがRedなら、生成・TTS・upload・notificationを再実行しない。runnerの`-FinalizeVerifiedPublishManifest`を`ScheduledRecoveryFull` intentで一度だけ使い、同一manifestのdate、public status、scheduled/recovery status、Podcast、notification、next-run readiness、local/remote commitを再検証して`publish_complete`へ遷移させる。
+- sealed public manifest Green後にreadinessだけがRedなら、生成・TTS・upload・notificationを再実行しない。public authorityを維持し、readiness debtを`COMPLETION_OUTCOME_ENVELOPE_V1`のsidecarへ記録する。SLO失敗もpublic authorityは維持するがguardをRed、terminalをmajor incident、automation exitを2とする。
 - typed finalizerが失敗した場合は`deferred`や再生成へ逃がさず、`audit_major_incident_open`とする。
 - `blocked_startup_self_repair_failed` はfixed stateの`attempt_terminal=true`と`scheduled_failure_receipt_path`を必須証拠とする。broker ledger一致なら通常のrecovery authorityを導出し、receipt欠落・terminalizer失敗・ledger不一致は外部境界として丸めず`audit_major_incident_open`にする。手製receiptや自由文reconcileで復旧権限を作らない。
 

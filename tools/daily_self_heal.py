@@ -3309,20 +3309,43 @@ def _distribution_artifact_manifest(repo_root: Path, date: str) -> dict:
             manifest_errors.append("manifest_not_object")
             loaded = {}
         manifest = loaded
+        schema_version = str(manifest.get("schemaVersion") or "")
         required_text_fields = (
             "date",
             "primary_podcast_state",
             "deepdive_podcast_state",
             "latest_audio_state",
             "deepdive_audio_state",
-            "generated_at",
         )
+        if schema_version != "NEWS_GRASP_DISTRIBUTION_MANIFEST_V2":
+            required_text_fields = (*required_text_fields, "generated_at")
         for field in required_text_fields:
             value = str(manifest.get(field) or "").strip()
             if not value:
                 manifest_errors.append(f"missing_field:{field}")
             elif field.endswith("_state") and Path(value).is_absolute():
                 manifest_errors.append(f"absolute_path:{field}")
+        if schema_version == "NEWS_GRASP_DISTRIBUTION_MANIFEST_V2":
+            if (
+                not _sealed_receipt_valid(manifest)
+                or manifest.get("issueDate") != date
+                or manifest.get("stage") != "pre-verifier"
+                or not isinstance(manifest.get("artifacts"), dict)
+            ):
+                manifest_errors.append("v2_seal_or_stage_invalid")
+            else:
+                for item in manifest["artifacts"].values():
+                    relative = str(item.get("path") or "")
+                    expected_sha = str(item.get("sha256") or "")
+                    artifact_path = repo_root / relative
+                    if (
+                        Path(relative).is_absolute()
+                        or ".." in Path(relative).parts
+                        or not artifact_path.is_file()
+                        or hashlib.sha256(artifact_path.read_bytes()).hexdigest()
+                        != expected_sha
+                    ):
+                        manifest_errors.append(f"artifact_hash_mismatch:{relative}")
         if manifest_errors:
             manifest_reason = "distribution_manifest_invalid"
         elif str(manifest.get("date")) != date:
@@ -3335,9 +3358,14 @@ def _distribution_artifact_manifest(repo_root: Path, date: str) -> dict:
                 publish_commit = str(manifest.get("publish_commit") or "").strip()
                 resolution = str(manifest.get("publish_commit_resolution") or "").strip()
                 same_publish_contract = str(manifest.get("same_publish_contract") or "").strip()
+                allowed_contract = (
+                    "pre_publish_commit_must_be_ancestor_of_verified_publish_commit"
+                    if schema_version == "NEWS_GRASP_DISTRIBUTION_MANIFEST_V2"
+                    else "pre_publish_commit_must_equal_verified_publish_commit"
+                )
                 if not publish_commit and (
                     resolution != "post_push_verify"
-                    or same_publish_contract != "pre_publish_commit_must_equal_verified_publish_commit"
+                    or same_publish_contract != allowed_contract
                 ):
                     manifest_reason = "distribution_manifest_publish_commit_resolution_missing"
     return {
@@ -3998,6 +4026,7 @@ def complete_readiness_repair(
 
 _KNOWN_NOTIFICATION_STATUSES = {
     "sent",
+    "already_sent",
     "send_failed",
     "no_subscribers",
     "dry_run",
@@ -4006,6 +4035,59 @@ _KNOWN_NOTIFICATION_STATUSES = {
     "config_error",
     "external_error",
 }
+
+
+def _sealed_receipt_valid(payload: object) -> bool:
+    if not isinstance(payload, dict):
+        return False
+    expected = str(payload.get("receiptSha256") or "").lower()
+    if not re.fullmatch(r"[0-9a-f]{64}", expected):
+        return False
+    unsigned = {key: value for key, value in payload.items() if key != "receiptSha256"}
+    actual = hashlib.sha256(
+        json.dumps(
+            unsigned,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    return actual == expected
+
+
+def _notification_delivery_proven(payload: dict, date: str) -> bool:
+    if payload.get("schemaVersion") != "NEWS_GRASP_NOTIFICATION_OUTCOME_V2":
+        return False
+    if payload.get("ok") is not True or not _sealed_receipt_valid(payload):
+        return False
+    status = str(payload.get("status") or "")
+    subscriptions = payload.get("subscription_count")
+    sent = payload.get("sent_count")
+    if status in {"sent", "already_sent"}:
+        receipt = payload.get("deliveryReceipt")
+        return bool(
+            _sealed_receipt_valid(receipt)
+            and receipt.get("schemaVersion")
+            == "NEWS_GRASP_NOTIFICATION_DELIVERY_RECEIPT_V1"
+            and receipt.get("issueDate") == date
+            and isinstance(subscriptions, int)
+            and subscriptions > 0
+            and sent == subscriptions
+            and receipt.get("targetCount") == subscriptions
+            and receipt.get("acceptedCount") == sent
+        )
+    if status == "no_subscribers":
+        receipt = payload.get("audienceResolutionReceipt")
+        return bool(
+            _sealed_receipt_valid(receipt)
+            and receipt.get("schemaVersion")
+            == "NEWS_GRASP_NOTIFICATION_AUDIENCE_RESOLUTION_RECEIPT_V1"
+            and receipt.get("issueDate") == date
+            and subscriptions == 0
+            and sent == 0
+            and receipt.get("resolvedAudienceCount") == 0
+        )
+    return False
 
 
 def _load_notification_state(path: Path, date: str) -> dict:
@@ -4032,6 +4114,13 @@ def _load_notification_state(path: Path, date: str) -> dict:
             "state": payload,
             "reason": "notification_state_mismatch",
             "detail": f"date:{payload_date}",
+        }
+    if not _notification_delivery_proven(payload, date):
+        return {
+            "path": str(path),
+            "state": payload,
+            "reason": "notification_delivery_unproven",
+            "detail": f"status:{status}",
         }
     return {"path": str(path), "state": payload, "reason": ""}
 

@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "NEWS_GRASP_FULL_RECOVERY_POLICY_V2",
+  "productId": "News-Grasp",
+  "authorityScope": "ScheduledRecoveryFull",
+  "sourceStatus": "UserConfirmed",
+  "userConfirmationProvenance": "actual_user:2026-08-14:PLEASE_IMPLEMENT_THIS_PLAN",
+  "brokerReceiptRequired": true,
+  "artifactSnapshotRequired": true,
+  "fullAllowedOnlyBeforeRunnerWithoutArtifactDelta": true,
+  "unknownRoute": "audit_major_incident_open",
+  "maxFullE2EAttempts": 0,
+  "receiptSha256": "fd692f19bfef353f2b6722602fc2881546fcdcf1bd35a4dff955f306cdfad4c1"
+}

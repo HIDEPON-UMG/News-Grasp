@@ -1,0 +1,47 @@
+{
+  "schemaVersion": "NEWS_GRASP_RECOVERY_EVENT_REPLAY_V1",
+  "issueDate": "2026-08-14",
+  "auditSloAnchor": "2026-08-14T06:40:00+09:00",
+  "events": [
+    {
+      "at": "2026-08-14T06:53:00+09:00",
+      "reasonCode": "RECOVERY_EXECUTION_RECEIPT_REQUIRED",
+      "expectedStop": "execution_receipt_v2_seal"
+    },
+    {
+      "at": "2026-08-14T06:56:00+09:00",
+      "reasonCode": "HIGH_COST_OPERATION_ADMISSION_REJECTED",
+      "expectedStop": "preflight_capability_reservation"
+    },
+    {
+      "at": "2026-08-14T07:16:00+09:00",
+      "reasonCode": "RECOVERY_RUNTIME_BINDING_INVALID",
+      "expectedStop": "single_reconcile_then_reprobe"
+    },
+    {
+      "at": "2026-08-14T07:19:00+09:00",
+      "reasonCode": "ARTIFACT_DELTA_FULL_RERUN_FORBIDDEN",
+      "expectedStop": "checkpoint_or_registered_reconcile"
+    },
+    {
+      "at": "2026-08-14T08:19:00+09:00",
+      "reasonCode": "SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_INVALID",
+      "expectedStop": "single_flight_cause_ledger"
+    },
+    {
+      "at": "2026-08-14T09:41:00+09:00",
+      "reasonCode": "audio_script_missing",
+      "expectedStop": "deterministic_materialization_quality_gate"
+    },
+    {
+      "at": "2026-08-14T10:02:00+09:00",
+      "reasonCode": "scheduled_task_missed_runs",
+      "expectedStop": "readiness_debt_nonblocking_public_authority"
+    },
+    {
+      "at": "2026-08-14T11:08:00+09:00",
+      "reasonCode": "post_green_slo_exceeded",
+      "expectedStop": "common_finalizer_post_green_15m"
+    }
+  ]
+}

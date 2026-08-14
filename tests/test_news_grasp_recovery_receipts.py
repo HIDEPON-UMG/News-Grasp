@@ -71,6 +71,7 @@ def test_finalization_receipt_rejects_manifest_mutation(
     manifest_value = {
         "schemaVersion": "NEWS_GRASP_PUBLISH_COMPLETE_V2",
         "date": "2026-08-13",
+        "runId": "fixture",
         "ok": True,
         "public_status": "green",
         "scheduled_attempt_status": "failed_then_recovered",
@@ -88,6 +89,23 @@ def test_finalization_receipt_rejects_manifest_mutation(
             "next_run_readiness": {"ok": True},
         },
     }
+    common_result = _write_sealed(
+        artifact / "build" / "publish-complete" / "2026-08-13.common-finalization.json",
+        {
+            "schemaVersion": "NEWS_GRASP_COMMON_FINALIZATION_RESULT_V1",
+            "issueDate": "2026-08-13",
+            "publicStatus": "green",
+            "completionAuthority": {
+                "producerLineage": {
+                    "generationId": "fixture",
+                    "publishCommit": "c" * 40,
+                }
+            },
+        },
+    )
+    manifest_value["commonFinalizationResultPath"] = str(
+        (artifact / "build" / "publish-complete" / "2026-08-13.common-finalization.json").resolve()
+    )
     manifest.write_text(json.dumps(manifest_value), encoding="utf-8")
     execution = receipts.create_recovery_execution_receipt(
         issue_date="2026-08-13",

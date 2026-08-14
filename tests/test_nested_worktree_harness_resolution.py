@@ -6,8 +6,18 @@ import json
 import pytest
 
 from tools import model_spawn_client
-from tools import harness
-from tools.news_grasp_high_cost_binding import resolve_binding
+from tools.news_grasp_high_cost_binding import HighCostBindingError, resolve_binding
+
+try:
+    from tools import harness
+except HighCostBindingError:
+    harness = None
+
+
+pytestmark = pytest.mark.skipif(
+    harness is None,
+    reason="live workspace high-cost binding is unavailable; isolated binding tests remain separate",
+)
 
 
 def _activate_binding(

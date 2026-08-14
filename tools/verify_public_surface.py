@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime, timedelta, timezone
+import hashlib
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
 from typing import Any
 
 from tools import daily_self_heal, publish_inventory
+from tools.news_grasp_operational_contract import PUBLIC_COMPLETION_FIELDS
 from tools.recovery_state import (
     canonical_required_surface_digest,
     build_recovery_proof,
@@ -24,6 +27,59 @@ YELLOW_REASONS = {
     "github_pages_deploy_workflow_not_success",
     "deploy_workflow_not_success",
 }
+SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+GIT_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+
+
+def _canonical(value: object) -> bytes:
+    return json.dumps(
+        value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+
+
+def verify_sealed_public_manifest(
+    manifest: object, *, issue_date: str
+) -> dict[str, Any]:
+    """sealed manifestだけを読むpure public oracle。producerを再実行しない。"""
+
+    code = "PUBLIC_COMPLETION_MANIFEST_INVALID"
+    if not isinstance(manifest, dict):
+        raise ValueError(code)
+    body = {key: item for key, item in manifest.items() if key != "receiptSha256"}
+    receipt_sha = str(manifest.get("receiptSha256") or "")
+    checks = body.get("checks")
+    evidence = body.get("evidenceSha256")
+    lineage = body.get("producerLineage")
+    if (
+        body.get("schemaVersion") != "NEWS_GRASP_PUBLIC_COMPLETION_MANIFEST_V2"
+        or body.get("issueDate") != issue_date
+        or body.get("profile") != "public-only-v3"
+        or body.get("publicStatus") != "green"
+        or not SHA256_RE.fullmatch(receipt_sha)
+        or hashlib.sha256(_canonical(body)).hexdigest() != receipt_sha
+        or not isinstance(checks, dict)
+        or not isinstance(evidence, dict)
+        or not all(
+            checks.get(field) is True
+            and SHA256_RE.fullmatch(str(evidence.get(field) or "")) is not None
+            for field in PUBLIC_COMPLETION_FIELDS
+        )
+        or not isinstance(lineage, dict)
+        or not str(lineage.get("generationId") or "")
+        or GIT_SHA_RE.fullmatch(str(lineage.get("publishCommit") or "")) is None
+        or SHA256_RE.fullmatch(str(lineage.get("producerOperationId") or ""))
+        is None
+    ):
+        raise ValueError(code)
+    return {
+        "ok": True,
+        "overall_status": "green",
+        "public_status": "green",
+        "profile": "public-only-v3",
+        "manifest_sha256": receipt_sha,
+        "producer_lineage": dict(lineage),
+        "reason": "",
+    }
 
 
 def _run_git(repo_root: Path, args: list[str]) -> str:
@@ -68,6 +124,8 @@ def verify_public_surface(
     wait_sec: int,
     poll_sec: int,
     write_proof: Path | None = None,
+    verification_profile: str | None = None,
+    publish_manifest_path: Path | None = None,
 ) -> dict[str, Any]:
     repo_root = Path(repo_root).resolve()
     ops_repo_root = Path(ops_repo_root).resolve() if ops_repo_root is not None else repo_root
@@ -80,18 +138,38 @@ def verify_public_surface(
     remote_head = _remote_head(repo_root, remote, branch)
     required_surfaces = publish_inventory.required_published_repair_artifacts(date)
     required_digest = canonical_required_surface_digest(required_surfaces)
-    manifest = daily_self_heal.verify_publish_complete(
-        repo_root=repo_root,
-        ops_repo_root=ops_repo_root,
-        date=date,
-        remote=remote,
-        branch=branch,
-        public_base_url=public_base_url,
-        wait_sec=wait_sec,
-        poll_sec=poll_sec,
-        notification_state_path=notification_state_path,
-        producer_state_path=producer_state_path,
-    )
+    if verification_profile == "public-only-v3":
+        if publish_manifest_path is None:
+            raise ValueError("PUBLISH_MANIFEST_REQUIRED")
+        manifest_path = Path(publish_manifest_path).resolve()
+        if not manifest_path.is_file() or manifest_path.is_symlink():
+            raise ValueError("PUBLISH_MANIFEST_REQUIRED")
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
+        except (OSError, UnicodeError, json.JSONDecodeError) as error:
+            raise ValueError("PUBLISH_MANIFEST_REQUIRED") from error
+        manifest_result = verify_sealed_public_manifest(manifest, issue_date=date)
+        manifest = {
+            **manifest,
+            "ok": manifest_result["ok"],
+            "public_status": manifest_result["public_status"],
+            "reason": manifest_result["reason"],
+        }
+    elif verification_profile == "legacy-full":
+        manifest = daily_self_heal.verify_publish_complete(
+            repo_root=repo_root,
+            ops_repo_root=ops_repo_root,
+            date=date,
+            remote=remote,
+            branch=branch,
+            public_base_url=public_base_url,
+            wait_sec=wait_sec,
+            poll_sec=poll_sec,
+            notification_state_path=notification_state_path,
+            producer_state_path=producer_state_path,
+        )
+    else:
+        raise ValueError("PUBLISH_VERIFICATION_PROFILE_REQUIRED")
 
     checked_at = datetime.now(timezone.utc)
     reason = str(manifest.get("reason") or "")
@@ -163,6 +241,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--wait-sec", type=int, default=600)
     parser.add_argument("--poll-sec", type=int, default=30)
     parser.add_argument("--write-proof", type=Path, default=None)
+    parser.add_argument(
+        "--verification-profile",
+        choices=("public-only-v3", "legacy-full"),
+        required=True,
+    )
+    parser.add_argument("--publish-manifest", type=Path, default=None)
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
 
@@ -178,6 +262,8 @@ def main(argv: list[str] | None = None) -> int:
         wait_sec=args.wait_sec,
         poll_sec=args.poll_sec,
         write_proof=args.write_proof,
+        verification_profile=args.verification_profile,
+        publish_manifest_path=args.publish_manifest,
     )
     text = json.dumps(result, ensure_ascii=False, indent=2)
     print(text if args.json else text)

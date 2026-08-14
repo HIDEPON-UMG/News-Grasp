@@ -7,6 +7,7 @@
     [string] $BootstrapTaskName = 'News-Grasp Bootstrap',
     [string] $DeadmanTaskName = 'News-Grasp Deadman',
     [string] $LegacyRunnerTaskName = 'News-Grasp Runner',
+    [switch] $DryRun,
     [switch] $SkipTaskRegistration
 )
 
@@ -18,6 +19,7 @@ $script:InstallationCommitted = $false
 $script:InstallationMutationStarted = $false
 $script:DeliveryReceiptSummary = $null
 $missionAuthorityPath = ''
+$brokerMissionAuthorityPath = ''
 
 . (Join-Path $PSScriptRoot 'install-news-grasp-ops-guard.ps1')
 
@@ -366,11 +368,12 @@ function Write-NewsGraspInstallJournal {
         mission_authority = [ordered]@{
             path = $missionAuthorityPath
             sha256 = $missionSha
-            schema = 'AUDIT_MISSION_AUTHORITY_V1'
+            schema = 'AUDIT_MISSION_AUTHORITY_V2'
         }
         scheduled_tasks = $scheduledTasks
         task_snapshots = $taskSnapshots
         delivery_state = $script:DeliveryReceiptSummary
+        loaded_smoke_receipt = $script:LoadedSmokeReceipt
     }
     Write-AtomicUtf8Text -Path $ManifestPath -Text (($journal | ConvertTo-Json -Depth 10) + [Environment]::NewLine)
 }
@@ -411,7 +414,31 @@ function Assert-NewsGraspInstalledState {
         -RequireSingleLink
     $mission = [Text.Encoding]::UTF8.GetString($missionFile.Bytes) | ConvertFrom-Json
     $missionSchema = [string]$(if ($mission.schemaVersion) { $mission.schemaVersion } else { $mission.schema })
-    if ($missionSchema -ne 'AUDIT_MISSION_AUTHORITY_V1') { throw 'audit mission authority schema mismatch' }
+    if ($missionSchema -ne 'AUDIT_MISSION_AUTHORITY_V2') { throw 'audit mission authority schema mismatch' }
+    $installedMissionValidationJson = (& $missionValidatorPython '-I' '-B' $missionValidatorPath 'validate-existing' '--path' $missionAuthorityPath 2>&1 | Out-String).Trim()
+    $installedMissionValidationExit = $LASTEXITCODE
+    try { $installedMissionValidation = $installedMissionValidationJson | ConvertFrom-Json -ErrorAction Stop } catch { $installedMissionValidation = $null }
+    if (
+        $installedMissionValidationExit -ne 0 -or
+        -not $installedMissionValidation -or
+        [string]$installedMissionValidation.status -cne 'Green' -or
+        [string]$installedMissionValidation.authorityVersion -cne 'current' -or
+        [string]$installedMissionValidation.fileSha256 -cne [string]$missionFile.Sha256
+    ) { throw 'audit mission authority current validation failed' }
+    $brokerMissionFile = Read-NewsGraspVerifiedFile `
+        -Path $brokerMissionAuthorityPath `
+        -TrustedBoundary $BinDir `
+        -RequireSingleLink
+    $installedBrokerMissionValidationJson = (& $missionValidatorPython '-I' '-B' $missionValidatorPath 'validate-existing' '--path' $brokerMissionAuthorityPath 2>&1 | Out-String).Trim()
+    $installedBrokerMissionValidationExit = $LASTEXITCODE
+    try { $installedBrokerMissionValidation = $installedBrokerMissionValidationJson | ConvertFrom-Json -ErrorAction Stop } catch { $installedBrokerMissionValidation = $null }
+    if (
+        $installedBrokerMissionValidationExit -ne 0 -or
+        -not $installedBrokerMissionValidation -or
+        [string]$installedBrokerMissionValidation.status -cne 'Green' -or
+        [string]$installedBrokerMissionValidation.authorityVersion -cne 'legacy_read_only' -or
+        [string]$installedBrokerMissionValidation.fileSha256 -cne [string]$brokerMissionFile.Sha256
+    ) { throw 'audit mission authority broker source validation failed' }
     $runtimeRootFile = Read-NewsGraspVerifiedFile `
         -Path $runtimeRootPath `
         -TrustedBoundary $canonicalBinDir `
@@ -566,6 +593,56 @@ foreach ($asset in $automationAssetRows) {
     }
     $automationAssetSourcePaths[[string]$asset.sourcePath] = $true
     $automationAssetInstallPaths[[string]$asset.installPath] = $true
+}
+if ($DryRun) {
+    $packageRows = @()
+    foreach ($file in $files) {
+        $path = Join-Path $RepoDir (Join-Path 'scripts\ops' $file)
+        if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+            throw "NEWS_GRASP_INSTALL_PACKAGE_FILE_MISSING:$file"
+        }
+        $snapshot = Read-NewsGraspVerifiedFile `
+            -Path $path `
+            -TrustedBoundary $RepoDir `
+            -RequireSingleLink
+        $packageRows += [ordered]@{
+            path = ("scripts/ops/" + $file)
+            sha256 = ([string]$snapshot.Sha256).ToLowerInvariant()
+        }
+    }
+    foreach ($asset in $automationAssetRows) {
+        $relative = [string]$asset.sourcePath
+        $path = Join-Path $RepoDir $relative
+        if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+            throw "NEWS_GRASP_AUTOMATION_ASSET_SOURCE_MISSING:$relative"
+        }
+        $snapshot = Read-NewsGraspVerifiedFile `
+            -Path $path `
+            -TrustedBoundary $RepoDir `
+            -RequireSingleLink
+        $packageRows += [ordered]@{
+            path = $relative.Replace('\', '/')
+            sha256 = ([string]$snapshot.Sha256).ToLowerInvariant()
+        }
+    }
+    foreach ($requiredAssetId in @('audit-recovery-prompt-v2', 'common-finalization-guard-v2')) {
+        if (-not $automationAssetIds.ContainsKey($requiredAssetId)) {
+            throw "NEWS_GRASP_REQUIRED_AUTOMATION_ASSET_MISSING:$requiredAssetId"
+        }
+    }
+    [ordered]@{
+        schemaVersion = 'NEWS_GRASP_INSTALLER_DRY_RUN_V1'
+        ok = $true
+        repoDir = $RepoDir
+        assetVersion = [string]$automationAssetManifest.assetVersion
+        packageFileCount = $packageRows.Count
+        packageFiles = $packageRows
+        mutationCount = 0
+        taskMutationCount = 0
+        externalMutationCount = 0
+        releaseEligibility = 'requires_separate_clean_released_generation_check'
+    } | ConvertTo-Json -Depth 6 -Compress
+    exit 0
 }
 $TaskPythonwPath = Resolve-NewsGraspTaskPythonw -Override $TaskPythonwPath -ResolvedRepoDir $RepoDir
 # runtime/task/asset の決定論的promotionはexternal model readinessと分離する。
@@ -823,9 +900,14 @@ foreach ($asset in $automationAssetRows) {
 }
 
 $authorityDir = Join-Path $BinDir 'news-grasp-authority'
-$missionAuthorityPath = Join-Path $authorityDir 'audit-mission-authority-v1.json'
-$missionAuthorityBackup = Join-Path $BackupDir 'audit-mission-authority-v1.json'
+$missionAuthorityPath = Join-Path $authorityDir 'audit-mission-authority-v2.json'
+$missionAuthorityBackup = Join-Path $BackupDir 'audit-mission-authority-v2.json'
+$brokerMissionAuthorityPath = Join-Path $authorityDir 'broker-audit-mission-authority-v1.json'
+$brokerMissionAuthorityBackup = Join-Path $BackupDir 'broker-audit-mission-authority-v1.json'
 $missionAuthorityBeforeHash = ''
+$missionAuthoritySnapshot = $null
+$missionValidatorPath = Join-Path $RepoDir 'tools\news_grasp_mission_authority.py'
+$missionValidatorPython = Join-Path (Split-Path -Parent $TaskPythonwPath) 'python.exe'
 $reuseExistingMissionAuthority = $false
 if (Test-Path -LiteralPath $missionAuthorityPath -PathType Leaf) {
     $missionAuthoritySnapshot = Read-NewsGraspVerifiedFile `
@@ -836,8 +918,6 @@ if (Test-Path -LiteralPath $missionAuthorityPath -PathType Leaf) {
         -TrustedBoundary $BackupDir `
         -Bytes $missionAuthoritySnapshot.Bytes | Out-Null
     $missionAuthorityBeforeHash = [string]$missionAuthoritySnapshot.Sha256
-    $missionValidatorPath = Join-Path $RepoDir 'tools\news_grasp_mission_authority.py'
-    $missionValidatorPython = Join-Path (Split-Path -Parent $TaskPythonwPath) 'python.exe'
     if (
         (Test-Path -LiteralPath $missionValidatorPath -PathType Leaf) -and
         (Test-Path -LiteralPath $missionValidatorPython -PathType Leaf)
@@ -849,12 +929,33 @@ if (Test-Path -LiteralPath $missionAuthorityPath -PathType Leaf) {
             $missionValidationExit -eq 0 -and
             $missionValidation -and
             [string]$missionValidation.status -ceq 'Green' -and
+            [string]$missionValidation.authorityVersion -ceq 'current' -and
             [string]$missionValidation.fileSha256 -ceq $missionAuthorityBeforeHash
         )
     }
 }
+$brokerMissionAuthorityBeforeHash = ''
+if (Test-Path -LiteralPath $brokerMissionAuthorityPath -PathType Leaf) {
+    $brokerMissionAuthoritySnapshot = Read-NewsGraspVerifiedFile `
+        -Path $brokerMissionAuthorityPath `
+        -TrustedBoundary $BinDir
+    Write-NewsGraspAtomicFile `
+        -Path $brokerMissionAuthorityBackup `
+        -TrustedBoundary $BackupDir `
+        -Bytes $brokerMissionAuthoritySnapshot.Bytes | Out-Null
+    $brokerMissionAuthorityBeforeHash = [string]$brokerMissionAuthoritySnapshot.Sha256
+}
+$brokerMissionAuthorityRow = [ordered]@{
+    file = 'broker-audit-mission-authority-v1.json'
+    source = 'broker:issue-news-grasp-audit-mission'
+    destination = $brokerMissionAuthorityPath
+    backup = if (Test-Path -LiteralPath $brokerMissionAuthorityBackup -PathType Leaf) { $brokerMissionAuthorityBackup } else { '' }
+    before_sha256 = $brokerMissionAuthorityBeforeHash
+    source_sha256 = ''
+    after_sha256 = ''
+}
 $missionAuthorityRow = [ordered]@{
-    file = 'audit-mission-authority-v1.json'
+    file = 'audit-mission-authority-v2.json'
     source = if ($reuseExistingMissionAuthority) { 'existing:validated-audit-mission' } else { 'broker:issue-news-grasp-audit-mission' }
     destination = $missionAuthorityPath
     backup = if (Test-Path -LiteralPath $missionAuthorityBackup -PathType Leaf) { $missionAuthorityBackup } else { '' }
@@ -862,6 +963,7 @@ $missionAuthorityRow = [ordered]@{
     source_sha256 = ''
     after_sha256 = ''
 }
+$manifestFiles += $brokerMissionAuthorityRow
 $manifestFiles += $missionAuthorityRow
 $runtimeRootPath = Join-Path $BinDir 'news-grasp-runtime-root-v1.json'
 $runtimeRootBackup = Join-Path $BackupDir 'news-grasp-runtime-root-v1.json'
@@ -1020,9 +1122,17 @@ $controlPlaneToolSnapshot = Read-NewsGraspVerifiedFile `
     -Path (Join-Path $runtimeEvidenceRepoDir 'tools\news_grasp_control_plane.py') `
     -TrustedBoundary $installTrustedBoundary `
     -RequireSingleLink
+$completionGuardAsset = @(
+    $automationAssetRows |
+        Where-Object { [string]$_.assetId -eq 'common-finalization-guard-v2' }
+)[0]
+if ($null -eq $completionGuardAsset) {
+    throw 'NEWS_GRASP_COMPLETION_GUARD_ASSET_MISSING'
+}
+$completionGuardToolPath = Join-Path $assetInstallRoot ([string]$completionGuardAsset.installPath)
 $completionGuardToolSnapshot = Read-NewsGraspVerifiedFile `
-    -Path (Join-Path $runtimeEvidenceRepoDir 'tools\news_grasp_completion_guard.py') `
-    -TrustedBoundary $installTrustedBoundary `
+    -Path $completionGuardToolPath `
+    -TrustedBoundary $canonicalBinDir `
     -RequireSingleLink
 $dailySelfHealSnapshot = Read-NewsGraspVerifiedFile `
     -Path (Join-Path $runtimeEvidenceRepoDir 'tools\daily_self_heal.py') `
@@ -1081,7 +1191,7 @@ $recoveryRuntimeBinding = [ordered]@{
     receiptToolSha256 = ([string]$receiptToolSnapshot.Sha256).ToLowerInvariant()
     controlPlaneToolPath = (Join-Path $runtimeEvidenceRepoDir 'tools\news_grasp_control_plane.py')
     controlPlaneToolSha256 = ([string]$controlPlaneToolSnapshot.Sha256).ToLowerInvariant()
-    completionGuardToolPath = (Join-Path $runtimeEvidenceRepoDir 'tools\news_grasp_completion_guard.py')
+    completionGuardToolPath = $completionGuardToolPath
     completionGuardToolSha256 = ([string]$completionGuardToolSnapshot.Sha256).ToLowerInvariant()
     dailySelfHealPath = (Join-Path $runtimeEvidenceRepoDir 'tools\daily_self_heal.py')
     dailySelfHealSha256 = ([string]$dailySelfHealSnapshot.Sha256).ToLowerInvariant()
@@ -1126,6 +1236,35 @@ $stableTaskAuthorityInstalled = Read-NewsGraspVerifiedFile `
 $stableTaskAuthorityRow['after_sha256'] = [string]$stableTaskAuthorityInstalled.Sha256
 Write-NewsGraspInstallJournal -Phase 'files_installed'
 
+$finalizationCoordinatorPath = Join-Path $runtimeEvidenceRepoDir 'tools\news_grasp_finalization.py'
+$loadedSmokeJson = (& $runtimePythonPath '-I' '-S' '-B' $finalizationCoordinatorPath `
+    'smoke-loaded' '--repo-root' $runtimeEvidenceRepoDir `
+    '--installed-asset-root' $assetInstallRoot 2>&1 | Out-String).Trim()
+if ($LASTEXITCODE -ne 0) {
+    throw "NEWS_GRASP_INSTALLED_GENERATION_LOADED_SMOKE_FAILED detail=$loadedSmokeJson"
+}
+try {
+    $loadedSmoke = $loadedSmokeJson | ConvertFrom-Json -ErrorAction Stop
+} catch {
+    throw 'NEWS_GRASP_INSTALLED_GENERATION_LOADED_SMOKE_INVALID'
+}
+if (
+    [string]$loadedSmoke.schemaVersion -cne 'NEWS_GRASP_NO_SIDE_EFFECT_LOADED_SMOKE_V1' -or
+    $loadedSmoke.ok -ne $true -or
+    [int]$loadedSmoke.mutationCount -ne 0 -or
+    [int]$loadedSmoke.externalCallCount -ne 0 -or
+    [int]$loadedSmoke.scheduledTaskObservationCount -ne 0 -or
+    [int]$loadedSmoke.scheduledTaskMutationCount -ne 0
+) { throw 'NEWS_GRASP_INSTALLED_GENERATION_LOADED_SMOKE_INVALID' }
+$loadedSmokeReceiptPath = Join-Path $BackupDir 'installed-generation-loaded-smoke-v1.json'
+Write-AtomicUtf8Text -Path $loadedSmokeReceiptPath -Text ($loadedSmokeJson + [Environment]::NewLine)
+$script:LoadedSmokeReceipt = [ordered]@{
+    path = $loadedSmokeReceiptPath
+    sha256 = (Get-FileHash -LiteralPath $loadedSmokeReceiptPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    repo_root = [string]$loadedSmoke.repoRoot
+}
+Write-NewsGraspInstallJournal -Phase 'loaded_smoke_green'
+
 $pythonPath = $runtimePythonPath
 $null = Assert-NewsGraspCanonicalInstallSource `
     -ResolvedRepoDir $RepoDir `
@@ -1134,7 +1273,33 @@ $null = Assert-NewsGraspCanonicalInstallSource `
     -TrustedBoundary $installTrustedBoundary `
     -ExpectedRuntimeRootSha256 $runtimeRootAuthoritySha `
     -ManagedTaskNames $managedTaskNames
-if ($reuseExistingMissionAuthority) {
+$brokerPath = Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py'
+if ((-not (Test-Path -LiteralPath $brokerPath -PathType Leaf)) -or (-not (Test-Path -LiteralPath $pythonPath -PathType Leaf))) {
+    throw 'News-Grasp audit mission authority broker is unavailable.'
+}
+New-Item -ItemType Directory -Force -Path $authorityDir | Out-Null
+$legacyMissionAuthorityJson = (& $pythonPath $brokerPath 'issue-news-grasp-audit-mission' 2>&1 | Out-String).Trim()
+if ($LASTEXITCODE -ne 0) { throw "audit mission authority issuance failed exit=$LASTEXITCODE" }
+try { $legacyMissionAuthority = $legacyMissionAuthorityJson | ConvertFrom-Json -ErrorAction Stop } catch { throw 'AUDIT_MISSION_AUTHORITY_V1_OUTPUT_INVALID' }
+if ([string]$legacyMissionAuthority.schemaVersion -ne 'AUDIT_MISSION_AUTHORITY_V1' -or [string]$legacyMissionAuthority.receiptSha256 -notmatch '^[0-9a-f]{64}$') {
+    throw 'AUDIT_MISSION_AUTHORITY_V1_OUTPUT_INVALID'
+}
+Write-AtomicUtf8Text -Path $brokerMissionAuthorityPath -Text ($legacyMissionAuthorityJson + [Environment]::NewLine)
+$brokerMissionAuthorityRow['after_sha256'] = (Get-FileHash -LiteralPath $brokerMissionAuthorityPath -Algorithm SHA256).Hash.ToLowerInvariant()
+$existingMissionAuthority = $null
+if ($missionAuthoritySnapshot) {
+    try {
+        $existingMissionAuthority = [Text.Encoding]::UTF8.GetString($missionAuthoritySnapshot.Bytes) | ConvertFrom-Json -ErrorAction Stop
+    } catch { $existingMissionAuthority = $null }
+}
+$reuseBoundBrokerAuthority = (
+    $reuseExistingMissionAuthority -and
+    $missionAuthoritySnapshot -and
+    [string]$missionAuthoritySnapshot.Sha256 -eq $missionAuthorityBeforeHash -and
+    $existingMissionAuthority -and
+    [string]$existingMissionAuthority.sourceAuthorityReceiptSha256 -eq [string]$legacyMissionAuthority.receiptSha256
+)
+if ($reuseBoundBrokerAuthority) {
     $missionAuthorityCurrent = Read-NewsGraspVerifiedFile `
         -Path $missionAuthorityPath `
         -TrustedBoundary $BinDir `
@@ -1142,15 +1307,12 @@ if ($reuseExistingMissionAuthority) {
     if ([string]$missionAuthorityCurrent.Sha256 -cne $missionAuthorityBeforeHash) {
         throw 'audit mission authority changed after validation'
     }
+    $missionAuthorityRow['source'] = 'existing:validated-audit-mission'
 } else {
-    $brokerPath = Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py'
-    if ((-not (Test-Path -LiteralPath $brokerPath -PathType Leaf)) -or (-not (Test-Path -LiteralPath $pythonPath -PathType Leaf))) {
-        throw 'News-Grasp audit mission authority broker is unavailable.'
-    }
-    New-Item -ItemType Directory -Force -Path $authorityDir | Out-Null
-    $missionAuthorityJson = (& $pythonPath $brokerPath 'issue-news-grasp-audit-mission' 2>&1 | Out-String).Trim()
-    if ($LASTEXITCODE -ne 0) { throw "audit mission authority issuance failed exit=$LASTEXITCODE" }
+    $missionAuthorityJson = (& $pythonPath '-I' '-B' $missionValidatorPath 'wrap-legacy' '--path' $brokerMissionAuthorityPath 2>&1 | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) { throw "audit mission authority V2 wrapping failed exit=$LASTEXITCODE" }
     Write-AtomicUtf8Text -Path $missionAuthorityPath -Text ($missionAuthorityJson + [Environment]::NewLine)
+    $missionAuthorityRow['source'] = 'broker:wrap-legacy-audit-mission'
 }
 $null = Assert-NewsGraspCanonicalInstallSource `
     -ResolvedRepoDir $RepoDir `

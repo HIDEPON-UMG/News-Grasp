@@ -106,7 +106,7 @@ def test_audit_normal_green_preserves_full_same_date_completion_evidence(monkeyp
         }
     )
     monkeypatch.setattr(control, "prepare_recovery", lambda **_: plan)
-    result = control.execute_audit_0640(
+    result = control._execute_audit_0640_owned(
         issue_date="2026-08-06",
         terminal_writer=lambda value: value,
     )
@@ -132,7 +132,7 @@ def test_existing_recovery_green_preserves_recovery_terminal_status(monkeypatch)
     )
     monkeypatch.setattr(control, "prepare_recovery", lambda **_: plan)
 
-    result = control.execute_audit_0640(
+    result = control._execute_audit_0640_owned(
         issue_date="2026-08-06",
         terminal_writer=lambda value: value,
     )
@@ -164,9 +164,9 @@ def test_audit_minimal_unblocker_must_reverify_and_write_recovered_terminal(monk
     monkeypatch.setattr(control, "prepare_recovery", lambda **_: _audit_plan(action="launch_minimal_unblocker", branch="minimal_unblocker"))
     monkeypatch.setattr(control.audit_recovery_control, "same_date_completion_green", lambda *_: True)
     terminals: list[dict[str, object]] = []
-    result = control.execute_audit_0640(
+    result = control._execute_audit_0640_owned(
         issue_date="2026-08-06",
-        minimal_executor=lambda _: {"completion": False},
+        minimal_executor=lambda _, **__: {"completion": False},
         completion_verifier=lambda *_: {"receiptSha256": "2" * 64},
         terminal_writer=lambda value: terminals.append(value) or value,
     )
@@ -184,7 +184,7 @@ def test_audit_resume_branch_is_executed_before_same_date_green(monkeypatch) -> 
     monkeypatch.setattr(control, "prepare_recovery", lambda **_: plan)
     monkeypatch.setattr(control.audit_recovery_control, "same_date_completion_green", lambda *_: True)
     commands: list[list[str]] = []
-    result = control.execute_audit_0640(
+    result = control._execute_audit_0640_owned(
         issue_date="2026-08-06",
         backend=SimpleNamespace(
             repo_root=REPO,
@@ -197,17 +197,25 @@ def test_audit_resume_branch_is_executed_before_same_date_green(monkeypatch) -> 
         command_runner=lambda command, **_: commands.append(command) or 0,
         completion_verifier=lambda *_: {"receiptSha256": "3" * 64},
         terminal_writer=lambda value: value,
+        execution_receipt_issuer=lambda **_: (
+            REPO / "build/recovery-authority/execution-v2.json",
+            REPO / "build/recovery/capability-reservations/resume.json",
+        ),
     )
     assert result["terminal"] == "audit_recovered_green"
     assert commands and "-ResumeFromStage" in commands[0]
     assert commands[0][commands[0].index("-ResumeFromStage") + 1] == "deepdive"
+    assert "-RecoveryExecutionReceiptPath" in commands[0]
+    assert commands[0][commands[0].index("-RecoveryExecutionReceiptPath") + 1].endswith(
+        "execution-v2.json"
+    )
 
 
 def test_audit_recovery_exit_zero_with_incomplete_public_surface_is_major_incident(monkeypatch) -> None:
     control = _control()
     monkeypatch.setattr(control, "prepare_recovery", lambda **_: _audit_plan(action="launch_recovery", branch="ScheduledRecoveryFull"))
     monkeypatch.setattr(control.audit_recovery_control, "same_date_completion_green", lambda *_: False)
-    result = control.execute_audit_0640(
+    result = control._execute_audit_0640_owned(
         issue_date="2026-08-06",
         backend=SimpleNamespace(
             repo_root=REPO,
@@ -220,6 +228,10 @@ def test_audit_recovery_exit_zero_with_incomplete_public_surface_is_major_incide
         command_runner=lambda *_args, **_kwargs: 0,
         completion_verifier=lambda *_: {"receiptSha256": "4" * 64},
         terminal_writer=lambda value: value,
+        execution_receipt_issuer=lambda **_: (
+            REPO / "build/recovery-authority/execution-v2.json",
+            REPO / "build/recovery/capability-reservations/full.json",
+        ),
     )
     assert result["terminal"] == "audit_major_incident_open"
     assert result["owner"] == "News-Grasp Operations"
@@ -234,7 +246,7 @@ def test_audit_controller_failure_writes_owned_major_incident(monkeypatch) -> No
         lambda **_: (_ for _ in ()).throw(ValueError("primary evidence invalid")),
     )
     terminals: list[dict[str, object]] = []
-    result = control.execute_audit_0640(
+    result = control._execute_audit_0640_owned(
         issue_date="2026-08-06",
         terminal_writer=lambda value: terminals.append(value) or value,
     )
@@ -246,7 +258,7 @@ def test_audit_controller_failure_writes_owned_major_incident(monkeypatch) -> No
 
 def test_deadman_delegates_to_single_canonical_audit_executor() -> None:
     source = (REPO / "scripts/ops/news-grasp-deadman.ps1").read_text(encoding="utf-8-sig")
-    assert "'execute-audit-0640'" in source
+    assert "'tools.audit_recovery_control' 'ensure-0640'" in source
     assert "launch_minimal_unblocker" not in source
     assert "Start -RecoveryDecisionPath" not in source
     registry = json.loads(
@@ -257,8 +269,8 @@ def test_deadman_delegates_to_single_canonical_audit_executor() -> None:
     route = next(
         row for row in registry["routes"] if row["routeId"] == "audit_0640_control"
     )
-    assert route["consumerSymbol"] == "execute_audit_0640"
-    assert route["productionCallSymbol"] == "execute-audit-0640"
+    assert route["consumerSymbol"] == "ensure_0640"
+    assert route["productionCallSymbol"] == "ensure-0640"
 
 
 def test_failure_classification_is_derived_from_observed_state_only() -> None:
@@ -349,11 +361,11 @@ def test_watcher_executes_controller_after_failure_and_rewatches_once() -> None:
     source = (REPO / "scripts" / "ops" / "watch-news-grasp-runner.ps1").read_text(
         encoding="utf-8-sig"
     )
-    assert "tools.news_grasp_daily_control" in source, "PRODUCTION_FAILURE_CONTROLLER_MISSING"
-    assert "production_failure" in source
-    assert "maxAutomaticRecoveryAttempts" in source
-    assert "Start-RecoveryFromDecision" in source
-    assert source.count("Start-RecoveryFromDecision") == 3
+    assert "tools.audit_recovery_control" in source, "PRODUCTION_FAILURE_CONTROLLER_MISSING"
+    assert "'ensure-0640'" in source
+    assert "'watcher'" in source
+    assert "Start-RecoveryFromDecision" not in source
+    assert source.count("Invoke-CanonicalRecoveryEnsure") == 2
 
 
 def test_runner_serializes_daily_log_append_and_hash_at_one_boundary() -> None:
@@ -391,54 +403,45 @@ def test_deadman_calls_same_controller_for_public_incomplete() -> None:
     source = (REPO / "scripts" / "ops" / "news-grasp-deadman.ps1").read_text(
         encoding="utf-8-sig"
     )
-    assert "tools.news_grasp_daily_control" in source, "AUDIT_0640_CONTROLLER_MISSING"
-    assert "execute-audit-0640" in source
+    assert "tools.audit_recovery_control" in source, "AUDIT_0640_CONTROLLER_MISSING"
+    assert "ensure-0640" in source
     assert "Invoke-RecoverOnlyIfStaleDeadPid" not in source
     assert "audit canonical executor" in source
 
 
-def test_resume_branch_consumes_recovery_authority_not_failed_production_admission() -> None:
+def test_resume_branch_consumes_only_v2_bound_capability_reservation() -> None:
     runner = (REPO / "scripts" / "ops" / "news-grasp-runner.ps1").read_text(
         encoding="utf-8-sig"
     )
     watcher = (REPO / "scripts" / "ops" / "watch-news-grasp-runner.ps1").read_text(
         encoding="utf-8-sig"
     )
-    assert "[string] $RecoveryDecisionPath" in runner
-    assert "validate-decision" in runner
-    assert "RECOVERY_DECISION_BRANCH_MISMATCH" in runner
+    assert "RecoveryDecisionPath" not in runner
+    assert "validate-decision" not in runner
+    assert "RECOVERY_DECISION_BRANCH_MISMATCH" not in runner
     assert "RecoveryDecisionPath" in watcher
-    resume_block = runner[
-        runner.index("if ($ResumeFromStage)") : runner.index(
-            "if ($HighCostAdmissionPath)", runner.index("if ($ResumeFromStage)")
-        )
-    ]
-    assert "admit-news-grasp-recovery-continuation" not in resume_block
-    assert "ScheduledAuthorityEvidencePath" in resume_block
-    assert "start-news-grasp-recovery-stage" in runner
+    assert "watcher cannot launch a recovery decision directly" in watcher
+    assert "RECOVERY_CAPABILITY_CALLER_OVERRIDE_FORBIDDEN" in runner
+    assert "ValidatedRecoveryExecutionReceipt.capabilityReservation.receiptPath" in runner
+    assert "start-news-grasp-recovery-stage" not in runner
     assert "consume-news-grasp-recovery-stage-decision" not in runner
-    assert runner.index("start-news-grasp-recovery-stage") > runner.index(
-        "} elseif ($ResumeFromPostDailyQuality -or $ResumeAfterDeepDive -or $ResumeGenerationQualityRepair) {"
-    )
-    assert "sourceAdmissionReceipt" not in resume_block
 
 
-def test_resume_plan_without_broker_ledger_decision_falls_back_to_full_recovery() -> None:
+def test_resume_plan_without_broker_ledger_decision_fails_closed() -> None:
     control = _control()
-    plan = control.build_recovery_plan(
-        issue_date="2026-08-05",
-        trigger="production_failure",
-        classification="recoverable",
-        branch="ResumeFromStage",
-        authority_path=Path("C:/evidence/recovery-authority.json"),
-        failure_receipt_sha256="a" * 64,
-        operational_truth_sha256="b" * 64,
-        resume_stage="deepdive",
-        source_admission_path="C:/evidence/source-production-admission.json",
-        source_admission_sha256="c" * 64,
-    )
-    assert plan["recoveryBranch"] == "ScheduledRecoveryFull"
-    assert plan["resumeStage"] is None
+    with pytest.raises(ValueError, match="RECOVERY_RESUME_EVIDENCE_INVALID"):
+        control.build_recovery_plan(
+            issue_date="2026-08-05",
+            trigger="production_failure",
+            classification="recoverable",
+            branch="ResumeFromStage",
+            authority_path=Path("C:/evidence/recovery-authority.json"),
+            failure_receipt_sha256="a" * 64,
+            operational_truth_sha256="b" * 64,
+            resume_stage="deepdive",
+            source_admission_path="C:/evidence/source-production-admission.json",
+            source_admission_sha256="c" * 64,
+        )
 
 
 def test_resume_plan_binds_broker_ledger_decision() -> None:
@@ -451,7 +454,7 @@ def test_resume_plan_binds_broker_ledger_decision() -> None:
         authority_path=Path("C:/evidence/recovery-authority.json"),
         failure_receipt_sha256="a" * 64,
         operational_truth_sha256="b" * 64,
-        resume_stage="deepdive",
+        resume_stage="post-daily-quality",
         source_admission_path="C:/evidence/source-production-admission.json",
         source_admission_sha256="c" * 64,
         broker_stage_decision_path="C:/evidence/stage-decision.json",
@@ -637,11 +640,12 @@ def test_production_registry_excludes_root_fix_promotion_routes() -> None:
     expected_route_ids = [
         "scheduled_runner",
         "producer_lineage",
-        "production_self_heal",
+        "watcher_recovery_control",
         "audit_0640_control",
         "audit_observer",
         "audit_decision",
         "completion_verifier",
+        "common_finalizer",
     ]
     assert registry["declaredRouteIds"] == expected_route_ids
     assert registry["consumerRouteIds"] == expected_route_ids
@@ -666,7 +670,8 @@ def test_installer_rollback_restores_absent_files_and_task_definitions() -> None
     assert "Unregister-ScheduledTask -TaskName $taskName -Confirm:$false" in source
     assert "Remove-NewsGraspVerifiedFile" in source
     assert "$missionAuthorityBackup" in source
-    assert "file = 'audit-mission-authority-v1.json'" in source
+    assert "file = 'audit-mission-authority-v2.json'" in source
+    assert "file = 'broker-audit-mission-authority-v1.json'" in source
     assert "destination = $missionAuthorityPath" in source
     assert "Recover-NewsGraspInterruptedInstall" in source
     assert source.index("$script:InstallationCommitted = $false") < source.index(
@@ -788,24 +793,156 @@ def test_ng_red_05_audit_monotonic_readiness_red_never_starts_public_recovery() 
     except AttributeError as error:  # pragma: no cover - preimplementation Red path
         pytest.fail(f"READINESS_RED_STARTED_PUBLIC_RECOVERY: {error}")
 
-    assert result["action"] == "readiness_repair"
-    assert result["recoveryScope"] == "next_run_readiness"
+    assert result["action"] == "none"
+    assert result["recoveryScope"] == "readiness_debt_out_of_band"
     assert result["publicStatus"] == "green"
+    assert result["publicRecoveryStarted"] is False
+    assert result["readinessDebt"] is True
+    assert result["exitCode"] == 2
+
+
+def test_public_green_slo_failure_opens_incident_without_public_recovery(
+    monkeypatch, tmp_path: Path
+) -> None:
+    control = _control()
+    completion = {
+        "verificationStatus": "slo_failed",
+        "publicCompletionStatus": "green",
+        "nextRunReadinessStatus": "green",
+        "reasonCode": "PUBLIC_GREEN_SLO_FAILED",
+        "completionAuthorityId": "authority-1",
+    }
+    backend = SimpleNamespace(
+        repo_root=tmp_path,
+        load_state=lambda _date: {"status": "publish_complete", "run_intent": "ScheduledProduction"},
+        probe_external_control_plane=lambda: {"status": "ready"},
+        log_text=lambda _date: "",
+        inspect_attempt=lambda _date: {
+            "scheduledAttemptStatus": "reserved",
+            "recoveryAttemptStatus": "not_started",
+        },
+    )
+    monkeypatch.setattr(
+        control.audit_recovery_control,
+        "_verify_same_date_completion",
+        lambda **_kwargs: completion,
+    )
+    result = control.prepare_recovery(
+        issue_date="2026-08-14",
+        trigger="audit_0640",
+        process_exit_code=2,
+        backend=backend,
+    )
+    assert result["action"] == "major_incident"
+    assert result["terminal"] == "audit_major_incident_open"
+    assert result["publicStatus"] == "green"
+    assert result["publicRecoveryStarted"] is False
+    assert result["nextAction"] == "investigate_slo_without_public_republication"
+
+
+@pytest.mark.parametrize(
+    ("observation", "expected_action"),
+    [
+        (
+            {
+                "healthy": True,
+                "ownedProcessAlive": True,
+                "ownershipEvidenceValid": True,
+                "reasonCode": "OWNED_RUNNER_HEALTHY",
+            },
+            "observe_existing_runner",
+        ),
+        (
+            {
+                "healthy": False,
+                "ownedProcessAlive": True,
+                "ownershipEvidenceValid": True,
+                "reasonCode": "OWNED_RUNNER_HEARTBEAT_STALE",
+            },
+            "observe_existing_runner",
+        ),
+        (
+            {
+                "healthy": False,
+                "ownedProcessAlive": False,
+                "ownershipEvidenceValid": False,
+                "reasonCode": "OWNED_RUNNER_IDENTITY_UNVERIFIED",
+            },
+            "major_incident",
+        ),
+    ],
+)
+def test_running_runner_never_launches_parallel_recovery(
+    tmp_path: Path, observation: dict[str, object], expected_action: str
+) -> None:
+    control = _control()
+    backend = SimpleNamespace(
+        repo_root=tmp_path,
+        load_state=lambda _date: {
+            "status": "running",
+            "run_intent": "ScheduledProduction",
+        },
+        probe_external_control_plane=lambda: {"status": "ready"},
+        observe_owned_runner=lambda _date, _state: observation,
+    )
+    result = control.prepare_recovery(
+        issue_date="2026-08-14",
+        trigger="audit_0640",
+        process_exit_code=1,
+        backend=backend,
+    )
+    assert result["action"] == expected_action
+    assert result["recoveryStarted"] is False
     assert result["publicRecoveryStarted"] is False
 
 
-def test_ng_red_14_readiness_repair_executes_canonical_installer_once(
-    monkeypatch,
+def test_legacy_readiness_repair_plan_cannot_invoke_installer(monkeypatch) -> None:
+    control = _control()
+    plan = _audit_plan(action="readiness_repair")
+    plan.update(
+        {
+            "publicStatus": "green",
+            "completionAuthorityId": "authority-1",
+            "reasonCode": "RUNNER_READINESS_RED",
+        }
+    )
+    monkeypatch.setattr(control, "prepare_recovery", lambda **_: plan)
+    commands: list[object] = []
+    verifications: list[object] = []
+    result = control._execute_audit_0640_owned(
+        issue_date="2026-08-06",
+        backend=SimpleNamespace(
+            repo_root=REPO,
+            capture_readiness_observation=lambda **_kwargs: None,
+        ),
+        command_runner=lambda *_args, **_kwargs: commands.append(True) or 0,
+        completion_verifier=lambda *_args: verifications.append(True),
+        terminal_writer=lambda value: value,
+    )
+    assert result["terminal"] == "audit_observation_unverified"
+    assert result["reasonCode"] == "READINESS_DEBT_OUT_OF_BAND_REQUIRED"
+    assert commands == []
+    assert verifications == []
+
+
+def test_ng_red_14_readiness_debt_closes_public_terminal_without_installer(
+    monkeypatch, tmp_path: Path,
 ) -> None:
     control = _control()
     completion = _same_date_completion(control)
-    plan = _audit_plan(action="readiness_repair")
+    plan = _audit_plan(action="none")
     plan.update(
         {
             "publicStatus": "green",
             "nextRunReadinessStatus": "red",
             "completionAuthorityId": "authority-1",
             "reasonCode": "RUNNER_READINESS_RED",
+            "completion": True,
+            "completionEvidence": completion,
+            "completionEvidenceSha256": completion["receiptSha256"],
+            "readinessDebt": True,
+            "exitCode": 2,
+            "nextAction": "reconcile_readiness_in_separate_transaction",
         }
     )
     monkeypatch.setattr(control, "prepare_recovery", lambda **_: plan)
@@ -814,34 +951,30 @@ def test_ng_red_14_readiness_repair_executes_canonical_installer_once(
 
     def run_command(command: list[str], **_kwargs: object) -> int:
         commands.append(command)
-        return 0
+        raise AssertionError("POST_GREEN_INSTALLER_FORBIDDEN")
 
     def verify(issue_date: str, run_intent: str) -> dict[str, object]:
         verifications.append((issue_date, run_intent))
         return completion
 
-    result = control.execute_audit_0640(
+    result = control._execute_audit_0640_owned(
         issue_date="2026-08-06",
-        backend=SimpleNamespace(repo_root=REPO),
+        backend=SimpleNamespace(
+            repo_root=REPO,
+            capture_readiness_observation=lambda **_kwargs: None,
+        ),
         command_runner=run_command,
         completion_verifier=verify,
         terminal_writer=lambda value: value,
     )
 
-    assert len(commands) == 1, "READINESS_REPAIR_NOT_EXECUTED_BY_RUNTIME"
-    command = commands[0]
-    assert command[0].casefold() == "powershell.exe"
-    assert "-NonInteractive" in command
-    assert "-File" in command
-    assert any(
-        value.endswith("scripts\\ops\\install-news-grasp-ops.ps1")
-        or value.endswith("scripts/ops/install-news-grasp-ops.ps1")
-        for value in command
-    ), "READINESS_REPAIR_NOT_EXECUTED_BY_RUNTIME"
-    assert verifications == [("2026-08-06", "ScheduledProduction")]
+    assert commands == []
+    assert verifications == []
     assert result["terminal"] == "audit_normal_green"
     assert result["publicStatus"] == "green"
     assert result["recoveryStarted"] is False
+    assert result["readinessDebt"] is True
+    assert result["exitCode"] == 2
 
 
 def test_sec_red_causal_retry_compare_and_consume_is_single_writer(

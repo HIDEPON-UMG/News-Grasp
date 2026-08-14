@@ -7,14 +7,23 @@ import os
 import re
 import subprocess
 import sys
+import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
 from tools import audit_recovery_control
+from tools import news_grasp_recovery_receipts
+from tools import news_grasp_recovery_transaction
+from tools import news_grasp_finalization
+from tools import news_grasp_control_plane
 from tools import news_grasp_external_control as external_control
 from tools import news_grasp_convergence as convergence
-from tools import operational_recovery_registry
-from tools.news_grasp_operational_contract import evaluate_completion_v3, select_recovery_branch_from_truth
+from tools.news_grasp_operational_contract import (
+    RECOVERY_RESUME_STAGES,
+    evaluate_completion_v3,
+    select_recovery_branch_from_truth,
+)
 
 
 SCHEMA = "NEWS_GRASP_DAILY_RECOVERY_PLAN_V1"
@@ -39,12 +48,7 @@ INCIDENT_STATUSES = {
     "watchdog_stale_unconfirmed",
     "blocked_runner_state_corrupt",
 }
-RESUME_STAGES = {
-    "deepdive",
-    "post-daily-quality",
-    "post-deepdive",
-    "generation-quality-repair",
-}
+RESUME_STAGES = set(RECOVERY_RESUME_STAGES)
 
 
 def build_completion_state_vector_v3(**states: Any) -> dict[str, Any]:
@@ -84,6 +88,34 @@ def _validate_date(value: str) -> str:
     if re.fullmatch(r"20\d{2}-\d{2}-\d{2}", value) is None:
         raise ValueError("ISSUE_DATE_INVALID")
     return value
+
+
+def _remaining_deadline_seconds(
+    value: object,
+    *,
+    observed_at: datetime | None = None,
+    invalid_code: str = "AUDIT_RECOVERY_DEADLINE_INVALID",
+    expired_code: str = "AUDIT_RECOVERY_HARD_DEADLINE_EXPIRED",
+) -> int:
+    """共有deadlineから親・観測・childが使う同一の残時間を算出する。"""
+    try:
+        deadline = datetime.fromisoformat(str(value or "").replace("Z", "+00:00"))
+    except ValueError as error:
+        raise ValueError(invalid_code) from error
+    if deadline.tzinfo is None:
+        raise ValueError(invalid_code)
+    observed = observed_at or datetime.now(timezone.utc)
+    if observed.tzinfo is None:
+        raise ValueError(invalid_code)
+    remaining = int(
+        (
+            deadline.astimezone(timezone.utc)
+            - observed.astimezone(timezone.utc)
+        ).total_seconds()
+    )
+    if remaining <= 0:
+        raise ValueError(expired_code)
+    return remaining
 
 
 def _atomic_json(path: Path, value: dict[str, Any]) -> None:
@@ -241,11 +273,26 @@ def external_reentry_decision(
 
 
 def select_audit_recovery_action(completion: object) -> dict[str, Any]:
-    """public Green を保持したまま readiness だけを選択的に修復する。"""
+    """public Green後はterminalを閉じ、readiness debtを別取引へ搬送する。"""
     value = completion if isinstance(completion, dict) else {}
     public_status = str(value.get("publicCompletionStatus") or "")
     readiness_status = str(value.get("nextRunReadinessStatus") or "")
     authority_id = str(value.get("completionAuthorityId") or "")
+    if (
+        str(value.get("verificationStatus") or "") == "slo_failed"
+        or str(value.get("reasonCode") or "") == "PUBLIC_GREEN_SLO_FAILED"
+    ):
+        return {
+            "action": "major_incident",
+            "terminal": "audit_major_incident_open",
+            "publicStatus": "green",
+            "publicRecoveryStarted": False,
+            "recoveryStarted": False,
+            "exitCode": 2,
+            "completionAuthorityId": authority_id,
+            "reasonCode": "PUBLIC_GREEN_SLO_FAILED",
+            "nextAction": "investigate_slo_without_public_republication",
+        }
     if str(value.get("verificationStatus") or "") == "verification_unavailable":
         return {
             "action": "audit_observation_unverified",
@@ -259,12 +306,15 @@ def select_audit_recovery_action(completion: object) -> dict[str, Any]:
         }
     if public_status == "green" and readiness_status == "red":
         return {
-            "action": "readiness_repair",
-            "recoveryScope": "next_run_readiness",
+            "action": "none",
+            "recoveryScope": "readiness_debt_out_of_band",
             "publicStatus": "green",
             "publicRecoveryStarted": False,
             "completionAuthorityId": authority_id,
             "reasonCode": str(value.get("reasonCode") or "READINESS_RED"),
+            "readinessDebt": True,
+            "exitCode": 2,
+            "nextAction": "reconcile_readiness_in_separate_transaction",
         }
     if public_status == "green" and readiness_status in {"green", "unverified"}:
         return {
@@ -284,37 +334,6 @@ def select_audit_recovery_action(completion: object) -> dict[str, Any]:
     }
 
 
-def dispatch_registered_readiness_repair(
-    *,
-    repo_root: Path | str,
-    reason_code: str,
-    context: Mapping[str, Any],
-    executor: Callable[[Mapping[str, Any]], Mapping[str, Any]],
-) -> dict[str, Any]:
-    """readiness repairをexact registry entry経由だけで実行する。"""
-
-    handlers = operational_recovery_registry.default_handlers()
-    handlers["active_generation_reconcile"] = executor
-    dispatched = operational_recovery_registry.dispatch(
-        repo_root=repo_root,
-        reason_code=reason_code,
-        context={**dict(context), "reasonCode": reason_code},
-        handlers=handlers,
-    )
-    if dispatched.handler_id != "active_generation_reconcile":
-        raise ValueError("READINESS_REPAIR_HANDLER_NOT_REGISTERED")
-    result = dict(dispatched.result)
-    if result.get("selfDeclaredGreen") is True:
-        raise ValueError("READINESS_REPAIR_SELF_DECLARED_GREEN")
-    return {
-        "schemaVersion": "REGISTERED_READINESS_REPAIR_RESULT_V1",
-        "status": dispatched.status,
-        "handlerId": dispatched.handler_id,
-        "reasonCode": dispatched.reason_code,
-        "handlerResult": result,
-    }
-
-
 def build_recovery_plan(
     *,
     issue_date: str,
@@ -324,6 +343,7 @@ def build_recovery_plan(
     authority_path: Path,
     failure_receipt_sha256: str,
     operational_truth_sha256: str,
+    operational_truth_path: str = "",
     recovery_attempt_number: int = 0,
     resume_stage: str = "",
     source_admission_path: str = "",
@@ -350,6 +370,7 @@ def build_recovery_plan(
         "scheduledFailureRetained": True,
         "failureReceiptSha256": failure_receipt_sha256,
         "operationalTruthReceiptSha256": operational_truth_sha256,
+        "operationalTruthPath": operational_truth_path or None,
         "maxAutomaticRecoveryAttempts": 1,
         "recoveryAttemptNumber": int(recovery_attempt_number),
         "noFocusTheft": True,
@@ -412,13 +433,7 @@ def build_recovery_plan(
             r"[0-9a-f]{64}", broker_stage_decision_receipt_sha256
         )
     ):
-        branch = "ScheduledRecoveryFull"
-        resume_stage = ""
-        source_admission_path = ""
-        source_admission_sha256 = ""
-        broker_stage_decision_path = ""
-        broker_stage_decision_sha256 = ""
-        broker_stage_decision_receipt_sha256 = ""
+        raise ValueError("RECOVERY_RESUME_EVIDENCE_INVALID")
     action = "launch_minimal_unblocker" if branch == "minimal_unblocker" else "launch_recovery"
     return _sealed(
         {
@@ -461,7 +476,9 @@ class ProductionBackend:
         self.log_dir = self.bin_dir / "news-grasp-logs"
         self.runner_path = self.bin_dir / "news-grasp-runner.ps1"
         self.authority_dir = self.bin_dir / "news-grasp-authority"
-        self.mission_path = self.authority_dir / "audit-mission-authority-v1.json"
+        # brokerへ渡す効果authorityはV1のまま更新可能にし、product側の
+        # current authority V2を同じパスへ上書きしない。
+        self.mission_path = self.authority_dir / "broker-audit-mission-authority-v1.json"
 
     def probe_external_control_plane(self) -> dict[str, Any]:
         """固定global authorityのpure probe。product側からglobalを修復しない。"""
@@ -469,6 +486,23 @@ class ProductionBackend:
 
     def resolve_high_cost_binding(self) -> dict[str, Any]:
         return audit_recovery_control.resolve_live_high_cost_binding(self.bin_dir)
+
+    def capture_readiness_observation(
+        self, *, issue_date: str, completion_authority_id: str
+    ) -> dict[str, Any]:
+        from tools import daily_self_heal
+
+        observation = daily_self_heal.verify_live_runner_readiness(
+            repo_root=self.repo_root,
+            ops_repo_root=self.repo_root,
+            date=issue_date,
+        )
+        return news_grasp_finalization.record_readiness_observation_v1(
+            repo_root=self.repo_root,
+            issue_date=issue_date,
+            completion_authority_id=completion_authority_id,
+            observation=observation,
+        )
 
     def resolve_failure_receipt(self, issue_date: str, receipt_sha256: str) -> Path:
         issue_date = _validate_date(issue_date)
@@ -542,6 +576,99 @@ class ProductionBackend:
             raise ValueError("RUNNER_STATE_EVIDENCE_INVALID")
         return value
 
+    def observe_owned_runner(
+        self, issue_date: str, state: Mapping[str, Any]
+    ) -> dict[str, Any]:
+        """実runnerをidentity receiptとheartbeatで限定観測する。"""
+
+        from tools import news_grasp_recovery_transaction
+
+        common = {
+            "schemaVersion": "NEWS_GRASP_OWNED_RUNNER_OBSERVATION_V1",
+            "issueDate": issue_date,
+            "runId": str(state.get("run_id") or ""),
+            "processId": int(state.get("pid") or 0),
+            "healthy": False,
+            "ownedProcessAlive": False,
+            "ownershipEvidenceValid": False,
+        }
+        if (
+            state.get("status") != "running"
+            or state.get("run_intent") != "ScheduledProduction"
+            or re.fullmatch(r"[0-9a-f]{32}", common["runId"]) is None
+            or common["processId"] <= 0
+        ):
+            return _sealed({**common, "reasonCode": "OWNED_RUNNER_STATE_NOT_RUNNING"})
+        expected = (
+            self.repo_root
+            / "build"
+            / "recovery"
+            / "launch-identities"
+            / issue_date
+            / f"{common['runId']}.json"
+        ).resolve()
+        try:
+            receipt_path = Path(
+                str(state.get("actualLaunchIdentityReceiptPath") or "")
+            ).resolve(strict=True)
+            if receipt_path != expected or receipt_path.is_symlink():
+                raise ValueError("NEWS_GRASP_ACTUAL_LAUNCH_IDENTITY_INVALID")
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8-sig"))
+            validated = news_grasp_recovery_transaction.validate_actual_launch_identity_v1(
+                receipt,
+                receipt_path=receipt_path,
+                issue_date=issue_date,
+                run_id=common["runId"],
+                process_id=common["processId"],
+                artifact_root=self.repo_root,
+                current_task_action_sha256=self.task_action_sha256(),
+                require_process_alive=False,
+            )
+            if (
+                state.get("actualLaunchIdentityReceiptSha256")
+                != validated.get("receiptSha256")
+                or Path(str(state.get("runner_path") or "")).resolve(strict=True)
+                != Path(str(validated["runner"]["path"])).resolve(strict=True)
+            ):
+                raise ValueError("NEWS_GRASP_ACTUAL_LAUNCH_IDENTITY_INVALID")
+        except (OSError, UnicodeError, json.JSONDecodeError, ValueError):
+            return _sealed({**common, "reasonCode": "OWNED_RUNNER_IDENTITY_UNVERIFIED"})
+        alive = validated.get("processAlive") is True
+        verified = {**common, "ownedProcessAlive": alive, "ownershipEvidenceValid": True}
+        if not alive:
+            return _sealed({**verified, "reasonCode": "OWNED_RUNNER_EXITED"})
+        try:
+            heartbeat = datetime.fromisoformat(
+                str(state.get("heartbeat_at") or "").replace("Z", "+00:00")
+            )
+        except ValueError:
+            return _sealed({**verified, "reasonCode": "OWNED_RUNNER_HEARTBEAT_INVALID"})
+        if heartbeat.tzinfo is None:
+            return _sealed({**verified, "reasonCode": "OWNED_RUNNER_HEARTBEAT_INVALID"})
+        age = (datetime.now(timezone.utc) - heartbeat.astimezone(timezone.utc)).total_seconds()
+        if age < -60:
+            return _sealed({**verified, "reasonCode": "OWNED_RUNNER_HEARTBEAT_FUTURE"})
+        if age > 15 * 60:
+            return _sealed(
+                {
+                    **verified,
+                    "heartbeatAgeSeconds": int(age),
+                    "reasonCode": "OWNED_RUNNER_HEARTBEAT_STALE",
+                }
+            )
+        return _sealed(
+            {
+                **verified,
+                "healthy": True,
+                "heartbeatAgeSeconds": max(0, int(age)),
+                "reasonCode": "OWNED_RUNNER_HEALTHY",
+            }
+        )
+
+    @staticmethod
+    def wait_for_owned_runner_change(seconds: float) -> None:
+        time.sleep(max(0.0, seconds))
+
     def log_text(self, issue_date: str) -> str:
         path = self.log_dir / f"{issue_date}.log"
         try:
@@ -584,7 +711,7 @@ class ProductionBackend:
     ) -> tuple[dict[str, Any], Path]:
         state = self.load_state(issue_date)
         log_path = self.log_dir / f"{issue_date}.log"
-        permit_path = self.authority_dir / f"{issue_date}-launch-permit.json"
+        permit_path = self.authority_dir / f"{issue_date}-launch-permit-v1.json"
         if not log_path.is_file() or not permit_path.is_file():
             raise ValueError("SCHEDULED_PRE_ADMISSION_PRIMARY_EVIDENCE_MISSING")
         failure = self._run_broker(
@@ -657,6 +784,59 @@ class ProductionBackend:
         path = self.repo_root / "build" / "recovery" / "authority" / f"{issue_date}-recovery-authority.json"
         _atomic_json(path, authority)
         return authority, path
+
+    def reserve_recovery_capability(
+        self, *, issue_date: str, recovery_authority_path: Path
+    ) -> tuple[dict[str, Any], Path]:
+        """runner前に最大必要量のscheduled recovery admissionを一回予約する。"""
+
+        output = (
+            self.repo_root
+            / "build"
+            / "recovery"
+            / "capability-reservations"
+            / f"{issue_date}-scheduled-recovery.json"
+        )
+        if output.is_file() and not output.is_symlink():
+            try:
+                existing = json.loads(output.read_text(encoding="utf-8-sig"))
+                body = {
+                    key: item for key, item in existing.items() if key != "receiptSha256"
+                }
+                if (
+                    existing.get("schemaVersion")
+                    == "HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1"
+                    and existing.get("issueDate") == issue_date
+                    and existing.get("operationKind") == "scheduled_recovery"
+                    and existing.get("receiptSha256") == _sha(body)
+                ):
+                    return existing, output.resolve()
+            except (OSError, UnicodeError, json.JSONDecodeError):
+                pass
+        admission = self._run_broker(
+            "admit",
+            "--operation-kind",
+            "scheduled_recovery",
+            "--attempt-id",
+            issue_date,
+            "--issue-date",
+            issue_date,
+            "--authority-evidence",
+            str(recovery_authority_path),
+            "--expected-task-action-sha256",
+            self.task_action_sha256(),
+            "--expected-runner-sha256",
+            _file_sha(self.runner_path),
+        )
+        if (
+            admission.get("schemaVersion")
+            != "HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1"
+            or admission.get("issueDate") != issue_date
+            or admission.get("operationKind") != "scheduled_recovery"
+        ):
+            raise ValueError("RECOVERY_CAPABILITY_RESERVATION_INVALID")
+        _atomic_json(output, admission)
+        return admission, output.resolve()
 
     def issue_stage_decision(
         self,
@@ -913,6 +1093,71 @@ def prepare_recovery(
             output = actual.repo_root / "build" / "recovery" / "control" / f"{issue_date}-{trigger}.json"
             _atomic_json(output, plan)
             return {**plan, "decisionPath": str(output.resolve())}
+    if trigger == "audit_0640" and str(state.get("status") or "") == "running":
+        observation = (
+            actual.observe_owned_runner(issue_date, state)
+            if hasattr(actual, "observe_owned_runner")
+            else {
+                "healthy": False,
+                "ownedProcessAlive": False,
+                "ownershipEvidenceValid": False,
+                "reasonCode": "OWNED_RUNNER_OBSERVER_UNAVAILABLE",
+            }
+        )
+        if observation.get("healthy") is True or observation.get("ownedProcessAlive") is True:
+            plan = _sealed(
+                {
+                    "schemaVersion": SCHEMA,
+                    "issuer": ISSUER,
+                    "issueDate": issue_date,
+                    "trigger": trigger,
+                    "action": "observe_existing_runner",
+                    "terminal": None,
+                    "reasonCode": str(observation.get("reasonCode") or "OWNED_RUNNER_OBSERVATION"),
+                    "scheduledAttemptStatus": "running",
+                    "recoveryAttemptStatus": "not_started",
+                    "publicStatus": "pending",
+                    "publicRecoveryStarted": False,
+                    "recoveryStarted": False,
+                    "completion": False,
+                    "ownedRunnerObservation": observation,
+                    "noFocusTheft": True,
+                    "noAutoOpen": True,
+                    "noUserMonitoring": True,
+                }
+            )
+            output = actual.repo_root / "build" / "recovery" / "control" / f"{issue_date}-{trigger}.json"
+            _atomic_json(output, plan)
+            return {**plan, "decisionPath": str(output.resolve())}
+        if (
+            observation.get("ownershipEvidenceValid") is not True
+            and observation.get("reasonCode") != "OWNED_RUNNER_EXITED"
+        ):
+            plan = _sealed(
+                {
+                    "schemaVersion": SCHEMA,
+                    "issuer": ISSUER,
+                    "issueDate": issue_date,
+                    "trigger": trigger,
+                    "action": "major_incident",
+                    "terminal": "audit_major_incident_open",
+                    "reasonCode": str(observation.get("reasonCode") or "OWNED_RUNNER_IDENTITY_UNVERIFIED"),
+                    "scheduledAttemptStatus": "unverified",
+                    "recoveryAttemptStatus": "not_started",
+                    "publicStatus": "incomplete",
+                    "publicRecoveryStarted": False,
+                    "recoveryStarted": False,
+                    "completion": False,
+                    "ownedRunnerObservation": observation,
+                    "nextAction": "verify_owned_runner_without_parallel_launch",
+                    "noFocusTheft": True,
+                    "noAutoOpen": True,
+                    "noUserMonitoring": True,
+                }
+            )
+            output = actual.repo_root / "build" / "recovery" / "control" / f"{issue_date}-{trigger}.json"
+            _atomic_json(output, plan)
+            return {**plan, "decisionPath": str(output.resolve())}
     log_text = actual.log_text(issue_date)
     pre_admission_failure: dict[str, Any] | None = None
     pre_admission_failure_path: Path | None = None
@@ -963,19 +1208,10 @@ def prepare_recovery(
         selected = select_audit_recovery_action(completion)
         causal_retry: dict[str, Any] | None = None
         retry_suppressed = False
-        if selected.get("action") == "readiness_repair":
-            causal_retry = _admit_causal_retry(
-                repo_root=actual.repo_root,
-                issue_date=issue_date,
-                runner_state=state,
-                completion=completion,
-            )
-            retry_suppressed = causal_retry.get("allowed") is not True
-            selected = {
-                **selected,
-                "retrySuppressed": retry_suppressed,
-            }
-        if selected.get("action") in {"audit_observation_unverified", "readiness_repair"}:
+        if selected.get("action") in {
+            "audit_observation_unverified",
+            "major_incident",
+        }:
             plan = _sealed(
                 {
                     "schemaVersion": SCHEMA,
@@ -1004,7 +1240,7 @@ def prepare_recovery(
                         else ""
                     ),
                     "terminal": selected.get("terminal")
-                    or "audit_readiness_repair_pending",
+                    or "audit_observation_unverified",
                 }
             )
             output = actual.repo_root / "build" / "recovery" / "control" / f"{issue_date}-{trigger}.json"
@@ -1027,6 +1263,9 @@ def prepare_recovery(
                     ),
                     "publicStatus": "green",
                     "completion": True,
+                    "readinessDebt": selected.get("readinessDebt") is True,
+                    "exitCode": int(selected.get("exitCode") or 0),
+                    "nextAction": str(selected.get("nextAction") or ""),
                     "completionEvidenceSha256": completion["receiptSha256"],
                     "completionEvidence": completion,
                     "maxAutomaticRecoveryAttempts": 1,
@@ -1097,6 +1336,14 @@ def prepare_recovery(
     truth = audit_recovery_control._observe_operational_truth(
         issue_date=issue_date, attempt_witness=witness
     )
+    truth_path = (
+        actual.repo_root
+        / "build"
+        / "recovery"
+        / "evidence"
+        / f"{issue_date}-operational-truth.json"
+    )
+    _atomic_json(truth_path, truth)
     branch = select_recovery_branch_from_truth(truth)
     resume_stage = str(truth.get("resumeStage") or "")
     source_admission_path = str(state.get("highCostAdmissionPath") or "")
@@ -1104,19 +1351,9 @@ def prepare_recovery(
     broker_stage_decision_sha256 = ""
     broker_stage_decision_receipt_sha256 = ""
     if branch == "ResumeFromStage":
-        truth_path = (
-            actual.repo_root
-            / "build"
-            / "recovery"
-            / "evidence"
-            / f"{issue_date}-operational-truth.json"
-        )
-        _atomic_json(truth_path, truth)
         source_path = Path(source_admission_path)
         if not source_path.is_file():
-            branch = "ScheduledRecoveryFull"
-            resume_stage = ""
-            source_admission_path = ""
+            raise ValueError("RECOVERY_CAPABILITY_RESERVATION_REQUIRED")
         else:
             stage_decision, stage_decision_path = actual.issue_stage_decision(
                 issue_date=issue_date,
@@ -1139,6 +1376,7 @@ def prepare_recovery(
         authority_path=authority_path,
         failure_receipt_sha256=str(failure["receiptSha256"]),
         operational_truth_sha256=str(truth["receiptSha256"]),
+        operational_truth_path=str(truth_path.resolve()),
         recovery_attempt_number=recovery_attempt_number,
         resume_stage=resume_stage,
         source_admission_path=source_admission_path,
@@ -1179,7 +1417,12 @@ def validate_decision(path: Path) -> dict[str, Any]:
     return {**value, "decisionPath": str(path.resolve())}
 
 
-def execute_minimal_unblocker(path: Path) -> dict[str, Any]:
+def _execute_minimal_unblocker_owned(
+    path: Path,
+    *,
+    transaction_receipt: Mapping[str, Any],
+    repo_root: Path,
+) -> dict[str, Any]:
     decision = validate_decision(path)
     if (
         decision.get("action") != "launch_minimal_unblocker"
@@ -1199,14 +1442,93 @@ def execute_minimal_unblocker(path: Path) -> dict[str, Any]:
         or proof.get("receiptSha256") != decision["minimalPublicProofSha256"]
     ):
         raise ValueError("MINIMAL_UNBLOCKER_PUBLIC_PROOF_DRIFT")
-    repo_root = Path(__file__).resolve().parents[1]
     notification = repo_root / "build" / "notification" / f"{issue_date}.json"
+    operation_kind = "minimal_notification_unblocker"
+
+    def proven_notification() -> dict[str, Any] | None:
+        if not notification.is_file():
+            return None
+        try:
+            value = json.loads(notification.read_text(encoding="utf-8-sig"))
+            from tools import daily_self_heal
+
+            if not isinstance(value, dict) or not daily_self_heal._notification_delivery_proven(
+                value, issue_date
+            ):
+                return None
+            return value
+        except (OSError, UnicodeError, json.JSONDecodeError, ValueError):
+            return None
+
+    def result_for(operation_receipt: Mapping[str, Any]) -> dict[str, Any]:
+        return _sealed(
+            {
+                "schemaVersion": "NEWS_GRASP_MINIMAL_UNBLOCKER_RESULT_V1",
+                "issuer": ISSUER,
+                "issueDate": issue_date,
+                "decisionReceiptSha256": decision["receiptSha256"],
+                "ownedOperationReceiptSha256": operation_receipt["receiptSha256"],
+                "notificationStateSha256": _file_sha(notification),
+                "scheduledAttemptStatus": "failed",
+                "recoveryAttemptStatus": "succeeded",
+                "publicStatus": "pending_same_date_completion_reverification",
+                "completion": False,
+            }
+        )
+
+    try:
+        operation_receipt = news_grasp_recovery_transaction.begin_owned_operation(
+            repo_root=repo_root,
+            issue_date=issue_date,
+            owner_receipt=transaction_receipt,
+            operation_kind=operation_kind,
+            cause_receipt_sha256=decision["receiptSha256"],
+        )
+    except ValueError as error:
+        if str(error) != "AUDIT_RECOVERY_OWNED_OPERATION_REPLAY_REJECTED":
+            raise
+        operation_receipt = news_grasp_recovery_transaction.resume_owned_operation(
+            repo_root=repo_root,
+            issue_date=issue_date,
+            owner_receipt=transaction_receipt,
+            operation_kind=operation_kind,
+            cause_receipt_sha256=decision["receiptSha256"],
+        )
+        state = str(operation_receipt.get("operationState") or "")
+        existing_notification = proven_notification()
+        if state == "completed" and existing_notification is not None:
+            if operation_receipt.get("outcomeReceiptSha256") != _file_sha(notification):
+                raise ValueError("MINIMAL_UNBLOCKER_NOTIFICATION_RECEIPT_DRIFT")
+            return result_for(operation_receipt)
+        if state == "started_unresolved" and existing_notification is not None:
+            news_grasp_recovery_transaction.complete_owned_operation(
+                repo_root=repo_root,
+                issue_date=issue_date,
+                owner_receipt=transaction_receipt,
+                operation_receipt=operation_receipt,
+                outcome_status="completed",
+                outcome_receipt_sha256=_file_sha(notification),
+            )
+            return result_for(operation_receipt)
+        if state == "started_unresolved":
+            news_grasp_recovery_transaction.complete_owned_operation(
+                repo_root=repo_root,
+                issue_date=issue_date,
+                owner_receipt=transaction_receipt,
+                operation_receipt=operation_receipt,
+                outcome_status="outcome_unknown",
+                outcome_receipt_sha256=decision["receiptSha256"],
+            )
+        raise ValueError("MINIMAL_UNBLOCKER_NOTIFICATION_OUTCOME_UNKNOWN")
+
     completed = subprocess.run(
         [
             sys.executable,
             str(repo_root / "tools" / "send_push.py"),
             "--record-state",
             str(notification),
+            "--issue-date",
+            issue_date,
         ],
         cwd=repo_root,
         capture_output=True,
@@ -1216,21 +1538,26 @@ def execute_minimal_unblocker(path: Path) -> dict[str, Any]:
             getattr(subprocess, "CREATE_NO_WINDOW", 0) if os.name == "nt" else 0
         ),
     )
-    if completed.returncode != 0 or not notification.is_file():
+    notification_state = proven_notification()
+    if completed.returncode != 0 or notification_state is None:
+        news_grasp_recovery_transaction.complete_owned_operation(
+            repo_root=repo_root,
+            issue_date=issue_date,
+            owner_receipt=transaction_receipt,
+            operation_receipt=operation_receipt,
+            outcome_status="outcome_unknown",
+            outcome_receipt_sha256=decision["receiptSha256"],
+        )
         raise ValueError("MINIMAL_UNBLOCKER_NOTIFICATION_FAILED")
-    return _sealed(
-        {
-            "schemaVersion": "NEWS_GRASP_MINIMAL_UNBLOCKER_RESULT_V1",
-            "issuer": ISSUER,
-            "issueDate": issue_date,
-            "decisionReceiptSha256": decision["receiptSha256"],
-            "notificationStateSha256": _file_sha(notification),
-            "scheduledAttemptStatus": "failed",
-            "recoveryAttemptStatus": "succeeded",
-            "publicStatus": "pending_same_date_completion_reverification",
-            "completion": False,
-        }
+    news_grasp_recovery_transaction.complete_owned_operation(
+        repo_root=repo_root,
+        issue_date=issue_date,
+        owner_receipt=transaction_receipt,
+        operation_receipt=operation_receipt,
+        outcome_status="completed",
+        outcome_receipt_sha256=_file_sha(notification),
     )
+    return result_for(operation_receipt)
 
 
 def _audit_incident_terminal(
@@ -1239,6 +1566,9 @@ def _audit_incident_terminal(
     evidence = str((decision or {}).get("receiptSha256") or "")
     if re.fullmatch(r"[0-9a-f]{64}", evidence) is None:
         evidence = _sha({"issueDate": issue_date, "reasonCode": reason_code})
+    requested_public_status = str((decision or {}).get("publicStatus") or "incomplete")
+    public_status = requested_public_status if requested_public_status in {"green", "incomplete"} else "incomplete"
+    public_green = public_status == "green"
     return audit_recovery_control.seal_audit_decision(
         {
             "schemaVersion": "AUDIT_RECOVERY_DECISION_V1",
@@ -1253,13 +1583,26 @@ def _audit_incident_terminal(
             "recoveryAttemptStatus": str(
                 (decision or {}).get("recoveryAttemptStatus") or "unverified"
             ),
-            "publicStatus": "incomplete",
+            "publicStatus": public_status,
             "operationState": "incident_open",
-            "workPriority": audit_recovery_control.SAME_DAY_PUBLIC_RECOVERY_PRIORITY,
-            "allowedBeforePublicGreen": audit_recovery_control.ALLOWED_BEFORE_PUBLIC_GREEN,
-            "forbiddenBeforePublicGreen": audit_recovery_control.FORBIDDEN_BEFORE_PUBLIC_GREEN,
+            "workPriority": (
+                audit_recovery_control.PUBLIC_GREEN_FOLLOWUP_PRIORITY
+                if public_green
+                else audit_recovery_control.SAME_DAY_PUBLIC_RECOVERY_PRIORITY
+            ),
+            **(
+                {"allowedAfterPublicGreen": audit_recovery_control.PUBLIC_GREEN_ALLOWED_OPERATIONS}
+                if public_green
+                else {
+                    "allowedBeforePublicGreen": audit_recovery_control.ALLOWED_BEFORE_PUBLIC_GREEN,
+                    "forbiddenBeforePublicGreen": audit_recovery_control.FORBIDDEN_BEFORE_PUBLIC_GREEN,
+                }
+            ),
             "owner": "News-Grasp Operations",
-            "nextAction": "resume_same_date_recovery_from_verified_stop_point",
+            "nextAction": str(
+                (decision or {}).get("nextAction")
+                or "resume_same_date_recovery_from_verified_stop_point"
+            ),
             "evidenceSha256": evidence,
             "sourceDecision": decision,
             "completionEvidence": None,
@@ -1296,6 +1639,9 @@ def _audit_green_terminal(
             "allowedAfterPublicGreen": audit_recovery_control.PUBLIC_GREEN_ALLOWED_OPERATIONS,
             "publicRecoveryStarted": False,
             "recoveryStarted": False,
+            "readinessDebt": decision.get("readinessDebt") is True,
+            "exitCode": 2 if decision.get("readinessDebt") is True else 0,
+            "nextAction": str(decision.get("nextAction") or ""),
             "completionEvidenceSha256": completion["receiptSha256"],
             "sourceDecision": decision,
             "completionEvidence": completion,
@@ -1347,7 +1693,333 @@ def _audit_observation_terminal(
     )
 
 
-def execute_audit_0640(
+def _validate_full_recovery_policy(repo_root: Path) -> dict[str, Any]:
+    path = repo_root / "config" / "news_grasp_full_recovery_policy_v2.json"
+    try:
+        value = json.loads(path.read_text(encoding="utf-8-sig"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError("FULL_RECOVERY_POLICY_INVALID") from error
+    if not isinstance(value, dict):
+        raise ValueError("FULL_RECOVERY_POLICY_INVALID")
+    body = {key: item for key, item in value.items() if key != "receiptSha256"}
+    if (
+        body.get("schemaVersion") != "NEWS_GRASP_FULL_RECOVERY_POLICY_V2"
+        or body.get("productId") != "News-Grasp"
+        or body.get("authorityScope") != "ScheduledRecoveryFull"
+        or body.get("sourceStatus") != "UserConfirmed"
+        or body.get("brokerReceiptRequired") is not True
+        or body.get("artifactSnapshotRequired") is not True
+        or body.get("fullAllowedOnlyBeforeRunnerWithoutArtifactDelta") is not True
+        or body.get("unknownRoute") != "audit_major_incident_open"
+        or body.get("maxFullE2EAttempts") != 0
+        or value.get("receiptSha256") != _sha(body)
+    ):
+        raise ValueError("FULL_RECOVERY_POLICY_INVALID")
+    return value
+
+
+def _ensure_control_plane_preflight_once(
+    *,
+    actual: ProductionBackend,
+    issue_date: str,
+    payload: Mapping[str, Any],
+    decision: Mapping[str, Any],
+    production_runtime_root: Path,
+    runtime_binding: Mapping[str, Any],
+    preflight_deadline: datetime,
+) -> dict[str, Any]:
+    """root/Python/live bindingをrunner前に検査し、allowlist repairは一回だけ行う。"""
+
+    high_cost_binding = actual.resolve_high_cost_binding()
+
+    def verify() -> dict[str, Any]:
+        return news_grasp_control_plane.verify_control_plane(
+            artifact_root=actual.repo_root,
+            ops_root=actual.repo_root,
+            production_runtime_root=production_runtime_root,
+            live_bin_root=actual.bin_dir,
+            issue_date=issue_date,
+            run_intent="ScheduledRecoveryFull",
+            high_cost_binding_path=Path(str(high_cost_binding["bindingPath"])),
+            high_cost_binding_receipt_sha256=str(
+                high_cost_binding["bindingReceiptSha256"]
+            ),
+        )
+
+    observed = verify()
+    if observed.get("ok") is True:
+        return observed
+    if observed.get("reasonCode") not in {
+        "PRODUCTION_RUNTIME_DRIFT",
+        "LIVE_BIN_DRIFT",
+    }:
+        raise ValueError(str(observed.get("reasonCode") or "RECOVERY_RUNTIME_BINDING_INVALID"))
+    repair_authority_path = audit_recovery_control._issue_control_plane_repair_receipt(
+        payload=dict(payload),
+        decision=dict(decision),
+        issue_date=issue_date,
+        artifact_repo_root=actual.repo_root,
+        production_runtime_root=production_runtime_root,
+        live_bin_root=actual.bin_dir,
+        preflight=observed,
+    )
+    bootstrap_path = actual.bin_dir / "news-grasp-bootstrap.ps1"
+    python_path = Path(str(runtime_binding.get("pythonExe") or ""))
+    if (
+        not bootstrap_path.is_file()
+        or bootstrap_path.is_symlink()
+        or not python_path.is_file()
+        or python_path.is_symlink()
+    ):
+        raise ValueError("CONTROL_PLANE_REPAIR_ENTRYPOINT_INVALID")
+    remaining = int(
+        (
+            preflight_deadline.astimezone(timezone.utc)
+            - datetime.now(timezone.utc)
+        ).total_seconds()
+    )
+    if remaining <= 0:
+        raise ValueError("RECOVERY_PREFLIGHT_DEADLINE_EXCEEDED")
+    completed = subprocess.run(
+        [
+            "powershell.exe",
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(bootstrap_path),
+            "-UseProductionRuntime",
+            "-ControlPlaneRepairOnly",
+            "-RecoverOnly",
+            "-ControlPlaneRepairAuthorityPath",
+            str(repair_authority_path),
+            "-ControlPlaneRepairArtifactRoot",
+            str(actual.repo_root),
+            "-RepoDir",
+            str(actual.repo_root),
+            "-EvidenceRepoDir",
+            str(actual.repo_root),
+            "-PythonExe",
+            str(python_path),
+            "-BinDir",
+            str(actual.bin_dir),
+            "-DateStamp",
+            issue_date,
+            "-HighCostBindingPath",
+            str(high_cost_binding["bindingPath"]),
+            "-HighCostBindingReceiptSha256",
+            str(high_cost_binding["bindingReceiptSha256"]),
+        ],
+        cwd=actual.repo_root,
+        capture_output=True,
+        check=False,
+        timeout=min(300, remaining),
+        creationflags=(
+            getattr(subprocess, "CREATE_NO_WINDOW", 0) if os.name == "nt" else 0
+        ),
+    )
+    if completed.returncode != 0:
+        raise ValueError("RECOVERY_CONTROL_PLANE_RECONCILE_FAILED")
+    reprobe = verify()
+    if reprobe.get("ok") is not True:
+        raise ValueError("RECOVERY_RUNTIME_BINDING_INVALID")
+    return reprobe
+
+
+def issue_recovery_execution_receipt_v2(
+    *,
+    actual: ProductionBackend,
+    issue_date: str,
+    decision: Mapping[str, Any],
+    transaction_receipt: Mapping[str, Any] | None,
+) -> tuple[Path, Path]:
+    """5分preflightの確定結果をrunnerが一回だけ消費するV2 receiptへsealする。"""
+
+    if (
+        not isinstance(transaction_receipt, Mapping)
+        or transaction_receipt.get("schemaVersion")
+        != "AUDIT_RECOVERY_TRANSACTION_V2"
+        or transaction_receipt.get("issueDate") != issue_date
+        or transaction_receipt.get("phase") != "owned_preflight"
+    ):
+        raise ValueError("AUDIT_RECOVERY_TRANSACTION_REQUIRED")
+    try:
+        preflight_deadline = datetime.fromisoformat(
+            str(transaction_receipt.get("preflightDeadline") or "").replace(
+                "Z", "+00:00"
+            )
+        )
+    except ValueError as error:
+        raise ValueError("RECOVERY_PREFLIGHT_DEADLINE_INVALID") from error
+    if (
+        preflight_deadline.tzinfo is None
+        or datetime.now(timezone.utc) > preflight_deadline.astimezone(timezone.utc)
+    ):
+        raise ValueError("RECOVERY_PREFLIGHT_DEADLINE_EXCEEDED")
+    branch = str(decision.get("recoveryBranch") or "")
+    resume_stage = str(decision.get("resumeStage") or "")
+    truth_path = Path(str(decision.get("operationalTruthPath") or ""))
+    if not truth_path.is_file() or truth_path.is_symlink():
+        raise ValueError("RECOVERY_OPERATIONAL_TRUTH_INVALID")
+    try:
+        truth = json.loads(truth_path.read_text(encoding="utf-8-sig"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError("RECOVERY_OPERATIONAL_TRUTH_INVALID") from error
+    if not isinstance(truth, dict):
+        raise ValueError("RECOVERY_OPERATIONAL_TRUTH_INVALID")
+    truth_body = {
+        key: item for key, item in truth.items() if key != "receiptSha256"
+    }
+    if (
+        truth.get("receiptSha256") != decision.get("operationalTruthReceiptSha256")
+        or truth.get("receiptSha256") != _sha(truth_body)
+    ):
+        raise ValueError("RECOVERY_OPERATIONAL_TRUTH_INVALID")
+    authority_path = Path(str(decision.get("scheduledAuthorityEvidencePath") or ""))
+    if not authority_path.is_file() or authority_path.is_symlink():
+        raise ValueError("RECOVERY_AUTHORITY_INVALID")
+    authority = json.loads(authority_path.read_text(encoding="utf-8-sig"))
+    failure_path = actual.resolve_failure_receipt(
+        issue_date, str(decision.get("failureReceiptSha256") or "")
+    )
+    evidence_payload = {
+        "scheduledFailureReceiptPath": str(failure_path),
+        "recoveryAuthorityPath": str(authority_path),
+    }
+    evidence_decision = {
+        "recoveryAuthorityReceiptSha256": authority.get("receiptSha256")
+    }
+    (
+        validated_failure_path,
+        failure,
+        validated_authority_path,
+        validated_authority,
+        authority_witness,
+    ) = audit_recovery_control._load_recovery_evidence_for_receipt(
+        payload=evidence_payload,
+        decision=evidence_decision,
+        issue_date=issue_date,
+        artifact_repo_root=actual.repo_root,
+    )
+    runtime_binding_path = actual.bin_dir / "news-grasp-recovery-runtime-binding-v1.json"
+    try:
+        runtime_binding = json.loads(
+            runtime_binding_path.read_text(encoding="utf-8-sig")
+        )
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError("RECOVERY_RUNTIME_BINDING_INVALID") from error
+    if not isinstance(runtime_binding, dict):
+        raise ValueError("RECOVERY_RUNTIME_BINDING_INVALID")
+    production_runtime_root = Path(
+        str(runtime_binding.get("productionRuntimeRoot") or "")
+    )
+    python_path = Path(str(runtime_binding.get("pythonExe") or ""))
+    high_cost_binding_path = Path(
+        str(runtime_binding.get("highCostBindingPath") or "")
+    )
+    if not all(
+        path.is_file() and not path.is_symlink()
+        for path in (runtime_binding_path, python_path, high_cost_binding_path)
+    ) or not production_runtime_root.is_dir():
+        raise ValueError("RECOVERY_RUNTIME_BINDING_INVALID")
+    _ensure_control_plane_preflight_once(
+        actual=actual,
+        issue_date=issue_date,
+        payload=evidence_payload,
+        decision=evidence_decision,
+        production_runtime_root=production_runtime_root,
+        runtime_binding=runtime_binding,
+        preflight_deadline=preflight_deadline,
+    )
+    runtime_binding = json.loads(
+        runtime_binding_path.read_text(encoding="utf-8-sig")
+    )
+    production_runtime_root = Path(
+        str(runtime_binding.get("productionRuntimeRoot") or "")
+    )
+    python_path = Path(str(runtime_binding.get("pythonExe") or ""))
+    high_cost_binding_path = Path(
+        str(runtime_binding.get("highCostBindingPath") or "")
+    )
+    if not all(
+        path.is_file() and not path.is_symlink()
+        for path in (runtime_binding_path, python_path, high_cost_binding_path)
+    ) or not production_runtime_root.is_dir():
+        raise ValueError("RECOVERY_RUNTIME_BINDING_INVALID")
+    if datetime.now(timezone.utc) > preflight_deadline.astimezone(timezone.utc):
+        raise ValueError("RECOVERY_PREFLIGHT_DEADLINE_EXCEEDED")
+    if branch == "ScheduledRecoveryFull":
+        _validate_full_recovery_policy(actual.repo_root)
+        if (
+            (truth.get("artifactDelta") or {}).get("exists") is not False
+            or truth.get("scheduledAttemptReachedRunner") is not False
+        ):
+            raise ValueError("RECOVERY_FULL_BRANCH_FORBIDDEN")
+        reservation, reservation_path = actual.reserve_recovery_capability(
+            issue_date=issue_date,
+            recovery_authority_path=validated_authority_path,
+        )
+    elif branch == "ResumeFromStage":
+        if (
+            re.fullmatch(
+                r"[0-9a-f]{64}",
+                str(truth.get("stageCheckpointReceiptSha256") or ""),
+            )
+            is None
+            or truth.get("resumeStage") != resume_stage
+        ):
+            raise ValueError("RECOVERY_CHECKPOINT_INVALID")
+        reservation_path = Path(str(decision.get("brokerStageDecisionPath") or ""))
+        if (
+            not reservation_path.is_file()
+            or reservation_path.is_symlink()
+            or _file_sha(reservation_path)
+            != decision.get("brokerStageDecisionSha256")
+        ):
+            raise ValueError("RECOVERY_CAPABILITY_RESERVATION_INVALID")
+        reservation = json.loads(reservation_path.read_text(encoding="utf-8-sig"))
+    else:
+        raise ValueError("RECOVERY_BRANCH_INVALID")
+    output = (
+        actual.repo_root
+        / "build"
+        / "recovery-authority"
+        / f"{issue_date}-execution-receipt-v2.json"
+    )
+    receipt = news_grasp_recovery_receipts.create_recovery_execution_receipt_v2(
+        transaction=dict(transaction_receipt),
+        branch=branch,
+        resume_from_stage=resume_stage,
+        capability_reservation_path=reservation_path,
+        capability_reservation_sha256=str(reservation.get("receiptSha256") or ""),
+        python_path=python_path,
+        python_sha256=_file_sha(python_path),
+        production_runtime_binding_sha256=_file_sha(runtime_binding_path),
+        live_binding_sha256=_file_sha(high_cost_binding_path),
+        operational_truth_path=truth_path,
+        operational_truth=truth,
+        issue_date=issue_date,
+        artifact_root=actual.repo_root,
+        ops_root=actual.repo_root,
+        production_runtime_root=production_runtime_root,
+        live_bin_root=actual.bin_dir,
+        runner_state_path=actual.state_path,
+        runner_script_path=actual.runner_path,
+        recovery_authority_path=validated_authority_path,
+        recovery_authority=validated_authority,
+        scheduled_failure_receipt_path=validated_failure_path,
+        scheduled_failure_receipt=failure,
+        authority_ledger_witness=authority_witness,
+        audit_accepted_at=str(transaction_receipt.get("updatedAt")),
+    )
+    news_grasp_recovery_receipts.write_atomic_json(
+        output, receipt, root=actual.repo_root
+    )
+    return output.resolve(), reservation_path.resolve()
+
+
+def _execute_audit_0640_owned(
     *,
     issue_date: str,
     backend: ProductionBackend | None = None,
@@ -1355,6 +2027,8 @@ def execute_audit_0640(
     minimal_executor: Any | None = None,
     completion_verifier: Any | None = None,
     terminal_writer: Any | None = None,
+    transaction_receipt: Mapping[str, Any] | None = None,
+    execution_receipt_issuer: Any | None = None,
 ) -> dict[str, Any]:
     """stop-point判断、選択branch、same-date再検証、typed terminalを単一路で閉じる。"""
     issue_date = _validate_date(issue_date)
@@ -1367,28 +2041,74 @@ def execute_audit_0640(
             expected_run_intent=intent,
         )
     )
-    execute_minimal = minimal_executor or execute_minimal_unblocker
-    run_command = command_runner or (
-        lambda command, **kwargs: subprocess.run(
+    execute_minimal = minimal_executor or _execute_minimal_unblocker_owned
+
+    def run_with_shared_deadline(command: list[str], **kwargs: Any) -> int:
+        from tools.news_grasp_owned_process import run_owned_bounded
+
+        if not isinstance(transaction_receipt, Mapping):
+            raise ValueError("AUDIT_RECOVERY_TRANSACTION_REQUIRED")
+        remaining = _remaining_deadline_seconds(
+            transaction_receipt.get("hardDeadline")
+        )
+        result = run_owned_bounded(
             command,
-            **kwargs,
-            capture_output=True,
-            check=False,
-            timeout=10800,
-            creationflags=(
-                getattr(subprocess, "CREATE_NO_WINDOW", 0) if os.name == "nt" else 0
-            ),
-        ).returncode
-    )
+            cwd=kwargs.get("cwd", actual.repo_root),
+            timeout=min(90 * 60, remaining),
+            max_output_bytes=4 * 1024 * 1024,
+            env=kwargs.get("env"),
+        )
+        if result.output_exceeded:
+            raise ValueError("RECOVERY_OWNED_PROCESS_OUTPUT_EXCEEDED")
+        if result.timed_out:
+            return 124
+        return int(result.returncode)
+
+    run_command = command_runner or run_with_shared_deadline
     decision: dict[str, Any] | None = None
     try:
-        decision = prepare_recovery(
-            issue_date=issue_date,
-            trigger="audit_0640",
-            process_exit_code=1,
-            backend=actual,
-        )
-        action = str(decision.get("action") or "")
+        while True:
+            decision = prepare_recovery(
+                issue_date=issue_date,
+                trigger="audit_0640",
+                process_exit_code=1,
+                backend=actual,
+            )
+            action = str(decision.get("action") or "")
+            if action != "observe_existing_runner":
+                break
+            if not isinstance(transaction_receipt, Mapping):
+                raise ValueError("AUDIT_RECOVERY_TRANSACTION_REQUIRED")
+            try:
+                remaining = _remaining_deadline_seconds(
+                    transaction_receipt.get("hardDeadline")
+                )
+            except ValueError as error:
+                if str(error) != "AUDIT_RECOVERY_HARD_DEADLINE_EXPIRED":
+                    raise
+                terminal = _audit_incident_terminal(
+                    issue_date=issue_date,
+                    reason_code="OWNED_RUNNER_HARD_DEADLINE_EXCEEDED",
+                    decision={
+                        **decision,
+                        "publicStatus": "incomplete",
+                        "nextAction": "watcher_closes_verified_owned_job_then_investigate",
+                    },
+                )
+                write_terminal(terminal)
+                return terminal
+            wait = getattr(actual, "wait_for_owned_runner_change", None)
+            if not callable(wait):
+                raise ValueError("OWNED_RUNNER_BOUNDED_OBSERVER_UNAVAILABLE")
+            wait(min(10.0, remaining))
+        if action == "major_incident":
+            terminal = _audit_incident_terminal(
+                issue_date=issue_date,
+                reason_code=str(decision.get("reasonCode") or "AUDIT_MAJOR_INCIDENT_REQUIRED"),
+                decision=decision,
+            )
+            write_terminal(terminal)
+            return terminal
         if action == "none" and decision.get("completion") is True:
             completion = decision.get("completionEvidence")
             if (
@@ -1431,93 +2151,15 @@ def execute_audit_0640(
             write_terminal(terminal)
             return terminal
         if action == "readiness_repair":
-            if decision.get("retrySuppressed") is True:
-                terminal = _audit_observation_terminal(
-                    issue_date=issue_date,
-                    decision={
-                        **decision,
-                        "reasonCode": str(
-                            (decision.get("causalRetry") or {}).get("reasonCode")
-                            or "CAUSAL_RETRY_SUPPRESSED"
-                        ),
-                    },
-                )
-                write_terminal(terminal)
-                return terminal
-            installer_path = (
-                actual.repo_root / "scripts" / "ops" / "install-news-grasp-ops.ps1"
-            )
-            command = [
-                "powershell.exe",
-                "-NoProfile",
-                "-NonInteractive",
-                "-ExecutionPolicy",
-                "Bypass",
-                "-File",
-                str(installer_path),
-                "-RepoDir",
-                str(actual.repo_root),
-            ]
-            def _execute_registered_reconcile(
-                context: Mapping[str, Any],
-            ) -> Mapping[str, Any]:
-                return_code = int(run_command(command, cwd=actual.repo_root))
-                return {
-                    "status": "command_completed",
-                    "returnCode": return_code,
-                    "mutationCount": 1 if return_code == 0 else 0,
-                    "dailyOperationLineageId": context.get(
-                        "dailyOperationLineageId"
-                    ),
-                }
-
-            registered_repair = dispatch_registered_readiness_repair(
-                repo_root=actual.repo_root,
-                reason_code=str(decision.get("reasonCode") or "READINESS_RED"),
-                context={
-                    "dailyOperationLineageId": str(
-                        decision.get("dailyOperationLineageId") or ""
-                    ),
-                    "completionAuthorityId": str(
-                        decision.get("completionAuthorityId") or ""
-                    ),
-                    "causeFingerprint": str(
-                        decision.get("causeFingerprint") or ""
-                    ),
-                },
-                executor=_execute_registered_reconcile,
-            )
-            return_code = int(
-                registered_repair["handlerResult"].get("returnCode", 1)
-            )
-            if return_code != 0:
-                terminal = _audit_observation_terminal(
-                    issue_date=issue_date,
-                    decision={
-                        **decision,
-                        "reasonCode": f"READINESS_REPAIR_EXECUTION_FAILED_{return_code}",
-                    },
-                )
-                write_terminal(terminal)
-                return terminal
-            completion = verify_completion(issue_date, "ScheduledProduction")
-            if not audit_recovery_control.same_date_completion_green(
-                issue_date, completion
-            ):
-                terminal = _audit_observation_terminal(
-                    issue_date=issue_date,
-                    decision={
-                        **decision,
-                        "reasonCode": "READINESS_REPAIR_COMPLETION_INVALID",
-                    },
-                )
-                write_terminal(terminal)
-                return terminal
-            terminal = _audit_green_terminal(
+            # V1互換入力はfail-closedで受けるが、installerや再検証を実行しない。
+            # V2 producerはaction=none + readinessDebt=trueだけを発行する。
+            terminal = _audit_observation_terminal(
                 issue_date=issue_date,
-                decision={**decision, "registeredRepair": registered_repair},
-                completion=completion,
-                recovered=False,
+                decision={
+                    **decision,
+                    "reasonCode": "READINESS_DEBT_OUT_OF_BAND_REQUIRED",
+                    "nextAction": "reconcile_readiness_in_separate_transaction",
+                },
             )
             write_terminal(terminal)
             return terminal
@@ -1532,8 +2174,23 @@ def execute_audit_0640(
 
         expected_intent = "ScheduledProduction"
         if action == "launch_minimal_unblocker":
-            execute_minimal(Path(str(decision["decisionPath"])))
+            execute_minimal(
+                Path(str(decision["decisionPath"])),
+                transaction_receipt=transaction_receipt,
+                repo_root=actual.repo_root,
+            )
         elif action == "launch_recovery":
+            issue_execution_receipt = (
+                execution_receipt_issuer or issue_recovery_execution_receipt_v2
+            )
+            execution_receipt_path, _capability_reservation_path = (
+                issue_execution_receipt(
+                    actual=actual,
+                    issue_date=issue_date,
+                    decision=decision,
+                    transaction_receipt=transaction_receipt,
+                )
+            )
             high_cost_binding = actual.resolve_high_cost_binding()
             command = [
                 "powershell.exe",
@@ -1555,16 +2212,14 @@ def execute_audit_0640(
                 str(high_cost_binding["bindingReceiptSha256"]),
                 "-ScheduledAuthorityEvidencePath",
                 str(decision["scheduledAuthorityEvidencePath"]),
-                "-RecoveryDecisionPath",
-                str(decision["decisionPath"]),
+                "-RecoveryExecutionReceiptPath",
+                str(execution_receipt_path),
             ]
             if decision.get("recoveryBranch") == "ResumeFromStage":
                 command.extend(
                     [
                         "-ResumeFromStage",
                         str(decision["resumeStage"]),
-                        "-HighCostAdmissionPath",
-                        str(decision["sourceAdmissionPath"]),
                     ]
                 )
             return_code = int(run_command(command, cwd=actual.repo_root))
@@ -1625,6 +2280,37 @@ def execute_audit_0640(
         return terminal
 
 
+def execute_audit_0640(
+    *,
+    issue_date: str,
+    backend: ProductionBackend | None = None,
+    command_runner: Any | None = None,
+    minimal_executor: Any | None = None,
+    completion_verifier: Any | None = None,
+    terminal_writer: Any | None = None,
+    transaction_receipt: Mapping[str, Any] | None = None,
+    execution_receipt_issuer: Any | None = None,
+) -> dict[str, Any]:
+    """互換adapter。runner ownershipはcanonical ensure transactionに委譲する。"""
+
+    actual = backend or ProductionBackend()
+    return audit_recovery_control.ensure_0640(
+        issue_date=issue_date,
+        trigger="daily_adapter",
+        repo_root=actual.repo_root,
+        executor=lambda *, issue_date, transaction_receipt: _execute_audit_0640_owned(
+            issue_date=issue_date,
+            backend=actual,
+            command_runner=command_runner,
+            minimal_executor=minimal_executor,
+            completion_verifier=completion_verifier,
+            terminal_writer=terminal_writer,
+            transaction_receipt=transaction_receipt,
+            execution_receipt_issuer=execution_receipt_issuer,
+        ),
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="command", required=True)
@@ -1637,8 +2323,6 @@ def main(argv: list[str] | None = None) -> int:
     prepare.add_argument("--recovery-attempt-number", type=int, default=0)
     validate = sub.add_parser("validate-decision")
     validate.add_argument("--path", type=Path, required=True)
-    minimal = sub.add_parser("execute-minimal-unblocker")
-    minimal.add_argument("--path", type=Path, required=True)
     execute_audit = sub.add_parser("execute-audit-0640")
     execute_audit.add_argument("--issue-date", required=True)
     args = parser.parse_args(argv)
@@ -1652,8 +2336,6 @@ def main(argv: list[str] | None = None) -> int:
             )
         elif args.command == "validate-decision":
             result = validate_decision(args.path)
-        elif args.command == "execute-minimal-unblocker":
-            result = execute_minimal_unblocker(args.path)
         else:
             result = execute_audit_0640(issue_date=args.issue_date)
     except (OSError, ValueError, subprocess.SubprocessError) as error:
@@ -1666,6 +2348,7 @@ def main(argv: list[str] | None = None) -> int:
         in {"audit_major_incident_open", "audit_observation_unverified"}
         or result.get("action")
         in {"audit_observation_unverified", "readiness_repair"}
+        or int(result.get("exitCode") or result.get("processExitCode") or 0) == 2
         else 0
     )
 

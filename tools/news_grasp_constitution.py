@@ -2880,25 +2880,41 @@ def _operation_integrity_oracle(
         ):
             raise ValueError("CONSTITUTION_READINESS_RECOVERY_NOT_CONVERGED")
         if perspective == "operational_recovery":
-            dispatched = daily_control.dispatch_registered_readiness_repair(
+            debt = daily_control.select_audit_recovery_action(
+                {
+                    "publicCompletionStatus": "green",
+                    "nextRunReadinessStatus": "red",
+                    "completionAuthorityId": "authority-v1",
+                    "reasonCode": "GENERATION_DRIFT",
+                }
+            )
+            if (
+                debt.get("action") != "none"
+                or debt.get("readinessDebt") is not True
+                or debt.get("exitCode") != 2
+            ):
+                raise ValueError("CONSTITUTION_READINESS_DEBT_NOT_SEPARATED")
+            from tools import operational_recovery_registry as registry
+
+            handlers = registry.default_handlers()
+            handlers["active_generation_reconcile"] = lambda context: {
+                "status": "command_completed",
+                "returnCode": 0,
+                "mutationCount": 1,
+                "dailyOperationLineageId": context.get("dailyOperationLineageId"),
+            }
+            dispatched = registry.dispatch(
                 repo_root=root,
                 reason_code="GENERATION_DRIFT",
                 context={
                     "reasonCode": "GENERATION_DRIFT",
                     "dailyOperationLineageId": "lineage-v1",
                 },
-                executor=lambda context: {
-                    "status": "command_completed",
-                    "returnCode": 0,
-                    "mutationCount": 1,
-                    "dailyOperationLineageId": context.get(
-                        "dailyOperationLineageId"
-                    ),
-                },
+                handlers=handlers,
             )
             if (
-                dispatched["handlerId"] != "active_generation_reconcile"
-                or dispatched["handlerResult"].get("returnCode") != 0
+                dispatched.handler_id != "active_generation_reconcile"
+                or dispatched.result.get("returnCode") != 0
             ):
                 raise ValueError("CONSTITUTION_RECOVERY_EXACT_DISPATCH_INVALID")
         return

@@ -126,6 +126,7 @@ def test_verify_public_surface_returns_to_full_publish_complete_for_google_api(m
         public_base_url="https://example.test/News-Grasp/",
         wait_sec=0,
         poll_sec=30,
+        verification_profile="legacy-full",
     )
 
     assert result["overall_status"] == "yellow"
@@ -161,6 +162,7 @@ def test_verify_public_surface_keeps_public_and_scheduled_attempt_status_separat
         public_base_url="https://example.test/News-Grasp/",
         wait_sec=0,
         poll_sec=30,
+        verification_profile="legacy-full",
     )
 
     assert result["overall_status"] == "green"
@@ -202,6 +204,7 @@ def test_verify_public_surface_passes_canonical_ops_root_to_completion_verifier(
         public_base_url="https://example.test/News-Grasp/",
         wait_sec=0,
         poll_sec=30,
+        verification_profile="legacy-full",
     )
 
     assert result["ok"] is True

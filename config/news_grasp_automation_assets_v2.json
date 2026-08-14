@@ -1,14 +1,20 @@
 {
   "schemaVersion": "NEWS_GRASP_AUTOMATION_ASSET_MANIFEST_V2",
   "productId": "News-Grasp",
-  "assetVersion": "2026-08-12.v2",
+  "assetVersion": "2026-08-14.v3",
   "installRoot": "news-grasp-assets",
   "assets": [
     {
-      "assetId": "operational-recovery-skill-v1",
-      "kind": "skill",
-      "sourcePath": "ops-prompts/news-grasp-operational-recovery-v1.md",
-      "installPath": "operational-recovery-v1.md"
+      "assetId": "audit-recovery-prompt-v2",
+      "kind": "automation",
+      "sourcePath": "automation/prompts/news-grasp-0640-v2.md",
+      "installPath": "prompts/news-grasp-0640-v2.md"
+    },
+    {
+      "assetId": "common-finalization-guard-v2",
+      "kind": "guard",
+      "sourcePath": "automation/guards/news-grasp-finalization-guard-v2.py",
+      "installPath": "guards/news-grasp-finalization-guard-v2.py"
     },
     {
       "assetId": "product-write-guard-v1",

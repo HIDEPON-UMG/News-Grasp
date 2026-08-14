@@ -6,6 +6,7 @@ import argparse
 import ast
 import re
 from dataclasses import asdict, dataclass
+from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 import sys
 from typing import Any, Callable, Mapping
@@ -16,6 +17,18 @@ RECOVERY_BRANCHES = {
     "ScheduledRecoveryFull",
     "minimal_unblocker",
 }
+RECOVERY_RESUME_STAGES = frozenset(
+    {
+        "post-reporter",
+        "post-daily-quality",
+        "post-deepdive",
+        "generation-quality-repair",
+    }
+)
+AUDIT_RECOVERY_DECISION_V2 = "AUDIT_RECOVERY_DECISION_V2"
+COMPLETION_AUTHORITY_V2 = "COMPLETION_AUTHORITY_V2"
+COMPLETION_OUTCOME_ENVELOPE_V1 = "COMPLETION_OUTCOME_ENVELOPE_V1"
+JST = timezone(timedelta(hours=9), name="JST")
 OPERATIONAL_DESIGN_FIELDS = (
     "owner",
     "trigger",
@@ -43,6 +56,15 @@ COMPLETION_FIELDS = (
     "deepDivePodcast",
     "notification",
     "runnerState",
+)
+PUBLIC_COMPLETION_FIELDS = (
+    "quality",
+    "distributionManifest",
+    "publishStatus",
+    "publicSurface",
+    "primaryPodcast",
+    "deepDivePodcast",
+    "notification",
 )
 SHA256_PATTERN = re.compile(r"[0-9a-f]{64}")
 ROOT = Path(__file__).resolve().parents[1]
@@ -198,20 +220,208 @@ def validate_completion_authority_receipt(
     return dict(value)
 
 
+def validate_completion_authority_v2(
+    value: object, *, issue_date: str
+) -> dict[str, Any]:
+    """公開bundleだけをauthority化し、readiness debtを混入させない。"""
+
+    code = "AUDIT_COMPLETION_AUTHORITY_V2_INVALID"
+    if not isinstance(value, dict):
+        raise ValueError(code)
+    body = {key: item for key, item in value.items() if key != "receiptSha256"}
+    manifest = body.get("publicManifest")
+    if not isinstance(manifest, dict):
+        raise ValueError(code)
+    manifest_body = {
+        key: item for key, item in manifest.items() if key != "receiptSha256"
+    }
+    checks = manifest_body.get("checks")
+    evidence = manifest_body.get("evidenceSha256")
+    lineage = manifest_body.get("producerLineage")
+    authority_lineage = body.get("producerLineage")
+    if (
+        body.get("schemaVersion") != COMPLETION_AUTHORITY_V2
+        or body.get("issuer") != COMPLETION_AUTHORITY_ISSUER
+        or body.get("issueDate") != issue_date
+        or value.get("receiptSha256") != _sha(body)
+        or not str(body.get("completionAuthorityId") or "")
+        or body.get("publicManifestSha256") != manifest.get("receiptSha256")
+        or SHA256_PATTERN.fullmatch(str(body.get("publicManifestSha256") or ""))
+        is None
+        or SHA256_PATTERN.fullmatch(str(body.get("decisionReceiptSha256") or ""))
+        is None
+        or body.get("firstVerifiedTerminal")
+        not in {"audit_normal_green", "audit_recovered_green"}
+        or manifest_body.get("schemaVersion")
+        != "NEWS_GRASP_PUBLIC_COMPLETION_MANIFEST_V2"
+        or manifest_body.get("issueDate") != issue_date
+        or manifest_body.get("profile") != "public-only-v3"
+        or manifest_body.get("publicStatus") != "green"
+        or manifest.get("receiptSha256") != _sha(manifest_body)
+        or not isinstance(checks, dict)
+        or not isinstance(evidence, dict)
+        or not all(
+            checks.get(field) is True
+            and SHA256_PATTERN.fullmatch(str(evidence.get(field) or "")) is not None
+            for field in PUBLIC_COMPLETION_FIELDS
+        )
+        or not isinstance(lineage, dict)
+        or authority_lineage != lineage
+        or not str(lineage.get("generationId") or "")
+        or re.fullmatch(r"[0-9a-f]{40}", str(lineage.get("publishCommit") or ""))
+        is None
+        or SHA256_PATTERN.fullmatch(str(lineage.get("producerOperationId") or ""))
+        is None
+    ):
+        raise ValueError(code)
+    forbidden = {"nextRunReadinessStatus", "readinessStatus", "readinessDebt"}
+    if forbidden.intersection(body) or forbidden.intersection(manifest_body):
+        raise ValueError(code)
+    return dict(value)
+
+
 def select_recovery_branch_from_truth(value: object) -> str:
     truth = validate_operational_truth_receipt(value)
     if not truth["stopPointKnown"]:
-        return "ScheduledRecoveryFull"
+        raise ValueError("RECOVERY_STOP_POINT_UNKNOWN")
     if truth.get("minimalUnblockerReceiptSha256"):
         if len(str(truth["minimalUnblockerReceiptSha256"])) != 64:
             raise ValueError("MINIMAL_UNBLOCKER_RECEIPT_INVALID")
         return "minimal_unblocker"
     delta = truth["artifactDelta"]
-    if delta["exists"] is True and truth.get("stageCheckpointReceiptSha256"):
+    if delta["exists"] is True:
+        if not truth.get("stageCheckpointReceiptSha256"):
+            raise ValueError("RECOVERY_CHECKPOINT_REQUIRED")
         if len(str(truth["stageCheckpointReceiptSha256"])) != 64:
             raise ValueError("STAGE_CHECKPOINT_RECEIPT_INVALID")
         return "ResumeFromStage"
+    if truth["scheduledAttemptReachedRunner"]:
+        raise ValueError("RECOVERY_BRANCH_UNKNOWN")
     return "ScheduledRecoveryFull"
+
+
+def _audit_slo_anchor(issue_date: str) -> datetime:
+    try:
+        parsed = date.fromisoformat(issue_date)
+    except ValueError as error:
+        raise ValueError("RECOVERY_SLO_DATE_INVALID") from error
+    return datetime.combine(parsed, time(hour=6, minute=40), tzinfo=JST)
+
+
+def _aware_clock(value: str, *, code: str) -> datetime:
+    try:
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError as error:
+        raise ValueError(code) from error
+    if parsed.tzinfo is None:
+        raise ValueError(code)
+    return parsed.astimezone(JST)
+
+
+def evaluate_recovery_slo_v2(
+    *,
+    issue_date: str,
+    transaction_started_at: str,
+    public_green_at: str,
+    done_at: str,
+    actual_recovery_operation_count: int,
+) -> dict[str, Any]:
+    """06:40固定anchorとpost-Green 15分を一つのenvelopeで評価する。"""
+
+    anchor = _audit_slo_anchor(issue_date)
+    started = _aware_clock(transaction_started_at, code="RECOVERY_SLO_CLOCK_INVALID")
+    green = _aware_clock(public_green_at, code="RECOVERY_SLO_CLOCK_INVALID")
+    done = _aware_clock(done_at, code="RECOVERY_SLO_CLOCK_INVALID")
+    if started > done or green > done or actual_recovery_operation_count < 0:
+        raise ValueError("RECOVERY_SLO_CLOCK_INVALID")
+    overall_minutes = (done - anchor).total_seconds() / 60
+    post_green_minutes = (done - green).total_seconds() / 60
+    pre_audit_green = green <= anchor and done <= anchor
+    target_met = (
+        not pre_audit_green
+        and 0 <= overall_minutes <= 60
+        and 0 <= post_green_minutes <= 15
+    )
+    repair_budget_met = (
+        not pre_audit_green
+        and actual_recovery_operation_count > 0
+        and 60 < overall_minutes <= 90
+        and 0 <= post_green_minutes <= 15
+    )
+    if pre_audit_green:
+        status = "not_applicable_pre_audit_green"
+    elif target_met:
+        status = "recovered_within_target"
+    elif repair_budget_met:
+        status = "recovered_within_budget"
+    else:
+        status = "public_green_slo_failed"
+    return {
+        "schemaVersion": "RECOVERY_SLO_ENVELOPE_V2",
+        "issueDate": issue_date,
+        "transactionStartedAt": started.isoformat(),
+        "auditSloAnchor": anchor.isoformat(),
+        "publicGreenAt": green.isoformat(),
+        "doneAt": done.isoformat(),
+        "overallMinutes": overall_minutes,
+        "postGreenMinutes": post_green_minutes,
+        "actualRecoveryOperationCount": actual_recovery_operation_count,
+        "targetMet": target_met,
+        "repairBudgetMet": repair_budget_met,
+        "status": status,
+    }
+
+
+def recovery_deadline_policy_v2(
+    issue_date: str,
+    now: datetime,
+    *,
+    operation_class: str = "new_high_cost",
+) -> dict[str, Any]:
+    """45/60/75/90分境界をoperation classごとに判定するpure policy。"""
+
+    if now.tzinfo is None:
+        raise ValueError("RECOVERY_DEADLINE_CLOCK_INVALID")
+    if operation_class not in {
+        "new_high_cost",
+        "sealed_high_cost_continuation",
+        "closeout",
+    }:
+        raise ValueError("RECOVERY_OPERATION_CLASS_INVALID")
+    anchor = _audit_slo_anchor(issue_date)
+    current = now.astimezone(JST)
+    elapsed = (current - anchor).total_seconds() / 60
+    if elapsed >= 90:
+        operation_allowed = False
+        reason = "hard_deadline_exceeded"
+    elif operation_class == "sealed_high_cost_continuation" and elapsed >= 75:
+        operation_allowed = False
+        reason = "high_cost_cutoff_exceeded"
+    elif operation_class == "new_high_cost" and elapsed >= 45:
+        operation_allowed = False
+        reason = "target_closeout_reserve_active"
+    else:
+        operation_allowed = True
+        reason = "admitted"
+    return {
+        "schemaVersion": "RECOVERY_DEADLINE_POLICY_V2",
+        "issueDate": issue_date,
+        "auditSloAnchor": anchor.isoformat(),
+        "targetCloseoutAt": (anchor + timedelta(minutes=45)).isoformat(),
+        "targetDeadline": (anchor + timedelta(minutes=60)).isoformat(),
+        "highCostCutoff": (anchor + timedelta(minutes=75)).isoformat(),
+        "hardDeadline": (anchor + timedelta(minutes=90)).isoformat(),
+        "elapsedMinutes": elapsed,
+        "operationClass": operation_class,
+        "operationAllowed": operation_allowed,
+        "reason": reason,
+        "closeoutReserveActive": elapsed >= 45,
+        "targetDeadlineExceeded": elapsed > 60,
+        "allowNewHighCostStage": elapsed < 45,
+        "allowSealedHighCostContinuation": elapsed < 75,
+        "allowNewOperation": elapsed < 90,
+        "ownedStopRequired": elapsed >= 90,
+    }
 
 
 def bind_outcome_target(
@@ -713,7 +923,7 @@ def finalize_audit_decision(
             if audit_status == "green" and readiness_status == "green"
             else "degraded"
         )
-    result["stateVector"] = {
+    result["legacyStateProjectionV2"] = {
         "scheduledAttemptStatus": result.get("scheduledAttemptStatus", "unverified"),
         "recoveryAttemptStatus": result.get("recoveryAttemptStatus", "unverified"),
         "publicStatus": public_status,
@@ -721,12 +931,29 @@ def finalize_audit_decision(
         "nextRunReadinessStatus": readiness_status,
         "operationalStatus": operational_status,
     }
+    result["stateVector"] = {
+        "scheduledAttemptStatus": result.get("scheduledAttemptStatus", "unverified"),
+        "recoveryAttemptStatus": result.get("recoveryAttemptStatus", "unverified"),
+        "publicCompletionStatus": public_status,
+        "nextRunReadinessStatus": readiness_status,
+        "auditObservationStatus": audit_status,
+        "externalDependencyStatus": result.get(
+            "externalDependencyStatus", "unverified"
+        ),
+        "constitutionStatus": result.get("constitutionStatus", "unverified"),
+        "operationalStatus": operational_status,
+    }
     result = bind_outcome_target(payload, result)
     result = map_quality_issue_to_work_order(payload, result)
     result = transition_operational_state(payload, result)
-    branch = str(result.get("recoveryBranch") or "ScheduledRecoveryFull")
-    if branch not in RECOVERY_BRANCHES:
-        branch = "ScheduledRecoveryFull"
+    branch = str(result.get("recoveryBranch") or "")
+    if result.get("action") == "scheduled_recovery":
+        if branch not in RECOVERY_BRANCHES:
+            raise ValueError("RECOVERY_BRANCH_INVALID")
+    elif branch and branch not in RECOVERY_BRANCHES:
+        raise ValueError("RECOVERY_BRANCH_INVALID")
+    elif not branch:
+        branch = "not_applicable"
     result["recoveryBranch"] = branch
     result["stopPointProofSha256"] = _sha({
         "issueDate": result.get("issueDate"),
@@ -890,6 +1117,49 @@ def evaluate_completion_v3(
         "externalEvidenceHash": external_dependency.get("evidenceHash"),
         "constitutionHash": constitution_admission.get("constitutionHash"),
     }
+
+
+def build_completion_outcome_envelope_v1(
+    *,
+    completion_state_vector_v3: Mapping[str, Any],
+    completion_authority_sha256: str,
+    slo: Mapping[str, Any],
+    automation_outcome: str,
+    readiness_debt: Mapping[str, Any] | None,
+    generated_at: str,
+) -> dict[str, Any]:
+    """不変V3を埋め込まずhash参照し、SLO/readinessをsidecarへ分離する。"""
+
+    vector = completion_state_vector_v3.get("stateVector")
+    expected_fields = {field.name for field in CompletionStateVectorV3.__dataclass_fields__.values()}
+    if (
+        completion_state_vector_v3.get("schemaVersion") != COMPLETION_STATE_VECTOR_V3
+        or not isinstance(vector, Mapping)
+        or set(vector) != expected_fields
+        or SHA256_PATTERN.fullmatch(completion_authority_sha256) is None
+        or slo.get("schemaVersion") != "RECOVERY_SLO_ENVELOPE_V2"
+        or automation_outcome
+        not in {
+            "audit_normal_green",
+            "audit_recovered_green",
+            "audit_observation_unverified",
+            "audit_major_incident_open",
+        }
+    ):
+        raise ValueError("COMPLETION_OUTCOME_ENVELOPE_INVALID")
+    body = {
+        "schemaVersion": COMPLETION_OUTCOME_ENVELOPE_V1,
+        "completionStateVectorV3Sha256": _sha(completion_state_vector_v3),
+        "completionAuthoritySha256": completion_authority_sha256,
+        "slo": dict(slo),
+        "automationOutcome": automation_outcome,
+        "readinessDebt": dict(readiness_debt or {}),
+        "generatedAt": _aware_clock(
+            generated_at, code="COMPLETION_OUTCOME_ENVELOPE_INVALID"
+        ).isoformat(),
+    }
+    body["receiptSha256"] = _sha(body)
+    return body
 
 
 def probe_readiness(*, root: Path | str, expected_paths: list[str], generation_id: str) -> dict[str, Any]:

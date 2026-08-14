@@ -24,4 +24,4 @@ Scoring dimensions:
 - summary_planning: Summary plan follows the newsroom prompt and gamma-style requirements.
 - append_safety: append scope is explicit and excludes failed/quarantined records.
 - context_budget: solution avoids full-file reads and heavy payloads.
-- deepdive_direction: DeepDive theme is specific, cross-category, and optional if weak.
+- deepdive_direction: DeepDive theme is required, specific, and cross-category; never mark the final public bundle optional.

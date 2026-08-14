@@ -157,10 +157,13 @@ def test_main_no_subscribers_records_machine_readable_state(tmp_path, monkeypatc
     assert main() == 0
     capsys.readouterr()
     payload = json.loads(state.read_text(encoding="utf-8"))
+    assert payload["schemaVersion"] == "NEWS_GRASP_NOTIFICATION_OUTCOME_V2"
     assert payload["status"] == "no_subscribers"
     assert payload["ok"] is True
     assert payload["subscription_count"] == 0
     assert payload["sent_count"] == 0
+    assert payload["audienceResolutionReceipt"]["resolvedAudienceCount"] == 0
+    assert payload["audienceResolutionReceipt"]["receiptSha256"]
 
 
 def test_main_dry_run_does_not_send(tmp_path, monkeypatch, capsys):
@@ -204,8 +207,43 @@ def test_main_dry_run_records_machine_readable_state(tmp_path, monkeypatch, caps
     capsys.readouterr()
     payload = json.loads(state.read_text(encoding="utf-8"))
     assert payload["status"] == "dry_run"
-    assert payload["ok"] is True
+    assert payload["ok"] is False
     assert payload["subscription_count"] == 1
+
+
+def test_main_records_sealed_delivery_receipt_only_when_every_target_accepts(
+    tmp_path, monkeypatch, capsys
+):
+    subscriptions = tmp_path / "subs.json"
+    subscriptions.write_text(json.dumps([SAMPLE_SUB]), encoding="utf-8")
+    key = tmp_path / "vapid.pem"
+    key.write_text("test-key", encoding="utf-8")
+    state = tmp_path / "notification.json"
+    monkeypatch.setattr(sp, "send_one", lambda *_args: (True, False, "ok"))
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "send_push.py",
+            "--subscriptions-file",
+            str(subscriptions),
+            "--token-file",
+            str(tmp_path / "no-token"),
+            "--vapid-key-file",
+            str(key),
+            "--record-state",
+            str(state),
+        ],
+    )
+
+    assert main() == 0
+    capsys.readouterr()
+    payload = json.loads(state.read_text(encoding="utf-8"))
+    assert payload["status"] == "sent"
+    assert payload["ok"] is True
+    assert payload["deliveryReceipt"]["targetCount"] == 1
+    assert payload["deliveryReceipt"]["acceptedCount"] == 1
+    assert payload["deliveryReceipt"]["receiptSha256"]
 
 
 # --- 送信契約: TTL ---------------------------------------------------------

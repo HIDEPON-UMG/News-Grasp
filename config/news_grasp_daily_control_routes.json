@@ -16,46 +16,51 @@
   "declaredRouteIds": [
     "scheduled_runner",
     "producer_lineage",
-    "production_self_heal",
+    "watcher_recovery_control",
     "audit_0640_control",
     "audit_observer",
     "audit_decision",
-    "completion_verifier"
+    "completion_verifier",
+    "common_finalizer"
   ],
   "consumerRouteIds": [
     "scheduled_runner",
     "producer_lineage",
-    "production_self_heal",
+    "watcher_recovery_control",
     "audit_0640_control",
     "audit_observer",
     "audit_decision",
-    "completion_verifier"
+    "completion_verifier",
+    "common_finalizer"
   ],
   "positiveFixtureRouteIds": [
     "scheduled_runner",
     "producer_lineage",
-    "production_self_heal",
+    "watcher_recovery_control",
     "audit_0640_control",
     "audit_observer",
     "audit_decision",
-    "completion_verifier"
+    "completion_verifier",
+    "common_finalizer"
   ],
   "negativeFixtureRouteIds": [
     "scheduled_runner",
     "producer_lineage",
-    "production_self_heal",
+    "watcher_recovery_control",
     "audit_0640_control",
     "audit_observer",
     "audit_decision",
-    "completion_verifier"
+    "completion_verifier",
+    "common_finalizer"
   ],
   "routes": [
     {"routeId": "scheduled_runner", "consumerPath": "scripts/ops/news-grasp-runner.ps1", "consumerSymbol": "Set-RunnerState", "productionCallerPath": "scripts/ops/news-grasp-runner.ps1", "productionCallSymbol": "Set-RunnerState"},
     {"routeId": "producer_lineage", "consumerPath": "scripts/ops/news-grasp-lineage.ps1", "consumerSymbol": "New-NewsGraspProducerLineage", "productionCallerPath": "scripts/ops/news-grasp-runner.ps1", "productionCallSymbol": "New-NewsGraspProducerLineage"},
-    {"routeId": "production_self_heal", "consumerPath": "tools/news_grasp_daily_control.py", "consumerSymbol": "prepare_recovery", "productionCallerPath": "scripts/ops/watch-news-grasp-runner.ps1", "productionCallSymbol": "tools.news_grasp_daily_control"},
-    {"routeId": "audit_0640_control", "consumerPath": "tools/news_grasp_daily_control.py", "consumerSymbol": "execute_audit_0640", "productionCallerPath": "scripts/ops/news-grasp-deadman.ps1", "productionCallSymbol": "execute-audit-0640"},
+    {"routeId": "watcher_recovery_control", "consumerPath": "tools/audit_recovery_control.py", "consumerSymbol": "ensure_0640", "productionCallerPath": "scripts/ops/watch-news-grasp-runner.ps1", "productionCallSymbol": "ensure-0640"},
+    {"routeId": "audit_0640_control", "consumerPath": "tools/audit_recovery_control.py", "consumerSymbol": "ensure_0640", "productionCallerPath": "scripts/ops/news-grasp-deadman.ps1", "productionCallSymbol": "ensure-0640"},
     {"routeId": "audit_observer", "consumerPath": "tools/audit_recovery_control.py", "consumerSymbol": "_observe_operational_truth", "productionCallerPath": "tools/news_grasp_daily_control.py", "productionCallSymbol": "_observe_operational_truth"},
     {"routeId": "audit_decision", "consumerPath": "tools/audit_recovery_control.py", "consumerSymbol": "decide_audit_recovery", "productionCallerPath": "tools/news_grasp_daily_control.py", "productionCallSymbol": "decide_audit_recovery"},
-    {"routeId": "completion_verifier", "consumerPath": "tools/daily_self_heal.py", "consumerSymbol": "verify_publish_complete", "productionCallerPath": "tools/audit_recovery_control.py", "productionCallSymbol": "verify_publish_complete"}
+    {"routeId": "completion_verifier", "consumerPath": "tools/news_grasp_finalization.py", "consumerSymbol": "get_or_produce_manifest", "productionCallerPath": "tools/audit_recovery_control.py", "productionCallSymbol": "get_or_produce_manifest"},
+    {"routeId": "common_finalizer", "consumerPath": "tools/news_grasp_finalization.py", "consumerSymbol": "coordinate_publish", "productionCallerPath": "scripts/ops/news-grasp-runner.ps1", "productionCallSymbol": "coordinate-publish"}
   ]
 }

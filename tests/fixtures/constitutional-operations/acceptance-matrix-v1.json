@@ -149,8 +149,8 @@
     {
       "acceptanceId": "A10",
       "requirementId": "R10",
-      "productionRoute": "tools/news_grasp_daily_control.py",
-      "consumerMarker": "COMPLETION_STATE_VECTOR_V3",
+      "productionRoute": "tools/news_grasp_finalization.py",
+      "consumerMarker": "NEWS_GRASP_COMMON_FINALIZATION_RESULT_V1",
       "perspectives": [
         "primary_behavior",
         "adversarial_boundary",

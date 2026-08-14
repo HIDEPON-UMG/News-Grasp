@@ -4448,15 +4448,19 @@ def test_verify_publish_complete_records_notification_state(monkeypatch, tmp_pat
     _write_publish_complete_inventory(tmp_path)
     notification = tmp_path / "build" / "notification" / "2026-06-20.json"
     notification.parent.mkdir(parents=True)
+    from tools.news_grasp_deterministic_builders import build_notification_outcome_v2
+
     notification.write_text(
         json.dumps(
-            {
-                "status": "no_subscribers",
-                "ok": True,
-                "date": "2026-06-20",
-                "subscription_count": 0,
-                "sent_count": 0,
-            }
+            build_notification_outcome_v2(
+                issue_date="2026-06-20",
+                status="no_subscribers",
+                source="worker",
+                subscription_count=0,
+                sent_count=0,
+                evidence={"audienceSha256": "7" * 64},
+                recorded_at="2026-06-20T06:40:00+09:00",
+            )
         ),
         encoding="utf-8",
     )
@@ -4497,6 +4501,48 @@ def test_verify_publish_complete_records_notification_state(monkeypatch, tmp_pat
     assert result["public_status"] == "green"
     assert result["scheduled_attempt_status"] == "failed_then_recovered"
     assert result["recovery_attempt_status"] == "succeeded"
+
+
+def test_verify_publish_complete_rejects_skipped_notification_success_forgery(
+    tmp_path: Path,
+) -> None:
+    notification = tmp_path / "build" / "notification" / "2026-06-20.json"
+    notification.parent.mkdir(parents=True)
+    notification.write_text(
+        json.dumps(
+            {
+                "date": "2026-06-20",
+                "status": "skipped_not_normal",
+                "ok": True,
+                "subscription_count": 0,
+                "sent_count": 0,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    loaded = dsh._load_notification_state(notification, "2026-06-20")
+    assert loaded["reason"] == "notification_delivery_unproven"
+
+
+def test_notification_sent_requires_sealed_delivery_receipt(tmp_path: Path) -> None:
+    notification = tmp_path / "notification.json"
+    notification.write_text(
+        json.dumps(
+            {
+                "schemaVersion": "NEWS_GRASP_NOTIFICATION_OUTCOME_V2",
+                "date": "2026-06-20",
+                "status": "sent",
+                "ok": True,
+                "subscription_count": 1,
+                "sent_count": 1,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    loaded = dsh._load_notification_state(notification, "2026-06-20")
+    assert loaded["reason"] == "notification_delivery_unproven"
 
 
 def test_verify_publish_complete_cli_outputs_manifest(monkeypatch, tmp_path: Path, capsys) -> None:

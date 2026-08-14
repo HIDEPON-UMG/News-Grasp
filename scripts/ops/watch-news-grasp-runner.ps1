@@ -14,7 +14,7 @@ param(
     [switch] $RecoverOnly,
     [int] $PollSeconds = 30,
     [int] $StaleMinutes = 15,
-    [int] $TimeoutMinutes = 120,
+    [int] $TimeoutMinutes = 90,
     [string] $RunnerPath = (Join-Path $env:USERPROFILE 'bin\news-grasp-runner.ps1'),
     [string] $StateFile = (Join-Path $env:USERPROFILE 'bin\news-grasp-runner-state.json'),
     [string] $LogDir = (Join-Path $env:USERPROFILE 'bin\news-grasp-logs'),
@@ -514,6 +514,18 @@ function Get-StateTime {
     try { return [datetime]::Parse([string]$State.$Name) } catch { return $null }
 }
 
+function Get-WatchHardDeadline {
+    param([datetime] $Started)
+    if ((-not $SmokeTest) -and (-not $RecoverOnly)) {
+        return [DateTimeOffset]::ParseExact(
+            "$DateStamp`T08:10:00+09:00",
+            'yyyy-MM-ddTHH:mm:sszzz',
+            [Globalization.CultureInfo]::InvariantCulture
+        ).LocalDateTime
+    }
+    return $Started.AddMinutes($TimeoutMinutes)
+}
+
 function Get-StaleSeconds {
     param($State)
     $now = Get-Date
@@ -691,7 +703,6 @@ function Write-StartedJson {
 }
 
 function Start-RunnerProcess {
-    param([object] $RecoveryDecision = $null)
     if (-not (Test-Path $RunnerPath)) {
         throw "runner not found: $RunnerPath"
     }
@@ -714,15 +725,6 @@ function Start-RunnerProcess {
     }
     if ($HighCostBindingReceiptSha256) {
         $runnerParameters.HighCostBindingReceiptSha256 = $HighCostBindingReceiptSha256
-    }
-    if ($RecoveryDecision) {
-        $runnerParameters.RunIntent = 'ScheduledRecoveryFull'
-        $runnerParameters.ScheduledAuthorityEvidencePath = [string]$RecoveryDecision.scheduledAuthorityEvidencePath
-        if ([string]$RecoveryDecision.recoveryBranch -eq 'ResumeFromStage') {
-            $runnerParameters.ResumeFromStage = [string]$RecoveryDecision.resumeStage
-            $runnerParameters.HighCostAdmissionPath = [string]$RecoveryDecision.sourceAdmissionPath
-        }
-        $runnerParameters.RecoveryDecisionPath = [string]$RecoveryDecision.decisionPath
     }
     $quote = {
         param([string]$Value)
@@ -782,45 +784,18 @@ function Get-DailyControlPython {
     return 'python'
 }
 
-function Get-RecoveryDecision {
-    param(
-        [string] $Trigger,
-        [int] $ProcessExitCode,
-        [int] $RecoveryAttemptNumber = 0
-    )
+function Invoke-CanonicalRecoveryEnsure {
     $python = Get-DailyControlPython
     Push-Location $RepoDir
     try {
-        $json = (& $python '-m' 'tools.news_grasp_daily_control' 'prepare' '--issue-date' $DateStamp '--trigger' $Trigger '--process-exit-code' $ProcessExitCode '--recovery-attempt-number' $RecoveryAttemptNumber 2>&1 | Out-String).Trim()
-        if ($LASTEXITCODE -ne 0) {
-            Write-BootstrapLog "daily control failed trigger=$Trigger exit=$LASTEXITCODE detail=$json"
-            return $null
-        }
-        return $json | ConvertFrom-Json -ErrorAction Stop
+        $json = (& $python '-B' '-m' 'tools.audit_recovery_control' 'ensure-0640' '--issue-date' $DateStamp '--trigger' 'watcher' 2>&1 | Out-String).Trim()
+        $exitCode = $LASTEXITCODE
+        Write-BootstrapLog "canonical recovery ensure exit=$exitCode detail=$json"
+        if ($exitCode -notin @(0, 2, 3)) { return 2 }
+        return $exitCode
     } finally {
         Pop-Location
     }
-}
-
-function Read-ValidatedRecoveryDecision {
-    param([string] $Path)
-    $python = Get-DailyControlPython
-    Push-Location $RepoDir
-    try {
-        $json = (& $python '-m' 'tools.news_grasp_daily_control' 'validate-decision' '--path' $Path 2>&1 | Out-String).Trim()
-        if ($LASTEXITCODE -ne 0) { throw "recovery decision invalid: $json" }
-        return $json | ConvertFrom-Json -ErrorAction Stop
-    } finally {
-        Pop-Location
-    }
-}
-
-function Start-RecoveryFromDecision {
-    param([Parameter(Mandatory=$true)][object] $Decision)
-    if ([string]$Decision.action -ne 'launch_recovery' -or [int]$Decision.maxAutomaticRecoveryAttempts -ne 1) {
-        throw "typed recovery launch not admitted: action=$($Decision.action)"
-    }
-    return Start-RunnerProcess -RecoveryDecision $Decision
 }
 
 function Test-TerminalState {
@@ -888,7 +863,8 @@ function Watch-Runner {
         }
         return
     }
-    $nextDeadline = $started.AddMinutes($TimeoutMinutes)
+    $watchHardDeadline = Get-WatchHardDeadline -Started $started
+    $nextDeadline = $watchHardDeadline
     $firstObservation = $true
     try {
       while ($true) {
@@ -928,7 +904,7 @@ function Watch-Runner {
                 $script:WatchExitCode = 125
                 return
             }
-            $nextDeadline = $started.AddMinutes($TimeoutMinutes)
+            $nextDeadline = $watchHardDeadline
             continue
         }
         if (-not $watchRunId -and $state -and $state.run_id) {
@@ -936,13 +912,26 @@ function Watch-Runner {
         }
         if (Test-TerminalState -State $state) {
             if (-not $Process.HasExited) { $null = $Process.WaitForExit(30000) }
+            $terminalProcessExitCode = if ($Process.HasExited) {
+                [int]$Process.ExitCode
+            } else {
+                125
+            }
+            $terminalReasonCode = if (-not $Process.HasExited) {
+                'RUNNER_TERMINAL_PROCESS_EXIT_TIMEOUT'
+            } elseif ($terminalProcessExitCode -eq 0) {
+                'RUNNER_TERMINAL_STATE_REACHED'
+            } else {
+                'RUNNER_PUBLIC_TERMINAL_WITH_DEGRADED_AUTOMATION'
+            }
             Complete-RunnerLaunchEvidence `
                 -Process $Process `
                 -Status 'terminal_state_reached' `
-                -ReasonCode 'RUNNER_TERMINAL_STATE_REACHED' `
+                -ReasonCode $terminalReasonCode `
                 -StateClaimed $true
-            Write-StatusJson -Mode 'completed' -State $state -ProcessId $Process.Id
-            $script:WatchExitCode = 0
+            $terminalMode = if ($terminalProcessExitCode -eq 0) { 'completed' } else { 'completed_degraded' }
+            Write-StatusJson -Mode $terminalMode -State $state -ProcessId $Process.Id
+            $script:WatchExitCode = $terminalProcessExitCode
             return
         }
         if ($state -and [string]$state.status -eq 'error' -and $Process.HasExited) {
@@ -979,15 +968,14 @@ function Watch-Runner {
             Write-StatusJson -Mode 'stale' -State (Read-State) -ProcessId $Process.Id -Message $message
             return
         }
-        $elapsed = (Get-Date) - $started
-        if ($elapsed.TotalMinutes -ge $TimeoutMinutes) {
-            $message = "watch timeout after $TimeoutMinutes minutes"
+        if ((Get-Date) -ge $watchHardDeadline) {
+            $message = "watch hard deadline reached at $($watchHardDeadline.ToString('o'))"
             $script:WatchExitCode = Stop-VerifiedRunner -State $state -Status 'watchdog_wall_timeout' -Message $message
             Write-StatusJson -Mode 'timeout' -State (Read-State) -ProcessId $Process.Id -Message $message
             return
         }
         $staleAt = (Get-Date).AddSeconds([Math]::Max(1, ($StaleMinutes * 60) - $staleSeconds))
-        $wallAt = $started.AddMinutes($TimeoutMinutes)
+        $wallAt = $watchHardDeadline
         $nextDeadline = if ($staleAt -lt $wallAt) { $staleAt } else { $wallAt }
       }
     } finally {
@@ -1007,11 +995,11 @@ if ($PSCmdlet.ParameterSetName -eq 'Status') {
 }
 
 Repair-LiveOpsFromRepo
-$decision = $null
 if ($RecoveryDecisionPath) {
-    $decision = Read-ValidatedRecoveryDecision -Path $RecoveryDecisionPath
+    throw 'RECOVERY_TRANSACTION_REQUIRED: watcher cannot launch a recovery decision directly'
 }
-$proc = if ($decision) { Start-RecoveryFromDecision -Decision $decision } else { Start-RunnerProcess }
+$decision = $null
+$proc = Start-RunnerProcess
 if ($PSCmdlet.ParameterSetName -eq 'StartOnly') {
     # Job handleはこのwatcherが保持する。ここで終了するとKILL_ON_JOB_CLOSEにより
     # runnerも終了し、started receiptだけが残るため、StartOnlyも所有watchまで継続する。
@@ -1019,14 +1007,11 @@ if ($PSCmdlet.ParameterSetName -eq 'StartOnly') {
 }
 
 Watch-Runner -Process $proc
-if ($script:WatchExitCode -ne 0 -and (-not $decision) -and (-not $SmokeTest) -and (-not $RecoverOnly)) {
-    $decision = Get-RecoveryDecision -Trigger 'production_failure' -ProcessExitCode $script:WatchExitCode
-    if ($decision -and [string]$decision.action -eq 'launch_recovery') {
-        $recoveryProcess = Start-RecoveryFromDecision -Decision $decision
-        Watch-Runner -Process $recoveryProcess
-        if ($script:WatchExitCode -ne 0) {
-            $null = Get-RecoveryDecision -Trigger 'production_failure' -ProcessExitCode $script:WatchExitCode -RecoveryAttemptNumber 1
-        }
-    }
+$finalRunnerState = Read-State
+if (
+    $script:WatchExitCode -ne 0 -and
+    (-not $decision) -and (-not $SmokeTest) -and (-not $RecoverOnly)
+) {
+    $script:WatchExitCode = Invoke-CanonicalRecoveryEnsure
 }
 exit $script:WatchExitCode

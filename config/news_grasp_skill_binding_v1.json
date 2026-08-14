@@ -54,7 +54,7 @@
       "sourceLocator": "shared-skill://news-grasp-repair-method/SKILL.md",
       "sourceSha256": "3633db76d91507c575b8710d14b9734c7ebdbe9ab6716595c2425d7c039ef1fc",
       "overlayPath": "automation/skills/news-grasp-repair-method",
-      "overlaySha256": "9edf7ed1a339bda9ca512fc60139463bb37aa7ed9a13dfb370694aadab06eb64",
+      "overlaySha256": "7ed4848cee34c103332d38e5f841d005c10702f05f30d179088152921fa4519e",
       "installedPath": "news-grasp-assets/skills/news-grasp-repair-method",
       "consumer": "Registered daily recovery classification and execution",
       "reason": "Product recovery routes and typed incident boundaries require a product-owned versioned projection."

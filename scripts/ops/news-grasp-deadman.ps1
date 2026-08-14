@@ -57,10 +57,10 @@ function Write-SupervisorLog {
 }
 
 function Invoke-Audit0640Control {
-    $terminalJson = (& $PyExe '-B' '-m' 'tools.news_grasp_daily_control' 'execute-audit-0640' '--issue-date' $DateStamp 2>&1 | Out-String).Trim()
+    $terminalJson = (& $PyExe '-B' '-m' 'tools.audit_recovery_control' 'ensure-0640' '--issue-date' $DateStamp '--trigger' 'deadman' 2>&1 | Out-String).Trim()
     $executorExitCode = $LASTEXITCODE
     Write-SupervisorLog "audit canonical executor: exit=$executorExitCode terminal=$terminalJson"
-    if ($executorExitCode -notin @(0, 2)) {
+    if ($executorExitCode -notin @(0, 2, 3)) {
         return 2
     }
     return $executorExitCode
