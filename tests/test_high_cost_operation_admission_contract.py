@@ -272,6 +272,21 @@ def test_scheduled_model_calls_keep_existing_shared_admission_route() -> None:
     )
 
 
+def test_scheduled_runner_exports_explicit_authority_to_child_model_calls() -> None:
+    """scheduled broker authorityをrunnerからmodel wrapperへ明示伝播する。"""
+
+    text = RUNNER.read_text(encoding="utf-8-sig")
+    for variable in (
+        "AIHARNESS_SCHEDULED_NEWS_GRASP_AUTHORITY",
+        "AIHARNESS_SCHEDULED_TASK_IDENTITY",
+        "AIHARNESS_SCHEDULED_ACTUAL_EVENT_HASH",
+        "AIHARNESS_SCHEDULED_ISSUE_DATE",
+        "AIHARNESS_SCHEDULED_OPERATION_KIND",
+    ):
+        assert f"$env:{variable}" in text
+    assert "HIGH_COST_SCHEDULED_AUTHORITY_ENV_INVALID" in text
+
+
 def test_runner_rejects_cross_mode_authority_and_nopublish_resume_inputs() -> None:
     text = RUNNER.read_text(encoding="utf-8-sig")
     gate = text.split("function Assert-HighCostOperationAdmission", 1)[1].split(
