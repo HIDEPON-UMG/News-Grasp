@@ -511,6 +511,8 @@ def test_ng813_finalizer_marks_state_applied_before_completion_guard() -> None:
     mark = finalizer.index("-Command 'mark-finalization-state-applied'", state)
     guard = finalizer.index("Invoke-NewsGraspCompletionGuard", mark)
     assert consume < state < mark < guard
+    assert "$historicalScheduledFailureRecovered" in finalizer
+    assert "scheduled_task_missed_runs" in finalizer
 
 
 def _load_control_plane_module():
