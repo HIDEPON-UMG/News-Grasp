@@ -1,8 +1,8 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 2587,
-  "collectedNodeSetSha256": "721a646f226cc839ed376d94162b323e4574f263128b1aded6378a57d27b4d70",
+  "collectedNodeCount": 2588,
+  "collectedNodeSetSha256": "970f6a562a6e4faea9f624b909166ba83ab81c3da3f15db2bd5b361b22912225",
   "files": [
     {
       "path": "tests/test_20260813_control_plane_repair.py",
@@ -2010,11 +2010,12 @@
     },
     {
       "path": "tests/test_news_grasp_completion_guard.py",
-      "sha256": "56f2699d7be3347109f1807d72c61151646e029045e0e034e25589dbe272d139",
-      "nodeCount": 7,
+      "sha256": "d3b11b459fa5245c009151a25f8c03ad3a3b8be325250da56102f573fd5013bd",
+      "nodeCount": 8,
       "nodeIds": [
         "tests/test_news_grasp_completion_guard.py::test_20260813_historical_four_hour_shape_fails_and_repaired_replay_passes",
         "tests/test_news_grasp_completion_guard.py::test_completion_guard_accepts_distinct_commit_roles_and_exact_slo_boundary",
+        "tests/test_news_grasp_completion_guard.py::test_completion_guard_accepts_recovered_public_green_with_historical_missed_run",
         "tests/test_news_grasp_completion_guard.py::test_completion_guard_rejects_clock_reversal_and_missing_clock",
         "tests/test_news_grasp_completion_guard.py::test_completion_guard_rejects_future_self_reported_clocks",
         "tests/test_news_grasp_completion_guard.py::test_completion_guard_rejects_legacy_manifest_and_commit_role_substitution",

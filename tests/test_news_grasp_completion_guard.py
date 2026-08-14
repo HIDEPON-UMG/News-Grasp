@@ -64,6 +64,33 @@ def test_completion_guard_accepts_distinct_commit_roles_and_exact_slo_boundary()
     assert result["slo"]["overallMinutes"] == 60
 
 
+def test_completion_guard_accepts_recovered_public_green_with_historical_missed_run() -> None:
+    guard = _guard()
+    manifest = _manifest()
+    manifest["live_runner_readiness"] = {
+        "ok": False,
+        "reason": "scheduled_task_missed_runs",
+        "last_scheduled_attempt": {"status": "failed", "last_task_result": 1},
+        "next_run_readiness": {
+            "ok": False,
+            "reasonCode": "scheduled_task_missed_runs",
+        },
+    }
+
+    result = guard.evaluate(
+        manifest,
+        _runner_state(),
+        "2026-08-13",
+        audit_accepted_at="2026-08-13T06:40:00+09:00",
+        public_green_at="2026-08-13T07:25:00+09:00",
+        done_at="2026-08-13T07:40:00+09:00",
+    )
+
+    assert result["ok"] is True
+    assert "live_runner_readiness_not_ok" not in result["failures"]
+    assert "next_run_readiness_not_ok" not in result["failures"]
+
+
 def test_completion_guard_rejects_legacy_manifest_and_commit_role_substitution() -> None:
     guard = _guard()
     manifest = _manifest()
