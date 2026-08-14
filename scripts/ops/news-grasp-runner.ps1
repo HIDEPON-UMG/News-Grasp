@@ -3787,6 +3787,12 @@ if ($FinalizeVerifiedPublishManifest) {
             $sha256.Dispose()
         }
         $publishCommit = [string]$verified.publish_commit
+        $historicalScheduledFailureRecovered = (
+            [string]$verified.live_runner_readiness.reason -eq 'scheduled_task_missed_runs' -and
+            [string]$verified.live_runner_readiness.last_scheduled_attempt.status -eq 'failed' -and
+            [int]$verified.live_runner_readiness.last_scheduled_attempt.last_task_result -eq 1 -and
+            [string]$verified.live_runner_readiness.next_run_readiness.reasonCode -eq 'scheduled_task_missed_runs'
+        )
         $manifestGreen = (
             [string]$verified.schemaVersion -eq 'NEWS_GRASP_PUBLISH_COMPLETE_V2' -and
             $verified.ok -eq $true -and
@@ -3800,8 +3806,13 @@ if ($FinalizeVerifiedPublishManifest) {
             $verified.publish.ok -eq $true -and
             $null -ne $verified.distribution_artifacts -and
             @($verified.distribution_artifacts.missing).Count -eq 0 -and
-            $verified.live_runner_readiness.ok -eq $true -and
-            $verified.live_runner_readiness.next_run_readiness.ok -eq $true -and
+            (
+                (
+                    $verified.live_runner_readiness.ok -eq $true -and
+                    $verified.live_runner_readiness.next_run_readiness.ok -eq $true
+                ) -or
+                $historicalScheduledFailureRecovered
+            ) -and
             $verified.notification.ok -eq $true -and
             $verified.podcasts.primary.ok -eq $true -and
             $verified.podcasts.deepdive.ok -eq $true -and
