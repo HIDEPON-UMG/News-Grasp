@@ -518,7 +518,7 @@ $runnerArguments = @(
     '-ExternalHealthAuthorityExpectedSha256', $externalHealthAuthorityFixtureSha256,
     '-HighCostAttemptId', $attemptId
 )
- $runnerArguments += @('-E2EAttemptPolicyPath', $e2eAttemptPolicyFullPath, '-E2ELogicalAttempt', [string]$E2ELogicalAttempt, '-E2EFinalAdmissionPath', $E2EAdmissionPath)
+ $runnerArguments += @('-E2EAttemptPolicyPath', $e2eAttemptPolicyFullPath, '-E2ELogicalAttempt', [string]$E2ELogicalAttempt)
 if ($globalGenerationManifestPath) {
     $runnerArguments += @('-GlobalHarnessGenerationManifestPath', $globalGenerationManifestPath)
 }
