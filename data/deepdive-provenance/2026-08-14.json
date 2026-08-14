@@ -1,0 +1,77 @@
+{
+  "articlePath": "digest/DeepDive/2026-08-14-DeepDive.md",
+  "articleSha256": "de01f4ecc4f663a5daa144ca504b07c8a8c7607b1a134817e89313f6f4a176cc",
+  "issueDate": "2026-08-14",
+  "manifestSha256": "fe766ee619e65a18c34e7f7f62d2c7e07cb7f5508d9dde34db3ec7bf0bc2f2fe",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "91ee9f895025913ca466f9423ea0f3b7d9b373677974c0ca88cfd435230144b6",
+  "sources": [
+    {
+      "contentSha256": "2f77cdd6d078f7894c2ec72a82ba967aff6c8814a3b5c4d8161aa19ed793b64b",
+      "fetchedAt": "2026-08-14T00:57:15.866062+00:00",
+      "finalUrl": "https://investor.tsmc.com/english/quarterly-results/2026/q2",
+      "httpStatus": 206,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://investor.tsmc.com/english/quarterly-results/2026/q2",
+      "url": "https://investor.tsmc.com/english/quarterly-results/2026/q2"
+    },
+    {
+      "contentSha256": "be472adb0586f781450cccb1603038f46f9ea747b2dba6dc6831a76246294ff1",
+      "fetchedAt": "2026-08-14T00:57:16.800160+00:00",
+      "finalUrl": "https://www.bis.gov/press-release/commerce-strengthens-export-controls-restrict-chinas-capability-produce-advanced-semiconductors-military",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.bis.gov/press-release/commerce-strengthens-export-controls-restrict-chinas-capability-produce-advanced-semiconductors-military",
+      "url": "https://www.bis.gov/press-release/commerce-strengthens-export-controls-restrict-chinas-capability-produce-advanced-semiconductors-military"
+    },
+    {
+      "contentSha256": "234f4e517bf54734a39d5c61e1987bf5b9e0a6afea7c8cf2c6b676bf2e9693a2",
+      "fetchedAt": "2026-08-14T00:57:17.181972+00:00",
+      "finalUrl": "https://www.hkexnews.hk/listedco/listconews/sehk/2025/0807/2025080700636.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.hkexnews.hk/listedco/listconews/sehk/2025/0807/2025080700636.pdf",
+      "url": "https://www.hkexnews.hk/listedco/listconews/sehk/2025/0807/2025080700636.pdf"
+    },
+    {
+      "contentSha256": "eb5514dff0bbf66905cf4b2935430c4667a180a146fbba51bcae6c313063ac20",
+      "fetchedAt": "2026-08-14T00:57:17.607848+00:00",
+      "finalUrl": "https://www.hkexnews.hk/listedco/listconews/sehk/2026/0408/2026040801181.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "refs"
+      ],
+      "publicHref": "https://www.hkexnews.hk/listedco/listconews/sehk/2026/0408/2026040801181.pdf",
+      "url": "https://www.hkexnews.hk/listedco/listconews/sehk/2026/0408/2026040801181.pdf"
+    },
+    {
+      "contentSha256": "64901d4c50f4dabbc120a6b6ced4da73eafc0472821dca6ed3623c0b773a4854",
+      "fetchedAt": "2026-08-14T00:57:17.958505+00:00",
+      "finalUrl": "https://www.hkexnews.hk/listedco/listconews/sehk/2026/0514/2026051400908.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.hkexnews.hk/listedco/listconews/sehk/2026/0514/2026051400908.pdf",
+      "url": "https://www.hkexnews.hk/listedco/listconews/sehk/2026/0514/2026051400908.pdf"
+    }
+  ],
+  "status": "Green"
+}
