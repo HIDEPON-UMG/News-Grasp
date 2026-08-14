@@ -1,8 +1,8 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 2588,
-  "collectedNodeSetSha256": "970f6a562a6e4faea9f624b909166ba83ab81c3da3f15db2bd5b361b22912225",
+  "collectedNodeCount": 2589,
+  "collectedNodeSetSha256": "2c07c5f2b82f20386a8337f3242a1972c0cfb5351ebf10d9e74856d2a24f5e2c",
   "files": [
     {
       "path": "tests/test_20260813_control_plane_repair.py",
@@ -2455,10 +2455,11 @@
     },
     {
       "path": "tests/test_news_grasp_recovery_receipts.py",
-      "sha256": "c2ad8deaa5047c1326243912e9fbcb6c4b96c2622d21d01864938c28ad81e93b",
-      "nodeCount": 7,
+      "sha256": "69c6558e1c71e47d28475e2862a80bcec84d15aa716f263337bf0211da7bfcac",
+      "nodeCount": 8,
       "nodeIds": [
         "tests/test_news_grasp_recovery_receipts.py::test_control_plane_repair_receipt_is_consumed_by_drift_change",
+        "tests/test_news_grasp_recovery_receipts.py::test_execution_reissue_with_new_runtime_identity_is_a_bounded_resume",
         "tests/test_news_grasp_recovery_receipts.py::test_finalization_parent_is_unique_but_exact_retry_is_idempotent",
         "tests/test_news_grasp_recovery_receipts.py::test_finalization_receipt_rejects_manifest_mutation",
         "tests/test_news_grasp_recovery_receipts.py::test_producer_lineage_validator_rejects_wrong_run_intent",

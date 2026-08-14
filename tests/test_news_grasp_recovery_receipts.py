@@ -330,6 +330,38 @@ def test_semantic_execution_reissue_is_rejected(tmp_path: Path) -> None:
         receipts.consume_or_resume(receipt=first, live_bin_root=live, kind="execution")
 
 
+def test_execution_reissue_with_new_runtime_identity_is_a_bounded_resume(
+    tmp_path: Path,
+) -> None:
+    *_, live = _roots(tmp_path)
+    body = {
+        "schemaVersion": receipts.EXECUTION_SCHEMA,
+        "issueDate": "2026-08-13",
+        "recoveryAuthorityReceiptSha256": "b" * 64,
+        "scheduledFailureReceiptSha256": "c" * 64,
+        "artifactRoot": str(tmp_path / "artifact"),
+        "opsRoot": str(tmp_path / "ops"),
+        "artifactHead": "1" * 40,
+        "opsHead": "2" * 40,
+        "runnerSha256": "3" * 64,
+        "nonce": "a" * 32,
+    }
+    first = receipts._seal(body)
+    refreshed = receipts._seal(
+        {
+            **body,
+            "artifactHead": "4" * 40,
+            "nonce": "d" * 32,
+        }
+    )
+
+    receipts.consume_or_resume(receipt=first, live_bin_root=live, kind="execution")
+    resumed = receipts.consume_or_resume(
+        receipt=refreshed, live_bin_root=live, kind="execution"
+    )
+    assert resumed["status"] == "consumed_pending_operation"
+
+
 def test_finalization_parent_is_unique_but_exact_retry_is_idempotent(
     tmp_path: Path,
 ) -> None:

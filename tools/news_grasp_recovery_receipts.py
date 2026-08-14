@@ -299,13 +299,21 @@ def _semantic_consumption_key(receipt: dict[str, Any], *, kind: str) -> str:
             "opsRoot",
         )
     elif kind == "execution":
-        fields = (
+        legacy_fields = (
             "issueDate",
             "recoveryAuthorityReceiptSha256",
             "scheduledFailureReceiptSha256",
             "artifactRoot",
             "opsRoot",
         )
+        identity_fields = (
+            # 実行identityが更新されたbounded recoveryは、同一authorityでも
+            # stale receiptのsemantic keyへ衝突させず、現行runtimeへ再束縛する。
+            "artifactHead",
+            "opsHead",
+            "runnerSha256",
+        )
+        fields = legacy_fields + identity_fields if all(receipt.get(field) for field in identity_fields) else legacy_fields
     elif kind == "finalization":
         fields = ("issueDate", "executionReceiptSha256")
     else:
