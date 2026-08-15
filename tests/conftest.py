@@ -14,7 +14,13 @@ import pytest
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _SESSION_BINDING_ROOT: Path | None = None
-for _candidate in _REPO_ROOT.parents:
+if os.environ.get("NEWS_GRASP_HIGH_COST_BINDING_PATH") and os.environ.get(
+    "NEWS_GRASP_HIGH_COST_BINDING_RECEIPT_SHA256"
+):
+    _candidate_roots: tuple[Path, ...] = ()
+else:
+    _candidate_roots = tuple(_REPO_ROOT.parents)
+for _candidate in _candidate_roots:
     _adapter = _candidate / "tools" / "harness" / "high_cost_capability_adapter.py"
     _descriptor = (
         Path.home()

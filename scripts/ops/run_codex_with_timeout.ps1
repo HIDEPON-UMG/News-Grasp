@@ -108,19 +108,8 @@ function Resolve-NewsGraspHighCostBinding {
         (Resolve-Path -LiteralPath $installedResolver).Path
     } else { '' }
     $resolverItem = if ($derivedResolver) { Get-Item -LiteralPath $derivedResolver -Force -ErrorAction SilentlyContinue } else { $null }
-    $suppliedResolverValid = $true
-    if ($HighCostBindingResolverPath) {
-        try {
-            $suppliedResolverValid = [string]::Equals(
-                (Resolve-Path -LiteralPath $HighCostBindingResolverPath -ErrorAction Stop).Path,
-                $derivedResolver,
-                [StringComparison]::OrdinalIgnoreCase
-            )
-        } catch { $suppliedResolverValid = $false }
-    }
     if (
         (-not $derivedResolver) -or
-        (-not $suppliedResolverValid) -or
         $HighCostBindingResolverSha256 -notmatch '^[0-9a-f]{64}$' -or
         $null -eq $resolverItem -or
         ($resolverItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or
