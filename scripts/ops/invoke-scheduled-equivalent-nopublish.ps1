@@ -16,6 +16,7 @@ param(
     [Parameter(Mandatory=$true)][string] $StaticReceiptPath,
     [Parameter(Mandatory=$true)][string] $SimulationReceiptPath,
     [Parameter(Mandatory=$true)][string] $E2EAdmissionPath,
+    [Parameter(Mandatory=$true)][string] $ReleaseReflectionReceiptPath,
     [string] $HighCostBindingPath = '',
     [string] $HighCostBindingReceiptSha256 = '',
     [string] $E2EAttemptPolicyPath = '',
@@ -397,6 +398,26 @@ try {
         $executionRepoCommit -cne $runtimeRepoCommit -or $executionTrackedDiff.Count -ne 0) {
         throw 'execution generation is not the clean active runtime generation'
     }
+
+    $ReleaseReflectionReceiptPath = Get-CanonicalExistingFile -Path $ReleaseReflectionReceiptPath -Label 'release reflection receipt' -Boundary $workspacePath -MaxBytes 65536
+    $releaseReflectionToolPath = Get-CanonicalExistingFile -Path (Join-Path $workspacePath 'tools\harness\release_reflection_receipt.py') -Label 'release reflection receipt validator' -Boundary $workspacePath -MaxBytes 65536
+    $releaseReflectionJson = (& $pythonCanonicalPath '-I' '-S' '-B' $releaseReflectionToolPath 'validate' '--receipt' $ReleaseReflectionReceiptPath 2>&1 | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) { throw "NEWS_GRASP_RELEASE_REFLECTION_INVALID detail=$releaseReflectionJson" }
+    try {
+        $releaseReflection = $releaseReflectionJson | ConvertFrom-Json -ErrorAction Stop
+    } catch {
+        throw "NEWS_GRASP_RELEASE_REFLECTION_INVALID detail=$releaseReflectionJson"
+    }
+    if ([string]$releaseReflection.status -cne 'green' -or
+        [string]$releaseReflection.impactClass -cne 'source-runtime-impacting' -or
+        [string]$releaseReflection.l8Mode -cne 'consume-only' -or
+        [int]$releaseReflection.producerInvocationCount -ne 1 -or
+        [string]$releaseReflection.sourceCommit -cne $executionRepoCommit -or
+        [string]$releaseReflection.remoteHead -cne $runtimeRepoCommit -or
+        [string]$releaseReflection.targetRef -notmatch '^refs/heads/.+') {
+        throw 'NEWS_GRASP_RELEASE_REFLECTION_RUNTIME_REF_MISMATCH'
+    }
+    $releaseReflectionReceiptSha256 = (Get-FileHash -LiteralPath $ReleaseReflectionReceiptPath -Algorithm SHA256).Hash.ToLowerInvariant()
 } catch {
     throw "HIGH_COST_EXECUTABLE_IDENTITY_INVALID: $($_.Exception.Message)"
 }
@@ -563,6 +584,9 @@ $installedLaunchAuthority = [ordered]@{
     e2eLogicalAttempt = $E2ELogicalAttempt
     e2eAdmissionPath = [System.IO.Path]::GetFullPath($E2EAdmissionPath)
     e2eAdmissionSha256 = (Get-FileHash -LiteralPath $E2EAdmissionPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    releaseReflectionReceiptPath = [System.IO.Path]::GetFullPath($ReleaseReflectionReceiptPath)
+    releaseReflectionReceiptSha256 = $releaseReflectionReceiptSha256
+    releaseReflectionImpactClass = [string]$releaseReflection.impactClass
 }
 if ($globalGenerationManifestPath) {
     $installedLaunchAuthority.globalGenerationManifestPath = $globalGenerationManifestPath
@@ -713,6 +737,9 @@ $receipt = [ordered]@{
     external_health_authority_fixture_path = $ExternalHealthAuthorityFixturePath
     external_health_authority_fixture_sha256 = $externalHealthAuthorityFixtureSha256
     high_cost_parent_authority_sha256 = if (Test-Path -LiteralPath $parentAuthorityFullPath -PathType Leaf) { (Get-FileHash -LiteralPath $parentAuthorityFullPath -Algorithm SHA256).Hash.ToLowerInvariant() } else { '' }
+    release_reflection_receipt_path = [System.IO.Path]::GetFullPath($ReleaseReflectionReceiptPath)
+    release_reflection_receipt_sha256 = $releaseReflectionReceiptSha256
+    release_reflection_impact_class = [string]$releaseReflection.impactClass
     ok = ($runnerExitCode -eq 0 -and $observedStatus -eq 'publish_dry_run_ok' -and $durationSloMet)
 }
 $json = $receipt | ConvertTo-Json -Depth 6
