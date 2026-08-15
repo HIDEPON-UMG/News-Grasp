@@ -703,6 +703,9 @@ def _validate_live_high_cost_binding_authority(
         if bootstrap_argv != expected_bootstrap and bootstrap_argv[1:] == expected_bootstrap[1:]:
             bootstrap_argv = [expected_bootstrap[0], *bootstrap_argv[1:]]
         if bootstrap_argv != expected_bootstrap:
+            if bootstrap_argv[1:] == expected_bootstrap[1:]:
+                bootstrap_argv = [expected_bootstrap[0], *bootstrap_argv[1:]]
+        if bootstrap_argv != expected_bootstrap:
             raise ValueError("bootstrap action mismatch")
         files = _validate_live_high_cost_binding_files(
             live_bin_root=live_bin,

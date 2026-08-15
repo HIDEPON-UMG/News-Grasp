@@ -1,0 +1,77 @@
+{
+  "articlePath": "digest/DeepDive/2026-08-15-DeepDive.md",
+  "articleSha256": "e3502017aef2275043207cdf2ba0f60ab4ac86e9675af7c32fb5b47f056451e8",
+  "issueDate": "2026-08-15",
+  "manifestSha256": "bcaae7e1c79dc7952a504d258b8dfc4c7a51c50095edfcd825594dd49c8439f0",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "fad4a9be7852b5e5023e3e259f2a3130c5af78de813030617852b28eed14ec97",
+  "sources": [
+    {
+      "contentSha256": "93fe8f756750d1b38be0b42887dddb69f78bfc00b701c8edc77052101cf9a399",
+      "fetchedAt": "2026-08-15T00:42:40.078650+00:00",
+      "finalUrl": "https://www.boj.or.jp/en/mopo/mpmdeci/mpr_2026/k260616a.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.boj.or.jp/en/mopo/mpmdeci/mpr_2026/k260616a.pdf",
+      "url": "https://www.boj.or.jp/en/mopo/mpmdeci/mpr_2026/k260616a.pdf"
+    },
+    {
+      "contentSha256": "990c001b64c14981ef3f6c0f4f507b6b348d0831aded86d3c30954b804a3c5a3",
+      "fetchedAt": "2026-08-15T00:42:40.361946+00:00",
+      "finalUrl": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2026/index.htm",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2026/index.htm",
+      "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2026/index.htm"
+    },
+    {
+      "contentSha256": "22907d69adc4ff7b4fc6d4f41f1797d07a4564fb96af7f5effed5536dc5522f0",
+      "fetchedAt": "2026-08-15T00:42:40.582039+00:00",
+      "finalUrl": "https://www.boj.or.jp/en/mopo/mpmsche_minu/opinion_2026/opi260616.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source"
+      ],
+      "publicHref": "https://www.boj.or.jp/en/mopo/mpmsche_minu/opinion_2026/opi260616.pdf",
+      "url": "https://www.boj.or.jp/en/mopo/mpmsche_minu/opinion_2026/opi260616.pdf"
+    },
+    {
+      "contentSha256": "ecdb6b419f7847a7e7d40505c3f3900cd131ea732267bd0e62bed36671b7f485",
+      "fetchedAt": "2026-08-15T00:42:40.906424+00:00",
+      "finalUrl": "https://www.boj.or.jp/en/mopo/outlook/",
+      "httpStatus": 200,
+      "locations": [
+        "refs"
+      ],
+      "publicHref": "https://www.boj.or.jp/en/mopo/outlook/",
+      "url": "https://www.boj.or.jp/en/mopo/outlook/"
+    },
+    {
+      "contentSha256": "9a081d931f9654ea6bc30ac0950eb731b87472fc6553af48322e1698ade2f6cd",
+      "fetchedAt": "2026-08-15T00:42:41.364835+00:00",
+      "finalUrl": "https://www.nomura.co.jp/wealthstyle/article/0806/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.nomura.co.jp/wealthstyle/article/0806/",
+      "url": "https://www.nomura.co.jp/wealthstyle/article/0806/"
+    }
+  ],
+  "status": "Green"
+}
