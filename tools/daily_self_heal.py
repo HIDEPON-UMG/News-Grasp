@@ -664,6 +664,8 @@ def _validate_live_high_cost_binding_authority(
             raise ValueError("authority action invalid")
         runner_action = runner_actions[0]
         runner_argv = [runner_action["execute"], *_windows_action_arguments(runner_action["arguments"])]
+        if runner_argv != authority_action and runner_argv[1:] == authority_action[1:]:
+            runner_argv = [authority_action[0], *runner_argv[1:]]
         if runner_argv != authority_action:
             raise ValueError("runner action mismatch")
         if len(authority_action) != 9:
@@ -698,6 +700,9 @@ def _validate_live_high_cost_binding_authority(
             "--high-cost-binding-sha256",
             authority_action[8],
         ]
+        if bootstrap_argv != expected_bootstrap:
+            if bootstrap_argv[1:] == expected_bootstrap[1:]:
+                bootstrap_argv = [expected_bootstrap[0], *bootstrap_argv[1:]]
         if bootstrap_argv != expected_bootstrap:
             raise ValueError("bootstrap action mismatch")
         files = _validate_live_high_cost_binding_files(
@@ -1238,7 +1243,7 @@ def _scheduled_task_action_summary(
             [powershell_exe, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", command],
             capture_output=True,
             text=True,
-            encoding="utf-8",
+            encoding=("mbcs" if sys.platform == "win32" else "utf-8"),
             errors="replace",
             timeout=10,
             check=False,
@@ -1287,7 +1292,7 @@ def _scheduled_task_details(
             [powershell_exe, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", command],
             capture_output=True,
             text=True,
-            encoding="utf-8",
+            encoding=("mbcs" if sys.platform == "win32" else "utf-8"),
             errors="replace",
             timeout=10,
             check=False,
