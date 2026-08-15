@@ -88,7 +88,7 @@
         "tools/operational_recovery_registry.py": "1439a76fc5d82cefc11704f5f24cc358e04036dd022e8a5f8d146f3d13c043ae",
         "tools/news_grasp_daily_control.py": "2e626990694dcf7dca2ee936a5089da637c6362cbf12110a449895cd99ccccc3",
         "tools/audit_recovery_control.py": "f37b4935ea2c34fec285407f74ac5ad453e148e308d1c2688dfa9f67033d116b",
-        "tools/daily_self_heal.py": "66c10df2c2a678172f3516e3a9f1190b10c427c6ec0d97e73cab3d311508fda7",
+        "tools/daily_self_heal.py": "e8d753b37acfe06d857aa90a305b068666a4bad6d88ead8603dd718a9339d5e3",
         "scripts/ops/get-news-grasp-authenticode-identity.ps1": "b9d58826023b8baee80b8d5622ae24bbbec7feecc244bf52b459d3bd81512c97",
         "config/operational_recovery_registry_v1.json": "84810a8f9d6f99a269f418941311f41381582ccda7e941ec1f627035bd9db98f",
         "tools/news_grasp_constitution.py": "d34e2a152523c0b30961e907c0e90b0eb63a44b84c8c46da0ca57cf8bb49741a"
@@ -384,9 +384,9 @@
         "config/news_grasp_automation_assets_v2.json": "275a6f4217db6d064cb9c378541fcab0412d086415ff4043744b816de1d45f70",
         "tools/news_grasp_generation.py": "04c6fd4c736bc3c2e0f0024a873996a45a5ba75c1e616b1f8379141036a96b16",
         "tools/news_grasp_constitution.py": "d34e2a152523c0b30961e907c0e90b0eb63a44b84c8c46da0ca57cf8bb49741a",
-        "config/news_grasp_active_object_catalog_v1.json": "3b12cd0205fd62a8413aa959654d573c1160d0581c3a68dfe6c698b02ce30f9f",
+        "config/news_grasp_active_object_catalog_v1.json": "25a71e271b0a17318a677bba902106d4f1901ca085ff7087ae958858e3c04c1f",
         "config/news_grasp_test_constitution_map_v1.json": "142657621b10320cb6984bb5413de5bf3cf4573645ee68e7ab67d96eb62ff96c",
-        "config/news_grasp_spec_disposition_v1.json": "a77a02b55e6eed9a60b079ab40fe18f32b08add7fe830b2dee031b5b1790a9fd",
+        "config/news_grasp_spec_disposition_v1.json": "d78ebb9366b7a5596b3ee953600cfce7622d03f340745ea21e961ba74fa3591b",
         "tests/test_runner_convergence_contract.py": "16dd86f318eb510f72fb4310b81fa9255a93d1b59cb6ef61594f2db413aa011b"
       },
       "constitutionClauses": [

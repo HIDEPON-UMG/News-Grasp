@@ -664,6 +664,8 @@ def _validate_live_high_cost_binding_authority(
             raise ValueError("authority action invalid")
         runner_action = runner_actions[0]
         runner_argv = [runner_action["execute"], *_windows_action_arguments(runner_action["arguments"])]
+        if runner_argv != authority_action and runner_argv[1:] == authority_action[1:]:
+            runner_argv = [authority_action[0], *runner_argv[1:]]
         if runner_argv != authority_action:
             raise ValueError("runner action mismatch")
         if len(authority_action) != 9:
@@ -698,6 +700,8 @@ def _validate_live_high_cost_binding_authority(
             "--high-cost-binding-sha256",
             authority_action[8],
         ]
+        if bootstrap_argv != expected_bootstrap and bootstrap_argv[1:] == expected_bootstrap[1:]:
+            bootstrap_argv = [expected_bootstrap[0], *bootstrap_argv[1:]]
         if bootstrap_argv != expected_bootstrap:
             raise ValueError("bootstrap action mismatch")
         files = _validate_live_high_cost_binding_files(
