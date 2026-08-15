@@ -561,6 +561,8 @@ $installedLaunchAuthority = [ordered]@{
     e2eAttemptPolicyPath = $e2eAttemptPolicyFullPath
     e2eAttemptPolicySha256 = $e2eAttemptPolicySha256
     e2eLogicalAttempt = $E2ELogicalAttempt
+    e2eAdmissionPath = [System.IO.Path]::GetFullPath($E2EAdmissionPath)
+    e2eAdmissionSha256 = (Get-FileHash -LiteralPath $E2EAdmissionPath -Algorithm SHA256).Hash.ToLowerInvariant()
 }
 if ($globalGenerationManifestPath) {
     $installedLaunchAuthority.globalGenerationManifestPath = $globalGenerationManifestPath

@@ -1690,7 +1690,7 @@
     },
     {
       "path": "tests/test_high_cost_operation_admission_contract.py",
-      "sha256": "7c25725d20ce7e65da0067e8b82ce89dfb3380f43a70957cfd4eec2fe7241d62",
+      "sha256": "6c8a8fc3d8016dc3bb646ce7edd3caf3c115e1c480c7bdd9bc2286514b77ade5",
       "nodeCount": 27,
       "nodeIds": [
         "tests/test_high_cost_operation_admission_contract.py::test_every_full_e2e_model_process_issues_exact_child_immediately_before_start",

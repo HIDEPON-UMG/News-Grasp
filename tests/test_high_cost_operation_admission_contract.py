@@ -89,6 +89,8 @@ def test_nopublish_wrapper_binds_authority_and_runner_to_isolated_repo() -> None
     assert "executionRepoRoot = $repoPath" in text
     assert "executionRepoCommit = $executionRepoCommit" in text
     assert "runtimeRepoCommit = $runtimeRepoCommit" in text
+    assert "e2eAdmissionPath = [System.IO.Path]::GetFullPath($E2EAdmissionPath)" in text
+    assert "e2eAdmissionSha256 = (Get-FileHash -LiteralPath $E2EAdmissionPath -Algorithm SHA256).Hash.ToLowerInvariant()" in text
 
 
 def test_nopublish_wrapper_propagates_parent_authority_not_shared_child_receipt() -> None:
