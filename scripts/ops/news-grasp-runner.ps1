@@ -3883,7 +3883,7 @@ if ($RunIntent -eq 'ScheduledRecoveryFull') {
         exit 76
     }
     $script:RecoveryHardDeadline = [DateTimeOffset]::Parse([string]$script:ValidatedRecoveryExecutionReceipt.hardDeadlineAt)
-    if ([DateTimeOffset]::Now -gt [DateTimeOffset]$script:RecoveryHardDeadline) {
+    if ((-not $FinalizeVerifiedPublishManifest) -and [DateTimeOffset]::Now -gt [DateTimeOffset]$script:RecoveryHardDeadline) {
         Add-RunnerLogLine -Text 'ERROR: RECOVERY_EXECUTION_HARD_DEADLINE_EXCEEDED'
         exit 78
     }
