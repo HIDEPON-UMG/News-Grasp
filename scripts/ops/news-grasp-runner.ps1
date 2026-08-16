@@ -1374,7 +1374,7 @@ function Invoke-NewsGraspCompletionGuard {
     if ($RunIntent -ne 'ScheduledRecoveryFull') { return $true }
     $guardOutput = Join-Path $RepoDir "build\publish-complete\$DateStamp.automation-guard.json"
     $completionGuardTool = [string]$RecoveryRuntimeBinding.CompletionGuardToolPath
-    & $PyExe '-I' '-S' '-B' $completionGuardTool `
+    & $PyExe '-I' '-B' $completionGuardTool `
         '--finalization-receipt' $FinalizationReceiptPath `
         '--artifact-root' $RepoDir `
         '--ops-root' $OpsRepoRoot `
