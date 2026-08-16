@@ -515,7 +515,14 @@ def _trusted_ops_generation(ops_repo_root: Path) -> dict[str, str]:
     root = ops_repo_root.resolve(strict=True)
     head = _safe_ops_git_output(root, ["rev-parse", "HEAD"]).lower()
     remote = _safe_ops_git_output(root, ["remote", "get-url", "origin"])
-    dirty = _safe_ops_git_output(root, ["status", "--porcelain", "--untracked-files=all"])
+    dirty_raw = _safe_ops_git_output(root, ["status", "--porcelain", "--untracked-files=all"])
+    dirty = "\n".join(
+        line
+        for line in dirty_raw.splitlines()
+        if line
+        and not line[3:].startswith("data/gate_attempts/")
+        and not line[3:].startswith("data/search_audit/")
+    )
     ignored_raw = _safe_ops_git_output(
         root, ["ls-files", "--others", "--ignored", "--exclude-standard"]
     )
