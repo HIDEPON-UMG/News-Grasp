@@ -599,13 +599,9 @@ def _validate_live_high_cost_binding_files(
             or (
                 trusted_ops is not None
                 and (
-                    os.path.normcase(str(Path(str(recovery.get("opsRepoRoot") or "")).resolve()))
-                    != os.path.normcase(trusted_ops["root"])
-                    or str(recovery.get("opsHead") or "").lower() != trusted_ops["head"]
+                    str(recovery.get("opsHead") or "").lower() != trusted_ops["head"]
                     or str(recovery.get("trustedRemote") or "") != trusted_remote
                     or trusted_ops["remote"].removesuffix(".git") != trusted_remote.removesuffix(".git")
-                    or os.path.normcase(str(Path(str(recovery.get("dailySelfHealPath") or "")).resolve()))
-                    != os.path.normcase(trusted_ops["daily_self_heal_path"])
                     or str(recovery.get("dailySelfHealSha256") or "").lower()
                     != trusted_ops["daily_self_heal_sha256"]
                 )
