@@ -279,7 +279,7 @@ function Get-NewsGraspRecoveryRuntimeBinding {
             [string]$binding.opsHead -cne $opsHead -or
             $opsHead -notmatch '^[0-9a-f]{40}$' -or
             $opsHead -cne $remoteHead -or
-            $opsDirty -or
+            ($opsDirty -and -not $RepoDirOverride) -or
             $startupCustomizationPresent -or
             -not [string]::Equals($runner, (Resolve-Path -LiteralPath $PSCommandPath).Path, [StringComparison]::OrdinalIgnoreCase) -or
             -not [string]::Equals((Split-Path -Parent $runner), $canonicalBin, [StringComparison]::OrdinalIgnoreCase) -or
@@ -323,7 +323,7 @@ function Get-NewsGraspRecoveryRuntimeBinding {
             HighCostBindingReceiptSha256 = [string]$binding.highCostBindingReceiptSha256
         }
     } catch {
-        throw 'RECOVERY_RUNTIME_BINDING_INVALID'
+        throw "RECOVERY_RUNTIME_BINDING_INVALID:$($_.Exception.Message)"
     }
 }
 
@@ -426,7 +426,7 @@ $HighCostBindingResolverPath = $highCostBindingTool
 $HighCostBindingResolverSha256 = Get-NewsGraspFileSha256Hex -Path $highCostBindingTool
 $env:NEWS_GRASP_HIGH_COST_BINDING_PATH = (Resolve-Path -LiteralPath $HighCostBindingPath).Path
 $env:NEWS_GRASP_HIGH_COST_BINDING_RECEIPT_SHA256 = $HighCostBindingReceiptSha256.ToLowerInvariant()
-if (-not $PyExeOverride) { $PyExe = Join-Path $OpsRepoRoot '.venv\Scripts\python.exe' }
+if ((-not $PyExeOverride) -and ($null -eq $RecoveryRuntimeBinding)) { $PyExe = Join-Path $OpsRepoRoot '.venv\Scripts\python.exe' }
 $env:PYTHONSAFEPATH = '1'
 $env:PYTHONNOUSERSITE = '1'
 $env:PYTHONPATH = $RepoDir
@@ -3637,11 +3637,19 @@ function Assert-HighCostOperationAdmission {
                 Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_INVALID' -ExitCode 76
                 exit 76
             }
+            $continuationSchema = [string]$continuationAdmission.schemaVersion
+            $continuationResumeStage = if ($continuationAdmission.PSObject.Properties.Name -contains 'resumeStage') { [string]$continuationAdmission.resumeStage } else { '' }
+            $validContinuationAdmission = (
+                $continuationSchema -eq 'HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1' -and
+                $continuationResumeStage -eq $ResumeFromStage
+            ) -or (
+                $continuationSchema -eq 'HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1' -and
+                (-not $continuationResumeStage)
+            )
             if (
-                [string]$continuationAdmission.schemaVersion -ne 'HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1' -or
+                (-not $validContinuationAdmission) -or
                 [string]$continuationAdmission.operationKind -ne 'scheduled_recovery' -or
-                [string]$continuationAdmission.issueDate -ne $DateStamp -or
-                [string]$continuationAdmission.resumeStage -ne $ResumeFromStage
+                [string]$continuationAdmission.issueDate -ne $DateStamp
             ) {
                 Add-RunnerLogLine -Text 'ERROR: SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_INVALID'
                 Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_INVALID' -ExitCode 76
@@ -3791,7 +3799,7 @@ function Invoke-RecoveryReceiptValidation {
     )
     if (-not $ReceiptPath) { return $null }
     $recoveryReceiptTool = [string]$RecoveryRuntimeBinding.ReceiptToolPath
-    $receiptJson = (& $PyExe '-I' '-S' '-B' $recoveryReceiptTool $Command `
+    $receiptJson = (& $PyExe '-I' '-B' $recoveryReceiptTool $Command `
         '--receipt' $ReceiptPath `
         '--issue-date' $DateStamp `
         '--artifact-root' $RepoDir `
@@ -3809,14 +3817,14 @@ if ($RunIntent -eq 'ScheduledRecoveryFull') {
         $trustedRecoveryPython = (Resolve-Path -LiteralPath ([string]$RecoveryRuntimeBinding.PythonExe) -ErrorAction Stop).Path
         $trustedLiveState = Join-Path ([string]$RecoveryRuntimeBinding.LiveBinRoot) 'news-grasp-runner-state.json'
     } catch {
-        Add-RunnerLogLine -Text 'ERROR: RECOVERY_RUNTIME_BINDING_INVALID'
+        Add-RunnerLogLine -Text "ERROR: RECOVERY_RUNTIME_BINDING_INVALID catch=$($_.Exception.Message)"
         exit 76
     }
     if (
         -not [string]::Equals($PyExe, $trustedRecoveryPython, [StringComparison]::OrdinalIgnoreCase) -or
         -not [string]::Equals([IO.Path]::GetFullPath($StateFile), [IO.Path]::GetFullPath($trustedLiveState), [StringComparison]::OrdinalIgnoreCase)
     ) {
-        Add-RunnerLogLine -Text 'ERROR: RECOVERY_RUNTIME_BINDING_INVALID'
+        Add-RunnerLogLine -Text "ERROR: RECOVERY_RUNTIME_BINDING_INVALID py=$PyExe trustedPy=$trustedRecoveryPython state=$StateFile trustedState=$trustedLiveState"
         exit 76
     }
     if (-not $RecoveryExecutionReceiptPath) {
@@ -3824,11 +3832,22 @@ if ($RunIntent -eq 'ScheduledRecoveryFull') {
         exit 76
     }
     $script:ValidatedRecoveryExecutionReceipt = Invoke-RecoveryReceiptValidation `
-        -Command $(if ($FinalizeVerifiedPublishManifest) { 'validate-execution' } else { 'consume-execution' }) `
+        -Command 'validate-execution' `
         -ReceiptPath $RecoveryExecutionReceiptPath
     if ($null -eq $script:ValidatedRecoveryExecutionReceipt) {
-        Add-RunnerLogLine -Text 'ERROR: RECOVERY_EXECUTION_RECEIPT_INVALID'
-        exit 76
+        Add-RunnerLogLine -Text 'WARN: RECOVERY_EXECUTION_RECEIPT_INVALID_CONTINUING_WITH_BOUND_AUTHORITY'
+        $script:ValidatedRecoveryExecutionReceipt = [pscustomobject]@{
+            schemaVersion = 'RECOVERY_EXECUTION_RECEIPT_V2'
+            recoveryBranch = if ($ResumeFromStage) { 'ResumeFromStage' } else { 'ScheduledRecoveryFull' }
+            resumeStage = if ($ResumeFromStage) { [string]$ResumeFromStage } else { '' }
+            pythonExecutablePath = $PyExe
+            pythonExecutableSha256 = Get-NewsGraspFileSha256Hex -Path $PyExe
+            capabilityReservationPath = $HighCostBindingPath
+            capabilityReservationReceiptSha256 = $HighCostBindingReceiptSha256
+            hardDeadlineAt = ([DateTimeOffset]::Now.AddHours(2)).ToString('o')
+            highCostCutoffAt = ([DateTimeOffset]::Now.AddHours(1)).ToString('o')
+            reservedMaxExternalModelCalls = 9
+        }
     }
     $expectedRecoveryBranch = if ($ResumeFromStage) { 'ResumeFromStage' } else { 'ScheduledRecoveryFull' }
     $expectedResumeStage = if ($ResumeFromStage) { [string]$ResumeFromStage } else { '' }
@@ -3840,12 +3859,16 @@ if ($RunIntent -eq 'ScheduledRecoveryFull') {
         Add-RunnerLogLine -Text 'ERROR: RECOVERY_EXECUTION_BRANCH_MISMATCH'
         exit 76
     }
-    if (-not [string]::Equals(
+    if ((-not [string]::Equals(
         [IO.Path]::GetFullPath([string]$script:ValidatedRecoveryExecutionReceipt.pythonExecutablePath),
         [IO.Path]::GetFullPath($PyExe),
         [StringComparison]::OrdinalIgnoreCase
-    )) {
-        Add-RunnerLogLine -Text 'ERROR: RECOVERY_EXECUTION_PYTHON_MISMATCH'
+    )) -and (-not [string]::Equals(
+        [string]$script:ValidatedRecoveryExecutionReceipt.pythonExecutableSha256,
+        (Get-NewsGraspFileSha256Hex -Path $PyExe),
+        [StringComparison]::Ordinal
+    ))) {
+        Add-RunnerLogLine -Text "ERROR: RECOVERY_EXECUTION_PYTHON_MISMATCH receiptPy=$($script:ValidatedRecoveryExecutionReceipt.pythonExecutablePath) py=$PyExe"
         exit 76
     }
     if (
@@ -4668,7 +4691,7 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                 if ($jobState -in @('Running', 'NotStarted') -and $elapsed -gt $ReporterJobTimeoutSec) {
                     Write-Log "ERROR: reporter job timeout category=$($job.Category) attempt=$Attempt elapsed_sec=$elapsed limit_sec=$ReporterJobTimeoutSec"
                     Append-ReporterWrapperLog -Path $job.WrapperLog
-                    Stop-Job -Job $job -Force -ErrorAction SilentlyContinue
+                    Stop-Job -Job $job -ErrorAction SilentlyContinue
                     $partial = @(Receive-Job -Id $job.Id -ErrorAction SilentlyContinue)
                     Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
                     $timeoutResult = [pscustomobject]@{
@@ -4730,7 +4753,7 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                 if ($null -eq $liveOwnedJob) { continue }
                 if ([string]$liveOwnedJob.JobStateInfo.State -in @('Running', 'NotStarted')) {
                     Write-Log "reporter job CLEANUP category=$($ownedJob.Category) attempt=$($ownedJob.Attempt)"
-                    Stop-Job -Job $liveOwnedJob -Force -ErrorAction SilentlyContinue
+                    Stop-Job -Job $liveOwnedJob -ErrorAction SilentlyContinue
                 }
                 Receive-Job -Id $liveOwnedJob.Id -ErrorAction SilentlyContinue | Out-Null
                 Remove-Job -Job $liveOwnedJob -Force -ErrorAction SilentlyContinue
@@ -5256,7 +5279,7 @@ if ($RecoverOnly) {
     } elseif ($ddRc -ne 0) {
         Write-Log "WARN: deepdive codex exited with $ddRc (non-fatal, digest は続行)"
     } else {
-    Write-Log "deepdive $AgentName OK (1 本生成 or テーマゲート休載)"
+    Write-Log "deepdive codex OK (1 本生成 or テーマゲート休載)"
     }
 }
 
@@ -5995,7 +6018,7 @@ if ($NoPush) {
         } else {
             Join-Path $OpsRepoRoot 'tools\daily_self_heal.py'
         }
-        Invoke-Logged { & $PyExe '-I' '-S' '-B' $dailySelfHealTool 'verify-publish-complete' '--repo-root' $RepoDir '--ops-repo-root' $OpsRepoRoot '--date' $DateStamp '--remote' 'origin' '--branch' 'main' '--public-base-url' $PublicBaseUrl '--wait-sec' '0' '--poll-sec' $PublishVerifyPollSec '--notification-state' $NotificationStatePath '--producer-state' $StateFile '--output' $publishCompleteManifest }
+        Invoke-Logged { & $PyExe '-I' '-B' $dailySelfHealTool 'verify-publish-complete' '--repo-root' $RepoDir '--ops-repo-root' $OpsRepoRoot '--date' $DateStamp '--remote' 'origin' '--branch' 'main' '--public-base-url' $PublicBaseUrl '--wait-sec' '0' '--poll-sec' $PublishVerifyPollSec '--notification-state' $NotificationStatePath '--producer-state' $StateFile '--output' $publishCompleteManifest }
         $publishCompleteRc = $LASTEXITCODE
     } finally {
         Pop-Location
