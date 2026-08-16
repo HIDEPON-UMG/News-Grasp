@@ -1,0 +1,796 @@
+
+
+
+
+
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp — Editorial Summary 2026-08-16</title>
+<meta name="description" content="2026-08-16 の Editorial Summary — 今日の論点を総論、3結論、カテゴリ別 FACT / CONTEXT / OUTLOOK、明日への観測ボードで整理。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/2026-08-16/summary/">
+
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp — Editorial Summary 2026-08-16">
+<meta property="og:description" content="2026-08-16 の Editorial Summary — 今日の論点を総論、3結論、カテゴリ別 FACT / CONTEXT / OUTLOOK、明日への観測ボードで整理。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/2026-08-16/summary/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/summary.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp — Editorial Summary 2026-08-16">
+<meta name="twitter:description" content="2026-08-16 の Editorial Summary — 今日の論点を総論、3結論、カテゴリ別 FACT / CONTEXT / OUTLOOK、明日への観測ボードで整理。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/summary.jpg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="summary" class="summary-page">
+
+<svg class="summary-icon-sprite" width="0" height="0" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="ic-fx" viewBox="0 0 20 20"><path d="M10 2v16M5 5.5 10 10l5-4.5M5 10.5h10M5 14.5h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/></symbol>
+    <symbol id="ic-ai" viewBox="0 0 20 20"><path d="M10 2 18 10 10 18 2 10Z" fill="currentColor"/></symbol>
+    <symbol id="ic-it" viewBox="0 0 20 20"><path d="M7 2v16M13 2v16M3 7h14M2 13h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></symbol>
+    <symbol id="ic-mob" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="10" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="ic-man" viewBox="0 0 20 20"><path d="M10 2 17 6v8l-7 4-7-4V6Z" fill="currentColor"/></symbol>
+    <symbol id="ic-eco" viewBox="0 0 20 20"><path d="M4 4h12v12H4Z" fill="currentColor"/></symbol>
+    <symbol id="ic-game" viewBox="0 0 20 20"><path d="M5 3.5 16.5 10 5 16.5Z" fill="currentColor"/></symbol>
+    <symbol id="ic-summary" viewBox="0 0 20 20"><path d="M10 2 12.4 7.4 18 8 13.8 11.8 15 17.3 10 14.4 5 17.3 6.2 11.8 2 8 7.6 7.4Z" fill="currentColor"/></symbol>
+    <symbol id="ic-fact" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><line x1="15.5" y1="15.5" x2="21" y2="21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ic-context" viewBox="0 0 24 24"><rect x="6" y="5" width="5" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="13" y="5" width="5" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ic-outlook" viewBox="0 0 24 24"><polyline points="4 16 9 11 13 14 20 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><polyline points="15 7 20 7 20 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<section class="brand-zone brand-zone--summary">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <label class="brand-search brand-search--summary">
+      <span class="brand-search__icon">⌕</span>
+      <input id="summary-search" type="search" autocomplete="off"
+             placeholder="日付 / キーワードを検索 (e.g. BYD, FOMC, 08-16)"
+             aria-label="本文を検索">
+    </label>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/2026-08-16/">DIGEST</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/2026-08-16/summary/" aria-current="page">ESSAY</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<nav class="lens-nav lens-nav--summary">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill" style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill" style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill" style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill" style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill" style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill" style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill" style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/2026-08-16/summary/" class="lens-pill lens-pill--essay is-active">
+      <span class="lens-pill__glyph">§</span>ESSAY
+    </a>
+    <span class="lens-nav__meta">23 SOURCES · 5 SECTIONS</span>
+  </div>
+</nav>
+
+<main>
+  <div id="summary-search-empty" class="summary-search-empty">該当する項目がありません。検索条件を変えてください。</div>
+
+  <section class="daily-audio daily-audio--summary" aria-label="今日のニュース朗読">
+    <div class="daily-audio__inner">
+      <div class="daily-audio__meta">
+        <span class="daily-audio__kicker">LISTEN</span>
+        <span class="daily-audio__title">今日のニュース朗読</span>
+        <span class="daily-audio__date">2026-08-16</span>
+      </div>
+      <div class="daily-audio__controls">
+        <audio preload="none" controls>
+          <source src="https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/2026-08-16.mp3?v=b2d5b367ee9c" type="audio/mpeg">
+        </audio>
+        <div class="daily-audio__rates" role="group" aria-label="再生速度">
+          <button type="button" class="daily-audio__rate is-active" data-rate="1">1x</button>
+          <button type="button" class="daily-audio__rate" data-rate="1.1">1.1x</button>
+          <button type="button" class="daily-audio__rate" data-rate="1.2">1.2x</button>
+          <button type="button" class="daily-audio__rate" data-rate="1.3">1.3x</button>
+          <button type="button" class="daily-audio__rate" data-rate="1.4">1.4x</button>
+          <button type="button" class="daily-audio__rate" data-rate="1.5">1.5x</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="summary-hero" data-summary-search="2026-08-16 本日のテーマ考察 Editorial Summary ウェイモ、自動車の無人配車をカリフォルニア18郡へ拡大 ウェイモがカリフォルニア州で有料の完全自動運転配車（ウェイモがカリフォルニア州で有料の完全自動運転配車）を18郡へ広げる承認を得た。AIでは生成物の出所確認、ITでは電力や冷却を含む基盤投資、ゲームでは制作と予約の外部接続が進む。分野は違っても、技術の新しさだけでなく、規制、供給、責任、利用接点をそろえて初めてサービスとして広がる局面に入った。為替も指標の鈍化と当局発言が交錯し、次の数字で評価が変わる。為替では、PPI鈍化だけでは金利観測が固まらない。">
+    <div class="summary-hero__inner">
+      <div class="summary-hero__main">
+        <div class="summary-hero__kicker">EDITORIAL SUMMARY</div>
+        <h1 class="summary-hero__title">本日のテーマ考察</h1>
+
+        <p class="summary-hero__subtitle">「ウェイモ、自動車の無人配車をカリフォルニア18郡へ拡大」</p>
+
+        <p class="summary-hero__lead"><span class="emph-und"><strong>ウェイモがカリフォルニア州で有料の完全自動運転配車</strong>（<strong class="emph-bold">ウェイモがカリフォルニア州で有料の完全自動運転配車</strong>）を18郡へ広げる承認を得た。AIでは生成物の出所確認、ITでは電力や冷却を含む基盤投資、ゲームでは制作と予約の外部接続が進む。分野は違っても、技術の新しさだけでなく、規制、供給、責任、利用接点をそろえて初めてサービスとして広がる局面に入った。為替も指標の鈍化と当局発言が交錯し、次の数字で評価が変わる。為替では、PPI鈍化だけでは金利観測が固まらない。</span></p>
+        <div class="summary-hero__chips" aria-label="支配軸">
+
+          <span>制度・標準</span>
+
+          <span>供給・販路</span>
+
+          <span>実装・拡張</span>
+
+        </div>
+      </div>
+      <aside class="summary-glance" aria-label="At a glance">
+        <div class="summary-glance__kicker">AT A GLANCE</div>
+        <div class="summary-glance__temp">
+          <span class="summary-glance__temp-label">TEMP</span>
+          <strong>MID</strong>
+        </div>
+        <div class="summary-glance__heat" aria-hidden="true">
+
+          <span class="is-on"></span>
+
+          <span class="is-on"></span>
+
+          <span class=""></span>
+
+          <span class=""></span>
+
+        </div>
+        <dl class="summary-glance__stats">
+          <div><dt>横断カテゴリ</dt><dd>5</dd></div>
+          <div><dt>読了</dt><dd>9min</dd></div>
+          <div><dt>参照ソース</dt><dd>23</dd></div>
+        </dl>
+      </aside>
+      <div class="summary-flow" aria-label="今日の支配軸フロー">
+
+        <div class="summary-flow__node">
+          <span>LAYER 1</span>
+          <strong>制度・標準</strong>
+        </div>
+        <div class="summary-flow__arrow">→</div>
+
+        <div class="summary-flow__node">
+          <span>LAYER 2</span>
+          <strong>供給・販路</strong>
+        </div>
+        <div class="summary-flow__arrow">→</div>
+
+        <div class="summary-flow__node is-final">
+          <span>LAYER 3</span>
+          <strong>実装・拡張</strong>
+        </div>
+
+
+      </div>
+    </div>
+  </section>
+
+  <section class="summary-conclusions" aria-label="今日の3結論">
+    <div class="summary-conclusions__inner">
+      <div class="summary-section-label">
+        <span>TODAY'S 3 CONCLUSIONS</span>
+        <h2>今日の3結論</h2>
+      </div>
+      <div class="summary-conclusions__grid">
+
+        <article class="summary-conclusion" style="--c: #3A7B8C;" data-category-id="mobility" data-summary-search="2026-08-16 Mobility ウェイモ、カリフォルニアで有料ロボタクシーを18郡へ拡大">
+          <div class="summary-conclusion__top">
+            <div class="summary-conclusion__n">01</div>
+            <div class="summary-conclusion__chip">
+              <span aria-hidden="true">◎</span>Mobility
+            </div>
+          </div>
+          <p>ウェイモ、カリフォルニアで有料ロボタクシーを18郡へ拡大</p>
+          <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
+        </article>
+
+        <article class="summary-conclusion" style="--c: #B8860B;" data-category-id="fx" data-summary-search="2026-08-16 Foreign Exchange 米PPIは予想下振れ、なおFRB高官は利上げを主張">
+          <div class="summary-conclusion__top">
+            <div class="summary-conclusion__n">02</div>
+            <div class="summary-conclusion__chip">
+              <span aria-hidden="true">¥</span>Foreign Exchange
+            </div>
+          </div>
+          <p>米PPIは予想下振れ、なおFRB高官は利上げを主張</p>
+          <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
+        </article>
+
+        <article class="summary-conclusion" style="--c: #5E3D8C;" data-category-id="game" data-summary-search="2026-08-16 Gaming 中国ゲーム業界、生成AI活用が主流に">
+          <div class="summary-conclusion__top">
+            <div class="summary-conclusion__n">03</div>
+            <div class="summary-conclusion__chip">
+              <span aria-hidden="true">▶</span>Gaming
+            </div>
+          </div>
+          <p>中国ゲーム業界、生成AI活用が主流に</p>
+          <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;" data-summary-search="2026-08-16 総論 総論 ウェイモがカリフォルニア州で有料の完全自動運転配車（ウェイモがカリフォルニア州で有料の完全自動運転配車）を18郡へ広げる承認を得た。AIでは生成物の出所確認、ITでは電力や冷却を含む基盤投資、ゲームでは制作と予約の外部接続が進む。分野は違っても、技術の新しさだけでなく、規制、供給、責任、利用接点をそろえて初めてサービスとして広がる局面に入った。為替も指標の鈍化と当局発言が交錯し、次の数字で評価が変わる。為替では、PPI鈍化だけでは金利観測が固まらない。">
+    <div class="summary-synthesis__inner">
+      <div class="summary-synthesis__label">
+        <span>§ 00</span>
+        <strong>EDITORIAL SYNTHESIS / 総論</strong>
+      </div>
+      <h2>総論</h2>
+      <div class="summary-synthesis__grid">
+        <article class="summary-synthesis__panel">
+          <h3>今日の総論</h3>
+          <p><span class="emph-und"><strong>ウェイモがカリフォルニア州で有料の完全自動運転配車</strong>（<strong class="emph-bold">ウェイモがカリフォルニア州で有料の完全自動運転配車</strong>）を18郡へ広げる承認を得た。AIでは生成物の出所確認、ITでは電力や冷却を含む基盤投資、ゲームでは制作と予約の外部接続が進む。分野は違っても、技術の新しさだけでなく、規制、供給、責任、利用接点をそろえて初めてサービスとして広がる局面に入った。為替も指標の鈍化と当局発言が交錯し、次の数字で評価が変わる。為替では、PPI鈍化だけでは金利観測が固まらない。</span></p>
+        </article>
+        <article class="summary-synthesis__panel">
+          <h3>今日の論点マップ — CROSS-CATEGORY</h3>
+          <div class="summary-synthesis__layers">
+
+            <div class="summary-synthesis__layer">
+              <span class="summary-synthesis__layer-label">制度・標準</span>
+              <div class="summary-synthesis__chips">
+
+                <span style="--c: #B8860B;"><b>¥</b>為替</span>
+
+                <span style="--c: #3A7B8C;"><b>◎</b>モビリティ</span>
+
+              </div>
+            </div>
+            <div class="summary-synthesis__down">↓</div>
+
+            <div class="summary-synthesis__layer">
+              <span class="summary-synthesis__layer-label">供給・販路</span>
+              <div class="summary-synthesis__chips">
+
+                <span style="--c: #2D5BB8;"><b>◆</b>AI</span>
+
+                <span style="--c: #5E3D8C;"><b>▶</b>ゲーム</span>
+
+              </div>
+            </div>
+            <div class="summary-synthesis__down">↓</div>
+
+            <div class="summary-synthesis__layer">
+              <span class="summary-synthesis__layer-label">実装・拡張</span>
+              <div class="summary-synthesis__chips">
+
+                <span style="--c: #2E6B52;"><b>⌗</b>IT</span>
+
+              </div>
+            </div>
+
+
+          </div>
+        </article>
+        <article class="summary-synthesis__panel">
+          <h3>読者への示唆 — TAKEAWAYS</h3>
+          <ol class="summary-synthesis__implications">
+
+            <li><span>1</span><p>ウェイモ、カリフォルニアで有料ロボタクシーを18郡へ拡大</p></li>
+
+            <li><span>2</span><p>米PPIは予想下振れ、なおFRB高官は利上げを主張</p></li>
+
+            <li><span>3</span><p>中国ゲーム業界、生成AI活用が主流に</p></li>
+
+          </ol>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="summary-category-sections" aria-label="カテゴリ別 FACT / CONTEXT / OUTLOOK">
+
+    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-08-16 Foreign Exchange 為替 160円の攻防を指標で見極める">
+      <div class="summary-category__inner">
+        <header class="summary-category__head">
+          <span class="summary-category__no">§01</span>
+          <div class="summary-category__titlebox">
+            <div class="summary-category__chip">
+              <span class="summary-category__glyph" aria-hidden="true">¥</span>
+              <span>FOREIGN EXCHANGE / 為替</span>
+            </div>
+            <h3>160円の攻防を指標で見極める</h3>
+          </div>
+        </header>
+        <div class="summary-lane-cards">
+
+          <section class="summary-lane-card" data-role="fact">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-fact"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">FACT</span>
+              <span class="summary-lane-card__marker">事実・概要</span>
+            </div>
+            <p><span class="emph-und"><strong>米PPIの伸びが鈍化する一方、ドル円は159円台</strong>（<strong class="emph-bold">米PPIの伸びが鈍化する一方、ドル円は159円台</strong>）を回復し、来週は日本GDP・CPIと19日のFOMC議事要旨が焦点になる。</span></p>
+          </section>
+
+          <section class="summary-lane-card" data-role="context">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-context"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">CONTEXT</span>
+              <span class="summary-lane-card__marker">背景・要点</span>
+            </div>
+            <p><span class="emph-und">原油一服によるモノ価格下落とサービス価格上昇が同居し、<strong>物価の弱さと粘着性</strong>（<strong class="emph-bold">物価の弱さと粘着性</strong>）が金利観測を分けている。</span></p>
+          </section>
+
+          <section class="summary-lane-card" data-role="outlook">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-outlook"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">OUTLOOK</span>
+              <span class="summary-lane-card__marker">影響・展望</span>
+            </div>
+            <p><strong>160円近辺の当局発言に加え、日本指標が日銀観測</strong>（<strong class="emph-bold">160円近辺の当局発言に加え、日本指標が日銀観測</strong>）をどう動かすか、<span class="emph-und">金利差と実需の円売り</span>を追う。</p>
+          </section>
+
+        </div>
+
+        <a class="summary-category__more" href="https://hidepon-umg.github.io/News-Grasp/fx/">→ §01 為替 詳細を読む</a>
+
+      </div>
+    </article>
+
+    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-08-16 Artificial Intelligence AI 生成物の証明を運用へ組み込む">
+      <div class="summary-category__inner">
+        <header class="summary-category__head">
+          <span class="summary-category__no">§02</span>
+          <div class="summary-category__titlebox">
+            <div class="summary-category__chip">
+              <span class="summary-category__glyph" aria-hidden="true">◆</span>
+              <span>ARTIFICIAL INTELLIGENCE / AI</span>
+            </div>
+            <h3>生成物の証明を運用へ組み込む</h3>
+          </div>
+        </header>
+        <div class="summary-lane-cards">
+
+          <section class="summary-lane-card" data-role="fact">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-fact"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">FACT</span>
+              <span class="summary-lane-card__marker">事実・概要</span>
+            </div>
+            <p><span class="emph-und"><strong>可視透かしの表示切替、不可視のSynthID・C2PA、Claudeの電子透かし、宮城県の27人向け活用講座が報じられた</strong>（<strong class="emph-bold">可視透かしの表示切替、不可視のSynthID・C2PA、Claudeの電子透かし、宮城県の27人向け活用講座が報じられた</strong>）。</span></p>
+          </section>
+
+          <section class="summary-lane-card" data-role="context">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-context"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">CONTEXT</span>
+              <span class="summary-lane-card__marker">背景・要点</span>
+            </div>
+            <p><span class="emph-und">見た目の自由度や作業効率を上げても、<strong>生成物の由来・権利・入力安全性</strong>（<strong class="emph-bold">生成物の由来・権利・入力安全性</strong>）を確かめる仕組みが別に必要になる。</span></p>
+          </section>
+
+          <section class="summary-lane-card" data-role="outlook">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-outlook"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">OUTLOOK</span>
+              <span class="summary-lane-card__marker">影響・展望</span>
+            </div>
+            <p><strong>透かし検出API、法令対象国での表示、自治体現場の定着効果、<span class="emph-und">AI利用目的の開示基準</span>が次の観測点になる</strong>（<strong class="emph-bold">透かし検出API、法令対象国での表示、自治体現場の定着効果、<span class="emph-und">AI利用目的の開示基準</span>が次の観測点になる</strong>）。</p>
+          </section>
+
+        </div>
+
+        <a class="summary-category__more" href="https://hidepon-umg.github.io/News-Grasp/ai/">→ §02 AI 詳細を読む</a>
+
+      </div>
+    </article>
+
+    <article class="summary-category" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-08-16 IT &amp; Consulting IT Consulting — AI基盤の費用を全体で測る">
+      <div class="summary-category__inner">
+        <header class="summary-category__head">
+          <span class="summary-category__no">§03</span>
+          <div class="summary-category__titlebox">
+            <div class="summary-category__chip">
+              <span class="summary-category__glyph" aria-hidden="true">⌗</span>
+              <span>IT &amp; CONSULTING / IT</span>
+            </div>
+            <h3>Consulting — AI基盤の費用を全体で測る</h3>
+          </div>
+        </header>
+        <div class="summary-lane-cards">
+
+          <section class="summary-lane-card" data-role="fact">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-fact"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">FACT</span>
+              <span class="summary-lane-card__marker">事実・概要</span>
+            </div>
+            <p><span class="emph-und"><strong>主要CSP9社の設備投資は前年比約90％増の見通しで、電力・冷却・ASICまで投資範囲が拡大している</strong>（<strong class="emph-bold">主要CSP9社の設備投資は前年比約90％増の見通しで、電力・冷却・ASICまで投資範囲が拡大している</strong>）。</span></p>
+          </section>
+
+          <section class="summary-lane-card" data-role="context">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-context"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">CONTEXT</span>
+              <span class="summary-lane-card__marker">背景・要点</span>
+            </div>
+            <p><span class="emph-und">AIサーバー需要の増加は、<strong>GPU以外の電源・冷却・運用設備</strong>（<strong class="emph-bold">GPU以外の電源・冷却・運用設備</strong>）にも制約を広げ、基盤コストの見え方を変える。</span></p>
+          </section>
+
+          <section class="summary-lane-card" data-role="outlook">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-outlook"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">OUTLOOK</span>
+              <span class="summary-lane-card__marker">影響・展望</span>
+            </div>
+            <p><strong>SaaSのAI代替圧力や内製システムの安全性課題も含め、<span class="emph-und">総保有コストと障害復旧の責任分界</span></strong>（<strong class="emph-bold">SaaSのAI代替圧力や内製システムの安全性課題も含め、<span class="emph-und">総保有コストと障害復旧の責任分界</span></strong>）を確認したい。</p>
+          </section>
+
+        </div>
+
+        <a class="summary-category__more" href="https://hidepon-umg.github.io/News-Grasp/it/">→ §03 IT 詳細を読む</a>
+
+      </div>
+    </article>
+
+    <article class="summary-category" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-08-16 Mobility モビリティ 承認後の運行を事業に変える">
+      <div class="summary-category__inner">
+        <header class="summary-category__head">
+          <span class="summary-category__no">§04</span>
+          <div class="summary-category__titlebox">
+            <div class="summary-category__chip">
+              <span class="summary-category__glyph" aria-hidden="true">◎</span>
+              <span>MOBILITY / モビリティ</span>
+            </div>
+            <h3>承認後の運行を事業に変える</h3>
+          </div>
+        </header>
+        <div class="summary-lane-cards">
+
+          <section class="summary-lane-card" data-role="fact">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-fact"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">FACT</span>
+              <span class="summary-lane-card__marker">事実・概要</span>
+            </div>
+            <p><span class="emph-und"><strong>Waymoが18郡で有料配車</strong>（<strong class="emph-bold">Waymoが18郡で有料配車</strong>）を展開できる承認を得て、テラチャージは2030年3月までに急速充電器5000口を計画する。</span></p>
+          </section>
+
+          <section class="summary-lane-card" data-role="context">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-context"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">CONTEXT</span>
+              <span class="summary-lane-card__marker">背景・要点</span>
+            </div>
+            <p><span class="emph-und">車両やAIの性能だけでなく、<strong>運賃収受、充電立地、事故対応、利用率</strong>（<strong class="emph-bold">運賃収受、充電立地、事故対応、利用率</strong>）がサービスの継続条件になる。</span></p>
+          </section>
+
+          <section class="summary-lane-card" data-role="outlook">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-outlook"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">OUTLOOK</span>
+              <span class="summary-lane-card__marker">影響・展望</span>
+            </div>
+            <p><strong>実際の開始時期、安全実績、投資回収、特許技術の製品化、<span class="emph-und">地域交通との調整</span></strong>（<strong class="emph-bold">実際の開始時期、安全実績、投資回収、特許技術の製品化、<span class="emph-und">地域交通との調整</span></strong>）を段階的に見極める。</p>
+          </section>
+
+        </div>
+
+        <a class="summary-category__more" href="https://hidepon-umg.github.io/News-Grasp/mobility/">→ §04 モビリティ 詳細を読む</a>
+
+      </div>
+    </article>
+
+    <article class="summary-category" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-08-16 Gaming ゲーム AIと外部接続が制作を変える">
+      <div class="summary-category__inner">
+        <header class="summary-category__head">
+          <span class="summary-category__no">§07</span>
+          <div class="summary-category__titlebox">
+            <div class="summary-category__chip">
+              <span class="summary-category__glyph" aria-hidden="true">▶</span>
+              <span>GAMING / ゲーム</span>
+            </div>
+            <h3>AIと外部接続が制作を変える</h3>
+          </div>
+        </header>
+        <div class="summary-lane-cards">
+
+          <section class="summary-lane-card" data-role="fact">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-fact"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">FACT</span>
+              <span class="summary-lane-card__marker">事実・概要</span>
+            </div>
+            <p><span class="emph-und"><strong>中国ゲーム業界の生成AI活用、『Trick × Trick』の20万字超シナリオ、ESCAPE</strong>（<strong class="emph-bold">中国ゲーム業界の生成AI活用、『Trick × Trick』の20万字超シナリオ、ESCAPE</strong>）.ID HubのAPI・Webhook・MCP開放が示された。</span></p>
+          </section>
+
+          <section class="summary-lane-card" data-role="context">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-context"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">CONTEXT</span>
+              <span class="summary-lane-card__marker">背景・要点</span>
+            </div>
+            <p><span class="emph-und">AIは開発工程を変え、外部APIは予約導線を広げるが、<strong>品質、権利、認証、運用負荷</strong>（<strong class="emph-bold">品質、権利、認証、運用負荷</strong>）を同時に管理しなければならない。</span></p>
+          </section>
+
+          <section class="summary-lane-card" data-role="outlook">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-outlook"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">OUTLOOK</span>
+              <span class="summary-lane-card__marker">影響・展望</span>
+            </div>
+            <p><strong>ゲームAIの品質管理、MCP経由の予約安全性、Steamでの発見性、<span class="emph-und">紙とデジタル</strong>（<strong class="emph-bold">ゲームAIの品質管理、MCP経由の予約安全性、Steamでの発見性、</span>紙とデジタル</strong>）をまたぐ接点設計__を追う。</p>
+          </section>
+
+        </div>
+
+        <a class="summary-category__more" href="https://hidepon-umg.github.io/News-Grasp/game/">→ §07 ゲーム 詳細を読む</a>
+
+      </div>
+    </article>
+
+  </section>
+
+  <section class="summary-tomorrow" aria-label="明日への観測ボード" style="--c: #C9A155;">
+    <div class="summary-tomorrow__inner">
+      <div class="summary-tomorrow__head">
+        <span>§ 08</span>
+        <strong>TOMORROW BOARD / 明日への観測ボード</strong>
+        <h2>明日、何を見て、何が起きたら見方が変わるか</h2>
+        <p>各カテゴリで「見るもの（Watch）」「変化シグナル（Signal）」「どう解釈するか（Implication）」を一枚に整理します。</p>
+      </div>
+      <div class="summary-tomorrow__legend"><span class="is-high">HIGH</span><span class="is-mid">MID</span><span class="is-low">LOW</span></div>
+      <div class="summary-tomorrow__rows">
+
+        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-08-16 Foreign Exchange 為替 米PPIの伸びが鈍化する一方、ドル円は159円台（米PPIの伸びが鈍化する一方、ドル円は159円台）を回復し、来週は日本GDP・CPIと19日のFOMC議事要旨が焦点になる。 原油一服によるモノ価格下落とサービス価格上昇が同居し、物価の弱さと粘着性（物価の弱さと粘着性）が金利観測を分けている。 160円近辺の当局発言に加え、日本指標が日銀観測（160円近辺の当局発言に加え、日本指標が日銀観測）をどう動かすか、金利差と実需の円売りを追う。">
+          <div class="summary-tomorrow__meta">
+            <span class="summary-tomorrow__cat">
+              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>
+              <span>FOREIGN EXCHANGE / 為替</span>
+            </span>
+            <em class="summary-tomorrow__heat summary-tomorrow__heat--high">HIGH</em>
+          </div>
+          <div class="summary-tomorrow__cells">
+            <div><span>WATCH 見る</span><p><span class="emph-und"><strong>米PPIの伸びが鈍化する一方、ドル円は159円台</strong>（<strong class="emph-bold">米PPIの伸びが鈍化する一方、ドル円は159円台</strong>）を回復し、来週は日本GDP・CPIと19日のFOMC議事要旨が焦点になる。</span></p></div>
+            <div><span>SIGNAL 変化</span><p><span class="emph-und">原油一服によるモノ価格下落とサービス価格上昇が同居し、<strong>物価の弱さと粘着性</strong>（<strong class="emph-bold">物価の弱さと粘着性</strong>）が金利観測を分けている。</span></p></div>
+            <div><span>IMPLICATION 解釈</span><p><strong>160円近辺の当局発言に加え、日本指標が日銀観測</strong>（<strong class="emph-bold">160円近辺の当局発言に加え、日本指標が日銀観測</strong>）をどう動かすか、<span class="emph-und">金利差と実需の円売り</span>を追う。</p></div>
+          </div>
+        </article>
+
+        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-08-16 Artificial Intelligence AI 可視透かしの表示切替、不可視のSynthID・C2PA、Claudeの電子透かし、宮城県の27人向け活用講座が報じられた（可視透かしの表示切替、不可視のSynthID・C2PA、Claudeの電子透かし、宮城県の27人向け活用講座が報じられた）。 見た目の自由度や作業効率を上げても、生成物の由来・権利・入力安全性（生成物の由来・権利・入力安全性）を確かめる仕組みが別に必要になる。 透かし検出API、法令対象国での表示、自治体現場の定着効果、AI利用目的の開示基準が次の観測点になる（透かし検出API、法令対象国での表示、自治体現場の定着効果、AI利用目的の開示基準が次の観測点になる）。">
+          <div class="summary-tomorrow__meta">
+            <span class="summary-tomorrow__cat">
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>
+              <span>ARTIFICIAL INTELLIGENCE / AI</span>
+            </span>
+            <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
+          </div>
+          <div class="summary-tomorrow__cells">
+            <div><span>WATCH 見る</span><p><span class="emph-und"><strong>可視透かしの表示切替、不可視のSynthID・C2PA、Claudeの電子透かし、宮城県の27人向け活用講座が報じられた</strong>（<strong class="emph-bold">可視透かしの表示切替、不可視のSynthID・C2PA、Claudeの電子透かし、宮城県の27人向け活用講座が報じられた</strong>）。</span></p></div>
+            <div><span>SIGNAL 変化</span><p><span class="emph-und">見た目の自由度や作業効率を上げても、<strong>生成物の由来・権利・入力安全性</strong>（<strong class="emph-bold">生成物の由来・権利・入力安全性</strong>）を確かめる仕組みが別に必要になる。</span></p></div>
+            <div><span>IMPLICATION 解釈</span><p><strong>透かし検出API、法令対象国での表示、自治体現場の定着効果、<span class="emph-und">AI利用目的の開示基準</span>が次の観測点になる</strong>（<strong class="emph-bold">透かし検出API、法令対象国での表示、自治体現場の定着効果、<span class="emph-und">AI利用目的の開示基準</span>が次の観測点になる</strong>）。</p></div>
+          </div>
+        </article>
+
+        <article class="summary-tomorrow__row" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-08-16 IT &amp; Consulting IT 主要CSP9社の設備投資は前年比約90％増の見通しで、電力・冷却・ASICまで投資範囲が拡大している（主要CSP9社の設備投資は前年比約90％増の見通しで、電力・冷却・ASICまで投資範囲が拡大している）。 AIサーバー需要の増加は、GPU以外の電源・冷却・運用設備（GPU以外の電源・冷却・運用設備）にも制約を広げ、基盤コストの見え方を変える。 SaaSのAI代替圧力や内製システムの安全性課題も含め、総保有コストと障害復旧の責任分界（SaaSのAI代替圧力や内製システムの安全性課題も含め、総保有コストと障害復旧の責任分界）を確認したい。">
+          <div class="summary-tomorrow__meta">
+            <span class="summary-tomorrow__cat">
+              <span class="summary-tomorrow__glyph" aria-hidden="true">⌗</span>
+              <span>IT &amp; CONSULTING / IT</span>
+            </span>
+            <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
+          </div>
+          <div class="summary-tomorrow__cells">
+            <div><span>WATCH 見る</span><p><span class="emph-und"><strong>主要CSP9社の設備投資は前年比約90％増の見通しで、電力・冷却・ASICまで投資範囲が拡大している</strong>（<strong class="emph-bold">主要CSP9社の設備投資は前年比約90％増の見通しで、電力・冷却・ASICまで投資範囲が拡大している</strong>）。</span></p></div>
+            <div><span>SIGNAL 変化</span><p><span class="emph-und">AIサーバー需要の増加は、<strong>GPU以外の電源・冷却・運用設備</strong>（<strong class="emph-bold">GPU以外の電源・冷却・運用設備</strong>）にも制約を広げ、基盤コストの見え方を変える。</span></p></div>
+            <div><span>IMPLICATION 解釈</span><p><strong>SaaSのAI代替圧力や内製システムの安全性課題も含め、<span class="emph-und">総保有コストと障害復旧の責任分界</span></strong>（<strong class="emph-bold">SaaSのAI代替圧力や内製システムの安全性課題も含め、<span class="emph-und">総保有コストと障害復旧の責任分界</span></strong>）を確認したい。</p></div>
+          </div>
+        </article>
+
+        <article class="summary-tomorrow__row" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-08-16 Mobility モビリティ Waymoが18郡で有料配車（Waymoが18郡で有料配車）を展開できる承認を得て、テラチャージは2030年3月までに急速充電器5000口を計画する。 車両やAIの性能だけでなく、運賃収受、充電立地、事故対応、利用率（運賃収受、充電立地、事故対応、利用率）がサービスの継続条件になる。 実際の開始時期、安全実績、投資回収、特許技術の製品化、地域交通との調整（実際の開始時期、安全実績、投資回収、特許技術の製品化、地域交通との調整）を段階的に見極める。">
+          <div class="summary-tomorrow__meta">
+            <span class="summary-tomorrow__cat">
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◎</span>
+              <span>MOBILITY / モビリティ</span>
+            </span>
+            <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
+          </div>
+          <div class="summary-tomorrow__cells">
+            <div><span>WATCH 見る</span><p><span class="emph-und"><strong>Waymoが18郡で有料配車</strong>（<strong class="emph-bold">Waymoが18郡で有料配車</strong>）を展開できる承認を得て、テラチャージは2030年3月までに急速充電器5000口を計画する。</span></p></div>
+            <div><span>SIGNAL 変化</span><p><span class="emph-und">車両やAIの性能だけでなく、<strong>運賃収受、充電立地、事故対応、利用率</strong>（<strong class="emph-bold">運賃収受、充電立地、事故対応、利用率</strong>）がサービスの継続条件になる。</span></p></div>
+            <div><span>IMPLICATION 解釈</span><p><strong>実際の開始時期、安全実績、投資回収、特許技術の製品化、<span class="emph-und">地域交通との調整</span></strong>（<strong class="emph-bold">実際の開始時期、安全実績、投資回収、特許技術の製品化、<span class="emph-und">地域交通との調整</span></strong>）を段階的に見極める。</p></div>
+          </div>
+        </article>
+
+        <article class="summary-tomorrow__row" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-08-16 Gaming ゲーム 中国ゲーム業界の生成AI活用、『Trick × Trick』の20万字超シナリオ、ESCAPE（中国ゲーム業界の生成AI活用、『Trick × Trick』の20万字超シナリオ、ESCAPE）.ID HubのAPI・Webhook・MCP開放が示された。 AIは開発工程を変え、外部APIは予約導線を広げるが、品質、権利、認証、運用負荷（品質、権利、認証、運用負荷）を同時に管理しなければならない。 ゲームAIの品質管理、MCP経由の予約安全性、Steamでの発見性、紙とデジタル（ゲームAIの品質管理、MCP経由の予約安全性、Steamでの発見性、紙とデジタル）をまたぐ接点設計__を追う。">
+          <div class="summary-tomorrow__meta">
+            <span class="summary-tomorrow__cat">
+              <span class="summary-tomorrow__glyph" aria-hidden="true">▶</span>
+              <span>GAMING / ゲーム</span>
+            </span>
+            <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
+          </div>
+          <div class="summary-tomorrow__cells">
+            <div><span>WATCH 見る</span><p><span class="emph-und"><strong>中国ゲーム業界の生成AI活用、『Trick × Trick』の20万字超シナリオ、ESCAPE</strong>（<strong class="emph-bold">中国ゲーム業界の生成AI活用、『Trick × Trick』の20万字超シナリオ、ESCAPE</strong>）.ID HubのAPI・Webhook・MCP開放が示された。</span></p></div>
+            <div><span>SIGNAL 変化</span><p><span class="emph-und">AIは開発工程を変え、外部APIは予約導線を広げるが、<strong>品質、権利、認証、運用負荷</strong>（<strong class="emph-bold">品質、権利、認証、運用負荷</strong>）を同時に管理しなければならない。</span></p></div>
+            <div><span>IMPLICATION 解釈</span><p><strong>ゲームAIの品質管理、MCP経由の予約安全性、Steamでの発見性、<span class="emph-und">紙とデジタル</strong>（<strong class="emph-bold">ゲームAIの品質管理、MCP経由の予約安全性、Steamでの発見性、</span>紙とデジタル</strong>）をまたぐ接点設計__を追う。</p></div>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="summary-cta">
+    <h2>今日の論点を、記事で確かめる</h2>
+    <div>
+      <a class="summary-cta__primary" href="https://hidepon-umg.github.io/News-Grasp/2026-08-16/">全23本のニュースを読む →</a>
+      <a class="summary-cta__ghost" href="https://hidepon-umg.github.io/News-Grasp/archive/">過去の考察を見る</a>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · § SUMMARY · 2026-08-16 · #20260816
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/2026-08-16/">DIGEST</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://github.com/HIDEPON-UMG">GITHUB</a>
+  </div>
+</footer>
+
+<script>
+(function () {
+  document.querySelectorAll('.daily-audio').forEach(function (block) {
+    var audio = block.querySelector('audio');
+    var buttons = block.querySelectorAll('[data-rate]');
+    if (!audio || !buttons.length) return;
+    buttons.forEach(function (button) {
+      button.addEventListener('click', function () {
+        var rate = parseFloat(button.getAttribute('data-rate') || '1');
+        audio.playbackRate = rate;
+        buttons.forEach(function (item) {
+          item.classList.toggle('is-active', item === button);
+        });
+      });
+    });
+  });
+  var search = document.getElementById('summary-search');
+  var empty = document.getElementById('summary-search-empty');
+  var targets = Array.prototype.slice.call(document.querySelectorAll('[data-summary-search]'));
+  function applySummarySearch() {
+    var q = search ? search.value.trim().toLowerCase() : '';
+    var visible = 0;
+    targets.forEach(function (target) {
+      var text = (target.getAttribute('data-summary-search') || '').toLowerCase();
+      var hit = !q || text.indexOf(q) >= 0;
+      target.classList.toggle('is-search-hidden', !hit);
+      if (hit) visible += 1;
+    });
+    if (empty) empty.classList.toggle('is-active', !!q && visible === 0);
+  }
+  if (search) {
+    search.addEventListener('input', applySummarySearch);
+    applySummarySearch();
+  }
+})();
+</script>
+</body>
+</html>
