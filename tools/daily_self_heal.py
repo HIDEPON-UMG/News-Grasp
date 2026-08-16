@@ -56,6 +56,15 @@ def _current_jst_date() -> str:
     return datetime.now(timezone(timedelta(hours=9))).date().isoformat()
 
 
+def _jst_timezone():
+    try:
+        from zoneinfo import ZoneInfo
+
+        return ZoneInfo("Asia/Tokyo")
+    except Exception:
+        return timezone(timedelta(hours=9))
+
+
 def _parse_dt(value: str | None) -> datetime | None:
     if not value:
         return None
@@ -4125,9 +4134,7 @@ def _load_notification_state(
             "reason": "notification_semantics_invalid",
         }
     try:
-        from zoneinfo import ZoneInfo
-
-        recorded_date = recorded_at.astimezone(ZoneInfo("Asia/Tokyo")).date().isoformat()
+        recorded_date = recorded_at.astimezone(_jst_timezone()).date().isoformat()
     except (ValueError, OSError):
         recorded_date = ""
     producer_path = Path(__file__).with_name("send_push.py")
