@@ -1237,7 +1237,7 @@ def live_runner_readiness_manifest_ok(readiness: dict) -> bool:
 def _scheduled_task_action_summary(
     *,
     task_name: str = "News-Grasp Production",
-    powershell_exe: str = "powershell.exe",
+    powershell_exe: str = "pwsh",
 ) -> str:
     safe_task_name = task_name.replace("'", "''")
     command = (
@@ -1252,24 +1252,37 @@ def _scheduled_task_action_summary(
         proc = subprocess.run(
             [powershell_exe, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", command],
             capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
+            text=False,
             timeout=10,
             check=False,
         )
     except (OSError, subprocess.SubprocessError) as exc:
         return f"unavailable: {exc}"
+    stdout = _decode_scheduled_task_output(proc.stdout)
+    stderr = _decode_scheduled_task_output(proc.stderr)
     if proc.returncode != 0:
-        detail = (proc.stderr or proc.stdout).strip()
+        detail = (stderr or stdout).strip()
         return f"unavailable: {detail or f'rc={proc.returncode}'}"
-    return proc.stdout.strip()
+    return stdout.strip()
+
+
+def _decode_scheduled_task_output(data: bytes | str | None) -> str:
+    if data is None:
+        return ""
+    if isinstance(data, str):
+        return data
+    for encoding in ("utf-8-sig", "utf-8", "cp932", "mbcs"):
+        try:
+            return data.decode(encoding)
+        except (LookupError, UnicodeDecodeError):
+            continue
+    return data.decode("utf-8", errors="replace")
 
 
 def _scheduled_task_details(
     *,
     task_name: str = "News-Grasp Production",
-    powershell_exe: str = "powershell.exe",
+    powershell_exe: str = "pwsh",
 ) -> dict:
     safe_task_name = task_name.replace("'", "''")
     command = (
@@ -1303,22 +1316,22 @@ def _scheduled_task_details(
         proc = subprocess.run(
             [powershell_exe, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", command],
             capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
+            text=False,
             timeout=10,
             check=False,
         )
     except (OSError, subprocess.SubprocessError) as exc:
         return {"ok": False, "reason": f"unavailable: {exc}", "action_summary": f"unavailable: {exc}"}
+    stdout = _decode_scheduled_task_output(proc.stdout)
+    stderr = _decode_scheduled_task_output(proc.stderr)
     if proc.returncode != 0:
-        detail = (proc.stderr or proc.stdout).strip()
+        detail = (stderr or stdout).strip()
         reason = f"unavailable: {detail or f'rc={proc.returncode}'}"
         return {"ok": False, "reason": reason, "action_summary": reason}
     try:
-        payload = json.loads(proc.stdout)
+        payload = json.loads(stdout)
     except (json.JSONDecodeError, ValueError):
-        return {"ok": False, "reason": "scheduled_task_json_invalid", "action_summary": proc.stdout.strip()}
+        return {"ok": False, "reason": "scheduled_task_json_invalid", "action_summary": stdout.strip()}
     return payload if isinstance(payload, dict) else {"ok": False, "reason": "scheduled_task_json_not_object"}
 
 
@@ -1515,7 +1528,7 @@ def verify_live_runner_readiness(
     bootstrap_task_name: str = "News-Grasp Bootstrap",
     run_canary: bool = True,
     canary_timeout_sec: int = 60,
-    powershell_exe: str = "powershell.exe",
+    powershell_exe: str = "pwsh",
 ) -> dict:
     repo_root = repo_root.resolve()
     ops_repo_root = (ops_repo_root or repo_root).resolve()
@@ -4389,7 +4402,7 @@ def main(argv: list[str] | None = None) -> int:
     live_ready.add_argument("--bootstrap-task-name", default="News-Grasp Bootstrap")
     live_ready.add_argument("--skip-canary", action="store_true")
     live_ready.add_argument("--canary-timeout-sec", type=int, default=60)
-    live_ready.add_argument("--powershell-exe", default="powershell.exe")
+    live_ready.add_argument("--powershell-exe", default="pwsh")
     live_ready.add_argument("--output", type=Path, default=None)
 
     args = parser.parse_args(argv)
