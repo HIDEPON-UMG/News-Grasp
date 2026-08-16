@@ -3882,6 +3882,7 @@ def test_trusted_ops_generation_allows_ignored_runtime_artifacts(
             "--exclude-standard",
         ): "\n".join(
             [
+                ".managed-root.pin",
                 "build/tts/latest_audio.json",
                 "build/youtube-podcast/uploads.json",
                 "tools/__pycache__/daily_self_heal.cpython-312.pyc",

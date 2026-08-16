@@ -514,8 +514,9 @@ def _trusted_ops_generation(ops_repo_root: Path) -> dict[str, str]:
         line
         for line in ignored_raw.splitlines()
         if line
+        and line != ".managed-root.pin"
         and not line.startswith("build/")
-        and "/__pycache__/" not in line
+        and "__pycache__/" not in line
         and not line.endswith(".pyc")
     )
     daily_self_heal = (root / "tools" / "daily_self_heal.py").resolve(strict=True)
