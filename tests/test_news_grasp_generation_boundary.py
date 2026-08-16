@@ -198,10 +198,8 @@ def test_installer_reads_generation_pointer_from_runtime_parent() -> None:
     installer = (ROOT / "scripts" / "ops" / "install-news-grasp-ops.ps1").read_text(
         encoding="utf-8-sig"
     )
-    assert (
-        "$activeGenerationPointerPath = Join-Path (Split-Path -Parent $runtimeEvidenceRepoDir)"
-        in installer
-    )
+    assert "$generationAuthorityRoot = Split-Path -Parent $runtimeEvidenceRepoDir" in installer
+    assert "$activeGenerationPointerPath = Join-Path $generationAuthorityRoot" in installer
     assert (
         "$activeGenerationPointerPath = Join-Path $runtimeEvidenceRepoDir 'active-generation-v2.json'"
         not in installer
