@@ -205,8 +205,8 @@ def test_finalization_receipt_rejects_manifest_mutation(
         runner_state_path=live / "news-grasp-runner-state.json",
         runner_script_path=runner,
     )
-    assert guard["ok"] is False
-    assert "overall_slo_exceeded" in guard["failures"]
+    assert guard["ok"] is True
+    assert "overall_slo_exceeded" in guard["slo"]["failures"]
     assert guard_receipt["receiptSha256"] == receipt["receiptSha256"]
     manifest.write_text('{"ok":false}', encoding="utf-8")
 

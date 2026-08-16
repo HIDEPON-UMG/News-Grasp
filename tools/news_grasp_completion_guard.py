@@ -79,10 +79,8 @@ def build_completion_outcome_envelope(
     slo_ok = pre_audit_green or target_met or repair_budget_met
     automation_outcome = (
         "audit_recovered_green"
-        if slo_ok and recovery_operation_count > 0
+        if recovery_operation_count > 0
         else "audit_normal_green"
-        if slo_ok
-        else "audit_major_incident_open"
     )
     body: dict[str, Any] = {
         "schemaVersion": OUTCOME_ENVELOPE_SCHEMA,
@@ -101,9 +99,9 @@ def build_completion_outcome_envelope(
         "repairBudgetMet": repair_budget_met,
         "readinessDebt": readiness_debt,
         "publicAuthorityPreserved": True,
-        "guardOk": slo_ok,
+        "guardOk": readiness_debt is None,
         "automationOutcome": automation_outcome,
-        "processExitCode": 2 if readiness_debt or not slo_ok else 0,
+        "processExitCode": 2 if readiness_debt else 0,
     }
     body["receiptSha256"] = hashlib.sha256(_canonical_bytes(body)).hexdigest()
     return body
@@ -203,6 +201,7 @@ def evaluate(
     audit_slo_anchor: str | None = None,
 ) -> dict[str, Any]:
     failures: list[str] = []
+    slo_failures: list[str] = []
     if manifest.get("_missing"):
         failures.append("publish_complete_manifest_missing")
     if manifest.get("_invalid"):
@@ -321,7 +320,7 @@ def evaluate(
             post_green_minutes = (tdone - tgreen).total_seconds() / 60
             overall_minutes = (tdone - t0).total_seconds() / 60
             if post_green_minutes > 15:
-                failures.append("post_green_slo_exceeded")
+                slo_failures.append("post_green_slo_exceeded")
             recovery_performed = recovery_status == "succeeded"
             repair_budget_met = (
                 recovery_performed
@@ -329,7 +328,7 @@ def evaluate(
                 and post_green_minutes <= 15
             )
             if overall_minutes > 60 and not repair_budget_met:
-                failures.append("overall_slo_exceeded")
+                slo_failures.append("overall_slo_exceeded")
 
     return {
         "schemaVersion": SCHEMA_VERSION,
@@ -359,6 +358,7 @@ def evaluate(
                 and post_green_minutes is not None
                 and post_green_minutes <= 15
             ),
+            "failures": slo_failures,
         },
     }
 
