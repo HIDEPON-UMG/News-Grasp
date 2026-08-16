@@ -88,6 +88,9 @@ function Resolve-NewsGraspWorkspaceHarnessRoot {
             ) {
                 return $candidate
             }
+            # .NET の GetParent('C:') は現在の C: ドライブ作業ディレクトリへ
+            # 折り返すため、ドライブ相対表記を親探索の終端として扱う。
+            if ($candidate -match '^[A-Za-z]:$') { break }
             $parentInfo = [IO.Directory]::GetParent($candidate)
             if ($null -eq $parentInfo) { break }
             $parent = Get-NewsGraspCanonicalPath -Path $parentInfo.FullName
