@@ -520,8 +520,8 @@ def _trusted_ops_generation(ops_repo_root: Path) -> dict[str, str]:
         line
         for line in dirty_raw.splitlines()
         if line
-        and not line[3:].startswith("data/gate_attempts/")
-        and not line[3:].startswith("data/search_audit/")
+        and not line[2:].lstrip().startswith("data/gate_attempts/")
+        and not line[2:].lstrip().startswith("data/search_audit/")
     )
     ignored_raw = _safe_ops_git_output(
         root, ["ls-files", "--others", "--ignored", "--exclude-standard"]
