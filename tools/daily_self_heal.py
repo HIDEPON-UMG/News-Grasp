@@ -1717,9 +1717,9 @@ def verify_live_runner_readiness(
         "last_run_time": task_details.get("last_run_time") or "",
     }
     action_summary = str(task_details.get("action_summary") or "")
-    active_generation_path = (
-        Path.home() / ".news-grasp-runtime" / "production-runtime" / "active-generation-v2.json"
-    )
+    # stable launcher の authority と同じく、generation pointer は
+    # production-runtime の親 (.news-grasp-runtime) に置かれる。
+    active_generation_path = Path.home() / ".news-grasp-runtime" / "active-generation-v2.json"
     generation_id = ""
     if active_generation_path.is_file() and not active_generation_path.is_symlink():
         try:
