@@ -1409,7 +1409,12 @@ function New-NewsGraspFinalizationCandidateState {
         [Parameter(Mandatory = $true)][string] $PublishCommit
     )
     $before = Read-RunnerStateOrNull -Path $StateFile
-    if ($null -eq $before -or $before.__corrupt) {
+    $beforeCorrupt = (
+        $null -ne $before -and
+        ($before.PSObject.Properties.Name -contains '__corrupt') -and
+        [bool]$before.__corrupt
+    )
+    if ($null -eq $before -or $beforeCorrupt) {
         Add-RunnerLogLine -Text 'ERROR: FINALIZATION_CANDIDATE_BEFORE_STATE_INVALID'
         return ''
     }
@@ -1452,7 +1457,12 @@ function Commit-NewsGraspFinalizationCandidate {
             [IO.File]::Move($CandidateStatePath, $StateFile)
         }
         $committed = Read-RunnerStateOrNull -Path $StateFile
-        if ($null -eq $committed -or $committed.__corrupt -or $committed.status -ne 'publish_complete') {
+        $committedCorrupt = (
+            $null -ne $committed -and
+            ($committed.PSObject.Properties.Name -contains '__corrupt') -and
+            [bool]$committed.__corrupt
+        )
+        if ($null -eq $committed -or $committedCorrupt -or $committed.status -ne 'publish_complete') {
             throw 'committed candidate invalid'
         }
         return $true
