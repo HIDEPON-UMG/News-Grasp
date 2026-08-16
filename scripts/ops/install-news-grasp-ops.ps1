@@ -661,7 +661,10 @@ if (Test-Path -LiteralPath $activeGenerationPointerPath -PathType Leaf) {
         $activeGenerationPointer = [Text.Encoding]::UTF8.GetString($activeGenerationPointerSnapshot.Bytes) | ConvertFrom-Json -ErrorAction Stop
     } catch { throw 'NEWS_GRASP_ACTIVE_GENERATION_INVALID' }
     if (
-        [string]$activeGenerationPointer.schemaVersion -cne 'NEWS_GRASP_ACTIVE_GENERATION_V1' -or
+        [string]$activeGenerationPointer.schemaVersion -notin @(
+            'NEWS_GRASP_ACTIVE_GENERATION_V1',
+            'NEWS_GRASP_ACTIVE_GENERATION_V2'
+        ) -or
         [string]::IsNullOrWhiteSpace([string]$activeGenerationPointer.generationId) -or
         [string]::IsNullOrWhiteSpace([string]$activeGenerationPointer.manifestSha256)
     ) { throw 'NEWS_GRASP_ACTIVE_GENERATION_INVALID' }
