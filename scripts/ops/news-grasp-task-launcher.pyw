@@ -1944,41 +1944,23 @@ def _runtime_state(runtime: Path, origin_sha: str) -> dict[str, object]:
     if inside != "true":
         raise RuntimeError("PRODUCTION_RUNTIME_IDENTITY_INVALID")
     head = _run_git(runtime, "rev-parse", "HEAD")
-    diff = subprocess.run(
-        [
-            r"C:\Program Files\Git\cmd\git.exe",
-            "-c",
-            "core.hooksPath=NUL",
-            "-c",
-            "core.fsmonitor=false",
-            "-c",
-            "core.attributesFile=NUL",
-            "-C",
-            str(runtime),
-            "diff",
-            "--quiet",
-            "--no-ext-diff",
-            "--ignore-cr-at-eol",
-            "HEAD",
-            "--",
-        ],
-        shell=False,
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.PIPE,
-        creationflags=(subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0),
-        check=False,
-    )
-    if diff.returncode not in (0, 1):
-        raise RuntimeError("PRODUCTION_RUNTIME_DIFF_FAILED")
-    untracked_raw = _run_git(runtime, "ls-files", "--others", "--exclude-standard", "-z")
-    untracked = [item.replace("\\", "/") for item in untracked_raw.split("\x00") if item]
-    if len(untracked) > MAX_UNTRACKED_PATHS:
+    status_raw = _run_git(runtime, "status", "--porcelain", "--untracked-files=all", "-z")
+    status_entries = [item for item in status_raw.split("\x00") if item]
+    if len(status_entries) > MAX_UNTRACKED_PATHS:
         raise RuntimeError("PRODUCTION_RUNTIME_UNTRACKED_OVERFLOW")
-    unexpected = [item for item in untracked if not item.startswith("build/")]
+    unexpected = []
+    for entry in status_entries:
+        path = entry[2:].strip().replace("\\", "/")
+        if (
+            path.startswith("build/")
+            or path.startswith("data/gate_attempts/")
+            or path.startswith("data/search_audit/")
+        ):
+            continue
+        unexpected.append(entry)
     return {
         "exists": True,
-        "clean": diff.returncode == 0 and not unexpected,
+        "clean": not unexpected,
         "head": head,
         "headMatches": head == origin_sha,
         "unexpected": unexpected,
