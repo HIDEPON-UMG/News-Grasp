@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "gates": {
+    "record-schema": {
+      "signatures": {
+        "9b22a45cfcbdffcd": {
+          "failures": 1,
+          "artifact_hashes": [
+            "08a998614424591d"
+          ],
+          "category": "records"
+        }
+      },
+      "categories": {
+        "records": 1
+      }
+    }
+  },
+  "retry_budget_policy_version": 7
+}

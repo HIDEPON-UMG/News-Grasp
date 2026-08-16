@@ -1,0 +1,66 @@
+{
+  "articlePath": "digest/DeepDive/2026-08-16-DeepDive.md",
+  "articleSha256": "8a524c26ceeee17b37ede9cca0ed49ab02f0218232318dcc503bc670a4500256",
+  "issueDate": "2026-08-16",
+  "manifestSha256": "31bd0db04c35c08b6873f6bd969b053140005049328df39fc42f137228853650",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "bca7ccea5f9b756849c0dcf58bbe39855d50bfce3a4972b3a7446707e3faf119",
+  "sources": [
+    {
+      "contentSha256": "4fb19caa5b5348698117f371f647048df6c7270a78052e45016b6c71fa8e7af2",
+      "fetchedAt": "2026-08-16T00:13:12.751811+00:00",
+      "finalUrl": "https://blog.google/innovation-and-ai/products/ai-image-verification-gemini-app/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://blog.google/innovation-and-ai/products/ai-image-verification-gemini-app/",
+      "url": "https://blog.google/innovation-and-ai/products/ai-image-verification-gemini-app/"
+    },
+    {
+      "contentSha256": "e9e48744db04689ad821dc3024398b3189a8540a5cc09bb78154ff712762c817",
+      "fetchedAt": "2026-08-16T00:13:13.614507+00:00",
+      "finalUrl": "https://blog.google/innovation-and-ai/products/google-synthid-ai-content-detector/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://blog.google/innovation-and-ai/products/google-synthid-ai-content-detector/",
+      "url": "https://blog.google/innovation-and-ai/products/google-synthid-ai-content-detector/"
+    },
+    {
+      "contentSha256": "c1cb31cd71178868ae8de98f8906468a562974729bffde0382ea44a0b3a7eac8",
+      "fetchedAt": "2026-08-16T00:13:14.479375+00:00",
+      "finalUrl": "https://blog.google/innovation-and-ai/products/identifying-ai-generated-media-online/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://blog.google/innovation-and-ai/products/identifying-ai-generated-media-online/",
+      "url": "https://blog.google/innovation-and-ai/products/identifying-ai-generated-media-online/"
+    },
+    {
+      "contentSha256": "249401dbf8183810623cbab0ce2aee39a6d3e90ba7449e53ecea6253602f0331",
+      "fetchedAt": "2026-08-16T00:13:15.904653+00:00",
+      "finalUrl": "https://digital-strategy.ec.europa.eu/en/library/guidelines-transparency-obligations-providers-and-deployers-ai-systems",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://digital-strategy.ec.europa.eu/en/library/guidelines-transparency-obligations-providers-and-deployers-ai-systems",
+      "url": "https://digital-strategy.ec.europa.eu/en/library/guidelines-transparency-obligations-providers-and-deployers-ai-systems"
+    }
+  ],
+  "status": "Green"
+}
