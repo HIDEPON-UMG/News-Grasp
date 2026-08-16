@@ -1241,6 +1241,8 @@ def _scheduled_task_action_summary(
 ) -> str:
     safe_task_name = task_name.replace("'", "''")
     command = (
+        "[Console]::OutputEncoding=[System.Text.UTF8Encoding]::new($false); "
+        "$OutputEncoding=[System.Text.UTF8Encoding]::new($false); "
         f"$task=Get-ScheduledTask -TaskName '{safe_task_name}' -ErrorAction Stop; "
         "(@($task.Actions) | ForEach-Object { "
         "(([string]$_.Execute + ' ' + [string]$_.Arguments).Trim()) "
@@ -1271,6 +1273,8 @@ def _scheduled_task_details(
 ) -> dict:
     safe_task_name = task_name.replace("'", "''")
     command = (
+        "[Console]::OutputEncoding=[System.Text.UTF8Encoding]::new($false); "
+        "$OutputEncoding=[System.Text.UTF8Encoding]::new($false); "
         f"$task=Get-ScheduledTask -TaskName '{safe_task_name}' -ErrorAction Stop; "
         f"$info=Get-ScheduledTaskInfo -TaskName '{safe_task_name}' -ErrorAction Stop; "
         "$actions=(@($task.Actions) | ForEach-Object { "
