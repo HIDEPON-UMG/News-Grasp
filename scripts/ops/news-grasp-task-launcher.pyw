@@ -1228,6 +1228,22 @@ def _git_tracked_tree_manifest(repo: Path, commit: str) -> dict[str, str]:
     return dict(sorted(rows.items()))
 
 
+def _git_status_excluding_runtime_artifacts(repo: Path) -> str:
+    status_raw = _run_git(repo, "status", "--porcelain", "--untracked-files=no", "-z")
+    status_entries = [item for item in status_raw.split("\x00") if item]
+    unexpected = []
+    for entry in status_entries:
+        path = entry[2:].lstrip().replace("\\", "/")
+        if (
+            path.startswith("build/")
+            or path.startswith("data/gate_attempts/")
+            or path.startswith("data/search_audit/")
+        ):
+            continue
+        unexpected.append(entry)
+    return "\n".join(unexpected)
+
+
 def _seal_active_production_generation(
     *,
     source_repo: Path,
@@ -1242,12 +1258,8 @@ def _seal_active_production_generation(
     source_head = _run_git(source_repo, "rev-parse", "HEAD").strip().lower()
     runtime_head = _run_git(runtime_repo, "rev-parse", "HEAD").strip().lower()
     remote_head = _run_git(source_repo, "rev-parse", "origin/main").strip().lower()
-    source_status = _run_git(
-        source_repo, "status", "--porcelain", "--untracked-files=no"
-    ).strip()
-    runtime_status = _run_git(
-        runtime_repo, "status", "--porcelain", "--untracked-files=no"
-    ).strip()
+    source_status = _git_status_excluding_runtime_artifacts(source_repo).strip()
+    runtime_status = _git_status_excluding_runtime_artifacts(runtime_repo).strip()
     if source_status or runtime_status:
         raise RuntimeError("NEWS_GRASP_PRODUCTION_GENERATION_DIRTY")
     if (
@@ -1351,12 +1363,8 @@ def _seal_active_production_generation(
     final_source_head = _run_git(source_repo, "rev-parse", "HEAD").strip().lower()
     final_runtime_head = _run_git(runtime_repo, "rev-parse", "HEAD").strip().lower()
     final_remote_head = _run_git(source_repo, "rev-parse", "origin/main").strip().lower()
-    final_source_status = _run_git(
-        source_repo, "status", "--porcelain", "--untracked-files=no"
-    ).strip()
-    final_runtime_status = _run_git(
-        runtime_repo, "status", "--porcelain", "--untracked-files=no"
-    ).strip()
+    final_source_status = _git_status_excluding_runtime_artifacts(source_repo).strip()
+    final_runtime_status = _git_status_excluding_runtime_artifacts(runtime_repo).strip()
     final_source_tracked = _git_tracked_tree_manifest(source_repo, final_source_head)
     if final_source_status or final_runtime_status:
         raise RuntimeError("NEWS_GRASP_PRODUCTION_GENERATION_DIRTY")
