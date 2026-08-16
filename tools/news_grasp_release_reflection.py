@@ -16,7 +16,8 @@ from typing import Any
 
 
 SCHEMA = "NEWS_GRASP_RELEASE_REFLECTION_RECEIPT_V1"
-PRODUCER_ID = "news-grasp.release-reflection.v1"
+# global L8 consumerと同じproducer identityを使う。
+PRODUCER_ID = "ops-safe-commit.release-reflection.v1"
 IMPACT_CLASSES = frozenset({"public-content-only", "internal-only", "source-runtime-impacting"})
 _HEX40 = re.compile(r"^[0-9a-f]{40}$")
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
