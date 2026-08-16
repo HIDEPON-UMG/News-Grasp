@@ -87,8 +87,8 @@
         "tools/news_grasp_checkpoint.py": "3d20bb1774de83ba24b66269f585d29463c8fbd78d9aa2e12eae037575821581",
         "tools/operational_recovery_registry.py": "1439a76fc5d82cefc11704f5f24cc358e04036dd022e8a5f8d146f3d13c043ae",
         "tools/news_grasp_daily_control.py": "2e626990694dcf7dca2ee936a5089da637c6362cbf12110a449895cd99ccccc3",
-        "tools/audit_recovery_control.py": "f37b4935ea2c34fec285407f74ac5ad453e148e308d1c2688dfa9f67033d116b",
-        "tools/daily_self_heal.py": "e8d753b37acfe06d857aa90a305b068666a4bad6d88ead8603dd718a9339d5e3",
+        "tools/audit_recovery_control.py": "a780f58867c849ab06afe7bae33b0d88f1d1ad3e7b784d1ee9630f67dfc82ee8",
+        "tools/daily_self_heal.py": "4578bb415946767fd51a2f281a8eb6b3237ee5db7e89945509d0e1ae377208d3",
         "scripts/ops/get-news-grasp-authenticode-identity.ps1": "b9d58826023b8baee80b8d5622ae24bbbec7feecc244bf52b459d3bd81512c97",
         "config/operational_recovery_registry_v1.json": "84810a8f9d6f99a269f418941311f41381582ccda7e941ec1f627035bd9db98f",
         "tools/news_grasp_constitution.py": "d34e2a152523c0b30961e907c0e90b0eb63a44b84c8c46da0ca57cf8bb49741a"
@@ -280,18 +280,18 @@
         "tools/news_grasp_human_impact.py": "763a625022ea02f48ab503c379b4ade7d165d765f1b61e4d8c7db4a6fbb227a4",
         "tools/news_grasp_e2e_contract.py": "7978bea1160b53aa9cb21d163e844720dc80ce9650220b9f45852901ab06fdd6",
         "tools/news_grasp_owned_process.py": "69fd43aa0043554e8c1d435659cd86d926f8f180da7770b69f99e2182ca14733",
-        "tools/audit_recovery_control.py": "f37b4935ea2c34fec285407f74ac5ad453e148e308d1c2688dfa9f67033d116b",
+        "tools/audit_recovery_control.py": "a780f58867c849ab06afe7bae33b0d88f1d1ad3e7b784d1ee9630f67dfc82ee8",
         "tools/tts/aivis_client.py": "e0a69d6847721dd5ece69f6d4b3a411269592aa1b37b627140ea0c3645396a08",
         "tools/tts/proc.py": "db4cb4ab9d939ec0a308dad56e607d7aaf9fb578e8e694829944a952a2212ee6",
-        "scripts/ops/news-grasp-runner.ps1": "e4edaad1ca2748b6161468a2300cb7ed951ad01efc506297d5769d0da7a42234",
-        "scripts/ops/run_codex_with_timeout.ps1": "4a14a3b6d88016cf618763611529d3c53fa91caf5951ad9cc1f90500d776355f",
-        "scripts/ops/news-grasp-task-launcher.pyw": "9adbbfdd484bbc43f9b79c973da7ecf1ad8d0a060473012bfcc25bed291cebe3",
-        "scripts/ops/watch-news-grasp-runner.ps1": "c76e682ae2830ea203dab67008f3ebd31e785e245a307604cbf5c0bb0e3a1ce9",
+        "scripts/ops/news-grasp-runner.ps1": "96de509470749f3288dddaab56c5ae7dd2ea8a45237596bc3563f82534daf21d",
+        "scripts/ops/run_codex_with_timeout.ps1": "d5d17dac1cb6eb13aaf8656d8696f18c54f6bcf660d9d2d0d54317a6317dd440",
+        "scripts/ops/news-grasp-task-launcher.pyw": "a095d2fe05ebf06129fc93095fa57e43239483a6c7caddc310347cecbf5c0aef",
+        "scripts/ops/watch-news-grasp-runner.ps1": "d5c1025bd6f6ac1e14208ca17c2bd78bd25ce98edc17a8df9e391121f862580f",
         "tools/news_grasp_constitution.py": "d34e2a152523c0b30961e907c0e90b0eb63a44b84c8c46da0ca57cf8bb49741a",
         "tests/test_codex_wrapper_security.py": "ddc52dc911daf92e6567df98cbaf9b3ec7191d50de5548cddb054c0401c06fb4",
-        "tests/test_high_cost_operation_admission_contract.py": "6c8a8fc3d8016dc3bb646ce7edd3caf3c115e1c480c7bdd9bc2286514b77ade5",
-        "tests/test_runner_convergence_contract.py": "16dd86f318eb510f72fb4310b81fa9255a93d1b59cb6ef61594f2db413aa011b",
-        "tests/test_audit_recovery_control.py": "a862c05067060ee5ae90a43b2f2577c3fcbc35c707930f27de4c4452033dfe12",
+        "tests/test_high_cost_operation_admission_contract.py": "24df8efa3c8c1ae77ed6becb4609dff998118fe4ef82b62b488aef566d79fc64",
+        "tests/test_runner_convergence_contract.py": "cc754b35d72b6b865222803684068c8b50396dfebf5c928e1eb17764ce0e1f2d",
+        "tests/test_audit_recovery_control.py": "f6952a0821aa92156d4735490fa7f09928489cdbf718f435533badbb483bd3ec",
         "tests/test_tts_aivis_client.py": "3e16160dd4731009be82bb7144268afaf291188b7109fa86d4943d4add7e944e"
       },
       "constitutionClauses": [
@@ -378,16 +378,16 @@
         "tests/test_runner_convergence_contract.py"
       ],
       "targetSourceHashes": {
-        "scripts/ops/install-news-grasp-ops.ps1": "153c424c3ae626443896d48f86da948f8b87b95f2d475af921c16904897a4cf0",
-        "scripts/ops/news-grasp-task-launcher.pyw": "9adbbfdd484bbc43f9b79c973da7ecf1ad8d0a060473012bfcc25bed291cebe3",
+        "scripts/ops/install-news-grasp-ops.ps1": "e7ceb65c9fe3035451073fad8144344d6aa03628467c07534e0efd8b8144eccc",
+        "scripts/ops/news-grasp-task-launcher.pyw": "a095d2fe05ebf06129fc93095fa57e43239483a6c7caddc310347cecbf5c0aef",
         "config/news_grasp_skill_binding_v1.json": "f1453dc95ce71a16441efe6947d26cfba16eff897d25e8bd1fe9ac7a3fd85f1e",
-        "config/news_grasp_automation_assets_v2.json": "275a6f4217db6d064cb9c378541fcab0412d086415ff4043744b816de1d45f70",
-        "tools/news_grasp_generation.py": "04c6fd4c736bc3c2e0f0024a873996a45a5ba75c1e616b1f8379141036a96b16",
+        "config/news_grasp_automation_assets_v2.json": "dfdfc155df0753258ac26f15bf3c9a28c38b792b7b3d17f6f10ae937424e400e",
+        "tools/news_grasp_generation.py": "391cc730ba27d1f0d15c82426a08d942d3a08a0d973d649ad6dcbd16662ebeff",
         "tools/news_grasp_constitution.py": "d34e2a152523c0b30961e907c0e90b0eb63a44b84c8c46da0ca57cf8bb49741a",
-        "config/news_grasp_active_object_catalog_v1.json": "25a71e271b0a17318a677bba902106d4f1901ca085ff7087ae958858e3c04c1f",
-        "config/news_grasp_test_constitution_map_v1.json": "142657621b10320cb6984bb5413de5bf3cf4573645ee68e7ab67d96eb62ff96c",
-        "config/news_grasp_spec_disposition_v1.json": "d78ebb9366b7a5596b3ee953600cfce7622d03f340745ea21e961ba74fa3591b",
-        "tests/test_runner_convergence_contract.py": "16dd86f318eb510f72fb4310b81fa9255a93d1b59cb6ef61594f2db413aa011b"
+        "config/news_grasp_active_object_catalog_v1.json": "49b815c782f9bb7a47637e54818cf8efe166e0dabd174e5a7c831e5311a53e77",
+        "config/news_grasp_test_constitution_map_v1.json": "df6ff5cc24a969ba54effe1022c8ec68471f307489da75e296a63a900490874a",
+        "config/news_grasp_spec_disposition_v1.json": "c8a32f07e59ef4f2a6f26dd6838c555128d12dd13dc46d562a40aedef497e903",
+        "tests/test_runner_convergence_contract.py": "cc754b35d72b6b865222803684068c8b50396dfebf5c928e1eb17764ce0e1f2d"
       },
       "constitutionClauses": [
         "NGC-C09",
@@ -867,11 +867,11 @@
       ],
       "targetSourceHashes": {
         "config/news_grasp_skill_cross_layer_graph_v1.json": "402cfaee75923837b3ce12ca842d868bfff6681c26f235a10cefaa79992f982c",
-        "config/news_grasp_constitution_projection_v1.json": "12aa2699c8c0645f919bdc5dca40f4f147d028362b1adf8c6938b5acee021e09",
-        "docs/specs/2026-08-12_news-grasp-product-constitution.html": "c95c92bae918bb9bb13a53a89007e2bf73b8ad19f4eda060089c5dead7aaa6bb",
+        "config/news_grasp_constitution_projection_v1.json": "726d76c1da4a104cf2433decd0b796f898857a5fcc4097ef62ad660c183fe31b",
+        "docs/specs/2026-08-12_news-grasp-product-constitution.html": "ab27f1cf6a8fbd1fc9b1b7b595dc6abf64d227819cbcf652817e23dbceee2039",
         "tools/news_grasp_constitution.py": "d34e2a152523c0b30961e907c0e90b0eb63a44b84c8c46da0ca57cf8bb49741a",
-        "AGENTS.md": "abcc60545a27dcd152b73529a435b6c0b9020cd0c029c4e828c2728299d371a5",
-        "CLAUDE.md": "abcc60545a27dcd152b73529a435b6c0b9020cd0c029c4e828c2728299d371a5"
+        "AGENTS.md": "2927e87cae33d303bed36a185f1caa4f57658194853d99df189b8ada0f23daa0",
+        "CLAUDE.md": "2927e87cae33d303bed36a185f1caa4f57658194853d99df189b8ada0f23daa0"
       },
       "constitutionClauses": [
         "NGC-C01",
@@ -967,11 +967,11 @@
         "automation/skills/news-grasp-e2e-discipline/SKILL.md": "31514db9592e81e8350d790c7a7a45da28500a1e0e159a8ee42c13dca0ab3da3",
         "config/news_grasp_skill_binding_v1.json": "f1453dc95ce71a16441efe6947d26cfba16eff897d25e8bd1fe9ac7a3fd85f1e",
         "config/news_grasp_skill_cross_layer_graph_v1.json": "402cfaee75923837b3ce12ca842d868bfff6681c26f235a10cefaa79992f982c",
-        "scripts/ops/install-news-grasp-ops.ps1": "153c424c3ae626443896d48f86da948f8b87b95f2d475af921c16904897a4cf0",
+        "scripts/ops/install-news-grasp-ops.ps1": "e7ceb65c9fe3035451073fad8144344d6aa03628467c07534e0efd8b8144eccc",
         "tests/test_news_grasp_luna_packets.py": "3b99e881de9127ae7f435c5f6fef61c9def0eb5010e323846b17a44281cd3749",
         "tests/test_news_grasp_operational_skill_contract.py": "b5829482e365cfa453babcef028c7969a922302bff06c7825780710fe171465f",
         "tests/test_news_grasp_skill_cross_layer_graph.py": "a711c1bc5397c4fb30636cf4b673cb642aae8c9510cdfaa6d5d668381b7334fd",
-        "tests/test_operational_redesign_contract.py": "a84338229402b3d48ef5fc77f7417f1e106499f564c3023fe331bdc0cb197d62",
+        "tests/test_operational_redesign_contract.py": "06c975cf35e46c2f27a2d75ddd9c7886480be8f7597f0549cab2024b84fbe20f",
         "tests/test_operational_redesign_matrix.py": "bd1722f19a1a14973b171ed24fef7769b5b3def2ba268ff1db80799d0a05e522",
         "tools/news_grasp_change_control.py": "5d68b06f79f16668bc519a2300cb8db0067a54a00646cebce04f9bf014ab9397",
         "tools/news_grasp_constitution.py": "d34e2a152523c0b30961e907c0e90b0eb63a44b84c8c46da0ca57cf8bb49741a",
@@ -1307,16 +1307,16 @@
         "tests/test_news_grasp_luna_packets.py"
       ],
       "targetSourceHashes": {
-        "scripts/ops/invoke-scheduled-equivalent-nopublish.ps1": "ebab91fbbe3ccd14dc79f81bbb0e976ff758a3e1c2e497974b1c5b00b171f4e5",
-        "scripts/ops/news-grasp-task-launcher.pyw": "9adbbfdd484bbc43f9b79c973da7ecf1ad8d0a060473012bfcc25bed291cebe3",
-        "scripts/ops/news-grasp-runner.ps1": "e4edaad1ca2748b6161468a2300cb7ed951ad01efc506297d5769d0da7a42234",
-        "scripts/ops/watch-news-grasp-runner.ps1": "c76e682ae2830ea203dab67008f3ebd31e785e245a307604cbf5c0bb0e3a1ce9",
+        "scripts/ops/invoke-scheduled-equivalent-nopublish.ps1": "85c207178c64bf933cafa8f67bfebdc4c86001893d7f474ddd7774d99b175ea4",
+        "scripts/ops/news-grasp-task-launcher.pyw": "a095d2fe05ebf06129fc93095fa57e43239483a6c7caddc310347cecbf5c0aef",
+        "scripts/ops/news-grasp-runner.ps1": "96de509470749f3288dddaab56c5ae7dd2ea8a45237596bc3563f82534daf21d",
+        "scripts/ops/watch-news-grasp-runner.ps1": "d5c1025bd6f6ac1e14208ca17c2bd78bd25ce98edc17a8df9e391121f862580f",
         "tools/news_grasp_execution_governance.py": "ec0a75f380aa807e33e3d4011a8e02692446202034576a31cbcf00224822c023",
         "tools/news_grasp_operational_contract.py": "e0f91b3c8f14831cbc26f9323b1e7ebd71774bcafddcddf1782432e2cfc09059",
         "tests/test_news_grasp_e2e_composition_contract.py": "1c59979e3f2c3ae25a2375aa9761fe4a461093d63f6c5e109df18cadfc84a2ba",
         "tests/test_news_grasp_execution_governance.py": "44d8944f5ff38e12da471b5bdcc3ed287b8216b334529225223fcf45e543232b",
         "tests/test_news_grasp_operation_decision_graph.py": "ee1540b430a1e84125a1379d8ae6745edc9251fb2f8d68d3fca84930bdc5bdd8",
-        "tests/test_runner_convergence_contract.py": "16dd86f318eb510f72fb4310b81fa9255a93d1b59cb6ef61594f2db413aa011b",
+        "tests/test_runner_convergence_contract.py": "cc754b35d72b6b865222803684068c8b50396dfebf5c928e1eb17764ce0e1f2d",
         "tests/test_news_grasp_luna_packets.py": "3b99e881de9127ae7f435c5f6fef61c9def0eb5010e323846b17a44281cd3749"
       },
       "constitutionClauses": [
@@ -1403,9 +1403,9 @@
         "tests/test_news_grasp_luna_packets.py"
       ],
       "targetSourceHashes": {
-        "scripts/ops/install-news-grasp-ops.ps1": "153c424c3ae626443896d48f86da948f8b87b95f2d475af921c16904897a4cf0",
+        "scripts/ops/install-news-grasp-ops.ps1": "e7ceb65c9fe3035451073fad8144344d6aa03628467c07534e0efd8b8144eccc",
         "scripts/ops/install-news-grasp-verified-file-boundary.ps1": "d9d1258c89e040a093d1ba2593787cb7a0cb8e400ea5a9c5a217800bf9728a56",
-        "tests/test_runner_convergence_contract.py": "16dd86f318eb510f72fb4310b81fa9255a93d1b59cb6ef61594f2db413aa011b",
+        "tests/test_runner_convergence_contract.py": "cc754b35d72b6b865222803684068c8b50396dfebf5c928e1eb17764ce0e1f2d",
         "tests/test_news_grasp_luna_packets.py": "3b99e881de9127ae7f435c5f6fef61c9def0eb5010e323846b17a44281cd3749"
       },
       "constitutionClauses": [
@@ -1568,7 +1568,7 @@
         "tools/news_grasp_constitution.py": "d34e2a152523c0b30961e907c0e90b0eb63a44b84c8c46da0ca57cf8bb49741a",
         "tests/test_news_grasp_luna_packets.py": "3b99e881de9127ae7f435c5f6fef61c9def0eb5010e323846b17a44281cd3749",
         "tests/test_news_grasp_operational_skill_contract.py": "b5829482e365cfa453babcef028c7969a922302bff06c7825780710fe171465f",
-        "tests/test_operational_redesign_contract.py": "a84338229402b3d48ef5fc77f7417f1e106499f564c3023fe331bdc0cb197d62",
+        "tests/test_operational_redesign_contract.py": "06c975cf35e46c2f27a2d75ddd9c7886480be8f7597f0549cab2024b84fbe20f",
         "tests/test_operational_redesign_matrix.py": "bd1722f19a1a14973b171ed24fef7769b5b3def2ba268ff1db80799d0a05e522"
       },
       "derivedWriteSet": [
@@ -1662,9 +1662,9 @@
         "tests/test_news_grasp_luna_packets.py"
       ],
       "targetSourceHashes": {
-        "scripts/ops/watch-news-grasp-runner.ps1": "c76e682ae2830ea203dab67008f3ebd31e785e245a307604cbf5c0bb0e3a1ce9",
-        "scripts/ops/news-grasp-task-launcher.pyw": "9adbbfdd484bbc43f9b79c973da7ecf1ad8d0a060473012bfcc25bed291cebe3",
-        "tests/test_runner_convergence_contract.py": "16dd86f318eb510f72fb4310b81fa9255a93d1b59cb6ef61594f2db413aa011b",
+        "scripts/ops/watch-news-grasp-runner.ps1": "d5c1025bd6f6ac1e14208ca17c2bd78bd25ce98edc17a8df9e391121f862580f",
+        "scripts/ops/news-grasp-task-launcher.pyw": "a095d2fe05ebf06129fc93095fa57e43239483a6c7caddc310347cecbf5c0aef",
+        "tests/test_runner_convergence_contract.py": "cc754b35d72b6b865222803684068c8b50396dfebf5c928e1eb17764ce0e1f2d",
         "tests/test_news_grasp_luna_packets.py": "3b99e881de9127ae7f435c5f6fef61c9def0eb5010e323846b17a44281cd3749"
       },
       "constitutionClauses": [

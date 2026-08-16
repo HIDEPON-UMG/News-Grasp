@@ -1,7 +1,7 @@
 {
   "schemaVersion": "NEWS_GRASP_AUTOMATION_ASSET_MANIFEST_V2",
   "productId": "News-Grasp",
-  "assetVersion": "2026-08-12.v2",
+  "assetVersion": "2026-08-16.v3",
   "installRoot": "news-grasp-assets",
   "assets": [
     {
@@ -75,6 +75,18 @@
       "kind": "skill",
       "sourcePath": "automation/skills/report-news-grasp-incident/tests/test_workflow_contract.py",
       "installPath": "skills/report-news-grasp-incident/tests/test_workflow_contract.py"
+    },
+    {
+      "assetId": "news-grasp-6-40-automation-template-v1",
+      "kind": "automation",
+      "sourcePath": "automation/news-grasp-6-40/automation.toml.template",
+      "installPath": "automations/news-grasp-6-40/automation.toml"
+    },
+    {
+      "assetId": "news-grasp-6-40-completion-guard-projection-v1",
+      "kind": "automation",
+      "sourcePath": "automation/news-grasp-6-40/completion_guard.py",
+      "installPath": "automations/news-grasp-6-40/completion_guard.py"
     }
   ]
 }

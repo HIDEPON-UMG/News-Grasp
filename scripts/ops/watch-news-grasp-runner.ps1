@@ -767,7 +767,7 @@ function Start-RunnerProcess {
 function Get-CanonicalRecoveryControlBinding {
     $profileRoot = [Environment]::GetFolderPath([Environment+SpecialFolder]::UserProfile)
     $canonicalOps = Join-Path $profileRoot 'OneDrive\ドキュメント\ProjectFolders\News-Grasp'
-    $canonicalPython = Join-Path $canonicalOps '.venv\Scripts\python.exe'
+    $canonicalPython = Join-Path $profileRoot 'AppData\Local\Programs\Python\Python312\python.exe'
     $canonicalRuntime = Join-Path $profileRoot '.news-grasp-runtime\production-runtime'
     $trustedRemote = 'https://github.com/HIDEPON-UMG/News-Grasp.git'
     $gitExe = 'C:\Program Files\Git\cmd\git.exe'

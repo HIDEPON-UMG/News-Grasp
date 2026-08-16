@@ -2652,6 +2652,41 @@ def execute_audit_recovery(payload: object) -> dict[str, Any]:
         )
         write_audit_terminal(incident)
         return incident
+    # child processを作る前に同じreceiptを再検証し、canonical ledgerへ予約する。
+    # invalid/mismatched receiptはauthorityを合成せず、process start=0で終了する。
+    try:
+        execution_value = news_grasp_recovery_receipts.validate_recovery_execution_receipt(
+            receipt_path=execution_receipt,
+            issue_date=issue_date,
+            artifact_root=artifact_repo_root,
+            ops_root=CANONICAL_REPO_ROOT,
+            production_runtime_root=production_runtime_root,
+            live_bin_root=live_bin_root,
+            runner_state_path=CANONICAL_RUNNER_STATE_PATH,
+            runner_script_path=runner_path,
+        )
+        status = news_grasp_recovery_receipts.consumption_status(
+            receipt=execution_value,
+            live_bin_root=live_bin_root,
+            kind="execution",
+        )
+        if status is None:
+            news_grasp_recovery_receipts.consume_or_resume(
+                receipt=execution_value,
+                live_bin_root=live_bin_root,
+                kind="execution",
+            )
+        elif status != "consumed_pending_operation":
+            raise ValueError("RECOVERY_EXECUTION_RECEIPT_ALREADY_APPLIED")
+    except (OSError, ValueError, RuntimeError) as error:
+        incident = _incident(
+            issue_date=issue_date,
+            scheduled_status="failed",
+            recovery_status="not_started",
+            reason_code=f"RECOVERY_EXECUTION_RECEIPT_INVALID_{type(error).__name__}",
+        )
+        write_audit_terminal(incident)
+        return incident
     state_path = Path.home() / "bin" / "news-grasp-runner-state.json"
     log_dir = Path.home() / "bin" / "news-grasp-logs"
     command = [

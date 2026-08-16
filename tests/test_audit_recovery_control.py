@@ -49,6 +49,32 @@ def _seal(value: dict[str, object]) -> dict[str, object]:
     return body
 
 
+def _admit_test_execution_receipt(monkeypatch, control) -> None:
+    """execute系unit fixtureへ、P03のpre-child receipt admissionを束縛する。"""
+
+    value = {
+        "schemaVersion": "RECOVERY_EXECUTION_RECEIPT_V2",
+        "receiptSha256": "e" * 64,
+        "nonce": "test-execution-nonce",
+        "issueDate": "2026-08-13",
+    }
+    monkeypatch.setattr(
+        control.news_grasp_recovery_receipts,
+        "validate_recovery_execution_receipt",
+        lambda **_kwargs: value,
+    )
+    monkeypatch.setattr(
+        control.news_grasp_recovery_receipts,
+        "consumption_status",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        control.news_grasp_recovery_receipts,
+        "consume_or_resume",
+        lambda **_kwargs: {"status": "consumed_pending_operation"},
+    )
+
+
 def _green_completion(control, run_intent: str) -> dict[str, object]:
     lineage = control._completion_lineage(
         issue_date="2026-08-02",
@@ -91,6 +117,22 @@ def _attempt_witness(
             }
         )
     return value
+
+
+def test_p03_invalid_execution_receipt_is_fail_closed_before_child_start() -> None:
+    root = Path(__file__).resolve().parents[1]
+    runner = (root / "scripts" / "ops" / "news-grasp-runner.ps1").read_text(
+        encoding="utf-8-sig"
+    )
+    controller = Path(__file__).resolve().parents[1] / "tools" / "audit_recovery_control.py"
+    controller_text = controller.read_text(encoding="utf-8")
+    assert "RECOVERY_EXECUTION_RECEIPT_INVALID_FAIL_CLOSED" in runner
+    assert "RECOVERY_EXECUTION_RECEIPT_INVALID_CONTINUING_WITH_BOUND_AUTHORITY" not in runner
+    assert "_admit_test_execution_receipt" not in runner
+    assert controller_text.index("validate_recovery_execution_receipt(") < controller_text.index(
+        "_run_bounded(command"
+    )
+    assert "consume_or_resume(" in controller_text
 
 
 def _failure_context(control, monkeypatch, tmp_path: Path):
@@ -1228,6 +1270,7 @@ def test_execute_runs_one_typed_recovery_then_writes_recovered_terminal(
         "_issue_recovery_execution_receipt",
         lambda **_kwargs: repo / "build" / "recovery-execution.json",
     )
+    _admit_test_execution_receipt(monkeypatch, control)
 
     result = control.execute_audit_recovery(
         {
@@ -1364,6 +1407,7 @@ def test_execute_uses_typed_finalizer_when_public_manifest_is_already_green(
         "_issue_recovery_execution_receipt",
         lambda **_kwargs: artifact / "build" / "recovery-execution.json",
     )
+    _admit_test_execution_receipt(monkeypatch, control)
 
     result = control.execute_audit_recovery(
         {
@@ -1451,6 +1495,7 @@ def test_execute_repairs_control_plane_once_then_reverifies_before_runner(
         "_issue_recovery_execution_receipt",
         lambda **_kwargs: artifact / "build" / "recovery-execution.json",
     )
+    _admit_test_execution_receipt(monkeypatch, control)
 
     result = control.execute_audit_recovery(
         {
@@ -1622,6 +1667,7 @@ def test_post_green_runtime_drift_never_reenters_broad_repair(
         lambda **_kwargs: artifact / "build" / "recovery-execution.json",
     )
     monkeypatch.setattr(control, "write_audit_terminal", lambda _v: None)
+    _admit_test_execution_receipt(monkeypatch, control)
 
     result = control.execute_audit_recovery(
         {

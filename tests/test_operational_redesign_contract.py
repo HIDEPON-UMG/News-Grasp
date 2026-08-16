@@ -909,3 +909,4 @@ def test_ng2_a09_installer_declares_versioned_asset_sync() -> None:
     assert "news-grasp-assets" in installer
     assert "source_sha256" in installer
     assert "Assert-NewsGraspAssetInstallDestination" in installer
+    assert "Assert-NewsGraspAutomationProjectionAsset" in installer

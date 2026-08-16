@@ -23,7 +23,24 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 
-TRANSACTION_SCHEMA = "AUDIT_RECOVERY_TRANSACTION_V2"
+TRANSACTION_SCHEMA_V2 = "AUDIT_RECOVERY_TRANSACTION_V2"
+TRANSACTION_SCHEMA = "AUDIT_RECOVERY_TRANSACTION_V3"
+MISSION_TERMINALS = {
+    "closed_reader_green",
+    "closed_reader_incomplete_external_blocker",
+    "closed_reader_unverified_budget_exhausted",
+    "closed_control_plane_unavailable",
+}
+MISSION_PHASES = (
+    "observed",
+    "envelope_validated",
+    "recovery_admitted",
+    "recovery_running",
+    "reader_verified",
+    "finalization_prepared",
+    "finalization_committed",
+    "closed",
+)
 JST = ZoneInfo("Asia/Tokyo")
 ISSUE_DATE_RE = re.compile(r"^20\d{2}-\d{2}-\d{2}$")
 LEASE_MINUTES = 5
@@ -281,7 +298,10 @@ class RecoveryTransactionStore:
             value = json.loads(raw.decode("utf-8-sig"))
         except (UnicodeDecodeError, json.JSONDecodeError) as error:
             raise ValueError("AUDIT_RECOVERY_TRANSACTION_INVALID") from error
-        if not isinstance(value, dict) or value.get("schemaVersion") != TRANSACTION_SCHEMA:
+        if not isinstance(value, dict) or value.get("schemaVersion") not in {
+            TRANSACTION_SCHEMA,
+            TRANSACTION_SCHEMA_V2,
+        }:
             raise ValueError("AUDIT_RECOVERY_TRANSACTION_INVALID")
         expected = str(value.get("receiptSha256") or "")
         if _seal(value).get("receiptSha256") != expected:
@@ -290,9 +310,19 @@ class RecoveryTransactionStore:
             raise ValueError("AUDIT_RECOVERY_TRANSACTION_INVALID")
         return value
 
+    @staticmethod
+    def _compatibility_terminal(transaction: dict[str, Any]) -> dict[str, Any]:
+        projection = transaction.get("terminalProjection")
+        if isinstance(projection, dict):
+            return dict(projection)
+        legacy = transaction.get("terminal")
+        return dict(legacy) if isinstance(legacy, dict) else {}
+
     def _write(self, issue_date: str, value: dict[str, Any]) -> dict[str, Any]:
         path = self._transaction_path(issue_date)
-        sealed = _seal(value)
+        payload = dict(value)
+        payload["schemaVersion"] = TRANSACTION_SCHEMA
+        sealed = _seal(payload)
         encoded = (
             json.dumps(sealed, ensure_ascii=False, sort_keys=True) + "\n"
         ).encode("utf-8")
@@ -411,8 +441,12 @@ class RecoveryTransactionStore:
                 if current and current.get("status") == "terminal":
                     response = dict(current)
                     response["status"] = "terminal_projection"
+                    response["terminal"] = self._compatibility_terminal(current)
+                    response["missionTerminal"] = str(
+                        current.get("missionTerminal") or ""
+                    )
                     response["processExitCode"] = int(
-                        (current.get("terminal") or {}).get("exitCode", 0)
+                        (response["terminal"] or {}).get("exitCode", 0)
                     )
                     return response
                 if current and current.get("status") == "active":
@@ -440,6 +474,8 @@ class RecoveryTransactionStore:
                                 observed_at + timedelta(minutes=LEASE_MINUTES)
                             ).isoformat(),
                             "updatedAt": observed_at.isoformat(),
+                            "missionState": str(current.get("missionState") or "observed"),
+                            "missionPhase": str(current.get("missionPhase") or "observed"),
                         }
                     )
                     self._append_event(
@@ -471,7 +507,12 @@ class RecoveryTransactionStore:
                     "updatedAt": observed_at.isoformat(),
                     **audit_deadlines(issue_date),
                     "phaseJournal": [],
-                    "terminal": None,
+                    "missionState": "observed",
+                    "missionPhase": "observed",
+                    "missionTerminal": None,
+                    "terminalProjection": None,
+                    "operationBinding": None,
+                    "observationEvents": [],
                 }
                 self._append_event(
                     transaction,
@@ -527,17 +568,41 @@ class RecoveryTransactionStore:
                 or int(current.get("fencingToken") or 0) != int(fencing_token)
             ):
                 raise ValueError("AUDIT_RECOVERY_FENCING_TOKEN_STALE")
-            if terminal.get("terminal") not in {
+            compatibility_terminal = str(terminal.get("terminal") or "")
+            if compatibility_terminal not in {
                 "audit_normal_green",
                 "audit_recovered_green",
                 "audit_observation_unverified",
                 "audit_major_incident_open",
             }:
                 raise ValueError("AUDIT_RECOVERY_TERMINAL_INVALID")
+            mission_terminal = {
+                "audit_normal_green": "closed_reader_green",
+                "audit_recovered_green": "closed_reader_green",
+                "audit_observation_unverified": "closed_reader_unverified_budget_exhausted",
+                "audit_major_incident_open": "closed_reader_incomplete_external_blocker",
+            }[compatibility_terminal]
             current["status"] = "terminal"
-            current["terminal"] = dict(terminal)
+            current["missionState"] = "closed"
+            current["missionPhase"] = "closed"
+            current["missionTerminal"] = mission_terminal
+            current["terminalProjection"] = dict(terminal)
+            current.pop("terminal", None)
             current["updatedAt"] = observed_at.isoformat()
             current["leaseExpiresAt"] = observed_at.isoformat()
+            if compatibility_terminal == "audit_major_incident_open":
+                self._append_event(
+                    current,
+                    event="audit_observation",
+                    now=observed_at,
+                    details={
+                        "schemaVersion": "AuditObservationEventV1",
+                        "compatibilityTerminal": compatibility_terminal,
+                        "missionTerminal": mission_terminal,
+                        "ownerId": owner_id,
+                        "fencingToken": fencing_token,
+                    },
+                )
             self._append_event(
                 current,
                 event="terminal_committed",
@@ -545,13 +610,145 @@ class RecoveryTransactionStore:
                 details={
                     "ownerId": owner_id,
                     "fencingToken": fencing_token,
-                    "terminal": terminal["terminal"],
+                    "terminal": mission_terminal,
+                    "compatibilityTerminal": compatibility_terminal,
                 },
             )
             written = self._write(issue_date, current)
             response = dict(written)
             response["processExitCode"] = int(terminal.get("exitCode", 0))
             return response
+
+    def advance_phase(
+        self,
+        *,
+        issue_date: str,
+        owner_id: str,
+        fencing_token: int,
+        phase: str,
+        details: dict[str, Any] | None = None,
+        now: datetime | None = None,
+    ) -> dict[str, Any]:
+        """同一fencing tokenでmission phaseを単調に進める。"""
+
+        if phase not in MISSION_PHASES:
+            raise ValueError("AUDIT_RECOVERY_MISSION_PHASE_INVALID")
+        observed_at = _aware(now)
+        with self._guard(issue_date):
+            current = self._read(issue_date)
+            if current is None or current.get("status") != "active":
+                raise ValueError("AUDIT_RECOVERY_TRANSACTION_NOT_ACTIVE")
+            if (
+                current.get("ownerId") != owner_id
+                or int(current.get("fencingToken") or 0) != int(fencing_token)
+            ):
+                raise ValueError("AUDIT_RECOVERY_FENCING_TOKEN_STALE")
+            current_index = MISSION_PHASES.index(
+                str(current.get("missionPhase") or "observed")
+            )
+            next_index = MISSION_PHASES.index(phase)
+            if next_index < current_index:
+                raise ValueError("AUDIT_RECOVERY_MISSION_PHASE_REGRESSION")
+            current["missionPhase"] = phase
+            current["missionState"] = (
+                "closed" if phase == "closed" else "active"
+            )
+            current["updatedAt"] = observed_at.isoformat()
+            if next_index > current_index:
+                self._append_event(
+                    current,
+                    event="mission_phase_advanced",
+                    now=observed_at,
+                    details={
+                        "phase": phase,
+                        "ownerId": owner_id,
+                        "fencingToken": fencing_token,
+                        **dict(details or {}),
+                    },
+                )
+            return self._write(issue_date, current)
+
+    def bind_operation(
+        self,
+        *,
+        issue_date: str,
+        owner_id: str,
+        fencing_token: int,
+        binding: dict[str, Any],
+        now: datetime | None = None,
+    ) -> dict[str, Any]:
+        """child/finalizer/public authority identityをtransaction journalへ束縛する。"""
+
+        required = (
+            "childExecutableSha256",
+            "childArgvSha256",
+            "childCwdSha256",
+            "executionReceiptSha256",
+        )
+        if any(not str(binding.get(key) or "") for key in required):
+            raise ValueError("AUDIT_RECOVERY_OPERATION_BINDING_INVALID")
+        observed_at = _aware(now)
+        with self._guard(issue_date):
+            current = self._read(issue_date)
+            if current is None or current.get("status") != "active":
+                raise ValueError("AUDIT_RECOVERY_TRANSACTION_NOT_ACTIVE")
+            if (
+                current.get("ownerId") != owner_id
+                or int(current.get("fencingToken") or 0) != int(fencing_token)
+            ):
+                raise ValueError("AUDIT_RECOVERY_TRANSACTION_FENCING_TOKEN_STALE")
+            existing = current.get("operationBinding")
+            if existing is not None and existing != binding:
+                raise ValueError("AUDIT_RECOVERY_OPERATION_BINDING_DRIFT")
+            current["operationBinding"] = dict(binding)
+            self._append_event(
+                current,
+                event="operation_bound",
+                now=observed_at,
+                details={
+                    "ownerId": owner_id,
+                    "fencingToken": fencing_token,
+                    "bindingSha256": hashlib.sha256(_canonical(binding)).hexdigest(),
+                },
+            )
+            current["updatedAt"] = observed_at.isoformat()
+            return self._write(issue_date, current)
+
+    def observe(
+        self,
+        *,
+        issue_date: str,
+        owner_id: str,
+        fencing_token: int,
+        observation: dict[str, Any],
+        now: datetime | None = None,
+    ) -> dict[str, Any]:
+        """major incidentをterminal化せずappend-only observationとして記録する。"""
+
+        if not observation.get("reasonCode"):
+            raise ValueError("AUDIT_RECOVERY_OBSERVATION_INVALID")
+        observed_at = _aware(now)
+        with self._guard(issue_date):
+            current = self._read(issue_date)
+            if current is None or current.get("status") != "active":
+                raise ValueError("AUDIT_RECOVERY_TRANSACTION_NOT_ACTIVE")
+            if (
+                current.get("ownerId") != owner_id
+                or int(current.get("fencingToken") or 0) != int(fencing_token)
+            ):
+                raise ValueError("AUDIT_RECOVERY_TRANSACTION_FENCING_TOKEN_STALE")
+            events = current.setdefault("observationEvents", [])
+            event = {
+                "schemaVersion": "AuditObservationEventV1",
+                "observedAt": observed_at.isoformat(),
+                "fencingToken": fencing_token,
+                **dict(observation),
+            }
+            events.append(event)
+            if len(events) > MAX_JOURNAL_EVENTS:
+                raise ValueError("AUDIT_RECOVERY_JOURNAL_LIMIT_EXCEEDED")
+            current["updatedAt"] = observed_at.isoformat()
+            return self._write(issue_date, current)
 
     def renew(
         self,

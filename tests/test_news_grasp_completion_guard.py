@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import importlib
+import hashlib
 import json
+import subprocess
+import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -242,3 +245,100 @@ def test_failed_guard_replaces_stale_green_output(tmp_path: Path, monkeypatch) -
         ]
     ) == 2
     assert json.loads(output.read_text(encoding="utf-8"))["ok"] is False
+
+
+def test_p01_automation_guard_is_stdout_only(tmp_path: Path) -> None:
+    root = Path(__file__).parents[1]
+    script = root / "automation" / "news-grasp-6-40" / "completion_guard.py"
+    manifest_path = tmp_path / "publish-complete.json"
+    state_path = tmp_path / "runner-state.json"
+    manifest_path.write_text(json.dumps(_manifest()), encoding="utf-8")
+    state_path.write_text(json.dumps(_runner_state()), encoding="utf-8")
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--issue-date",
+            "2026-08-13",
+            "--manifest",
+            str(manifest_path),
+            "--runner-state",
+            str(state_path),
+        ],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert json.loads(completed.stdout)["ok"] is True
+    assert not list(tmp_path.glob("*.automation-guard.json"))
+    source = script.read_text(encoding="utf-8")
+    assert "--output" not in source
+    assert "write_text" not in source
+    assert "write_bytes" not in source
+    assert "write_atomic" not in source
+
+
+def test_p01_automation_assets_bind_projection_and_single_writer() -> None:
+    root = Path(__file__).parents[1]
+    manifest = json.loads(
+        (root / "config" / "news_grasp_automation_assets_v2.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    rows = {
+        row["sourcePath"]: row
+        for row in manifest["assets"]
+        if row["sourcePath"].startswith("automation/news-grasp-6-40/")
+    }
+    assert rows["automation/news-grasp-6-40/automation.toml.template"]["installPath"] == (
+        "automations/news-grasp-6-40/automation.toml"
+    )
+    assert rows["automation/news-grasp-6-40/completion_guard.py"]["installPath"] == (
+        "automations/news-grasp-6-40/completion_guard.py"
+    )
+
+    template = (
+        root / "automation" / "news-grasp-6-40" / "automation.toml.template"
+    ).read_text(encoding="utf-8")
+    assert 'model = "gpt-5.6-luna"' in template
+    assert 'reasoning_effort = "max"' in template
+    assert "stdout" in template
+    assert "--output" not in template
+
+    projection = (
+        root / "automation" / "news-grasp-6-40" / "completion_guard.py"
+    ).read_text(encoding="utf-8")
+    product_guard = (root / "tools" / "news_grasp_completion_guard.py").read_text(
+        encoding="utf-8"
+    )
+    installer = (root / "scripts" / "ops" / "install-news-grasp-ops.ps1").read_text(
+        encoding="utf-8-sig"
+    )
+    assert "write_atomic_json" in product_guard
+    assert "write_atomic_json" not in projection
+    assert "Assert-NewsGraspAutomationProjectionAsset" in installer
+
+
+def test_completion_guard_rejects_readiness_proof_after_deadman_drift(tmp_path: Path) -> None:
+    guard = _guard()
+    descriptor = tmp_path / "descriptor.json"
+    deadman = tmp_path / "deadman.ps1"
+    descriptor.write_text("descriptor-v1\n", encoding="utf-8")
+    deadman.write_text("deadman-v1\n", encoding="utf-8")
+    proof = {
+        "schemaVersion": "NEXT_RUN_READINESS_V1",
+        "generationId": "generation-001",
+        "descriptorPath": str(descriptor),
+        "descriptorSha256": hashlib.sha256(descriptor.read_bytes()).hexdigest(),
+        "taskDefinitionSha256": hashlib.sha256(b"task-v1").hexdigest(),
+        "deadmanPath": str(deadman),
+        "deadmanIdentitySha256": hashlib.sha256(deadman.read_bytes()).hexdigest(),
+    }
+    assert guard._readiness_freshness_is_current({"freshness": proof}) is True
+    deadman.write_text("deadman-v2\n", encoding="utf-8")
+    assert guard._readiness_freshness_is_current({"freshness": proof}) is False

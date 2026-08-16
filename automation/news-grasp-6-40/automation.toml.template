@@ -1,0 +1,15 @@
+schema_version = "NEWS_GRASP_640_AUTOMATION_V1"
+id = "news-grasp-6-40"
+schedule = "40 6 * * *"
+model = "gpt-5.6-luna"
+reasoning_effort = "max"
+execution_mode = "stdout_projection"
+
+prompt = """
+News-Grasp の canonical product completion decision を読み取り、同梱の
+completion_guard.py に manifest と runner state を渡して、stdout へ一つの
+JSON projection だけを返す。canonical product artifact、manifest、runner
+state、task、runtime、公開面を作成・変更しない。runner、installer、publisher、
+finalizerを起動せず、ファイル出力を追加しない。成功判定は stdout の JSON
+projection に含まれる ok と failures だけで報告する。
+"""

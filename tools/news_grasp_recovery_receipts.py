@@ -766,6 +766,37 @@ def is_consumed(*, receipt: dict[str, Any], live_bin_root: Path, kind: str) -> b
     )
 
 
+def consumption_status(
+    *, receipt: dict[str, Any], live_bin_root: Path, kind: str
+) -> str | None:
+    """receiptのcanonical ledger状態を返す。未登録はNoneで、推測補完しない。"""
+
+    ledger = _consumption_ledger(live_bin_root)
+    if not ledger.is_file() or ledger.is_symlink():
+        return None
+    connection = sqlite3.connect(f"file:{ledger}?mode=ro", uri=True, timeout=10)
+    try:
+        _ensure_consumption_table(connection)
+        row = connection.execute(
+            f"SELECT nonce, kind, issue_date, status FROM {CONSUMPTION_TABLE} "
+            "WHERE receipt_sha256 = ?",
+            (str(receipt.get("receiptSha256") or ""),),
+        ).fetchone()
+    except sqlite3.Error:
+        return None
+    finally:
+        connection.close()
+    if row is None:
+        return None
+    if row[:3] != (
+        str(receipt.get("nonce") or ""),
+        kind,
+        str(receipt.get("issueDate") or ""),
+    ):
+        raise ValueError("RECOVERY_RECEIPT_CONSUMPTION_INVALID")
+    return str(row[3])
+
+
 def pending_finalization_for_execution(
     *, execution_receipt_sha256: str, live_bin_root: Path
 ) -> str:

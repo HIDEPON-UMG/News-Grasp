@@ -60,19 +60,63 @@ function Assert-NewsGraspAssetInstallDestination {
     Assert-NewsGraspNoReparsePath -Path (Split-Path -Parent $canonicalDestination) -Boundary $canonicalBin
 }
 
+function Assert-NewsGraspAutomationProjectionAsset {
+    param(
+        [Parameter(Mandatory = $true)]$Asset,
+        [Parameter(Mandatory = $true)][byte[]]$Bytes
+    )
+    $sourcePath = ([string]$Asset.sourcePath).Replace('/', '\')
+    if ($sourcePath -notlike 'automation\news-grasp-6-40\*') { return }
+    $text = [Text.Encoding]::UTF8.GetString($Bytes)
+    if ($text -notmatch '(?i)stdout' -or $text -notmatch '(?i)projection') {
+        throw 'NEWS_GRASP_AUTOMATION_PROJECTION_CONTRACT_MISSING'
+    }
+    if ($text -match '(?i)(--output|write_text|write_bytes|write_atomic|set-content|out-file|new-item)') {
+        throw 'NEWS_GRASP_AUTOMATION_CANONICAL_WRITE_FORBIDDEN'
+    }
+}
+
 function Resolve-NewsGraspWorkspaceHarnessRoot {
     param([Parameter(Mandatory = $true)][string] $StartPath)
-    $candidate = Get-NewsGraspCanonicalPath -Path $StartPath
-    for ($depth = 0; $depth -lt 6; $depth += 1) {
-        if (
-            (Test-Path -LiteralPath (Join-Path $candidate 'tools\harness\task_model_routing.py') -PathType Leaf) -and
-            (Test-Path -LiteralPath (Join-Path $candidate 'docs\harness\high_cost_model_routes_v1.json') -PathType Leaf)
-        ) {
-            return $candidate
+    $findHarnessRoot = {
+        param([Parameter(Mandatory = $true)][string] $InitialPath)
+        $candidate = Get-NewsGraspCanonicalPath -Path $InitialPath
+        for ($depth = 0; $depth -lt 12; $depth += 1) {
+            if (
+                (Test-Path -LiteralPath (Join-Path $candidate 'tools\harness\task_model_routing.py') -PathType Leaf) -and
+                (Test-Path -LiteralPath (Join-Path $candidate 'docs\harness\high_cost_model_routes_v1.json') -PathType Leaf)
+            ) {
+                return $candidate
+            }
+            $parentInfo = [IO.Directory]::GetParent($candidate)
+            if ($null -eq $parentInfo) { break }
+            $parent = Get-NewsGraspCanonicalPath -Path $parentInfo.FullName
+            if (Test-NewsGraspSamePath -Left $parent -Right $candidate) { break }
+            $candidate = $parent
         }
-        $parent = Split-Path -Parent $candidate
-        if (-not $parent -or (Test-NewsGraspSamePath -Left $parent -Right $candidate)) { break }
-        $candidate = Get-NewsGraspCanonicalPath -Path $parent
+        return $null
+    }
+
+    $resolvedStartPath = Get-NewsGraspCanonicalPath -Path $StartPath
+    $ancestorRoot = & $findHarnessRoot $resolvedStartPath
+    if ($ancestorRoot) { return $ancestorRoot }
+
+    # implementation worktreeはworkspace rootの外側に置ける。候補repoのGit
+    # common-dirはcanonical product repoへ戻るため、その祖先からglobal harnessを解決する。
+    $gitCommand = Get-Command git.exe -ErrorAction SilentlyContinue
+    if (-not $gitCommand) { $gitCommand = Get-Command git -ErrorAction SilentlyContinue }
+    if ($gitCommand) {
+        $gitCommonRaw = ((& $gitCommand.Source -C $resolvedStartPath rev-parse --git-common-dir 2>$null) | Out-String).Trim()
+        $gitCommonExit = $LASTEXITCODE
+        if ($gitCommonExit -eq 0 -and $gitCommonRaw) {
+            $gitCommonPath = if ([IO.Path]::IsPathRooted($gitCommonRaw)) {
+                $gitCommonRaw
+            } else {
+                Join-Path $resolvedStartPath $gitCommonRaw
+            }
+            $commonDirRoot = & $findHarnessRoot (Get-NewsGraspCanonicalPath -Path $gitCommonPath)
+            if ($commonDirRoot) { return $commonDirRoot }
+        }
     }
     throw 'NEWS_GRASP_SHARED_HARNESS_ROOT_UNAVAILABLE'
 }
@@ -181,8 +225,7 @@ function Resolve-NewsGraspTaskPythonw {
         return (Resolve-Path -LiteralPath $env:NEWS_GRASP_TASK_PYTHONW).Path
     }
     $candidates = @(
-        (Join-Path $env:USERPROFILE 'OneDrive\ドキュメント\ProjectFolders\News-Grasp\.venv\Scripts\pythonw.exe'),
-        (Join-Path $ResolvedRepoDir '.venv\Scripts\pythonw.exe')
+        (Join-Path $env:USERPROFILE 'AppData\Local\Programs\Python\Python312\pythonw.exe')
     )
     foreach ($candidate in $candidates) {
         if (Test-Path -LiteralPath $candidate -PathType Leaf) {
@@ -600,6 +643,28 @@ Assert-NewsGraspNoReparsePath -Path $runtimeEvidenceRepoDir -Boundary $installTr
 if (Test-NewsGraspSamePath -Left $runtimeEvidenceRepoDir -Right $RepoDir) {
     throw 'NEWS_GRASP_EVIDENCE_REPO_SELF_REFERENCE_FORBIDDEN'
 }
+$activeGenerationId = 'pending-active-generation'
+$activeGenerationManifestSha256 = ''
+$activeGenerationPointerSha256 = ''
+$activeGenerationPointerPath = Join-Path $runtimeEvidenceRepoDir 'active-generation-v2.json'
+if (Test-Path -LiteralPath $activeGenerationPointerPath -PathType Leaf) {
+    $activeGenerationPointerSnapshot = Read-NewsGraspVerifiedFile `
+        -Path $activeGenerationPointerPath `
+        -TrustedBoundary $runtimeEvidenceRepoDir `
+        -MaxBytes 65536 `
+        -RequireSingleLink
+    try {
+        $activeGenerationPointer = [Text.Encoding]::UTF8.GetString($activeGenerationPointerSnapshot.Bytes) | ConvertFrom-Json -ErrorAction Stop
+    } catch { throw 'NEWS_GRASP_ACTIVE_GENERATION_INVALID' }
+    if (
+        [string]$activeGenerationPointer.schemaVersion -cne 'NEWS_GRASP_ACTIVE_GENERATION_V1' -or
+        [string]::IsNullOrWhiteSpace([string]$activeGenerationPointer.generationId) -or
+        [string]::IsNullOrWhiteSpace([string]$activeGenerationPointer.manifestSha256)
+    ) { throw 'NEWS_GRASP_ACTIVE_GENERATION_INVALID' }
+    $activeGenerationId = [string]$activeGenerationPointer.generationId
+    $activeGenerationManifestSha256 = ([string]$activeGenerationPointer.manifestSha256).ToLowerInvariant()
+    $activeGenerationPointerSha256 = ([string]$activeGenerationPointerSnapshot.Sha256).ToLowerInvariant()
+}
 $existingRuntimeRootPath = Join-Path $canonicalBinDir 'news-grasp-runtime-root-v1.json'
 if (Test-Path -LiteralPath $existingRuntimeRootPath -PathType Leaf) {
     $existingRuntimeRootSnapshot = Read-NewsGraspVerifiedFile `
@@ -639,6 +704,11 @@ foreach ($asset in $automationAssetRows) {
         -Path (Join-Path $RepoDir ([string]$asset.sourcePath)) `
         -TrustedBoundary $RepoDir `
         -RequireSingleLink
+}
+foreach ($asset in $automationAssetRows) {
+    Assert-NewsGraspAutomationProjectionAsset `
+        -Asset $asset `
+        -Bytes $assetSourceSnapshots[[string]$asset.assetId].Bytes
 }
 $backupRoot = Join-Path $RepoDir 'build\live-runner-backups'
 $null = Assert-NewsGraspCanonicalInstallSource `
@@ -1190,7 +1260,7 @@ if (-not $SkipTaskRegistration) {
     $deadmanLauncherPath = Join-Path $BinDir 'news-grasp-deadman-launcher.pyw'
     $taskLauncherPath = Join-Path $BinDir 'news-grasp-task-launcher.pyw'
     $pythonw = $TaskPythonwPath
-    if (-not (Test-Path -LiteralPath $pythonw)) { throw 'News-Grasp .venv pythonw.exe が見つかりません。' }
+    if (-not (Test-Path -LiteralPath $pythonw)) { throw 'News-Grasp system Python312 pythonw.exe が見つかりません。' }
     # Scheduled Taskはstable installed launcherだけを指す。source worktreeのpathをtask定義へ封印しない。
     $runnerArgs = "`"$taskLauncherPath`" runner --scheduled-task-name `"$RunnerTaskName`" --high-cost-binding-path `"$highCostBindingPath`" --high-cost-binding-sha256 $highCostBindingReceiptSha256"
     $runnerAction = New-ScheduledTaskAction -Execute $pythonw -Argument $runnerArgs -WorkingDirectory $BinDir
@@ -1289,6 +1359,17 @@ $installedEvidenceBody = [ordered]@{
     transactionId = $timestamp
     files = $manifestFiles
     scheduledTasks = $scheduledTasks
+    generationBinding = [ordered]@{
+        schemaVersion = 'RUN_ENVELOPE_V1'
+        generationId = $activeGenerationId
+        activeGenerationManifestSha256 = $activeGenerationManifestSha256
+        activeGenerationPointerSha256 = $activeGenerationPointerSha256
+        stableTaskAuthoritySha256 = ([string]$stableTaskAuthorityInstalled.Sha256).ToLowerInvariant()
+        automationAssetManifestSha256 = ((Get-FileHash -LiteralPath $automationAssetManifestPath -Algorithm SHA256).Hash).ToLowerInvariant()
+        sourceRoot = $RepoDir
+        installedRoot = $BinDir
+        runtimeRoot = $runtimeEvidenceRepoDir
+    }
 }
 $installedEvidenceJson = $installedEvidenceBody | ConvertTo-Json -Depth 10 -Compress
 $installedEvidenceHasher = [Security.Cryptography.SHA256]::Create()
@@ -1320,7 +1401,7 @@ $deliveryFields = [ordered]@{
 }
 $deliveryStateBody = [ordered]@{
     schemaVersion = 'NEWS_GRASP_PHYSICAL_DELIVERY_STATE_V1'
-    generationId = 'pending-active-generation'
+    generationId = $activeGenerationId
     fields = $deliveryFields
     operationalStatus = 'incomplete'
 }

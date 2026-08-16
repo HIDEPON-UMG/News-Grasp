@@ -88,6 +88,76 @@ def sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
+def readiness_freshness_snapshot(
+    *,
+    generation_id: str,
+    descriptor_path: Path | None = None,
+    task_definition: str = "",
+    deadman_path: Path | None = None,
+    valid_until: str = "",
+) -> dict[str, object]:
+    """readiness proofをgenerationと運用面hashへ束縛する。"""
+
+    def _safe_sha(path: Path | None) -> str:
+        if path is None or not path.is_file() or path.is_symlink():
+            return ""
+        try:
+            return sha256_file(path)
+        except OSError:
+            return ""
+
+    descriptor = descriptor_path.resolve() if descriptor_path else None
+    deadman = deadman_path.resolve() if deadman_path else None
+    return {
+        "schemaVersion": "NEXT_RUN_READINESS_V1",
+        "generationId": str(generation_id or ""),
+        "descriptorPath": str(descriptor) if descriptor else "",
+        "descriptorSha256": _safe_sha(descriptor),
+        "taskDefinitionSha256": hashlib.sha256(
+            str(task_definition or "").encode("utf-8")
+        ).hexdigest(),
+        "deadmanPath": str(deadman) if deadman else "",
+        "deadmanIdentitySha256": _safe_sha(deadman),
+        "validUntil": str(valid_until or ""),
+    }
+
+
+def verify_readiness_freshness(
+    proof: dict[str, object],
+    *,
+    generation_id: str,
+    descriptor_path: Path | None = None,
+    task_definition: str = "",
+    deadman_path: Path | None = None,
+) -> dict[str, object]:
+    """保存済みGreen proofをcurrent generation/descriptor/task/deadmanへ再束縛する。"""
+
+    if not isinstance(proof, dict) or proof.get("schemaVersion") != "NEXT_RUN_READINESS_V1":
+        return {"ok": False, "status": "unverified", "reasonCode": "readiness_proof_missing"}
+    expected = readiness_freshness_snapshot(
+        generation_id=generation_id,
+        descriptor_path=descriptor_path,
+        task_definition=task_definition,
+        deadman_path=deadman_path,
+        valid_until=str(proof.get("validUntil") or ""),
+    )
+    keys = (
+        "generationId",
+        "descriptorSha256",
+        "taskDefinitionSha256",
+        "deadmanIdentitySha256",
+    )
+    if any(str(proof.get(key) or "") != str(expected.get(key) or "") for key in keys):
+        return {
+            "ok": False,
+            "status": "stale",
+            "reasonCode": "readiness_proof_stale",
+            "expected": expected,
+            "observed": {key: proof.get(key) for key in keys},
+        }
+    return {"ok": True, "status": "ready", "freshness": expected}
+
+
 @dataclass(frozen=True)
 class CompletionVerificationResultV1:
     """公開完了、次回 readiness、audit 観測を混同しない内部結果。"""
@@ -1647,6 +1717,17 @@ def verify_live_runner_readiness(
         "last_run_time": task_details.get("last_run_time") or "",
     }
     action_summary = str(task_details.get("action_summary") or "")
+    active_generation_path = (
+        Path.home() / ".news-grasp-runtime" / "production-runtime" / "active-generation-v2.json"
+    )
+    generation_id = ""
+    if active_generation_path.is_file() and not active_generation_path.is_symlink():
+        try:
+            active_generation = json.loads(active_generation_path.read_text(encoding="utf-8-sig"))
+            if isinstance(active_generation, dict):
+                generation_id = str(active_generation.get("generationId") or "")
+        except (OSError, UnicodeError, json.JSONDecodeError):
+            generation_id = ""
     action_text = _command_path_text(action_summary)
     watcher_text = _command_path_text(live_watcher_path)
     runner_text = _command_path_text(live_runner_path)
@@ -1931,6 +2012,17 @@ def verify_live_runner_readiness(
         "number_of_missed_runs": task_details.get("number_of_missed_runs"),
         "canary_status": result["canary"].get("status", "skipped"),
     }
+    descriptor_path = Path.home() / ".codex" / "state" / "high-cost-operation" / "capability-v1.json"
+    deadman_path = ops_repo_root / "scripts" / "ops" / "news-grasp-deadman.ps1"
+    if generation_id or descriptor_path.is_file() or deadman_path.is_file():
+        freshness = readiness_freshness_snapshot(
+            generation_id=generation_id,
+            descriptor_path=descriptor_path,
+            task_definition=action_summary,
+            deadman_path=deadman_path,
+        )
+        result["readinessFreshness"] = freshness
+        result["next_run_readiness"]["freshness"] = freshness
     return {**result, "ok": True, "reason": "", "status": ready_status}
 
 

@@ -2,7 +2,7 @@
   "schemaVersion": "NEWS_GRASP_CONSTITUTION_PROJECTION_V1",
   "constitutionVersion": "2026-08-12",
   "generator": "tools/news_grasp_constitution.py",
-  "constitutionSha256": "f56cbe5fa9cc59ea3c965b95263d157c75a92fd3e95b6a9ba5973c1a2742f8e1",
+  "constitutionSha256": "9dbb8f0d8f953eb0e85380d12be506a578bc315da3f6c8b2d70634c9ce5e1a84",
   "traceSha256": "e101f7c0c95fa7952c4d85258fb3eaf5495abf5c69b8f1f222576689e990dd1e",
   "projectionSha256": "691cc6ae3de9fa93e550490aa9f9c4ee07824eb2a8caa296163798a2b5f32418",
   "mermaidDiagramCount": 3,
@@ -28,8 +28,8 @@
   ],
   "assetProjection": {
     "manifestPath": "config/news_grasp_automation_assets_v2.json",
-    "manifestSha256": "275a6f4217db6d064cb9c378541fcab0412d086415ff4043744b816de1d45f70",
-    "assetCount": 12,
+    "manifestSha256": "dfdfc155df0753258ac26f15bf3c9a28c38b792b7b3d17f6f10ae937424e400e",
+    "assetCount": 14,
     "assets": [
       {
         "assetId": "operational-recovery-skill-v1",
@@ -114,22 +114,36 @@
         "sourcePath": "automation/skills/report-news-grasp-incident/tests/test_workflow_contract.py",
         "installPath": "skills/report-news-grasp-incident/tests/test_workflow_contract.py",
         "sourceSha256": "3454db0fcf383165dcaa8539e4de081d9220d596e89963b27b7d8087d98554e9"
+      },
+      {
+        "assetId": "news-grasp-6-40-automation-template-v1",
+        "kind": "automation",
+        "sourcePath": "automation/news-grasp-6-40/automation.toml.template",
+        "installPath": "automations/news-grasp-6-40/automation.toml",
+        "sourceSha256": "e3da5b55e1ff03c46f370b43218f142497224e1f909f00ddd674acfa250a231a"
+      },
+      {
+        "assetId": "news-grasp-6-40-completion-guard-projection-v1",
+        "kind": "automation",
+        "sourcePath": "automation/news-grasp-6-40/completion_guard.py",
+        "installPath": "automations/news-grasp-6-40/completion_guard.py",
+        "sourceSha256": "b458bdfdd85159c0a4f3c706209050c826662ee10bd92cef1d19ccbbd2b30890"
       }
     ],
-    "assetSetSha256": "67fa74d9a4d8eb1e5d3ec4587a9f884a0429a3360d15d540f5c1b707c24d512a"
+    "assetSetSha256": "078c7ffea642ce77aa6479d5ab72a94fd0bf59d6f11a24bca82d50443ec6abc2"
   },
   "outputs": [
     {
       "path": "AGENTS.md",
-      "managedBlockSha256": "829dbe6f7b0755dd7a2e3c1d599a5c0a1f7d220eb34aba95449d5a258014e4b2"
+      "managedBlockSha256": "04dca334b444683ffefd113fcb0e4bdf232a9674f41ff0753a7ae7f5eda54e78"
     },
     {
       "path": "CLAUDE.md",
-      "managedBlockSha256": "829dbe6f7b0755dd7a2e3c1d599a5c0a1f7d220eb34aba95449d5a258014e4b2"
+      "managedBlockSha256": "04dca334b444683ffefd113fcb0e4bdf232a9674f41ff0753a7ae7f5eda54e78"
     },
     {
       "path": "docs/specs/2026-08-12_news-grasp-product-constitution.html",
-      "sha256": "c95c92bae918bb9bb13a53a89007e2bf73b8ad19f4eda060089c5dead7aaa6bb",
+      "sha256": "ab27f1cf6a8fbd1fc9b1b7b595dc6abf64d227819cbcf652817e23dbceee2039",
       "lineCount": 882
     }
   ]

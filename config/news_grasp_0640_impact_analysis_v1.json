@@ -1,0 +1,264 @@
+{
+  "schemaVersion": "TDD_IMPACT_ANALYSIS_RECEIPT_V1",
+  "receiptId": "NG-640-20260816-REDESIGN-V1",
+  "issueDate": "2026-08-16",
+  "status": "design_closed_red_pending",
+  "authority": {
+    "sourceStatus": "UserConfirmed",
+    "approvalText": "PLEASE IMPLEMENT THIS PLAN:",
+    "scope": [
+      "implementation",
+      "safe_commit_push",
+      "live_install",
+      "scheduled_task_cutover",
+      "automation_sync",
+      "rollback",
+      "final_nopublish_e2e"
+    ],
+    "excluded": [
+      "same_day_recovery",
+      "content_generation",
+      "public_publish",
+      "cleanup",
+      "public_incident_publication",
+      "historical_artifact_rewrite",
+      "global_harness_change"
+    ]
+  },
+  "baseline": {
+    "repository": "News-Grasp",
+    "commit": "d3d44f11dfa84f2070cb2cf86e209f2474dd389b",
+    "branch": "fix/news-grasp-0640-operation-v1",
+    "worktree": "C:\\Users\\hidek\\ng-0640-redesign-v1",
+    "runtimeCommit": "d3d44f11dfa84f2070cb2cf86e209f2474dd389b",
+    "activeGenerationId": "139cd81903b070b27d0cf62c9926f7edc657bba1ac5795776b100068002bf175"
+  },
+  "requirements": [
+    "R01_single_operation_owner",
+    "R02_completion_single_writer",
+    "R03_pre_commit_finalization",
+    "R04_invalid_receipt_process_start_zero",
+    "R05_public_readiness_slo_separation",
+    "R06_automation_read_only",
+    "R07_immutable_active_standby_capsule",
+    "R08_source_installed_loaded_task_automation_parity",
+    "R09_three_day_same_state_machine_replay",
+    "R10_human_impact_and_slo_bounded_termination"
+  ],
+  "sourceSurfaces": [
+    "automation/news-grasp-6-40/automation.toml.template",
+    "automation/news-grasp-6-40/completion_guard.py",
+    "config/news_grasp_automation_assets_v2.json",
+    "scripts/ops/install-news-grasp-ops.ps1",
+    "scripts/ops/news-grasp-runner.ps1",
+    "scripts/ops/news-grasp-bootstrap.ps1",
+    "scripts/ops/news-grasp-deadman.ps1",
+    "scripts/ops/watch-news-grasp-runner.ps1",
+    "scripts/ops/news-grasp-task-launcher.pyw",
+    "scripts/ops/prepare-news-grasp-staged-generation.ps1",
+    "scripts/ops/release-and-reflect-news-grasp.ps1",
+    "tools/audit_recovery_control.py",
+    "tools/daily_self_heal.py",
+    "tools/news_grasp_completion_guard.py",
+    "tools/news_grasp_daily_control.py",
+    "tools/news_grasp_finalization.py",
+    "tools/news_grasp_generation.py",
+    "tools/news_grasp_operational_contract.py",
+    "tools/news_grasp_recovery_receipts.py",
+    "tools/news_grasp_recovery_transaction.py",
+    "tools/news_grasp_release_reflection.py"
+  ],
+  "runtimeSurfaces": {
+    "productionRuntime": "C:\\Users\\hidek\\.news-grasp-runtime\\production-runtime",
+    "liveBin": "C:\\Users\\hidek\\bin",
+    "runtimeBinding": "C:\\Users\\hidek\\bin\\news-grasp-recovery-runtime-binding-v1.json",
+    "stableTaskAuthority": "C:\\Users\\hidek\\bin\\news-grasp-stable-task-authority-v1.json",
+    "activeGeneration": "C:\\Users\\hidek\\.news-grasp-runtime\\active-generation-v2.json",
+    "python": {
+      "pythonwPath": "C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\pythonw.exe",
+      "pythonwSha256": "2198767147bdf67a45da63ad9a35900b4ca8e628fedca13873ae50cf5805c810",
+      "authenticode": "Valid:Python Software Foundation"
+    }
+  },
+  "scheduledTaskSurfaces": [
+    {
+      "taskName": "News-Grasp Production",
+      "role": "06:00 scheduled production",
+      "actionSha256": "73a2f5336508780f2edf01fe52b7e6596fca0243f712faa2ad18722708add776"
+    },
+    {
+      "taskName": "News-Grasp Bootstrap",
+      "role": "05:55 admission and capsule seal",
+      "actionSha256": "06439063a4ce14d567d2549fdc3306349981d422f93bba5cf709abb773c28963"
+    },
+    {
+      "taskName": "News-Grasp Deadman",
+      "role": "06:40 acquire-or-attach",
+      "actionSha256": "8c14f42b00cd27a87e1afb3f5912435ae415ea24022ee921d375ddff003efad7"
+    },
+    {
+      "taskName": "News-Grasp Runner",
+      "role": "legacy disabled compatibility task",
+      "enabled": false,
+      "actionSha256": "f6b1171f992208ee7345fb1b105e877fe23e3ef16837e1dadc27edee737f30ee"
+    }
+  ],
+  "automationSurfaces": {
+    "installedRoot": "C:\\Users\\hidek\\.codex\\automations\\news-grasp-6-40",
+    "installedAutomationTomlSha256": "2170f49078d53900418ce591adca96c6bfdfb220a528d19f538e32a15cc0cd90",
+    "installedCompletionGuardSha256": "db7905a47805669034afab5375e3e81e2ea0708f39ca99f40bff0f6eabfa6f65",
+    "observedDrift": [
+      "model_gpt_5_5",
+      "reasoning_effort_medium",
+      "execute_input_repair_path",
+      "three_terminal_projection",
+      "local_guard_output_writer"
+    ],
+    "productOverlaySkills": [
+      "automation/skills/news-grasp-repair-method/SKILL.md",
+      "automation/skills/news-grasp-e2e-discipline/SKILL.md",
+      "automation/skills/report-news-grasp-incident/SKILL.md"
+    ]
+  },
+  "writerInventory": [
+    {
+      "writerId": "runner_finalizer_state_writer",
+      "path": "scripts/ops/news-grasp-runner.ps1",
+      "artifact": "C:/Users/hidek/bin/news-grasp-runner-state.json",
+      "currentRole": "writes publish_complete before completion guard in recovery finalization",
+      "targetRole": "AtomicFinalizationCoordinator commits runner state last"
+    },
+    {
+      "writerId": "product_completion_guard_writer",
+      "path": "tools/news_grasp_completion_guard.py",
+      "artifact": "build/publish-complete/<date>.automation-guard.json",
+      "currentRole": "writes canonical guard and SLO envelope",
+      "targetRole": "writes product guard decision only; SLO is a separate projector"
+    },
+    {
+      "writerId": "automation_local_completion_guard_writer",
+      "path": "C:/Users/hidek/.codex/automations/news-grasp-6-40/completion_guard.py",
+      "artifact": "build/publish-complete/<date>.automation-guard.json",
+      "currentRole": "second writer through --output",
+      "targetRole": "removed; stdout projection only"
+    },
+    {
+      "writerId": "audit_terminal_writer",
+      "path": "tools/audit_recovery_control.py",
+      "artifact": "build/incidents/<date>-audit-terminal.json",
+      "currentRole": "writes compatibility terminal and audit events",
+      "targetRole": "projects V3 mission state and append-only observations"
+    },
+    {
+      "writerId": "readiness_writer",
+      "path": "tools/daily_self_heal.py",
+      "artifact": "build/publish-complete/<date>.live-runner-readiness.json",
+      "currentRole": "nested completion input",
+      "targetRole": "independent NEXT_RUN_READINESS_V1 sidecar"
+    }
+  ],
+  "readerInventory": [
+    "tools/audit_recovery_control.py::actual_completion_verifier",
+    "tools/news_grasp_recovery_receipts.py::finalization_receipt_validation",
+    "tools/daily_self_heal.py::verify_public_completion",
+    "tools/daily_self_heal.py::evaluate_completion",
+    "tools/news_grasp_daily_control.py::compatibility_projection",
+    "scripts/ops/news-grasp-deadman.ps1::ensure-0640",
+    "scripts/ops/watch-news-grasp-runner.ps1::ensure-0640",
+    "automation/news-grasp-6-40/completion_guard.py::AutomationReporter"
+  ],
+  "routeInventory": [
+    {
+      "routeId": "bootstrap_0555",
+      "target": "AdmissionReconciler",
+      "policy": "seal_envelope_only"
+    },
+    {
+      "routeId": "production_0600",
+      "target": "stable_launcher",
+      "policy": "scheduled_production_once"
+    },
+    {
+      "routeId": "audit_0640_deadman",
+      "target": "ensure-0640",
+      "policy": "acquire_or_attach"
+    },
+    {
+      "routeId": "audit_0640_watcher",
+      "target": "ensure-0640",
+      "policy": "acquire_or_attach"
+    },
+    {
+      "routeId": "audit_0640_automation",
+      "target": "ensure-0640",
+      "policy": "invoke_once_then_read_only_projection"
+    },
+    {
+      "routeId": "daily_compatibility",
+      "target": "ensure-0640",
+      "policy": "projection_only"
+    },
+    {
+      "routeId": "legacy_execute_input",
+      "target": "none",
+      "policy": "process_start_zero_with_ensure_hint"
+    },
+    {
+      "routeId": "direct_runner_or_finalizer",
+      "target": "none",
+      "policy": "unreachable_fail_closed"
+    }
+  ],
+  "plannedFixtures": [
+    "tests/fixtures/2026_08_14_recovery_replay.json",
+    "tests/fixtures/2026_08_15_recovery_replay.json",
+    "tests/fixtures/2026_08_16_recovery_replay.json",
+    "tests/test_2026_08_14_recovery_replay.py",
+    "tests/test_2026_08_15_recovery_replay.py",
+    "tests/test_2026_08_16_recovery_replay.py",
+    "tests/test_news_grasp_completion_guard.py",
+    "tests/test_news_grasp_finalization.py",
+    "tests/test_news_grasp_recovery_receipts.py",
+    "tests/test_audit_recovery_control.py",
+    "tests/test_news_grasp_daily_control.py",
+    "tests/test_daily_self_heal.py",
+    "tests/test_runner_convergence_contract.py",
+    "tests/test_news_grasp_generation_boundary.py",
+    "tests/test_news_grasp_release_reflection.py",
+    "tests/test_operational_redesign_contract.py"
+  ],
+  "expectedRedSuite": [
+    "RED_COMPLETION_MULTI_WRITER",
+    "RED_FINALIZATION_STATE_BEFORE_GUARD",
+    "RED_GUARD_REQUIRES_COMMITTED_STATE",
+    "RED_PUBLIC_READINESS_SLO_COUPLED",
+    "RED_INVALID_RECEIPT_PROCESS_STARTED",
+    "RED_MAJOR_INCIDENT_CLOSES_TRANSACTION",
+    "RED_AUTOMATION_SOURCE_RUNTIME_DRIFT",
+    "RED_RUNTIME_PYTHON_MISSING",
+    "RED_READINESS_GENERATION_NOT_REHASHED",
+    "RED_THREE_DAY_REPLAY_DIVERGES",
+    "RED_EXTERNAL_WORKTREE_HARNESS_ROOT_UNAVAILABLE",
+    "RED_STALE_SAME_DAY_STARTUP_CANARY_ROOT"
+  ],
+  "counterEvidence": [
+    "reader-facing publication completed near 09:17 while formal control-plane completion continued until 10:54",
+    "2026-08-16 overallMinutes=208.67 and sloStatus=slo_failed",
+    "the successful ScheduledRecoveryFull started at 09:10:49 and reader delivery completed quickly",
+    "current automation model/prompt/terminal contract differs from current ensure-0640 source",
+    "WP-00 first Bootstrap after generation cutover failed on stale same-date StartupCanary state before causal state reset"
+  ],
+  "planningDesignClosureRef": {
+    "path": "build/implementation-control/planning-design-closure-v1.json",
+    "requiredEmptySets": [
+      "openDecisionIds",
+      "feasibilityUnknownIds",
+      "surfaceInventoryUnknownIds",
+      "writerOwnershipUnknownIds",
+      "routeCoverageUnknownIds",
+      "integrationConflictIds",
+      "lunaDecisionIds"
+    ],
+    "postImplementationEvidenceSeparated": true
+  }
+}

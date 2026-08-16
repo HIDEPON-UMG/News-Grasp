@@ -1952,20 +1952,23 @@ def _runtime_state(runtime: Path, origin_sha: str) -> dict[str, object]:
     if inside != "true":
         raise RuntimeError("PRODUCTION_RUNTIME_IDENTITY_INVALID")
     head = _run_git(runtime, "rev-parse", "HEAD")
-    status_raw = _run_git(runtime, "status", "--porcelain", "--untracked-files=all", "-z")
-    status_entries = [item for item in status_raw.split("\x00") if item]
-    if len(status_entries) > MAX_UNTRACKED_PATHS:
+    tracked_raw = _run_git(
+        runtime, "diff", "--ignore-cr-at-eol", "--name-only", "-z", "HEAD"
+    )
+    untracked_raw = _run_git(
+        runtime, "ls-files", "--others", "--exclude-standard", "-z"
+    )
+    tracked_entries = [item for item in tracked_raw.split("\x00") if item]
+    untracked_entries = [item for item in untracked_raw.split("\x00") if item]
+    if len(tracked_entries) + len(untracked_entries) > MAX_UNTRACKED_PATHS:
         raise RuntimeError("PRODUCTION_RUNTIME_UNTRACKED_OVERFLOW")
     unexpected = []
-    for entry in status_entries:
-        path = entry[2:].strip().replace("\\", "/")
-        if (
-            path.startswith("build/")
-            or path.startswith("data/gate_attempts/")
-            or path.startswith("data/search_audit/")
-        ):
-            continue
-        unexpected.append(entry)
+    for item in tracked_entries + untracked_entries:
+        path = item.replace("\\", "/").lstrip("./")
+        if not item.startswith("build/"):
+            if path.startswith("build/") or path.startswith("data/gate_attempts/") or path.startswith("data/search_audit/"):
+                continue
+            unexpected.append(path)
     return {
         "exists": True,
         "clean": not unexpected,

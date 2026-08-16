@@ -148,6 +148,89 @@ def test_stale_fencing_token_cannot_complete_new_owner(tmp_path: Path) -> None:
         raise AssertionError("stale owner completed a newer transaction")
 
 
+def test_v3_keeps_major_incident_as_observation_and_closes_mission_terminal(
+    tmp_path: Path,
+) -> None:
+    from tools.news_grasp_recovery_transaction import (
+        MISSION_TERMINALS,
+        RecoveryTransactionStore,
+        TRANSACTION_SCHEMA,
+    )
+
+    store = RecoveryTransactionStore(tmp_path)
+    started = datetime(2026, 8, 14, 6, 40, tzinfo=timezone(timedelta(hours=9)))
+    owner = store.acquire(
+        issue_date="2026-08-14",
+        trigger="automation_0640",
+        owner_id="owner-v3",
+        now=started,
+    )
+    store.advance_phase(
+        issue_date="2026-08-14",
+        owner_id="owner-v3",
+        fencing_token=1,
+        phase="envelope_validated",
+        now=started,
+    )
+    store.bind_operation(
+        issue_date="2026-08-14",
+        owner_id="owner-v3",
+        fencing_token=1,
+        binding={
+            "childExecutableSha256": "a" * 64,
+            "childArgvSha256": "b" * 64,
+            "childCwdSha256": "c" * 64,
+            "executionReceiptSha256": "d" * 64,
+        },
+        now=started,
+    )
+    store.observe(
+        issue_date="2026-08-14",
+        owner_id="owner-v3",
+        fencing_token=1,
+        observation={"reasonCode": "EXTERNAL_CONTROL_PLANE_UNAVAILABLE"},
+        now=started,
+    )
+    result = store.complete(
+        issue_date="2026-08-14",
+        owner_id="owner-v3",
+        fencing_token=1,
+        terminal={"terminal": "audit_major_incident_open", "exitCode": 2},
+        now=started,
+    )
+    persisted = json.loads((tmp_path / "2026-08-14.json").read_text(encoding="utf-8"))
+    assert result["status"] == "terminal"
+    assert persisted["schemaVersion"] == TRANSACTION_SCHEMA
+    assert persisted["missionTerminal"] in MISSION_TERMINALS
+    assert persisted["missionTerminal"] == "closed_reader_incomplete_external_blocker"
+    assert persisted["terminalProjection"]["terminal"] == "audit_major_incident_open"
+    assert any(event["schemaVersion"] == "AuditObservationEventV1" for event in persisted["observationEvents"])
+
+
+def test_v3_phase_regression_is_rejected(tmp_path: Path) -> None:
+    from tools.news_grasp_recovery_transaction import RecoveryTransactionStore
+
+    store = RecoveryTransactionStore(tmp_path)
+    store.acquire(
+        issue_date="2026-08-14",
+        trigger="automation_0640",
+        owner_id="owner-v3",
+    )
+    store.advance_phase(
+        issue_date="2026-08-14",
+        owner_id="owner-v3",
+        fencing_token=1,
+        phase="recovery_running",
+    )
+    with pytest.raises(ValueError, match="AUDIT_RECOVERY_MISSION_PHASE_REGRESSION"):
+        store.advance_phase(
+            issue_date="2026-08-14",
+            owner_id="owner-v3",
+            fencing_token=1,
+            phase="envelope_validated",
+        )
+
+
 def test_transaction_lock_file_residue_is_not_a_permanent_denial(
     tmp_path: Path,
 ) -> None:

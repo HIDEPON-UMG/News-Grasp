@@ -59,6 +59,39 @@ function Write-AtomicUtf8Text {
     }
 }
 
+function Archive-StaleStartupCanaryState {
+    param(
+        [Parameter(Mandatory = $true)][string] $StateFile,
+        [Parameter(Mandatory = $true)][string] $ExpectedRoot
+    )
+    if (-not $StateFile -or -not (Test-Path -LiteralPath $StateFile -PathType Leaf)) { return }
+    try {
+        $state = Get-Content -LiteralPath $StateFile -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+    } catch { return }
+    $stateRoot = [string]$state.repo_dir
+    if (-not $stateRoot -or [string]::Equals((Resolve-Path -LiteralPath $stateRoot -ErrorAction SilentlyContinue).Path, (Resolve-Path -LiteralPath $ExpectedRoot).Path, [StringComparison]::OrdinalIgnoreCase)) {
+        return
+    }
+    $archiveRoot = Join-Path (Split-Path -Parent $StateFile) 'startup-canary-archive'
+    New-Item -ItemType Directory -Force -Path $archiveRoot | Out-Null
+    $timestamp = Get-Date -Format 'yyyyMMdd-HHmmssfff'
+    $archivePath = Join-Path $archiveRoot ($timestamp + '-state.json')
+    $stateBytes = [IO.File]::ReadAllBytes($StateFile)
+    $hasher = [Security.Cryptography.SHA256]::Create()
+    try { $stateSha256 = ([BitConverter]::ToString($hasher.ComputeHash($stateBytes)) -replace '-', '').ToLowerInvariant() } finally { $hasher.Dispose() }
+    Move-Item -LiteralPath $StateFile -Destination $archivePath -Force
+    $receipt = [ordered]@{
+        schemaVersion = 'STARTUP_CANARY_STATE_ARCHIVE_V1'
+        sourceStateFile = $StateFile
+        archivePath = $archivePath
+        expectedRoot = $ExpectedRoot
+        observedRoot = $stateRoot
+        StateFileSha256 = $stateSha256
+        archivedAt = [DateTime]::UtcNow.ToString('o')
+    }
+    Write-AtomicUtf8Text -Path ($archivePath + '.receipt.json') -Text (($receipt | ConvertTo-Json -Depth 6) + [Environment]::NewLine)
+}
+
 function Resolve-NewsGraspHighCostBinding {
     param(
         [Parameter(Mandatory=$true)][string] $OpsRoot,
@@ -97,7 +130,7 @@ function Get-NewsGraspRecoveryRuntimeBinding {
         $ops = (Resolve-Path -LiteralPath ([string]$binding.opsRepoRoot) -ErrorAction Stop).Path
         $python = (Resolve-Path -LiteralPath ([string]$binding.pythonExe) -ErrorAction Stop).Path
         $expectedBootstrap = (Resolve-Path -LiteralPath ([string]$binding.bootstrapPath) -ErrorAction Stop).Path
-        $expectedPython = (Resolve-Path -LiteralPath (Join-Path $profileRoot 'OneDrive\ドキュメント\ProjectFolders\News-Grasp\.venv\Scripts\python.exe') -ErrorAction Stop).Path
+        $expectedPython = (Resolve-Path -LiteralPath (Join-Path $profileRoot 'AppData\Local\Programs\Python\Python312\python.exe') -ErrorAction Stop).Path
         $expectedRuntime = (Resolve-Path -LiteralPath (Join-Path $profileRoot '.news-grasp-runtime\production-runtime') -ErrorAction Stop).Path
         $gitExe = 'C:\Program Files\Git\cmd\git.exe'
         $gitSafeArgs = @('-c', 'core.hooksPath=NUL', '-c', 'core.fsmonitor=false', '-c', 'core.attributesFile=NUL')
@@ -498,7 +531,7 @@ function Record-StartupFailureForAudit {
 }
 
 $SourceRepoDir = Resolve-NewsGraspRepoDir -Override $RepoDir
-$PythonExe = if ($PythonExe) { (Resolve-Path -LiteralPath $PythonExe).Path } else { Join-Path $SourceRepoDir '.venv\Scripts\python.exe' }
+$PythonExe = if ($PythonExe) { (Resolve-Path -LiteralPath $PythonExe).Path } else { Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::UserProfile)) 'AppData\Local\Programs\Python\Python312\python.exe' }
 if (-not (Test-Path -LiteralPath $PythonExe -PathType Leaf)) { throw 'News-Grasp Python runtime is missing.' }
 $OpsRepoRoot = if ($EvidenceRepoDir) {
     (Resolve-Path -LiteralPath $EvidenceRepoDir).Path
@@ -643,6 +676,7 @@ if ($StateFile -and -not [System.IO.Path]::IsPathRooted($StateFile)) {
 if ($LogDir -and -not [System.IO.Path]::IsPathRooted($LogDir)) {
     $LogDir = Join-Path $BinDir $LogDir
 }
+Archive-StaleStartupCanaryState -StateFile $StateFile -ExpectedRoot $RepoDir
 foreach ($file in @('run_codex_with_timeout.ps1', 'news-grasp-bootstrap.ps1', 'watch-news-grasp-runner.ps1', 'news-grasp-runner.ps1', 'news-grasp-lineage.ps1', 'news-grasp-deadman.ps1', 'news-grasp-deadman-launcher.pyw', 'news-grasp-task-launcher.pyw')) {
     $source = Join-Path $opsDir $file
     $destination = Join-Path $BinDir $file

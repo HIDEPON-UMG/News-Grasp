@@ -592,6 +592,83 @@ retryは回数ではなく因果で許可する。同一cause fingerprintかつs
 
 本commitmentの正本要件は`NG-R01`〜`NG-R12`、Acceptanceは`NG-A01`〜`NG-A08`であり、goal-controlのrequirement contract、generation manifest、TDD impact receipt、HumanImpactContractと同じgenerationへ束縛する。
 
+## 2026-08-16 06:40 Daily Operation Redesign Commitment
+
+| Field | Value |
+|---|---|
+| approval_status | Committed |
+| committed_by_human | true |
+| approved_by_user_text | `PLEASE IMPLEMENT THIS PLAN:` / `News-Grasp 06:40日次運用再設計・実装計画` |
+| approved_goal_statement | 2026-08-16の約4時間化を個別blockerの追加修正ではなく、05:55 envelope sealから06:40 acquire-or-attach、reader public検証、pre-commit finalization、WAL commit、readiness/SLO sidecar、read-only Luna automationまでの単一運用へ置換する。 |
+| approval_evidence_ref | current chat turn, 2026-08-16 |
+| commitment_version | news-grasp-0640-operation-redesign-v1 |
+| baseline | `origin/main=d3d44f11dfa84f2070cb2cf86e209f2474dd389b`。実装開始時driftはpacket再sealを必須とする。 |
+| implementation_scope | local implementation、safe commit/push、正規installer、Scheduled Task切替、automation同期、rollback rehearsal、final-only NoPublish E2E。 |
+| excluded_scope | 当日recovery、content生成、public publish、cleanup、public incident publication、2026-08-14〜16の履歴artifact再生成・再finalize、global harness変更。 |
+| open_questions | None. `PLANNING_DESIGN_CLOSURE_V1`の全unknown配列は実装packet発行前に空でなければならない。 |
+
+### Required operation topology
+
+```text
+05:55 Admission Reconciler seals RUN_ENVELOPE_V1 and active/standby capsules
+  -> 06:00 scheduled production
+  -> 06:40 IssueDateOperationCoordinator acquire-or-attach
+  -> the same AUDIT_RECOVERY_TRANSACTION_V3 owns at most one recovery child
+  -> PublicCompletionVerifier verifies the reader surface
+  -> AtomicFinalizationCoordinator prepares candidate and guards before commit
+  -> ATOMIC_FINALIZATION_WAL_V1 commits runner state last
+  -> ReadinessAssessor and SLO projector write independent sidecars
+  -> AutomationReporter emits read-only stdout projection
+```
+
+`COMPLETION_AUTHORITY_V2`、`COMPLETION_STATE_VECTOR_V3`の既存field、`NEWS_GRASP_PUBLISH_COMPLETE_V2`互換aggregate、既存4値`<date>-audit-terminal.json` projectionは維持する。内部mission terminalは`closed_reader_green|closed_reader_incomplete_external_blocker|closed_reader_unverified_budget_exhausted|closed_control_plane_unavailable`の4値とし、`audit_major_incident_open`はterminalではなくappend-only `AuditObservationEventV1`とする。新規issue dateは`AUDIT_RECOVERY_TRANSACTION_V3`だけを書き、V2は過去日のread-only readerに限定する。
+
+### Requirements
+
+| ID | Requirement | Primary acceptance | Adversarial boundary | Operational recovery |
+|---|---|---|---|---|
+| R01 | single operation owner | `ensure-0640`がissue date leaseを取得またはattachし、recovery child、public verification、finalizationまで同じfencing tokenで所有する。 | Deadman、watcher、automation、compatibility CLIから直接runnerを起動できず、production startは1回、recovery startは0または1回である。 | owner crashは同じtransactionをforward recoveryし、別transactionやbudget resetを作らない。 |
+| R02 | completion single writer | active artifact pathごとにproduct `AtomicFinalizationCoordinator`だけが`<date>.automation-guard.json`を書く。 | automation-local adapter、caller指定`--output`、別predicateによる上書きを拒否する。 | stale Greenがあっても新candidateのproduct guard decisionだけで置換し、automationはstdout projectionに留まる。 |
+| R03 | pre-commit finalization | manifest/receipt同一bytesをparse/hashし、candidate prepare→public/integrity guard→receipt journal→runner state atomic rename→WAL commitの順である。 | guard前にrunner `publish_complete`、state-applied、receipt consumptionを観測できない。 | guard前crashはbefore保持、guard後/state前は同じWAL/candidateでforward、state後はhash一致時だけcloseし、divergeはfail-closedにする。 |
+| R04 | invalid receipt process start 0 | controllerがchild前にexecution receiptをvalidate/consumeし、runnerが同じreceiptを再検証する。 | root、Python path/hash、branch、stage、budget、cutoff、deadlineをfallback object、path変更、nonce変更、別command、transaction再作成で補完またはresetできない。 | invalid receiptはtyped Redを返し、recovery child process start countを0のまま維持する。 |
+| R05 | public/readiness/SLO separation | reader public authority、next-run readiness、SLO outcomeを別artifact・別status・別exitで保持する。 | readiness/SLO Redが`COMPLETION_AUTHORITY_V2`またはrunner `publish_complete`を後退させない。 | readiness driftは`NEXT_RUN_READINESS_V1=stale|degraded|unverified`、SLO失敗は`COMPLETION_OUTCOME_ENVELOPE_V2.processExitCode=2`としてだけ残す。 |
+| R06 | automation read-only | installed automationは`ensure-0640`を一回呼び、`AUTOMATION_REPORT_PROJECTION_V1`を表示するだけである。 | direct execute、source/runtime/task patch、receipt生成、runner直接起動、incident report生成、artifact writeをprompt/adapter/APIから到達不能にする。 | product terminal未確定時もautomationはcanonical stateを分離表示し、自分で修復やcompletion authority発行をしない。 |
+| R07 | immutable active/standby capsule | 05:55に既存`PRODUCTION_GENERATION_MANIFEST_V2`とstable authority/runtime bindingから`RUN_ENVELOPE_V1`、active capsule、直前verified standby capsuleをsealする。 | 06:00以降のsource/runtime/task driftを当日patchへ変換しない。 | active不整合はstandbyへtransactional切替し、両方不成立なら`closed_control_plane_unavailable`にする。 |
+| R08 | source-to-loaded parity | source、remote、installed、loaded generation、Python、Task action、automation template/rendered config/adapterのhashを一つのcutover receiptへ束縛する。 | 消失`.venv`、未署名Python、prompt/source drift、同日stale StartupCanary state、workspace外worktreeのharness解決失敗をGreenにしない。 | installer WALで旧generationへ復元し、read時のgeneration/hash再検証で保存済みreadiness Greenをstale化する。 |
+| R09 | three-day same-machine replay | 2026-08-14、15、16のsanitized dataを同じV3 coordinator/state machineへ入力しfinite terminalへ到達する。 | 日付別特例、branch一括移植、`execute --input`、terminal backup/swap、transaction外finalizerを使わない。 | replay Redは同じfailure signatureとfixtureにbindし、局所patchではなくimpact phaseへ戻す。 |
+| R10 | bounded human impact and SLO | noFocusTheft、noAutoOpen、noUserMonitoring、raw process kill 0を維持し、45分closeout reserve、75分high-cost拒否、90分new operation拒否を適用する。 | GUI/UAC待ち、blind polling、外部model fan-out、同一shape retryで予算を延長しない。 | reader Green後15分以内にfinalizationし、超過はpublic authorityを変えずtyped SLO debtとして閉じる。 |
+
+### New contracts and ownership
+
+| Contract | Sole owner | Required decision boundary |
+|---|---|---|
+| `RUN_ENVELOPE_V1` | Admission Reconciler | issue date、generation manifest hash、Python/runner/launcher/verifier/broker/task/tzdata/budget/deadline hash、active/standby identity。 |
+| `AUDIT_RECOVERY_TRANSACTION_V3` | IssueDateOperationCoordinator | `observed→envelope_validated→recovery_admitted→recovery_running→reader_verified→finalization_prepared→finalization_committed→closed`、fencing token、child identity、receipt/hash。 |
+| `FINALIZATION_DECISION_V1` | AtomicFinalizationCoordinator | candidate state、manifest/authority/receipt hash、public/integrity failures、`commitAllowed`。readiness/SLOは入力しない。 |
+| `ATOMIC_FINALIZATION_WAL_V1` | AtomicFinalizationCoordinator | before/candidate/after state hash、receipt reservation、guard decision、commit phase、forward recovery情報。 |
+| `NEXT_RUN_READINESS_V1` | ReadinessAssessor | `ready|degraded|unverified|stale`、generation/descriptor/task/deadman hash、observedAt、validUntil identity。 |
+| `COMPLETION_OUTCOME_ENVELOPE_V2` | OutcomeProjector | SLO anchor、publicGreenAt、doneAt、target/repair budget、readiness debt ref、process exit。public authorityを変更しない。 |
+| `AUTOMATION_REPORT_PROJECTION_V1` | AutomationReporter | Reader Public、Runner Terminal、Next-run Readiness、SLO Outcome、Audit Observation、Transaction Resultを別field/別行でstdoutへ出す。write authorityは持たない。 |
+
+### TDD, replay, cutover and model boundary
+
+影響調査正本は`config/news_grasp_0640_impact_analysis_v1.json`の`TDD_IMPACT_ANALYSIS_RECEIPT_V1`とする。全Requirementの`primary_behavior|adversarial_boundary|operational_recovery`を同じoracleでRed→Greenにし、source、installed runtime、Task action、local automation、product overlay skill、writer/reader、route、8/14〜16 fixtureを先に列挙する。現在Greenの「state applied before guard」はExpected Redへ反転する。`c2d19aa1`はbranchとして移植せず、8/15 sanitized data、receipt fail-closed hunk、pure release reflection helperだけをcurrent baselineのoracleへ再束縛する。
+
+Solは要件、設計、security、impact、統合、cutover、完了判断を所有する。判断不要な編集は`gpt-5.6-luna`、reasoning effort `max`、fan-out 1、model substitution禁止の`LUNA_EXECUTION_PACKET_V3`で逐次実行する。packetはexact write set、baseline/head、Acceptance/Red oracle、causal retry 1、delivery snapshot、decision stopを持つ。fresh attestationがない場合は該当Luna packetだけを開始前停止し、Terra/Solへ実装代替しない。
+
+`PLANNING_DESIGN_CLOSURE_V1`は次を満たすまでimplementationを許可しない。
+
+```text
+unresolvedDecisionIds=[]
+unknownSurfaceIds=[]
+unknownWriterIds=[]
+unknownRouteIds=[]
+unknownIntegrationIds=[]
+lunaJudgmentIds=[]
+```
+
+検証はstatic inventory→schema/contract→unit/component→WAL crash/fault injection→8/14〜16 replay→production write 0のshadow→focused+broad regression→safe commit/push/dry-run/rollback rehearsal→installed stable launcherからfinal-only NoPublish E2Eの順とする。attempt Aが内部修正なしでGreenならBは禁止し、failure-local cause hash変更時だけBを一回許可する。B後のC、patch-and-resume、publish mutationは禁止する。cutover後3回の自然scheduled cycleは別の自動集計であり、実装完了条件や後付けE2E証拠へ使わない。
+
 ## Acceptance Scenarios
 
 | Scenario | Given | When | Then |

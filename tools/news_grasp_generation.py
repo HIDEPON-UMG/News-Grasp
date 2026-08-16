@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import hashlib
+import argparse
 import json
 import os
 import re
 import subprocess
+import sys
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -15,6 +18,7 @@ from typing import Any, Mapping
 SCHEMA = "PRODUCTION_GENERATION_MANIFEST_V2"
 ProductionGenerationManifestV2 = SCHEMA
 immutable_generation = "immutable_generation"
+RUN_ENVELOPE_SCHEMA = "RUN_ENVELOPE_V1"
 PHYSICAL_DELIVERY_SCHEMA = "NEWS_GRASP_PHYSICAL_DELIVERY_STATE_V1"
 PHYSICAL_DELIVERY_FIELDS = (
     "implemented",
@@ -35,6 +39,83 @@ DELIVERY_FIELD_STATUSES = frozenset(
 
 class NewsGraspGenerationError(RuntimeError):
     """generation parity / promotion違反。"""
+
+
+def seal_run_envelope(
+    *,
+    issue_date: str,
+    generation_manifest: Mapping[str, Any],
+    stable_task_authority: Mapping[str, Any],
+    runtime_binding: Mapping[str, Any],
+    task_action: list[str],
+    descriptor_sha256: str,
+    deadman_sha256: str,
+    active_capsule: Mapping[str, Any],
+    standby_capsule: Mapping[str, Any],
+) -> dict[str, Any]:
+    """既存generation/authorityからRUN_ENVELOPE_V1を導出する。"""
+
+    if generation_manifest.get("schemaVersion") != SCHEMA:
+        raise NewsGraspGenerationError("NG_RUN_ENVELOPE_GENERATION_INVALID")
+    generation_id = str(generation_manifest.get("generationId") or "")
+    if (
+        not generation_id
+        or not issue_date
+        or not task_action
+        or not re.fullmatch(r"[0-9a-f]{64}", descriptor_sha256)
+        or not re.fullmatch(r"[0-9a-f]{64}", deadman_sha256)
+    ):
+        raise NewsGraspGenerationError("NG_RUN_ENVELOPE_INPUT_INVALID")
+    if not isinstance(active_capsule, Mapping) or not isinstance(standby_capsule, Mapping):
+        raise NewsGraspGenerationError("NG_RUN_ENVELOPE_CAPSULE_INVALID")
+    active_generation_id = str(active_capsule.get("generationId") or "")
+    standby_generation_id = str(standby_capsule.get("generationId") or "")
+    if not active_generation_id or not standby_generation_id or active_generation_id == standby_generation_id:
+        raise NewsGraspGenerationError("NG_RUN_ENVELOPE_CAPSULE_INVALID")
+    body: dict[str, Any] = {
+        "schemaVersion": RUN_ENVELOPE_SCHEMA,
+        "issueDate": issue_date,
+        "generationId": generation_id,
+        "generationManifestSha256": _sha(generation_manifest),
+        "stableTaskAuthoritySha256": _sha(stable_task_authority),
+        "runtimeBindingSha256": _sha(runtime_binding),
+        "taskActionSha256": hashlib.sha256(_json(task_action)).hexdigest(),
+        "descriptorSha256": descriptor_sha256,
+        "deadmanSha256": deadman_sha256,
+        "activeCapsule": dict(active_capsule),
+        "standbyCapsule": dict(standby_capsule),
+        "sealedAt": datetime.now(timezone.utc).isoformat(),
+    }
+    body["envelopeSha256"] = _sha(body)
+    return body
+
+
+def validate_run_envelope(envelope: Mapping[str, Any]) -> dict[str, Any]:
+    if not isinstance(envelope, Mapping) or envelope.get("schemaVersion") != RUN_ENVELOPE_SCHEMA:
+        raise NewsGraspGenerationError("NG_RUN_ENVELOPE_INVALID")
+    body = dict(envelope)
+    expected = str(body.pop("envelopeSha256") or "")
+    if not re.fullmatch(r"[0-9a-f]{64}", expected) or _sha(body) != expected:
+        raise NewsGraspGenerationError("NG_RUN_ENVELOPE_INVALID")
+    if (
+        not body.get("generationId")
+        or body.get("activeCapsule") is None
+        or body.get("standbyCapsule") is None
+        or not re.fullmatch(r"[0-9a-f]{64}", str(body.get("descriptorSha256") or ""))
+        or not re.fullmatch(r"[0-9a-f]{64}", str(body.get("deadmanSha256") or ""))
+    ):
+        raise NewsGraspGenerationError("NG_RUN_ENVELOPE_INVALID")
+    active_capsule = body.get("activeCapsule")
+    standby_capsule = body.get("standbyCapsule")
+    if (
+        not isinstance(active_capsule, Mapping)
+        or not isinstance(standby_capsule, Mapping)
+        or not active_capsule.get("generationId")
+        or not standby_capsule.get("generationId")
+        or active_capsule.get("generationId") == standby_capsule.get("generationId")
+    ):
+        raise NewsGraspGenerationError("NG_RUN_ENVELOPE_INVALID")
+    return dict(envelope)
 
 
 def create_physical_delivery_state(
@@ -140,6 +221,10 @@ def validate_installer_delivery_contract(installer_source: str) -> dict[str, Any
 
 def _json(value: object) -> bytes:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+
+def _sha(value: object) -> str:
+    return hashlib.sha256(_json(value)).hexdigest()
 
 
 def _json_insertion_order(value: object) -> bytes:
@@ -633,3 +718,80 @@ def activate(*, manifest: Path | str | dict[str, Any], active_pointer: Path | st
 
 def rollback(*, previous_manifest: Path | str | dict[str, Any], active_pointer: Path | str, **verify_kwargs: Any) -> dict[str, Any]:
     return activate(manifest=previous_manifest, active_pointer=active_pointer, **verify_kwargs)
+
+
+def _read_json_document(path: Path) -> Any:
+    try:
+        return json.loads(path.read_text(encoding="utf-8-sig"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise NewsGraspGenerationError("NG_JSON_DOCUMENT_INVALID") from exc
+
+
+def _write_json_document(path: Path, value: Mapping[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.tmp-{os.getpid()}")
+    try:
+        temporary.write_bytes(_json(value) + b"\n")
+        os.replace(temporary, path)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(prog="news_grasp_generation.py")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    seal = subparsers.add_parser("seal-envelope")
+    seal.add_argument("--issue-date", required=True)
+    seal.add_argument("--generation-manifest", type=Path, required=True)
+    seal.add_argument("--stable-task-authority", type=Path, required=True)
+    seal.add_argument("--runtime-binding", type=Path, required=True)
+    seal.add_argument("--task-action-json", type=Path, required=True)
+    seal.add_argument("--descriptor", type=Path, required=True)
+    seal.add_argument("--deadman", type=Path, required=True)
+    seal.add_argument("--active-capsule", type=Path, required=True)
+    seal.add_argument("--standby-capsule", type=Path, required=True)
+    seal.add_argument("--output", type=Path, required=True)
+    validate = subparsers.add_parser("validate-envelope")
+    validate.add_argument("--envelope", type=Path, required=True)
+    args = parser.parse_args(argv)
+    try:
+        if args.command == "seal-envelope":
+            generation_manifest = _read_json_document(args.generation_manifest)
+            stable_task_authority = _read_json_document(args.stable_task_authority)
+            runtime_binding = _read_json_document(args.runtime_binding)
+            task_action = _read_json_document(args.task_action_json)
+            active_capsule = _read_json_document(args.active_capsule)
+            standby_capsule = _read_json_document(args.standby_capsule)
+            if not isinstance(generation_manifest, Mapping) or not isinstance(stable_task_authority, Mapping):
+                raise NewsGraspGenerationError("NG_RUN_ENVELOPE_INPUT_INVALID")
+            if not isinstance(runtime_binding, Mapping) or not isinstance(task_action, list):
+                raise NewsGraspGenerationError("NG_RUN_ENVELOPE_INPUT_INVALID")
+            if not isinstance(active_capsule, Mapping) or not isinstance(standby_capsule, Mapping):
+                raise NewsGraspGenerationError("NG_RUN_ENVELOPE_CAPSULE_INVALID")
+            envelope = seal_run_envelope(
+                issue_date=args.issue_date,
+                generation_manifest=generation_manifest,
+                stable_task_authority=stable_task_authority,
+                runtime_binding=runtime_binding,
+                task_action=[str(item) for item in task_action],
+                descriptor_sha256=_hash(args.descriptor),
+                deadman_sha256=_hash(args.deadman),
+                active_capsule=active_capsule,
+                standby_capsule=standby_capsule,
+            )
+            _write_json_document(args.output, envelope)
+            print(json.dumps(envelope, ensure_ascii=False, sort_keys=True))
+            return 0
+        value = _read_json_document(args.envelope)
+        if not isinstance(value, Mapping):
+            raise NewsGraspGenerationError("NG_RUN_ENVELOPE_INVALID")
+        print(json.dumps(validate_run_envelope(value), ensure_ascii=False, sort_keys=True))
+        return 0
+    except (NewsGraspGenerationError, OSError, UnicodeError) as error:
+        print(str(error) or "NG_RUN_ENVELOPE_INVALID", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

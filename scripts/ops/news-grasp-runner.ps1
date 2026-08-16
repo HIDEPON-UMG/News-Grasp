@@ -256,7 +256,7 @@ function Get-NewsGraspRecoveryRuntimeBinding {
         $ops = (Resolve-Path -LiteralPath ([string]$binding.opsRepoRoot) -ErrorAction Stop).Path
         $python = (Resolve-Path -LiteralPath ([string]$binding.pythonExe) -ErrorAction Stop).Path
         $runner = (Resolve-Path -LiteralPath ([string]$binding.runnerPath) -ErrorAction Stop).Path
-        $expectedPython = (Resolve-Path -LiteralPath (Join-Path $profileRoot 'OneDrive\ドキュメント\ProjectFolders\News-Grasp\.venv\Scripts\python.exe') -ErrorAction Stop).Path
+        $expectedPython = (Resolve-Path -LiteralPath (Join-Path $profileRoot 'AppData\Local\Programs\Python\Python312\python.exe') -ErrorAction Stop).Path
         $expectedRuntime = (Resolve-Path -LiteralPath (Join-Path $profileRoot '.news-grasp-runtime\production-runtime') -ErrorAction Stop).Path
         $gitExe = 'C:\Program Files\Git\cmd\git.exe'
         $gitSafeArgs = @('-c', 'core.hooksPath=NUL', '-c', 'core.fsmonitor=false', '-c', 'core.attributesFile=NUL')
@@ -346,7 +346,7 @@ $GitExe    = 'C:\Program Files\Git\cmd\git.exe'
 $GitSafeArgs = @('-c', 'core.hooksPath=NUL', '-c', 'core.fsmonitor=false', '-c', 'core.attributesFile=NUL')
 $env:GIT_ATTR_NOSYSTEM = '1'
 $CodexExe  = Resolve-CodexCliExe -Override $CodexExeOverride
-$PyExe     = Join-Path $OpsRepoRoot '.venv\Scripts\python.exe'
+$PyExe     = Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::UserProfile)) 'AppData\Local\Programs\Python\Python312\python.exe'
 $CodexWrapper = Join-Path $env:USERPROFILE 'bin\run_codex_with_timeout.ps1'
 $TimeoutSec = 4800  # 2026-06-12: 3600→4800。日次 digest の wall-clock timeout を 80 分へ延長。真の暴走は IdleTimeoutSec 900 が先に検知する
 $PromptFile = Join-Path $RepoDir 'prompts\runner-prompt.md'
@@ -426,7 +426,7 @@ $HighCostBindingResolverPath = $highCostBindingTool
 $HighCostBindingResolverSha256 = Get-NewsGraspFileSha256Hex -Path $highCostBindingTool
 $env:NEWS_GRASP_HIGH_COST_BINDING_PATH = (Resolve-Path -LiteralPath $HighCostBindingPath).Path
 $env:NEWS_GRASP_HIGH_COST_BINDING_RECEIPT_SHA256 = $HighCostBindingReceiptSha256.ToLowerInvariant()
-if ((-not $PyExeOverride) -and ($null -eq $RecoveryRuntimeBinding)) { $PyExe = Join-Path $OpsRepoRoot '.venv\Scripts\python.exe' }
+if ((-not $PyExeOverride) -and ($null -eq $RecoveryRuntimeBinding)) { $PyExe = Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::UserProfile)) 'AppData\Local\Programs\Python\Python312\python.exe' }
 $env:PYTHONSAFEPATH = '1'
 $env:PYTHONNOUSERSITE = '1'
 $env:PYTHONPATH = $RepoDir
@@ -1357,18 +1357,23 @@ function Write-Log {
 }
 
 function Invoke-NewsGraspCompletionGuard {
-    param([Parameter(Mandatory = $true)][string] $FinalizationReceiptPath)
+    param(
+        [Parameter(Mandatory = $true)][string] $FinalizationReceiptPath,
+        [string] $CandidateStatePath = ''
+    )
     if ($RunIntent -ne 'ScheduledRecoveryFull') { return $true }
     $guardOutput = Join-Path $RepoDir "build\publish-complete\$DateStamp.automation-guard.json"
     $completionGuardTool = [string]$RecoveryRuntimeBinding.CompletionGuardToolPath
-    & $PyExe '-I' '-B' $completionGuardTool `
+    & $PyExe '-I' '-S' '-B' $completionGuardTool `
         '--finalization-receipt' $FinalizationReceiptPath `
         '--artifact-root' $RepoDir `
         '--ops-root' $OpsRepoRoot `
         '--production-runtime-root' $TrustedProductionRuntimeRoot `
         '--live-bin-root' $TrustedRecoveryLiveBinRoot `
         '--runner-state' $StateFile `
-        '--runner-script' $PSCommandPath | ForEach-Object { Add-RunnerLogLine -Text ([string]$_) }
+        '--runner-script' $PSCommandPath `
+        $(if ($CandidateStatePath) { '--candidate-state' }) `
+        $(if ($CandidateStatePath) { $CandidateStatePath }) | ForEach-Object { Add-RunnerLogLine -Text ([string]$_) }
     $guardRc = $LASTEXITCODE
     if ($guardRc -ne 0 -or (-not (Test-Path -LiteralPath $guardOutput -PathType Leaf))) {
         Add-RunnerLogLine -Text "ERROR: NEWS_GRASP_640_COMPLETION_GUARD_FAILED rc=$guardRc output=$guardOutput"
@@ -1385,6 +1390,66 @@ function Invoke-NewsGraspCompletionGuard {
     }
     Add-RunnerLogLine -Text "NEWS_GRASP_640_COMPLETION_GUARD_OK output=$guardOutput"
     return $true
+}
+
+function New-NewsGraspFinalizationCandidateState {
+    param(
+        [Parameter(Mandatory = $true)][string] $FinalizationReceiptPath,
+        [Parameter(Mandatory = $true)][string] $ManifestPath,
+        [Parameter(Mandatory = $true)][string] $PublishCommit
+    )
+    $before = Read-RunnerStateOrNull -Path $StateFile
+    if ($null -eq $before -or $before.__corrupt) {
+        Add-RunnerLogLine -Text 'ERROR: FINALIZATION_CANDIDATE_BEFORE_STATE_INVALID'
+        return ''
+    }
+    if ([string]$before.date -ne $DateStamp) {
+        Add-RunnerLogLine -Text 'ERROR: FINALIZATION_CANDIDATE_DATE_MISMATCH'
+        return ''
+    }
+    $candidatePath = Join-Path $TrustedRecoveryLiveBinRoot ("news-grasp-runner-state.$DateStamp.$RunId.candidate.json")
+    $candidate = $before | ConvertTo-Json -Depth 20 | ConvertFrom-Json
+    $candidate.status = 'publish_complete'
+    $candidate.message = 'verified recovery publish complete'
+    $candidate.exit_code = 0
+    $candidate.updated_at = (Get-Date).ToString('o')
+    $candidate.publish_manifest_path = [IO.Path]::GetFullPath($ManifestPath)
+    $candidate.publish_commit = $PublishCommit
+    $candidate.scheduled_attempt_status = 'failed_then_recovered'
+    $candidate.recovery_attempt_status = 'succeeded'
+    $candidate.recovery_finalization_receipt_path = [IO.Path]::GetFullPath($FinalizationReceiptPath)
+    $candidate.recovery_finalization_receipt_sha256 = [string]$script:ValidatedFinalizationReceipt.receiptSha256
+    $candidate.scheduled_failure_receipt_path = [string]$script:ValidatedFinalizationReceipt.scheduledFailureReceiptPath
+    $candidate.scheduled_failure_receipt_sha256 = [string]$script:ValidatedFinalizationReceipt.scheduledFailureReceiptSha256
+    $candidate.finalization_candidate = $true
+    try {
+        Write-RunnerStateAtomic -Path $candidatePath -Payload $candidate
+        return $candidatePath
+    } catch {
+        Add-RunnerLogLine -Text "ERROR: FINALIZATION_CANDIDATE_WRITE_FAILED reason=$($_.Exception.Message)"
+        return ''
+    }
+}
+
+function Commit-NewsGraspFinalizationCandidate {
+    param([Parameter(Mandatory = $true)][string] $CandidateStatePath)
+    try {
+        if (-not (Test-Path -LiteralPath $CandidateStatePath -PathType Leaf)) { throw 'candidate missing' }
+        $backup = "$StateFile.finalization-before.bak"
+        if (Test-Path -LiteralPath $StateFile -PathType Leaf) {
+            [IO.File]::Replace($CandidateStatePath, $StateFile, $backup, $true)
+        } else {
+            [IO.File]::Move($CandidateStatePath, $StateFile)
+        }
+        $committed = Read-RunnerStateOrNull -Path $StateFile
+        if ($null -eq $committed -or $committed.__corrupt -or $committed.status -ne 'publish_complete') {
+            throw 'committed candidate invalid'
+        }
+        return $true
+    } catch {
+        Add-RunnerLogLine -Text "ERROR: FINALIZATION_STATE_COMMIT_FAILED reason=$($_.Exception.Message)"
+        return $false
+    }
 }
 
 function New-NewsGraspFinalizationReceipt {
@@ -2531,7 +2596,7 @@ $failureText
 制約:
 - 検証コマンドは必ず次の Python 実行体だけを使う。
 - runner_python: $PyExe
-- python / py / uv / .venv\Scripts\python.exe の直書きは禁止。WindowsApps python や uv cache に流れる経路を作らない。
+- python / py / uv / repo-local runtime の直書きは禁止。WindowsApps python や uv cache に流れる経路を作らず、署名済みsystem Python312 bindingだけを使う。
 - git add / git commit / git push / git checkout / git reset は絶対に実行しない。
 - rg / Get-ChildItem -Recurse / 広域 Select-String は禁止。読む場合は失敗ログと artifacts に列挙された最小ファイルだけに限定する。
 "@
@@ -3639,6 +3704,9 @@ function Assert-HighCostOperationAdmission {
             }
             $continuationSchema = [string]$continuationAdmission.schemaVersion
             $continuationResumeStage = if ($continuationAdmission.PSObject.Properties.Name -contains 'resumeStage') { [string]$continuationAdmission.resumeStage } else { '' }
+            if ($continuationSchema -eq 'HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1' -and [string]$continuationAdmission.resumeStage -ne $ResumeFromStage) {
+                throw 'SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_INVALID'
+            }
             $validContinuationAdmission = (
                 $continuationSchema -eq 'HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1' -and
                 $continuationResumeStage -eq $ResumeFromStage
@@ -3835,19 +3903,8 @@ if ($RunIntent -eq 'ScheduledRecoveryFull') {
         -Command 'validate-execution' `
         -ReceiptPath $RecoveryExecutionReceiptPath
     if ($null -eq $script:ValidatedRecoveryExecutionReceipt) {
-        Add-RunnerLogLine -Text 'WARN: RECOVERY_EXECUTION_RECEIPT_INVALID_CONTINUING_WITH_BOUND_AUTHORITY'
-        $script:ValidatedRecoveryExecutionReceipt = [pscustomobject]@{
-            schemaVersion = 'RECOVERY_EXECUTION_RECEIPT_V2'
-            recoveryBranch = if ($ResumeFromStage) { 'ResumeFromStage' } else { 'ScheduledRecoveryFull' }
-            resumeStage = if ($ResumeFromStage) { [string]$ResumeFromStage } else { '' }
-            pythonExecutablePath = $PyExe
-            pythonExecutableSha256 = Get-NewsGraspFileSha256Hex -Path $PyExe
-            capabilityReservationPath = $HighCostBindingPath
-            capabilityReservationReceiptSha256 = $HighCostBindingReceiptSha256
-            hardDeadlineAt = ([DateTimeOffset]::Now.AddHours(2)).ToString('o')
-            highCostCutoffAt = ([DateTimeOffset]::Now.AddHours(1)).ToString('o')
-            reservedMaxExternalModelCalls = 9
-        }
+        Add-RunnerLogLine -Text 'ERROR: RECOVERY_EXECUTION_RECEIPT_INVALID_FAIL_CLOSED'
+        exit 76
     }
     $expectedRecoveryBranch = if ($ResumeFromStage) { 'ResumeFromStage' } else { 'ScheduledRecoveryFull' }
     $expectedResumeStage = if ($ResumeFromStage) { [string]$ResumeFromStage } else { '' }
@@ -4014,6 +4071,21 @@ if ($FinalizeVerifiedPublishManifest) {
             -ReceiptPath $RecoveryFinalizationReceiptPath
         if ($null -eq $consumedFinalization) { throw 'RECOVERY_FINALIZATION_RECEIPT_ALREADY_CONSUMED' }
         Add-RunnerLogLine -Text "typed recovery finalize accepted manifest=$actualManifest publish_commit=$publishCommit"
+        $candidateStatePath = New-NewsGraspFinalizationCandidateState `
+            -FinalizationReceiptPath $RecoveryFinalizationReceiptPath `
+            -ManifestPath $actualManifest `
+            -PublishCommit $publishCommit
+        if (-not $candidateStatePath) { throw 'FINALIZATION_CANDIDATE_PREPARE_FAILED' }
+        if (-not (Invoke-NewsGraspCompletionGuard `
+                -FinalizationReceiptPath $RecoveryFinalizationReceiptPath `
+                -CandidateStatePath $candidateStatePath)) {
+            exit 2
+        }
+        if (-not (Commit-NewsGraspFinalizationCandidate -CandidateStatePath $candidateStatePath)) {
+            exit 76
+        }
+        # Candidate renameがcommit済みであることを互換consumerへ明示する。
+        # first-terminal-winsにより、ここではstateを再書込みしない。
         Set-RunnerState -Status 'publish_complete' -Message 'verified recovery publish complete' -ExitCode 0 `
             -PublishManifestPath $actualManifest -PublishCommit $publishCommit `
             -ScheduledAttemptStatus 'failed_then_recovered' -RecoveryAttemptStatus 'succeeded' `
@@ -4025,9 +4097,6 @@ if ($FinalizeVerifiedPublishManifest) {
             -Command 'mark-finalization-state-applied' `
             -ReceiptPath $RecoveryFinalizationReceiptPath
         if ($null -eq $stateAppliedJournal) { throw 'RECOVERY_FINALIZATION_STATE_JOURNAL_INVALID' }
-        if (-not (Invoke-NewsGraspCompletionGuard -FinalizationReceiptPath $RecoveryFinalizationReceiptPath)) {
-            exit 2
-        }
         $executionAppliedJournal = Invoke-RecoveryReceiptValidation `
             -Command 'mark-execution-applied' `
             -ReceiptPath $RecoveryExecutionReceiptPath
@@ -4692,6 +4761,7 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                     Write-Log "ERROR: reporter job timeout category=$($job.Category) attempt=$Attempt elapsed_sec=$elapsed limit_sec=$ReporterJobTimeoutSec"
                     Append-ReporterWrapperLog -Path $job.WrapperLog
                     Stop-Job -Job $job -ErrorAction SilentlyContinue
+                    Stop-Job -Job $job -Force -ErrorAction SilentlyContinue
                     $partial = @(Receive-Job -Id $job.Id -ErrorAction SilentlyContinue)
                     Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
                     $timeoutResult = [pscustomobject]@{
@@ -6018,7 +6088,7 @@ if ($NoPush) {
         } else {
             Join-Path $OpsRepoRoot 'tools\daily_self_heal.py'
         }
-        Invoke-Logged { & $PyExe '-I' '-B' $dailySelfHealTool 'verify-publish-complete' '--repo-root' $RepoDir '--ops-repo-root' $OpsRepoRoot '--date' $DateStamp '--remote' 'origin' '--branch' 'main' '--public-base-url' $PublicBaseUrl '--wait-sec' '0' '--poll-sec' $PublishVerifyPollSec '--notification-state' $NotificationStatePath '--producer-state' $StateFile '--output' $publishCompleteManifest }
+        Invoke-Logged { & $PyExe '-I' '-S' '-B' $dailySelfHealTool 'verify-publish-complete' '--repo-root' $RepoDir '--ops-repo-root' $OpsRepoRoot '--date' $DateStamp '--remote' 'origin' '--branch' 'main' '--public-base-url' $PublicBaseUrl '--wait-sec' '0' '--poll-sec' $PublishVerifyPollSec '--notification-state' $NotificationStatePath '--producer-state' $StateFile '--output' $publishCompleteManifest }
         $publishCompleteRc = $LASTEXITCODE
     } finally {
         Pop-Location
@@ -6056,6 +6126,19 @@ if ($NoPublish) {
             -Command 'consume-finalization' `
             -ReceiptPath $normalFinalizationReceipt
         if ($null -eq $consumedNormalFinalization) { exit 2 }
+        $normalCandidateStatePath = New-NewsGraspFinalizationCandidateState `
+            -FinalizationReceiptPath $normalFinalizationReceipt `
+            -ManifestPath $script:PublishCompleteManifestPath `
+            -PublishCommit $script:PublishCompleteCommit
+        if (-not $normalCandidateStatePath) { exit 76 }
+        if (-not (Invoke-NewsGraspCompletionGuard `
+                -FinalizationReceiptPath $normalFinalizationReceipt `
+                -CandidateStatePath $normalCandidateStatePath)) {
+            exit 2
+        }
+        if (-not (Commit-NewsGraspFinalizationCandidate -CandidateStatePath $normalCandidateStatePath)) {
+            exit 76
+        }
     }
     Write-Log 'news-grasp-runner.ps1 OK'
     if ($RunIntent -eq 'ScheduledRecoveryFull') {
@@ -6063,9 +6146,6 @@ if ($NoPublish) {
             -Command 'mark-finalization-state-applied' `
             -ReceiptPath $normalFinalizationReceipt
         if ($null -eq $normalStateAppliedJournal) { exit 2 }
-    }
-    if ($RunIntent -eq 'ScheduledRecoveryFull' -and (-not (Invoke-NewsGraspCompletionGuard -FinalizationReceiptPath $normalFinalizationReceipt))) {
-        exit 2
     }
     if ($RunIntent -eq 'ScheduledRecoveryFull') {
         $normalExecutionAppliedJournal = Invoke-RecoveryReceiptValidation `

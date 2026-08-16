@@ -504,17 +504,17 @@ def test_ng813_isolated_recovery_entrypoints_ignore_ambient_sitecustomize(
     assert not sentinel.exists()
 
 
-def test_ng813_finalizer_marks_state_applied_before_completion_guard() -> None:
-    """recovery: consume後crashは同一receiptでstateを再適用し、guard前にjournal確定する。"""
+def test_ng813_finalizer_guards_candidate_before_state_applied() -> None:
+    """Expected Red: candidate guardがrunner state適用とjournal確定より前にある。"""
     runner = RUNNER.read_text(encoding="utf-8-sig")
     finalizer = runner.rsplit("if ($FinalizeVerifiedPublishManifest)", 1)[1].split(
         "# 前回 crash の WAL", 1
     )[0]
     consume = finalizer.index("-Command 'consume-finalization'")
-    state = finalizer.index("Set-RunnerState -Status 'publish_complete'", consume)
+    guard = finalizer.index("Invoke-NewsGraspCompletionGuard", consume)
+    state = finalizer.index("Set-RunnerState -Status 'publish_complete'", guard)
     mark = finalizer.index("-Command 'mark-finalization-state-applied'", state)
-    guard = finalizer.index("Invoke-NewsGraspCompletionGuard", mark)
-    assert consume < state < mark < guard
+    assert consume < guard < state < mark
     assert "$historicalScheduledFailureRecovered" in finalizer
     assert "scheduled_task_missed_runs" in finalizer
 

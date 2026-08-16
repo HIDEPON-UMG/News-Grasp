@@ -4895,3 +4895,33 @@ def test_ng_red_13_typed_completion_cli_returns_two_for_non_green(
         "TYPED_COMPLETION_CLI_EXIT_CONTRACT_MISSING"
     )
     assert result == 2, "TYPED_COMPLETION_CLI_EXIT_CONTRACT_MISSING"
+
+
+def test_readiness_freshness_marks_descriptor_drift_stale(tmp_path: Path) -> None:
+    descriptor = tmp_path / "capability-v1.json"
+    deadman = tmp_path / "news-grasp-deadman.ps1"
+    descriptor.write_text("descriptor-v1\n", encoding="utf-8")
+    deadman.write_text("deadman-v1\n", encoding="utf-8")
+    proof = dsh.readiness_freshness_snapshot(
+        generation_id="generation-001",
+        descriptor_path=descriptor,
+        task_definition="task-action-v1",
+        deadman_path=deadman,
+    )
+    assert dsh.verify_readiness_freshness(
+        proof,
+        generation_id="generation-001",
+        descriptor_path=descriptor,
+        task_definition="task-action-v1",
+        deadman_path=deadman,
+    )["status"] == "ready"
+    descriptor.write_text("descriptor-v2\n", encoding="utf-8")
+    stale = dsh.verify_readiness_freshness(
+        proof,
+        generation_id="generation-001",
+        descriptor_path=descriptor,
+        task_definition="task-action-v1",
+        deadman_path=deadman,
+    )
+    assert stale["status"] == "stale"
+    assert stale["reasonCode"] == "readiness_proof_stale"

@@ -164,6 +164,34 @@ def _historical_scheduled_failure_is_recovered(
     return isinstance(next_run, dict) and str(next_run.get("reasonCode") or "") == "scheduled_task_missed_runs"
 
 
+def _readiness_freshness_is_current(readiness: object) -> bool:
+    """保存済みreadiness proofのdescriptor/deadman identityをread時に再確認する。"""
+
+    if not isinstance(readiness, dict):
+        return True
+    freshness = readiness.get("freshness") or readiness.get("readinessFreshness")
+    if not isinstance(freshness, dict):
+        return True
+    for path_key, hash_key in (
+        ("descriptorPath", "descriptorSha256"),
+        ("deadmanPath", "deadmanIdentitySha256"),
+    ):
+        path_text = str(freshness.get(path_key) or "")
+        expected = str(freshness.get(hash_key) or "")
+        if not path_text or not expected:
+            return False
+        candidate = Path(path_text)
+        try:
+            if not candidate.is_file() or candidate.is_symlink():
+                return False
+            actual = hashlib.sha256(candidate.read_bytes()).hexdigest()
+        except OSError:
+            return False
+        if actual != expected:
+            return False
+    return True
+
+
 def evaluate(
     manifest: dict[str, Any],
     runner_state: dict[str, Any],
@@ -238,6 +266,8 @@ def evaluate(
         and not historical_failure_recovered
     ):
         failures.append("next_run_readiness_not_ok")
+    if not _readiness_freshness_is_current(readiness):
+        failures.append("readiness_proof_stale")
 
     source_commit = str(manifest.get("source_commit") or "")
     artifact_commit = str(manifest.get("artifact_commit") or "")
@@ -342,6 +372,7 @@ def evaluate_finalization_receipt(
     live_bin_root: Path,
     runner_state_path: Path,
     runner_script_path: Path,
+    candidate_state_path: Path | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """sealed finalization receiptから自己申告でないclock/root/stateを再検証する。"""
     from tools import news_grasp_recovery_receipts
@@ -374,24 +405,43 @@ def evaluate_finalization_receipt(
         root=trusted_artifact_root / "build",
         code="FINALIZATION_MANIFEST_INVALID",
     )
-    state, _ = news_grasp_recovery_receipts._read_json_with_sha(
-        Path(str(receipt["runnerStatePath"])),
-        root=live_bin_root,
-        code="FINALIZATION_STATE_BINDING_INVALID",
-    )
-    if (
-        manifest_file_sha != receipt.get("manifestSha256")
-        or
-        os.path.normcase(str(Path(str(state.get("recovery_finalization_receipt_path") or "")).resolve()))
-        != os.path.normcase(str(resolved_receipt))
-        or state.get("recovery_finalization_receipt_sha256") != receipt.get("receiptSha256")
-        or state.get("scheduled_failure_receipt_path") != receipt.get("scheduledFailureReceiptPath")
-        or state.get("scheduled_failure_receipt_sha256") != receipt.get("scheduledFailureReceiptSha256")
-        or not news_grasp_recovery_receipts.finalization_state_applied(
-            receipt=receipt, live_bin_root=live_bin_root
-        )
-    ):
+    if manifest_file_sha != receipt.get("manifestSha256"):
         raise ValueError("FINALIZATION_STATE_BINDING_INVALID")
+    if candidate_state_path is None:
+        state, _ = news_grasp_recovery_receipts._read_json_with_sha(
+            Path(str(receipt["runnerStatePath"])),
+            root=live_bin_root,
+            code="FINALIZATION_STATE_BINDING_INVALID",
+        )
+        if (
+            os.path.normcase(str(Path(str(state.get("recovery_finalization_receipt_path") or "")).resolve()))
+            != os.path.normcase(str(resolved_receipt))
+            or state.get("recovery_finalization_receipt_sha256") != receipt.get("receiptSha256")
+            or state.get("scheduled_failure_receipt_path") != receipt.get("scheduledFailureReceiptPath")
+            or state.get("scheduled_failure_receipt_sha256") != receipt.get("scheduledFailureReceiptSha256")
+            or not news_grasp_recovery_receipts.finalization_state_applied(
+                receipt=receipt, live_bin_root=live_bin_root
+            )
+        ):
+            raise ValueError("FINALIZATION_STATE_BINDING_INVALID")
+    else:
+        candidate = Path(candidate_state_path)
+        try:
+            candidate.resolve(strict=True).relative_to(live_bin_root.resolve(strict=True))
+        except (OSError, ValueError) as error:
+            raise ValueError("FINALIZATION_CANDIDATE_STATE_PATH_INVALID") from error
+        state, _ = news_grasp_recovery_receipts._read_json_with_sha(
+            candidate,
+            root=live_bin_root,
+            code="FINALIZATION_CANDIDATE_STATE_INVALID",
+        )
+        if (
+            state.get("recovery_finalization_receipt_sha256") != receipt.get("receiptSha256")
+            or state.get("recovery_finalization_receipt_path")
+            != str(resolved_receipt)
+            or state.get("finalization_candidate") is not True
+        ):
+            raise ValueError("FINALIZATION_CANDIDATE_STATE_BINDING_INVALID")
     result = evaluate(
         manifest,
         state,
@@ -406,6 +456,9 @@ def evaluate_finalization_receipt(
     receipt_with_snapshots = dict(receipt)
     receipt_with_snapshots["_validatedManifestSnapshot"] = manifest
     receipt_with_snapshots["_validatedRunnerStateSnapshot"] = state
+    receipt_with_snapshots["_candidateStatePath"] = (
+        str(Path(candidate_state_path).resolve()) if candidate_state_path else ""
+    )
     return result, receipt_with_snapshots
 
 
@@ -418,6 +471,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--live-bin-root", type=Path, required=True)
     parser.add_argument("--runner-state", type=Path, required=True)
     parser.add_argument("--runner-script", type=Path, required=True)
+    parser.add_argument("--candidate-state", type=Path)
     args = parser.parse_args(argv)
     result, receipt = evaluate_finalization_receipt(
         args.finalization_receipt,
@@ -427,6 +481,7 @@ def main(argv: list[str] | None = None) -> int:
         live_bin_root=args.live_bin_root,
         runner_state_path=args.runner_state,
         runner_script_path=args.runner_script,
+        candidate_state_path=args.candidate_state,
     )
     issue_date = str(receipt["issueDate"])
     artifact_root = args.artifact_root.resolve(strict=True)

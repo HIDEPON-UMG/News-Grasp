@@ -462,7 +462,7 @@ def test_targeted_repair_prompt_is_bounded_to_runner_owned_tools() -> None:
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
 
     assert "検証コマンドは必ず次の Python 実行体だけを使う" in runner
-    assert "python / py / uv / .venv\\Scripts\\python.exe の直書きは禁止" in runner
+    assert "python / py / uv / repo-local runtime の直書きは禁止" in runner
     assert "git add / git commit / git push / git checkout / git reset は絶対に実行しない" in runner
     assert "rg / Get-ChildItem -Recurse / 広域 Select-String は禁止" in runner
     assert "runner_python:" in runner
@@ -1739,7 +1739,7 @@ def test_editor_materialization_uses_one_production_boundary_and_recovers_before
     assert "EDITOR_OUTPUT_TRANSACTION_RECOVERY_REQUIRED" in editor_flow
     assert "tools.validate_editor_output_preview' $editorOutputPreview '--date'" not in runner
     assert editor_flow.rfind("--recover-only") < editor_flow.rfind("$gateAttemptDir =") or "$gateAttemptDir =" not in editor_flow
-    assert "$PyExe     = Join-Path $OpsRepoRoot '.venv\\Scripts\\python.exe'" in runner
+    assert "Python312\\python.exe" in runner
     assert "$env:PYTHONSAFEPATH = '1'" in runner
     assert "$env:PYTHONNOUSERSITE = '1'" in runner
     assert "$env:PYTHONPATH = $RepoDir" in runner
@@ -1812,7 +1812,7 @@ def test_scheduled_tasks_bind_to_stable_pythonw_not_recovery_worktree() -> None:
     assert "[string] $TaskPythonwPath = ''" in installer_text
     assert "function Resolve-NewsGraspTaskPythonw" in installer_text
     assert "$env:NEWS_GRASP_TASK_PYTHONW" in installer_text
-    assert "OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\.venv\\Scripts\\pythonw.exe" in installer_text
+    assert "AppData\\Local\\Programs\\Python\\Python312\\pythonw.exe" in installer_text
     assert "$TaskPythonwPath = Resolve-NewsGraspTaskPythonw" in installer_text
     assert "$pythonw = $TaskPythonwPath" in installer_text
     assert "task_pythonw_path = $TaskPythonwPath" in installer_text
@@ -3532,6 +3532,94 @@ def test_ops_installer_preflights_shared_broker_generation_before_mutation() -> 
     runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
     assert "tools\\news_grasp_external_control.py" in runner
     assert "external_control_plane_unavailable" in runner
+
+
+def test_installer_resolves_workspace_harness_from_external_worktree_git_common_dir(
+    tmp_path: Path,
+) -> None:
+    """repo外worktreeでもGit common-dirからworkspace-global harness正本を解決する。"""
+    workspace_root = tmp_path / "ProjectFolders"
+    canonical_repo = workspace_root / "News-Grasp"
+    external_worktree = tmp_path / "ng-0640-redesign-v1"
+    (workspace_root / "tools" / "harness").mkdir(parents=True)
+    (workspace_root / "docs" / "harness").mkdir(parents=True)
+    (workspace_root / "tools" / "harness" / "task_model_routing.py").write_text(
+        "# fixture\n", encoding="utf-8"
+    )
+    (workspace_root / "docs" / "harness" / "high_cost_model_routes_v1.json").write_text(
+        "{}\n", encoding="utf-8"
+    )
+    canonical_repo.mkdir()
+    subprocess.run(["git", "init", str(canonical_repo)], check=True, capture_output=True)
+    subprocess.run(
+        ["git", "-C", str(canonical_repo), "config", "user.email", "fixture@example.invalid"],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(canonical_repo), "config", "user.name", "News-Grasp fixture"],
+        check=True,
+        capture_output=True,
+    )
+    (canonical_repo / "tracked.txt").write_text("fixture\n", encoding="utf-8")
+    subprocess.run(
+        ["git", "-C", str(canonical_repo), "add", "tracked.txt"],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(canonical_repo), "commit", "-m", "fixture"],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(canonical_repo), "worktree", "add", str(external_worktree), "HEAD"],
+        check=True,
+        capture_output=True,
+    )
+
+    installer = (OPS_DIR / "install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
+    resolver_source = "function Resolve-NewsGraspWorkspaceHarnessRoot" + installer.split(
+        "function Resolve-NewsGraspWorkspaceHarnessRoot", 1
+    )[1].split("function Assert-NewsGraspSharedBrokerGeneration", 1)[0]
+    resolver_path = tmp_path / "workspace-root-resolver.ps1"
+    resolver_path.write_text(resolver_source, encoding="utf-8")
+    guard = OPS_DIR / "install-news-grasp-ops-guard.ps1"
+    script = (
+        "$ErrorActionPreference='Stop'; "
+        f". '{guard}'; . '{resolver_path}'; "
+        f"Resolve-NewsGraspWorkspaceHarnessRoot -StartPath '{external_worktree}'"
+    )
+    completed = subprocess.run(
+        [POWERSHELL, "-NoProfile", "-NonInteractive", "-Command", script],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert Path(completed.stdout.strip()).resolve() == workspace_root.resolve()
+
+
+def test_bootstrap_archives_stale_same_day_startup_canary_before_preflight() -> None:
+    """Expected Red: generation切替後の旧canary rootを次のcanary admissionへ混入させない。"""
+    bootstrap = (OPS_DIR / "news-grasp-bootstrap.ps1").read_text(
+        encoding="utf-8-sig"
+    )
+
+    assert "function Archive-StaleStartupCanaryState" in bootstrap
+    archive_call = (
+        "Archive-StaleStartupCanaryState -StateFile $StateFile "
+        "-ExpectedRoot $RepoDir"
+    )
+    archive = bootstrap.index(archive_call)
+    control_plane = bootstrap.index("$controlPlaneArgs = @(", archive)
+    assert archive < control_plane
+    assert "STARTUP_CANARY_STATE_ARCHIVE_V1" in bootstrap
+    assert "StateFileSha256" in bootstrap
 
 
 def test_install_guard_dynamically_rejects_noncanonical_runtime_root_source(tmp_path: Path) -> None:

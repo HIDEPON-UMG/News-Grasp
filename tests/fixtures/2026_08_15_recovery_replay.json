@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "NEWS_GRASP_RECOVERY_REPLAY_FIXTURE_V1",
+  "issueDate": "2026-08-15",
+  "stateMachine": "AUDIT_RECOVERY_TRANSACTION_V3",
+  "events": [
+    {"observed": "RECOVERY_EXECUTION_RECEIPT_REQUIRED", "expectedStop": "execution_receipt_v2_not_sealed"},
+    {"observed": "SCHEDULED_TASK_MISSED_RUNS", "expectedStop": "readiness_debt_sidecar"},
+    {"observed": "POST_GREEN_30_26_MINUTES", "expectedStop": "common_finalizer_post_green_15_minute_gate"}
+  ]
+}

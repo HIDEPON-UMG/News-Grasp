@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "NEWS_GRASP_RECOVERY_REPLAY_FIXTURE_V1",
+  "issueDate": "2026-08-16",
+  "stateMachine": "AUDIT_RECOVERY_TRANSACTION_V3",
+  "events": [
+    {"observed": "RECOVERY_EXECUTION_RECEIPT_INVALID", "expectedStop": "process_start_zero"},
+    {"observed": "AUDIT_MAJOR_INCIDENT_OPEN", "expectedStop": "append_only_observation_event"},
+    {"observed": "READINESS_DESCRIPTOR_DRIFT", "expectedStop": "readiness_proof_stale"}
+  ]
+}

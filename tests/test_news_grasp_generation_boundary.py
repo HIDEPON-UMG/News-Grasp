@@ -7,6 +7,8 @@ from typing import Any
 
 import pytest
 
+from tools import news_grasp_generation as generation
+
 
 ROOT = Path(__file__).resolve().parents[1]
 LAUNCHER = ROOT / "scripts" / "ops" / "news-grasp-task-launcher.pyw"
@@ -70,8 +72,11 @@ def _generation_fixture(
             return head
         if arguments == ("rev-parse", "origin/main"):
             return remote_values.pop(0) if remote_values else head
-        if arguments == ("status", "--porcelain", "--untracked-files=no"):
-            return tracked_status
+        if arguments in {
+            ("status", "--porcelain", "--untracked-files=no"),
+            ("status", "--porcelain", "--untracked-files=no", "-z"),
+        }:
+            return tracked_status + ("\0" if arguments[-1] == "-z" and tracked_status else "")
         if arguments == ("ls-tree", "-r", "--full-tree", "-z", head):
             return "\0".join(
                 f"{identity.replace(':', ' ', 2)}\t{relative}"
@@ -157,3 +162,33 @@ def test_generation_seal_rejects_remote_owner_drift_before_pointer(
             bin_dir=bin_dir,
         )
     assert not (runtime_root / "active-generation-v2.json").exists()
+
+
+def test_run_envelope_derives_active_and_standby_without_new_generation() -> None:
+    envelope = generation.seal_run_envelope(
+        issue_date="2026-08-17",
+        generation_manifest={"schemaVersion": generation.SCHEMA, "generationId": "generation-active"},
+        stable_task_authority={"authority": "task"},
+        runtime_binding={"python": "system"},
+        task_action=["pythonw.exe", "launcher.pyw", "runner"],
+        descriptor_sha256="a" * 64,
+        deadman_sha256="b" * 64,
+        active_capsule={"generationId": "generation-active", "status": "verified"},
+        standby_capsule={"generationId": "generation-standby", "status": "verified"},
+    )
+    assert envelope["generationId"] == "generation-active"
+    assert generation.validate_run_envelope(envelope)["schemaVersion"] == "RUN_ENVELOPE_V1"
+    assert envelope["activeCapsule"]["generationId"] != envelope["standbyCapsule"]["generationId"]
+
+
+def test_installer_delivery_binds_generation_to_task_and_automation_evidence() -> None:
+    installer = (ROOT / "scripts" / "ops" / "install-news-grasp-ops.ps1").read_text(
+        encoding="utf-8-sig"
+    )
+    assert "RUN_ENVELOPE_V1" in installer
+    assert "active-generation-v2.json" in installer
+    assert "stableTaskAuthoritySha256" in installer
+    assert "automationAssetManifestSha256" in installer
+    assert "generationBinding" in installer
+    assert "sourceRoot = $RepoDir" in installer
+    assert "installedRoot = $BinDir" in installer
