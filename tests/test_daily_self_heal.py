@@ -3863,6 +3863,74 @@ def test_safe_ops_git_disables_repo_controlled_execution_and_has_timeout(
     assert captured["check"] is False
 
 
+def test_trusted_ops_generation_allows_ignored_runtime_artifacts(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """復旧artifact同居rootでも、tracked source dirtyでなければops generationを検証できる。"""
+    daily_self_heal = tmp_path / "tools" / "daily_self_heal.py"
+    daily_self_heal.parent.mkdir(parents=True)
+    daily_self_heal.write_text("fixture", encoding="utf-8")
+
+    outputs = {
+        ("rev-parse", "HEAD"): "a" * 40,
+        ("remote", "get-url", "origin"): "https://github.com/HIDEPON-UMG/News-Grasp.git",
+        ("status", "--porcelain", "--untracked-files=all"): "",
+        (
+            "ls-files",
+            "--others",
+            "--ignored",
+            "--exclude-standard",
+        ): "\n".join(
+            [
+                "build/tts/latest_audio.json",
+                "build/youtube-podcast/uploads.json",
+                "tools/__pycache__/daily_self_heal.cpython-312.pyc",
+            ]
+        ),
+    }
+
+    monkeypatch.setattr(
+        dsh,
+        "_safe_ops_git_output",
+        lambda _root, args: outputs[tuple(args)],
+    )
+
+    result = dsh._trusted_ops_generation(tmp_path)
+
+    assert result["head"] == "a" * 40
+    assert result["daily_self_heal_sha256"] == dsh.sha256_file(daily_self_heal)
+
+
+def test_trusted_ops_generation_rejects_tracked_dirty_with_runtime_artifacts(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """artifact許容はtracked source dirtyのfail-closedを緩めない。"""
+    daily_self_heal = tmp_path / "tools" / "daily_self_heal.py"
+    daily_self_heal.parent.mkdir(parents=True)
+    daily_self_heal.write_text("fixture", encoding="utf-8")
+
+    outputs = {
+        ("rev-parse", "HEAD"): "a" * 40,
+        ("remote", "get-url", "origin"): "https://github.com/HIDEPON-UMG/News-Grasp.git",
+        ("status", "--porcelain", "--untracked-files=all"): " M tools/daily_self_heal.py",
+        (
+            "ls-files",
+            "--others",
+            "--ignored",
+            "--exclude-standard",
+        ): "build/tts/latest_audio.json",
+    }
+
+    monkeypatch.setattr(
+        dsh,
+        "_safe_ops_git_output",
+        lambda _root, args: outputs[tuple(args)],
+    )
+
+    with pytest.raises(ValueError, match="ops generation invalid"):
+        dsh._trusted_ops_generation(tmp_path)
+
+
 def test_authenticode_timeout_is_typed_failure(monkeypatch, tmp_path: Path) -> None:
     """operational recovery: trust store停滞はtracebackでなくtyped authority failureにする。"""
     executable = tmp_path / "python.exe"

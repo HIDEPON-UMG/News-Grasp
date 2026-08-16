@@ -507,8 +507,16 @@ def _trusted_ops_generation(ops_repo_root: Path) -> dict[str, str]:
     head = _safe_ops_git_output(root, ["rev-parse", "HEAD"]).lower()
     remote = _safe_ops_git_output(root, ["remote", "get-url", "origin"])
     dirty = _safe_ops_git_output(root, ["status", "--porcelain", "--untracked-files=all"])
-    ignored = _safe_ops_git_output(
+    ignored_raw = _safe_ops_git_output(
         root, ["ls-files", "--others", "--ignored", "--exclude-standard"]
+    )
+    ignored = "\n".join(
+        line
+        for line in ignored_raw.splitlines()
+        if line
+        and not line.startswith("build/")
+        and "/__pycache__/" not in line
+        and not line.endswith(".pyc")
     )
     daily_self_heal = (root / "tools" / "daily_self_heal.py").resolve(strict=True)
     if dirty or ignored or not re.fullmatch(r"[0-9a-f]{40}", head):
