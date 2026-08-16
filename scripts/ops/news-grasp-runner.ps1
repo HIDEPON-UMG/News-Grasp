@@ -1428,15 +1428,15 @@ function New-NewsGraspFinalizationCandidateState {
     $candidate.message = 'verified recovery publish complete'
     $candidate.exit_code = 0
     $candidate.updated_at = (Get-Date).ToString('o')
-    $candidate.publish_manifest_path = [IO.Path]::GetFullPath($ManifestPath)
-    $candidate.publish_commit = $PublishCommit
-    $candidate.scheduled_attempt_status = 'failed_then_recovered'
-    $candidate.recovery_attempt_status = 'succeeded'
-    $candidate.recovery_finalization_receipt_path = [IO.Path]::GetFullPath($FinalizationReceiptPath)
-    $candidate.recovery_finalization_receipt_sha256 = [string]$script:ValidatedFinalizationReceipt.receiptSha256
-    $candidate.scheduled_failure_receipt_path = [string]$script:ValidatedFinalizationReceipt.scheduledFailureReceiptPath
-    $candidate.scheduled_failure_receipt_sha256 = [string]$script:ValidatedFinalizationReceipt.scheduledFailureReceiptSha256
-    $candidate.finalization_candidate = $true
+    $candidate | Add-Member -NotePropertyName 'publish_manifest_path' -NotePropertyValue ([IO.Path]::GetFullPath($ManifestPath)) -Force
+    $candidate | Add-Member -NotePropertyName 'publish_commit' -NotePropertyValue $PublishCommit -Force
+    $candidate | Add-Member -NotePropertyName 'scheduled_attempt_status' -NotePropertyValue 'failed_then_recovered' -Force
+    $candidate | Add-Member -NotePropertyName 'recovery_attempt_status' -NotePropertyValue 'succeeded' -Force
+    $candidate | Add-Member -NotePropertyName 'recovery_finalization_receipt_path' -NotePropertyValue ([IO.Path]::GetFullPath($FinalizationReceiptPath)) -Force
+    $candidate | Add-Member -NotePropertyName 'recovery_finalization_receipt_sha256' -NotePropertyValue ([string]$script:ValidatedFinalizationReceipt.receiptSha256) -Force
+    $candidate | Add-Member -NotePropertyName 'scheduled_failure_receipt_path' -NotePropertyValue ([string]$script:ValidatedFinalizationReceipt.scheduledFailureReceiptPath) -Force
+    $candidate | Add-Member -NotePropertyName 'scheduled_failure_receipt_sha256' -NotePropertyValue ([string]$script:ValidatedFinalizationReceipt.scheduledFailureReceiptSha256) -Force
+    $candidate | Add-Member -NotePropertyName 'finalization_candidate' -NotePropertyValue $true -Force
     try {
         Write-RunnerStateAtomic -Path $candidatePath -Payload $candidate
         return $candidatePath
