@@ -422,10 +422,20 @@ function Write-StateAtomic {
     } finally {
         $fs.Dispose()
     }
-    if (Test-Path -LiteralPath $Path) {
-        [System.IO.File]::Replace($tmp, $Path, $backup, $true)
-    } else {
-        [System.IO.File]::Move($tmp, $Path)
+    # watcher の証跡も同じ atomic writer を使うため、read/replace の瞬間競合だけを
+    # bounded retry で吸収する。非 transient な失敗はそのまま fail-closed にする。
+    for ($attempt = 1; $attempt -le 3; $attempt++) {
+        try {
+            if (Test-Path -LiteralPath $Path) {
+                [System.IO.File]::Replace($tmp, $Path, $backup, $true)
+            } else {
+                [System.IO.File]::Move($tmp, $Path)
+            }
+            return
+        } catch [System.IO.IOException] {
+            if ($attempt -eq 3) { throw }
+            Start-Sleep -Milliseconds 50
+        }
     }
 }
 

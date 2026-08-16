@@ -801,10 +801,20 @@ function Write-RunnerStateAtomic {
     } finally {
         $fs.Dispose()
     }
-    if (Test-Path -LiteralPath $Path) {
-        [System.IO.File]::Replace($tmp, $Path, $backup, $true)
-    } else {
-        [System.IO.File]::Move($tmp, $Path)
+    # watcher の read handle と Windows の File.Replace が瞬間的に競合するため、
+    # atomic commit 自体は維持したまま、短い bounded retry だけを許可する。
+    for ($attempt = 1; $attempt -le 3; $attempt++) {
+        try {
+            if (Test-Path -LiteralPath $Path) {
+                [System.IO.File]::Replace($tmp, $Path, $backup, $true)
+            } else {
+                [System.IO.File]::Move($tmp, $Path)
+            }
+            return
+        } catch [System.IO.IOException] {
+            if ($attempt -eq 3) { throw }
+            Start-Sleep -Milliseconds 50
+        }
     }
 }
 
