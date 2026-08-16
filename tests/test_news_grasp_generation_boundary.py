@@ -190,6 +190,7 @@ def test_installer_delivery_binds_generation_to_task_and_automation_evidence() -
     assert "stableTaskAuthoritySha256" in installer
     assert "automationAssetManifestSha256" in installer
     assert "generationBinding" in installer
+    assert "runtimeGenerationEvidence = if (" in installer
     assert "sourceRoot = $RepoDir" in installer
     assert "installedRoot = $BinDir" in installer
 

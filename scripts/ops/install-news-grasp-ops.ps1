@@ -1381,12 +1381,21 @@ $installedEvidenceBody = [ordered]@{
 $installedEvidenceJson = $installedEvidenceBody | ConvertTo-Json -Depth 10 -Compress
 $installedEvidenceHasher = [Security.Cryptography.SHA256]::Create()
 try {
-    $installedEvidenceSha256 = ([BitConverter]::ToString(
+$installedEvidenceSha256 = ([BitConverter]::ToString(
         $installedEvidenceHasher.ComputeHash([Text.Encoding]::UTF8.GetBytes($installedEvidenceJson))
     ) -replace '-', '').ToLowerInvariant()
 } finally { $installedEvidenceHasher.Dispose() }
 $pendingEvidence = [ordered]@{ status = 'pending'; evidenceSha256 = ''; reasonCode = 'AWAITING_RELEASE_EVIDENCE' }
-$runtimePendingEvidence = [ordered]@{ status = 'pending'; evidenceSha256 = ''; reasonCode = 'AWAITING_ACTIVE_GENERATION' }
+$runtimeGenerationEvidence = if (
+    $activeGenerationId -and
+    $activeGenerationId -cne 'pending-active-generation' -and
+    $activeGenerationManifestSha256 -match '^[0-9a-f]{64}$' -and
+    $activeGenerationPointerSha256 -match '^[0-9a-f]{64}$'
+) {
+    [ordered]@{ status = 'green'; evidenceSha256 = $installedEvidenceSha256 }
+} else {
+    [ordered]@{ status = 'pending'; evidenceSha256 = ''; reasonCode = 'AWAITING_ACTIVE_GENERATION' }
+}
 $e2ePendingEvidence = [ordered]@{ status = 'pending'; evidenceSha256 = ''; reasonCode = 'AWAITING_FINAL_NOPUBLISH_E2E' }
 $greenEvidence = [ordered]@{ status = 'green'; evidenceSha256 = $installedEvidenceSha256 }
 $taskEvidence = if ($SkipTaskRegistration) {
@@ -1401,7 +1410,7 @@ $deliveryFields = [ordered]@{
     remoteHeadVerified = $pendingEvidence
     installed = $greenEvidence
     installedSkillsFresh = $greenEvidence
-    runtimeGenerationFresh = $runtimePendingEvidence
+    runtimeGenerationFresh = $runtimeGenerationEvidence
     scheduledTaskParity = $taskEvidence
     rollbackReceipt = $greenEvidence
     noPublishE2E = $e2ePendingEvidence
