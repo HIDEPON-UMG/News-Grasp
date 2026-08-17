@@ -101,7 +101,9 @@ def build_completion_outcome_envelope(
         "publicAuthorityPreserved": True,
         "guardOk": readiness_debt is None,
         "automationOutcome": automation_outcome,
-        "processExitCode": 2 if readiness_debt else 0,
+        # SLO RedはOutcome側のexitだけをRedにし、public authority/runnerの
+        # completion stateは後退させない。readiness debtも同じsidecar境界に残す。
+        "processExitCode": 2 if readiness_debt or not slo_ok else 0,
     }
     body["receiptSha256"] = hashlib.sha256(_canonical_bytes(body)).hexdigest()
     return body

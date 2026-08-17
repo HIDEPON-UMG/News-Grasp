@@ -389,7 +389,10 @@ def test_completion_outcome_boundaries_and_readiness_debt_are_separate() -> None
     assert budget["publicAuthorityPreserved"] is True
     assert budget["processExitCode"] == 2
     assert no_recovery["repairBudgetMet"] is False
-    assert no_recovery["automationOutcome"] == "audit_major_incident_open"
+    # SLO RedはOutcome sidecarのexitだけに残し、互換audit projectionを
+    # major terminalへ後退させない（public/readiness/SLO分離）。
+    assert no_recovery["automationOutcome"] == "audit_normal_green"
+    assert no_recovery["processExitCode"] == 2
 
 
 @pytest.mark.parametrize(
