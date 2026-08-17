@@ -61,7 +61,7 @@ param(
     [string] $HighCostCallReceiptPath = '',
     [string] $GlobalHarnessGenerationManifestPath = '',
     [string] $E2EAttemptPolicyPath = '',
-    [ValidateRange(1,2)][int] $E2ELogicalAttempt = 0,
+    [ValidateRange(0,2)][int] $E2ELogicalAttempt = 0,
     [string] $E2EFinalAdmissionPath = '',
     [string] $E2EFinalRunnerArgumentsPath = '',
     [string] $E2EFinalReservationReceiptPath = '',
