@@ -1,0 +1,74 @@
+{
+  "articlePath": "digest/DeepDive/2026-08-18-DeepDive.md",
+  "articleSha256": "835cfe37ab259bc8e2e39a82bc86d408447c3ff006bacb919b1ec9c092812d4a",
+  "issueDate": "2026-08-18",
+  "manifestSha256": "9e568a0c9aca2007bbc325dae7ae768178740b70b96b047b0ffaccb4f9ef4ac6",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "5e05bd28aa9db1e3f37197e267a672a59b3b1f48b5d485c36bb2bd1090fb9d78",
+  "sources": [
+    {
+      "contentSha256": "5634f596e2bec1ebf24f64e53f2588bb2a0c5caa4cb3b4af44698c9ef9467e2f",
+      "fetchedAt": "2026-08-17T23:26:03.353417+00:00",
+      "finalUrl": "https://aismiley.co.jp/ai_news/anthropic-cybersecurity-incidents/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://aismiley.co.jp/ai_news/anthropic-cybersecurity-incidents/",
+      "url": "https://aismiley.co.jp/ai_news/anthropic-cybersecurity-incidents/"
+    },
+    {
+      "contentSha256": "e9b80a3ddab9639a238f8d9104f80f700b5fa96332cc2e453f09e3ab72895140",
+      "fetchedAt": "2026-08-17T23:26:03.673172+00:00",
+      "finalUrl": "https://www.businessinsider.jp/article/2608-openai-slashed-ai-prices-usage-soared-revenue-jumped/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.businessinsider.jp/article/2608-openai-slashed-ai-prices-usage-soared-revenue-jumped/",
+      "url": "https://www.businessinsider.jp/article/2608-openai-slashed-ai-prices-usage-soared-revenue-jumped/"
+    },
+    {
+      "contentSha256": "67ba9ca58d401e270709203a2a06ea478d915c1e7f37155d4fcec0717d379d0a",
+      "fetchedAt": "2026-08-17T23:26:04.161988+00:00",
+      "finalUrl": "https://www.gaitame.com/media/entry/2026/08/17/121939",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.gaitame.com/media/entry/2026/08/17/121939",
+      "url": "https://www.gaitame.com/media/entry/2026/08/17/121939"
+    },
+    {
+      "contentSha256": "b0872920a6e1f3822ae3b3c759ea0b4c3901968bcc3e7cd25dc92df3637c2d3a",
+      "fetchedAt": "2026-08-17T23:26:04.515194+00:00",
+      "finalUrl": "https://www.nikkei.com/article/DGKKZO98214800X10C26A8EA2000/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.nikkei.com/article/DGKKZO98214800X10C26A8EA2000",
+      "url": "https://www.nikkei.com/article/DGKKZO98214800X10C26A8EA2000"
+    },
+    {
+      "contentSha256": "10fdbe9aae71988116b936f6ecfb155a42fe8f5a3d9576701dc17b7d245e4a4d",
+      "fetchedAt": "2026-08-17T23:26:04.768557+00:00",
+      "finalUrl": "https://www.yomiuri.co.jp/politics/20260818-GYT1T00012/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.yomiuri.co.jp/politics/20260818-GYT1T00012/",
+      "url": "https://www.yomiuri.co.jp/politics/20260818-GYT1T00012/"
+    }
+  ],
+  "status": "Green"
+}
