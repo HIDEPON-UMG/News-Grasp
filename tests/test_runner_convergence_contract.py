@@ -1818,15 +1818,18 @@ def test_scheduled_tasks_bind_to_stable_pythonw_not_recovery_worktree() -> None:
     assert "task_pythonw_path = $TaskPythonwPath" in installer_text
 
 
-def test_nopublish_installed_python_uses_workspace_reparse_boundary() -> None:
-    """正規OneDrive workspaceの外側だけを祖先境界として検査する。"""
+def test_nopublish_installed_python_uses_runtime_binding_or_workspace_boundary() -> None:
+    """正規runtime bindingのsystem Pythonだけをworkspace外で許可する。"""
     wrapper = (OPS_DIR / "invoke-scheduled-equivalent-nopublish.ps1").read_text(
         encoding="utf-8-sig"
     )
     marker = "-Label 'installed launcher Python'"
     assert marker in wrapper
     call = next(line for line in wrapper.splitlines() if marker in line)
-    assert "-Boundary $workspacePath" in call
+    assert "-Boundary $installedPythonBoundary" in call
+    assert "$installedRuntimeBinding.schemaVersion" in wrapper
+    assert "$installedRuntimeBinding.pythonExeSha256" in wrapper
+    assert "Get-AuthenticodeSignature" in wrapper
 
 
 def test_runner_has_typed_verified_publish_finalize_path() -> None:

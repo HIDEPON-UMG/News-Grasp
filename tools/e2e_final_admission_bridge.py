@@ -465,6 +465,63 @@ def _require_trusted_workspace_root(repo_root: Path) -> Path:
     return trusted
 
 
+def _canonical_authority_python(
+    path: Path,
+    *,
+    trusted_workspace: Path | None,
+) -> Path:
+    """runtime binding が明示した署名済みsystem Pythonだけをworkspace外で許可する。
+
+    News-Graspの運用正本はユーザーのPython Software Foundation署名済み
+    system Pythonであり、workspace内の仮想環境ではない。一方、テストfixture
+    は従来どおり ``trusted_workspace=None`` で合成実行体を束縛する。
+    """
+
+    candidate = Path(path)
+    if trusted_workspace is None:
+        return _canonical_file(candidate, code="E2E_AUTHORITY_PYTHON_INVALID")
+    try:
+        return _canonical_file(
+            candidate,
+            code="E2E_AUTHORITY_PYTHON_INVALID",
+            trusted_root=trusted_workspace,
+            max_bytes=MAX_EXECUTABLE_BYTES,
+        )
+    except E2EFinalAdmissionError:
+        binding_path = Path.home() / "bin" / "news-grasp-recovery-runtime-binding-v1.json"
+        try:
+            binding_file = _canonical_file(
+                binding_path,
+                code="E2E_AUTHORITY_PYTHON_INVALID",
+                max_bytes=1024 * 1024,
+            )
+            binding = json.loads(
+                _read_stable_bytes(
+                    binding_file,
+                    max_bytes=1024 * 1024,
+                    code="E2E_AUTHORITY_PYTHON_INVALID",
+                ).decode("utf-8-sig")
+            )
+            bound_path = Path(str(binding.get("pythonExe") or "")).resolve(strict=True)
+            bound_sha = str(binding.get("pythonExeSha256") or "").lower()
+            if (
+                binding.get("schemaVersion") != "NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1"
+                or bound_path != candidate.resolve(strict=True)
+                or HEX_64_RE.fullmatch(bound_sha) is None
+            ):
+                raise ValueError("runtime Python binding mismatch")
+            actual = _canonical_file(
+                candidate,
+                code="E2E_AUTHORITY_PYTHON_INVALID",
+                max_bytes=MAX_EXECUTABLE_BYTES,
+            )
+            if _file_sha256(actual) != bound_sha:
+                raise ValueError("runtime Python hash mismatch")
+            return actual
+        except (OSError, TypeError, ValueError, E2EFinalAdmissionError) as error:
+            raise E2EFinalAdmissionError("E2E_AUTHORITY_PYTHON_INVALID") from error
+
+
 def _canonical_directory(path: Path, *, code: str) -> Path:
     try:
         resolved = Path(path).resolve(strict=True)
@@ -969,7 +1026,52 @@ def _normalize_evidence(
                 )
         if kind == "red_suite_execution":
             _validate_red_suite_execution_receipt(value, repo_root=repo_root)
-        if value.get("status") != "Green":
+        if kind == "efficiency_design":
+            if value.get("schemaVersion") == "MAXIMUM_EFFICIENCY_TASK_DESIGN_V1":
+                if value.get("designSha256") != _canonical_sha256(
+                    {key: item for key, item in value.items() if key != "designSha256"}
+                ):
+                    raise E2EFinalAdmissionError("E2E_EFFICIENCY_DESIGN_INVALID")
+            elif value.get("status") != "Green":
+                raise E2EFinalAdmissionError("E2E_UPSTREAM_NOT_GREEN")
+        elif kind == "route_manifest":
+            if value.get("schemaVersion") == "HIGH_COST_ROUTE_MANIFEST_V1":
+                if value.get("manifestSha256") != _canonical_sha256(
+                    {key: item for key, item in value.items() if key != "manifestSha256"}
+                ):
+                    raise E2EFinalAdmissionError("E2E_ROUTE_MANIFEST_INVALID")
+            elif value.get("status") != "Green":
+                raise E2EFinalAdmissionError("E2E_UPSTREAM_NOT_GREEN")
+        elif kind == "adversarial_review":
+            if value.get("schemaVersion") == "ADVERSARIAL_HIGH_COST_REVIEW_V1":
+                if (
+                    value.get("status") != "Green"
+                    or value.get("reviewSha256")
+                    != _canonical_sha256(
+                        {key: item for key, item in value.items() if key != "reviewSha256"}
+                    )
+                ):
+                    raise E2EFinalAdmissionError("E2E_ADVERSARIAL_REVIEW_INVALID")
+            elif value.get("status") != "Green":
+                raise E2EFinalAdmissionError("E2E_UPSTREAM_NOT_GREEN")
+        elif kind in {"static", "simulation"}:
+            expected_schema = (
+                "HIGH_COST_STATIC_VERIFICATION_V1"
+                if kind == "static"
+                else "HIGH_COST_SIMULATION_VERIFICATION_V1"
+            )
+            if value.get("schemaVersion") == expected_schema:
+                if (
+                    value.get("status") != "Green"
+                    or value.get("receiptSha256")
+                    != _canonical_sha256(
+                        {key: item for key, item in value.items() if key != "receiptSha256"}
+                    )
+                ):
+                    raise E2EFinalAdmissionError("E2E_UPSTREAM_RECEIPT_INVALID")
+            elif value.get("status") != "Green":
+                raise E2EFinalAdmissionError("E2E_UPSTREAM_NOT_GREEN")
+        elif value.get("status") != "Green":
             raise E2EFinalAdmissionError("E2E_UPSTREAM_NOT_GREEN")
         normalized.append(
             {"kind": kind, "path": str(path), "sha256": expected_hash}
@@ -1422,11 +1524,9 @@ def issue_admission(
             runner_executable_path,
             code="E2E_RUNNER_EXECUTABLE_INVALID",
         )
-        authority_python_executable = _canonical_file(
+        authority_python_executable = _canonical_authority_python(
             authority_python_executable_path,
-            code="E2E_AUTHORITY_PYTHON_INVALID",
-            trusted_root=trusted_workspace,
-            max_bytes=MAX_EXECUTABLE_BYTES,
+            trusted_workspace=trusted_workspace,
         )
     except OSError as error:
         raise E2EFinalAdmissionError("E2E_RUNNER_INVALID") from error
@@ -1808,11 +1908,9 @@ def _validate_runtime_bindings(
             actual_runner_executable_path,
             code="E2E_RUNNER_EXECUTABLE_INVALID",
         )
-        authority_python = _canonical_file(
+        authority_python = _canonical_authority_python(
             actual_authority_python_executable_path,
-            code="E2E_AUTHORITY_PYTHON_INVALID",
-            trusted_root=trusted_workspace,
-            max_bytes=MAX_EXECUTABLE_BYTES,
+            trusted_workspace=trusted_workspace,
         )
         parent: Path | None = None
         if parent_authority_path is not None:

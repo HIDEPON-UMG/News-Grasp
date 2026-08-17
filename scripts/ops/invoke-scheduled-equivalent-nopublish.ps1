@@ -323,7 +323,27 @@ try {
     if (-not [string]::Equals($runtimeRepoPath, $expectedRuntimeRepoPath, [System.StringComparison]::OrdinalIgnoreCase)) {
         throw 'production runtime root mismatch'
     }
-    $installedTaskPythonPath = Get-CanonicalExistingFile -Path ([string]$runtimeRootConfig.pythonExe) -Label 'installed launcher Python' -Boundary $workspacePath -MaxBytes 67108864
+    $installedPythonBoundary = $workspacePath
+    $installedRuntimeBindingPath = Join-Path $env:USERPROFILE 'bin\news-grasp-recovery-runtime-binding-v1.json'
+    if (Test-Path -LiteralPath $installedRuntimeBindingPath -PathType Leaf) {
+        try {
+            $installedRuntimeBindingCanonical = Get-CanonicalExistingFile -Path $installedRuntimeBindingPath -Label 'recovery runtime binding' -MaxBytes 1048576
+            $installedRuntimeBinding = Get-Content -LiteralPath $installedRuntimeBindingCanonical -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+            $installedPythonCandidate = [System.IO.Path]::GetFullPath([string]$runtimeRootConfig.pythonExe)
+            $installedPythonSha256 = (Get-FileHash -LiteralPath $installedPythonCandidate -Algorithm SHA256 -ErrorAction Stop).Hash.ToLowerInvariant()
+            $installedPythonSignature = Get-AuthenticodeSignature -FilePath $installedPythonCandidate
+            if ([string]$installedRuntimeBinding.schemaVersion -ceq 'NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1' -and
+                [string]::Equals([System.IO.Path]::GetFullPath([string]$installedRuntimeBinding.pythonExe), $installedPythonCandidate, [StringComparison]::OrdinalIgnoreCase) -and
+                [string]::Equals([string]$installedRuntimeBinding.pythonExeSha256, $installedPythonSha256, [StringComparison]::OrdinalIgnoreCase) -and
+                $installedPythonSignature.Status -eq 'Valid' -and
+                [string]::Equals([string]$installedPythonSignature.SignerCertificate.Subject, [string]$installedRuntimeBinding.pythonSignerSubject, [StringComparison]::OrdinalIgnoreCase)) {
+                $installedPythonBoundary = ''
+            }
+        } catch {
+            $installedPythonBoundary = $workspacePath
+        }
+    }
+    $installedTaskPythonPath = Get-CanonicalExistingFile -Path ([string]$runtimeRootConfig.pythonExe) -Label 'installed launcher Python' -Boundary $installedPythonBoundary -MaxBytes 67108864
     $runnerPath = Join-Path $repoPath 'scripts\ops\news-grasp-runner.ps1'
     $codexWrapperPath = Join-Path $repoPath 'scripts\ops\run_codex_with_timeout.ps1'
     $e2eAdmissionBridgePath = Join-Path $runtimeRepoPath 'tools\e2e_final_admission_bridge.py'
@@ -352,7 +372,32 @@ if (-not (Test-Path -LiteralPath (Join-Path $repoPath '.git'))) {
     throw "RepoRoot は git worktree でなければなりません: $repoPath"
 }
 try {
-    $pythonCanonicalPath = Get-CanonicalExistingFile -Path $PythonExe -Label 'authority Python' -Boundary $workspacePath -MaxBytes 67108864
+    # 正規installerが発行したruntime bindingに一致するsystem Pythonだけは、
+    # workspace外の固定インストール先をauthority executableとして許可する。
+    # 任意のworkspace外実行体は従来どおり境界で拒否する。
+    $pythonBoundary = $workspacePath
+    $runtimePythonBindingPath = Join-Path $env:USERPROFILE 'bin\news-grasp-recovery-runtime-binding-v1.json'
+    $runtimePythonBinding = $null
+    if (Test-Path -LiteralPath $runtimePythonBindingPath -PathType Leaf) {
+        try {
+            $runtimePythonBindingCanonical = Get-CanonicalExistingFile -Path $runtimePythonBindingPath -Label 'recovery runtime binding' -MaxBytes 1048576
+            $runtimePythonBinding = Get-Content -LiteralPath $runtimePythonBindingCanonical -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+            $boundPython = [System.IO.Path]::GetFullPath([string]$runtimePythonBinding.pythonExe)
+            $requestedPython = [System.IO.Path]::GetFullPath($PythonExe)
+            $boundPythonSha = [string]$runtimePythonBinding.pythonExeSha256
+            $requestedPythonSha = (Get-FileHash -LiteralPath $requestedPython -Algorithm SHA256 -ErrorAction Stop).Hash.ToLowerInvariant()
+            if ([string]$runtimePythonBinding.schemaVersion -cne 'NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1' -or
+                -not [string]::Equals($boundPython, $requestedPython, [StringComparison]::OrdinalIgnoreCase) -or
+                -not [string]::Equals($boundPythonSha, $requestedPythonSha, [StringComparison]::OrdinalIgnoreCase)) {
+                $runtimePythonBinding = $null
+            } else {
+                $pythonBoundary = ''
+            }
+        } catch {
+            $runtimePythonBinding = $null
+        }
+    }
+    $pythonCanonicalPath = Get-CanonicalExistingFile -Path $PythonExe -Label 'authority Python' -Boundary $pythonBoundary -MaxBytes 67108864
     $powerShellCommand = if (Test-Path -LiteralPath $PowerShellExe -PathType Leaf) {
         Get-Item -LiteralPath $PowerShellExe -ErrorAction Stop
     } else {
