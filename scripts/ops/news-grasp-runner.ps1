@@ -466,6 +466,7 @@ $script:RecoveryMaxExternalModelCalls = 0
 $script:HighCostExpectedOperationKind = ''
 $script:HighCostExpectedIssueDate = ''
 $script:HighCostAdmissionPath = $HighCostAdmissionPath
+$script:UsesHighCostContinuationAdmission = $false
 $script:HighCostParentAuthorityPath = $HighCostParentAuthorityPath
 $script:HighCostParentAuthoritySha256 = ''
 $script:E2EFinalAdmissionPath = $E2EFinalAdmissionPath
