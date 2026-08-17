@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import ctypes
 from ctypes import wintypes
 from datetime import datetime, timedelta, timezone
@@ -12,7 +13,9 @@ import json
 import msvcrt
 import os
 import re
+import shutil
 import stat
+import subprocess
 import sys
 import tempfile
 import time
@@ -86,6 +89,12 @@ KNOWN_LOCAL_APP_DATA_GUID = (
     0x4FCF,
     (0x9D, 0x55, 0x7B, 0x8E, 0x7F, 0x15, 0x70, 0x91),
 )
+PYTHON_TRUST_ANCHOR = "authenticode:python-software-foundation"
+PYTHON_SIGNER_SUBJECT = (
+    "CN=Python Software Foundation, O=Python Software Foundation, "
+    "L=Beaverton, S=Oregon, C=US"
+)
+PYTHON_SIGNER_THUMBPRINT = "36168ee17c1a240517388540c903bb6717dd2563"
 
 
 class E2EFinalAdmissionError(RuntimeError):
@@ -465,6 +474,81 @@ def _require_trusted_workspace_root(repo_root: Path) -> Path:
     return trusted
 
 
+def _read_authenticode_identity(path: Path) -> dict[str, str]:
+    """PowerShellのAuthenticode結果をbounded・非対話で取得する。"""
+
+    path_b64 = base64.b64encode(str(path).encode("utf-8")).decode("ascii")
+    script = (
+        "Import-Module Microsoft.PowerShell.Security -ErrorAction Stop; "
+        "$path=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('"
+        + path_b64
+        + "')); "
+        "$sig = Get-AuthenticodeSignature -LiteralPath $path; "
+        "[ordered]@{status=[string]$sig.Status; "
+        "subject=[string]$sig.SignerCertificate.Subject; "
+        "thumbprint=[string]$sig.SignerCertificate.Thumbprint} "
+        "| ConvertTo-Json -Compress"
+    )
+    try:
+        result = subprocess.run(
+            [
+                shutil.which("pwsh.exe") or "powershell.exe",
+                "-NoProfile",
+                "-NonInteractive",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-EncodedCommand",
+                base64.b64encode(script.encode("utf-16le")).decode("ascii"),
+            ],
+            check=False,
+            capture_output=True,
+            shell=False,
+            timeout=10,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
+        if result.returncode != 0 or len(result.stdout) > 4096:
+            raise ValueError("Authenticode query failed")
+        try:
+            stdout = result.stdout.decode("utf-8", errors="strict")
+        except UnicodeDecodeError:
+            stdout = result.stdout.decode("mbcs" if os.name == "nt" else "cp1252")
+        value = json.loads(stdout.strip())
+        if not isinstance(value, dict):
+            raise ValueError("Authenticode response invalid")
+        return {
+            "status": str(value.get("status") or ""),
+            "subject": str(value.get("subject") or ""),
+            "thumbprint": re.sub(r"\s+", "", str(value.get("thumbprint") or "")).lower(),
+        }
+    except (OSError, ValueError, subprocess.SubprocessError, json.JSONDecodeError) as error:
+        raise E2EFinalAdmissionError("E2E_AUTHORITY_PYTHON_INVALID") from error
+
+
+def _validate_runtime_python_identity(
+    binding: dict[str, Any],
+    *,
+    candidate: Path,
+    bound_path: Path,
+    bound_sha: str,
+    signature: dict[str, str],
+) -> None:
+    """runtime bindingとOS署名のtrust anchorを同時に固定する。"""
+
+    if (
+        binding.get("schemaVersion") != "NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1"
+        or binding.get("pythonTrustAnchor") != PYTHON_TRUST_ANCHOR
+        or binding.get("pythonSignerSubject") != PYTHON_SIGNER_SUBJECT
+        or str(binding.get("pythonSignerThumbprint") or "").lower()
+        != PYTHON_SIGNER_THUMBPRINT
+        or bound_path != candidate.resolve(strict=True)
+        or HEX_64_RE.fullmatch(bound_sha) is None
+        or signature.get("status") != "Valid"
+        or signature.get("subject") != PYTHON_SIGNER_SUBJECT
+        or signature.get("thumbprint") != PYTHON_SIGNER_THUMBPRINT
+    ):
+        raise E2EFinalAdmissionError("E2E_AUTHORITY_PYTHON_INVALID")
+
+
 def _canonical_authority_python(
     path: Path,
     *,
@@ -517,6 +601,13 @@ def _canonical_authority_python(
             )
             if _file_sha256(actual) != bound_sha:
                 raise ValueError("runtime Python hash mismatch")
+            _validate_runtime_python_identity(
+                binding,
+                candidate=actual,
+                bound_path=bound_path,
+                bound_sha=bound_sha,
+                signature=_read_authenticode_identity(actual),
+            )
             return actual
         except (OSError, TypeError, ValueError, E2EFinalAdmissionError) as error:
             raise E2EFinalAdmissionError("E2E_AUTHORITY_PYTHON_INVALID") from error

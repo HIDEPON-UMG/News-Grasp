@@ -333,10 +333,14 @@ try {
             $installedPythonSha256 = (Get-FileHash -LiteralPath $installedPythonCandidate -Algorithm SHA256 -ErrorAction Stop).Hash.ToLowerInvariant()
             $installedPythonSignature = Get-AuthenticodeSignature -FilePath $installedPythonCandidate
             if ([string]$installedRuntimeBinding.schemaVersion -ceq 'NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1' -and
+                [string]$installedRuntimeBinding.pythonTrustAnchor -ceq 'authenticode:python-software-foundation' -and
+                [string]$installedRuntimeBinding.pythonSignerSubject -ceq 'CN=Python Software Foundation, O=Python Software Foundation, L=Beaverton, S=Oregon, C=US' -and
+                [string]$installedRuntimeBinding.pythonSignerThumbprint -ceq '36168ee17c1a240517388540c903bb6717dd2563' -and
                 [string]::Equals([System.IO.Path]::GetFullPath([string]$installedRuntimeBinding.pythonExe), $installedPythonCandidate, [StringComparison]::OrdinalIgnoreCase) -and
                 [string]::Equals([string]$installedRuntimeBinding.pythonExeSha256, $installedPythonSha256, [StringComparison]::OrdinalIgnoreCase) -and
                 $installedPythonSignature.Status -eq 'Valid' -and
-                [string]::Equals([string]$installedPythonSignature.SignerCertificate.Subject, [string]$installedRuntimeBinding.pythonSignerSubject, [StringComparison]::OrdinalIgnoreCase)) {
+                [string]::Equals([string]$installedPythonSignature.SignerCertificate.Subject, [string]$installedRuntimeBinding.pythonSignerSubject, [StringComparison]::OrdinalIgnoreCase) -and
+                [string]::Equals([string]$installedPythonSignature.SignerCertificate.Thumbprint, [string]$installedRuntimeBinding.pythonSignerThumbprint, [StringComparison]::OrdinalIgnoreCase)) {
                 $installedPythonBoundary = ''
             }
         } catch {
@@ -386,9 +390,16 @@ try {
             $requestedPython = [System.IO.Path]::GetFullPath($PythonExe)
             $boundPythonSha = [string]$runtimePythonBinding.pythonExeSha256
             $requestedPythonSha = (Get-FileHash -LiteralPath $requestedPython -Algorithm SHA256 -ErrorAction Stop).Hash.ToLowerInvariant()
+            $runtimePythonSignature = Get-AuthenticodeSignature -FilePath $requestedPython
             if ([string]$runtimePythonBinding.schemaVersion -cne 'NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1' -or
+                [string]$runtimePythonBinding.pythonTrustAnchor -cne 'authenticode:python-software-foundation' -or
+                [string]$runtimePythonBinding.pythonSignerSubject -cne 'CN=Python Software Foundation, O=Python Software Foundation, L=Beaverton, S=Oregon, C=US' -or
+                [string]$runtimePythonBinding.pythonSignerThumbprint -cne '36168ee17c1a240517388540c903bb6717dd2563' -or
                 -not [string]::Equals($boundPython, $requestedPython, [StringComparison]::OrdinalIgnoreCase) -or
-                -not [string]::Equals($boundPythonSha, $requestedPythonSha, [StringComparison]::OrdinalIgnoreCase)) {
+                -not [string]::Equals($boundPythonSha, $requestedPythonSha, [StringComparison]::OrdinalIgnoreCase) -or
+                $runtimePythonSignature.Status -ne 'Valid' -or
+                $runtimePythonSignature.SignerCertificate.Subject -cne 'CN=Python Software Foundation, O=Python Software Foundation, L=Beaverton, S=Oregon, C=US' -or
+                $runtimePythonSignature.SignerCertificate.Thumbprint.ToLowerInvariant() -cne '36168ee17c1a240517388540c903bb6717dd2563') {
                 $runtimePythonBinding = $null
             } else {
                 $pythonBoundary = ''

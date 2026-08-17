@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from tools import news_grasp_p08_evidence as evidence
+from tools import e2e_final_admission_bridge as bridge
 
 
 def test_design_and_route_seals_are_recomputed(tmp_path: Path) -> None:
@@ -76,3 +77,37 @@ def test_caller_evidence_order_excludes_red_execution(tmp_path: Path) -> None:
     assert "red_suite_execution" not in [row["kind"] for row in rows]
     for path in paths.values():
         path.unlink()
+
+
+def test_runtime_python_identity_requires_fixed_trust_anchor_and_thumbprint(
+    tmp_path: Path,
+) -> None:
+    candidate = tmp_path / "python.exe"
+    candidate.write_bytes(b"MZ fixture")
+    binding = {
+        "schemaVersion": "NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1",
+        "pythonTrustAnchor": bridge.PYTHON_TRUST_ANCHOR,
+        "pythonSignerSubject": bridge.PYTHON_SIGNER_SUBJECT,
+        "pythonSignerThumbprint": bridge.PYTHON_SIGNER_THUMBPRINT,
+    }
+    signature = {
+        "status": "Valid",
+        "subject": bridge.PYTHON_SIGNER_SUBJECT,
+        "thumbprint": bridge.PYTHON_SIGNER_THUMBPRINT,
+    }
+    bridge._validate_runtime_python_identity(
+        binding,
+        candidate=candidate,
+        bound_path=candidate.resolve(),
+        bound_sha="a" * 64,
+        signature=signature,
+    )
+    binding["pythonSignerThumbprint"] = "0" * 64
+    with pytest.raises(bridge.E2EFinalAdmissionError, match="E2E_AUTHORITY_PYTHON_INVALID"):
+        bridge._validate_runtime_python_identity(
+            binding,
+            candidate=candidate,
+            bound_path=candidate.resolve(),
+            bound_sha="a" * 64,
+            signature=signature,
+        )

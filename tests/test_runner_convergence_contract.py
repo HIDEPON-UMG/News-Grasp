@@ -1829,6 +1829,8 @@ def test_nopublish_installed_python_uses_runtime_binding_or_workspace_boundary()
     assert "-Boundary $installedPythonBoundary" in call
     assert "$installedRuntimeBinding.schemaVersion" in wrapper
     assert "$installedRuntimeBinding.pythonExeSha256" in wrapper
+    assert "$installedRuntimeBinding.pythonTrustAnchor" in wrapper
+    assert "$installedRuntimeBinding.pythonSignerThumbprint" in wrapper
     assert "Get-AuthenticodeSignature" in wrapper
 
 
