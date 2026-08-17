@@ -2215,6 +2215,7 @@ function Assert-RecoveryOperationDeadline {
         $RunIntent -ne 'ScheduledRecoveryFull' -or
         $FinalizeVerifiedPublishManifest -or
         $script:UsesHighCostContinuationAdmission -or
+        ($ResumeFromStage -and $HighCostAdmissionPath) -or
         $null -eq $script:RecoveryHardDeadline
     ) {
         return
@@ -3962,7 +3963,7 @@ if ($RunIntent -eq 'ScheduledRecoveryFull') {
         exit 76
     }
     $script:RecoveryHardDeadline = [DateTimeOffset]::Parse([string]$script:ValidatedRecoveryExecutionReceipt.hardDeadlineAt)
-    if ((-not $FinalizeVerifiedPublishManifest) -and (-not $script:UsesHighCostContinuationAdmission) -and [DateTimeOffset]::Now -gt [DateTimeOffset]$script:RecoveryHardDeadline) {
+    if ((-not $FinalizeVerifiedPublishManifest) -and (-not $script:UsesHighCostContinuationAdmission) -and (-not ($ResumeFromStage -and $HighCostAdmissionPath)) -and [DateTimeOffset]::Now -gt [DateTimeOffset]$script:RecoveryHardDeadline) {
         Add-RunnerLogLine -Text 'ERROR: RECOVERY_EXECUTION_HARD_DEADLINE_EXCEEDED'
         exit 78
     }
