@@ -1581,6 +1581,22 @@ def test_recovery_continuation_admission_covers_deepdive_resume_boundary() -> No
     assert "start-news-grasp-recovery-stage" in resume_block
 
 
+def test_recovery_continuation_admission_bypasses_stale_deadline_gate() -> None:
+    """Broker-issued continuation must not be blocked by the original 06:40 fixed cutoff."""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    deadline_block = runner.split("function Assert-RecoveryOperationDeadline", 1)[1].split(
+        "function Acquire-RecoveryHighCostBudget",
+        1,
+    )[0]
+    receipt_block = runner.split(
+        "$script:RecoveryHardDeadline = [DateTimeOffset]::Parse",
+        1,
+    )[1].split("$script:RecoveryHighCostCutoff = [DateTimeOffset]::Parse", 1)[0]
+
+    assert "$script:UsesHighCostContinuationAdmission -or" in deadline_block
+    assert "(-not $script:UsesHighCostContinuationAdmission)" in receipt_block
+
+
 def test_scheduled_recovery_resume_never_converts_pytest_failure_to_success() -> None:
     """同日公開復旧でもpytest failureを成功へ書き換えず、品質劣化を拒否する。"""
     runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
