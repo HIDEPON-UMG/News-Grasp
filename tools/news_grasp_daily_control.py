@@ -133,6 +133,13 @@ def _atomic_json(path: Path, value: dict[str, Any]) -> None:
     os.replace(temporary, path)
 
 
+def _high_cost_admission_stage_rejection(state: Mapping[str, Any]) -> bool:
+    return str(state.get("status") or "") in {
+        "operation_rejected_high_cost_admission",
+        "operation_rejected_high_cost_admission_required",
+    }
+
+
 def classify_observed_failure(
     *, runner_state: dict[str, Any], process_exit_code: int, log_text: str
 ) -> str:
@@ -708,6 +715,54 @@ class ProductionBackend:
         _atomic_json(path, authority)
         return authority, path
 
+    def admit_scheduled_recovery(
+        self, *, issue_date: str, recovery_authority_path: Path
+    ) -> Path:
+        path = (
+            self.repo_root
+            / "build"
+            / "high-cost-operation-admissions"
+            / issue_date
+            / "audit-0640-scheduled_recovery.json"
+        )
+        if path.is_file() and not path.is_symlink():
+            admission = json.loads(path.read_text(encoding="utf-8-sig"))
+            authority = json.loads(recovery_authority_path.read_text(encoding="utf-8-sig"))
+            if (
+                admission.get("schemaVersion") == "HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1"
+                and admission.get("operationKind") == "scheduled_recovery"
+                and admission.get("issueDate") == issue_date
+                and admission.get("operationAuthoritySha256")
+                == authority.get("receiptSha256")
+            ):
+                return path.resolve()
+        admission = self._run_broker(
+            "admit",
+            "--operation-kind",
+            "scheduled_recovery",
+            "--attempt-id",
+            issue_date,
+            "--issue-date",
+            issue_date,
+            "--authority-evidence",
+            str(recovery_authority_path),
+            "--expected-task-action-sha256",
+            self.task_action_sha256(),
+            "--expected-runner-sha256",
+            _file_sha(self.runner_path),
+        )
+        authority = json.loads(recovery_authority_path.read_text(encoding="utf-8-sig"))
+        if (
+            admission.get("schemaVersion") != "HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1"
+            or admission.get("operationKind") != "scheduled_recovery"
+            or admission.get("issueDate") != issue_date
+            or admission.get("operationAuthoritySha256")
+            != authority.get("receiptSha256")
+        ):
+            raise ValueError("HIGH_COST_SCHEDULED_ADMISSION_INVALID")
+        _atomic_json(path, admission)
+        return path.resolve()
+
     def issue_stage_decision(
         self,
         *,
@@ -1125,7 +1180,7 @@ def prepare_recovery(
         witness.get("failureReceiptSha256") != failure.get("receiptSha256")
     ):
         raise ValueError("SCHEDULED_FAILURE_LEDGER_MISMATCH")
-    if witness.get("recoveryAttemptStatus") == "started":
+    if witness.get("recoveryAttemptStatus") == "started" and not _high_cost_admission_stage_rejection(state):
         recovery_attempt_number = max(1, int(recovery_attempt_number))
     _, authority_path = actual.derive_authority(
         issue_date=issue_date, failure_path=failure_path
@@ -1142,7 +1197,12 @@ def prepare_recovery(
             },
         }
     )
-    if audit_decision.get("action") != "scheduled_recovery":
+    high_cost_admission_reentry = (
+        _high_cost_admission_stage_rejection(state)
+        and audit_decision.get("reasonCode") == "RECOVERY_STARTED_BUT_COMPLETION_INVALID"
+        and audit_decision.get("recoveryBranch") == "ScheduledRecoveryFull"
+    )
+    if audit_decision.get("action") != "scheduled_recovery" and not high_cost_admission_reentry:
         classification = "incident_required"
     truth = audit_recovery_control._observe_operational_truth(
         issue_date=issue_date, attempt_witness=witness
@@ -1584,6 +1644,7 @@ def _execute_audit_0640_owned(
         elif action == "launch_recovery":
             high_cost_binding = actual.resolve_high_cost_binding()
             execution_receipt: Path | None = None
+            high_cost_admission_path: Path | None = None
             if isinstance(actual, ProductionBackend):
                 receipt_payload = {
                     "issueDate": issue_date,
@@ -1592,9 +1653,24 @@ def _execute_audit_0640_owned(
                     ),
                     "recoveryAuthorityPath": str(decision["recoveryAuthorityPath"]),
                 }
-                receipt_authority_decision = (
-                    audit_recovery_control.decide_audit_recovery(receipt_payload)
+                receipt_authority_decision = audit_recovery_control.decide_audit_recovery(
+                    receipt_payload
                 )
+                if (
+                    receipt_authority_decision.get("action") != "scheduled_recovery"
+                    and decision.get("recoveryBranch") == "ScheduledRecoveryFull"
+                ):
+                    authority_value = json.loads(
+                        Path(str(decision["scheduledAuthorityEvidencePath"])).read_text(
+                            encoding="utf-8-sig"
+                        )
+                    )
+                    receipt_authority_decision = {
+                        **receipt_authority_decision,
+                        "recoveryAuthorityReceiptSha256": str(
+                            authority_value.get("receiptSha256") or ""
+                        ),
+                    }
                 execution_receipt = (
                     audit_recovery_control._issue_recovery_execution_receipt(
                         payload=receipt_payload,
@@ -1627,6 +1703,13 @@ def _execute_audit_0640_owned(
                         reserved_max_external_model_calls=9,
                     )
                 )
+                if decision.get("recoveryBranch") == "ScheduledRecoveryFull":
+                    high_cost_admission_path = actual.admit_scheduled_recovery(
+                        issue_date=issue_date,
+                        recovery_authority_path=Path(
+                            str(decision["scheduledAuthorityEvidencePath"])
+                        ),
+                    )
             command = [
                 "powershell.exe",
                 "-NoProfile",
@@ -1654,6 +1737,8 @@ def _execute_audit_0640_owned(
                 command.extend(
                     ["-RecoveryExecutionReceiptPath", str(execution_receipt)]
                 )
+            if high_cost_admission_path is not None:
+                command.extend(["-HighCostAdmissionPath", str(high_cost_admission_path)])
             if decision.get("recoveryBranch") == "ResumeFromStage":
                 command.extend(
                     [
