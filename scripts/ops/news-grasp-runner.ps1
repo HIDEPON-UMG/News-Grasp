@@ -3978,7 +3978,7 @@ if ($RunIntent -eq 'ScheduledRecoveryFull') {
         Add-RunnerLogLine -Text 'ERROR: RECOVERY_EXECUTION_MODEL_BUDGET_INVALID'
         exit 76
     }
-    if ((-not $FinalizeVerifiedPublishManifest) -and [DateTimeOffset]::Now -gt [DateTimeOffset]$script:RecoveryHighCostCutoff) {
+    if ((-not $FinalizeVerifiedPublishManifest) -and (-not $script:UsesHighCostContinuationAdmission) -and (-not ($ResumeFromStage -and $HighCostAdmissionPath)) -and [DateTimeOffset]::Now -gt [DateTimeOffset]$script:RecoveryHighCostCutoff) {
         Add-RunnerLogLine -Text 'ERROR: RECOVERY_EXECUTION_HIGH_COST_CUTOFF_EXCEEDED'
         exit 78
     }

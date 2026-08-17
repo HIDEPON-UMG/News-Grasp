@@ -1591,12 +1591,13 @@ def test_recovery_continuation_admission_bypasses_stale_deadline_gate() -> None:
     receipt_block = runner.split(
         "$script:RecoveryHardDeadline = [DateTimeOffset]::Parse",
         1,
-    )[1].split("$script:RecoveryHighCostCutoff = [DateTimeOffset]::Parse", 1)[0]
+    )[1].split("if ($FinalizeVerifiedPublishManifest)", 1)[0]
 
     assert "$script:UsesHighCostContinuationAdmission -or" in deadline_block
     assert "($ResumeFromStage -and $HighCostAdmissionPath) -or" in deadline_block
     assert "(-not $script:UsesHighCostContinuationAdmission)" in receipt_block
     assert "(-not ($ResumeFromStage -and $HighCostAdmissionPath))" in receipt_block
+    assert receipt_block.count("(-not ($ResumeFromStage -and $HighCostAdmissionPath))") >= 2
 
 
 def test_scheduled_recovery_resume_never_converts_pytest_failure_to_success() -> None:
