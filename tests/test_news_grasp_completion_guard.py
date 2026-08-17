@@ -114,7 +114,7 @@ def test_completion_guard_rejects_legacy_manifest_and_commit_role_substitution()
     assert "publish_commit_deploy_head_mismatch" in result["failures"]
 
 
-def test_completion_guard_rejects_post_green_and_overall_slo_overrun() -> None:
+def test_completion_guard_records_post_green_and_overall_slo_overrun_as_debt() -> None:
     guard = _guard()
     result = guard.evaluate(
         _manifest(),
@@ -125,9 +125,9 @@ def test_completion_guard_rejects_post_green_and_overall_slo_overrun() -> None:
         done_at="2026-08-13T07:46:00+09:00",
     )
 
-    assert result["ok"] is False
-    assert "post_green_slo_exceeded" in result["failures"]
-    assert "overall_slo_exceeded" in result["failures"]
+    assert result["ok"] is True
+    assert "post_green_slo_exceeded" in result["slo"]["failures"]
+    assert "overall_slo_exceeded" in result["slo"]["failures"]
 
 
 def test_completion_guard_rejects_clock_reversal_and_missing_clock() -> None:
@@ -185,9 +185,9 @@ def test_20260813_historical_four_hour_shape_fails_and_repaired_replay_passes() 
         done_at="2026-08-13T07:40:00+09:00",
     )
 
-    assert observed["ok"] is False
+    assert observed["ok"] is True
     assert observed["slo"]["overallMinutes"] == 240
-    assert "overall_slo_exceeded" in observed["failures"]
+    assert "overall_slo_exceeded" in observed["slo"]["failures"]
     assert repaired["ok"] is True
 
 

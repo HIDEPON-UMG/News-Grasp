@@ -1,0 +1,50 @@
+{
+  "articlePath": "digest/DeepDive/2026-08-17-DeepDive.md",
+  "articleSha256": "ca63ca4faa49eba27f0fd79e923f9f6bc0ceb764b33e14303c1bf4b64bc77cb5",
+  "issueDate": "2026-08-17",
+  "manifestSha256": "896db885b7a19440e83e64752af8e0361ccf72e8d18d9a1a3464aed41a1917e1",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "f1e8eadd3e8ba59ff9d975058ba767e41df1f313b4b2fa019fc1969d6beed0a4",
+  "sources": [
+    {
+      "contentSha256": "7325f91653f650e023a67285b8a24db38612bada55ddfd997fb46de84a360534",
+      "fetchedAt": "2026-08-16T23:09:58.843858+00:00",
+      "finalUrl": "https://breakingdefense.com/2022/12/pentagon-awards-google-amazon-microsoft-oracle-9b-cloud-contract/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://breakingdefense.com/2022/12/pentagon-awards-google-amazon-microsoft-oracle-9b-cloud-contract/",
+      "url": "https://breakingdefense.com/2022/12/pentagon-awards-google-amazon-microsoft-oracle-9b-cloud-contract/"
+    },
+    {
+      "contentSha256": "1a12a3df796303ed4ed7e8fcf3bb24bafad04ca1e0414d0c1e49fdab38ea6c33",
+      "fetchedAt": "2026-08-16T23:09:59.096626+00:00",
+      "finalUrl": "https://defensescoop.com/2023/11/06/inside-task-force-limas-exploration-of-180-plus-generative-ai-use-cases-for-dod/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs"
+      ],
+      "publicHref": "https://defensescoop.com/2023/11/06/inside-task-force-limas-exploration-of-180-plus-generative-ai-use-cases-for-dod/",
+      "url": "https://defensescoop.com/2023/11/06/inside-task-force-limas-exploration-of-180-plus-generative-ai-use-cases-for-dod/"
+    },
+    {
+      "contentSha256": "a7d5d4ff19c68d5e48ecfab9ea8fe640e50f7ad200a76f9d2e2b21c1e3bb9867",
+      "fetchedAt": "2026-08-16T23:10:00.710448+00:00",
+      "finalUrl": "https://www.gov.uk/government/publications/cloud-strategic-roadmap-for-defence/cloud-strategic-roadmap-for-defence",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.gov.uk/government/publications/cloud-strategic-roadmap-for-defence/cloud-strategic-roadmap-for-defence",
+      "url": "https://www.gov.uk/government/publications/cloud-strategic-roadmap-for-defence/cloud-strategic-roadmap-for-defence"
+    }
+  ],
+  "status": "Green"
+}
