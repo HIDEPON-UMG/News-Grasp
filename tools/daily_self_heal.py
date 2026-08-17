@@ -603,6 +603,7 @@ def _trusted_ops_generation(ops_repo_root: Path) -> dict[str, str]:
         and line != ".managed-root.pin"
         and not line.startswith(".pytest_cache/")
         and not line.startswith("build/")
+        and not line.startswith("tmp/")
         and not line.startswith("data/search_audit/")
         and "__pycache__/" not in line
         and not line.endswith(".pyc")
