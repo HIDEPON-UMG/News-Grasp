@@ -133,11 +133,15 @@ def _atomic_json(path: Path, value: dict[str, Any]) -> None:
     os.replace(temporary, path)
 
 
-def _high_cost_admission_stage_rejection(state: Mapping[str, Any]) -> bool:
-    return str(state.get("status") or "") in {
+def _local_startup_unblocker_rejection(state: Mapping[str, Any]) -> bool:
+    status = str(state.get("status") or "")
+    message = str(state.get("message") or "")
+    if status in {
         "operation_rejected_high_cost_admission",
         "operation_rejected_high_cost_admission_required",
-    }
+    }:
+        return True
+    return status == "error" and "ARTIFACT_EXECUTABLE_TREE_INVALID" in message
 
 
 def classify_observed_failure(
@@ -1180,7 +1184,7 @@ def prepare_recovery(
         witness.get("failureReceiptSha256") != failure.get("receiptSha256")
     ):
         raise ValueError("SCHEDULED_FAILURE_LEDGER_MISMATCH")
-    if witness.get("recoveryAttemptStatus") == "started" and not _high_cost_admission_stage_rejection(state):
+    if witness.get("recoveryAttemptStatus") == "started" and not _local_startup_unblocker_rejection(state):
         recovery_attempt_number = max(1, int(recovery_attempt_number))
     _, authority_path = actual.derive_authority(
         issue_date=issue_date, failure_path=failure_path
@@ -1198,7 +1202,7 @@ def prepare_recovery(
         }
     )
     high_cost_admission_reentry = (
-        _high_cost_admission_stage_rejection(state)
+        _local_startup_unblocker_rejection(state)
         and audit_decision.get("reasonCode") == "RECOVERY_STARTED_BUT_COMPLETION_INVALID"
         and audit_decision.get("recoveryBranch") == "ScheduledRecoveryFull"
     )
