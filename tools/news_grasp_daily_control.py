@@ -141,6 +141,8 @@ def _local_startup_unblocker_rejection(state: Mapping[str, Any]) -> bool:
         "operation_rejected_high_cost_admission_required",
     }:
         return True
+    if status == "blocked_recovery_model_budget" and str(state.get("phase") or "") == "reporter":
+        return True
     return status == "error" and "ARTIFACT_EXECUTABLE_TREE_INVALID" in message
 
 
