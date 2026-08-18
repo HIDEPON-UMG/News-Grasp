@@ -61,7 +61,7 @@ function Write-AtomicUtf8Text {
 
 function Archive-StaleStartupCanaryState {
     param(
-        [Parameter(Mandatory = $true)][string] $StateFile,
+        [AllowEmptyString()][string] $StateFile,
         [Parameter(Mandatory = $true)][string] $ExpectedRoot
     )
     if (-not $StateFile -or -not (Test-Path -LiteralPath $StateFile -PathType Leaf)) { return }
