@@ -1,0 +1,68 @@
+{
+  "articlePath": "digest/DeepDive/2026-08-19-DeepDive.md",
+  "articleSha256": "e8d70b3f5c30b6176dd381c278a1c2d1f9a12b4af83f88d3fbe12b647fae6d8f",
+  "issueDate": "2026-08-19",
+  "manifestSha256": "2da77d1a33ce313b5cf4c9de4f7c0421fd3171b842e09291a642b7814091e6f5",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "f9497ea792f35313647716a3fc986bdc98baf20b8b176b7f4295bfce35488554",
+  "sources": [
+    {
+      "contentSha256": "65dd654744c3d7cfad92dbee66706a6f7e808b59adbb213cdffcdedeb968135a",
+      "fetchedAt": "2026-08-18T22:59:06.718983+00:00",
+      "finalUrl": "https://ir.tesla.com/_flysystem/s3/sec/000162828026003952/tsla-20251231-gen.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://ir.tesla.com/_flysystem/s3/sec/000162828026003952/tsla-20251231-gen.pdf",
+      "url": "https://ir.tesla.com/_flysystem/s3/sec/000162828026003952/tsla-20251231-gen.pdf"
+    },
+    {
+      "contentSha256": "ed171e43d25a5ee68e04a31540a07d95428b84ec585478df8ad5d448d0917408",
+      "fetchedAt": "2026-08-18T22:59:07.172505+00:00",
+      "finalUrl": "https://news.samsung.com/global/samsung-electronics-and-broadcom-expand-strategic-collaboration-across-memory-and-foundry-technologies",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://news.samsung.com/global/samsung-electronics-and-broadcom-expand-strategic-collaboration-across-memory-and-foundry-technologies",
+      "url": "https://news.samsung.com/global/samsung-electronics-and-broadcom-expand-strategic-collaboration-across-memory-and-foundry-technologies"
+    },
+    {
+      "contentSha256": "dea87b494c7b131ba2322f77213b3ae798c66d348ac928047105e390b8f96662",
+      "fetchedAt": "2026-08-18T22:59:07.524823+00:00",
+      "finalUrl": "https://pr.tsmc.com/english/news/3326",
+      "httpStatus": 206,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://pr.tsmc.com/english/news/3326",
+      "url": "https://pr.tsmc.com/english/news/3326"
+    },
+    {
+      "contentSha256": "4a21e4f984cf90d302ab9fce97d480974e602cdd602e9b6700752724cc0b96ec",
+      "fetchedAt": "2026-08-18T22:59:07.967797+00:00",
+      "finalUrl": "https://www.intc.com/filings-reports/all-sec-filings/content/0000050863-26-000077/0000050863-26-000077.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.intc.com/filings-reports/all-sec-filings/content/0000050863-26-000077/0000050863-26-000077.pdf",
+      "url": "https://www.intc.com/filings-reports/all-sec-filings/content/0000050863-26-000077/0000050863-26-000077.pdf"
+    }
+  ],
+  "status": "Green"
+}
