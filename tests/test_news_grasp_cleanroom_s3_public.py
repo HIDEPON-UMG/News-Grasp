@@ -291,3 +291,203 @@ def test_s3_report_scheduled_first() -> None:
     assert positions == sorted(positions)
     assert all(lineage in rendered for lineage in data["reportOrder"])
     assert report["overallState"] != "GREEN"
+
+
+def _surface_integrity_receipt(row: Any, mutation: str) -> str:
+    receipt: dict[str, Any] = {
+        "schemaVersion": "PUBLIC_SURFACE_RECEIPT_V1",
+        "surfaceId": row["surface_id"],
+        "artifactSha256": row["artifact_sha256"],
+        "idempotencyKey": row["idempotency_key"],
+        "status": "CONFIRMED",
+        "terminalHash": row["terminal_hash"] or ("a" * 64),
+    }
+    if mutation == "syntax":
+        return "{not-json"
+    if mutation == "schema":
+        receipt.pop("schemaVersion")
+    elif mutation == "status":
+        receipt["status"] = "PENDING"
+    elif mutation == "surfaceId":
+        receipt["surfaceId"] = "other-surface"
+    elif mutation == "artifactSha256":
+        receipt["artifactSha256"] = "f" * 64
+    elif mutation == "idempotencyKey":
+        receipt["idempotencyKey"] = "tampered-idempotency"
+    elif mutation == "terminalHash":
+        receipt["terminalHash"] = "e" * 64
+    return json.dumps(receipt, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+
+def _notification_integrity_receipt(row: Any, mutation: str) -> str:
+    receipt: dict[str, Any] = {
+        "schemaVersion": "PUBLIC_NOTIFICATION_RECEIPT_V1",
+        "idempotencyKey": row["idempotency_key"],
+        "status": "CONFIRMED",
+        "terminalHash": "a" * 64,
+    }
+    if mutation == "syntax":
+        return "{not-json"
+    if mutation == "schema":
+        receipt.pop("schemaVersion")
+    elif mutation == "status":
+        receipt["status"] = "PENDING"
+    elif mutation == "idempotencyKey":
+        receipt["idempotencyKey"] = "tampered-notification"
+    elif mutation == "terminalHash":
+        receipt["terminalHash"] = "e" * 64
+    return json.dumps(receipt, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+
+def test_s3_persisted_surface_rows_are_revalidated(tmp_path: Path) -> None:
+    import sqlite3
+
+    module = importlib.import_module("tools.news_grasp_cleanroom_public")
+    data = _load_fixture()
+    mutations = (
+        "state",
+        "attempt_disposition",
+        "idempotency_key",
+        "artifact_sha256",
+        "terminal_hash",
+        "receipt_syntax",
+        "receipt_schema",
+        "receipt_status",
+        "receipt_surfaceId",
+        "receipt_artifactSha256",
+        "receipt_idempotencyKey",
+        "receipt_terminalHash",
+    )
+    outcomes: list[dict[str, Any]] = []
+    for status_index, baseline_status in enumerate(("CONFIRMED", "NOT_REQUIRED")):
+        for mutation_index, mutation in enumerate(mutations):
+            index = status_index * 100 + mutation_index
+            root = _runtime_root(tmp_path, index)
+            statuses = {surface_id: "CONFIRMED" for surface_id in data["requiredSurfaceIds"]}
+            surface_id = "web"
+            if baseline_status == "NOT_REQUIRED":
+                surface_id = "archive"
+                statuses[surface_id] = "NOT_REQUIRED"
+            publisher = _Publisher(module.PublishResultUnknown)
+            notifier = _Notifier(module.PublishResultUnknown)
+            _reconcile(_controller(module, root, publisher, notifier), _inventory(data, statuses))
+            with sqlite3.connect(root / "control" / "public-ledger-v1.sqlite3") as connection:
+                connection.row_factory = sqlite3.Row
+                row = connection.execute(
+                    "SELECT * FROM surfaces WHERE issue_date=? AND surface_id=?",
+                    (data["issueDate"], surface_id),
+                ).fetchone()
+                assert row is not None
+                if mutation == "state":
+                    connection.execute("UPDATE surfaces SET state=? WHERE issue_date=? AND surface_id=?", ("PENDING", data["issueDate"], surface_id))
+                elif mutation == "attempt_disposition":
+                    connection.execute("UPDATE surfaces SET attempt_disposition=? WHERE issue_date=? AND surface_id=?", ("QUERY_REQUIRED", data["issueDate"], surface_id))
+                elif mutation in {"idempotency_key", "artifact_sha256", "terminal_hash"}:
+                    column, value = {
+                        "idempotency_key": ("idempotency_key", "tampered-idempotency"),
+                        "artifact_sha256": ("artifact_sha256", "f" * 64),
+                        "terminal_hash": ("terminal_hash", "e" * 64),
+                    }[mutation]
+                    connection.execute(f"UPDATE surfaces SET {column}=? WHERE issue_date=? AND surface_id=?", (value, data["issueDate"], surface_id))
+                else:
+                    receipt_case = mutation.removeprefix("receipt_")
+                    connection.execute("UPDATE surfaces SET receipt_json=? WHERE issue_date=? AND surface_id=?", (_surface_integrity_receipt(row, receipt_case), data["issueDate"], surface_id))
+                connection.commit()
+            retry_publisher = _Publisher(module.PublishResultUnknown)
+            retry_notifier = _Notifier(module.PublishResultUnknown)
+            try:
+                _reconcile(_controller(module, root, retry_publisher, retry_notifier), _inventory(data, statuses))
+            except module.PublicControlError as caught:
+                reason = caught.reason
+            else:
+                reason = "RETURNED"
+            outcomes.append({"status": baseline_status, "mutation": mutation, "reason": reason, "publish": len(retry_publisher.calls), "query": len(retry_publisher.queries), "notify": len(retry_notifier.calls), "notifyQuery": len(retry_notifier.queries)})
+    assert all(item["reason"] == "PUBLIC_LEDGER_CORRUPT" for item in outcomes), outcomes
+    assert all(item["publish"] == 0 and item["query"] == 0 and item["notify"] == 0 and item["notifyQuery"] == 0 for item in outcomes)
+
+
+def test_s3_persisted_notification_is_revalidated(tmp_path: Path) -> None:
+    import sqlite3
+
+    module = importlib.import_module("tools.news_grasp_cleanroom_public")
+    data = _load_fixture()
+    mutations = ("state", "attempt_disposition", "idempotency_key", "receipt_syntax", "receipt_schema", "receipt_status", "receipt_idempotencyKey", "receipt_terminalHash")
+    outcomes: list[dict[str, Any]] = []
+    for index, mutation in enumerate(mutations, start=300):
+        root = _runtime_root(tmp_path, index)
+        statuses = {surface_id: "CONFIRMED" for surface_id in data["requiredSurfaceIds"]}
+        publisher = _Publisher(module.PublishResultUnknown)
+        notifier = _Notifier(module.PublishResultUnknown)
+        _reconcile(_controller(module, root, publisher, notifier), _inventory(data, statuses))
+        with sqlite3.connect(root / "control" / "public-ledger-v1.sqlite3") as connection:
+            connection.row_factory = sqlite3.Row
+            row = connection.execute("SELECT * FROM notifications WHERE issue_date=?", (data["issueDate"],)).fetchone()
+            assert row is not None
+            if mutation == "state":
+                connection.execute("UPDATE notifications SET state=? WHERE issue_date=?", ("PENDING", data["issueDate"]))
+            elif mutation == "attempt_disposition":
+                connection.execute("UPDATE notifications SET attempt_disposition=? WHERE issue_date=?", ("QUERY_REQUIRED", data["issueDate"]))
+            elif mutation == "idempotency_key":
+                connection.execute("UPDATE notifications SET idempotency_key=? WHERE issue_date=?", ("tampered-notification", data["issueDate"]))
+            else:
+                connection.execute("UPDATE notifications SET receipt_json=? WHERE issue_date=?", (_notification_integrity_receipt(row, mutation.removeprefix("receipt_")), data["issueDate"]))
+            connection.commit()
+        retry_publisher = _Publisher(module.PublishResultUnknown)
+        retry_notifier = _Notifier(module.PublishResultUnknown)
+        try:
+            _reconcile(_controller(module, root, retry_publisher, retry_notifier), _inventory(data, statuses))
+        except module.PublicControlError as caught:
+            reason = caught.reason
+        else:
+            reason = "RETURNED"
+        outcomes.append({"mutation": mutation, "reason": reason, "notify": len(retry_notifier.calls), "notifyQuery": len(retry_notifier.queries)})
+    assert all(item["reason"] == "PUBLIC_LEDGER_CORRUPT" for item in outcomes), outcomes
+    assert all(item["notify"] == 0 and item["notifyQuery"] == 0 for item in outcomes)
+
+
+def test_s3_persisted_lineage_columns_are_revalidated(tmp_path: Path) -> None:
+    import sqlite3
+
+    module = importlib.import_module("tools.news_grasp_cleanroom_public")
+    data = _load_fixture()
+    outcomes: list[dict[str, Any]] = []
+    for index, lineage in enumerate(("Scheduled", "Readiness"), start=400):
+        root = _runtime_root(tmp_path, index)
+        source = root / "source-immutable.json"
+        source.write_bytes(b"scheduled-source-immutable-v1")
+        before = source.read_bytes()
+        statuses = {surface_id: "CONFIRMED" for surface_id in data["requiredSurfaceIds"]}
+        scheduled = {"state": "FAILED", "terminalHash": "s" * 64}
+        recovery = {"state": "GREEN", "terminalHash": "r" * 64}
+        readiness = {"state": "RED", "terminalHash": "d" * 64}
+        _reconcile(
+            _controller(module, root, _Publisher(module.PublishResultUnknown), _Notifier(module.PublishResultUnknown)),
+            _inventory(data, statuses),
+            scheduled_state=scheduled,
+            recovery_state=recovery,
+            readiness_state=readiness,
+        )
+        with sqlite3.connect(root / "control" / "public-ledger-v1.sqlite3") as connection:
+            connection.execute("UPDATE lineages SET state=? WHERE issue_date=? AND lineage=?", ("GREEN", data["issueDate"], lineage))
+            connection.commit()
+        retry_publisher = _Publisher(module.PublishResultUnknown)
+        retry_notifier = _Notifier(module.PublishResultUnknown)
+        try:
+            result = _reconcile(
+                _controller(module, root, retry_publisher, retry_notifier),
+                _inventory(data, statuses),
+                scheduled_state=scheduled,
+                recovery_state=recovery,
+                readiness_state=readiness,
+            )
+        except module.PublicControlError as caught:
+            reason = caught.reason
+            public_state = None
+        else:
+            reason = "RETURNED"
+            public_state = result.get("publicState")
+        outcomes.append({"lineage": lineage, "reason": reason, "publicState": public_state, "publish": len(retry_publisher.calls), "notify": len(retry_notifier.calls), "source": source.read_bytes()})
+        assert source.read_bytes() == before
+    assert all(item["reason"] == "PUBLIC_LEDGER_CORRUPT" for item in outcomes), outcomes
+    assert all(item["publicState"] != "GREEN" for item in outcomes)
+    assert all(item["publish"] == 0 and item["notify"] == 0 for item in outcomes)
