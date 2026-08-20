@@ -1,0 +1,110 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S5-RED-CORRECTION-V1",
+  "todoId": "NG-CLEANROOM-S5-RED-R1",
+  "role": "test_luna",
+  "canonicalContext": "/root/s1_edge_driver_red",
+  "dependencyIds": ["NG-CLEANROOM-S5-RED-V1", "S5-TEST-DESIGN-REVIEW-R1-BLOCK"],
+  "baselineCommit": "569b1d9b6b52469b13a32f6fd870fcaabbd3d610",
+  "reviewEvidence": {
+    "reviewerContext": "/root/s1_independent_acceptance",
+    "reviewedCommit": "907760a3577489d30c9bea36e286f5f9cae5da0c",
+    "verdict": "BLOCK",
+    "blockerCount": 6,
+    "trackedMutationCount": 0,
+    "blockerClasses": ["stage_cutover_separation", "crash_hook_reachability", "initial_both_snapshot_semantics", "rollback_preimage_timing", "canonical_manifest_drift", "security_human_impact_noncausal"]
+  },
+  "writeLease": {
+    "leaseId": "TEST-LEASE-S5-R1-V1",
+    "leaseSha256": "8b7b69f3076b3c6c63a4f838674c32f92250c7983d71cced95f2f055763abc17",
+    "canonicalPayload": {
+      "leaseId": "TEST-LEASE-S5-R1-V1",
+      "role": "test_luna",
+      "canonicalContext": "/root/s1_edge_driver_red",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-s1-h1",
+      "writes": ["tests/test_news_grasp_cleanroom_s5_install.py", "tests/fixtures/news_grasp_cleanroom_s5_cases.json"],
+      "baselineCommit": "569b1d9b6b52469b13a32f6fd870fcaabbd3d610"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tests/test_news_grasp_cleanroom_s5_install.py", "tests/fixtures/news_grasp_cleanroom_s5_cases.json"],
+  "forbiddenWrites": ["tools", "config", "docs", "scripts", "all other tests and fixtures"],
+  "canonicalManifest": {
+    "path": "config/news_grasp_cleanroom_task_manifest_v1.json",
+    "sha256": "99888f219a8483e5d8c8698538444cf84d68fc36ab40e842962447982d86e641",
+    "bytes": 872,
+    "requiredTopKeys": ["schemaVersion", "scheduleId", "tasks"],
+    "requiredTaskKeys": ["taskPath", "taskName", "multipleInstancesPolicy", "triggers", "action"],
+    "requiredActionKeys": ["entryModule", "argv", "workingDirectoryToken"],
+    "requiredTriggerIds": ["scheduled-0600", "audit-0640"]
+  },
+  "correctedProductionContract": {
+    "module": "tools.news_grasp_cleanroom_install",
+    "symbols": ["InstallCutoverController", "InstallControlError", "PrivilegeDenied"],
+    "constructor": "InstallCutoverController(runtime_root, task_adapter, pythonw_path, process_adapter=None, security_adapter=None, boundary_hook=None)",
+    "stage": "stage(manifest, source_root, installed_root, authority, observed_at) -> INSTALL_STAGE_RESULT_V1; it ends old-enabled/candidate-disabled and never calls adapter.enable or disables the old task",
+    "cutover": "cutover(authority, observed_at) -> CUTOVER_RESULT_V1; it disables old before enabling new",
+    "rollback": "rollback(authority, observed_at) -> ROLLBACK_RESULT_V1; it disables new before restoring and enabling exact old preimage",
+    "inspect": "inspect() -> INSTALL_INSPECTION_V1 with no secrets",
+    "taskAdapter": "snapshot/register_disabled/disable/enable/restore/remove_candidate; snapshot observations are distinct from post-mutation invariant snapshots",
+    "securityAdapter": "capture_identity(path), verify_identity(path, token), is_reparse(path), acl_is_secure(path), signer_is_trusted(executable); default production adapter may use OS APIs but tests inject causal outcomes",
+    "taskDefinition": "register_disabled receives a structured TASK_DEFINITION_V1 mapping with exact taskPath/taskName/enabled=false/executable/arguments/workingDirectory/triggers/multipleInstancesPolicy; no shell command string"
+  },
+  "requiredCorrections": [
+    {
+      "blocker": "stage_cutover_separation",
+      "change": "after every successful stage and before cutover assert old enabled, new disabled, register_disabled exactly once, old disable count zero, new enable count zero and installed bytes/hash exact; stage retry never auto-calls cutover"
+    },
+    {
+      "blocker": "crash_hook_reachability",
+      "change": "map stage/install/pointer to stage API and old_disable/new_enable/commit to cutover API; every first call must raise the test-owned crash and set crashed.active false; assert safe phase state before retry; rollback does the same for all four rollback hooks"
+    },
+    {
+      "blocker": "initial_both_snapshot_semantics",
+      "change": "TaskAdapter keeps initialObservations separate from mutationSnapshots; mutators denial-check before change and record post-change state; for initial both or new-only require the first task mutation to disable the new candidate, then require every mutationSnapshot dual-enabled zero"
+    },
+    {
+      "blocker": "rollback_preimage_timing",
+      "change": "seal old task definition bytes and canonical hash before stage; after every rollback crash/resume require exact original definition/hash, not a value captured after cutover"
+    },
+    {
+      "blocker": "canonical_manifest_drift",
+      "change": "load the tracked canonical manifest, assert its exact hash, preserve both 06:00 and 06:40 triggers plus entryModule/workingDirectoryToken, and compare the structured registered task definition for exact equality including argument order and resolved working directory; add nested unknown/missing key negatives"
+    },
+    {
+      "blocker": "security_human_impact_noncausal",
+      "change": "use the public security adapter to causally inject reparse, post-capture identity swap, insecure ACL and untrusted signer; keep traversal/hash/source-root cases; seal an outside sentinel inventory before/after every rejection; assert process launch shell=false, CREATE_NO_WINDOW, encoding=utf-8, includeChildTree=true, noFocusTheft/noAutoOpen/noUserMonitoring and no kill"
+    }
+  ],
+  "requiredNodes": [
+    "test_s5_cutover_crash_matrix",
+    "test_s5_dual_enabled_invariant",
+    "test_s5_uac_and_rollback_recovery",
+    "test_s5_path_security_matrix",
+    "test_s5_secret_and_argument_injection",
+    "test_s5_child_tree_human_impact"
+  ],
+  "testDesignRules": [
+    "retain exactly the six top-level node names and cover matrices inside them; rewrite weak oracle bodies rather than add duplicate top-level tests",
+    "use isolated Japanese-named tmp roots and aware Asia/Tokyo times; any outside sentinel stays inside pytest tmp_path but outside the runtime root",
+    "all test adapters are public protocol substitutes only; never require production to read adapter private attributes",
+    "assert through adapter public observations/history/state methods and exact returned contract fields",
+    "dynamic import remains inside each node so the absent module produces six causal Red failures",
+    "no Windows Task Scheduler, UAC, subprocess, network, UI, credentials, sleep or filesystem mutation outside pytest tmp roots"
+  ],
+  "verification": {
+    "compileCommand": "py -3.12 -m py_compile tests/test_news_grasp_cleanroom_s5_install.py",
+    "collectCommand": "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s5_install.py",
+    "collectExpected": 6,
+    "redCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s5_install.py",
+    "redExpected": "exactly six failures for absent tools.news_grasp_cleanroom_install, collection errors zero",
+    "ruffCommand": "py -3.12 -m ruff check tests/test_news_grasp_cleanroom_s5_install.py",
+    "diffCommand": "git diff --check -- tests/test_news_grasp_cleanroom_s5_install.py tests/fixtures/news_grasp_cleanroom_s5_cases.json"
+  },
+  "commitPolicy": {"allowedOnlyAfterExpectedRed": true, "paths": ["tests/test_news_grasp_cleanroom_s5_install.py", "tests/fixtures/news_grasp_cleanroom_s5_cases.json"], "message": "test: harden S5 operational oracles"},
+  "causalRetryCondition": "one correction attempt and one verification chain; return to Sol on the first non-Green design or static gate",
+  "delivery": "two test-owned files, hashes and bytes, exact six-Red evidence, review-blocker closure map and zero external mutation",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "noSharedProcessKill": true, "persistentPolling": false}
+}
