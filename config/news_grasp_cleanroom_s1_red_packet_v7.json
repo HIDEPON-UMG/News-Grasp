@@ -1,0 +1,100 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S1-RED-R7",
+  "todoId": "NG-CLEANROOM-S1-GREEN",
+  "role": "test_luna",
+  "canonicalContext": "/root/s1_edge_driver_red",
+  "mutationMode": "add_three_acceptance_blocker_red_nodes",
+  "dependencyIds": [
+    "ng-cleanroom-s1-entry-impact-v4",
+    "ng-cleanroom-s1-acceptance-r1:BLOCK"
+  ],
+  "requirementIds": ["NG-A-R04", "NG-A-R05"],
+  "baselineCommit": "5ad445bdca77793d6068cb9a521344c058edb9f0",
+  "impactReceiptPath": "config/news_grasp_cleanroom_s1_impact_receipt_v4.json",
+  "impactReceiptSha256": "6c4d85485f9f2405bb9484ffbfab20cb4f9e12b602612c1ef4ce8c76bc5a2b2c",
+  "acceptanceReviewPath": "config/news_grasp_cleanroom_s1_acceptance_review_r1.json",
+  "acceptanceReviewSha256": "3adc13042f081847935bf5dcb6a57834df6a30b39c450c09fd6e06302444e548",
+  "writeLease": {
+    "leaseId": "TEST-LEASE-S1-R7",
+    "leaseSha256": "e31230db7d696648cf3b5b45927f863f78325a4c0d5d1273671fcd344a053229",
+    "canonicalPayload": {
+      "leaseId": "TEST-LEASE-S1-R7",
+      "role": "test_luna",
+      "canonicalContext": "/root/s1_edge_driver_red",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-s1-h1",
+      "writes": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+      "baselineCommit": "5ad445bdca77793d6068cb9a521344c058edb9f0"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+  "baselineSourceHashes": {
+    "tests/test_news_grasp_cleanroom_s1_entry.py": "7de339dae51028a91c8b12ddeebd3b12f1144b1cfe89ccafe6fe09a14c21a8e0",
+    "tests/fixtures/news_grasp_cleanroom_s1_cases.json": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f",
+    "tools/news_grasp_cleanroom_controller.py": "c5197c9c1899d72dd1eb15438b32cca814322538ee073af57283faf224d8be0d",
+    "tools/news_grasp_cleanroom_ledger.py": "8527d56c092b4d43ecc615f32cc8689224493475b669b4b706fcf441a7a342d9",
+    "tools/news_grasp_cleanroom_dispatch.py": "1d61e10ba6771834466b3def672be1d33e4fbb5236c398c7d80de54f02bc98af"
+  },
+  "newNodes": [
+    {
+      "name": "test_s1_reconcile_revalidates_scheduled_state_inside_transaction",
+      "oracle": [
+        "use the real DurableWal, ControlLedger, Controller and SQLite files under tmp_path",
+        "use a one-shot synchronized wrapper around ControlLedger.import_zero_entries so the outer 06:40 invocation has already observed Scheduled ABSENT, then a distinct writer completes a real 06:39 ENSURE_SCHEDULED dispatch before the outer ledger transaction continues",
+        "require the outer result decision ENSURE_AUDIT_OBSERVING_SCHEDULED, scheduledState ACTIVE and Audit slot target",
+        "inspect real control state and require Scheduled ACTIVE with no MISSED_SCHEDULED terminal row",
+        "do not accept a generic busy error, sleep-based race or mocked ledger result"
+      ],
+      "expectedCurrentFailure": "outer result remains MISSED_SCHEDULED_AND_ENSURE_AUDIT or persists false MISSED_SCHEDULED"
+    },
+    {
+      "name": "test_s1_recovery_after_committed_journal_repairs_new_corruption",
+      "oracle": [
+        "create a real generation-1 ledger, corrupt it and complete one real recovery to generation 2 with a COMMITTED journal",
+        "corrupt the reopened generation-2 SQLite header after all connections close",
+        "call the real recover_ledger again and require a different recoveryId, oldGeneration 2, newGeneration 3 and a different quarantinePath",
+        "call inspect_control_state or ControlLedger.verify after the second recovery and require integrity Green",
+        "require the prior COMMITTED journal remains preserved in recovery history"
+      ],
+      "expectedCurrentFailure": "second call reuses generation-2 recovery identity or leaves verify corrupt"
+    },
+    {
+      "name": "test_s1_recover_wrapper_exposes_and_forwards_busy_timeout",
+      "oracle": [
+        "inspect.signature on the real tools.news_grasp_cleanroom_dispatch.recover_ledger and require keyword-only busy_timeout_ms with default 1000",
+        "replace only the Controller constructor with a capturing test double, invoke recover_ledger with busy_timeout_ms=17 and require the constructor receives 17 and recover_ledger receives the exact observed_at",
+        "do not compare receipt strings without inspecting the real callable"
+      ],
+      "expectedCurrentFailure": "signature lacks busy_timeout_ms or forwarding capture differs"
+    }
+  ],
+  "testConstraints": {
+    "existingNodeCount": 15,
+    "expectedCollected": 18,
+    "fixtureMutation": "forbidden",
+    "productionMutation": "forbidden",
+    "sleepBasedRace": "forbidden",
+    "subprocess": "forbidden",
+    "testWeakening": "forbidden",
+    "existingAssertions": "byte-preserved except import additions required by the three new tests"
+  },
+  "verification": {
+    "compileCommand": "py -3.12 -m py_compile tests/test_news_grasp_cleanroom_s1_entry.py",
+    "collectCommand": "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "newNodesCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py -k 'revalidates_scheduled_state_inside_transaction or recovery_after_committed_journal_repairs_new_corruption or recover_wrapper_exposes_and_forwards_busy_timeout'",
+    "fullCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "ruffCommand": "py -3.12 -m ruff check tests/test_news_grasp_cleanroom_s1_entry.py",
+    "expected": "collect 18; exactly three new nodes fail for their named blocker; existing 15 pass; unrelated failure zero; Ruff and diff-check Green"
+  },
+  "commitPolicy": {
+    "allowedOnlyAfterExpectedRed": true,
+    "paths": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+    "message": "test: expose S1 acceptance blockers"
+  },
+  "causalRetryCondition": "one authoring attempt and one ordered verification chain; if any existing test fails or a new node passes unexpectedly, stop without weakening or rerun",
+  "delivery": "test file only, final hash/bytes, authoring commit, collected node list and exact expected Red evidence",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "persistentPolling": false, "rawProcessTermination": false}
+}
