@@ -1,0 +1,68 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_S1_EXPECTED_RED_RECEIPT_V1",
+  "generation": "V4",
+  "supersedes": "config/news_grasp_cleanroom_s1_red_receipt_v3.json",
+  "workPackage": "S1",
+  "requirementIds": ["NG-A-R02", "NG-A-R03", "NG-A-R04", "NG-A-R05"],
+  "itSuites": ["IT-01", "IT-06", "IT-07"],
+  "impactAdmission": {
+    "reviewId": "ng-cleanroom-s1-impact-r3",
+    "receiptSha256": "a484fc5a0c8486f096fbc19f340d9988067c9536517ce4ea437b0ddd11bb1087",
+    "decision": "accepted",
+    "blockerCount": 0,
+    "redAdmissionReady": true
+  },
+  "causalCorrection": {
+    "sourceAttemptReceipt": "config/news_grasp_cleanroom_s1_impl_attempt_v4_receipt.json",
+    "sourceAttemptReceiptSha256": "c0ceeeb15594b85e37580f5cec19e5751fd4151a753457494d4bbd6858bca70b",
+    "packetPath": "config/news_grasp_cleanroom_s1_test_packet_v4.json",
+    "packetSha256": "1dfd60e886e86837612de807c01fd62781fc6b4ea6aecff5f8a1d66d510381e4",
+    "correctedOracleDefect": "after_recovery_committed uses its exact terminal nextCall instead of the other four resumable hook expectations",
+    "otherFourRecoveredAssertionsPreserved": true,
+    "secondNoopAssertionPreserved": true,
+    "assertionWeakening": false,
+    "fixtureMutation": false
+  },
+  "testOwner": {
+    "role": "test_luna",
+    "canonicalContext": "/root/playlist_repair_red",
+    "leaseId": "TEST-LEASE-S1-V4",
+    "leaseSha256": "131c5b73962df0a0f3154a506c038a1945d813d9c5034a0f20b72801377678ed",
+    "authoringCommit": "8b3c95a1788a6fbcaab8d497221e2b48ac387e41",
+    "integratedCommit": "cd025b1ed3c0a2ffeae32426bbeedec439072e96"
+  },
+  "productionBaseline": {
+    "commit": "cd025b1ed3c0a2ffeae32426bbeedec439072e96",
+    "contractsSha256": "b5e0904636085228f2e59a66c8cc4551ae78ce0db18f247fcc9d3b690668c6e2",
+    "otherS1ProductionTargets": "ABSENT"
+  },
+  "testArtifacts": [
+    {"path": "tests/test_news_grasp_cleanroom_s1_entry.py", "sha256": "a3a1edd86fe6df2fccf15c9b4ca88eb392ae5b0573c471f6a800a85cd7a47eb4", "bytes": 26252},
+    {"path": "tests/fixtures/news_grasp_cleanroom_s1_cases.json", "sha256": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f", "bytes": 34435}
+  ],
+  "coverage": {
+    "topLevelNodeCount": 15,
+    "dispatchProjectionCaseCount": 13,
+    "dispatchCommitBoundaryCount": 9,
+    "recoveryHookCount": 5,
+    "invalidReasonCaseCount": 17,
+    "fixtureNormativeEquality": true,
+    "fallbackImplementationCount": 0
+  },
+  "collection": {"command": "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s1_entry.py", "exitCode": 0, "collected": 15},
+  "expectedRed": {
+    "command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "exitCode": 1,
+    "failed": 15,
+    "passed": 0,
+    "reason": "ModuleNotFoundError",
+    "message": "No module named 'tools.news_grasp_cleanroom_wal'",
+    "reasonMatchCount": 15,
+    "unrelatedFailureCount": 0,
+    "status": "expected_red"
+  },
+  "verification": {"compileExitCode": 0, "ruffExitCode": 0, "diffCheckExitCode": 0, "fixtureSelfValidationExitCode": 0, "externalModelCallCount": 0},
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "networkCallCount": 0, "installedOrTaskMutation": false},
+  "measuredAt": "2026-08-20T18:21:33Z",
+  "status": "sealed"
+}
