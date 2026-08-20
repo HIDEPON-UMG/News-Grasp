@@ -53,6 +53,7 @@ def _inventory(data: dict[str, Any], statuses: dict[str, str]) -> dict[str, Any]
             "artifactSha256": _canonical_sha256({"issueDate": ISSUE_DATE, "surfaceId": surface_id}),
         }
         for surface_id in data["requiredSurfaceIds"]
+        if surface_id in statuses
     ]
     inventory: dict[str, Any] = {
         "schemaVersion": "PUBLIC_SURFACE_INVENTORY_V1",
