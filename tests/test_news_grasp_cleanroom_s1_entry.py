@@ -15,6 +15,7 @@ import hashlib
 import inspect
 import importlib
 import json
+import os
 from pathlib import Path
 import sqlite3
 from concurrent.futures import ThreadPoolExecutor
@@ -194,6 +195,22 @@ def _assert_real_sqlite(runtime_root: Path) -> None:
     with closing(sqlite3.connect(ledger_path)) as connection:
         assert connection.execute("PRAGMA journal_mode").fetchone()[0].lower() == "wal"
         assert connection.execute("PRAGMA synchronous").fetchone()[0] == 2
+
+
+def _tree_snapshot(root: Path) -> dict[str, tuple[str, bytes | None]]:
+    snapshot: dict[str, tuple[str, bytes | None]] = {}
+    root = Path(root)
+    if not root.exists():
+        return snapshot
+    for path in root.rglob("*"):
+        relative = path.relative_to(root).as_posix()
+        if path.is_symlink():
+            snapshot[relative] = ("symlink", os.readlink(path).encode("utf-8"))
+        elif path.is_dir():
+            snapshot[relative] = ("directory", None)
+        else:
+            snapshot[relative] = ("file", path.read_bytes())
+    return snapshot
 
 
 def _result_hash(schedule_id: str, issue_date: str, terminal_state: str) -> str:
@@ -920,6 +937,497 @@ def test_edge_writer_crash_recovery(tmp_path: Path) -> None:
         terminal = resumed.recover_ledger(observed_at=_at(6, 2, 2))
         assert terminal["status"] == "RECOVERY_NOT_REQUIRED"
         _assert_real_sqlite(runtime_root)
+
+
+def test_s1_recovery_journal_self_consistent_forgery_fails_closed(tmp_path: Path) -> None:
+    data = _load_fixture()
+    production = _production()
+    contracts = importlib.import_module("tools.news_grasp_cleanroom_contracts")
+    mutations = (
+        ("missing_key", lambda journal: journal.pop("updatedAt")),
+        ("extra_key", lambda journal: journal.update({"forged": "extra"})),
+        ("unknown_phase", lambda journal: journal.update({"phase": "UNKNOWN"})),
+        ("bool_generation", lambda journal: journal.update({"oldGeneration": True})),
+        ("nonconsecutive_generation", lambda journal: journal.update({"newGeneration": 4})),
+        ("invalid_recovery_id", lambda journal: journal.update({"recoveryId": "!"})),
+        ("traversal_quarantine", lambda journal: journal.update({"quarantineRelativePath": "../outside/traversal"})),
+        ("absolute_quarantine", lambda journal: journal.update({"quarantineRelativePath": ""})),
+    )
+    for index, (case_name, mutate) in enumerate(mutations, start=1):
+        case_root = tmp_path / f"forgery-{index}-{case_name}"
+        runtime_root = case_root / "runtime"
+        outside_root = case_root / "outside"
+        outside_root.mkdir(parents=True)
+        (outside_root / "sentinel.txt").write_text("outside sentinel", encoding="utf-8")
+        manifest_path = _write_manifest(case_root, data)
+        initial = _controller(production, runtime_root, manifest_path)
+        initial.reconcile(
+            raw_argv=data["normative"]["rawArgv"]["exact"],
+            observed_at=_at(6, 1),
+            writer=_writer(index),
+        )
+        del initial
+        ledger_path = runtime_root / "control" / "control-ledger-v1.sqlite3"
+        corrupted = bytearray(ledger_path.read_bytes())
+        corrupted[:16] = b"not a sqlite file"
+        ledger_path.write_bytes(corrupted)
+        first = _controller(production, runtime_root, manifest_path).recover_ledger(observed_at=_at(6, 2))
+        assert first["status"] == "recovered"
+        recovery_journal = runtime_root / "control" / "recovery-journal-v1.json"
+        journal = json.loads(recovery_journal.read_text(encoding="utf-8"))
+        mutate(journal)
+        if case_name == "absolute_quarantine":
+            journal["quarantineRelativePath"] = str(outside_root / "absolute")
+        journal["journalSha256"] = contracts._entry_canonical_sha256(
+            {key: value for key, value in journal.items() if key != "journalSha256"}
+        )
+        recovery_journal.write_text(
+            json.dumps(journal, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
+            encoding="utf-8",
+        )
+        corrupted = bytearray(ledger_path.read_bytes())
+        corrupted[:16] = b"not a sqlite file"
+        ledger_path.write_bytes(corrupted)
+        managed_before = ledger_path.read_bytes()
+        outside_before = _tree_snapshot(outside_root)
+        reopened = _controller(production, runtime_root, manifest_path)
+        _expect_reason(
+            production["error"],
+            "NEWS_GRASP_ENTRY_LEDGER_RECOVERY_FAILED",
+            lambda: reopened.recover_ledger(observed_at=_at(6, 3)),
+        )
+        assert ledger_path.exists()
+        assert ledger_path.read_bytes() == managed_before
+        assert _tree_snapshot(outside_root) == outside_before
+
+
+def test_s1_busy_timeout_invalid_matrix_is_typed_before_write(tmp_path: Path) -> None:
+    data = _load_fixture()
+    production = _production()
+    dispatch_manifest = _write_manifest(tmp_path, data)
+    invalid_values = (
+        ("true", True),
+        ("zero", 0),
+        ("negative", -1),
+        ("float", 1.5),
+        ("string", "1000"),
+        ("none", None),
+    )
+    for value_name, value in invalid_values:
+        route_root = tmp_path / f"busy-dispatch-{value_name}"
+        _expect_reason(
+            production["error"],
+            "NEWS_GRASP_ENTRY_BUSY_TIMEOUT_INVALID",
+            lambda value=value, route_root=route_root: production["dispatch"](
+                raw_argv=data["normative"]["rawArgv"]["exact"],
+                runtime_root=route_root,
+                manifest_path=dispatch_manifest,
+                observed_at=_at(6, 1),
+                writer=_writer(1),
+                busy_timeout_ms=value,
+            ),
+        )
+        assert not route_root.exists()
+
+        route_root = tmp_path / f"busy-recover-{value_name}"
+        _expect_reason(
+            production["error"],
+            "NEWS_GRASP_ENTRY_BUSY_TIMEOUT_INVALID",
+            lambda value=value, route_root=route_root: production["recover_ledger"](
+                runtime_root=route_root,
+                manifest_path=tmp_path / f"manifest-recover-{value_name}.json",
+                observed_at=_at(6, 2),
+                busy_timeout_ms=value,
+            ),
+        )
+        assert not route_root.exists()
+
+        route_root = tmp_path / f"busy-controller-{value_name}"
+        _expect_reason(
+            production["error"],
+            "NEWS_GRASP_ENTRY_BUSY_TIMEOUT_INVALID",
+            lambda value=value, route_root=route_root: production["Controller"](
+                runtime_root=route_root,
+                manifest_path=tmp_path / f"manifest-controller-{value_name}.json",
+                busy_timeout_ms=value,
+            ),
+        )
+        assert not route_root.exists()
+
+        route_root = tmp_path / f"busy-ledger-{value_name}"
+        _expect_reason(
+            production["error"],
+            "NEWS_GRASP_ENTRY_BUSY_TIMEOUT_INVALID",
+            lambda value=value, route_root=route_root: production["ControlLedger"](
+                route_root,
+                busy_timeout_ms=value,
+            ),
+        )
+        assert not route_root.exists()
+
+    for value in (1, 60000):
+        controller = production["Controller"](
+            runtime_root=tmp_path / f"accepted-controller-{value}",
+            manifest_path=tmp_path / f"accepted-controller-{value}.json",
+            busy_timeout_ms=value,
+        )
+        ledger = production["ControlLedger"](
+            tmp_path / f"accepted-ledger-{value}",
+            busy_timeout_ms=value,
+        )
+        assert controller.busy_timeout_ms == value
+        assert ledger.busy_timeout_ms == value
+
+
+def test_s1_zero_entry_import_cannot_erase_clock_rollback(tmp_path: Path) -> None:
+    data = _load_fixture()
+    production = _production()
+    manifest_path = _write_manifest(tmp_path, data)
+    runtime_root = tmp_path / "runtime"
+    controller = _controller(production, runtime_root, manifest_path)
+    controller.reconcile(
+        raw_argv=data["normative"]["rawArgv"]["exact"],
+        observed_at=_at(7, 0),
+        writer=_writer(1),
+    )
+    before = controller.inspect_control_state()
+    wal = production["DurableWal"](runtime_root)
+    prior = wal.record_initial(
+        raw_argv=data["normative"]["rawArgv"]["exact"],
+        received_at=_at(6, 59),
+        writer=_writer(2),
+    )
+    prior_path = runtime_root / "control" / "wal" / prior["invocationId"]
+    _expect_reason(
+        production["error"],
+        "NEWS_GRASP_ENTRY_CLOCK_ROLLBACK",
+        lambda: controller.reconcile(
+            raw_argv=data["normative"]["rawArgv"]["exact"],
+            observed_at=_at(6, 59),
+            writer=_writer(3),
+        ),
+    )
+    after = controller.inspect_control_state()
+    assert after["lastObservedAt"] == _at(7, 0).isoformat()
+    assert after["invocations"] == before["invocations"]
+    assert after["slots"] == before["slots"]
+    assert after["eventChainHead"] == before["eventChainHead"]
+    assert not (prior_path / "0002-imported.json").exists()
+
+
+def test_s1_wal_exact_schema_directory_and_imported_chain(tmp_path: Path) -> None:
+    data = _load_fixture()
+    production = _production()
+    contracts = importlib.import_module("tools.news_grasp_cleanroom_contracts")
+    cases = (
+        ("extra_key", lambda event: event.update({"unexpected": "value"}), False),
+        ("missing_key", lambda event: event.pop("writer"), False),
+        ("wrong_type", lambda event: event.update({"sequence": "1"}), False),
+        ("wrong_event_type", lambda event: event.update({"eventType": "FORGED"}), False),
+        ("wrong_phase", lambda event: event.update({"phase": "FORGED"}), False),
+        ("wrong_sequence", lambda event: event.update({"sequence": 2}), False),
+        ("raw_argv_hash_mismatch", lambda event: event.update({"rawArgv": ["forged"]}), False),
+        ("directory_invocation_mismatch", lambda event: event.update({"invocationId": "f" * 32}), False),
+        ("imported_parity_mismatch", lambda event: event.update({"rawArgv": ["forged"]}), True),
+    )
+    for index, (case_name, mutate, imported) in enumerate(cases, start=1):
+        runtime_root = tmp_path / f"wal-schema-{index}-{case_name}"
+        wal = production["DurableWal"](runtime_root)
+        initial = wal.record_initial(
+            raw_argv=data["normative"]["rawArgv"]["exact"],
+            received_at=_at(6, 1),
+            writer=_writer(index),
+        )
+        if imported:
+            wal.mark_imported(initial, imported_at=_at(6, 2))
+            target = runtime_root / "control" / "wal" / initial["invocationId"] / "0002-imported.json"
+        else:
+            target = runtime_root / "control" / "wal" / initial["invocationId"] / "0001-initial.json"
+        event = json.loads(target.read_text(encoding="utf-8"))
+        mutate(event)
+        event["eventSha256"] = contracts._entry_canonical_sha256(
+            {key: value for key, value in event.items() if key != "eventSha256"}
+        )
+        target.write_text(
+            json.dumps(event, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
+            encoding="utf-8",
+        )
+        _expect_reason(
+            production["error"],
+            "NEWS_GRASP_ENTRY_LEDGER_CORRUPT",
+            lambda wal=wal: wal.verify(),
+        )
+
+
+def test_s1_recovery_transition_gaps_resume_same_identity(tmp_path: Path) -> None:
+    data = _load_fixture()
+    production = _production()
+    for index, target_phase in enumerate(("SEALED", "LEDGER_CREATED"), start=1):
+        case_root = tmp_path / f"transition-{index}-{target_phase.lower()}"
+        case_root.mkdir(parents=True)
+        runtime_root = case_root / "runtime"
+        manifest_path = _write_manifest(case_root, data)
+        initial = _controller(production, runtime_root, manifest_path)
+        initial.reconcile(
+            raw_argv=data["normative"]["rawArgv"]["exact"],
+            observed_at=_at(6, 1),
+            writer=_writer(index),
+        )
+        del initial
+        generation_path = runtime_root / "control" / "generation-seal-v1.json"
+        old_seal = json.loads(generation_path.read_text(encoding="utf-8"))
+        ledger_path = runtime_root / "control" / "control-ledger-v1.sqlite3"
+        corrupted = bytearray(ledger_path.read_bytes())
+        corrupted[:16] = b"not a sqlite file"
+        ledger_path.write_bytes(corrupted)
+        failure_state = {"failed": False}
+
+        def fail_at_phase(source: str | os.PathLike[str], destination: str | os.PathLike[str], expected=target_phase) -> None:
+            if Path(destination).name == "recovery-journal-v1.json" and not failure_state["failed"]:
+                payload = json.loads(Path(source).read_text(encoding="utf-8"))
+                if payload.get("phase") == expected:
+                    failure_state["failed"] = True
+                    raise OSError(f"test-owned replace failure at {expected}")
+            os.replace(source, destination)
+
+        operations = production["DurabilityOps"](replace=fail_at_phase)
+        _expect_reason(
+            production["error"],
+            "NEWS_GRASP_ENTRY_LEDGER_RECOVERY_FAILED",
+            lambda operations=operations: production["recover_ledger"](
+                runtime_root=runtime_root,
+                manifest_path=manifest_path,
+                observed_at=_at(6, 2),
+                durability_ops=operations,
+            ),
+        )
+        assert failure_state["failed"]
+        recovery_journal = runtime_root / "control" / "recovery-journal-v1.json"
+        failed_journal = json.loads(recovery_journal.read_text(encoding="utf-8"))
+        recovery_id = failed_journal["recoveryId"]
+        new_generation = failed_journal["newGeneration"]
+        resumed = _controller(production, runtime_root, manifest_path).recover_ledger(observed_at=_at(6, 3))
+        assert resumed["status"] == "recovered"
+        assert resumed["recoveryId"] == recovery_id
+        assert resumed["newGeneration"] == new_generation == 2
+        seal = json.loads(generation_path.read_text(encoding="utf-8"))
+        assert seal["generation"] == 2
+        assert seal["previousSealSha256"] == old_seal["sealSha256"]
+        with closing(sqlite3.connect(ledger_path)) as connection:
+            genesis_count = connection.execute(
+                "SELECT COUNT(*) FROM events WHERE event_type='LEDGER_RECOVERED'"
+            ).fetchone()[0]
+        assert genesis_count == 1
+        committed = json.loads(recovery_journal.read_text(encoding="utf-8"))
+        assert committed["phase"] == "COMMITTED"
+        assert committed["recoveryId"] == recovery_id
+        _controller(production, runtime_root, manifest_path).inspect_control_state()
+        _assert_real_sqlite(runtime_root)
+
+
+def test_s1_wal_managed_root_containment(tmp_path: Path) -> None:
+    data = _load_fixture()
+    production = _production()
+    contracts = importlib.import_module("tools.news_grasp_cleanroom_contracts")
+
+    direct_root = tmp_path / "containment-direct"
+    direct_outside = tmp_path / "containment-direct-outside"
+    direct_outside.mkdir()
+    (direct_outside / "sentinel.txt").write_text("outside sentinel", encoding="utf-8")
+    direct_wal = production["DurableWal"](direct_root)
+    direct_initial = direct_wal.record_initial(
+        raw_argv=data["normative"]["rawArgv"]["exact"],
+        received_at=_at(6, 1),
+        writer=_writer(1),
+    )
+    forged = dict(direct_initial)
+    forged["invocationId"] = "../../../containment-direct-outside"
+    forged["eventSha256"] = contracts._entry_canonical_sha256(
+        {key: value for key, value in forged.items() if key != "eventSha256"}
+    )
+    direct_before = _tree_snapshot(direct_outside)
+    _expect_reason(
+        production["error"],
+        "NEWS_GRASP_ENTRY_LEDGER_CORRUPT",
+        lambda: direct_wal.mark_imported(forged, imported_at=_at(6, 2)),
+    )
+    assert _tree_snapshot(direct_outside) == direct_before
+
+    forged_root = tmp_path / "containment-forged"
+    forged_outside = tmp_path / "containment-forged-outside"
+    forged_outside.mkdir()
+    (forged_outside / "sentinel.txt").write_text("outside sentinel", encoding="utf-8")
+    forged_wal = production["DurableWal"](forged_root)
+    forged_initial = forged_wal.record_initial(
+        raw_argv=data["normative"]["rawArgv"]["exact"],
+        received_at=_at(6, 1),
+        writer=_writer(2),
+    )
+    forged_event = dict(forged_initial)
+    forged_event["invocationId"] = "../../../containment-forged-outside"
+    forged_event["eventSha256"] = contracts._entry_canonical_sha256(
+        {key: value for key, value in forged_event.items() if key != "eventSha256"}
+    )
+    forged_directory = forged_root / "control" / "wal" / "forged-directory"
+    forged_directory.mkdir(parents=True)
+    (forged_directory / "0001-initial.json").write_text(
+        json.dumps(forged_event, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
+        encoding="utf-8",
+    )
+    forged_before = _tree_snapshot(forged_outside)
+    _expect_reason(
+        production["error"],
+        "NEWS_GRASP_ENTRY_LEDGER_CORRUPT",
+        lambda: forged_wal.iter_zero_entries(),
+    )
+    assert _tree_snapshot(forged_outside) == forged_before
+
+    symlink_root = tmp_path / "containment-symlink"
+    symlink_outside = tmp_path / "containment-symlink-outside"
+    symlink_outside.mkdir()
+    (symlink_outside / "sentinel.txt").write_text("outside sentinel", encoding="utf-8")
+    (symlink_root / "control").mkdir(parents=True)
+    wal_link = symlink_root / "control" / "wal"
+    try:
+        wal_link.symlink_to(symlink_outside, target_is_directory=True)
+    except (OSError, NotImplementedError):
+        symlink_created = False
+    else:
+        symlink_created = True
+    if symlink_created:
+        manifest_path = _write_manifest(tmp_path, data)
+        symlink_before = _tree_snapshot(symlink_outside)
+        _expect_reason(
+            production["error"],
+            "NEWS_GRASP_ENTRY_LEDGER_CORRUPT",
+            lambda: production["dispatch"](
+                raw_argv=data["normative"]["rawArgv"]["exact"],
+                runtime_root=symlink_root,
+                manifest_path=manifest_path,
+                observed_at=_at(6, 1),
+                writer=_writer(3),
+            ),
+        )
+        assert _tree_snapshot(symlink_outside) == symlink_before
+
+
+def test_s1_materialized_state_drift_is_corrupt(tmp_path: Path) -> None:
+    data = _load_fixture()
+    production = _production()
+    mutations = (
+        ("slot_owner", "UPDATE slots SET owner_key=?", ("forged-owner",)),
+        ("slot_fence", "UPDATE slots SET fence_token=?", (2,)),
+        ("invocation_status", "UPDATE invocations SET status=?", ("RECOVERED_ZERO_ENTRY",)),
+        ("last_observed_at", "UPDATE metadata SET value=? WHERE key='lastObservedAt'", (_at(6, 2).isoformat(),)),
+    )
+    for index, (case_name, statement, parameters) in enumerate(mutations, start=1):
+        runtime_root = tmp_path / f"materialized-{index}-{case_name}"
+        manifest_root = tmp_path / f"materialized-manifest-{index}"
+        manifest_root.mkdir(parents=True)
+        manifest_path = _write_manifest(manifest_root, data)
+        controller = _controller(production, runtime_root, manifest_path)
+        controller.reconcile(
+            raw_argv=data["normative"]["rawArgv"]["exact"],
+            observed_at=_at(6, 1),
+            writer=_writer(index),
+        )
+        del controller
+        ledger_path = runtime_root / "control" / "control-ledger-v1.sqlite3"
+        with closing(sqlite3.connect(ledger_path)) as connection:
+            events_before = connection.execute(
+                "SELECT sequence,generation,event_type,slot_key,payload_json,previous_event_sha256,event_sha256 FROM events ORDER BY sequence"
+            ).fetchall()
+            connection.execute(statement, parameters)
+            connection.commit()
+            events_after = connection.execute(
+                "SELECT sequence,generation,event_type,slot_key,payload_json,previous_event_sha256,event_sha256 FROM events ORDER BY sequence"
+            ).fetchall()
+        assert events_after == events_before
+        reopened = _controller(production, runtime_root, manifest_path)
+        _expect_reason(
+            production["error"],
+            "NEWS_GRASP_ENTRY_LEDGER_CORRUPT",
+            lambda: reopened.inspect_control_state(),
+        )
+
+
+def test_s1_public_invalid_type_matrix_is_total(tmp_path: Path) -> None:
+    data = _load_fixture()
+    production = _production()
+    manifest_path = _write_manifest(tmp_path, data)
+    for index, raw_argv in enumerate((None, 42), start=1):
+        runtime_root = tmp_path / f"invalid-raw-argv-{index}"
+        _expect_reason(
+            production["error"],
+            "NEWS_GRASP_ENTRY_ARGS_INVALID",
+            lambda raw_argv=raw_argv, runtime_root=runtime_root: production["dispatch"](
+                raw_argv=raw_argv,
+                runtime_root=runtime_root,
+                manifest_path=manifest_path,
+                observed_at=_at(6, 1),
+                writer=_writer(index),
+            ),
+        )
+        assert not runtime_root.exists()
+
+    for index, observed_at in enumerate((None, object()), start=1):
+        runtime_root = tmp_path / f"invalid-observed-at-{index}"
+        _expect_reason(
+            production["error"],
+            "NEWS_GRASP_ENTRY_TIME_INVALID",
+            lambda observed_at=observed_at, runtime_root=runtime_root: production["dispatch"](
+                raw_argv=data["normative"]["rawArgv"]["exact"],
+                runtime_root=runtime_root,
+                manifest_path=manifest_path,
+                observed_at=observed_at,
+                writer=_writer(index + 10),
+            ),
+        )
+        assert not runtime_root.exists()
+
+    _expect_reason(
+        production["error"],
+        "NEWS_GRASP_ENTRY_MANIFEST_INVALID",
+        lambda: production["reconcile_slot"](
+            manifest=_manifest(data),
+            observed_at=_at(6, 1),
+            last_observed_at=None,
+            scheduled_state=[],
+        ),
+    )
+    commit_root = tmp_path / "invalid-commit-slot"
+    _expect_reason(
+        production["error"],
+        "NEWS_GRASP_ENTRY_COMMIT_INVALID",
+        lambda: production["commit_slot"](
+            runtime_root=commit_root,
+            manifest_path=manifest_path,
+            slot_key=[],
+            writer=_writer(20),
+            fence_token=1,
+            terminal_state="SUCCEEDED",
+            result_hash="a" * 64,
+            observed_at=_at(6, 1),
+        ),
+    )
+    assert not commit_root.exists()
+
+    imported_root = tmp_path / "invalid-imported-at"
+    wal = production["DurableWal"](imported_root)
+    initial = wal.record_initial(
+        raw_argv=data["normative"]["rawArgv"]["exact"],
+        received_at=_at(6, 1),
+        writer=_writer(21),
+    )
+    initial_path = imported_root / "control" / "wal" / initial["invocationId"] / "0001-initial.json"
+    initial_before = initial_path.read_bytes()
+    _expect_reason(
+        production["error"],
+        "NEWS_GRASP_ENTRY_TIME_INVALID",
+        lambda: wal.mark_imported(initial, imported_at=None),
+    )
+    assert initial_path.read_bytes() == initial_before
+    assert not initial_path.with_name("0002-imported.json").exists()
 
 
 def test_s1_reconcile_revalidates_scheduled_state_inside_transaction(tmp_path: Path) -> None:
