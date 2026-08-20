@@ -222,7 +222,8 @@ def _s1_logical_dump(root: Path) -> list[dict[str, Any]]:
 
 
 def _s1_state(root: Path) -> tuple[dict[str, dict[str, Any]], list[dict[str, Any]]]:
-    return _s1_tree_snapshot(root), _s1_logical_dump(root)
+    logical = _s1_logical_dump(root)
+    return _s1_tree_snapshot(root), logical
 
 
 def _recovery_record(root: Path) -> dict[str, Any]:
