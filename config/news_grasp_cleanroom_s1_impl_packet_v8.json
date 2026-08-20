@@ -1,0 +1,100 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S1-GREEN-V8",
+  "todoId": "NG-CLEANROOM-S1-GREEN",
+  "role": "implementation_luna",
+  "canonicalContext": "/root/implementation_luna_canary",
+  "mutationMode": "static_cleanup_then_full_verification",
+  "dependencyIds": [
+    "ng-cleanroom-s0-acceptance-r2",
+    "ng-cleanroom-s1-impact-r3",
+    "NEWS_GRASP_CLEANROOM_S1_EXPECTED_RED_RECEIPT_V5",
+    "NG-CLEANROOM-S1-IMPL-ATTEMPT-V7"
+  ],
+  "requirementIds": ["NG-A-R02", "NG-A-R03", "NG-A-R04", "NG-A-R05"],
+  "baselineCommit": "a035b2f9d77533509064b6ea293eff5cbca337c4",
+  "baselineReceiptPath": "config/news_grasp_cleanroom_s1_impl_attempt_v7_receipt.json",
+  "baselineSha256": "9be68081145bf5c85d390fe62d21e58bc1756ff140ff3032b833de1e1d16b142",
+  "resumeDraft": {
+    "snapshotCommit": "841776eb08f01ffa6e763283683f26884aba335f",
+    "fullS1Prior": "15 passed",
+    "s0Prior": "3 passed",
+    "compilePrior": "passed",
+    "ruffPrior": "six F401 unused imports",
+    "productionEditAuthorized": true
+  },
+  "writeLease": {
+    "leaseId": "IMPL-LEASE-S1-V8",
+    "leaseSha256": "7c888049fa7d54ec4c3987f4b5b4fb9806e3a9d88d85f5847eddd3ef7459a9d7",
+    "canonicalPayload": {
+      "leaseId": "IMPL-LEASE-S1-V8",
+      "role": "implementation_luna",
+      "canonicalContext": "/root/implementation_luna_canary",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-s1-h1",
+      "writes": [
+        "config/news_grasp_cleanroom_task_manifest_v1.json",
+        "tools/news_grasp_cleanroom_contracts.py",
+        "tools/news_grasp_cleanroom_wal.py",
+        "tools/news_grasp_cleanroom_ledger.py",
+        "tools/news_grasp_cleanroom_dispatch.py",
+        "tools/news_grasp_cleanroom_controller.py"
+      ],
+      "baselineCommit": "a035b2f9d77533509064b6ea293eff5cbca337c4"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": [
+    "config/news_grasp_cleanroom_task_manifest_v1.json",
+    "tools/news_grasp_cleanroom_contracts.py",
+    "tools/news_grasp_cleanroom_wal.py",
+    "tools/news_grasp_cleanroom_ledger.py",
+    "tools/news_grasp_cleanroom_dispatch.py",
+    "tools/news_grasp_cleanroom_controller.py"
+  ],
+  "targetSourceHashes": {
+    "config/news_grasp_cleanroom_task_manifest_v1.json": "99888f219a8483e5d8c8698538444cf84d68fc36ab40e842962447982d86e641",
+    "tools/news_grasp_cleanroom_contracts.py": "0387a283b4f3555d3622a70356f5c08ba828ed2a5bb6949f97eede21b7844fd2",
+    "tools/news_grasp_cleanroom_wal.py": "a4da9ea14331966f004461b4957975d58385f9368ea21e0250d697001e2fe29a",
+    "tools/news_grasp_cleanroom_ledger.py": "688c1913c35aac131ca44d2851c525f35d613b181c230fafe374073f2fc8a081",
+    "tools/news_grasp_cleanroom_dispatch.py": "1d61e10ba6771834466b3def672be1d33e4fbb5236c398c7d80de54f02bc98af2",
+    "tools/news_grasp_cleanroom_controller.py": "92c6237de5b87f979e8a9abe3660b97690ca9bc9a65f72508a865d7d761b44c7"
+  },
+  "readOnlyInputs": {
+    "config/news_grasp_cleanroom_s1_red_receipt_v5.json": "2a9a02cd5b21b2db38c6d0b7a74b1a53d566cf474e272774a6c704440202c8dc",
+    "tests/test_news_grasp_cleanroom_s1_entry.py": "7de339dae51028a91c8b12ddeebd3b12f1144b1cfe89ccafe6fe09a14c21a8e0",
+    "tests/fixtures/news_grasp_cleanroom_s1_cases.json": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f",
+    "tests/test_news_grasp_cleanroom_s0_contract.py": "36b7be69a45dea4e7e6a0583d0c24fc67c95d7ee0bc890fbfb1cbf36ec0acb83"
+  },
+  "causalCorrection": {
+    "scope": "imports_only",
+    "requiredDeletions": [
+      "tools/news_grasp_cleanroom_controller.py: ENTRY_CLOCK_ROLLBACK",
+      "tools/news_grasp_cleanroom_controller.py: _entry_fail",
+      "tools/news_grasp_cleanroom_ledger.py: shutil",
+      "tools/news_grasp_cleanroom_ledger.py: ENTRY_TIME_INVALID",
+      "tools/news_grasp_cleanroom_ledger.py: _entry_fail",
+      "tools/news_grasp_cleanroom_ledger.py: _flush_parent_real"
+    ],
+    "prohibited": "no functional, schema, test, fixture, receipt, manifest, comment, formatting beyond the import lists, or error-contract changes"
+  },
+  "verification": {
+    "ruffCommand": "py -3.12 -m ruff check tools/news_grasp_cleanroom_contracts.py tools/news_grasp_cleanroom_wal.py tools/news_grasp_cleanroom_ledger.py tools/news_grasp_cleanroom_dispatch.py tools/news_grasp_cleanroom_controller.py",
+    "ruffExpected": "All checks passed",
+    "fullS1Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "fullS1Expected": "15 passed",
+    "s0RegressionCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s0_contract.py",
+    "s0Expected": "3 passed",
+    "compileCommand": "py -3.12 -m py_compile tools/news_grasp_cleanroom_contracts.py tools/news_grasp_cleanroom_wal.py tools/news_grasp_cleanroom_ledger.py tools/news_grasp_cleanroom_dispatch.py tools/news_grasp_cleanroom_controller.py",
+    "other": ["git add exact six paths", "git diff --cached --check", "git status --short", "production AST security scan"]
+  },
+  "commitPolicy": {
+    "allowedOnlyAfterAllGreen": true,
+    "paths": "exact six writeSet paths",
+    "message": "feat: add S1 clean-room entry control"
+  },
+  "causalRetryCondition": "one exact import-only edit and one ordered verification chain; stop without another edit or rerun on the first non-Green",
+  "delivery": "six production files only, final hashes/bytes, authoring commit and exact verification evidence",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "persistentPolling": false, "rawProcessTermination": false}
+}
