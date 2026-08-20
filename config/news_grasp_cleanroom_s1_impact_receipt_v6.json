@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "TDD_IMPACT_ANALYSIS_RECEIPT_V1",
+  "receiptId": "ng-cleanroom-s1-entry-impact-v6",
+  "workPackage": "S1",
+  "status": "red_authoring_ready",
+  "baselineCommit": "74043ba7d8e5a974f21994704ddb171e9ffaaec0",
+  "triggerEvidence": {
+    "command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "result": "25 passed, 1 failed",
+    "failedNode": "test_s1_three_writer_single_owner",
+    "exception": "PermissionError reading 0002-imported.json while another writer reopened the published marker with r+b",
+    "classification": "production concurrency defect exposed by candidate integration verification"
+  },
+  "impactSurface": {
+    "rootCause": "both filesystem durable JSON helpers fsync the temp file, atomically replace it, then reopen the public final path for r+b fsync; that post-publication writer handle can deny concurrent readers on Windows",
+    "productionConsumers": [
+      "tools/news_grasp_cleanroom_wal.py::_write_json",
+      "tools/news_grasp_cleanroom_ledger.py::_durable_write"
+    ],
+    "existingRegressionNodes": [
+      "test_s1_three_writer_single_owner",
+      "test_s1_wal_fsync_failure_zero_effect",
+      "test_edge_writer_crash_adversarial",
+      "test_edge_writer_crash_recovery"
+    ],
+    "contraryEvidence": "the Implementation Luna worktree full run passed 26 once; the candidate integration run then reproduced the Windows sharing race, so prior Green is insufficient"
+  },
+  "exactAmendment": {
+    "contractId": "S1-ATOMIC-PUBLISH-NO-FINAL-REOPEN-V1",
+    "predicate": "durable JSON publication fsyncs and closes the private temp file before atomic replace, then flushes the parent directory; after replace it never opens the public final leaf for write",
+    "scope": "both WAL and ledger durable JSON helpers",
+    "durability": "retain temp-file fsync, atomic replace and parent-directory flush; do not weaken injected fsync/replace/flush_parent failure behavior",
+    "concurrency": "a reader may open and validate the public final file immediately after replace without Windows sharing violation",
+    "forbidden": ["sleep", "polling retry", "PermissionError suppression", "test-specific branch", "removing temp fsync", "removing parent flush"]
+  },
+  "redSuiteAmendment": {
+    "testPath": "tests/test_news_grasp_cleanroom_s1_entry.py",
+    "newNode": "test_s1_atomic_publish_never_reopens_public_final_for_write",
+    "oracle": "monkeypatch Path.open so any r+b open of an already-public non-temp managed JSON leaf raises PermissionError; one real Controller reconcile must still succeed, WAL verify and ledger inspect remain Green, and the guard observes zero forbidden final-write reopen attempts after the production fix",
+    "currentExpected": "exact node Red with production PermissionError/WAL finalize failure",
+    "expectedCollected": 27,
+    "existingNodePolicy": "all 26 existing nodes unchanged",
+    "fixtureMutationAuthorized": false,
+    "noSleep": true,
+    "noSubprocess": true
+  },
+  "writeOwnership": {
+    "test_luna": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+    "implementation_luna_after_red": ["tools/news_grasp_cleanroom_wal.py", "tools/news_grasp_cleanroom_ledger.py"],
+    "writeIntersectionCount": 0
+  },
+  "verificationOrder": [
+    "compile and collect exactly 27",
+    "new exact node Red for final-path reopen only",
+    "existing 26 retain Green when the new deterministic monkeypatch is not active",
+    "ruff and diff-check",
+    "Expected Red receipt before production repair"
+  ],
+  "unresolvedDecisionIds": [],
+  "admissionPredicate": "one deterministic Red replaces reliance on probabilistic reruns and preserves all previous oracles"
+}

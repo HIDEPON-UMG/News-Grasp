@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S1-RED-R9",
+  "todoId": "NG-CLEANROOM-S1-RED",
+  "role": "test_luna",
+  "canonicalContext": "/root/s1_edge_driver_red",
+  "dependencyIds": ["ng-cleanroom-s1-entry-impact-v6"],
+  "baselineCommit": "74043ba7d8e5a974f21994704ddb171e9ffaaec0",
+  "writeLease": {
+    "leaseId": "TEST-LEASE-S1-R9",
+    "leaseSha256": "2354ac561cff9e53fec14ab55d1c2a5517f83ce4bb21f333ae80adcd877a9227",
+    "canonicalPayload": {
+      "leaseId": "TEST-LEASE-S1-R9",
+      "role": "test_luna",
+      "canonicalContext": "/root/s1_edge_driver_red",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-s1-h1",
+      "writes": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+      "baselineCommit": "74043ba7d8e5a974f21994704ddb171e9ffaaec0"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+  "forbiddenWrites": ["tools", "tests/fixtures", "config", "docs", "scripts"],
+  "baselineHashes": {
+    "tests/test_news_grasp_cleanroom_s1_entry.py": "5337c718abc04e9a88e9657236d0c79925eda7eaedee65bf1cf1dcb19307b5bb",
+    "tests/fixtures/news_grasp_cleanroom_s1_cases.json": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f",
+    "tools/news_grasp_cleanroom_wal.py": "885b7556a314f8aa2d0e9c7555789558ee294a9a4305c20402ab16542378cf06",
+    "tools/news_grasp_cleanroom_ledger.py": "6ab91dc06346653733cc132f61c944992471767a7408569191b563ab26ab7d65"
+  },
+  "exactTask": {
+    "newNode": "test_s1_atomic_publish_never_reopens_public_final_for_write",
+    "implementation": [
+      "use pytest monkeypatch on pathlib.Path.open and delegate to the original for every allowed call",
+      "when mode is r+b and the target is an existing public managed JSON leaf whose name does not start with '.', record the target and raise PermissionError simulating Windows sharing denial",
+      "run one real Controller.reconcile with normative argv, valid manifest/time/writer, then verify DurableWal and inspect_control_state remain Green",
+      "assert zero recorded forbidden final-write reopen attempts only after the reconcile succeeds; current production must fail before that assertion due its post-replace reopen",
+      "do not monkeypatch os.replace, temp-file opens, SQLite, sleeps or production symbols"
+    ],
+    "expectedCurrentFailure": "CleanroomEntryError caused by PermissionError from the public final r+b reopen",
+    "expectedExisting": "all prior 26 nodes unchanged and Green in a separate full run excluding the new deterministic node if needed for partition proof"
+  },
+  "verification": {
+    "compileCommand": "py -3.12 -m py_compile tests/test_news_grasp_cleanroom_s1_entry.py",
+    "collectCommand": "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "collectExpected": 27,
+    "newNodeCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py::test_s1_atomic_publish_never_reopens_public_final_for_write",
+    "newNodeExpected": "1 failed for S1-ATOMIC-PUBLISH-NO-FINAL-REOPEN-V1",
+    "existingCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py -k 'not atomic_publish_never_reopens_public_final_for_write'",
+    "existingExpected": "26 passed",
+    "ruffCommand": "py -3.12 -m ruff check tests/test_news_grasp_cleanroom_s1_entry.py",
+    "diffCommand": "git diff --check -- tests/test_news_grasp_cleanroom_s1_entry.py"
+  },
+  "commitPolicy": {
+    "allowedOnlyAfterExpectedRed": true,
+    "paths": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+    "message": "test: expose atomic publish sharing race"
+  },
+  "causalRetryCondition": "one authoring attempt and one ordered verification chain; only a test-setup defect may receive one causal correction",
+  "delivery": "one test file only, commit/hash/bytes and exact compile/collect/Red/existing/ruff/diff evidence",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "persistentPolling": false}
+}
