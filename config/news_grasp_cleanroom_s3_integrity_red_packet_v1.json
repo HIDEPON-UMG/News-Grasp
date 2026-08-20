@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S3-INTEGRITY-RED-V1",
+  "todoId": "NG-CLEANROOM-S3-R1-RED",
+  "role": "test_luna",
+  "canonicalContext": "/root/s1_edge_driver_red",
+  "dependencyIds": ["NG-CLEANROOM-S3-GREEN-V1", "S3-ACCEPT-R1-BLOCK"],
+  "baselineCommit": "7f135a192aa6d1429b894b53fb377492d5e328cb",
+  "reviewEvidence": {
+    "reviewerContext": "/root/s1_independent_acceptance",
+    "reviewedCommit": "359584818140b6065e419f8dbc56aea6d5276c62",
+    "verdict": "BLOCK",
+    "blockerCount": 3,
+    "blockerIds": ["S3-ACCEPT-R1-SURFACE-TERMINAL-NOT-REVALIDATED", "S3-ACCEPT-R1-NOTIFICATION-RECEIPT-NOT-REVALIDATED", "S3-ACCEPT-R1-LINEAGE-STATE-COLUMN-NOT-REVALIDATED"],
+    "trackedMutationCount": 0
+  },
+  "writeLease": {
+    "leaseId": "TEST-LEASE-S3-INTEGRITY-V1",
+    "leaseSha256": "f4cf4b773b207018b837940b3253bb78f75060044b33eab663e3c018da2b6c6a",
+    "canonicalPayload": {
+      "leaseId": "TEST-LEASE-S3-INTEGRITY-V1",
+      "role": "test_luna",
+      "canonicalContext": "/root/s1_edge_driver_red",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-s1-h1",
+      "writes": ["tests/test_news_grasp_cleanroom_s3_public.py"],
+      "baselineCommit": "7f135a192aa6d1429b894b53fb377492d5e328cb"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tests/test_news_grasp_cleanroom_s3_public.py"],
+  "forbiddenWrites": ["tools", "config", "docs", "scripts", "tests/fixtures", "all other tests"],
+  "requiredNodes": [
+    {
+      "node": "test_s3_persisted_surface_rows_are_revalidated",
+      "oracle": "after a baseline durable surface terminal, mutate one stored column at a time across CONFIRMED and NOT_REQUIRED: state, attempt_disposition, idempotency_key, artifact_sha256, terminal_hash, receipt_json syntax/schema/status/surfaceId/artifactSha256/idempotencyKey/terminalHash; every retry raises PublicControlError reason PUBLIC_LEDGER_CORRUPT before publisher or notifier call"
+    },
+    {
+      "node": "test_s3_persisted_notification_is_revalidated",
+      "oracle": "after durable notification CONFIRMED, independently mutate state, attempt_disposition, idempotency_key, terminal_hash or receipt_json syntax/schema/status/idempotencyKey/terminalHash; every retry raises PUBLIC_LEDGER_CORRUPT with notifier notify/query zero"
+    },
+    {
+      "node": "test_s3_persisted_lineage_columns_are_revalidated",
+      "oracle": "after baseline Scheduled FAILED and Readiness RED lineages, mutate stored state column only for each lineage while state_json/terminal_hash/lineage_hash remain original; retry raises PUBLIC_LEDGER_CORRUPT, never returns Green, and caller-owned source bytes/hash remain unchanged"
+    }
+  ],
+  "testDesignRules": [
+    "append exactly three top-level nodes to the existing sealed S3 test file; do not change or weaken the existing six nodes",
+    "use isolated Japanese-named tmp roots and the existing test helpers/public API to create a valid baseline before direct SQLite corruption",
+    "use a fresh baseline root per mutation so failures are independent and causal",
+    "assert exact PUBLIC_LEDGER_CORRUPT plus provider/notifier call counts zero and source bytes unchanged where applicable",
+    "no production import monkeypatch, network, subprocess, sleep, credentials or mutation outside tmp roots"
+  ],
+  "coverage": {
+    "requirements": {"NG-A-R09": [0], "NG-A-R10": [1, 2]},
+    "valuePredicates": {"partialGreen": 0, "notificationEvidenceBypass": 0, "scheduledOverwrite": 0},
+    "persistedRowClasses": ["surface CONFIRMED", "surface NOT_REQUIRED", "notification CONFIRMED", "lineage Scheduled", "lineage Readiness"]
+  },
+  "verification": {
+    "compileCommand": "py -3.12 -m py_compile tests/test_news_grasp_cleanroom_s3_public.py",
+    "collectCommand": "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s3_public.py",
+    "collectExpected": 9,
+    "redCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s3_public.py",
+    "redExpected": "existing 6 passed and exactly 3 new nodes failed because corrupted persisted rows were accepted or misclassified; collection errors zero",
+    "ruffCommand": "py -3.12 -m ruff check tests/test_news_grasp_cleanroom_s3_public.py",
+    "diffCommand": "git diff --check -- tests/test_news_grasp_cleanroom_s3_public.py"
+  },
+  "commitPolicy": {"allowedOnlyAfterExpectedRed": true, "paths": ["tests/test_news_grasp_cleanroom_s3_public.py"], "message": "test: expose S3 persisted evidence bypass"},
+  "causalRetryCondition": "one authoring attempt and one ordered verification chain; one test-only correction only if the new oracle contradicts the independent reproduction",
+  "delivery": "one test file, hash and bytes, commit, exact 6 Green plus 3 Red partition",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "persistentPolling": false}
+}
