@@ -56,6 +56,24 @@ def _current_jst_date() -> str:
     return datetime.now(timezone(timedelta(hours=9))).date().isoformat()
 
 
+def _next_scheduled_task_issue_date(
+    *, task_name: str = "News-Grasp Production", powershell_exe: str = "pwsh"
+) -> str:
+    """Scheduled Task の次回実行日を canary authority の issue-date に使う。"""
+    details = _scheduled_task_details(task_name=task_name, powershell_exe=powershell_exe)
+    value = str(details.get("next_run_time") or "").strip()
+    if value:
+        for pattern in ("%m/%d/%Y %H:%M:%S", "%Y/%m/%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"):
+            try:
+                return datetime.strptime(value, pattern).date().isoformat()
+            except ValueError:
+                continue
+        parsed = _parse_dt(value)
+        if parsed is not None:
+            return parsed.date().isoformat()
+    return _current_jst_date()
+
+
 def _jst_timezone():
     try:
         from zoneinfo import ZoneInfo
@@ -3677,7 +3695,7 @@ def verify_publish_complete(
     include_readiness: bool = True,
 ) -> dict:
     """公開完了を remote/public/audio/podcast/local inventory の同一 manifest として検証する。"""
-    readiness_date = _current_jst_date()
+    readiness_date = _next_scheduled_task_issue_date()
     distribution = _distribution_artifact_manifest(repo_root, date)
     base = {
         "schemaVersion": "NEWS_GRASP_PUBLISH_COMPLETE_V2",
