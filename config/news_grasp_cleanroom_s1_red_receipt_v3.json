@@ -1,0 +1,93 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_S1_EXPECTED_RED_RECEIPT_V1",
+  "generation": "V3",
+  "supersedes": "config/news_grasp_cleanroom_s1_red_receipt_v2.json",
+  "workPackage": "S1",
+  "requirementIds": ["NG-A-R02", "NG-A-R03", "NG-A-R04", "NG-A-R05"],
+  "itSuites": ["IT-01", "IT-06", "IT-07"],
+  "impactAdmission": {
+    "reviewId": "ng-cleanroom-s1-impact-r3",
+    "receiptSha256": "a484fc5a0c8486f096fbc19f340d9988067c9536517ce4ea437b0ddd11bb1087",
+    "decision": "accepted",
+    "blockerCount": 0,
+    "redAdmissionReady": true
+  },
+  "causalCorrection": {
+    "sourceAttemptReceipt": "config/news_grasp_cleanroom_s1_impl_attempt_v2_receipt.json",
+    "sourceAttemptReceiptSha256": "ac64c391870b0c774164b19ef609c6feaece4c807ee58abd6f5d49918490fa44",
+    "packetPath": "config/news_grasp_cleanroom_s1_test_packet_v3.json",
+    "packetSha256": "c43d71dd85a2dc3a34bf18cad735019484071ffcc2cc05e448b1d84b763859e5",
+    "correctedOracleDefect": "_assert_real_sqlite explicitly closes its caller-owned SQLite connection before Windows quarantine",
+    "pragmaAssertionsPreserved": true,
+    "assertionWeakening": false,
+    "fixtureMutation": false
+  },
+  "testOwner": {
+    "role": "test_luna",
+    "canonicalContext": "/root/playlist_repair_red",
+    "leaseId": "TEST-LEASE-S1-V3",
+    "leaseSha256": "3c47b84d05ad259941b6cdf3e2c4ae0c33e1abb1924590e374823a55d68ee6d3",
+    "authoringCommit": "63562002bf0320dcee6a13e47ad437b91e5c7c4a",
+    "integratedCommit": "62290ba4a27c538acbb32df36b99eb2a39651a88"
+  },
+  "productionBaseline": {
+    "commit": "62290ba4a27c538acbb32df36b99eb2a39651a88",
+    "targets": {
+      "config/news_grasp_cleanroom_task_manifest_v1.json": "ABSENT",
+      "tools/news_grasp_cleanroom_contracts.py": "b5e0904636085228f2e59a66c8cc4551ae78ce0db18f247fcc9d3b690668c6e2",
+      "tools/news_grasp_cleanroom_wal.py": "ABSENT",
+      "tools/news_grasp_cleanroom_ledger.py": "ABSENT",
+      "tools/news_grasp_cleanroom_dispatch.py": "ABSENT",
+      "tools/news_grasp_cleanroom_controller.py": "ABSENT"
+    }
+  },
+  "testArtifacts": [
+    {"path": "tests/test_news_grasp_cleanroom_s1_entry.py", "sha256": "e5dcf72358caf167ad127a6939901a83ebf08bef6ec6804b7ec3386c90c20415", "bytes": 26106},
+    {"path": "tests/fixtures/news_grasp_cleanroom_s1_cases.json", "sha256": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f", "bytes": 34435}
+  ],
+  "coverage": {
+    "topLevelNodeCount": 15,
+    "requirementNodeCount": 12,
+    "internalEdgeNodeCount": 3,
+    "dispatchProjectionCaseCount": 13,
+    "dispatchCommitBoundaryCount": 9,
+    "recoveryHookCount": 5,
+    "invalidReasonCaseCount": 17,
+    "fixtureNormativeEquality": true,
+    "fallbackImplementationCount": 0
+  },
+  "collection": {
+    "command": "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "exitCode": 0,
+    "collected": 15
+  },
+  "expectedRed": {
+    "command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "exitCode": 1,
+    "failed": 15,
+    "passed": 0,
+    "reason": "ModuleNotFoundError",
+    "message": "No module named 'tools.news_grasp_cleanroom_wal'",
+    "reasonMatchCount": 15,
+    "productionTracebackPreserved": true,
+    "unrelatedFailureCount": 0,
+    "status": "expected_red"
+  },
+  "verification": {
+    "compileExitCode": 0,
+    "ruffExitCode": 0,
+    "diffCheckExitCode": 0,
+    "fixtureSelfValidationExitCode": 0,
+    "highCostBrokerInvocation": false,
+    "externalModelCallCount": 0
+  },
+  "humanImpact": {
+    "noFocusTheft": true,
+    "noAutoOpen": true,
+    "noUserMonitoring": true,
+    "networkCallCount": 0,
+    "installedOrTaskMutation": false
+  },
+  "measuredAt": "2026-08-20T18:09:23Z",
+  "status": "sealed"
+}
