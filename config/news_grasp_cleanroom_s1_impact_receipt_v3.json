@@ -1,0 +1,389 @@
+{
+  "schemaVersion": "TDD_IMPACT_ANALYSIS_RECEIPT_V1",
+  "receiptId": "ng-cleanroom-s1-entry-impact-v3",
+  "workPackage": "S1",
+  "status": "review_required_before_red",
+  "supersedes": {
+    "path": "config/news_grasp_cleanroom_s1_impact_receipt_v2.json",
+    "sha256": "fdd3f3bcc8b83c458a8df5f5a7a9767767871c098adfe9feedebd502a11850ef",
+    "reviewId": "ng-cleanroom-s1-impact-r2",
+    "residualBlockerIds": [
+      "S1-IMPACT-R1-API-AND-PERSISTENCE-SCHEMAS-INCOMPLETE",
+      "S1-IMPACT-R1-FAULT-RECOVERY-ORACLE-INCOMPLETE"
+    ]
+  },
+  "baselineCommit": "6f98043a9012b1a1f12ad6b5dabc12a13a9723da",
+  "inheritedContract": {
+    "path": "config/news_grasp_cleanroom_s1_impact_receipt_v2.json",
+    "sha256": "fdd3f3bcc8b83c458a8df5f5a7a9767767871c098adfe9feedebd502a11850ef",
+    "allSectionsRemainNormativeExcept": [
+      "exactSchemas.slotDecision",
+      "exactSchemas.dispatchDecision",
+      "exactPublicApis.dispatchModule.recover_ledger signature",
+      "recoveryFaultOracle recovery boundary hook row"
+    ]
+  },
+  "dispatchProjectionSchema": {
+    "schemaVersion": "DISPATCH_DECISION_V1",
+    "exactKeys": [
+      "schemaVersion",
+      "status",
+      "decision",
+      "issueDate",
+      "scheduleId",
+      "slotKind",
+      "slotKey",
+      "slotState",
+      "slotTerminalState",
+      "generation",
+      "ownerDisposition",
+      "ownerKey",
+      "fenceToken",
+      "leaseExpiresAt",
+      "scheduledState",
+      "externalEffectCount",
+      "invocationId",
+      "walEventSha256"
+    ],
+    "statusSemantics": {
+      "accepted": "this call changed a Scheduled/Audit slot owner, fence or terminal state",
+      "noop": "this call only durably recorded/imported invocation evidence, completed an imported WAL marker, observed an existing lease/terminal, or returned NOT_DUE"
+    },
+    "scheduledStateValues": ["ABSENT", "ACTIVE", "SUCCEEDED", "FAILED", "MISSED_SCHEDULED"],
+    "commonSources": {
+      "schemaVersion": "literal DISPATCH_DECISION_V1",
+      "issueDate": "observed_at Asia/Tokyo local YYYY-MM-DD",
+      "scheduleId": "validated manifest scheduleId",
+      "generation": "verified current generation seal and SQLite metadata generation",
+      "externalEffectCount": 0,
+      "invocationId": "current initial WAL event invocationId",
+      "walEventSha256": "current initial WAL event eventSha256"
+    },
+    "ownerProjection": {
+      "NONE": {
+        "ownerKey": null,
+        "fenceToken": null,
+        "leaseExpiresAt": null,
+        "slotState": null,
+        "slotTerminalState": null
+      },
+      "ACQUIRED": {
+        "ownerKey": "caller writer canonical ownerKey",
+        "fenceToken": "1 for a new target slot or previous target-slot fenceToken plus one for expired-lease takeover",
+        "leaseExpiresAt": "observed_at plus lease_seconds in Asia/Tokyo ISO-8601",
+        "slotState": "ACTIVE",
+        "slotTerminalState": null
+      },
+      "ATTACHED": {
+        "ownerKey": "existing target-slot owner_key",
+        "fenceToken": "existing target-slot fence_token unchanged",
+        "leaseExpiresAt": "existing target-slot lease_expires_at unchanged",
+        "slotState": "ACTIVE",
+        "slotTerminalState": null
+      },
+      "TERMINAL_NOOP": {
+        "ownerKey": "existing target-slot owner_key",
+        "fenceToken": "existing target-slot fence_token unchanged",
+        "leaseExpiresAt": null,
+        "slotState": "TERMINAL",
+        "slotTerminalState": "existing target-slot terminal_state"
+      }
+    },
+    "targetSlotProjection": {
+      "NOT_DUE": {
+        "slotKind": null,
+        "slotKey": null,
+        "ownerDisposition": "NONE"
+      },
+      "ENSURE_SCHEDULED": {
+        "slotKind": "Scheduled",
+        "slotKey": "news-grasp-daily-v1/<issueDate>/Scheduled"
+      },
+      "MISSED_SCHEDULED_AND_ENSURE_AUDIT": {
+        "slotKind": "Audit",
+        "slotKey": "news-grasp-daily-v1/<issueDate>/Audit",
+        "meaning": "the single result projects the Audit target slot; the Scheduled terminal inserted in the same transaction is projected only by scheduledState=MISSED_SCHEDULED and the exact persisted row below"
+      },
+      "ENSURE_AUDIT_OBSERVING_SCHEDULED": {
+        "slotKind": "Audit",
+        "slotKey": "news-grasp-daily-v1/<issueDate>/Audit"
+      }
+    },
+    "missedScheduledPersistedRow": {
+      "scheduleId": "news-grasp-daily-v1",
+      "issueDate": "result issueDate",
+      "slotKind": "Scheduled",
+      "generation": "result generation",
+      "state": "TERMINAL",
+      "ownerKey": "system:reconcile",
+      "fenceToken": 1,
+      "leaseExpiresAt": null,
+      "terminalState": "MISSED_SCHEDULED",
+      "resultHash": "sha256 canonical UTF-8 JSON of scheduleId,issueDate,terminalState=MISSED_SCHEDULED",
+      "updatedAt": "observed_at Asia/Tokyo ISO-8601"
+    }
+  },
+  "slotDecisionResultMatrix": [
+    {
+      "timeClass": "BEFORE_0600",
+      "scheduledPreState": "ABSENT|ACTIVE|SUCCEEDED|FAILED|MISSED_SCHEDULED",
+      "result": {
+        "schemaVersion": "SLOT_DECISION_V1",
+        "decision": "NOT_DUE",
+        "scheduledState": "same as scheduledPreState",
+        "externalEffectCount": 0
+      }
+    },
+    {
+      "timeClass": "FROM_0600_BEFORE_0640",
+      "scheduledPreState": "ABSENT|ACTIVE|SUCCEEDED|FAILED|MISSED_SCHEDULED",
+      "result": {
+        "schemaVersion": "SLOT_DECISION_V1",
+        "decision": "ENSURE_SCHEDULED",
+        "scheduledState": "same as scheduledPreState",
+        "externalEffectCount": 0
+      }
+    },
+    {
+      "timeClass": "AT_OR_AFTER_0640",
+      "scheduledPreState": "ABSENT",
+      "result": {
+        "schemaVersion": "SLOT_DECISION_V1",
+        "decision": "MISSED_SCHEDULED_AND_ENSURE_AUDIT",
+        "scheduledState": "MISSED_SCHEDULED",
+        "externalEffectCount": 0
+      }
+    },
+    {
+      "timeClass": "AT_OR_AFTER_0640",
+      "scheduledPreState": "ACTIVE|SUCCEEDED|FAILED|MISSED_SCHEDULED",
+      "result": {
+        "schemaVersion": "SLOT_DECISION_V1",
+        "decision": "ENSURE_AUDIT_OBSERVING_SCHEDULED",
+        "scheduledState": "same as scheduledPreState",
+        "externalEffectCount": 0
+      }
+    }
+  ],
+  "dispatchResultValueMatrix": [
+    {
+      "caseId": "before_0600_any_state",
+      "decision": "NOT_DUE",
+      "scheduledPreState": "ABSENT|ACTIVE|SUCCEEDED|FAILED|MISSED_SCHEDULED",
+      "targetPreState": "not inspected for ownership",
+      "status": "noop",
+      "scheduledState": "same as scheduledPreState",
+      "slotKind": null,
+      "slotKey": null,
+      "ownerDisposition": "NONE",
+      "ownerProjection": "NONE"
+    },
+    {
+      "caseId": "scheduled_absent",
+      "decision": "ENSURE_SCHEDULED",
+      "scheduledPreState": "ABSENT",
+      "targetPreState": "ABSENT",
+      "status": "accepted",
+      "scheduledState": "ACTIVE",
+      "slotKind": "Scheduled",
+      "ownerDisposition": "ACQUIRED",
+      "ownerProjection": "ACQUIRED with fenceToken 1"
+    },
+    {
+      "caseId": "scheduled_active_unexpired",
+      "decision": "ENSURE_SCHEDULED",
+      "scheduledPreState": "ACTIVE",
+      "targetPreState": "ACTIVE_UNEXPIRED",
+      "status": "noop",
+      "scheduledState": "ACTIVE",
+      "slotKind": "Scheduled",
+      "ownerDisposition": "ATTACHED",
+      "ownerProjection": "ATTACHED"
+    },
+    {
+      "caseId": "scheduled_active_expired",
+      "decision": "ENSURE_SCHEDULED",
+      "scheduledPreState": "ACTIVE",
+      "targetPreState": "ACTIVE_EXPIRED",
+      "status": "accepted",
+      "scheduledState": "ACTIVE",
+      "slotKind": "Scheduled",
+      "ownerDisposition": "ACQUIRED",
+      "ownerProjection": "ACQUIRED with prior fenceToken plus one"
+    },
+    {
+      "caseId": "scheduled_terminal",
+      "decision": "ENSURE_SCHEDULED",
+      "scheduledPreState": "SUCCEEDED|FAILED|MISSED_SCHEDULED",
+      "targetPreState": "TERMINAL",
+      "status": "noop",
+      "scheduledState": "same as scheduledPreState",
+      "slotKind": "Scheduled",
+      "ownerDisposition": "TERMINAL_NOOP",
+      "ownerProjection": "TERMINAL_NOOP"
+    },
+    {
+      "caseId": "missed_scheduled_audit_absent",
+      "decision": "MISSED_SCHEDULED_AND_ENSURE_AUDIT",
+      "scheduledPreState": "ABSENT",
+      "targetPreState": "Audit ABSENT",
+      "status": "accepted",
+      "scheduledState": "MISSED_SCHEDULED",
+      "slotKind": "Audit",
+      "ownerDisposition": "ACQUIRED",
+      "ownerProjection": "ACQUIRED with fenceToken 1",
+      "atomicScheduledMutation": "exact missedScheduledPersistedRow"
+    },
+    {
+      "caseId": "missed_scheduled_audit_active_unexpired",
+      "decision": "MISSED_SCHEDULED_AND_ENSURE_AUDIT",
+      "scheduledPreState": "ABSENT",
+      "targetPreState": "Audit ACTIVE_UNEXPIRED",
+      "status": "accepted",
+      "scheduledState": "MISSED_SCHEDULED",
+      "slotKind": "Audit",
+      "ownerDisposition": "ATTACHED",
+      "ownerProjection": "ATTACHED",
+      "atomicScheduledMutation": "exact missedScheduledPersistedRow"
+    },
+    {
+      "caseId": "missed_scheduled_audit_active_expired",
+      "decision": "MISSED_SCHEDULED_AND_ENSURE_AUDIT",
+      "scheduledPreState": "ABSENT",
+      "targetPreState": "Audit ACTIVE_EXPIRED",
+      "status": "accepted",
+      "scheduledState": "MISSED_SCHEDULED",
+      "slotKind": "Audit",
+      "ownerDisposition": "ACQUIRED",
+      "ownerProjection": "ACQUIRED with prior fenceToken plus one",
+      "atomicScheduledMutation": "exact missedScheduledPersistedRow"
+    },
+    {
+      "caseId": "missed_scheduled_audit_terminal",
+      "decision": "MISSED_SCHEDULED_AND_ENSURE_AUDIT",
+      "scheduledPreState": "ABSENT",
+      "targetPreState": "Audit TERMINAL",
+      "status": "accepted",
+      "scheduledState": "MISSED_SCHEDULED",
+      "slotKind": "Audit",
+      "ownerDisposition": "TERMINAL_NOOP",
+      "ownerProjection": "TERMINAL_NOOP",
+      "atomicScheduledMutation": "exact missedScheduledPersistedRow"
+    },
+    {
+      "caseId": "observe_scheduled_audit_absent",
+      "decision": "ENSURE_AUDIT_OBSERVING_SCHEDULED",
+      "scheduledPreState": "ACTIVE|SUCCEEDED|FAILED|MISSED_SCHEDULED",
+      "targetPreState": "Audit ABSENT",
+      "status": "accepted",
+      "scheduledState": "same as scheduledPreState",
+      "slotKind": "Audit",
+      "ownerDisposition": "ACQUIRED",
+      "ownerProjection": "ACQUIRED with fenceToken 1"
+    },
+    {
+      "caseId": "observe_scheduled_audit_active_unexpired",
+      "decision": "ENSURE_AUDIT_OBSERVING_SCHEDULED",
+      "scheduledPreState": "ACTIVE|SUCCEEDED|FAILED|MISSED_SCHEDULED",
+      "targetPreState": "Audit ACTIVE_UNEXPIRED",
+      "status": "noop",
+      "scheduledState": "same as scheduledPreState",
+      "slotKind": "Audit",
+      "ownerDisposition": "ATTACHED",
+      "ownerProjection": "ATTACHED"
+    },
+    {
+      "caseId": "observe_scheduled_audit_active_expired",
+      "decision": "ENSURE_AUDIT_OBSERVING_SCHEDULED",
+      "scheduledPreState": "ACTIVE|SUCCEEDED|FAILED|MISSED_SCHEDULED",
+      "targetPreState": "Audit ACTIVE_EXPIRED",
+      "status": "accepted",
+      "scheduledState": "same as scheduledPreState",
+      "slotKind": "Audit",
+      "ownerDisposition": "ACQUIRED",
+      "ownerProjection": "ACQUIRED with prior fenceToken plus one"
+    },
+    {
+      "caseId": "observe_scheduled_audit_terminal",
+      "decision": "ENSURE_AUDIT_OBSERVING_SCHEDULED",
+      "scheduledPreState": "ACTIVE|SUCCEEDED|FAILED|MISSED_SCHEDULED",
+      "targetPreState": "Audit TERMINAL",
+      "status": "noop",
+      "scheduledState": "same as scheduledPreState",
+      "slotKind": "Audit",
+      "ownerDisposition": "TERMINAL_NOOP",
+      "ownerProjection": "TERMINAL_NOOP"
+    }
+  ],
+  "recoveryBoundaryHooks": [
+    {
+      "hook": "after_recovery_journal_prepared",
+      "callSite": "after PREPARED journal temp fsync, os.replace, final-file fsync and parent flush; before moving any ledger file",
+      "immediateState": {
+        "journalPhase": "PREPARED",
+        "sourceLedgerFiles": "all pre-existing files remain at source",
+        "quarantineFiles": [],
+        "generationSeal": "oldGeneration",
+        "newLedgerExists": false,
+        "externalEffectCount": 0
+      },
+      "nextCall": "resume same recoveryId/newGeneration and move existing source files to the same quarantine path"
+    },
+    {
+      "hook": "after_recovery_quarantined",
+      "callSite": "after every existing sqlite/sqlite-wal/sqlite-shm file is os.replace-moved, source/destination parents are flushed, and QUARANTINED journal is fsynced; before generation seal write",
+      "immediateState": {
+        "journalPhase": "QUARANTINED",
+        "sourceLedgerFiles": [],
+        "quarantineFiles": "exact set of files that existed at PREPARED",
+        "generationSeal": "oldGeneration",
+        "newLedgerExists": false,
+        "externalEffectCount": 0
+      },
+      "nextCall": "resume same recoveryId/newGeneration and write the new generation seal exactly once"
+    },
+    {
+      "hook": "after_recovery_generation_sealed",
+      "callSite": "after new generation seal temp fsync, os.replace, final-file fsync, parent flush and SEALED journal fsync; before new SQLite creation",
+      "immediateState": {
+        "journalPhase": "SEALED",
+        "sourceLedgerFiles": [],
+        "quarantineFiles": "unchanged exact quarantined set",
+        "generationSeal": "newGeneration",
+        "newLedgerExists": false,
+        "externalEffectCount": 0
+      },
+      "nextCall": "resume same recoveryId/newGeneration and create exactly one matching SQLite generation"
+    },
+    {
+      "hook": "after_recovery_ledger_created",
+      "callSite": "after SQLite DDL/metadata/LEDGER_RECOVERED genesis commit, FULL checkpoint, close/reopen verification and LEDGER_CREATED journal fsync; before COMMITTED journal",
+      "immediateState": {
+        "journalPhase": "LEDGER_CREATED",
+        "sourceLedgerFiles": "new verified SQLite generation is present",
+        "quarantineFiles": "unchanged exact quarantined set",
+        "generationSeal": "newGeneration",
+        "newLedgerExists": true,
+        "externalEffectCount": 0
+      },
+      "nextCall": "resume same recoveryId/newGeneration, reverify and write COMMITTED journal without another ledger or generation"
+    },
+    {
+      "hook": "after_recovery_committed",
+      "callSite": "after COMMITTED journal temp fsync, os.replace, final-file fsync and parent flush; immediately before returning CONTROL_LEDGER_RECOVERY_V1",
+      "immediateState": {
+        "journalPhase": "COMMITTED",
+        "sourceLedgerFiles": "new verified SQLite generation is present",
+        "quarantineFiles": "unchanged exact quarantined set",
+        "generationSeal": "newGeneration",
+        "newLedgerExists": true,
+        "externalEffectCount": 0
+      },
+      "nextCall": "normal dispatch succeeds; a new explicit recover_ledger call returns NEWS_GRASP_ENTRY_RECOVERY_NOT_REQUIRED without mutation"
+    }
+  ],
+  "recoveryHookExceptionPolicy": "the caller-supplied boundary hook exception is preserved exactly; all state listed for that hook is already durable before invocation",
+  "correctedRecoverWrapperSignature": "recover_ledger(*, runtime_root, manifest_path, observed_at, durability_ops=None, boundary_hook=None, busy_timeout_ms=1000) -> CONTROL_LEDGER_RECOVERY_V1",
+  "fixtureTransferPredicate": "Test Luna can copy every dispatchResultValueMatrix and recoveryBoundaryHooks row without choosing a field value, source, hook name or recovery outcome",
+  "admissionPredicate": "independent R3 confirms the two R2 residual blockers closed while V2 canonical bindings, schemas, reason bindings, 15-node coverage, ownership and no-cutover scope remain intact"
+}
