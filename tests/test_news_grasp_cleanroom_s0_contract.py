@@ -165,8 +165,9 @@ def _build_contract(data: dict[str, Any], case: dict[str, Any]) -> dict[str, Any
             assert isinstance(parent, list)
             parent.insert(leaf + 1, deepcopy(parent[leaf]))
         elif operation == "append":
-            assert isinstance(parent, list)
-            parent.append(deepcopy(mutation["value"]))
+            target = parent[leaf]
+            assert isinstance(target, list)
+            target.append(deepcopy(mutation["value"]))
         else:
             raise AssertionError(f"unknown fixture mutation: {operation}")
     return contract
