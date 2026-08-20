@@ -63,10 +63,12 @@ def recover_ledger(
     observed_at: datetime,
     durability_ops: DurabilityOps | None = None,
     boundary_hook: Callable[[str], None] | None = None,
+    busy_timeout_ms: int = 1000,
 ) -> dict[str, Any]:
     return Controller(
         runtime_root=runtime_root,
         manifest_path=manifest_path,
         durability_ops=durability_ops,
         boundary_hook=boundary_hook,
+        busy_timeout_ms=busy_timeout_ms,
     ).recover_ledger(observed_at=observed_at)

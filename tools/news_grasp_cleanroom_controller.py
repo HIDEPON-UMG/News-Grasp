@@ -18,7 +18,6 @@ from .news_grasp_cleanroom_contracts import (
     _ENTRY_SCHEDULE_ID,
     _validate_entry_time,
     _validate_entry_writer,
-    reconcile_slot,
     validate_manifest,
 )
 from .news_grasp_cleanroom_ledger import ControlLedger
@@ -108,25 +107,15 @@ class Controller:
         observed = _validate_entry_time(observed_at)
 
         ledger = self._ledger()
-        # Read monotonicity and slot state before importing zero-entry WAL;
-        # this keeps rollback fail-closed without mutating the slot.
-        last_observed = ledger.last_observed_at()
-        decision_probe = reconcile_slot(
-            manifest=manifest,
-            observed_at=observed,
-            last_observed_at=last_observed,
-            scheduled_state=ledger.scheduled_state(observed.date().isoformat()),
-        )
         zero_entries = wal.iter_zero_entries()
         prior_zero_entries = tuple(
             event for event in zero_entries
             if event.get("invocationId") != initial_event["invocationId"]
         )
         ledger.import_zero_entries(prior_zero_entries, observed_at=observed)
-        decision = decision_probe
         result = ledger.reconcile(
             invocation_event=initial_event,
-            decision=decision,
+            manifest=manifest,
             writer=writer,
             lease_seconds=lease,
             observed_at=observed,

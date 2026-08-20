@@ -21,6 +21,7 @@ from .news_grasp_cleanroom_contracts import (
     _validate_entry_time,
     _validate_entry_writer,
     _writer_owner_key,
+    reconcile_slot,
 )
 from .news_grasp_cleanroom_wal import DurabilityOps, _fsync_real
 
@@ -402,6 +403,43 @@ class ControlLedger:
         issue_date, kind = match.groups()
         return connection.execute("SELECT * FROM slots WHERE schedule_id=? AND issue_date=? AND slot_kind=?", (_ENTRY_SCHEDULE_ID, issue_date, kind)).fetchone()
 
+    def _decision_from_connection(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        manifest: Mapping[str, Any],
+        observed_at: datetime,
+    ) -> dict[str, Any]:
+        metadata_row = connection.execute("SELECT value FROM metadata WHERE key='lastObservedAt'").fetchone()
+        persisted_value = metadata_row[0] if metadata_row is not None else ""
+        if not persisted_value:
+            last_observed_at = None
+        else:
+            try:
+                persisted = datetime.fromisoformat(persisted_value)
+                if persisted.tzinfo is None or persisted.utcoffset() != timedelta(hours=9) or persisted.fold != 0:
+                    raise ValueError("persisted lastObservedAt timezone is invalid")
+                last_observed_at = _validate_entry_time(persisted.astimezone(ZoneInfo("Asia/Tokyo")))
+            except (TypeError, ValueError) as exc:
+                raise CleanroomEntryError(LEDGER_CORRUPT, "lastObservedAt is invalid") from exc
+        issue_date = observed_at.date().isoformat()
+        scheduled_row = connection.execute(
+            "SELECT state,terminal_state FROM slots WHERE schedule_id=? AND issue_date=? AND slot_kind='Scheduled'",
+            (_ENTRY_SCHEDULE_ID, issue_date),
+        ).fetchone()
+        if scheduled_row is None:
+            scheduled_state = "ABSENT"
+        elif scheduled_row["state"] == "ACTIVE":
+            scheduled_state = "ACTIVE"
+        else:
+            scheduled_state = str(scheduled_row["terminal_state"] or "TERMINAL")
+        return reconcile_slot(
+            manifest=manifest,
+            observed_at=observed_at,
+            last_observed_at=last_observed_at,
+            scheduled_state=scheduled_state,
+        )
+
     def _acquire_or_attach(self, connection: sqlite3.Connection, slot_key: str, writer: Mapping[str, Any], lease_seconds: int, observed_at: datetime) -> tuple[sqlite3.Row | dict[str, Any], str, bool]:
         match = _SLOT_KEY.fullmatch(slot_key)
         if match is None:
@@ -433,7 +471,7 @@ class ControlLedger:
         self,
         *,
         invocation_event: Mapping[str, Any],
-        decision: Mapping[str, Any],
+        manifest: Mapping[str, Any],
         writer: Mapping[str, Any],
         lease_seconds: int,
         observed_at: datetime,
@@ -448,6 +486,7 @@ class ControlLedger:
                 raise CleanroomEntryError(LEDGER_BUSY, "SQLite ledger is busy") from exc
             self._hook("after_ledger_begin")
             self._verify_connection(connection, generation)
+            decision = self._decision_from_connection(connection, manifest=manifest, observed_at=observed_at)
             imported = self._import_invocation(connection, invocation_event, observed_at)
             if imported:
                 self._hook("after_invocation_import")
@@ -622,6 +661,34 @@ class ControlLedger:
                     "resumed": True,
                     "externalEffectCount": 0,
                 }
+            if journal.get("phase") == "COMMITTED":
+                history_path = self.control_root / "recovery-history" / f"{journal['recoveryId']}.json"
+                history_path.parent.mkdir(parents=True, exist_ok=True)
+                if history_path.exists():
+                    try:
+                        history = json.loads(history_path.read_text(encoding="utf-8"))
+                    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+                        raise CleanroomEntryError(RECOVERY_FAILED, "recovery history is invalid") from exc
+                    if history != journal:
+                        raise CleanroomEntryError(RECOVERY_FAILED, "recovery history conflicts")
+                else:
+                    _durable_write(history_path, journal, operations, RECOVERY_FAILED)
+                old_generation = int(seal["generation"])
+                recovery_id = uuid.uuid4().hex
+                new_generation = old_generation + 1
+                quarantine = f"control/quarantine/g{old_generation:08d}-to-g{new_generation:08d}-{recovery_id}"
+                journal = {
+                    "schemaVersion": "CONTROL_LEDGER_RECOVERY_JOURNAL_V1",
+                    "recoveryId": recovery_id,
+                    "oldGeneration": old_generation,
+                    "newGeneration": new_generation,
+                    "quarantineRelativePath": quarantine,
+                    "phase": "PREPARED",
+                    "updatedAt": _iso(observed),
+                }
+                journal["journalSha256"] = _entry_canonical_sha256(journal)
+                _durable_write(self.recovery_path, journal, operations, RECOVERY_FAILED)
+                recovery_hook("after_recovery_journal_prepared")
         else:
             if healthy:
                 raise CleanroomEntryError(RECOVERY_NOT_REQUIRED, "ledger is healthy")
