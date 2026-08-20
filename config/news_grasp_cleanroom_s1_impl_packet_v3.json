@@ -1,0 +1,131 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S1-GREEN-V3",
+  "todoId": "NG-CLEANROOM-S1-GREEN",
+  "role": "implementation_luna",
+  "canonicalContext": "/root/implementation_luna_canary",
+  "mutationMode": "causal_resume_after_oracle_resource_fix",
+  "dependencyIds": [
+    "ng-cleanroom-s0-acceptance-r2",
+    "ng-cleanroom-s1-impact-r3",
+    "NEWS_GRASP_CLEANROOM_S1_EXPECTED_RED_RECEIPT_V3",
+    "NG-CLEANROOM-S1-IMPL-ATTEMPT-V2"
+  ],
+  "requirementIds": ["NG-A-R02", "NG-A-R03", "NG-A-R04", "NG-A-R05"],
+  "baselineCommit": "a7528d429cd69a74a1d5541476a70853e547a3ac",
+  "baselineSha256": "5dd3a14cf6b21eb996ea55a88bad53753d5b9a23bbc6a3596095ca0bca3047a9",
+  "baselineReceiptPath": "config/news_grasp_cleanroom_s1_red_receipt_v3.json",
+  "resumeDraft": {
+    "snapshotCommit": "29e536e8acda69f4c05fcbe5c28f9baa50737fca",
+    "attemptReceiptPath": "config/news_grasp_cleanroom_s1_impl_attempt_v2_receipt.json",
+    "attemptReceiptSha256": "ac64c391870b0c774164b19ef609c6feaece4c807ee58abd6f5d49918490fa44",
+    "focusedGreenAlreadyObserved": ["test_s1_three_writer_single_owner", "test_s1_stale_fence_cannot_commit"],
+    "sameShapeRetryConsumed": true,
+    "productionWorkaroundForCallerHandleForbidden": true
+  },
+  "writeLease": {
+    "leaseId": "IMPL-LEASE-S1-V3",
+    "leaseSha256": "80834a4d8740a90f4f49e76ae02e93b9635ee4f0f068a6c6b610924914397295",
+    "canonicalPayload": {
+      "leaseId": "IMPL-LEASE-S1-V3",
+      "role": "implementation_luna",
+      "canonicalContext": "/root/implementation_luna_canary",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-s1-h1",
+      "writes": [
+        "config/news_grasp_cleanroom_task_manifest_v1.json",
+        "tools/news_grasp_cleanroom_contracts.py",
+        "tools/news_grasp_cleanroom_wal.py",
+        "tools/news_grasp_cleanroom_ledger.py",
+        "tools/news_grasp_cleanroom_dispatch.py",
+        "tools/news_grasp_cleanroom_controller.py"
+      ],
+      "baselineCommit": "a7528d429cd69a74a1d5541476a70853e547a3ac"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": [
+    "config/news_grasp_cleanroom_task_manifest_v1.json",
+    "tools/news_grasp_cleanroom_contracts.py",
+    "tools/news_grasp_cleanroom_wal.py",
+    "tools/news_grasp_cleanroom_ledger.py",
+    "tools/news_grasp_cleanroom_dispatch.py",
+    "tools/news_grasp_cleanroom_controller.py"
+  ],
+  "targetSourceHashes": {
+    "config/news_grasp_cleanroom_task_manifest_v1.json": "99888f219a8483e5d8c8698538444cf84d68fc36ab40e842962447982d86e641",
+    "tools/news_grasp_cleanroom_contracts.py": "0387a283b4f3555d3622a70356f5c08ba828ed2a5bb6949f97eede21b7844fd2",
+    "tools/news_grasp_cleanroom_wal.py": "a4da9ea14331966f004461b4957975d58385f9368ea21e0250d697001e2fe29a",
+    "tools/news_grasp_cleanroom_ledger.py": "2bd7ef475dbf9fd03f403be82ac7f9df81c7a7b99763dc7060c5067547f366b5",
+    "tools/news_grasp_cleanroom_dispatch.py": "545325955b524ef9b7c7a5adc76ae83ee8fd9dcf3eb233576dd62b24299b2c2f",
+    "tools/news_grasp_cleanroom_controller.py": "6b13c146664923fa246f2aa19daf74419dc734b07c9b37c627ccc985b665e9ef"
+  },
+  "readOnlyInputs": {
+    "config/news_grasp_cleanroom_control_s0_v2.json": "2b76d2b0aa73d22a43e0279c93cea3eecf3dff0874da6384c6abb74ed61d3a91",
+    "config/news_grasp_cleanroom_s1_impact_receipt_v2.json": "fdd3f3bcc8b83c458a8df5f5a7a9767767871c098adfe9feedebd502a11850ef",
+    "config/news_grasp_cleanroom_s1_impact_receipt_v3.json": "6002f61ca6f7249e99db0b791aae5020883ff11e3f5aa4fb56f8f054846f1a08",
+    "config/news_grasp_cleanroom_s1_impact_review_v3.json": "a484fc5a0c8486f096fbc19f340d9988067c9536517ce4ea437b0ddd11bb1087",
+    "config/news_grasp_cleanroom_s1_red_receipt_v3.json": "5dd3a14cf6b21eb996ea55a88bad53753d5b9a23bbc6a3596095ca0bca3047a9",
+    "tests/test_news_grasp_cleanroom_s1_entry.py": "e5dcf72358caf167ad127a6939901a83ebf08bef6ec6804b7ec3386c90c20415",
+    "tests/fixtures/news_grasp_cleanroom_s1_cases.json": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f",
+    "tests/test_news_grasp_cleanroom_s0_contract.py": "36b7be69a45dea4e7e6a0583d0c24fc67c95d7ee0bc890fbfb1cbf36ec0acb83"
+  },
+  "authorizedDraftBehaviors": [
+    "cross-process bootstrap byte lock bounded by busy_timeout_ms, with BEGIN IMMEDIATE still the sole slot owner authority",
+    "close SQLite connection on every PRAGMA setup exception before typed corrupt return",
+    "rehydrate persisted +09:00 timestamp into ZoneInfo Asia/Tokyo without relaxing public time validation",
+    "preserve pre-import decision_probe for exact 06:40 MISSED_SCHEDULED plus Audit atomic reconcile",
+    "return typed eight-key RECOVERY_NOT_REQUIRED after an already COMMITTED recovery journal, without mutation",
+    "FULL checkpoint, close and reopen verification before LEDGER_CREATED recovery phase",
+    "when concurrent controllers race to publish one immutable imported marker, accept the existing marker only after valid self-hash and exact previousEventSha256 binding to the same initial event"
+  ],
+  "remainingImplementation": [
+    "do not add any retry, copy, delete, gc, sleep or platform workaround for the now-corrected test SQLite handle",
+    "remove trailing extra blank lines in all six production files so git diff --check is zero",
+    "if a new test failure appears, stop before another production edit and return its exact traceback"
+  ],
+  "mandatoryInvariants": [
+    "initial WAL is durable before argv, manifest, lease or time interpretation",
+    "three writers converge to one slot owner and immutable WAL marker races never suppress content drift",
+    "06:40 Scheduled absent creates one MISSED_SCHEDULED terminal plus one Audit acquire atomically",
+    "recovery moves exact SQLite files only after all production and test-owned handles are explicitly closed",
+    "five recovery hooks resume the same recoveryId and newGeneration exactly once",
+    "S0 public behavior remains Green and no external or installed state is touched"
+  ],
+  "verification": {
+    "remainingFocusedCommands": [
+      "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py::test_s1_ledger_corruption_recovery",
+      "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py::test_s1_missed_scheduled_persists_then_audits",
+      "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py::test_edge_writer_crash_recovery"
+    ],
+    "fullS1Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "fullS1Expected": "15 passed",
+    "s0RegressionCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s0_contract.py",
+    "s0Expected": "3 passed",
+    "compileCommand": "py -3.12 -m py_compile tools/news_grasp_cleanroom_contracts.py tools/news_grasp_cleanroom_wal.py tools/news_grasp_cleanroom_ledger.py tools/news_grasp_cleanroom_dispatch.py tools/news_grasp_cleanroom_controller.py",
+    "ruffCommand": "py -3.12 -m ruff check tools/news_grasp_cleanroom_contracts.py tools/news_grasp_cleanroom_wal.py tools/news_grasp_cleanroom_ledger.py tools/news_grasp_cleanroom_dispatch.py tools/news_grasp_cleanroom_controller.py",
+    "other": ["git diff --check", "git status --short", "production AST security scan"]
+  },
+  "expectedWriteSet": {
+    "pathCount": 6,
+    "testFixtureConfigReceiptDocsUnchanged": true,
+    "legacyLauncherTaskInstalledPublicUnchanged": true
+  },
+  "causalRetryCondition": "one exact V3 execution; stop and return to Sol on the first remaining focused, full S1, S0 or static non-Green",
+  "delivery": "six production files only, final hashes/bytes, authoring commit and exact verification evidence",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "returnToSolConditions": [
+    "write_set_expansion",
+    "read_only_hash_drift",
+    "new_public_api_schema_reason_or_boundary_required",
+    "any_test_or_static_non_green",
+    "network_subprocess_installed_task_or_external_effect_required"
+  ],
+  "humanImpact": {
+    "noFocusTheft": true,
+    "noAutoOpen": true,
+    "noUserMonitoring": true,
+    "persistentPolling": false,
+    "rawProcessTermination": false
+  }
+}
