@@ -1,0 +1,66 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S1-RED-CORRECTION-V3",
+  "todoId": "NG-CLEANROOM-S1-RED",
+  "role": "test_luna",
+  "canonicalContext": "/root/playlist_repair_red",
+  "mutationMode": "oracle_resource_lifecycle_correction",
+  "dependencyIds": ["ng-cleanroom-s1-impact-r3", "NG-CLEANROOM-S1-IMPL-ATTEMPT-V2"],
+  "requirementIds": ["NG-A-R02", "NG-A-R03", "NG-A-R04", "NG-A-R05"],
+  "baselineCommit": "d65e9af1218f22c4fa0e5aa3c35b10bd31d6fc88",
+  "writeLease": {
+    "leaseId": "TEST-LEASE-S1-V3",
+    "leaseSha256": "3c47b84d05ad259941b6cdf3e2c4ae0c33e1abb1924590e374823a55d68ee6d3",
+    "canonicalPayload": {
+      "leaseId": "TEST-LEASE-S1-V3",
+      "role": "test_luna",
+      "canonicalContext": "/root/playlist_repair_red",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-s1-h1",
+      "writes": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+      "baselineCommit": "d65e9af1218f22c4fa0e5aa3c35b10bd31d6fc88"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+  "targetSourceHashes": {
+    "tests/test_news_grasp_cleanroom_s1_entry.py": "023a8bc878e841e6992a8b3b33e9d3704337b30a5d71a852a5cc217ea373a944"
+  },
+  "readOnlyInputs": {
+    "tests/fixtures/news_grasp_cleanroom_s1_cases.json": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f",
+    "config/news_grasp_cleanroom_s1_impact_receipt_v2.json": "fdd3f3bcc8b83c458a8df5f5a7a9767767871c098adfe9feedebd502a11850ef",
+    "config/news_grasp_cleanroom_s1_impact_receipt_v3.json": "6002f61ca6f7249e99db0b791aae5020883ff11e3f5aa4fb56f8f054846f1a08"
+  },
+  "causalCorrection": {
+    "nodeId": "test_s1_ledger_corruption_recovery",
+    "helper": "_assert_real_sqlite",
+    "observedDefect": "sqlite3.Connection.__enter__/__exit__ controls transaction commit or rollback but does not close the connection; the helper therefore fails to prove that its caller-owned Windows file handle is released before recovery quarantine",
+    "requiredEdit": "import contextlib.closing and use with closing(sqlite3.connect(ledger_path)) as connection in _assert_real_sqlite; preserve both PRAGMA assertions exactly",
+    "prohibitedEdits": [
+      "do not edit production, fixture, receipt or docs",
+      "do not add gc.collect, sleep, retry, skip, platform conditional, xfail or sharing-violation suppression",
+      "do not weaken or delete either SQLite reality assertion",
+      "do not change any test node, fault boundary, reason or normative fixture value"
+    ]
+  },
+  "acceptance": {
+    "compileCommand": "py -3.12 -m py_compile tests/test_news_grasp_cleanroom_s1_entry.py",
+    "collectCommand": "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "expectedCollection": "15 tests collected",
+    "redCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "expectedRed": "15 failed with ModuleNotFoundError for tools.news_grasp_cleanroom_wal on the production baseline; unrelated failures zero",
+    "ruffCommand": "py -3.12 -m ruff check tests/test_news_grasp_cleanroom_s1_entry.py",
+    "fixtureHashMustRemain": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f",
+    "diffCheck": "git diff --check"
+  },
+  "causalRetryCondition": "one exact correction attempt; return to Sol on any unexpected collection, fixture drift, non-ModuleNotFoundError Red or write-set expansion",
+  "delivery": "one corrected test file, resulting hash and bytes, exact commands and results, authoring commit",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {
+    "noFocusTheft": true,
+    "noAutoOpen": true,
+    "noUserMonitoring": true,
+    "networkCallCount": 0,
+    "externalModelCallCount": 0
+  }
+}

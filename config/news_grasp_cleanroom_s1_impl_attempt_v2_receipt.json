@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_S1_IMPLEMENTATION_ATTEMPT_RECEIPT_V1",
+  "receiptId": "NG-CLEANROOM-S1-IMPL-ATTEMPT-V2",
+  "packetId": "NG-CLEANROOM-S1-GREEN-V2",
+  "leaseId": "IMPL-LEASE-S1-V2",
+  "role": "implementation_luna",
+  "canonicalContext": "/root/implementation_luna_canary",
+  "baselineCommit": "650626ea56d5bca6e3fcb30e17791995037ac137",
+  "draftSnapshotCommit": "29e536e8acda69f4c05fcbe5c28f9baa50737fca",
+  "attemptPolicy": {
+    "sameShapeRetryConsumed": true,
+    "retryAllowed": false,
+    "returnToSolRequired": true,
+    "nextAdmission": "correct the caller-owned SQLite test handle, then resume the preserved production draft without a production workaround"
+  },
+  "writeSet": [
+    {"path": "config/news_grasp_cleanroom_task_manifest_v1.json", "bytes": 872, "sha256": "99888f219a8483e5d8c8698538444cf84d68fc36ab40e842962447982d86e641"},
+    {"path": "tools/news_grasp_cleanroom_contracts.py", "bytes": 32191, "sha256": "0387a283b4f3555d3622a70356f5c08ba828ed2a5bb6949f97eede21b7844fd2"},
+    {"path": "tools/news_grasp_cleanroom_wal.py", "bytes": 9289, "sha256": "a4da9ea14331966f004461b4957975d58385f9368ea21e0250d697001e2fe29a"},
+    {"path": "tools/news_grasp_cleanroom_ledger.py", "bytes": 38572, "sha256": "2bd7ef475dbf9fd03f403be82ac7f9df81c7a7b99763dc7060c5067547f366b5"},
+    {"path": "tools/news_grasp_cleanroom_dispatch.py", "bytes": 2125, "sha256": "545325955b524ef9b7c7a5adc76ae83ee8fd9dcf3eb233576dd62b24299b2c2f"},
+    {"path": "tools/news_grasp_cleanroom_controller.py", "bytes": 6481, "sha256": "6b13c146664923fa246f2aa19daf74419dc734b07c9b37c627ccc985b665e9ef"}
+  ],
+  "focusedVerification": [
+    {"nodeId": "test_s1_three_writer_single_owner", "exitCode": 0, "status": "passed"},
+    {"nodeId": "test_s1_stale_fence_cannot_commit", "exitCode": 0, "status": "passed"},
+    {
+      "nodeId": "test_s1_ledger_corruption_recovery",
+      "exitCode": 1,
+      "status": "non_green",
+      "reason": "PermissionError WinError32 while moving control-ledger-v1.sqlite3 to its deterministic quarantine path"
+    }
+  ],
+  "causalClassification": {
+    "owner": "test_luna",
+    "defect": "tests._assert_real_sqlite uses sqlite3.Connection as a transaction context manager but never explicitly closes it; on Windows the caller-owned main-database handle can remain open when production recovery performs the required os.replace quarantine",
+    "evidence": "the helper opens the exact source immediately before test corruption; production _connect now closes its own connection on PRAGMA failure; source main DB, not an internal returned handle, remains sharing-locked",
+    "requiredCorrection": "wrap sqlite3.connect with contextlib.closing in the test helper so the caller releases its own handle before corrupting and quarantining the file",
+    "productionWorkaroundForbidden": true
+  },
+  "additionalV2Behavior": {
+    "nodeId": "test_s1_three_writer_single_owner",
+    "change": "WAL imported-marker publication now accepts a concurrently published immutable marker only when previousEventSha256 exactly matches the same initial event",
+    "disposition": "carry into V3 as an explicit causal correction; review again before Green integration"
+  },
+  "unrelatedFailureCount": 0,
+  "testFixtureReceiptDocsChangedByImplementation": false,
+  "fullS1Run": "not run after focused failure",
+  "s0Regression": "not run after focused failure",
+  "status": "non_green_causally_classified",
+  "measuredAt": "2026-08-20T18:06:51.2695093Z"
+}
