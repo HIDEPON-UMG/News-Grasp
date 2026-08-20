@@ -369,7 +369,10 @@ def test_s3_persisted_surface_rows_are_revalidated(tmp_path: Path) -> None:
         ("NOT_REQUIRED", "archive", "NOT_REQUIRED"),
     )
     for class_index, (baseline_class, surface_id, target_status) in enumerate(baseline_classes):
-        for mutation_index, mutation in enumerate(mutations):
+        class_mutations = mutations
+        if baseline_class == "PUBLISHED_CONFIRMED":
+            class_mutations = (*mutations, "terminal_receipt_self_reseal")
+        for mutation_index, mutation in enumerate(class_mutations):
             index = class_index * 100 + mutation_index
             root = _runtime_root(tmp_path, index)
             statuses = {surface_id: "CONFIRMED" for surface_id in data["requiredSurfaceIds"]}
@@ -402,6 +405,27 @@ def test_s3_persisted_surface_rows_are_revalidated(tmp_path: Path) -> None:
                         "terminal_hash": ("terminal_hash", "e" * 64),
                     }[mutation]
                     connection.execute(f"UPDATE surfaces SET {column}=? WHERE issue_date=? AND surface_id=?", (value, data["issueDate"], surface_id))
+                elif mutation == "terminal_receipt_self_reseal":
+                    assert row["receipt_json"] is not None
+                    receipt = json.loads(row["receipt_json"])
+                    assert isinstance(receipt, dict)
+                    assert publisher.calls
+                    expected_terminal_hash = _canonical_sha256(publisher.calls[0])
+                    assert receipt["terminalHash"] == expected_terminal_hash
+                    assert row["terminal_hash"] == expected_terminal_hash
+                    tampered_terminal_hash = "f" * 64
+                    if tampered_terminal_hash == expected_terminal_hash:
+                        tampered_terminal_hash = "e" * 64
+                    receipt["terminalHash"] = tampered_terminal_hash
+                    connection.execute(
+                        "UPDATE surfaces SET terminal_hash=?,receipt_json=? WHERE issue_date=? AND surface_id=?",
+                        (
+                            tampered_terminal_hash,
+                            json.dumps(receipt, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
+                            data["issueDate"],
+                            surface_id,
+                        ),
+                    )
                 else:
                     receipt_case = mutation.removeprefix("receipt_")
                     connection.execute("UPDATE surfaces SET receipt_json=? WHERE issue_date=? AND surface_id=?", (_surface_integrity_receipt(row, row["receipt_json"], receipt_case), data["issueDate"], surface_id))
