@@ -1,0 +1,291 @@
+{
+  "schemaVersion": "TDD_IMPACT_ANALYSIS_RECEIPT_V1",
+  "receiptId": "ng-cleanroom-s1-entry-impact-v1",
+  "workPackage": "S1",
+  "status": "review_required_before_red",
+  "baselineCommit": "df40c59ed7a7ebbe6d3884956ecb5e90139d660b",
+  "userOutcome": "06:00/06:40の起動消失、曖昧mode、二重ownerをなくし、全trigger/time/writer/crash組合せを単一slotへ収束させる",
+  "nonGoals": [
+    "記事生成品質の変更",
+    "model/public/notificationの外部副作用実行",
+    "現行launcher、Task Scheduler、installed runtimeの変更",
+    "S5より前のcutover"
+  ],
+  "sourceOfTruth": [
+    {
+      "path": "config/news_grasp_cleanroom_control_s0_v2.json",
+      "sha256": "2b76d2b0aa73d22a43e0279c93cea3eecf3dff0874da6384c6abb74ed61d3a91",
+      "bindings": [
+        "NG-A-R02",
+        "NG-A-R03",
+        "NG-A-R04",
+        "NG-A-R05",
+        "L1",
+        "L2",
+        "L3"
+      ]
+    },
+    {
+      "path": "<CODEX_ATTACHMENT>/pasted-text.txt",
+      "sha256": "b9104e23cb6b24d91788404b49fbf420d2ccc557f9fec3d97eb05370a9165d9d",
+      "lineRanges": ["397-434", "598-649", "709-739"]
+    },
+    {
+      "path": "docs/spec.md",
+      "sha256": "8f8119221292a5853c56afe6937f46f52a70987353e107400e604f8a58c24e8f",
+      "relationship": "legacy operational contracts remain read-only until cutover"
+    }
+  ],
+  "currentSurfaceInventory": [
+    {
+      "path": "scripts/ops/news-grasp-task-launcher.pyw",
+      "sha256": "a095d2fe05ebf06129fc93095fa57e43239483a6c7caddc310347cecbf5c0aef",
+      "classification": "legacy installed entry; do not modify in S1"
+    },
+    {
+      "path": "tools/news_grasp_daily_control.py",
+      "sha256": "878e5743577c7d81a27b538c528b504539edbd0d698af5ded57395a69918251d",
+      "classification": "legacy control plane; reference only"
+    },
+    {
+      "path": "tools/news_grasp_recovery_transaction.py",
+      "sha256": "8c94be3fd9637e8dc111a978f93bf564af215627f5a175e6d2c28786a8b331f3",
+      "classification": "legacy lease/fence pattern; reference only"
+    },
+    {
+      "path": "tools/news_grasp_execution_governance.py",
+      "sha256": "ec0a75f380aa807e33e3d4011a8e02692446202034576a31cbcf00224822c023",
+      "classification": "SQLite BEGIN IMMEDIATE pattern; reference only"
+    },
+    {
+      "path": "tools/news_grasp_recovery_receipts.py",
+      "sha256": "0cce0c37a49d6bc0a86b6b995b84716c0cb60bac3fbc4886f4af0cd21c9a10b8",
+      "classification": "SQLite WAL and recovery pattern; reference only"
+    }
+  ],
+  "targetSurfaces": {
+    "manifest": {
+      "path": "config/news_grasp_cleanroom_task_manifest_v1.json",
+      "baseline": "ABSENT",
+      "schema": "NEWS_GRASP_CONTROL_MANIFEST_V1",
+      "invariants": [
+        "exactly one task named News-Grasp Production",
+        "exactly two Asia/Tokyo daily triggers at 06:00:00 and 06:40:00",
+        "MultipleInstancesPolicy=Parallel",
+        "one action with argv dispatch --schedule-id news-grasp-daily-v1 --intent reconcile"
+      ]
+    },
+    "contracts": {
+      "path": "tools/news_grasp_cleanroom_contracts.py",
+      "baselineSha256": "b5e0904636085228f2e59a66c8cc4551ae78ce0db18f247fcc9d3b690668c6e2",
+      "addSymbols": ["validate_manifest", "reconcile_slot"],
+      "responsibility": "strict manifest validation and pure deterministic time/slot decision"
+    },
+    "wal": {
+      "path": "tools/news_grasp_cleanroom_wal.py",
+      "baseline": "ABSENT",
+      "symbols": ["DurableWal"],
+      "schema": "WAL_EVENT_V1",
+      "responsibility": "initial invocation WAL durable before argv/manifest interpretation"
+    },
+    "ledger": {
+      "path": "tools/news_grasp_cleanroom_ledger.py",
+      "baseline": "ABSENT",
+      "symbols": ["ControlLedger"],
+      "schema": "CONTROL_LEDGER_SQLITE_V1",
+      "responsibility": "generation, lease, fencing, invocation import, event hash chain, terminal conflict and explicit corruption recovery"
+    },
+    "dispatch": {
+      "path": "tools/news_grasp_cleanroom_dispatch.py",
+      "baseline": "ABSENT",
+      "symbols": ["dispatch", "commit_slot", "recover_ledger", "inspect_control_state"],
+      "schema": "DISPATCH_DECISION_V1",
+      "responsibility": "the only S1 reconcile orchestration entry; no external model/public/notification effect"
+    }
+  },
+  "publicApiContract": {
+    "error": {
+      "symbol": "CleanroomEntryError",
+      "requiredAttribute": "reason"
+    },
+    "dispatch": {
+      "parameters": [
+        "raw_argv: Sequence[str]",
+        "runtime_root: Path",
+        "manifest_path: Path",
+        "observed_at: timezone-aware datetime",
+        "writer: mapping with writerId, bootId, pid, processStartToken",
+        "lease_seconds: positive int",
+        "boundary_hook: optional callable receiving durable boundary name"
+      ],
+      "requiredOrder": [
+        "validate only the runtime-root and writer envelope needed to durably identify the invocation",
+        "write and fsync initial WAL event",
+        "invoke boundary_hook after_initial_wal_fsync",
+        "only then parse raw argv and load/validate manifest",
+        "recover prior zero-entry WAL records",
+        "open and verify SQLite ledger/hash chain",
+        "run deterministic reconcile decision",
+        "acquire-or-attach using BEGIN IMMEDIATE, generation, lease and monotonically increasing fence",
+        "commit one typed DISPATCH_DECISION_V1 result"
+      ]
+    },
+    "commitSlot": {
+      "parameters": ["runtime_root", "slotKey", "writerId", "fenceToken", "terminalState", "resultHash", "observed_at"],
+      "allowedTerminalStates": ["SUCCEEDED", "FAILED", "MISSED_SCHEDULED"],
+      "invariants": [
+        "stale writer or stale fence cannot commit",
+        "same terminal state and result hash is idempotent",
+        "different terminal state or result hash is terminal conflict",
+        "each committed event extends the verified hash chain"
+      ]
+    },
+    "recoverLedger": {
+      "parameters": ["runtime_root", "observed_at"],
+      "invariants": [
+        "corrupt sqlite, wal and shm files move into a runtime-local quarantine generation",
+        "new generation is previous sealed generation plus one",
+        "no external side effect can exist in S1",
+        "recovery event and generation seal are fsynced before returning"
+      ]
+    }
+  },
+  "deterministicDecisionTable": [
+    {
+      "condition": "observed_at before 06:00 Asia/Tokyo",
+      "decision": "NOT_DUE",
+      "slotMutation": "none",
+      "externalEffectCount": 0
+    },
+    {
+      "condition": "06:00 <= observed_at < 06:40",
+      "decision": "ENSURE_SCHEDULED",
+      "slot": "Scheduled",
+      "externalEffectCount": 0
+    },
+    {
+      "condition": "observed_at >= 06:40 and Scheduled absent",
+      "decision": "MISSED_SCHEDULED_AND_ENSURE_AUDIT",
+      "slotMutations": ["Scheduled terminal MISSED_SCHEDULED", "Audit acquire-or-attach"],
+      "externalEffectCount": 0
+    },
+    {
+      "condition": "observed_at >= 06:40 and Scheduled exists",
+      "decision": "ENSURE_AUDIT_OBSERVING_SCHEDULED",
+      "slot": "Audit",
+      "externalEffectCount": 0
+    },
+    {
+      "condition": "slot is leased or terminal",
+      "decision": "ATTACHED or TERMINAL_NOOP",
+      "newOwnerCount": 0,
+      "externalEffectCount": 0
+    },
+    {
+      "condition": "naive time, timezone mismatch, clock rollback, ambiguous fold or unknown schedule/intent",
+      "decision": "typed fail-closed",
+      "slotMutation": "none",
+      "externalEffectCount": 0
+    }
+  ],
+  "reasonCatalog": [
+    "NEWS_GRASP_ENTRY_INITIAL_WAL_FAILED",
+    "NEWS_GRASP_ENTRY_ARGS_INVALID",
+    "NEWS_GRASP_ENTRY_MANIFEST_INVALID",
+    "NEWS_GRASP_ENTRY_UNKNOWN_SCHEDULE",
+    "NEWS_GRASP_ENTRY_TIME_INVALID",
+    "NEWS_GRASP_ENTRY_CLOCK_ROLLBACK",
+    "NEWS_GRASP_ENTRY_LEDGER_BUSY",
+    "NEWS_GRASP_ENTRY_LEDGER_CORRUPT",
+    "NEWS_GRASP_ENTRY_STALE_FENCE",
+    "NEWS_GRASP_ENTRY_TERMINAL_CONFLICT"
+  ],
+  "redSuite": {
+    "testPath": "tests/test_news_grasp_cleanroom_s1_entry.py",
+    "fixturePath": "tests/fixtures/news_grasp_cleanroom_s1_cases.json",
+    "baseline": "ABSENT",
+    "topLevelNodes": [
+      "test_s1_manifest_single_entry",
+      "test_s1_unknown_manifest_zero_effect",
+      "test_s1_terminal_slot_idempotent",
+      "test_s1_wal_precedes_parse",
+      "test_s1_wal_fsync_failure_zero_effect",
+      "test_s1_zero_entry_recovery",
+      "test_s1_three_writer_single_owner",
+      "test_s1_stale_fence_cannot_commit",
+      "test_s1_ledger_corruption_recovery",
+      "test_s1_time_window_primary",
+      "test_s1_clock_rollback_and_dst_fail_closed",
+      "test_s1_missed_scheduled_persists_then_audits",
+      "test_edge_writer_crash_primary",
+      "test_edge_writer_crash_adversarial",
+      "test_edge_writer_crash_recovery"
+    ],
+    "fixtureMatrices": {
+      "triggerAndTime": ["05:59:59", "06:00:00", "06:39:59", "06:40:00", "delayed", "duplicate", "manual"],
+      "timeFaults": ["naive", "UTC_instead_of_Asia_Tokyo", "clock_rollback", "synthetic_DST_fold"],
+      "writers": ["writer-a", "writer-b", "writer-c", "same-pid-different-processStartToken"],
+      "durableBoundaries": [
+        "after_initial_wal_fsync",
+        "after_ledger_begin",
+        "after_invocation_import",
+        "after_slot_insert",
+        "after_lease_update",
+        "before_ledger_commit",
+        "after_ledger_commit",
+        "before_terminal_commit",
+        "after_terminal_commit"
+      ],
+      "ledgerFaults": ["sqlite-header-corrupt", "event-payload-hash-drift", "stale-lease", "terminal-conflict", "lock-contention"]
+    },
+    "realBoundaries": ["real sqlite3 file", "real os.fsync", "real atomic replace", "real filesystem restart by reopening production objects"],
+    "allowedFakes": ["deterministic clock value", "boundary hook that only raises a caller exception"],
+    "forbiddenFakes": ["in-memory ledger", "mocked SQLite", "mocked fsync on Green primary/recovery", "test-owned production implementation"]
+  },
+  "ownership": {
+    "test_luna": {
+      "canonicalContext": "/root/playlist_repair_red",
+      "writes": [
+        "tests/test_news_grasp_cleanroom_s1_entry.py",
+        "tests/fixtures/news_grasp_cleanroom_s1_cases.json"
+      ]
+    },
+    "implementation_luna": {
+      "canonicalContext": "/root/implementation_luna_canary",
+      "writes": [
+        "config/news_grasp_cleanroom_task_manifest_v1.json",
+        "tools/news_grasp_cleanroom_contracts.py",
+        "tools/news_grasp_cleanroom_wal.py",
+        "tools/news_grasp_cleanroom_ledger.py",
+        "tools/news_grasp_cleanroom_dispatch.py"
+      ]
+    },
+    "independent_sol_reviewer": {
+      "canonicalContext": "/root/s0_independent_review",
+      "writes": []
+    }
+  },
+  "consumerInventory": {
+    "declaredRoutes": ["library direct invocation", "future L6 subprocess", "future L7 installed launcher", "future L9 Task Scheduler"],
+    "S1ActiveRoutes": ["library direct invocation"],
+    "S1InactiveRoutes": ["CLI subprocess", "installed launcher", "Task Scheduler", "model provider", "public surfaces", "notification"],
+    "unknownRoutePolicy": "fail closed before slot mutation and with external effect count zero"
+  },
+  "securityAndHumanImpact": {
+    "networkAllowed": false,
+    "subprocessAllowed": false,
+    "externalEffectAllowed": false,
+    "userWindowEnumerationAllowed": false,
+    "noFocusTheft": true,
+    "noAutoOpen": true,
+    "noUserMonitoring": true,
+    "runtimeWrites": "only caller-supplied isolated runtime_root; S1 is not installed or scheduled",
+    "symlinkAndReparseHardening": "owned by S5 before installed promotion; S1 cannot be promoted"
+  },
+  "contraryEvidence": [
+    "legacy News-Grasp Production task currently has only the 06:00 runner entry and is not S1 proof",
+    "current public Green does not prove scheduled attempt or clean-room ledger",
+    "S0 acceptance proves governance only and is not S1 behavior evidence"
+  ],
+  "admissionPredicate": "independent review accepts exact source hashes, target modules, 15-node Red coverage, reason set, ownership write sets, fake-real boundary and no-cutover scope before Test Luna writes Red"
+}
