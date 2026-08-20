@@ -1,0 +1,118 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S4-GREEN-V1",
+  "todoId": "NG-CLEANROOM-S4-GREEN",
+  "role": "implementation_luna",
+  "canonicalContext": "/root/implementation_luna_canary",
+  "dependencyIds": ["NG-CLEANROOM-S3-ACCEPTED-V1", "NG-CLEANROOM-S4-RED-V1"],
+  "baselineCommit": "359584818140b6065e419f8dbc56aea6d5276c62",
+  "promotionGate": "S3 independent value review must ACCEPT before this packet is executed",
+  "expectedRedSeal": {
+    "authoringRole": "test_luna",
+    "canonicalContext": "/root/s1_edge_driver_red",
+    "authoringCommit": "155c9ceaeb55c958d5b4f6be587640c62ba0f39a",
+    "integrationCommit": "42ef04c0e4a0b66d2a753aedb33ea51fff37a78e",
+    "testPath": "tests/test_news_grasp_cleanroom_s4_recovery.py",
+    "testSha256": "7c1597277566759fccef93f5bd0794e3ffa6d33d63c49722ec7db23d2544ec78",
+    "testBytes": 14529,
+    "fixturePath": "tests/fixtures/news_grasp_cleanroom_s4_cases.json",
+    "fixtureSha256": "0b6e5ad44b55248de2b61b20fcd83f97c0f7ff656cd8a6eb8bacaf8986409316",
+    "fixtureBytes": 1242,
+    "collected": 3,
+    "failed": 3,
+    "cause": "tools.news_grasp_cleanroom_recovery is absent at each dynamic import; collection and static checks succeed"
+  },
+  "writeLease": {
+    "leaseId": "IMPL-LEASE-S4-V1",
+    "leaseSha256": "9392fec0e5ac1089a4a6690f4cab248c3ca04da460195ce84f43bf35097d03e3",
+    "canonicalPayload": {
+      "leaseId": "IMPL-LEASE-S4-V1",
+      "role": "implementation_luna",
+      "canonicalContext": "/root/implementation_luna_canary",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-s1-h1",
+      "writes": ["tools/news_grasp_cleanroom_recovery.py"],
+      "baselineCommit": "359584818140b6065e419f8dbc56aea6d5276c62"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tools/news_grasp_cleanroom_recovery.py"],
+  "forbiddenWrites": ["tests", "tests/fixtures", "all other tools", "config", "docs", "scripts"],
+  "publicContract": {
+    "exports": ["RecoveryController", "RecoveryControlError", "LegacyReadOnlyAdapter"],
+    "constructor": "RecoveryController(runtime_root, execution_reconciler, public_reconciler, legacy_reader=None, boundary_hook=None)",
+    "method": "audit(issue_date, parent, authority, budget, observed_at) returns RECOVERY_RECONCILE_RESULT_V1",
+    "error": "RecoveryControlError exposes exact .reason",
+    "ledger": "a separate real SQLite control/recovery-ledger-v1.sqlite3; S1 control-ledger-v1.sqlite3 is read-only"
+  },
+  "implementationDesign": {
+    "validationOrder": [
+      "reject any extra/missing key before hash or live-state lookup; an extra route key is RECOVERY_ROUTE_UNKNOWN",
+      "validate exact RECOVERY_PARENT_V1 and parentSha256, issueDate/scheduleId/slotKey/lineage Scheduled/FAILED terminal",
+      "read the Scheduled and Audit slots from S1 SQLite without write transaction; bind parent terminal hash/generation and current Audit owner/fence",
+      "validate exact RECOVERY_AUTHORITY_V1 and authoritySha256, issueDate, Scheduled parent hash/generation, Audit owner/fence and maxAttempts exactly 1",
+      "validate exact RECOVERY_BUDGET_V1 and budgetSha256, same authorityId/hash and remainingAttempts exactly 1",
+      "all validation failures occur before child call or recovery-ledger mutation"
+    ],
+    "typedReasons": {
+      "malformedAuthority": "RECOVERY_AUTHORITY_INVALID",
+      "wrongParent": "RECOVERY_PARENT_INVALID",
+      "staleGeneration": "RECOVERY_GENERATION_STALE",
+      "staleOwner": "RECOVERY_AUDIT_OWNER_STALE",
+      "staleFence": "RECOVERY_AUDIT_FENCE_STALE",
+      "exhaustedBudget": "RECOVERY_BUDGET_EXHAUSTED",
+      "mismatchedBudget": "RECOVERY_BUDGET_MISMATCH",
+      "unknownRoute": "RECOVERY_ROUTE_UNKNOWN",
+      "childReceipt": "RECOVERY_CHILD_RECEIPT_INVALID",
+      "durableState": "RECOVERY_LEDGER_CORRUPT",
+      "lineageConflict": "RECOVERY_LINEAGE_CONFLICT"
+    },
+    "durableFlow": [
+      "derive one deterministic recoveryId from immutable parent+authority binding and persist one attempt before children; retries never consume a second attempt",
+      "persist exact immutable inputs, attemptsUsed=1, phase, canonical phase hash and append-only Recovery history under one issueDate/recoveryId",
+      "call execution once with exact RECOVERY_CHILD_REQUEST_V1; validate exact EXECUTION_RECONCILE_RESULT_V1; persist its receipt before invoking before_execution_receipt, then persist phase and invoke after_execution_receipt",
+      "call public once only after durable execution receipt with exact RECOVERY_CHILD_REQUEST_V1; validate exact PUBLIC_RECONCILE_RESULT_V1; persist its receipt before invoking before_public_receipt, then persist phase and invoke after_public_receipt",
+      "persist the final RECOVERY_RECONCILE_RESULT_V1 bytes before before_recovery_commit; mark COMMITTED then invoke after_recovery_commit",
+      "every restart loads and hash-validates the durable row, skips each durable child/result, resumes the same recoveryId and returns byte-equivalent terminal result after COMMITTED",
+      "test-owned boundary-hook exceptions propagate unchanged and never rewrite S1 ledger or immutable caller artifacts"
+    ],
+    "childReceipt": [
+      "require exact keys schemaVersion,status,lineage,terminalHash with no extras",
+      "execution schema/status/lineage are EXECUTION_RECONCILE_RESULT_V1/CONFIRMED/execution; public equivalents are PUBLIC_RECONCILE_RESULT_V1/CONFIRMED/public",
+      "terminalHash is a non-empty string and the full receipt canonical hash is stored separately"
+    ],
+    "legacy": [
+      "LegacyReadOnlyAdapter exposes read only and no write/append/replace/update/delete method",
+      "read bytes once without mutation; exact LEGACY_RECOVERY_V3 keys schemaVersion,issueDate,status,payloadSha256 and canonical payload hash",
+      "return bytesSha256 and parsed snapshot for valid V3; malformed/hash mismatch is LEGACY_STATE_INVALID; unknown schema is LEGACY_STATE_UNKNOWN",
+      "never change legacy bytes or mtime and always report legacyWriterCount=0"
+    ],
+    "result": [
+      "return exact RECOVERY_RECONCILE_RESULT_V1 with issueDate,recoveryId,status,attemptsUsed,execution,public,recoveryHistory,legacy,legacyWriterCount",
+      "recoveryHistory is append-only and ends with lineage Recovery; never merge or overwrite Scheduled/Public/Readiness lineage",
+      "inspection/retry value metrics are duplicateRecoveryChild=0, scheduledOverwrite=0, legacyWriterCount=0"
+    ]
+  },
+  "forbiddenImplementation": ["write to S1 ledger", "second recovery attempt", "duplicate completed child", "legacy write API", "mutable Scheduled projection", "sleep or polling", "network or subprocess", "test-specific branch"],
+  "verification": {
+    "newSuiteCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s4_recovery.py",
+    "newSuiteExpected": "3 passed",
+    "s3Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s3_public.py",
+    "s3Expected": "6 passed",
+    "s2Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s2_execution.py",
+    "s2Expected": "10 passed",
+    "s1Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "s1Expected": "32 passed",
+    "s0Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s0_contract.py",
+    "s0Expected": "3 passed",
+    "ruffCommand": "py -3.12 -m ruff check tools/news_grasp_cleanroom_recovery.py",
+    "compileCommand": "py -3.12 -m py_compile tools/news_grasp_cleanroom_recovery.py",
+    "security": "NEWS_GRASP_CLEANROOM_SECURITY_SCAN_V1 exact new path; denied/private/secret/external/network counts zero",
+    "other": ["git status before stage shows exactly the one untracked lease path", "cached name-only equals one-file lease", "cached and worktree diff check", "post-commit worktree clean"]
+  },
+  "commitPolicy": {"allowedOnlyAfterAllGreen": true, "paths": ["tools/news_grasp_cleanroom_recovery.py"], "message": "feat: implement S4 recovery plane"},
+  "causalRetryCondition": "one implementation attempt and one ordered verification chain; return to Sol at first non-Green",
+  "delivery": "one production file, hash and bytes, commit and exact verification evidence",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "persistentPolling": false}
+}
