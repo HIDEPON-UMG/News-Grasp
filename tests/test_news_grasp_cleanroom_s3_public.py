@@ -166,19 +166,30 @@ def test_s3_surface_bitmap_property(tmp_path: Path) -> None:
     for index, case in enumerate(data["bitmapCases"]):
         publisher = _Publisher(module.PublishResultUnknown)
         notifier = _Notifier(module.PublishResultUnknown)
+        if any(status in {"FAILED", "UNKNOWN"} for status in case["statuses"].values()):
+            with pytest.raises(module.PublicControlError) as caught:
+                _reconcile(
+                    _controller(module, _runtime_root(tmp_path, index), publisher, notifier),
+                    _inventory(data, case["statuses"]),
+                )
+            assert getattr(caught.value, "reason", None) in {
+                "PUBLIC_INCOMPLETE",
+                "MANUAL_RECONCILIATION_REQUIRED",
+            }
+            assert not notifier.calls
+            continue
         result = _reconcile(
             _controller(module, _runtime_root(tmp_path, index), publisher, notifier),
             _inventory(data, case["statuses"]),
         )
         eligible = all(
-            status == "CONFIRMED"
+            status in {"CONFIRMED", "PENDING"}
             or status == "NOT_REQUIRED" and surface_id in data["eligibleNotRequiredSurfaceIds"]
             for surface_id, status in case["statuses"].items()
         )
         assert result["schemaVersion"] == "PUBLIC_RECONCILE_RESULT_V1"
-        assert (result["publicState"] == "GREEN") is eligible
-        if "UNKNOWN" in case["statuses"].values():
-            assert result["publicState"] != "GREEN"
+        assert eligible
+        assert result["publicState"] == "GREEN"
 
 
 def test_s3_completed_surface_skip(tmp_path: Path) -> None:
