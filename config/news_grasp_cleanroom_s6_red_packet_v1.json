@@ -1,0 +1,100 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S6-RED-V1",
+  "todoId": "NG-CLEANROOM-S6-RED",
+  "role": "test_luna",
+  "canonicalContext": "/root/s1_edge_driver_red",
+  "dependencyIds": ["NG-CLEANROOM-S0-ACCEPTED-V1", "NG-CLEANROOM-S5-RED-CORRECTION-V1"],
+  "baselineCommit": "4cec7fe6e6b7940af84763d3b0b05de28754cbe6",
+  "promotionGate": "Red authoring may proceed from sealed S0 requirements; Green and release promotion require accepted S4 and S5 receipts",
+  "authoritativeSources": [
+    "config/news_grasp_cleanroom_control_s0_v2.json",
+    "tests/fixtures/news_grasp_cleanroom_s0_cases.json",
+    "config/news_grasp_cleanroom_task_manifest_v1.json",
+    "tools/news_grasp_cleanroom_dispatch.py",
+    "tools/news_grasp_cleanroom_controller.py",
+    "tools/news_grasp_cleanroom_execution.py",
+    "tools/news_grasp_cleanroom_public.py"
+  ],
+  "writeLease": {
+    "leaseId": "TEST-LEASE-S6-V1",
+    "leaseSha256": "8a34a0dac7e795f6afede53a427545db63904329f7fb2becacd809b43d7e2332",
+    "canonicalPayload": {
+      "leaseId": "TEST-LEASE-S6-V1",
+      "role": "test_luna",
+      "canonicalContext": "/root/s1_edge_driver_red",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-s1-h1",
+      "writes": [
+        "tests/test_news_grasp_cleanroom_s6_release.py",
+        "tests/fixtures/news_grasp_cleanroom_s6_cases.json"
+      ],
+      "baselineCommit": "4cec7fe6e6b7940af84763d3b0b05de28754cbe6"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": [
+    "tests/test_news_grasp_cleanroom_s6_release.py",
+    "tests/fixtures/news_grasp_cleanroom_s6_cases.json"
+  ],
+  "forbiddenWrites": ["tools", "config", "docs", "scripts", "all other tests and fixtures"],
+  "requiredNodes": [
+    "test_s6_l3_l7_real_boundary_manifest",
+    "test_s6_installed_bytes_args_workdir",
+    "test_s6_l8_final_admission",
+    "test_s6_history_coverage_and_legacy_zero",
+    "test_s6_natural_receipt_schema",
+    "test_s6_natural_states_non_substitutable"
+  ],
+  "layerContract": {
+    "L3": "connect at least dispatch plus Controller through their production interfaces and the same real temporary SQLite/WAL root; prove serialization identity and both Scheduled/Audit durable observations",
+    "L4": "connect real S1/S2/S3 production components; only model, publisher and notification transports may be deterministic protocol substitutes; assert separate Scheduled/Public/Readiness lineage and terminal hashes",
+    "L5": "connect dispatch, ledger/controller, execution product gate, public and recovery through their public interfaces; assert recovery never overwrites Scheduled and completed children are not replayed",
+    "L6": "invoke the real Python module subprocess in an isolated Japanese path using UTF-8 and a real filesystem restart over WAL/SQLite; fault injection is the only fake and stdout is exactly one RECONCILE_RESULT_V1 JSON object with typed exit mapping",
+    "L7": "bind tracked source bytes, staged installed bytes, structured Task definition, executable, ordered argv and working directory; use STOP_BEFORE_RESERVE only as the external-provider substitute and assert child process no-window contract"
+  },
+  "releaseEvidenceContract": {
+    "validatorModule": "tools.news_grasp_cleanroom_release",
+    "symbols": ["ReleaseEvidenceError", "validate_layer_evidence", "admit_final_e2e", "validate_natural_evidence"],
+    "layerEvidence": "exact LAYER_EVIDENCE_V1 rows for L0-L7; each row has layer, realRequired, fakeUsed, schemaIdentity, evidenceSha256 and status=GREEN; fakeUsed must be a subset of the sealed layer manifest and all required real boundaries must be observed",
+    "l8Admission": "exact E2E_FINAL_ADMISSION_V1; accepted S0-S5 receipts plus L0-L7 GREEN hashes, installed source/hash parity, external mutation suppression only, attemptBudget=1, attemptsUsed=0, independent blockerCount=0; missing/unknown/stale/duplicate/second attempt rejects without executing anything",
+    "history": "exact HISTORY_COVERAGE_V1 over 30 Asia/Tokyo dates, explicit missing days, introduction date, timezone, 63+8 corpus counts, Scheduled/Recovery/Public/Readiness separate and legacyWriterCount=0",
+    "natural": "exact NATURAL_OPERATION_EVIDENCE_V1 with installed commit/hash/freshness and four distinct Scheduled, Audit, Public, Readiness receipts; issueDate and generation bound; Public NOT_REQUIRED allowed only as typed terminal while Scheduled/Audit remain GREEN",
+    "nonSubstitution": "L8 receipt cannot satisfy L9, recovery cannot satisfy Scheduled, Public cannot satisfy Readiness, prior date/generation/installed hash cannot satisfy current evidence; unknown extra route/schema/key fails closed"
+  },
+  "testDesignRules": [
+    "retain exactly the six top-level names; matrices and mutations stay inside them",
+    "use production interfaces and real temp SQLite/WAL/filesystem/subprocess for required boundaries; no monkeypatch of production validators or storage",
+    "protocol substitutes are allowed only for the exact fakeSubstitution list sealed in S0 and must expose public call/query observations",
+    "use a Japanese-named isolated temp root, aware Asia/Tokyo times, UTF-8, shell=false and CREATE_NO_WINDOW for the real subprocess",
+    "assert structured stdout/exit/state/receipt/hash values, not source-text presence or mock call prose",
+    "include positive, unknown-key, missing-key, hash-drift, cross-date, cross-generation, replay and mutation-kill cases for every evidence validator",
+    "tests must never touch Task Scheduler, UAC, network, public services, user windows, credentials or paths outside pytest temp roots",
+    "do not execute L8 or claim L9; only test fail-closed admission and evidence validators",
+    "every node dynamically imports the missing release validator before any expensive setup so baseline Expected Red is six causal ModuleNotFoundError failures"
+  ],
+  "verification": {
+    "compileCommand": "py -3.12 -m py_compile tests/test_news_grasp_cleanroom_s6_release.py",
+    "collectCommand": "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s6_release.py",
+    "collectExpected": 6,
+    "redCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s6_release.py",
+    "redExpected": "exactly six failures caused by absent tools.news_grasp_cleanroom_release; collection errors zero",
+    "ruffCommand": "py -3.12 -m ruff check tests/test_news_grasp_cleanroom_s6_release.py",
+    "diffCommand": "git diff --check -- tests/test_news_grasp_cleanroom_s6_release.py tests/fixtures/news_grasp_cleanroom_s6_cases.json"
+  },
+  "commitPolicy": {
+    "allowedOnlyAfterExpectedRed": true,
+    "paths": ["tests/test_news_grasp_cleanroom_s6_release.py", "tests/fixtures/news_grasp_cleanroom_s6_cases.json"],
+    "message": "test: define S6 release evidence boundaries"
+  },
+  "causalRetryCondition": "one authoring attempt and one ordered verification chain; return at the first design/static mismatch without production edits",
+  "delivery": "two test-owned files, hashes/bytes, exact six-Red evidence, per-layer real/fake coverage and zero external mutation",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {
+    "noFocusTheft": true,
+    "noAutoOpen": true,
+    "noUserMonitoring": true,
+    "noSharedProcessKill": true,
+    "persistentPolling": false
+  }
+}
