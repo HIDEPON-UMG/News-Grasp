@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_S1_ACCEPTANCE_REVIEW_V1",
+  "reviewId": "ng-cleanroom-s1-acceptance-r1",
+  "status": "BLOCK",
+  "reviewRole": "independent_sol_reviewer",
+  "reviewContext": "/root/s1_independent_acceptance",
+  "reviewedCommit": "163ccd8834b0f9960a252557f637d61ac945d325",
+  "probeSummary": {"total": 27, "green": 24, "contrary": 3},
+  "blockers": [
+    {
+      "id": "S1-ACCEPT-R1-TRANSACTIONAL-DECISION-DRIFT",
+      "severity": "HIGH",
+      "requirementIds": ["NG-A-R04", "NG-A-R05"],
+      "paths": ["tools/news_grasp_cleanroom_controller.py", "tools/news_grasp_cleanroom_ledger.py"],
+      "evidence": "Controller reads lastObservedAt and Scheduled state on separate connections before import_zero_entries and before ControlLedger.reconcile BEGIN IMMEDIATE; reconcile consumes the stale decision without authoritative in-transaction recomputation.",
+      "failure": "at the 06:40 boundary a concurrent Scheduled commit can leave the ledger ACTIVE while the second invocation reports MISSED_SCHEDULED_AND_ENSURE_AUDIT and persists a false missed terminal row",
+      "requiredRed": "inject one real competing Scheduled commit after the outer invocation observes ABSENT and before its transaction, then require ENSURE_AUDIT_OBSERVING_SCHEDULED with scheduledState ACTIVE and no MISSED_SCHEDULED row"
+    },
+    {
+      "id": "S1-ACCEPT-R1-COMMITTED-JOURNAL-SECOND-CORRUPTION",
+      "severity": "HIGH",
+      "requirementIds": ["NG-A-R04"],
+      "paths": ["tools/news_grasp_cleanroom_ledger.py"],
+      "evidence": "when the retained recovery journal phase is COMMITTED and verify reports corrupt, recover skips every PREPARED through LEDGER_CREATED branch and returns recovered with the old recovery identity while the ledger remains corrupt",
+      "failure": "a second independent corruption after a completed recovery is falsely reported recovered",
+      "requiredRed": "complete one recovery, corrupt the recovered ledger, call recover again and require a new recoveryId, exactly next generation, a new quarantine and a verified reopened ledger"
+    },
+    {
+      "id": "S1-ACCEPT-R1-RECOVERY-WRAPPER-SIGNATURE-DRIFT",
+      "severity": "HIGH",
+      "requirementIds": ["NG-A-R04"],
+      "paths": ["config/news_grasp_cleanroom_s1_impact_receipt_v3.json", "tools/news_grasp_cleanroom_dispatch.py"],
+      "evidence": "the exact accepted wrapper signature includes busy_timeout_ms=1000, but the production recover_ledger wrapper omits the parameter and cannot forward it to Controller",
+      "failure": "the public recovery API is not the accepted interface and callers cannot bind their lock budget",
+      "requiredRed": "inspect the real function signature and capture Controller construction to require exact busy_timeout_ms default and forwarding"
+    }
+  ],
+  "confirmedGreen": [
+    "HEAD and exact-six implementation write-set",
+    "test and fixture ownership hashes unchanged after Test Luna authoring",
+    "WAL-before-parse and durability ordering",
+    "basic zero-entry recovery, lease fencing and terminal semantics",
+    "nine crash boundaries and five recovery hook connections",
+    "S1 15 passed, S0 3 passed, Ruff, compile and scoped security"
+  ],
+  "mutationCount": 0,
+  "acceptanceIssued": false
+}

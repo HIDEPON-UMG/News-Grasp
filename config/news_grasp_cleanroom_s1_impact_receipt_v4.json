@@ -1,0 +1,78 @@
+{
+  "schemaVersion": "TDD_IMPACT_ANALYSIS_RECEIPT_V1",
+  "receiptId": "ng-cleanroom-s1-entry-impact-v4",
+  "workPackage": "S1",
+  "status": "red_authoring_ready",
+  "baselineCommit": "163ccd8834b0f9960a252557f637d61ac945d325",
+  "supersedes": {
+    "inheritedContractPath": "config/news_grasp_cleanroom_s1_impact_receipt_v3.json",
+    "reviewPath": "config/news_grasp_cleanroom_s1_acceptance_review_r1.json",
+    "closedNow": [],
+    "openBlockerIds": [
+      "S1-ACCEPT-R1-TRANSACTIONAL-DECISION-DRIFT",
+      "S1-ACCEPT-R1-COMMITTED-JOURNAL-SECOND-CORRUPTION",
+      "S1-ACCEPT-R1-RECOVERY-WRAPPER-SIGNATURE-DRIFT"
+    ]
+  },
+  "inheritedContract": "all V2 and V3 schemas, APIs, reasons, fault oracles, ownership and no-cutover constraints remain normative except the three explicit amendments below",
+  "amendments": {
+    "transactionalDecisionAuthority": {
+      "predicate": "the Scheduled state and lastObservedAt used by reconcile_slot are read from the same verified SQLite connection after BEGIN IMMEDIATE and after prior zero-entry import has converged",
+      "controllerPolicy": "Controller may validate manifest and time before the ledger call but must not supply a final decision derived from separately read mutable ledger state",
+      "ledgerPolicy": "ControlLedger.reconcile receives the validated manifest or an equivalent immutable schedule contract, reads lastObservedAt and Scheduled row in its transaction, calls reconcile_slot there, and persists and returns that exact decision",
+      "concurrentOracle": "an outer 06:40 invocation that observed ABSENT before a competing 06:39 Scheduled commit must return ENSURE_AUDIT_OBSERVING_SCHEDULED, scheduledState ACTIVE, create or attach Audit, and never synthesize MISSED_SCHEDULED",
+      "clockRollbackPolicy": "rollback comparison also uses transaction-local lastObservedAt; initial invocation WAL remains recoverable on typed rollback"
+    },
+    "repeatedRecovery": {
+      "predicate": "COMMITTED journal plus healthy ledger is RECOVERY_NOT_REQUIRED; COMMITTED journal plus corrupt ledger starts one new recovery from the current generation",
+      "identity": "second recoveryId differs, oldGeneration equals the current sealed generation, newGeneration is exactly old plus one, and quarantine path differs",
+      "history": "the prior COMMITTED journal is durably preserved under control/recovery-history/<priorRecoveryId>.json before the active recovery journal is replaced",
+      "return": "the second recovery returns recovered only after reopen verify succeeds; a crash resumes the new identity without an additional generation increment"
+    },
+    "recoveryWrapper": {
+      "exactSignature": "recover_ledger(*, runtime_root, manifest_path, observed_at, durability_ops=None, boundary_hook=None, busy_timeout_ms=1000) -> CONTROL_LEDGER_RECOVERY_V1",
+      "forwarding": "busy_timeout_ms is forwarded unchanged into Controller and then ControlLedger",
+      "invalidPolicy": "bool, non-int, zero or negative timeout remains rejected through the same constructor/ledger validation used by dispatch"
+    }
+  },
+  "redSuiteAmendment": {
+    "testPath": "tests/test_news_grasp_cleanroom_s1_entry.py",
+    "fixturePath": "tests/fixtures/news_grasp_cleanroom_s1_cases.json",
+    "fixtureMutationAuthorized": false,
+    "existingNodeCount": 15,
+    "newNodes": [
+      {
+        "name": "test_s1_reconcile_revalidates_scheduled_state_inside_transaction",
+        "viewpoint": "adversarial_boundary",
+        "expectedCurrentFailure": "result decision or scheduledState is derived from stale ABSENT and a false MISSED_SCHEDULED row is present"
+      },
+      {
+        "name": "test_s1_recovery_after_committed_journal_repairs_new_corruption",
+        "viewpoint": "operational_recovery",
+        "expectedCurrentFailure": "second result reuses the first recovery identity/generation or reopened verify remains corrupt"
+      },
+      {
+        "name": "test_s1_recover_wrapper_exposes_and_forwards_busy_timeout",
+        "viewpoint": "primary_behavior",
+        "expectedCurrentFailure": "busy_timeout_ms is absent from the real signature or not passed to Controller"
+      }
+    ],
+    "expectedCollected": 18,
+    "expectedRed": "existing 15 pass; exactly the three new nodes fail for their named blocker; unrelated failures zero",
+    "testWeakeningForbidden": true
+  },
+  "writeOwnership": {
+    "test_luna": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+    "implementation_luna_after_red": ["tools/news_grasp_cleanroom_controller.py", "tools/news_grasp_cleanroom_ledger.py", "tools/news_grasp_cleanroom_dispatch.py"],
+    "independent_sol_reviewer": [],
+    "writeIntersectionCount": 0
+  },
+  "verificationOrder": [
+    "compile and collect exactly 18",
+    "run three new nodes and observe three blocker-specific Red failures",
+    "run full S1 and observe existing 15 Green plus exact three Red",
+    "Ruff and diff-check test path",
+    "seal Expected Red receipt before production packet"
+  ],
+  "admissionPredicate": "Test Luna adds only the three decision-complete nodes, preserves all existing assertions and fixture bytes, and produces exact 15 Green plus three causally classified Red with zero unrelated failure"
+}
