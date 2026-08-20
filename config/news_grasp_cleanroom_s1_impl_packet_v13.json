@@ -1,0 +1,68 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S1-GREEN-V13",
+  "todoId": "NG-CLEANROOM-S1-GREEN",
+  "role": "implementation_luna",
+  "canonicalContext": "/root/implementation_luna_canary",
+  "mutationMode": "remove_post_publication_write_reopen",
+  "dependencyIds": ["ng-cleanroom-s1-entry-impact-v6", "NEWS_GRASP_CLEANROOM_S1_EXPECTED_RED_RECEIPT_V8"],
+  "requirementIds": ["NG-A-R03", "NG-A-R04", "NG-A-R13"],
+  "baselineCommit": "f03d3312353dd32b4f9444a09df1238505c3893a",
+  "baselineReceiptPath": "config/news_grasp_cleanroom_s1_red_receipt_v8.json",
+  "baselineSha256": "0e7098997b11b0f421c8e2d6a46353a7c42627a1796619e52a0b0e952e393083",
+  "writeLease": {
+    "leaseId": "IMPL-LEASE-S1-V13",
+    "leaseSha256": "35b7877ebd7ede8849e12ad730cb58905d1d34338e9f49ca91146bf46bb81d34",
+    "canonicalPayload": {
+      "leaseId": "IMPL-LEASE-S1-V13",
+      "role": "implementation_luna",
+      "canonicalContext": "/root/implementation_luna_canary",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-s1-h1",
+      "writes": ["tools/news_grasp_cleanroom_wal.py", "tools/news_grasp_cleanroom_ledger.py"],
+      "baselineCommit": "f03d3312353dd32b4f9444a09df1238505c3893a"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tools/news_grasp_cleanroom_wal.py", "tools/news_grasp_cleanroom_ledger.py"],
+  "forbiddenWrites": ["tests", "tests/fixtures", "tools/news_grasp_cleanroom_contracts.py", "tools/news_grasp_cleanroom_controller.py", "tools/news_grasp_cleanroom_dispatch.py", "config", "docs", "scripts"],
+  "baselineHashes": {
+    "tools/news_grasp_cleanroom_wal.py": "885b7556a314f8aa2d0e9c7555789558ee294a9a4305c20402ab16542378cf06",
+    "tools/news_grasp_cleanroom_ledger.py": "6ab91dc06346653733cc132f61c944992471767a7408569191b563ab26ab7d65",
+    "tests/test_news_grasp_cleanroom_s1_entry.py": "1ca05904e46dd5574347c43a9e8e404929eb7c4f5b01d78255249afb21fed9b0"
+  },
+  "causalCorrection": {
+    "blockerId": "S1-ATOMIC-PUBLISH-NO-FINAL-REOPEN-V1",
+    "targets": ["tools/news_grasp_cleanroom_wal.py::_write_json", "tools/news_grasp_cleanroom_ledger.py::_durable_write"],
+    "requiredImplementation": [
+      "write canonical JSON to a private same-directory temp leaf",
+      "open the temp leaf r+b, fsync it through the existing injected durability operation and close it before publication",
+      "atomically replace the public final path with the already-fsynced temp leaf",
+      "never reopen the public final path for write after replace",
+      "flush the parent directory exactly through the existing durability operation after replace",
+      "preserve cleanup, typed failure reason, Windows fsync fallback and all injected fsync/replace/flush_parent failure semantics"
+    ],
+    "forbidden": ["sleep", "retry loop", "PermissionError suppression", "reader-side retry", "test detection", "removing temp fsync", "removing atomic replace", "removing parent flush"]
+  },
+  "verification": {
+    "newNodeCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py::test_s1_atomic_publish_never_reopens_public_final_for_write",
+    "newNodeExpected": "1 passed",
+    "fullS1Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "fullS1Expected": "27 passed",
+    "s0Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s0_contract.py",
+    "s0Expected": "3 passed",
+    "ruffCommand": "py -3.12 -m ruff check tools/news_grasp_cleanroom_wal.py tools/news_grasp_cleanroom_ledger.py",
+    "compileCommand": "py -3.12 -m py_compile tools/news_grasp_cleanroom_wal.py tools/news_grasp_cleanroom_ledger.py",
+    "security": "NEWS_GRASP_CLEANROOM_SECURITY_SCAN_V1 on exact changed production paths; all denied/private/secret/external/network counts zero",
+    "other": ["git diff --name-only is an exact subset of the two-file lease", "git diff --check on exact changed paths", "post-commit worktree clean"]
+  },
+  "commitPolicy": {
+    "allowedOnlyAfterAllGreen": true,
+    "paths": "exact changed subset of two-file writeSet",
+    "message": "fix: make control JSON publication reader-safe"
+  },
+  "causalRetryCondition": "one implementation attempt and one ordered verification chain; stop on first non-Green",
+  "delivery": "production paths only, hashes/bytes, commit and exact verification evidence",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "persistentPolling": false}
+}
