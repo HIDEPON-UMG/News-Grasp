@@ -1,0 +1,101 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S1-GREEN-V5",
+  "todoId": "NG-CLEANROOM-S1-GREEN",
+  "role": "implementation_luna",
+  "canonicalContext": "/root/implementation_luna_canary",
+  "mutationMode": "causal_resume_nonterminal_recovery_journal",
+  "dependencyIds": [
+    "ng-cleanroom-s0-acceptance-r2",
+    "ng-cleanroom-s1-impact-r3",
+    "NEWS_GRASP_CLEANROOM_S1_EXPECTED_RED_RECEIPT_V4",
+    "NG-CLEANROOM-S1-IMPL-ATTEMPT-V4"
+  ],
+  "requirementIds": ["NG-A-R02", "NG-A-R03", "NG-A-R04", "NG-A-R05"],
+  "baselineCommit": "ed011cca2287ea93d50fa8a7a97f327b78b833be",
+  "baselineReceiptPath": "config/news_grasp_cleanroom_s1_red_receipt_v4.json",
+  "baselineSha256": "1a51ec37036db41d68ad8a2fd3e5639416c8d7843e7bd175a42d003f491f013a",
+  "resumeDraft": {
+    "snapshotCommit": "0ee9bcf98abd075e04a17827eb2babe848316437",
+    "attemptReceiptPath": "config/news_grasp_cleanroom_s1_impl_attempt_v4_receipt.json",
+    "attemptReceiptSha256": "c0ceeeb15594b85e37580f5cec19e5751fd4151a753457494d4bbd6858bca70b",
+    "sameShapeRetryConsumed": true
+  },
+  "writeLease": {
+    "leaseId": "IMPL-LEASE-S1-V5",
+    "leaseSha256": "70858ae27a394c6d9bbb201b8e9cdd3791a59d2e16a3baf6a9295ef2528a3a23",
+    "canonicalPayload": {
+      "leaseId": "IMPL-LEASE-S1-V5",
+      "role": "implementation_luna",
+      "canonicalContext": "/root/implementation_luna_canary",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-s1-h1",
+      "writes": [
+        "config/news_grasp_cleanroom_task_manifest_v1.json",
+        "tools/news_grasp_cleanroom_contracts.py",
+        "tools/news_grasp_cleanroom_wal.py",
+        "tools/news_grasp_cleanroom_ledger.py",
+        "tools/news_grasp_cleanroom_dispatch.py",
+        "tools/news_grasp_cleanroom_controller.py"
+      ],
+      "baselineCommit": "ed011cca2287ea93d50fa8a7a97f327b78b833be"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": [
+    "config/news_grasp_cleanroom_task_manifest_v1.json",
+    "tools/news_grasp_cleanroom_contracts.py",
+    "tools/news_grasp_cleanroom_wal.py",
+    "tools/news_grasp_cleanroom_ledger.py",
+    "tools/news_grasp_cleanroom_dispatch.py",
+    "tools/news_grasp_cleanroom_controller.py"
+  ],
+  "targetSourceHashes": {
+    "config/news_grasp_cleanroom_task_manifest_v1.json": "99888f219a8483e5d8c8698538444cf84d68fc36ab40e842962447982d86e641",
+    "tools/news_grasp_cleanroom_contracts.py": "0387a283b4f3555d3622a70356f5c08ba828ed2a5bb6949f97eede21b7844fd2",
+    "tools/news_grasp_cleanroom_wal.py": "a4da9ea14331966f004461b4957975d58385f9368ea21e0250d697001e2fe29a",
+    "tools/news_grasp_cleanroom_ledger.py": "5ac513d4b8b7b13806173952ae48e10da94d564570e936b6474b3531e376bc57",
+    "tools/news_grasp_cleanroom_dispatch.py": "1d61e10ba6771834466b3def672be1d33e4fbb5236c398c7d80de54f02bc98af2",
+    "tools/news_grasp_cleanroom_controller.py": "6b13c146664923fa246f2aa19daf74419dc734b07c9b37c627ccc985b665e9ef"
+  },
+  "readOnlyInputs": {
+    "config/news_grasp_cleanroom_s1_impact_receipt_v2.json": "fdd3f3bcc8b83c458a8df5f5a7a9767767871c098adfe9feedebd502a11850ef",
+    "config/news_grasp_cleanroom_s1_impact_receipt_v3.json": "6002f61ca6f7249e99db0b791aae5020883ff11e3f5aa4fb56f8f054846f1a08",
+    "config/news_grasp_cleanroom_s1_red_receipt_v4.json": "1a51ec37036db41d68ad8a2fd3e5639416c8d7843e7bd175a42d003f491f013a",
+    "tests/test_news_grasp_cleanroom_s1_entry.py": "a3a1edd86fe6df2fccf15c9b4ca88eb392ae5b0573c471f6a800a85cd7a47eb4",
+    "tests/fixtures/news_grasp_cleanroom_s1_cases.json": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f",
+    "tests/test_news_grasp_cleanroom_s0_contract.py": "36b7be69a45dea4e7e6a0583d0c24fc67c95d7ee0bc890fbfb1cbf36ec0acb83"
+  },
+  "causalCorrection": {
+    "id": "S1-CORR-08-HEALTHY-NONCOMMITTED-RESUME",
+    "file": "tools/news_grasp_cleanroom_ledger.py",
+    "contract": "every valid non-COMMITTED recovery journal resumes the same recoveryId/newGeneration; COMMITTED alone is terminal",
+    "implementation": "when recovery_path exists and its exact hash-valid phase is PREPARED, QUARANTINED, SEALED or LEDGER_CREATED, continue the existing phase machine even if verify reported the current ledger healthy. Keep RECOVERY_NOT_REQUIRED only for healthy COMMITTED journal and for healthy state with no recovery journal. Do not rebuild, move or increment anything before the branch for the persisted phase.",
+    "forbidden": [
+      "no new phase, journal key, public schema or reason",
+      "no second generation increment or new recoveryId",
+      "no production special-case for a test hook name",
+      "no mutation to tests, fixtures, receipts or docs"
+    ]
+  },
+  "authorizedExistingBehaviors": [
+    "all V4 draft behaviors and exact hook-exception identity propagation remain unchanged",
+    "COMMITTED plus healthy returns eight-key RECOVERY_NOT_REQUIRED without mutation",
+    "dispatch EOF formatting remains clean"
+  ],
+  "verification": {
+    "focusedCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py::test_edge_writer_crash_recovery",
+    "fullS1Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "fullS1Expected": "15 passed",
+    "s0RegressionCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s0_contract.py",
+    "s0Expected": "3 passed",
+    "compileCommand": "py -3.12 -m py_compile tools/news_grasp_cleanroom_contracts.py tools/news_grasp_cleanroom_wal.py tools/news_grasp_cleanroom_ledger.py tools/news_grasp_cleanroom_dispatch.py tools/news_grasp_cleanroom_controller.py",
+    "ruffCommand": "py -3.12 -m ruff check tools/news_grasp_cleanroom_contracts.py tools/news_grasp_cleanroom_wal.py tools/news_grasp_cleanroom_ledger.py tools/news_grasp_cleanroom_dispatch.py tools/news_grasp_cleanroom_controller.py",
+    "other": ["git diff --check", "git diff --cached --check after git add", "git status --short", "production AST security scan"]
+  },
+  "expectedWriteSet": {"pathCount": 6, "testFixtureConfigReceiptDocsUnchanged": true, "legacyLauncherTaskInstalledPublicUnchanged": true},
+  "causalRetryCondition": "one exact V5 execution; stop before a second edit or rerun on the first focused, full S1, S0 or static non-Green",
+  "delivery": "six production files only, final hashes/bytes, authoring commit and exact verification evidence",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "persistentPolling": false, "rawProcessTermination": false}
+}
