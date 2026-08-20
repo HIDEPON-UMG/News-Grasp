@@ -1,0 +1,190 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S1-GREEN-V2",
+  "todoId": "NG-CLEANROOM-S1-GREEN",
+  "role": "implementation_luna",
+  "canonicalContext": "/root/implementation_luna_canary",
+  "mutationMode": "causal_retry_from_preserved_draft",
+  "dependencyIds": [
+    "ng-cleanroom-s0-acceptance-r2",
+    "ng-cleanroom-s1-impact-r3",
+    "NEWS_GRASP_CLEANROOM_S1_EXPECTED_RED_RECEIPT_V2",
+    "NG-CLEANROOM-S1-IMPL-ATTEMPT-V1"
+  ],
+  "requirementIds": ["NG-A-R02", "NG-A-R03", "NG-A-R04", "NG-A-R05"],
+  "redNodeIds": [
+    "test_s1_manifest_single_entry",
+    "test_s1_unknown_manifest_zero_effect",
+    "test_s1_terminal_slot_idempotent",
+    "test_s1_wal_precedes_parse",
+    "test_s1_wal_fsync_failure_zero_effect",
+    "test_s1_zero_entry_recovery",
+    "test_s1_three_writer_single_owner",
+    "test_s1_stale_fence_cannot_commit",
+    "test_s1_ledger_corruption_recovery",
+    "test_s1_time_window_primary",
+    "test_s1_clock_rollback_and_dst_fail_closed",
+    "test_s1_missed_scheduled_persists_then_audits",
+    "test_edge_writer_crash_primary",
+    "test_edge_writer_crash_adversarial",
+    "test_edge_writer_crash_recovery"
+  ],
+  "baselineCommit": "5344a1e9ef711cf603ad7c223d2f7575ee48c995",
+  "baselineSha256": "fd7c651a741beebe7b91ab66f6137afc22397f18219da1b9facb9867de6748bc",
+  "baselineReceiptPath": "config/news_grasp_cleanroom_s1_red_receipt_v2.json",
+  "resumeDraft": {
+    "snapshotCommit": "7d692ceefe5fe547d7af512732410327dc19fc48",
+    "attemptReceiptPath": "config/news_grasp_cleanroom_s1_impl_attempt_v1_receipt.json",
+    "attemptReceiptSha256": "80a4256135072bd37a4623a112684716f7899b3784380d93fea159780c7df299",
+    "sameShapeRetryConsumed": true,
+    "reuseAllowedOnlyWithListedCausalCorrections": true
+  },
+  "writeLease": {
+    "leaseId": "IMPL-LEASE-S1-V2",
+    "leaseSha256": "0c870bd145ac1a66b5a40f8cbf73dfee91673003f9d88555f4ec23afa9a31805",
+    "canonicalPayload": {
+      "leaseId": "IMPL-LEASE-S1-V2",
+      "role": "implementation_luna",
+      "canonicalContext": "/root/implementation_luna_canary",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-s1-h1",
+      "writes": [
+        "config/news_grasp_cleanroom_task_manifest_v1.json",
+        "tools/news_grasp_cleanroom_contracts.py",
+        "tools/news_grasp_cleanroom_wal.py",
+        "tools/news_grasp_cleanroom_ledger.py",
+        "tools/news_grasp_cleanroom_dispatch.py",
+        "tools/news_grasp_cleanroom_controller.py"
+      ],
+      "baselineCommit": "5344a1e9ef711cf603ad7c223d2f7575ee48c995"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": [
+    "config/news_grasp_cleanroom_task_manifest_v1.json",
+    "tools/news_grasp_cleanroom_contracts.py",
+    "tools/news_grasp_cleanroom_wal.py",
+    "tools/news_grasp_cleanroom_ledger.py",
+    "tools/news_grasp_cleanroom_dispatch.py",
+    "tools/news_grasp_cleanroom_controller.py"
+  ],
+  "targetSourceHashes": {
+    "config/news_grasp_cleanroom_task_manifest_v1.json": "99888f219a8483e5d8c8698538444cf84d68fc36ab40e842962447982d86e641",
+    "tools/news_grasp_cleanroom_contracts.py": "0387a283b4f3555d3622a70356f5c08ba828ed2a5bb6949f97eede21b7844fd2",
+    "tools/news_grasp_cleanroom_wal.py": "6ac6c139adfb2d8f6d77303330348c6610799a18c97d41a2014fe06522a9ec",
+    "tools/news_grasp_cleanroom_ledger.py": "812a50c3a51f75d1dcc6958faac809593ac30a1426f92a4029415c325de4f5b3",
+    "tools/news_grasp_cleanroom_dispatch.py": "545325955b524ef9b7c7a5adc76ae83ee8fd9dcf3eb233576dd62b24299b2c2f",
+    "tools/news_grasp_cleanroom_controller.py": "4510344e5b5256a88e7a786f8e538a58e506036becf6034d0684296982fe6c4d"
+  },
+  "readOnlyInputs": {
+    "config/news_grasp_cleanroom_control_s0_v2.json": "2b76d2b0aa73d22a43e0279c93cea3eecf3dff0874da6384c6abb74ed61d3a91",
+    "config/news_grasp_cleanroom_s1_impact_receipt_v2.json": "fdd3f3bcc8b83c458a8df5f5a7a9767767871c098adfe9feedebd502a11850ef",
+    "config/news_grasp_cleanroom_s1_impact_receipt_v3.json": "6002f61ca6f7249e99db0b791aae5020883ff11e3f5aa4fb56f8f054846f1a08",
+    "config/news_grasp_cleanroom_s1_impact_review_v3.json": "a484fc5a0c8486f096fbc19f340d9988067c9536517ce4ea437b0ddd11bb1087",
+    "config/news_grasp_cleanroom_s1_red_receipt_v2.json": "fd7c651a741beebe7b91ab66f6137afc22397f18219da1b9facb9867de6748bc",
+    "tests/test_news_grasp_cleanroom_s1_entry.py": "023a8bc878e841e6992a8b3b33e9d3704337b30a5d71a852a5cc217ea373a944",
+    "tests/fixtures/news_grasp_cleanroom_s1_cases.json": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f",
+    "tests/test_news_grasp_cleanroom_s0_contract.py": "36b7be69a45dea4e7e6a0583d0c24fc67c95d7ee0bc890fbfb1cbf36ec0acb83"
+  },
+  "normativeContract": {
+    "base": "config/news_grasp_cleanroom_s1_impact_receipt_v2.json",
+    "overlay": "config/news_grasp_cleanroom_s1_impact_receipt_v3.json",
+    "executableOracle": "tests/test_news_grasp_cleanroom_s1_entry.py",
+    "designChoiceAllowed": false
+  },
+  "causalCorrections": [
+    {
+      "id": "S1-CORR-01-BOOTSTRAP-LOCK",
+      "nodeId": "test_s1_three_writer_single_owner",
+      "files": ["tools/news_grasp_cleanroom_ledger.py"],
+      "implementation": "serialize generation-seal and initial-ledger bootstrap across threads and processes with a persistent control/bootstrap-v1.lock byte lock. On Windows open a+b, ensure byte zero exists, seek zero and use msvcrt.locking LK_NBLCK for exactly one byte; on POSIX use fcntl.flock LOCK_EX|LOCK_NB. Bound contention by busy_timeout_ms using time.monotonic with 10 ms waits; timeout maps to NEWS_GRASP_ENTRY_LEDGER_BUSY. Within the acquired lock re-check generation seal and ledger existence, initialize at most once, then always unlock and close without deleting the lock file. This lock protects bootstrap only; BEGIN IMMEDIATE plus the SQLite slot row remains the sole run ownership authority.",
+      "forbidden": "no process-local-only threading lock, no replace retry loop, no lock-file deletion ownership protocol"
+    },
+    {
+      "id": "S1-CORR-02-CONNECT-CLOSE",
+      "nodeId": "test_s1_ledger_corruption_recovery",
+      "files": ["tools/news_grasp_cleanroom_ledger.py"],
+      "implementation": "in _connect, keep the new sqlite connection in a nullable local and close it before re-raising any sqlite.Error from row_factory or PRAGMA setup. This specifically releases the Windows sqlite/shm handles when PRAGMA journal_mode discovers a corrupt header before _connect returns.",
+      "forbidden": "no gc.collect, sleep retry, copy fallback, delete, or sharing-violation suppression"
+    },
+    {
+      "id": "S1-CORR-03-TIMEZONE-REHYDRATION",
+      "nodeId": "test_s1_stale_fence_cannot_commit",
+      "files": ["tools/news_grasp_cleanroom_ledger.py"],
+      "implementation": "parse persisted lastObservedAt, require its original offset to equal +09:00 and fold zero, then rehydrate with astimezone(ZoneInfo('Asia/Tokyo')) before _validate_entry_time. Reject naive, other-offset, malformed or fold-invalid persisted values as NEWS_GRASP_ENTRY_LEDGER_CORRUPT.",
+      "forbidden": "do not relax the public _validate_entry_time key/offset/fold boundary"
+    },
+    {
+      "id": "S1-CORR-04-PRESERVE-PREIMPORT-DECISION",
+      "nodeId": "test_s1_missed_scheduled_persists_then_audits",
+      "files": ["tools/news_grasp_cleanroom_controller.py"],
+      "implementation": "use the initial pure decision_probe as the exact decision passed to ControlLedger.reconcile after zero-entry import; remove the second reconcile_slot call. The pre-import Scheduled ABSENT observation therefore atomically creates MISSED_SCHEDULED plus Audit at exactly 06:40.",
+      "forbidden": "do not special-case only the test time and do not mutate slot state outside ControlLedger.reconcile"
+    },
+    {
+      "id": "S1-CORR-05-COMPLETED-RECOVERY-NOOP",
+      "nodeId": "test_edge_writer_crash_recovery",
+      "files": ["tools/news_grasp_cleanroom_ledger.py"],
+      "implementation": "after a healthy verify, parse and hash-validate an existing recovery journal. If it is COMMITTED, return the same eight CONTROL_LEDGER_RECOVERY_V1 keys with status RECOVERY_NOT_REQUIRED, oldGeneration/newGeneration/recoveryId/quarantinePath from that journal, resumed true and externalEffectCount zero, with no filesystem mutation. A healthy ledger with no completed journal continues to raise CleanroomEntryError reason NEWS_GRASP_ENTRY_RECOVERY_NOT_REQUIRED. A corrupt or non-COMMITTED journal follows the existing typed recovery rules. After creating a recovered SQLite generation, execute a FULL WAL checkpoint, close it, reopen through verify, then persist LEDGER_CREATED as V3 requires.",
+      "forbidden": "no new public API, schema key, reason, generation increment or journal deletion"
+    },
+    {
+      "id": "S1-CORR-06-FORMAT",
+      "nodeId": "static_diff_check",
+      "files": ["tools/news_grasp_cleanroom_controller.py", "tools/news_grasp_cleanroom_dispatch.py", "tools/news_grasp_cleanroom_ledger.py"],
+      "implementation": "remove trailing extra blank lines so git diff --check is clean",
+      "forbidden": "no behavior change beyond the five causal corrections"
+    }
+  ],
+  "mandatoryInvariants": [
+    "initial WAL remains durable before argv, manifest, lease or time interpretation",
+    "unknown input never mutates a slot and externalEffectCount remains zero",
+    "three independent Controllers converge through a cross-process bootstrap boundary and SQLite BEGIN IMMEDIATE ownership",
+    "06:40 Scheduled absent persists one exact MISSED_SCHEDULED terminal and one Audit acquire atomically",
+    "all SQLite connections, including PRAGMA setup failures, close before recovery file quarantine",
+    "recovery resumes one recoveryId/newGeneration across five hooks and a post-COMMITTED explicit call is no-mutation RECOVERY_NOT_REQUIRED",
+    "S0 public symbols and behavior remain byte-compatible except the approved S1 additions",
+    "no network, subprocess, model, public, notification, installed runtime or Task Scheduler operation"
+  ],
+  "verification": {
+    "focusedCommands": [
+      "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py::test_s1_three_writer_single_owner",
+      "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py::test_s1_stale_fence_cannot_commit",
+      "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py::test_s1_ledger_corruption_recovery",
+      "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py::test_s1_missed_scheduled_persists_then_audits",
+      "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py::test_edge_writer_crash_recovery"
+    ],
+    "fullS1Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "fullS1Expected": "15 passed",
+    "s0RegressionCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s0_contract.py",
+    "s0Expected": "3 passed",
+    "compileCommand": "py -3.12 -m py_compile tools/news_grasp_cleanroom_contracts.py tools/news_grasp_cleanroom_wal.py tools/news_grasp_cleanroom_ledger.py tools/news_grasp_cleanroom_dispatch.py tools/news_grasp_cleanroom_controller.py",
+    "ruffCommand": "py -3.12 -m ruff check tools/news_grasp_cleanroom_contracts.py tools/news_grasp_cleanroom_wal.py tools/news_grasp_cleanroom_ledger.py tools/news_grasp_cleanroom_dispatch.py tools/news_grasp_cleanroom_controller.py",
+    "other": ["git diff --check", "git status --short", "production AST security scan"]
+  },
+  "expectedWriteSet": {
+    "pathCount": 6,
+    "testFixtureConfigReceiptDocsUnchanged": true,
+    "legacyLauncherTaskInstalledPublicUnchanged": true
+  },
+  "causalRetryCondition": "one exact V2 implementation attempt; if any focused or full test remains non-Green, return exact traceback, failing node and six-file hashes to Sol before another edit",
+  "snapshot": "return six hashes/bytes, focused and full S1 results, S0 result, compile/ruff/diff/security results and exact commit",
+  "delivery": "six production-owned files only; tests, fixtures, receipts, legacy runtime and installed state remain byte-identical",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "returnToSolConditions": [
+    "write_set_expansion",
+    "test_fixture_receipt_or_docs_mutation_required",
+    "read_only_hash_drift",
+    "new_public_api_schema_reason_or_boundary_required",
+    "focused_or_full_s1_non_green_after_exact_attempt",
+    "s0_regression",
+    "network_subprocess_installed_task_or_external_effect_required"
+  ],
+  "humanImpact": {
+    "noFocusTheft": true,
+    "noAutoOpen": true,
+    "noUserMonitoring": true,
+    "persistentPolling": false,
+    "rawProcessTermination": false
+  }
+}
