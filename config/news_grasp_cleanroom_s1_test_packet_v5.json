@@ -1,0 +1,71 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S1-RED-CORRECTION-V5",
+  "todoId": "NG-CLEANROOM-S1-RED",
+  "role": "test_luna",
+  "canonicalContext": "/root/playlist_repair_red",
+  "mutationMode": "oracle_boundary_driver_correction",
+  "dependencyIds": ["ng-cleanroom-s1-impact-r3", "NG-CLEANROOM-S1-IMPL-ATTEMPT-V5"],
+  "requirementIds": ["NG-A-R02", "NG-A-R03", "NG-A-R04", "NG-A-R05"],
+  "baselineCommit": "8b3c95a1788a6fbcaab8d497221e2b48ac387e41",
+  "writeLease": {
+    "leaseId": "TEST-LEASE-S1-V5",
+    "leaseSha256": "f957ae0c60b4c0f5055f54f8e56cc032846cc41cd89b63314950b4bafeeb8b59",
+    "canonicalPayload": {
+      "leaseId": "TEST-LEASE-S1-V5",
+      "role": "test_luna",
+      "canonicalContext": "/root/playlist_repair_red",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-s1-h1",
+      "writes": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+      "baselineCommit": "8b3c95a1788a6fbcaab8d497221e2b48ac387e41"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+  "targetSourceHashes": {"tests/test_news_grasp_cleanroom_s1_entry.py": "a3a1edd86fe6df2fccf15c9b4ca88eb392ae5b0573c471f6a800a85cd7a47eb4"},
+  "readOnlyInputs": {
+    "tests/fixtures/news_grasp_cleanroom_s1_cases.json": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f",
+    "config/news_grasp_cleanroom_s1_impact_receipt_v2.json": "fdd3f3bcc8b83c458a8df5f5a7a9767767871c098adfe9feedebd502a11850ef",
+    "config/news_grasp_cleanroom_s1_impact_receipt_v3.json": "6002f61ca6f7249e99db0b791aae5020883ff11e3f5aa4fb56f8f054846f1a08"
+  },
+  "causalCorrection": {
+    "nodeIds": ["test_edge_writer_crash_primary", "test_edge_writer_crash_adversarial"],
+    "observedDefect": "one fresh reconcile driver is incorrectly reused for all nine boundary call sites",
+    "exactDrivers": {
+      "reconcileFresh": {
+        "hooks": ["after_initial_wal_fsync", "after_ledger_begin", "after_invocation_import", "after_slot_insert", "before_ledger_commit", "after_ledger_commit"],
+        "operation": "retain the existing hooked reconcile and reopen reconcile behavior"
+      },
+      "expiredLeaseTakeover": {
+        "hooks": ["after_lease_update"],
+        "operation": "first create an ACTIVE Scheduled slot without a hook at 06:01 with lease_seconds=1; then call hooked reconcile at 06:01:02 with a different writer so after_lease_update is reached; after the crash, reopen against the durable pre-update state and prove the row-specific takeover/stale-fence outcome"
+      },
+      "terminalCommit": {
+        "hooks": ["before_terminal_commit", "after_terminal_commit"],
+        "operation": "first acquire a Scheduled slot without a hook and retain its slotKey, writer and fenceToken; call hooked commit_slot with a valid terminalState/resultHash so the exact terminal boundary is reached. For before_terminal_commit, the next exact retry commits. For after_terminal_commit, the same payload is noop and a different payload is TERMINAL_CONFLICT. The adversarial node must also prove the stale writer/fence rejection on the pre-commit rollback case."
+      }
+    },
+    "prohibitedEdits": [
+      "do not edit production, fixture, receipt or docs",
+      "do not delete, merge, skip, xfail or reduce any of the nine boundary rows",
+      "do not accept DID NOT RAISE or condition assertions on implementation presence",
+      "do not weaken OwnedCrash identity, durable next-call, stale-fence, terminal noop or conflict checks"
+    ]
+  },
+  "acceptance": {
+    "compileCommand": "py -3.12 -m py_compile tests/test_news_grasp_cleanroom_s1_entry.py",
+    "collectCommand": "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "expectedCollection": "15 tests collected",
+    "redCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "expectedRed": "15 failed with ModuleNotFoundError for tools.news_grasp_cleanroom_wal; unrelated failures zero",
+    "ruffCommand": "py -3.12 -m ruff check tests/test_news_grasp_cleanroom_s1_entry.py",
+    "fixtureHashMustRemain": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f",
+    "boundaryRowCountMustRemain": 9,
+    "diffCheck": "git diff --check"
+  },
+  "causalRetryCondition": "one exact correction attempt; return to Sol on collection drift, fixture drift, non-ModuleNotFoundError Red, missing boundary assertion or write-set expansion",
+  "delivery": "one corrected test file, hash/bytes, exact results and authoring commit",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "networkCallCount": 0, "externalModelCallCount": 0}
+}

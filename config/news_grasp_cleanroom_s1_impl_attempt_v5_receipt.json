@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_S1_IMPLEMENTATION_ATTEMPT_RECEIPT_V1",
+  "receiptId": "NG-CLEANROOM-S1-IMPL-ATTEMPT-V5",
+  "packetId": "NG-CLEANROOM-S1-GREEN-V5",
+  "leaseId": "IMPL-LEASE-S1-V5",
+  "role": "implementation_luna",
+  "canonicalContext": "/root/implementation_luna_canary",
+  "baselineCommit": "05d22476f297227a2e677dd0dc30c00af2522beb",
+  "draftSnapshotCommit": "9e795713a018bd0e5f1670f1e24ddf98be9044ed",
+  "attemptPolicy": {
+    "sameShapeRetryConsumed": true,
+    "retryAllowed": false,
+    "returnToSolRequired": true,
+    "nextAdmission": "correct executable boundary drivers, then resume the preserved production draft without changing boundary call sites"
+  },
+  "writeSet": [
+    {"path": "config/news_grasp_cleanroom_task_manifest_v1.json", "bytes": 872, "sha256": "99888f219a8483e5d8c8698538444cf84d68fc36ab40e842962447982d86e641"},
+    {"path": "tools/news_grasp_cleanroom_contracts.py", "bytes": 32191, "sha256": "0387a283b4f3555d3622a70356f5c08ba828ed2a5bb6949f97eede21b7844fd2"},
+    {"path": "tools/news_grasp_cleanroom_wal.py", "bytes": 9289, "sha256": "a4da9ea14331966f004461b4957975d58385f9368ea21e0250d697001e2fe29a"},
+    {"path": "tools/news_grasp_cleanroom_ledger.py", "bytes": 38807, "sha256": "688c1913c35aac131ca44d2851c525f35d613b181c230fafe374073f2fc8a081"},
+    {"path": "tools/news_grasp_cleanroom_dispatch.py", "bytes": 2124, "sha256": "1d61e10ba6771834466b3def672be1d33e4fbb5236c398c7d80de54f02bc98af2"},
+    {"path": "tools/news_grasp_cleanroom_controller.py", "bytes": 6481, "sha256": "6b13c146664923fa246f2aa19daf74419dc734b07c9b37c627ccc985b665e9ef"}
+  ],
+  "verification": {
+    "focusedEdgeRecovery": {"exitCode": 0, "status": "passed"},
+    "fullS1": {"exitCode": 1, "passed": 13, "failed": 2, "failedNodes": ["test_edge_writer_crash_primary", "test_edge_writer_crash_adversarial"]}
+  },
+  "causalClassification": {
+    "owner": "test_luna",
+    "defect": "both edge tests drive every dispatchCommitBoundaries row through one fresh Controller.reconcile call. A fresh reconcile cannot invoke after_lease_update, and reconcile cannot invoke before_terminal_commit or after_terminal_commit, whose normative call sites are ControlLedger.commit_slot.",
+    "staticEvidence": {
+      "freshReconcileHooks": ["after_initial_wal_fsync", "after_ledger_begin", "after_invocation_import", "after_slot_insert", "before_ledger_commit", "after_ledger_commit"],
+      "expiredTakeoverHook": "after_lease_update",
+      "terminalCommitHooks": ["before_terminal_commit", "after_terminal_commit"]
+    },
+    "requiredCorrection": "drive each boundary through its declared production call site and prerequisite state; keep all nine exact rows and assert the row-specific next-call outcome"
+  },
+  "productionBoundaryChangeRequired": false,
+  "unrelatedFailureCount": 0,
+  "testFixtureReceiptDocsChangedByImplementation": false,
+  "s0Regression": "not run after full S1 failure",
+  "status": "non_green_causally_classified",
+  "measuredAt": "2026-08-20T18:26:45.6970362Z"
+}
