@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "IMPLEMENT_TEST_REVIEW_RECEIPT_V1",
+  "receiptId": "NEWS_GRASP_CLEANROOM_S1_ACCEPTED_V1",
+  "workPackage": "S1",
+  "requirementIds": ["NG-A-R02", "NG-A-R03", "NG-A-R04", "NG-A-R05"],
+  "baselineGeneration": "S0-H1",
+  "candidateCommit": "5b4ecff7f587b1be84efa17e891177390e0dcc80",
+  "roles": {
+    "test": {"role": "test_luna", "context": "/root/s1_edge_driver_red"},
+    "implementation": {"role": "implementation_luna", "context": "/root/implementation_luna_canary"},
+    "review": {"role": "sol_codex_reviewer", "context": "/root/s1_independent_acceptance"}
+  },
+  "source": {
+    "path": "tools/news_grasp_cleanroom_wal.py",
+    "sha256": "f5f3a32f791ef303dfda068753451df4d2703b98c70eb032ef8e3e5751365982"
+  },
+  "test": {
+    "path": "tests/test_news_grasp_cleanroom_s1_entry.py",
+    "sha256": "5d62ff2192780e19bfa197915af553f1224f641e33a40264dc978791fedea580",
+    "redReceipt": "config/news_grasp_cleanroom_s1_red_receipt_v10.json",
+    "redObserved": true,
+    "greenPassed": 32,
+    "s0RegressionPassed": 3
+  },
+  "valueOutcome": {
+    "invocationLoss": 0,
+    "duplicateOwner": 0,
+    "ambiguousMode": 0,
+    "unresolvedBlockers": 0
+  },
+  "review": {
+    "verdict": "ACCEPT",
+    "targetedPassed": 5,
+    "blockerCount": 0,
+    "mutationCount": 0,
+    "trackedDiff": false
+  },
+  "constraints": {
+    "knownUntrackedFilesOpened": false,
+    "externalE2EClaimed": false,
+    "operationalCompletionClaimed": false
+  },
+  "nextState": "S2_EXPECTED_RED",
+  "status": "ACCEPTED"
+}
