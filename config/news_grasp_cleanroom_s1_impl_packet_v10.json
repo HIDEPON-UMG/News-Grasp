@@ -1,0 +1,105 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S1-GREEN-V10",
+  "todoId": "NG-CLEANROOM-S1-GREEN",
+  "role": "implementation_luna",
+  "canonicalContext": "/root/implementation_luna_canary",
+  "mutationMode": "verify_preserved_bytes_and_commit",
+  "dependencyIds": [
+    "ng-cleanroom-s0-acceptance-r2",
+    "ng-cleanroom-s1-impact-r3",
+    "NEWS_GRASP_CLEANROOM_S1_EXPECTED_RED_RECEIPT_V5",
+    "NG-CLEANROOM-S1-IMPL-ATTEMPT-V9",
+    "NG-CLEANROOM-S1-SECURITY-R1"
+  ],
+  "requirementIds": ["NG-A-R02", "NG-A-R03", "NG-A-R04", "NG-A-R05"],
+  "baselineCommit": "9d554b8430d760bff559c850c849f017de73862e",
+  "baselineReceiptPath": "config/news_grasp_cleanroom_s1_impl_attempt_v9_receipt.json",
+  "baselineSha256": "fc3a59d6387d6a4aa575cf70938e7216f7b0505f8df941b09db72bb6e5d11ff8",
+  "securityReviewPath": "config/news_grasp_cleanroom_s1_security_review_v1.json",
+  "securityReviewSha256": "2857455beb86523fa92fec18061b0d4b5fd8b78c9f8b7a23fd2ed71a49426019",
+  "resumeDraft": {
+    "snapshotCommit": "7c5cb6f08e4e7a9f1cb85a606bd85f03b61dc76f",
+    "fullS1Prior": "15 passed",
+    "s0Prior": "3 passed",
+    "compilePrior": "passed",
+    "ruffPrior": "All checks passed",
+    "productionEditAuthorized": false
+  },
+  "writeLease": {
+    "leaseId": "IMPL-LEASE-S1-V10",
+    "leaseSha256": "30eca83ab80099062e12aa6403a17c4a378bb6ee896029019cb5ac32db83419d",
+    "canonicalPayload": {
+      "leaseId": "IMPL-LEASE-S1-V10",
+      "role": "implementation_luna",
+      "canonicalContext": "/root/implementation_luna_canary",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-s1-h1",
+      "writes": [
+        "config/news_grasp_cleanroom_task_manifest_v1.json",
+        "tools/news_grasp_cleanroom_contracts.py",
+        "tools/news_grasp_cleanroom_wal.py",
+        "tools/news_grasp_cleanroom_ledger.py",
+        "tools/news_grasp_cleanroom_dispatch.py",
+        "tools/news_grasp_cleanroom_controller.py"
+      ],
+      "baselineCommit": "9d554b8430d760bff559c850c849f017de73862e"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": [
+    "config/news_grasp_cleanroom_task_manifest_v1.json",
+    "tools/news_grasp_cleanroom_contracts.py",
+    "tools/news_grasp_cleanroom_wal.py",
+    "tools/news_grasp_cleanroom_ledger.py",
+    "tools/news_grasp_cleanroom_dispatch.py",
+    "tools/news_grasp_cleanroom_controller.py"
+  ],
+  "targetSourceHashes": {
+    "config/news_grasp_cleanroom_task_manifest_v1.json": "99888f219a8483e5d8c8698538444cf84d68fc36ab40e842962447982d86e641",
+    "tools/news_grasp_cleanroom_contracts.py": "0387a283b4f3555d3622a70356f5c08ba828ed2a5bb6949f97eede21b7844fd2",
+    "tools/news_grasp_cleanroom_wal.py": "a4da9ea14331966f004461b4957975d58385f9368ea21e0250d697001e2fe29a",
+    "tools/news_grasp_cleanroom_ledger.py": "8527d56c092b4d43ecc615f32cc8689224493475b669b4b706fcf441a7a342d9",
+    "tools/news_grasp_cleanroom_dispatch.py": "1d61e10ba6771834466b3def672be1d33e4fbb5236c398c7d80de54f02bc98af",
+    "tools/news_grasp_cleanroom_controller.py": "c5197c9c1899d72dd1eb15438b32cca814322538ee073af57283faf224d8be0d"
+  },
+  "readOnlyInputs": {
+    "config/news_grasp_cleanroom_s1_red_receipt_v5.json": "2a9a02cd5b21b2db38c6d0b7a74b1a53d566cf474e272774a6c704440202c8dc",
+    "tests/test_news_grasp_cleanroom_s1_entry.py": "7de339dae51028a91c8b12ddeebd3b12f1144b1cfe89ccafe6fe09a14c21a8e0",
+    "tests/fixtures/news_grasp_cleanroom_s1_cases.json": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f",
+    "tests/test_news_grasp_cleanroom_s0_contract.py": "36b7be69a45dea4e7e6a0583d0c24fc67c95d7ee0bc890fbfb1cbf36ec0acb83"
+  },
+  "verification": {
+    "preservedEvidence": [
+      "V9 ruff exit 0",
+      "V9 full S1 15 passed",
+      "V9 S0 3 passed",
+      "V9 compile exit 0",
+      "V9 cached diff --check exit 0"
+    ],
+    "requiredNow": [
+      "verify all six targetSourceHashes against working tree and index",
+      "verify no unstaged diff and exact six cached paths",
+      "run NEWS_GRASP_CLEANROOM_SECURITY_SCAN_V1 exactly once",
+      "require denied import/call, private absolute path literal, hardcoded secret, external process and network counts all zero",
+      "inventory managed runtime-root filesystem calls without treating them as violations",
+      "git diff --cached --check"
+    ],
+    "securityOracle": {
+      "denyImportRoots": ["subprocess", "socket", "requests", "urllib", "http", "ftplib", "webbrowser"],
+      "denyCalls": ["eval", "exec", "compile", "__import__", "os.system", "os.popen", "subprocess.run", "subprocess.Popen", "subprocess.call", "subprocess.check_call", "subprocess.check_output"],
+      "privateAbsolutePathPatterns": ["Windows user-profile absolute path", "UNC path", "POSIX /home user path"],
+      "secretPatterns": ["api key assignment", "Bearer credential", "password assignment", "client secret assignment"],
+      "allow": ["exact /root canonical role identifiers", "runtime_root/control and runtime_root/WAL durability calls"]
+    }
+  },
+  "commitPolicy": {
+    "allowedOnlyAfterAllGreen": true,
+    "paths": "exact six writeSet paths",
+    "message": "feat: add S1 clean-room entry control"
+  },
+  "causalRetryCondition": "verification-only; no production edit and no repeat of already Green behavior tests",
+  "delivery": "six production files only, final hashes/bytes, authoring commit and exact verification evidence",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "persistentPolling": false, "rawProcessTermination": false}
+}
