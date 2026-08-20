@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_S1_IMPLEMENTATION_ATTEMPT_RECEIPT_V1",
+  "receiptId": "NG-CLEANROOM-S1-IMPL-ATTEMPT-V7",
+  "packetId": "NG-CLEANROOM-S1-GREEN-V7",
+  "leaseId": "IMPL-LEASE-S1-V7",
+  "role": "implementation_luna",
+  "canonicalContext": "/root/implementation_luna_canary",
+  "baselineCommit": "82900ec757d01751609d18a250d2ae8b8b1f9460",
+  "draftSnapshotCommit": "841776eb08f01ffa6e763283683f26884aba335f",
+  "attemptPolicy": {
+    "sameShapeRetryConsumed": true,
+    "retryAllowed": false,
+    "returnToSolRequired": true,
+    "nextAdmission": "remove exactly the six Ruff F401 unused imports without semantic change, then run the complete ordered verification chain"
+  },
+  "writeSet": [
+    {"path": "config/news_grasp_cleanroom_task_manifest_v1.json", "bytes": 872, "sha256": "99888f219a8483e5d8c8698538444cf84d68fc36ab40e842962447982d86e641"},
+    {"path": "tools/news_grasp_cleanroom_contracts.py", "bytes": 32191, "sha256": "0387a283b4f3555d3622a70356f5c08ba828ed2a5bb6949f97eede21b7844fd2"},
+    {"path": "tools/news_grasp_cleanroom_wal.py", "bytes": 9289, "sha256": "a4da9ea14331966f004461b4957975d58385f9368ea21e0250d697001e2fe29a"},
+    {"path": "tools/news_grasp_cleanroom_ledger.py", "bytes": 38807, "sha256": "688c1913c35aac131ca44d2851c525f35d613b181c230fafe374073f2fc8a081"},
+    {"path": "tools/news_grasp_cleanroom_dispatch.py", "bytes": 2124, "sha256": "1d61e10ba6771834466b3def672be1d33e4fbb5236c398c7d80de54f02bc98af2"},
+    {"path": "tools/news_grasp_cleanroom_controller.py", "bytes": 6657, "sha256": "92c6237de5b87f979e8a9abe3660b97690ca9bc9a65f72508a865d7d761b44c7"}
+  ],
+  "verification": {
+    "fullS1": {"exitCode": 0, "passed": 15, "failed": 0},
+    "s0Regression": {"exitCode": 0, "passed": 3, "failed": 0},
+    "compile": {"exitCode": 0},
+    "ruff": {
+      "exitCode": 1,
+      "violations": [
+        "tools/news_grasp_cleanroom_controller.py:F401:ENTRY_CLOCK_ROLLBACK",
+        "tools/news_grasp_cleanroom_controller.py:F401:_entry_fail",
+        "tools/news_grasp_cleanroom_ledger.py:F401:shutil",
+        "tools/news_grasp_cleanroom_ledger.py:F401:ENTRY_TIME_INVALID",
+        "tools/news_grasp_cleanroom_ledger.py:F401:_entry_fail",
+        "tools/news_grasp_cleanroom_ledger.py:F401:_flush_parent_real"
+      ]
+    }
+  },
+  "causalClassification": {
+    "owner": "implementation_luna",
+    "boundary": "static_quality_gate",
+    "defect": "six imports retained from earlier implementation revisions are unused; all behavioral and compile gates are already Green",
+    "requiredCorrection": "delete exactly those six import bindings and make no behavioral edit",
+    "behavioralFailureCount": 0
+  },
+  "unrelatedFailureCount": 0,
+  "testFixtureReceiptDocsChangedByImplementation": false,
+  "status": "behavior_green_static_cleanup_required",
+  "measuredAt": "2026-08-20T18:50:49.1699541Z"
+}
