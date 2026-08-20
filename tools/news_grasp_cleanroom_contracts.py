@@ -209,15 +209,18 @@ def _validate_write_leases(contract: dict[str, Any]) -> None:
             seen_paths[normalized] = lease_id
 
 
-def _validate_requirements(contract: dict[str, Any]) -> tuple[list[str], dict[str, str]]:
+def _validate_requirements(
+    contract: dict[str, Any],
+) -> tuple[list[str], dict[str, str], dict[str, tuple[str, ...]]]:
     rows = contract["requirements"]
     if len(rows) != 15:
         _invalid("requirements count is invalid")
     requirement_ids: list[str] = []
     slices: dict[str, str] = {}
+    test_nodes: dict[str, tuple[str, ...]] = {}
     for index, row_value in enumerate(rows):
         row = _require_dict(row_value, f"requirements[{index}]")
-        if set(row) != {"id", "slice", "acceptance", "itSuite"}:
+        if set(row) != {"id", "slice", "acceptance", "itSuite", "testNodes"}:
             _invalid(f"requirements[{index}] fields are invalid")
         requirement_id = row.get("id")
         if not isinstance(requirement_id, str) or not requirement_id:
@@ -227,12 +230,20 @@ def _validate_requirements(contract: dict[str, Any]) -> tuple[list[str], dict[st
         for field in ("slice", "acceptance", "itSuite"):
             if not isinstance(row.get(field), str) or not row[field]:
                 _invalid(f"requirements[{index}].{field} is invalid")
+        nodes = row.get("testNodes")
+        if not isinstance(nodes, list) or len(nodes) != 3:
+            _invalid(f"requirements[{index}].testNodes must contain exactly three nodes")
+        if any(not isinstance(node, str) or not node for node in nodes):
+            _invalid(f"requirements[{index}].testNodes contains an invalid node")
+        if len(set(nodes)) != len(nodes):
+            _invalid(f"requirements[{index}].testNodes contains a duplicate node")
         requirement_ids.append(requirement_id)
         slices[requirement_id] = row["slice"]
+        test_nodes[requirement_id] = tuple(nodes)
     expected_ids = [f"NG-A-R{index:02d}" for index in range(1, 16)]
     if requirement_ids != expected_ids:
         _invalid("requirements catalog is not canonical")
-    return requirement_ids, slices
+    return requirement_ids, slices, test_nodes
 
 
 def _validate_traces(
@@ -325,10 +336,15 @@ def _validate_traces(
     return active_nodes
 
 
-def _validate_actual_nodes(actual_nodes: tuple[str, ...], active_nodes: set[str]) -> None:
-    unknown = [node for node in actual_nodes if node not in active_nodes]
+def _validate_actual_nodes(actual_nodes: tuple[str, ...], expected_nodes: tuple[str, ...]) -> None:
+    expected_set = set(expected_nodes)
+    unknown = [node for node in actual_nodes if node not in expected_set]
     if unknown:
         raise CleanroomContractError(UNKNOWN_NODE, "actual test node is outside the active slice")
+    if len(actual_nodes) != len(set(actual_nodes)):
+        raise CleanroomContractError(TRACE_DUPLICATE, "actual test node is duplicated")
+    if actual_nodes != expected_nodes:
+        raise CleanroomContractError(TRACE_GAP, "actual test node set is incomplete or out of order")
 
 
 def _validate_lease_seal(contract: dict[str, Any]) -> None:
@@ -391,7 +407,7 @@ def _sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _validate_baseline(contract: dict[str, Any], baseline_commit: str) -> None:
+def _validate_baseline(contract: dict[str, Any], baseline_commit: str) -> dict[str, Any]:
     baseline = contract["baselineSeal"]
     if set(baseline) != {"generation", "commit", "remoteHead"}:
         raise CleanroomContractError(BASELINE_DRIFT, "baseline seal fields are stale")
@@ -402,6 +418,7 @@ def _validate_baseline(contract: dict[str, Any], baseline_commit: str) -> None:
     if set(file_seal) != {"controlPath", "controlSha256", "impactPath", "impactSha256"}:
         raise CleanroomContractError(BASELINE_DRIFT, "file seal fields are stale")
     root = Path(__file__).resolve().parents[1]
+    control_path: Path | None = None
     for path_field, hash_field in (("controlPath", "controlSha256"), ("impactPath", "impactSha256")):
         normalized = _normalize_relative_path(file_seal.get(path_field), f"fileSeal.{path_field}")
         if normalized not in _SEALED_CONFIG_PATHS or _SEALED_CONFIG_PATHS[normalized] != hash_field:
@@ -416,6 +433,49 @@ def _validate_baseline(contract: dict[str, Any], baseline_commit: str) -> None:
             raise CleanroomContractError(BASELINE_DRIFT, f"sealed file cannot be read: {normalized}") from exc
         if actual_hash != expected_hash:
             raise CleanroomContractError(BASELINE_DRIFT, f"sealed file hash drifted: {normalized}")
+        if hash_field == "controlSha256":
+            control_path = actual_path
+    if control_path is None:
+        raise CleanroomContractError(BASELINE_DRIFT, "sealed control path is missing")
+    try:
+        with control_path.open("r", encoding="utf-8") as stream:
+            control = json.load(stream)
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise CleanroomContractError(BASELINE_DRIFT, "sealed control cannot be loaded") from exc
+    if not isinstance(control, dict):
+        raise CleanroomContractError(BASELINE_DRIFT, "sealed control is not an object")
+    return control
+
+
+def _validate_semantic_seal(contract: dict[str, Any], control: dict[str, Any]) -> None:
+    exact_subtrees = ("requirements", "requirementViewpointTrace", "internalEdgeTrace")
+    for key in exact_subtrees:
+        if contract.get(key) != control.get(key):
+            raise CleanroomContractError(BASELINE_DRIFT, f"sealed control subtree drifted: {key}")
+    try:
+        sealed_viewpoint_nodes = [
+            row[field]
+            for row in control["requirementViewpointTrace"]
+            for field in ("primary_behavior", "adversarial_boundary", "operational_recovery")
+        ]
+        sealed_edge_nodes = [row["plannedNode"] for row in control["internalEdgeTrace"]]
+        sealed_catalog = sorted(set(sealed_viewpoint_nodes) | set(sealed_edge_nodes))
+    except (KeyError, TypeError) as exc:
+        raise CleanroomContractError(BASELINE_DRIFT, "sealed control trace mapping is invalid") from exc
+    if contract.get("plannedNodeCatalog") != sealed_catalog:
+        raise CleanroomContractError(BASELINE_DRIFT, "planned node catalog is not sealed to the control")
+
+
+def _sealed_active_test_nodes(control: dict[str, Any], active_slice: str) -> tuple[str, ...]:
+    try:
+        requirements = control["requirements"]
+        rows = [row for row in requirements if row["slice"] == active_slice]
+        expected = tuple(node for row in rows for node in row["testNodes"])
+    except (KeyError, TypeError) as exc:
+        raise CleanroomContractError(BASELINE_DRIFT, "sealed requirement testNodes are invalid") from exc
+    if not expected:
+        raise CleanroomContractError(BASELINE_DRIFT, "sealed active slice has no testNodes")
+    return expected
 
 
 def validate_s0_admission(
@@ -434,11 +494,13 @@ def validate_s0_admission(
     )
     _validate_roles(contract_value)
     _validate_write_leases(contract_value)
-    requirement_ids, requirement_slices = _validate_requirements(contract_value)
-    active_nodes = _validate_traces(contract_value, requirement_ids, requirement_slices)
-    _validate_actual_nodes(actual_nodes, active_nodes)
+    requirement_ids, requirement_slices, _test_nodes = _validate_requirements(contract_value)
+    _validate_traces(contract_value, requirement_ids, requirement_slices)
     _validate_lease_seal(contract_value)
-    _validate_baseline(contract_value, baseline_commit)
+    control = _validate_baseline(contract_value, baseline_commit)
+    _validate_semantic_seal(contract_value, control)
+    expected_nodes = _sealed_active_test_nodes(control, active_slice)
+    _validate_actual_nodes(actual_nodes, expected_nodes)
     return {
         "schemaVersion": RESULT_SCHEMA,
         "status": "accepted",
