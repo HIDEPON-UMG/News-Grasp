@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_S2_CASES_V1",
+  "packetId": "NG-CLEANROOM-S2-RED-V1",
+  "issueDate": "2026-08-21",
+  "scheduleId": "news-grasp-daily-v1",
+  "slotKey": "news-grasp-daily-v1/2026-08-21/Scheduled",
+  "authority": {
+    "schemaVersion": "EXECUTION_AUTHORITY_V1",
+    "authorityId": "s2-authority-20260821",
+    "generation": 1,
+    "ownerKey": "s2-owner-key",
+    "fenceToken": 1,
+    "maxDispatchAttempts": 2
+  },
+  "payload": {
+    "artifactKey": "news-grasp/2026-08-21/daily",
+    "inputHashes": {
+      "source": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "request": "deterministic-s2-payload"
+  },
+  "stages": ["harvest", "model", "finalize"],
+  "externalStates": ["PENDING", "RESERVED", "INTENT_DURABLE", "DISPATCHED", "CONFIRMED", "COMMITTED"],
+  "admissionStatuses": ["GRANTED", "DENIED", "UNAVAILABLE", "MALFORMED"],
+  "crashBoundaries": [
+    "before_INTENT_DURABLE",
+    "after_INTENT_DURABLE",
+    "before_DISPATCHED",
+    "after_DISPATCHED",
+    "before_CONFIRMED",
+    "after_CONFIRMED",
+    "before_COMMITTED",
+    "after_COMMITTED"
+  ],
+  "queryOutcomes": ["PRESENT", "AMBIGUOUS", "UNAVAILABLE", "ABSENT"],
+  "checkpointStages": ["harvest", "model"],
+  "checkpointFaults": ["corrupt", "missing"],
+  "childStages": ["harvest", "model", "finalize"],
+  "durabilityFaults": ["fsync", "flush_parent"]
+}
