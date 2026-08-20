@@ -546,6 +546,18 @@ def test_edge_writer_crash_primary(tmp_path: Path) -> None:
     data = _load_fixture()
     production = _production()
     manifest_path = _write_manifest(tmp_path, data)
+    fresh_reconcile_boundaries = {
+        "after_initial_wal_fsync",
+        "after_ledger_begin",
+        "after_invocation_import",
+        "after_slot_insert",
+        "before_ledger_commit",
+        "after_ledger_commit",
+    }
+    terminal_commit_boundaries = {"before_terminal_commit", "after_terminal_commit"}
+    assert fresh_reconcile_boundaries | {"after_lease_update"} | terminal_commit_boundaries == {
+        row["boundary"] for row in data["dispatchCommitBoundaries"]
+    }
     for index, boundary_row in enumerate(data["dispatchCommitBoundaries"], start=1):
         runtime_root = tmp_path / f"boundary-{index}"
         hook_name = boundary_row["boundary"]
@@ -554,27 +566,149 @@ def test_edge_writer_crash_primary(tmp_path: Path) -> None:
             if hook == expected:
                 raise OwnedCrash(hook)
 
-        controller = _controller(production, runtime_root, manifest_path, boundary_hook=boundary_hook)
-        with pytest.raises(OwnedCrash):
-            controller.reconcile(
+        if hook_name in fresh_reconcile_boundaries:
+            controller = _controller(production, runtime_root, manifest_path, boundary_hook=boundary_hook)
+            with pytest.raises(OwnedCrash):
+                controller.reconcile(
+                    raw_argv=data["normative"]["rawArgv"]["exact"],
+                    observed_at=_at(6, 1),
+                    writer=_writer(index),
+                )
+            del controller
+            reopened = _controller(production, runtime_root, manifest_path)
+            reopened.reconcile(
+                raw_argv=data["normative"]["rawArgv"]["exact"],
+                observed_at=_at(6, 1, 1),
+                writer=_writer(index),
+            )
+            _assert_real_sqlite(runtime_root)
+            continue
+
+        if hook_name == "after_lease_update":
+            initial = _controller(production, runtime_root, manifest_path)
+            acquired = initial.reconcile(
                 raw_argv=data["normative"]["rawArgv"]["exact"],
                 observed_at=_at(6, 1),
                 writer=_writer(index),
+                lease_seconds=1,
             )
-        del controller
-        reopened = _controller(production, runtime_root, manifest_path)
-        reopened.reconcile(
-            raw_argv=data["normative"]["rawArgv"]["exact"],
-            observed_at=_at(6, 1, 1),
-            writer=_writer(index),
-        )
-        _assert_real_sqlite(runtime_root)
+            assert acquired["ownerDisposition"] == "ACQUIRED"
+            assert acquired["slotKind"] == "Scheduled"
+            del initial
+
+            crashed = _controller(production, runtime_root, manifest_path, boundary_hook=boundary_hook)
+            with pytest.raises(OwnedCrash):
+                crashed.reconcile(
+                    raw_argv=data["normative"]["rawArgv"]["exact"],
+                    observed_at=_at(6, 1, 2),
+                    writer=_writer(index + 100),
+                    lease_seconds=120,
+                )
+            del crashed
+
+            pre_update = _controller(production, runtime_root, manifest_path).inspect_control_state()
+            scheduled_rows = [
+                row
+                for row in pre_update["slots"]
+                if row["slotKind"] == "Scheduled" and row["state"] == "ACTIVE"
+            ]
+            assert len(scheduled_rows) == 1
+            assert scheduled_rows[0]["ownerKey"] == acquired["ownerKey"]
+            assert scheduled_rows[0]["fenceToken"] == acquired["fenceToken"]
+
+            reopened = _controller(production, runtime_root, manifest_path).reconcile(
+                raw_argv=data["normative"]["rawArgv"]["exact"],
+                observed_at=_at(6, 1, 3),
+                writer=_writer(index + 100),
+                lease_seconds=120,
+            )
+            assert reopened["ownerDisposition"] == "ACQUIRED"
+            assert reopened["ownerKey"] != acquired["ownerKey"]
+            assert reopened["fenceToken"] == acquired["fenceToken"] + 1
+            _assert_real_sqlite(runtime_root)
+            continue
+
+        if hook_name in terminal_commit_boundaries:
+            owner = _writer(index)
+            initial = _controller(production, runtime_root, manifest_path)
+            acquired = initial.reconcile(
+                raw_argv=data["normative"]["rawArgv"]["exact"],
+                observed_at=_at(6, 1),
+                writer=owner,
+            )
+            assert acquired["slotKind"] == "Scheduled"
+            assert acquired["ownerDisposition"] == "ACQUIRED"
+            terminal_state = "SUCCEEDED"
+            result_hash = "a" * 64
+            del initial
+
+            crashed = _controller(production, runtime_root, manifest_path, boundary_hook=boundary_hook)
+            with pytest.raises(OwnedCrash):
+                crashed.commit_slot(
+                    slot_key=acquired["slotKey"],
+                    writer=owner,
+                    fence_token=acquired["fenceToken"],
+                    terminal_state=terminal_state,
+                    result_hash=result_hash,
+                    observed_at=_at(6, 1, 1),
+                )
+            del crashed
+
+            reopened = _controller(production, runtime_root, manifest_path)
+            if hook_name == "before_terminal_commit":
+                retry = reopened.commit_slot(
+                    slot_key=acquired["slotKey"],
+                    writer=owner,
+                    fence_token=acquired["fenceToken"],
+                    terminal_state=terminal_state,
+                    result_hash=result_hash,
+                    observed_at=_at(6, 1, 2),
+                )
+                assert retry["status"] == "committed"
+            else:
+                replay = reopened.commit_slot(
+                    slot_key=acquired["slotKey"],
+                    writer=owner,
+                    fence_token=acquired["fenceToken"],
+                    terminal_state=terminal_state,
+                    result_hash=result_hash,
+                    observed_at=_at(6, 1, 2),
+                )
+                assert replay["status"] == "noop"
+                _expect_reason(
+                    production["error"],
+                    "NEWS_GRASP_ENTRY_TERMINAL_CONFLICT",
+                    lambda: reopened.commit_slot(
+                        slot_key=acquired["slotKey"],
+                        writer=owner,
+                        fence_token=acquired["fenceToken"],
+                        terminal_state="FAILED",
+                        result_hash="b" * 64,
+                        observed_at=_at(6, 1, 2),
+                    ),
+                )
+            _assert_real_sqlite(runtime_root)
+            continue
+
+        pytest.fail(f"unhandled dispatch/commit boundary: {hook_name}")
 
 
 def test_edge_writer_crash_adversarial(tmp_path: Path) -> None:
     data = _load_fixture()
     production = _production()
     manifest_path = _write_manifest(tmp_path, data)
+    fresh_reconcile_boundaries = {
+        "after_initial_wal_fsync",
+        "after_ledger_begin",
+        "after_invocation_import",
+        "after_slot_insert",
+        "before_ledger_commit",
+        "after_ledger_commit",
+    }
+    terminal_commit_boundaries = {"before_terminal_commit", "after_terminal_commit"}
+    assert fresh_reconcile_boundaries | {"after_lease_update"} | terminal_commit_boundaries == {
+        row["boundary"] for row in data["dispatchCommitBoundaries"]
+    }
     for index, boundary_row in enumerate(data["dispatchCommitBoundaries"], start=1):
         runtime_root = tmp_path / f"adversarial-{index}"
         hook_name = boundary_row["boundary"]
@@ -583,22 +717,24 @@ def test_edge_writer_crash_adversarial(tmp_path: Path) -> None:
             if hook == expected:
                 raise OwnedCrash(hook)
 
-        stale = _controller(production, runtime_root, manifest_path, boundary_hook=boundary_hook)
-        with pytest.raises(OwnedCrash):
-            stale.reconcile(
+        if hook_name in fresh_reconcile_boundaries:
+            stale = _controller(production, runtime_root, manifest_path, boundary_hook=boundary_hook)
+            with pytest.raises(OwnedCrash):
+                stale.reconcile(
+                    raw_argv=data["normative"]["rawArgv"]["exact"],
+                    observed_at=_at(6, 1),
+                    writer=_writer(index),
+                    lease_seconds=1,
+                )
+            del stale
+            current = _controller(production, runtime_root, manifest_path)
+            acquired = current.reconcile(
                 raw_argv=data["normative"]["rawArgv"]["exact"],
-                observed_at=_at(6, 1),
-                writer=_writer(index),
-                lease_seconds=1,
+                observed_at=_at(6, 1, 2),
+                writer=_writer(index + 100),
+                lease_seconds=120,
             )
-        del stale
-        current = _controller(production, runtime_root, manifest_path)
-        acquired = current.reconcile(
-            raw_argv=data["normative"]["rawArgv"]["exact"],
-            observed_at=_at(6, 1, 2),
-            writer=_writer(index + 100),
-        )
-        if acquired["ownerDisposition"] == "ACQUIRED":
+            assert acquired["ownerDisposition"] == "ACQUIRED"
             _expect_reason(
                 production["error"],
                 "NEWS_GRASP_ENTRY_STALE_FENCE",
@@ -611,6 +747,138 @@ def test_edge_writer_crash_adversarial(tmp_path: Path) -> None:
                     observed_at=_at(6, 1, 3),
                 ),
             )
+            _assert_real_sqlite(runtime_root)
+            continue
+
+        if hook_name == "after_lease_update":
+            owner = _writer(index)
+            initial = _controller(production, runtime_root, manifest_path)
+            acquired = initial.reconcile(
+                raw_argv=data["normative"]["rawArgv"]["exact"],
+                observed_at=_at(6, 1),
+                writer=owner,
+                lease_seconds=1,
+            )
+            assert acquired["ownerDisposition"] == "ACQUIRED"
+            del initial
+
+            crashed = _controller(production, runtime_root, manifest_path, boundary_hook=boundary_hook)
+            with pytest.raises(OwnedCrash):
+                crashed.reconcile(
+                    raw_argv=data["normative"]["rawArgv"]["exact"],
+                    observed_at=_at(6, 1, 2),
+                    writer=_writer(index + 100),
+                    lease_seconds=120,
+                )
+            del crashed
+
+            pre_update = _controller(production, runtime_root, manifest_path).inspect_control_state()
+            scheduled_rows = [
+                row
+                for row in pre_update["slots"]
+                if row["slotKind"] == "Scheduled" and row["state"] == "ACTIVE"
+            ]
+            assert len(scheduled_rows) == 1
+            assert scheduled_rows[0]["ownerKey"] == acquired["ownerKey"]
+            assert scheduled_rows[0]["fenceToken"] == acquired["fenceToken"]
+
+            current = _controller(production, runtime_root, manifest_path)
+            takeover = current.reconcile(
+                raw_argv=data["normative"]["rawArgv"]["exact"],
+                observed_at=_at(6, 1, 3),
+                writer=_writer(index + 100),
+                lease_seconds=120,
+            )
+            assert takeover["ownerDisposition"] == "ACQUIRED"
+            assert takeover["fenceToken"] == acquired["fenceToken"] + 1
+            _expect_reason(
+                production["error"],
+                "NEWS_GRASP_ENTRY_STALE_FENCE",
+                lambda: current.commit_slot(
+                    slot_key=acquired["slotKey"],
+                    writer=owner,
+                    fence_token=acquired["fenceToken"],
+                    terminal_state="SUCCEEDED",
+                    result_hash="a" * 64,
+                    observed_at=_at(6, 1, 4),
+                ),
+            )
+            _assert_real_sqlite(runtime_root)
+            continue
+
+        if hook_name in terminal_commit_boundaries:
+            owner = _writer(index)
+            initial = _controller(production, runtime_root, manifest_path)
+            acquired = initial.reconcile(
+                raw_argv=data["normative"]["rawArgv"]["exact"],
+                observed_at=_at(6, 1),
+                writer=owner,
+            )
+            assert acquired["slotKind"] == "Scheduled"
+            assert acquired["ownerDisposition"] == "ACQUIRED"
+            del initial
+
+            crashed = _controller(production, runtime_root, manifest_path, boundary_hook=boundary_hook)
+            with pytest.raises(OwnedCrash):
+                crashed.commit_slot(
+                    slot_key=acquired["slotKey"],
+                    writer=owner,
+                    fence_token=acquired["fenceToken"],
+                    terminal_state="SUCCEEDED",
+                    result_hash="a" * 64,
+                    observed_at=_at(6, 1, 1),
+                )
+            del crashed
+
+            current = _controller(production, runtime_root, manifest_path)
+            if hook_name == "before_terminal_commit":
+                _expect_reason(
+                    production["error"],
+                    "NEWS_GRASP_ENTRY_STALE_FENCE",
+                    lambda: current.commit_slot(
+                        slot_key=acquired["slotKey"],
+                        writer=_writer(index + 100),
+                        fence_token=acquired["fenceToken"],
+                        terminal_state="SUCCEEDED",
+                        result_hash="a" * 64,
+                        observed_at=_at(6, 1, 2),
+                    ),
+                )
+                retry = current.commit_slot(
+                    slot_key=acquired["slotKey"],
+                    writer=owner,
+                    fence_token=acquired["fenceToken"],
+                    terminal_state="SUCCEEDED",
+                    result_hash="a" * 64,
+                    observed_at=_at(6, 1, 3),
+                )
+                assert retry["status"] == "committed"
+            else:
+                replay = current.commit_slot(
+                    slot_key=acquired["slotKey"],
+                    writer=owner,
+                    fence_token=acquired["fenceToken"],
+                    terminal_state="SUCCEEDED",
+                    result_hash="a" * 64,
+                    observed_at=_at(6, 1, 2),
+                )
+                assert replay["status"] == "noop"
+                _expect_reason(
+                    production["error"],
+                    "NEWS_GRASP_ENTRY_TERMINAL_CONFLICT",
+                    lambda: current.commit_slot(
+                        slot_key=acquired["slotKey"],
+                        writer=owner,
+                        fence_token=acquired["fenceToken"],
+                        terminal_state="FAILED",
+                        result_hash="b" * 64,
+                        observed_at=_at(6, 1, 2),
+                    ),
+                )
+            _assert_real_sqlite(runtime_root)
+            continue
+
+        pytest.fail(f"unhandled dispatch/commit boundary: {hook_name}")
 
 
 def test_edge_writer_crash_recovery(tmp_path: Path) -> None:
