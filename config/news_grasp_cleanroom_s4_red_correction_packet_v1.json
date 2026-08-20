@@ -1,0 +1,114 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S4-RED-CORRECTION-V1",
+  "todoId": "NG-CLEANROOM-S4-RED-R1",
+  "role": "test_luna",
+  "canonicalContext": "/root/s1_edge_driver_red",
+  "dependencyIds": ["NG-CLEANROOM-S4-RED-V1", "S4-TEST-DESIGN-REVIEW-R1-BLOCK"],
+  "baselineCommit": "3e92845dadacb39c5fddcc3d7518e67d004ba269",
+  "reviewEvidence": {
+    "reviewerContext": "/root/s1_independent_acceptance",
+    "verdict": "BLOCK",
+    "blockerCount": 8,
+    "trackedMutationCount": 0,
+    "blockerClasses": ["hook_reachability", "receipt_durability", "attempt_budget_self_report", "recovery_id_binding", "s1_readonly_incomplete", "terminal_equivalence", "legacy_negative_weak", "persisted_row_corpus_absent"]
+  },
+  "writeLease": {
+    "leaseId": "TEST-LEASE-S4-R1-V1",
+    "leaseSha256": "65da851976c123bc1759c5e8d33a0804ca33ae7ecea1f7e217f45f8d5891e27e",
+    "canonicalPayload": {
+      "leaseId": "TEST-LEASE-S4-R1-V1",
+      "role": "test_luna",
+      "canonicalContext": "/root/s1_edge_driver_red",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-s1-h1",
+      "writes": ["tests/test_news_grasp_cleanroom_s4_recovery.py", "tests/fixtures/news_grasp_cleanroom_s4_cases.json"],
+      "baselineCommit": "3e92845dadacb39c5fddcc3d7518e67d004ba269"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tests/test_news_grasp_cleanroom_s4_recovery.py", "tests/fixtures/news_grasp_cleanroom_s4_cases.json"],
+  "forbiddenWrites": ["tools", "config", "docs", "scripts", "all other tests and fixtures"],
+  "correctedProductionContract": {
+    "module": "tools.news_grasp_cleanroom_recovery",
+    "symbols": ["RecoveryController", "RecoveryControlError", "LegacyReadOnlyAdapter"],
+    "audit": "audit(issue_date, parent, authority, budget, observed_at) -> RECOVERY_RECONCILE_RESULT_V1",
+    "inspect": "inspect(issue_date) -> RECOVERY_INSPECTION_V1; read-only projection from SQLite, never module-global cache",
+    "ledgerPath": "control/recovery-ledger-v1.sqlite3",
+    "table": {
+      "name": "recovery_records",
+      "primaryKey": "issue_date",
+      "columns": ["issue_date", "recovery_id", "binding_json", "binding_sha256", "authority_sha256", "budget_sha256", "attempts_used", "phase", "execution_receipt_json", "execution_receipt_sha256", "public_receipt_json", "public_receipt_sha256", "history_json", "history_sha256", "result_json", "result_sha256", "record_sha256"]
+    },
+    "phases": ["ATTEMPT_DURABLE", "EXECUTION_RESULT_DURABLE", "EXECUTION_COMMITTED", "PUBLIC_RESULT_DURABLE", "PUBLIC_COMMITTED", "RESULT_DURABLE", "COMMITTED"],
+    "recordSeal": "record_sha256 is canonical SHA-256 over every named column except record_sha256; semantic validators remain mandatory after seal validation"
+  },
+  "requiredCorrections": [
+    {
+      "blocker": "hook_reachability",
+      "change": "for every six boundary first audit must raise the exact test-owned RuntimeError and set crashed.active false; map before_execution_receipt/after_execution_receipt/before_public_receipt/after_public_receipt/before_recovery_commit/after_recovery_commit to the corresponding durable phase"
+    },
+    {
+      "blocker": "receipt_durability",
+      "change": "immediately after each crash construct a fresh controller, call inspect, and assert the exact phase plus receipt JSON/hash fields already durable where required; then retry with a fresh controller and require completed children skipped without module-global state"
+    },
+    {
+      "blocker": "attempt_budget_self_report",
+      "change": "require result attemptsUsed exactly 1, inspect attemptsUsed exactly 1, one recovery record, exact authoritySha256/budgetSha256/binding hash and no changes across terminal retries"
+    },
+    {
+      "blocker": "recovery_id_binding",
+      "change": "require recoveryId deterministic from canonical parent+authority binding and not runtime path; after terminal, same root/parent with a different self-consistent authorityId/hash must raise RECOVERY_AUTHORITY_CONFLICT with both child calls zero and original record unchanged"
+    },
+    {
+      "blocker": "s1_readonly_incomplete",
+      "change": "snapshot the S1 authoritative tree excluding only recovery-ledger-v1.sqlite3 and its -wal/-shm, after a logical all-table dump; compare raw path/bytes/hash and logical dump before/after every crash/retry/terminal call"
+    },
+    {
+      "blocker": "terminal_equivalence",
+      "change": "require terminal retry full dict equality and identical canonical serialized bytes, not only recoveryId"
+    },
+    {
+      "blocker": "legacy_negative_weak",
+      "change": "valid V3 requires exact parsed snapshot, bytesSha256, bytes and mtime unchanged, exact read-only public method surface and child behavior; corrupt_v3 reason LEGACY_STATE_INVALID and unknown_schema reason LEGACY_STATE_UNKNOWN, both with execution/public calls zero"
+    },
+    {
+      "blocker": "persisted_row_corpus_absent",
+      "change": "inside the retry node add fresh-root mutations of missing/extra binding key, unknown phase, attempts 0/2/bool, recoveryId drift, authority/budget hash drift, child receipt syntax/schema/hash/binding, history syntax/hash/lineage, result syntax/hash/recoveryId; include self-resealed semantic mutations by recomputing record_sha256; all raise RECOVERY_LEDGER_CORRUPT before child calls"
+    }
+  ],
+  "exactAuthorityReasons": {
+    "MALFORMED_AUTHORITY": "RECOVERY_AUTHORITY_INVALID",
+    "WRONG_PARENT": "RECOVERY_PARENT_INVALID",
+    "STALE_GENERATION": "RECOVERY_GENERATION_STALE",
+    "STALE_OWNER": "RECOVERY_AUDIT_OWNER_STALE",
+    "STALE_FENCE": "RECOVERY_AUDIT_FENCE_STALE",
+    "EXHAUSTED_BUDGET": "RECOVERY_BUDGET_EXHAUSTED",
+    "MISMATCHED_BUDGET": "RECOVERY_BUDGET_MISMATCH",
+    "UNKNOWN_ROUTE": "RECOVERY_ROUTE_UNKNOWN"
+  },
+  "requiredNodes": ["test_s4_recovery_authority_matrix", "test_s4_recovery_retry_preserves_lineage", "test_s4_legacy_writer_zero"],
+  "testDesignRules": [
+    "retain exactly the three top-level node names; matrices and persisted corruption corpus stay inside them",
+    "use a fresh Japanese-named tmp root per authority/crash/tamper/legacy case and aware Asia/Tokyo time",
+    "inspect must be exercised through the public controller API; direct SQLite UPDATE is allowed only to create a post-baseline corruption fixture",
+    "for self-resealed mutations compute record_sha256 from the exact public column contract so a hash-only implementation fails",
+    "source-tree snapshot helpers must not include the S4-owned recovery database but must include S1 SQLite main/WAL/SHM, JSON WAL, manifest and every other authoritative file",
+    "dynamic import remains in each node so absent production module yields exactly three causal Red failures",
+    "no network, subprocess, sleep, credentials, module-global monkeypatch or mutation outside pytest tmp roots"
+  ],
+  "verification": {
+    "compileCommand": "py -3.12 -m py_compile tests/test_news_grasp_cleanroom_s4_recovery.py",
+    "collectCommand": "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s4_recovery.py",
+    "collectExpected": 3,
+    "redCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s4_recovery.py",
+    "redExpected": "three failures for absent tools.news_grasp_cleanroom_recovery, collection errors zero",
+    "ruffCommand": "py -3.12 -m ruff check tests/test_news_grasp_cleanroom_s4_recovery.py",
+    "diffCommand": "git diff --check -- tests/test_news_grasp_cleanroom_s4_recovery.py tests/fixtures/news_grasp_cleanroom_s4_cases.json"
+  },
+  "commitPolicy": {"allowedOnlyAfterExpectedRed": true, "paths": ["tests/test_news_grasp_cleanroom_s4_recovery.py", "tests/fixtures/news_grasp_cleanroom_s4_cases.json"], "message": "test: harden S4 recovery oracles"},
+  "causalRetryCondition": "one correction attempt and one ordered verification chain; return to Sol on the first test-design or static non-Green",
+  "delivery": "two test-owned files, hashes and bytes, exact three-Red evidence and eight-blocker closure map",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "persistentPolling": false}
+}
