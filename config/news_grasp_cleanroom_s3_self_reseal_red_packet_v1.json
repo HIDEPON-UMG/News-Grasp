@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S3-SELF-RESEAL-RED-V1",
+  "todoId": "NG-CLEANROOM-S3-R2-RED",
+  "role": "test_luna",
+  "canonicalContext": "/root/s1_edge_driver_red",
+  "dependencyIds": ["NG-CLEANROOM-S3-INTEGRITY-GREEN-V1", "S3-ACCEPT-R2-BLOCK"],
+  "baselineCommit": "8708a84c34540463161f7b6e180d74daa39cd918",
+  "reviewEvidence": {
+    "reviewerContext": "/root/s1_independent_acceptance",
+    "verdict": "BLOCK",
+    "blockerCount": 1,
+    "blockerId": "S3-ACCEPT-R2-PUBLISHED-RECEIPT-SELF-RESEAL-ACCEPTED",
+    "observed": "coordinated canonical receipt terminalHash plus surfaces.terminal_hash mutation returns GREEN",
+    "normalMutationCountGreen": 29,
+    "trackedMutationCount": 0
+  },
+  "writeLease": {
+    "leaseId": "TEST-LEASE-S3-SELF-RESEAL-V1",
+    "leaseSha256": "e74e71301663253a55bb6838126dfacb91d56ab9662d33c64286c16989521a35",
+    "canonicalPayload": {
+      "leaseId": "TEST-LEASE-S3-SELF-RESEAL-V1",
+      "role": "test_luna",
+      "canonicalContext": "/root/s1_edge_driver_red",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-s1-h1",
+      "writes": ["tests/test_news_grasp_cleanroom_s3_public.py"],
+      "baselineCommit": "8708a84c34540463161f7b6e180d74daa39cd918"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tests/test_news_grasp_cleanroom_s3_public.py"],
+  "forbiddenWrites": ["tools", "config", "docs", "scripts", "tests/fixtures", "all other tests"],
+  "requiredCorrection": {
+    "node": "test_s3_persisted_surface_rows_are_revalidated",
+    "change": "extend the existing PUBLISHED_CONFIRMED mutation matrix with terminal_receipt_self_reseal; parse the actual provider receipt, replace receipt terminalHash and the row terminal_hash with the same different valid 64-hex value, serialize receipt canonically and commit",
+    "expected": "retry raises PublicControlError reason PUBLIC_LEDGER_CORRUPT before publisher publish/query, notifier notify/query or result",
+    "semanticAnchor": "expected terminal hash is canonical SHA-256 of {issueDate,surfaceId,artifactSha256,idempotencyKey}, exactly the original publish request",
+    "noChange": "do not add a top-level node; existing six and other two persisted-integrity nodes remain byte-semantically unchanged"
+  },
+  "verification": {
+    "compileCommand": "py -3.12 -m py_compile tests/test_news_grasp_cleanroom_s3_public.py",
+    "collectCommand": "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s3_public.py",
+    "collectExpected": 9,
+    "existingCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s3_public.py -k 'not persisted_'",
+    "existingExpected": "6 passed",
+    "redCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s3_public.py -k persisted_surface",
+    "redExpected": "one top-level node failed with terminal_receipt_self_reseal observed RETURNED/non-corrupt; no collection error",
+    "ruffCommand": "py -3.12 -m ruff check tests/test_news_grasp_cleanroom_s3_public.py",
+    "diffCommand": "git diff --check -- tests/test_news_grasp_cleanroom_s3_public.py"
+  },
+  "commitPolicy": {"allowedOnlyAfterExpectedRed": true, "paths": ["tests/test_news_grasp_cleanroom_s3_public.py"], "message": "test: expose S3 receipt self-reseal"},
+  "causalRetryCondition": "one minimal test edit and one ordered verification chain; return on first non-Green unrelated to the expected Red",
+  "delivery": "one test file, hash and bytes, commit and exact self-reseal Red evidence",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "persistentPolling": false}
+}
