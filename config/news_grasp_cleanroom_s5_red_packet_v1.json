@@ -1,0 +1,90 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S5-RED-V1",
+  "todoId": "NG-CLEANROOM-S5-RED",
+  "role": "test_luna",
+  "canonicalContext": "/root/s1_edge_driver_red",
+  "dependencyIds": ["NG-CLEANROOM-S4-GREEN-V1-CONTRACT"],
+  "baselineCommit": "42ef04c0e4a0b66d2a753aedb33ea51fff37a78e",
+  "dependencyState": "S5 Expected Red authoring may proceed from sealed S0 requirements while S3/S4 acceptance remain promotion gates",
+  "impactAnalysisReceipt": {
+    "schemaVersion": "TDD_IMPACT_ANALYSIS_RECEIPT_V1",
+    "receiptId": "NG-CLEANROOM-S5-IMPACT-V1",
+    "requirementIds": ["NG-A-R12", "NG-A-R13"],
+    "primarySurfaces": ["disabled candidate install", "exact Task XML/action/workdir", "journaled cutover", "rollback", "UAC and privilege denial", "path and reparse security", "signer and ACL", "secret-safe argv", "no-window child tree", "UTF-8 Japanese paths"],
+    "upstreamInputs": ["accepted S0 requirement trace", "S1 single authority", "S4 recovery contract", "source commit and file hashes"],
+    "downstreamConsumers": ["L7 installed boundary", "L8 NoPublish", "L9 natural Task", "rollback operator"],
+    "existingAssets": [
+      {"path": "scripts/ops/install-news-grasp-verified-file-boundary.ps1", "sha256": "d9d1258c89e040a093d1ba2593787cb7a0cb8e400ea5a9c5a217800bf9728a56", "reuse": "verified file and path threat corpus reference"},
+      {"path": "scripts/ops/install-news-grasp-ops.ps1", "sha256": "adf68d9fa8eaedf50075fc81064cb952a7942dd41cc8f7ffab11baebccc94819", "reuse": "legacy Task XML, journal and rollback behavior reference only"},
+      {"path": "scripts/ops/news-grasp-task-launcher.pyw", "sha256": "a095d2fe05ebf06129fc93095fa57e43239483a6c7caddc310347cecbf5c0aef", "reuse": "no-window and installed launcher boundary reference"},
+      {"path": "config/news_grasp_cleanroom_task_manifest_v1.json", "sha256": "99888f219a8483e5d8c8698538444cf84d68fc36ab40e842962447982d86e641", "reuse": "clean-room schedule identity reference"}
+    ],
+    "plannedProduction": ["tools/news_grasp_cleanroom_install.py"],
+    "plannedDurableState": ["install/cutover-journal-v1.json", "install/receipts/*.json"],
+    "contraryEvidence": ["legacy installer directly registers and enables live tasks", "clean-room disabled-stage and dual-enabled invariant are absent", "current installer security logic is not a clean-room cutover authority"],
+    "unknownRoutePolicy": "fail_closed",
+    "impactStatus": "accepted_for_expected_red"
+  },
+  "writeLease": {
+    "leaseId": "TEST-LEASE-S5-V1",
+    "leaseSha256": "b4374d2fe870e877616cea5e358281105bd7f661aca97e9a11948488b4122fc0",
+    "canonicalPayload": {
+      "leaseId": "TEST-LEASE-S5-V1",
+      "role": "test_luna",
+      "canonicalContext": "/root/s1_edge_driver_red",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-s1-h1",
+      "writes": ["tests/test_news_grasp_cleanroom_s5_install.py", "tests/fixtures/news_grasp_cleanroom_s5_cases.json"],
+      "baselineCommit": "42ef04c0e4a0b66d2a753aedb33ea51fff37a78e"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tests/test_news_grasp_cleanroom_s5_install.py", "tests/fixtures/news_grasp_cleanroom_s5_cases.json"],
+  "forbiddenWrites": ["tools", "config", "docs", "scripts", "all existing test and fixture files"],
+  "productionContract": {
+    "module": "tools.news_grasp_cleanroom_install",
+    "symbols": ["InstallCutoverController", "InstallControlError", "PrivilegeDenied"],
+    "constructor": "InstallCutoverController(runtime_root, task_adapter, process_adapter=None, boundary_hook=None)",
+    "stage": "stage(manifest, source_root, installed_root, authority, observed_at) -> INSTALL_STAGE_RESULT_V1",
+    "cutover": "cutover(authority, observed_at) -> CUTOVER_RESULT_V1",
+    "rollback": "rollback(authority, observed_at) -> ROLLBACK_RESULT_V1",
+    "inspect": "inspect() -> INSTALL_INSPECTION_V1",
+    "adapter": "test-owned task adapter exposes snapshot/register_disabled/disable/enable/restore/remove_candidate and never touches Windows Task Scheduler"
+  },
+  "requiredNodes": [
+    {"node": "test_s5_cutover_crash_matrix", "oracle": "stage installs exact hash-bound bytes and a disabled candidate; crashes at stage/install/pointer/old-disable/new-enable/commit resume one transaction to new-only without duplicate mutation"},
+    {"node": "test_s5_dual_enabled_invariant", "oracle": "every old/new enabled-state and every cutover boundary observes dualEnabledCount=0; old is disabled before new enable; pull/inventory-only tasks remain disabled and are never auto-deleted"},
+    {"node": "test_s5_uac_and_rollback_recovery", "oracle": "PrivilegeDenied before or between mutations yields a typed result and converges old-only or safe both-disabled; rollback always disables new before restoring exact old XML and resumes after every rollback crash"},
+    {"node": "test_s5_path_security_matrix", "oracle": "traversal, absolute escape, symlink/reparse, source identity swap, hash mismatch, insecure ACL and invalid signer fail closed before task or installed mutation"},
+    {"node": "test_s5_secret_and_argument_injection", "oracle": "manifest keys are exact; shell metacharacters/control bytes/secret-bearing argv and secret-bearing diagnostics are rejected; exact executable, argv and working directory round-trip without shell construction"},
+    {"node": "test_s5_child_tree_human_impact", "oracle": "process launch contract is shell=false, CREATE_NO_WINDOW for the full child tree, UTF-8 and Japanese paths, no focus theft, no auto-open, no user monitoring and no shared-process kill"}
+  ],
+  "coverage": {
+    "requirements": {"NG-A-R12": [0, 1, 2], "NG-A-R13": [3, 4, 5]},
+    "internalEdges": ["enable-state x cutover crash phase", "rollback phase x privilege loss", "path identity x TOCTOU", "argv x secret x encoding", "parent-child process x window flags"],
+    "valuePredicates": {"dualEnabledCount": 0, "unboundInstalledByteCount": 0, "autoDeletedPullTaskCount": 0, "secretLogCount": 0, "focusTheftCount": 0, "sharedProcessKillCount": 0}
+  },
+  "testDesignRules": [
+    "collect exactly six top-level nodes with matrices parameterized inside them",
+    "use isolated Japanese-named tmp roots and deterministic aware Asia/Tokyo timestamps",
+    "use a test-owned in-memory Task adapter that records ordered operations, enabled-state snapshots and injected PrivilegeDenied without Windows or UAC mutation",
+    "use real filesystem bytes for stage/hash/path cases; security substitutions must preserve the causal boundary and never escape tmp roots",
+    "dynamic import inside every node so collection succeeds and all six nodes are causal Red for the absent production module",
+    "no network, subprocess, sleep, credentials, UI, Task Scheduler or mutation outside tmp roots"
+  ],
+  "verification": {
+    "compileCommand": "py -3.12 -m py_compile tests/test_news_grasp_cleanroom_s5_install.py",
+    "collectCommand": "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s5_install.py",
+    "collectExpected": 6,
+    "redCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s5_install.py",
+    "redExpected": "6 failed for absent tools.news_grasp_cleanroom_install, collection errors zero",
+    "ruffCommand": "py -3.12 -m ruff check tests/test_news_grasp_cleanroom_s5_install.py",
+    "diffCommand": "git diff --check -- tests/test_news_grasp_cleanroom_s5_install.py tests/fixtures/news_grasp_cleanroom_s5_cases.json"
+  },
+  "commitPolicy": {"allowedOnlyAfterExpectedRed": true, "paths": ["tests/test_news_grasp_cleanroom_s5_install.py", "tests/fixtures/news_grasp_cleanroom_s5_cases.json"], "message": "test: define S5 install plane"},
+  "causalRetryCondition": "one authoring attempt and one ordered verification chain; one test-only correction allowed only for packet mismatch",
+  "delivery": "two test-owned files, hashes and bytes, commit, exact Red partition and zero external mutation",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "noSharedProcessKill": true, "persistentPolling": false}
+}
