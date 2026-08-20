@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_S1_EXPECTED_RED_RECEIPT_V1",
+  "receiptId": "NEWS_GRASP_CLEANROOM_S1_EXPECTED_RED_RECEIPT_V10",
+  "packetId": "NG-CLEANROOM-S1-RED-R11",
+  "leaseId": "TEST-LEASE-S1-R11",
+  "authoringRole": "test_luna",
+  "canonicalContext": "/root/s1_edge_driver_red",
+  "baselineCommit": "a5f8f432929309603cd3a7f62a49a614132591bb",
+  "authoringCommit": "0118346740d96dc04d85e69c50f2e5db6b9210c0",
+  "integrationCommit": "35dbb02b62de89102ca3c6ad881c3c293b239706",
+  "testPath": "tests/test_news_grasp_cleanroom_s1_entry.py",
+  "testSha256": "5d62ff2192780e19bfa197915af553f1224f641e33a40264dc978791fedea580",
+  "testGitBlobSha1": "9c754a2731d25df4b57099dd96734ef620b5ce8b",
+  "testBytes": 80497,
+  "fixturePath": "tests/fixtures/news_grasp_cleanroom_s1_cases.json",
+  "fixtureSha256": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f",
+  "fixtureChanged": false,
+  "changedPaths": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+  "verification": {
+    "compile": {"exitCode": 0},
+    "collect": {"exitCode": 0, "collected": 32},
+    "newNode": {
+      "node": "test_s1_imported_marker_parent_flush_failure_is_not_race_success",
+      "exitCode": 1,
+      "failed": 1,
+      "observed": "flush_parent raised OSError after create-once publication, but mark_imported returned success because any WAL_FINALIZE_FAILED with an existing final marker was treated as a race loser",
+      "blockerId": "S1-ACCEPT-R4-IMPORTED-MARKER-DURABILITY-FAILURE-MASKED"
+    },
+    "existingS1": {"exitCode": 0, "passed": 31, "failed": 0},
+    "ruff": {"exitCode": 0},
+    "diffCheck": {"exitCode": 0}
+  },
+  "coverage": {
+    "primaryBehavior": ["parent directory durability failure remains typed failure even when the final immutable marker exists"],
+    "adversarialBoundary": ["create-once collision success is not conflated with post-publication durability failure"],
+    "operationalRecovery": ["a later normal retry validates the complete existing marker and converges without replacement"],
+    "existingGreenCount": 31,
+    "unrelatedFailureCount": 0,
+    "testWeakening": false
+  },
+  "productionMutationCount": 0,
+  "status": "expected_red",
+  "measuredAt": "2026-08-21T06:18:14+09:00"
+}
