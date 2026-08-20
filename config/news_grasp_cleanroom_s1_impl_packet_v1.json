@@ -1,0 +1,215 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S1-GREEN-V1",
+  "todoId": "NG-CLEANROOM-S1-GREEN",
+  "role": "implementation_luna",
+  "canonicalContext": "/root/implementation_luna_canary",
+  "mutationMode": "product_mutation",
+  "dependencyIds": [
+    "ng-cleanroom-s0-acceptance-r2",
+    "ng-cleanroom-s1-impact-r3",
+    "NEWS_GRASP_CLEANROOM_S1_EXPECTED_RED_RECEIPT_V1"
+  ],
+  "requirementIds": ["NG-A-R02", "NG-A-R03", "NG-A-R04", "NG-A-R05"],
+  "redNodeIds": [
+    "test_s1_manifest_single_entry",
+    "test_s1_unknown_manifest_zero_effect",
+    "test_s1_terminal_slot_idempotent",
+    "test_s1_wal_precedes_parse",
+    "test_s1_wal_fsync_failure_zero_effect",
+    "test_s1_zero_entry_recovery",
+    "test_s1_three_writer_single_owner",
+    "test_s1_stale_fence_cannot_commit",
+    "test_s1_ledger_corruption_recovery",
+    "test_s1_time_window_primary",
+    "test_s1_clock_rollback_and_dst_fail_closed",
+    "test_s1_missed_scheduled_persists_then_audits",
+    "test_edge_writer_crash_primary",
+    "test_edge_writer_crash_adversarial",
+    "test_edge_writer_crash_recovery"
+  ],
+  "baselineCommit": "bd5451bc7614be30a01579941780613bfba96d69",
+  "baselineSha256": "570e2f6981df29099606e8a7210a770e11e1f19a1ebc8a06df8ad993d9eeca0d",
+  "baselineReceiptPath": "config/news_grasp_cleanroom_s1_red_receipt_v1.json",
+  "writeLease": {
+    "leaseId": "IMPL-LEASE-S1-V1",
+    "leaseSha256": "1e0160162e5831c14eb7f4f79131d2cc4125dd1d084e7e6473ba1a68b9f0416b",
+    "canonicalPayload": {
+      "leaseId": "IMPL-LEASE-S1-V1",
+      "role": "implementation_luna",
+      "canonicalContext": "/root/implementation_luna_canary",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-s1-h1",
+      "writes": [
+        "config/news_grasp_cleanroom_task_manifest_v1.json",
+        "tools/news_grasp_cleanroom_contracts.py",
+        "tools/news_grasp_cleanroom_wal.py",
+        "tools/news_grasp_cleanroom_ledger.py",
+        "tools/news_grasp_cleanroom_dispatch.py",
+        "tools/news_grasp_cleanroom_controller.py"
+      ],
+      "baselineCommit": "bd5451bc7614be30a01579941780613bfba96d69"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": [
+    "config/news_grasp_cleanroom_task_manifest_v1.json",
+    "tools/news_grasp_cleanroom_contracts.py",
+    "tools/news_grasp_cleanroom_wal.py",
+    "tools/news_grasp_cleanroom_ledger.py",
+    "tools/news_grasp_cleanroom_dispatch.py",
+    "tools/news_grasp_cleanroom_controller.py"
+  ],
+  "targetSourceHashes": {
+    "config/news_grasp_cleanroom_task_manifest_v1.json": "ABSENT",
+    "tools/news_grasp_cleanroom_contracts.py": "b5e0904636085228f2e59a66c8cc4551ae78ce0db18f247fcc9d3b690668c6e2",
+    "tools/news_grasp_cleanroom_wal.py": "ABSENT",
+    "tools/news_grasp_cleanroom_ledger.py": "ABSENT",
+    "tools/news_grasp_cleanroom_dispatch.py": "ABSENT",
+    "tools/news_grasp_cleanroom_controller.py": "ABSENT"
+  },
+  "readOnlyInputs": {
+    "config/news_grasp_cleanroom_control_s0_v2.json": "2b76d2b0aa73d22a43e0279c93cea3eecf3dff0874da6384c6abb74ed61d3a91",
+    "config/news_grasp_cleanroom_s1_impact_receipt_v2.json": "fdd3f3bcc8b83c458a8df5f5a7a9767767871c098adfe9feedebd502a11850ef",
+    "config/news_grasp_cleanroom_s1_impact_receipt_v3.json": "6002f61ca6f7249e99db0b791aae5020883ff11e3f5aa4fb56f8f054846f1a08",
+    "config/news_grasp_cleanroom_s1_impact_review_v3.json": "a484fc5a0c8486f096fbc19f340d9988067c9536517ce4ea437b0ddd11bb1087",
+    "config/news_grasp_cleanroom_s1_red_receipt_v1.json": "570e2f6981df29099606e8a7210a770e11e1f19a1ebc8a06df8ad993d9eeca0d",
+    "tests/test_news_grasp_cleanroom_s1_entry.py": "c50cf1b49d6139ac23a0e4e2bb38165143b2f2a551cef5401e5eb499b0003060",
+    "tests/fixtures/news_grasp_cleanroom_s1_cases.json": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f",
+    "tests/test_news_grasp_cleanroom_s0_contract.py": "36b7be69a45dea4e7e6a0583d0c24fc67c95d7ee0bc890fbfb1cbf36ec0acb83"
+  },
+  "normativeContract": {
+    "base": {
+      "path": "config/news_grasp_cleanroom_s1_impact_receipt_v2.json",
+      "sections": [
+        "canonicalBindings",
+        "faultSeamRelationship",
+        "exactSchemas",
+        "exactPublicApis",
+        "reasonBindings",
+        "decisionTable",
+        "faultRecoveryOracle",
+        "recoveryFaultOracle"
+      ]
+    },
+    "overlay": {
+      "path": "config/news_grasp_cleanroom_s1_impact_receipt_v3.json",
+      "sections": [
+        "dispatchProjectionSchema",
+        "slotDecisionResultMatrix",
+        "dispatchResultValueMatrix",
+        "recoveryBoundaryHooks",
+        "recoveryHookExceptionPolicy",
+        "correctedRecoverWrapperSignature"
+      ]
+    },
+    "executableOracle": "tests/test_news_grasp_cleanroom_s1_entry.py",
+    "designChoiceAllowed": false
+  },
+  "moduleResponsibilities": {
+    "config/news_grasp_cleanroom_task_manifest_v1.json": "exact NEWS_GRASP_CONTROL_MANIFEST_V1 value from V2 exactSchemas.manifest.task; one task/two ordered triggers/Parallel/one action",
+    "tools/news_grasp_cleanroom_contracts.py": "preserve every S0 public symbol and behavior; add CleanroomEntryError, validate_manifest and reconcile_slot with exact pure schemas/reasons/time rules",
+    "tools/news_grasp_cleanroom_wal.py": "DurabilityOps and DurableWal; immutable initial/imported WAL events, canonical hashes, real fsync/replace/parent flush defaults and negative-only injected operations",
+    "tools/news_grasp_cleanroom_ledger.py": "ControlLedger; exact SQLite DDL/PRAGMAs, generation seal, invocation import, slot acquire/attach/terminal, event hash chain, busy/corrupt detection and resumable quarantine recovery",
+    "tools/news_grasp_cleanroom_controller.py": "the only reconcile orchestration; initial WAL before argv/manifest interpretation; pending marker recovery; production components only",
+    "tools/news_grasp_cleanroom_dispatch.py": "thin public wrappers only; do not duplicate Controller decisions"
+  },
+  "implementationOrder": [
+    "validate all packet/read-only/target hashes and lease before editing",
+    "materialize the exact manifest",
+    "extend contracts without changing S0 behavior",
+    "implement WAL durable primitives and platform parent flush",
+    "implement ledger schema/state/hash/recovery",
+    "implement Controller ordering and exact named boundary hooks",
+    "implement thin dispatch wrappers",
+    "run exact S1 suite once, then S0 regression and static verification"
+  ],
+  "mandatoryInvariants": [
+    "writer envelope and runtime_root are the only validations before initial WAL; argv, lease, time and manifest are interpreted after initial WAL durability",
+    "writer invalid is rejected before WAL because no durable invocation identity can be formed",
+    "unknown route/intent/schedule/manifest/time/lease never mutates a slot and externalEffectCount is zero",
+    "BEGIN IMMEDIATE plus one SQLite slot row is the sole ownership authority; scheduler policy is not a mutex",
+    "ownerKey includes writerId, bootId, pid and processStartToken; PID alone never proves owner continuity",
+    "fence token increases monotonically only on expired takeover in the same generation",
+    "terminal commit is current writer plus exact fence only; same payload noop, different payload conflict",
+    "06:40 Scheduled absent inserts exact MISSED_SCHEDULED terminal and reconciles Audit atomically",
+    "every event hash chain is verified before mutation and after reopen",
+    "zero-entry and post-commit marker loss converge without reinserting invocation, slot or generation",
+    "recovery journal resumes same recoveryId/newGeneration across all five exact hooks and never double increments",
+    "primary and recovery paths use real sqlite3/fsync/os.replace/parent flush and reopen; injected durability is negative-only",
+    "S1 production performs no network, subprocess, model, public, notification, installed runtime or Task Scheduler operation"
+  ],
+  "boundaryHooks": [
+    "after_initial_wal_fsync",
+    "after_ledger_begin",
+    "after_invocation_import",
+    "after_slot_insert",
+    "after_lease_update",
+    "before_ledger_commit",
+    "after_ledger_commit",
+    "before_terminal_commit",
+    "after_terminal_commit",
+    "after_recovery_journal_prepared",
+    "after_recovery_quarantined",
+    "after_recovery_generation_sealed",
+    "after_recovery_ledger_created",
+    "after_recovery_committed"
+  ],
+  "security": {
+    "networkImportsAllowed": false,
+    "subprocessImportsAllowed": false,
+    "filesystemWrites": "only runtime_root/control plus the source manifest artifact",
+    "testOrFixtureImportsAllowed": false,
+    "testHashHardcodingAllowed": false,
+    "privateAbsolutePathLiteralsAllowed": false,
+    "unknownKeysAndEnums": "fail closed with exact typed reason before slot mutation"
+  },
+  "verification": {
+    "s1Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "s1Expected": "15 passed",
+    "s0RegressionCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s0_contract.py",
+    "s0Expected": "3 passed",
+    "compileTargets": [
+      "tools/news_grasp_cleanroom_contracts.py",
+      "tools/news_grasp_cleanroom_wal.py",
+      "tools/news_grasp_cleanroom_ledger.py",
+      "tools/news_grasp_cleanroom_dispatch.py",
+      "tools/news_grasp_cleanroom_controller.py"
+    ],
+    "ruffTargets": [
+      "tools/news_grasp_cleanroom_contracts.py",
+      "tools/news_grasp_cleanroom_wal.py",
+      "tools/news_grasp_cleanroom_ledger.py",
+      "tools/news_grasp_cleanroom_dispatch.py",
+      "tools/news_grasp_cleanroom_controller.py",
+      "tests/test_news_grasp_cleanroom_s1_entry.py"
+    ],
+    "other": ["git diff --check", "git status --short", "production AST security scan"]
+  },
+  "expectedWriteSet": {
+    "pathCount": 6,
+    "testFixtureConfigReceiptDocsUnchanged": true,
+    "legacyLauncherTaskInstalledPublicUnchanged": true
+  },
+  "causalRetryCondition": "one exact implementation attempt; if a coding defect within this closed contract causes non-Green, return the exact failing node/reason and changed-path snapshot to Sol before any retry",
+  "rollback": "restore only these six implementation-owned paths to targetSourceHashes in the isolated Implementation Luna worktree",
+  "snapshot": "return six hashes/bytes, 15 S1 Green, 3 S0 Green, compile/ruff/diff/security exits, exact boundary/reason coverage and write-set status",
+  "delivery": "six production-owned files only; tests, fixtures, receipts and legacy runtime remain byte-identical",
+  "stopPolicy": "return_to_sol_before_execution",
+  "unresolvedDecisionIds": [],
+  "returnToSolConditions": [
+    "write_set_expansion",
+    "test_fixture_receipt_or_docs_mutation_required",
+    "read_only_hash_drift",
+    "new_public_api_schema_reason_or_boundary_required",
+    "s1_non_green_after_exact_attempt",
+    "s0_regression",
+    "network_subprocess_installed_task_or_external_effect_required"
+  ],
+  "humanImpact": {
+    "noFocusTheft": true,
+    "noAutoOpen": true,
+    "noUserMonitoring": true,
+    "persistentPolling": false,
+    "rawProcessTermination": false
+  }
+}
