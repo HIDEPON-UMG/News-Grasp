@@ -64,14 +64,6 @@ def _durable_write(path: Path, payload: Mapping[str, Any], operations: Durabilit
                 else:
                     raise
         operations.replace(temp, path)
-        with path.open("r+b") as stream:
-            try:
-                operations.fsync(stream.fileno())
-            except OSError as exc:
-                if operations.fsync is os.fsync and os.name == "nt" and exc.errno == 9:
-                    _fsync_real(stream.fileno())
-                else:
-                    raise
         operations.flush_parent(path.parent)
     except Exception as exc:
         try:
