@@ -1,0 +1,78 @@
+{
+  "schemaVersion": "TDD_IMPACT_ANALYSIS_REVIEW_V1",
+  "reviewId": "ng-cleanroom-s1-impact-r3",
+  "decision": "accepted",
+  "reviewedHead": "4bb7568dd0875676798a9e62f0aa02a81a15788c",
+  "reviewedReceipt": {
+    "path": "config/news_grasp_cleanroom_s1_impact_receipt_v3.json",
+    "sha256": "6002f61ca6f7249e99db0b791aae5020883ff11e3f5aa4fb56f8f054846f1a08"
+  },
+  "inheritedReceipt": {
+    "path": "config/news_grasp_cleanroom_s1_impact_receipt_v2.json",
+    "sha256": "fdd3f3bcc8b83c458a8df5f5a7a9767767871c098adfe9feedebd502a11850ef"
+  },
+  "blockers": [],
+  "closedBlockers": [
+    {
+      "id": "S1-IMPACT-R1-CANONICAL-L1-L3-BINDING-DRIFT",
+      "status": "closed",
+      "evidence": {
+        "canonicalBindingsExact": true,
+        "controllerTargetAndLeasePresent": true,
+        "canonicalSha256": "21563a129ee62d03b36ac862cd52e7ee37d2b9c8691b6baeddcd2d4ad071ae7e"
+      }
+    },
+    {
+      "id": "S1-IMPACT-R1-API-AND-PERSISTENCE-SCHEMAS-INCOMPLETE",
+      "status": "closed",
+      "evidence": {
+        "dispatchCaseCount": 13,
+        "dispatchExactFieldCount": 18,
+        "fieldSourceCoverageGap": 0,
+        "dualSlotReturnedSlot": "Audit",
+        "dualSlotScheduledTerminal": "MISSED_SCHEDULED",
+        "fixtureTransferWithoutDesignChoice": true
+      }
+    },
+    {
+      "id": "S1-IMPACT-R1-FAULT-RECOVERY-ORACLE-INCOMPLETE",
+      "status": "closed",
+      "evidence": {
+        "dispatchCommitBoundaryCount": 9,
+        "recoveryHookCount": 5,
+        "allCallSitesExact": true,
+        "allImmediateStatesComplete": true,
+        "allNextCallsExact": true,
+        "doubleGenerationIncrementPrevented": true
+      }
+    }
+  ],
+  "coverage": {
+    "requirementIds": ["NG-A-R02", "NG-A-R03", "NG-A-R04", "NG-A-R05"],
+    "requirementNodeCount": 12,
+    "writerCrashEdgeNodeCount": 3,
+    "totalNodeCount": 15,
+    "uniqueNodeCount": 15,
+    "exactOrderedMatch": true,
+    "writeIntersectionCount": 0
+  },
+  "securityAndOperations": {
+    "unknownInputFailClosed": true,
+    "externalEffectCount": 0,
+    "networkAllowed": false,
+    "subprocessAllowed": false,
+    "negativeDurabilityInjectionRestricted": true,
+    "realPrimaryRecoveryRequired": true,
+    "launcherTaskInstalledPublicMutation": false
+  },
+  "noCutoverEvidence": {
+    "installedLauncherSha256": "a095d2fe05ebf06129fc93095fa57e43239483a6c7caddc310347cecbf5c0aef",
+    "taskTriggerCount": 1,
+    "taskMode": "runner",
+    "taskMultipleInstancesPolicy": "IgnoreNew"
+  },
+  "redAdmissionReady": true,
+  "reviewScope": "Red creation admission only; Red, Green, broker, E2E and external model were not executed",
+  "mutationPerformedByReviewer": false,
+  "reviewedAt": "2026-08-20T17:10:51.9703543Z"
+}
