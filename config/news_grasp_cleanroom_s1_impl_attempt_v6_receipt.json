@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_S1_IMPLEMENTATION_ATTEMPT_RECEIPT_V1",
+  "receiptId": "NG-CLEANROOM-S1-IMPL-ATTEMPT-V6",
+  "packetId": "NG-CLEANROOM-S1-GREEN-V6",
+  "leaseId": "IMPL-LEASE-S1-V6",
+  "role": "implementation_luna",
+  "canonicalContext": "/root/implementation_luna_canary",
+  "baselineCommit": "18a28c6112ad4020d21615b0a147dd199074ab83",
+  "draftSnapshotCommit": "9e795713a018bd0e5f1670f1e24ddf98be9044ed",
+  "attemptPolicy": {"sameShapeRetryConsumed": true, "retryAllowed": false, "returnToSolRequired": true, "nextAdmission": "exclude the current initial WAL event from prior zero-entry recovery before resuming full verification"},
+  "writeSet": [
+    {"path": "config/news_grasp_cleanroom_task_manifest_v1.json", "bytes": 872, "sha256": "99888f219a8483e5d8c8698538444cf84d68fc36ab40e842962447982d86e641"},
+    {"path": "tools/news_grasp_cleanroom_contracts.py", "bytes": 32191, "sha256": "0387a283b4f3555d3622a70356f5c08ba828ed2a5bb6949f97eede21b7844fd2"},
+    {"path": "tools/news_grasp_cleanroom_wal.py", "bytes": 9289, "sha256": "a4da9ea14331966f004461b4957975d58385f9368ea21e0250d697001e2fe29a"},
+    {"path": "tools/news_grasp_cleanroom_ledger.py", "bytes": 38807, "sha256": "688c1913c35aac131ca44d2851c525f35d613b181c230fafe374073f2fc8a081"},
+    {"path": "tools/news_grasp_cleanroom_dispatch.py", "bytes": 2124, "sha256": "1d61e10ba6771834466b3def672be1d33e4fbb5236c398c7d80de54f02bc98af2"},
+    {"path": "tools/news_grasp_cleanroom_controller.py", "bytes": 6481, "sha256": "6b13c146664923fa246f2aa19daf74419dc734b07c9b37c627ccc985b665e9ef"}
+  ],
+  "verification": {"fullS1": {"exitCode": 1, "passed": 13, "failed": 2, "failedNodes": ["test_edge_writer_crash_primary", "test_edge_writer_crash_adversarial"]}},
+  "causalClassification": {
+    "owner": "implementation_luna",
+    "boundary": "after_invocation_import",
+    "defect": "Controller records the current initial WAL, immediately includes it in iter_zero_entries and imports it as RECOVERED_ZERO_ENTRY before ControlLedger.reconcile. The current reconcile import then returns false and cannot fire its exact after_invocation_import boundary.",
+    "requiredCorrection": "partition iter_zero_entries by invocationId; import only events whose invocationId differs from the current initial_event, then let ControlLedger.reconcile import current initial_event as CURRENT and fire after_invocation_import after that insert",
+    "otherFreshBoundariesChanged": false
+  },
+  "unrelatedFailureCount": 0,
+  "testFixtureReceiptDocsChangedByImplementation": false,
+  "s0Regression": "not run after full S1 failure",
+  "status": "non_green_causally_classified",
+  "measuredAt": "2026-08-20T18:45:00Z"
+}
