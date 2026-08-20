@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "NEWS_GRASP_CONTROL_MANIFEST_V1",
+  "scheduleId": "news-grasp-daily-v1",
+  "tasks": [
+    {
+      "taskPath": "\\",
+      "taskName": "News-Grasp Production",
+      "multipleInstancesPolicy": "Parallel",
+      "triggers": [
+        {
+          "triggerId": "scheduled-0600",
+          "kind": "daily",
+          "localTime": "06:00:00",
+          "timeZone": "Asia/Tokyo"
+        },
+        {
+          "triggerId": "audit-0640",
+          "kind": "daily",
+          "localTime": "06:40:00",
+          "timeZone": "Asia/Tokyo"
+        }
+      ],
+      "action": {
+        "entryModule": "tools.news_grasp_cleanroom_dispatch",
+        "argv": [
+          "dispatch",
+          "--schedule-id",
+          "news-grasp-daily-v1",
+          "--intent",
+          "reconcile"
+        ],
+        "workingDirectoryToken": "<RUNTIME_ROOT>"
+      }
+    }
+  ]
+}

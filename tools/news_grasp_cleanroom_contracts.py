@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
+from datetime import datetime, timedelta
 from hashlib import sha256
 import json
 from pathlib import Path
 import re
+from collections.abc import Mapping
 from typing import Any, Iterable
+from zoneinfo import ZoneInfo
 
 
 CONTRACT_SCHEMA = "NEWS_GRASP_CLEANROOM_S0_ADMISSION_V1"
@@ -20,6 +24,15 @@ TRACE_ORPHAN = "NEWS_GRASP_S0_TRACE_ORPHAN"
 UNKNOWN_NODE = "NEWS_GRASP_S0_UNKNOWN_NODE"
 LEASE_SEAL_STALE = "NEWS_GRASP_S0_LEASE_SEAL_STALE"
 BASELINE_DRIFT = "NEWS_GRASP_S0_BASELINE_DRIFT"
+
+ENTRY_MANIFEST_INVALID = "NEWS_GRASP_ENTRY_MANIFEST_INVALID"
+ENTRY_ARGS_INVALID = "NEWS_GRASP_ENTRY_ARGS_INVALID"
+ENTRY_UNKNOWN_INTENT = "NEWS_GRASP_ENTRY_UNKNOWN_INTENT"
+ENTRY_UNKNOWN_SCHEDULE = "NEWS_GRASP_ENTRY_UNKNOWN_SCHEDULE"
+ENTRY_WRITER_INVALID = "NEWS_GRASP_ENTRY_WRITER_INVALID"
+ENTRY_LEASE_INVALID = "NEWS_GRASP_ENTRY_LEASE_INVALID"
+ENTRY_TIME_INVALID = "NEWS_GRASP_ENTRY_TIME_INVALID"
+ENTRY_CLOCK_ROLLBACK = "NEWS_GRASP_ENTRY_CLOCK_ROLLBACK"
 
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
@@ -511,4 +524,160 @@ def validate_s0_admission(
         "writeLeaseIntersectionCount": 0,
         "traceGapCount": 0,
         "staleSealCount": 0,
+    }
+
+
+class CleanroomEntryError(RuntimeError):
+    """S1 entry boundary の typed fail-closed error。"""
+
+    def __init__(self, reason: str, message: str | None = None) -> None:
+        self.reason = reason
+        super().__init__(message or reason)
+
+
+_ENTRY_MANIFEST_SCHEMA = "NEWS_GRASP_CONTROL_MANIFEST_V1"
+_ENTRY_SCHEDULE_ID = "news-grasp-daily-v1"
+_ENTRY_TRIGGER_KEYS = {"triggerId", "kind", "localTime", "timeZone"}
+_ENTRY_TASK_KEYS = {"taskPath", "taskName", "multipleInstancesPolicy", "triggers", "action"}
+_ENTRY_ACTION_KEYS = {"entryModule", "argv", "workingDirectoryToken"}
+_ENTRY_RAW_ARGV = ("dispatch", "--schedule-id", _ENTRY_SCHEDULE_ID, "--intent", "reconcile")
+_ENTRY_WRITER_KEYS = {"writerId", "bootId", "pid", "processStartToken"}
+_ENTRY_WRITER_RE = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
+_ENTRY_TZ = ZoneInfo("Asia/Tokyo")
+
+
+def _entry_fail(reason: str, message: str) -> None:
+    raise CleanroomEntryError(reason, message)
+
+
+def _entry_canonical_sha256(value: Any) -> str:
+    try:
+        payload = json.dumps(
+            value,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    except (TypeError, ValueError) as exc:
+        _entry_fail(ENTRY_MANIFEST_INVALID, f"canonical JSON is invalid: {exc}")
+    return sha256(payload).hexdigest()
+
+
+def validate_manifest(value: Mapping[str, Any]) -> dict[str, Any]:
+    """manifest のキー、値、順序、重複を exact に検証する。"""
+    if not isinstance(value, Mapping):
+        _entry_fail(ENTRY_MANIFEST_INVALID, "manifest must be an object")
+    manifest = deepcopy(dict(value))
+    if set(manifest) != {"schemaVersion", "scheduleId", "tasks"}:
+        _entry_fail(ENTRY_MANIFEST_INVALID, "manifest top-level fields are invalid")
+    if manifest.get("schemaVersion") != _ENTRY_MANIFEST_SCHEMA or manifest.get("scheduleId") != _ENTRY_SCHEDULE_ID:
+        _entry_fail(ENTRY_MANIFEST_INVALID, "manifest schema or schedule is invalid")
+    tasks = manifest.get("tasks")
+    if not isinstance(tasks, list) or len(tasks) != 1:
+        _entry_fail(ENTRY_MANIFEST_INVALID, "manifest must contain exactly one task")
+    task = tasks[0]
+    if not isinstance(task, dict) or set(task) != _ENTRY_TASK_KEYS:
+        _entry_fail(ENTRY_MANIFEST_INVALID, "task fields are invalid")
+    if task.get("taskPath") != "\\" or task.get("taskName") != "News-Grasp Production":
+        _entry_fail(ENTRY_MANIFEST_INVALID, "task identity is invalid")
+    if task.get("multipleInstancesPolicy") != "Parallel":
+        _entry_fail(ENTRY_MANIFEST_INVALID, "multiple instance policy is invalid")
+    triggers = task.get("triggers")
+    if not isinstance(triggers, list) or len(triggers) != 2:
+        _entry_fail(ENTRY_MANIFEST_INVALID, "manifest must contain two ordered triggers")
+    trigger_ids = {"scheduled-0600", "audit-0640"}
+    seen_trigger_ids: set[str] = set()
+    for index, trigger in enumerate(triggers):
+        if not isinstance(trigger, dict) or set(trigger) != _ENTRY_TRIGGER_KEYS:
+            _entry_fail(ENTRY_MANIFEST_INVALID, f"trigger {index} fields are invalid")
+        trigger_id = trigger.get("triggerId")
+        if trigger_id not in trigger_ids or trigger_id in seen_trigger_ids:
+            _entry_fail(ENTRY_MANIFEST_INVALID, "trigger identity or multiplicity is invalid")
+        seen_trigger_ids.add(trigger_id)
+        if trigger.get("kind") != "daily" or trigger.get("timeZone") != "Asia/Tokyo":
+            _entry_fail(ENTRY_MANIFEST_INVALID, "trigger kind or timezone is invalid")
+        expected_time = "06:00:00" if index == 0 else "06:40:00"
+        if trigger.get("localTime") != expected_time:
+            _entry_fail(ENTRY_MANIFEST_INVALID, "trigger order or local time is invalid")
+    action = task.get("action")
+    if not isinstance(action, dict) or set(action) != _ENTRY_ACTION_KEYS:
+        _entry_fail(ENTRY_MANIFEST_INVALID, "task action fields are invalid")
+    if action.get("entryModule") != "tools.news_grasp_cleanroom_dispatch":
+        _entry_fail(ENTRY_MANIFEST_INVALID, "task entry module is invalid")
+    argv = action.get("argv")
+    if not isinstance(argv, list) or tuple(argv) != _ENTRY_RAW_ARGV:
+        _entry_fail(ENTRY_MANIFEST_INVALID, "task action argv is invalid")
+    if action.get("workingDirectoryToken") != "<RUNTIME_ROOT>":
+        _entry_fail(ENTRY_MANIFEST_INVALID, "task working directory token is invalid")
+    return manifest
+
+
+def _validate_entry_time(value: Any) -> datetime:
+    if not isinstance(value, datetime) or value.tzinfo is None:
+        _entry_fail(ENTRY_TIME_INVALID, "observed_at must be timezone-aware")
+    if getattr(value.tzinfo, "key", None) != "Asia/Tokyo":
+        _entry_fail(ENTRY_TIME_INVALID, "timezone key must be Asia/Tokyo")
+    if value.utcoffset() != timedelta(hours=9) or value.fold != 0:
+        _entry_fail(ENTRY_TIME_INVALID, "timezone offset or fold is invalid")
+    return value
+
+
+def _validate_entry_writer(writer: Mapping[str, Any]) -> tuple[dict[str, Any], str]:
+    if not isinstance(writer, Mapping):
+        _entry_fail(ENTRY_WRITER_INVALID, "writer must be an object")
+    value = dict(writer)
+    if set(value) != _ENTRY_WRITER_KEYS:
+        _entry_fail(ENTRY_WRITER_INVALID, "writer fields are invalid")
+    for field in ("writerId", "bootId", "processStartToken"):
+        field_value = value.get(field)
+        if not isinstance(field_value, str) or not _ENTRY_WRITER_RE.fullmatch(field_value):
+            _entry_fail(ENTRY_WRITER_INVALID, f"writer {field} is invalid")
+    pid = value.get("pid")
+    if isinstance(pid, bool) or not isinstance(pid, int) or not 1 <= pid <= 2_147_483_647:
+        _entry_fail(ENTRY_WRITER_INVALID, "writer pid is invalid")
+    return value, _entry_canonical_sha256(value)
+
+
+def _writer_owner_key(writer: Mapping[str, Any]) -> str:
+    """ledger が共有する canonical writer owner key を返す。"""
+    _, owner_key = _validate_entry_writer(writer)
+    return owner_key
+
+
+def reconcile_slot(
+    *,
+    manifest: Mapping[str, Any],
+    observed_at: datetime,
+    last_observed_at: datetime | None,
+    scheduled_state: str,
+) -> dict[str, Any]:
+    """決定論的な Scheduled/Audit slot decision を返す。"""
+    canonical_manifest = validate_manifest(manifest)
+    observed = _validate_entry_time(observed_at)
+    if last_observed_at is not None:
+        previous = _validate_entry_time(last_observed_at)
+        if observed < previous:
+            _entry_fail(ENTRY_CLOCK_ROLLBACK, "observed_at precedes persisted lastObservedAt")
+    if scheduled_state not in {"ABSENT", "ACTIVE", "TERMINAL", "SUCCEEDED", "FAILED", "MISSED_SCHEDULED"}:
+        _entry_fail(ENTRY_MANIFEST_INVALID, "scheduled state is invalid")
+    local_time = observed.timetz().replace(tzinfo=None)
+    if local_time < datetime.strptime("06:00:00", "%H:%M:%S").time():
+        decision = "NOT_DUE"
+        projected_state = scheduled_state
+    elif local_time < datetime.strptime("06:40:00", "%H:%M:%S").time():
+        decision = "ENSURE_SCHEDULED"
+        projected_state = scheduled_state
+    elif scheduled_state == "ABSENT":
+        decision = "MISSED_SCHEDULED_AND_ENSURE_AUDIT"
+        projected_state = "MISSED_SCHEDULED"
+    else:
+        decision = "ENSURE_AUDIT_OBSERVING_SCHEDULED"
+        projected_state = scheduled_state
+    return {
+        "schemaVersion": "SLOT_DECISION_V1",
+        "decision": decision,
+        "issueDate": observed.date().isoformat(),
+        "scheduleId": canonical_manifest["scheduleId"],
+        "scheduledState": projected_state,
+        "externalEffectCount": 0,
     }
