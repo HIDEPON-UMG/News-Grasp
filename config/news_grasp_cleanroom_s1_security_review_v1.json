@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_SECURITY_REVIEW_V1",
+  "reviewId": "NG-CLEANROOM-S1-SECURITY-R1",
+  "role": "sol_codex_reviewer",
+  "sourceSnapshotCommit": "7c5cb6f08e4e7a9f1cb85a606bd85f03b61dc76f",
+  "scope": [
+    "tools/news_grasp_cleanroom_contracts.py",
+    "tools/news_grasp_cleanroom_wal.py",
+    "tools/news_grasp_cleanroom_ledger.py",
+    "tools/news_grasp_cleanroom_dispatch.py",
+    "tools/news_grasp_cleanroom_controller.py"
+  ],
+  "oracle": {
+    "schemaVersion": "NEWS_GRASP_CLEANROOM_SECURITY_SCAN_V1",
+    "denyImportRoots": ["subprocess", "socket", "requests", "urllib", "http", "ftplib", "webbrowser"],
+    "denyCalls": ["eval", "exec", "compile", "__import__", "os.system", "os.popen", "subprocess.run", "subprocess.Popen", "subprocess.call", "subprocess.check_call", "subprocess.check_output"],
+    "denyLiteralClasses": ["Windows user-profile absolute path", "UNC path", "POSIX /home user path", "hard-coded credential assignment"],
+    "managedWritePolicy": "inventory but allow runtime_root/control and runtime_root/WAL durability calls exercised by S1 fault and recovery tests",
+    "canonicalAgentContextPolicy": "exact /root role identifiers in task_model_roles are identifiers, not filesystem targets"
+  },
+  "result": {
+    "status": "Green",
+    "deniedImportOrCallCount": 0,
+    "privateAbsolutePathLiteralCount": 0,
+    "hardcodedSecretCount": 0,
+    "managedFilesystemCallInventoryCount": 20,
+    "externalProcessCount": 0,
+    "networkClientCount": 0
+  },
+  "manualBoundaryReview": {
+    "walWrites": "temporary sibling, fsync, atomic replace and imported marker paths derived from DurableWal.runtime_root",
+    "ledgerWrites": "generation, recovery journal, bootstrap lock and SQLite paths derived from ControlLedger.runtime_root/control",
+    "cleanup": "temporary siblings only; no recursive deletion or raw process termination",
+    "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true}
+  },
+  "decision": "accepted_for_verification_only_packet",
+  "measuredAt": "2026-08-20T19:00:40.7289903Z"
+}

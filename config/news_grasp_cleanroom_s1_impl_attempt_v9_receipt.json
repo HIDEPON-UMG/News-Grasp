@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_S1_IMPLEMENTATION_ATTEMPT_RECEIPT_V1",
+  "receiptId": "NG-CLEANROOM-S1-IMPL-ATTEMPT-V9",
+  "packetId": "NG-CLEANROOM-S1-GREEN-V9",
+  "leaseId": "IMPL-LEASE-S1-V9",
+  "role": "implementation_luna",
+  "canonicalContext": "/root/implementation_luna_canary",
+  "baselineCommit": "3f2818b8f5b28e564405d16db47a29ec27922eeb",
+  "draftSnapshotCommit": "7c5cb6f08e4e7a9f1cb85a606bd85f03b61dc76f",
+  "attemptPolicy": {
+    "sameShapeRetryConsumed": true,
+    "retryAllowed": false,
+    "returnToSolRequired": true,
+    "nextAdmission": "use the S1-scoped security oracle which prohibits external execution, network, credentials and private absolute paths while inventorying the required runtime-root WAL/SQLite durability calls"
+  },
+  "writeSet": [
+    {"path": "config/news_grasp_cleanroom_task_manifest_v1.json", "bytes": 872, "sha256": "99888f219a8483e5d8c8698538444cf84d68fc36ab40e842962447982d86e641"},
+    {"path": "tools/news_grasp_cleanroom_contracts.py", "bytes": 32191, "sha256": "0387a283b4f3555d3622a70356f5c08ba828ed2a5bb6949f97eede21b7844fd2"},
+    {"path": "tools/news_grasp_cleanroom_wal.py", "bytes": 9289, "sha256": "a4da9ea14331966f004461b4957975d58385f9368ea21e0250d697001e2fe29a"},
+    {"path": "tools/news_grasp_cleanroom_ledger.py", "bytes": 38732, "sha256": "8527d56c092b4d43ecc615f32cc8689224493475b669b4b706fcf441a7a342d9"},
+    {"path": "tools/news_grasp_cleanroom_dispatch.py", "bytes": 2124, "sha256": "1d61e10ba6771834466b3def672be1d33e4fbb5236c398c7d80de54f02bc98af"},
+    {"path": "tools/news_grasp_cleanroom_controller.py", "bytes": 6614, "sha256": "c5197c9c1899d72dd1eb15438b32cca814322538ee073af57283faf224d8be0d"}
+  ],
+  "verification": {
+    "ruff": {"exitCode": 0, "result": "All checks passed"},
+    "fullS1": {"exitCode": 0, "passed": 15, "failed": 0},
+    "s0Regression": {"exitCode": 0, "passed": 3, "failed": 0},
+    "compile": {"exitCode": 0},
+    "cachedDiffCheck": {"exitCode": 0},
+    "genericAstScan": {
+      "exitCode": 1,
+      "syntaxOrForbiddenImportOrSubprocessOrTestFixtureOrForbiddenCallCount": 0,
+      "filesystemWriteCallCount": 14,
+      "privateAbsolutePathLiteralCount": 17
+    }
+  },
+  "causalClassification": {
+    "owner": "sol_codex_reviewer",
+    "boundary": "security_oracle",
+    "defect": "the generic scan treated every required WAL/SQLite filesystem write as forbidden and counted canonical agent contexts beginning with /root as private filesystem paths",
+    "productionDefectObserved": false,
+    "requiredCorrection": "replace the generic predicate with the scoped NEWS_GRASP_CLEANROOM_SECURITY_SCAN_V1 oracle; do not change production bytes"
+  },
+  "unrelatedFailureCount": 0,
+  "testFixtureReceiptDocsChangedByImplementation": false,
+  "status": "behavior_and_static_green_security_oracle_replan_required",
+  "measuredAt": "2026-08-20T19:00:40.7289903Z"
+}
