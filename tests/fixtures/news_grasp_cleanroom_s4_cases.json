@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_S4_CASES_V1",
+  "packetId": "NG-CLEANROOM-S4-RED-V1",
+  "issueDate": "2026-08-21",
+  "scheduleId": "news-grasp-daily-v1",
+  "scheduledSlotKey": "news-grasp-daily-v1/2026-08-21/Scheduled",
+  "auditSlotKey": "news-grasp-daily-v1/2026-08-21/Audit",
+  "authority": {
+    "schemaVersion": "RECOVERY_AUTHORITY_V1",
+    "authorityId": "s4-authority-20260821",
+    "issueDate": "2026-08-21",
+    "scheduledParentTerminalHash": "s4-scheduled-parent-hash",
+    "scheduledGeneration": 1,
+    "auditOwnerKey": "s4-audit-owner",
+    "auditFenceToken": 1,
+    "maxAttempts": 1
+  },
+  "budget": {
+    "schemaVersion": "RECOVERY_BUDGET_V1",
+    "remainingAttempts": 1
+  },
+  "authorityFailures": [
+    "MALFORMED_AUTHORITY",
+    "WRONG_PARENT",
+    "STALE_GENERATION",
+    "STALE_OWNER",
+    "STALE_FENCE",
+    "EXHAUSTED_BUDGET",
+    "MISMATCHED_BUDGET",
+    "UNKNOWN_ROUTE"
+  ],
+  "crashBoundaries": [
+    "before_execution_receipt",
+    "after_execution_receipt",
+    "before_public_receipt",
+    "after_public_receipt",
+    "before_recovery_commit",
+    "after_recovery_commit"
+  ],
+  "legacyCases": ["valid_v3", "corrupt_v3", "unknown_schema"],
+  "lineages": ["Scheduled", "Recovery", "Public", "Readiness"]
+}
