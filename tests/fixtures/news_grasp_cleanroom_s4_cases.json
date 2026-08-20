@@ -38,5 +38,38 @@
     "after_recovery_commit"
   ],
   "legacyCases": ["valid_v3", "corrupt_v3", "unknown_schema"],
-  "lineages": ["Scheduled", "Recovery", "Public", "Readiness"]
+  "lineages": ["Scheduled", "Recovery", "Public", "Readiness"],
+  "phaseExpectations": {
+    "before_execution_receipt": {"phase": "ATTEMPT_DURABLE", "execution": false, "public": false, "result": false},
+    "after_execution_receipt": {"phase": "EXECUTION_RESULT_DURABLE", "execution": true, "public": false, "result": false},
+    "before_public_receipt": {"phase": "EXECUTION_COMMITTED", "execution": true, "public": false, "result": false},
+    "after_public_receipt": {"phase": "PUBLIC_RESULT_DURABLE", "execution": true, "public": true, "result": false},
+    "before_recovery_commit": {"phase": "RESULT_DURABLE", "execution": true, "public": true, "result": true},
+    "after_recovery_commit": {"phase": "COMMITTED", "execution": true, "public": true, "result": true}
+  },
+  "persistedRecordMutations": [
+    "missing_binding_key",
+    "extra_binding_key",
+    "unknown_phase",
+    "attempts_zero",
+    "attempts_two",
+    "attempts_bool",
+    "recovery_id_drift",
+    "authority_hash_drift",
+    "budget_hash_drift",
+    "execution_receipt_syntax",
+    "execution_receipt_schema",
+    "execution_receipt_hash",
+    "execution_receipt_binding",
+    "public_receipt_syntax",
+    "public_receipt_schema",
+    "public_receipt_hash",
+    "public_receipt_binding",
+    "history_syntax",
+    "history_hash",
+    "history_lineage",
+    "result_syntax",
+    "result_hash",
+    "result_recovery_id"
+  ]
 }
