@@ -62,6 +62,12 @@
   ],
   "causalClassification": [
     {
+      "nodeId": "all_s1_nodes_fixture_loader",
+      "owner": "test_luna",
+      "defect": "the fixture loader compares a production target that S1 must change against its Red baseline hash, so a valid Green implementation is rejected before import",
+      "requiredCorrection": "keep live hashes for immutable contract inputs; verify the declared contracts.py Red baseline hash inside the fixture without pinning the live mutable production file"
+    },
+    {
       "nodeId": "test_s1_time_window_primary",
       "owner": "test_luna",
       "defect": "the executable oracle compares the normative reference phrase same as scheduledPreState as a literal value",

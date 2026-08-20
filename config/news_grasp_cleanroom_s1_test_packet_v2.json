@@ -34,9 +34,15 @@
     "config/news_grasp_cleanroom_s1_impact_receipt_v3.json": "6002f61ca6f7249e99db0b791aae5020883ff11e3f5aa4fb56f8f054846f1a08"
   },
   "causalCorrection": {
-    "nodeId": "test_s1_time_window_primary",
-    "observedDefect": "slotDecisionResultMatrix uses same as scheduledPreState as a normative reference expression, but the test compares it literally against production output",
-    "requiredEdit": "inside the existing primary time-window test, resolve result.scheduledState equal to same as scheduledPreState to the actual scheduled_state argument ABSENT before assertion",
+    "nodeIds": ["all_s1_nodes_fixture_loader", "test_s1_time_window_primary"],
+    "observedDefects": [
+      "the fixture loader live-compares the mutable production target tools/news_grasp_cleanroom_contracts.py against its Red baseline hash, so a valid S1 Green implementation is rejected before import",
+      "slotDecisionResultMatrix uses same as scheduledPreState as a normative reference expression, but the test compares it literally against production output"
+    ],
+    "requiredEdits": [
+      "keep exact live-hash verification for the five immutable config inputs; verify that the fixture declares the canonical b5e0904636085228f2e59a66c8cc4551ae78ce0db18f247fcc9d3b690668c6e2 Red baseline for tools/news_grasp_cleanroom_contracts.py without pinning the current live mutable production file to that hash",
+      "inside the existing primary time-window test, resolve result.scheduledState equal to same as scheduledPreState to the actual scheduled_state argument ABSENT before assertion"
+    ],
     "prohibitedEdits": [
       "do not edit the fixture",
       "do not weaken or delete any assertion",
