@@ -12,11 +12,13 @@ from contextlib import closing
 from copy import deepcopy
 from datetime import datetime, timezone
 import hashlib
+import inspect
 import importlib
 import json
 from pathlib import Path
 import sqlite3
 from concurrent.futures import ThreadPoolExecutor
+from threading import Lock
 from typing import Any, Callable
 from zoneinfo import ZoneInfo
 
@@ -918,3 +920,150 @@ def test_edge_writer_crash_recovery(tmp_path: Path) -> None:
         terminal = resumed.recover_ledger(observed_at=_at(6, 2, 2))
         assert terminal["status"] == "RECOVERY_NOT_REQUIRED"
         _assert_real_sqlite(runtime_root)
+
+
+def test_s1_reconcile_revalidates_scheduled_state_inside_transaction(tmp_path: Path) -> None:
+    data = _load_fixture()
+    production = _production()
+    manifest_path = _write_manifest(tmp_path, data)
+    runtime_root = tmp_path / "runtime"
+    ledger_module = importlib.import_module("tools.news_grasp_cleanroom_ledger")
+    original_import_zero_entries = ledger_module.ControlLedger.import_zero_entries
+    trigger_lock = Lock()
+    triggered = False
+    competing_result: list[dict[str, Any]] = []
+
+    def synchronized_import_zero_entries(
+        ledger: Any,
+        zero_entries: tuple[dict[str, Any], ...],
+        *,
+        observed_at: datetime,
+    ) -> None:
+        nonlocal triggered
+        with trigger_lock:
+            should_trigger = not triggered
+            triggered = True
+        if should_trigger:
+            competing = _controller(production, runtime_root, manifest_path)
+            competing_result.append(
+                competing.reconcile(
+                    raw_argv=data["normative"]["rawArgv"]["exact"],
+                    observed_at=_at(6, 39),
+                    writer=_writer(2),
+                )
+            )
+            del competing
+        original_import_zero_entries(ledger, zero_entries, observed_at=observed_at)
+
+    ledger_module.ControlLedger.import_zero_entries = synchronized_import_zero_entries
+    try:
+        outer = _controller(production, runtime_root, manifest_path)
+        result = outer.reconcile(
+            raw_argv=data["normative"]["rawArgv"]["exact"],
+            observed_at=_at(6, 40),
+            writer=_writer(1),
+        )
+    finally:
+        ledger_module.ControlLedger.import_zero_entries = original_import_zero_entries
+
+    assert len(competing_result) == 1
+    assert competing_result[0]["decision"] == "ENSURE_SCHEDULED"
+    assert result["decision"] == "ENSURE_AUDIT_OBSERVING_SCHEDULED"
+    assert result["scheduledState"] == "ACTIVE"
+    assert result["slotKind"] == "Audit"
+    state = outer.inspect_control_state()
+    scheduled = [
+        row
+        for row in state["slots"]
+        if row["slotKind"] == "Scheduled" and row["state"] == "ACTIVE"
+    ]
+    missed = [
+        row
+        for row in state["slots"]
+        if row["slotKind"] == "Scheduled" and row["terminalState"] == "MISSED_SCHEDULED"
+    ]
+    assert len(scheduled) == 1
+    assert scheduled[0]["terminalState"] is None
+    assert not missed
+    _assert_real_sqlite(runtime_root)
+
+
+def test_s1_recovery_after_committed_journal_repairs_new_corruption(tmp_path: Path) -> None:
+    data = _load_fixture()
+    production = _production()
+    manifest_path = _write_manifest(tmp_path, data)
+    runtime_root = tmp_path / "runtime"
+    initial = _controller(production, runtime_root, manifest_path)
+    initial.reconcile(
+        raw_argv=data["normative"]["rawArgv"]["exact"],
+        observed_at=_at(6, 1),
+        writer=_writer(1),
+    )
+    del initial
+
+    ledger_path = runtime_root / "control" / "control-ledger-v1.sqlite3"
+    corrupted = bytearray(ledger_path.read_bytes())
+    corrupted[:16] = b"not a sqlite file"
+    ledger_path.write_bytes(corrupted)
+
+    first_controller = _controller(production, runtime_root, manifest_path)
+    first = first_controller.recover_ledger(observed_at=_at(6, 2))
+    assert first["status"] == "recovered"
+    assert first["oldGeneration"] == 1
+    assert first["newGeneration"] == 2
+    del first_controller
+    recovery_journal = runtime_root / "control" / "recovery-journal-v1.json"
+    prior_journal = json.loads(recovery_journal.read_text(encoding="utf-8"))
+    assert prior_journal["phase"] == "COMMITTED"
+
+    reopened = _controller(production, runtime_root, manifest_path)
+    reopened.inspect_control_state()
+    del reopened
+    corrupted = bytearray(ledger_path.read_bytes())
+    corrupted[:16] = b"not a sqlite file"
+    ledger_path.write_bytes(corrupted)
+
+    second_controller = _controller(production, runtime_root, manifest_path)
+    second = second_controller.recover_ledger(observed_at=_at(6, 3))
+    assert second["status"] == "recovered"
+    assert second["recoveryId"] != first["recoveryId"]
+    assert second["oldGeneration"] == 2
+    assert second["newGeneration"] == 3
+    assert second["quarantinePath"] != first["quarantinePath"]
+    state = second_controller.inspect_control_state()
+    assert state["generation"] == 3
+    assert state["integrityStatus"] == "green"
+    history_path = runtime_root / "control" / "recovery-history" / f"{first['recoveryId']}.json"
+    assert history_path.exists()
+    assert json.loads(history_path.read_text(encoding="utf-8")) == prior_journal
+    _assert_real_sqlite(runtime_root)
+
+
+def test_s1_recover_wrapper_exposes_and_forwards_busy_timeout(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    production = _production()
+    dispatch_module = importlib.import_module("tools.news_grasp_cleanroom_dispatch")
+    parameter = inspect.signature(production["recover_ledger"]).parameters.get("busy_timeout_ms")
+    assert parameter is not None
+    assert parameter.kind is inspect.Parameter.KEYWORD_ONLY
+    assert parameter.default == 1000
+    captured: dict[str, Any] = {}
+
+    class CapturingController:
+        def __init__(self, **kwargs: Any) -> None:
+            captured.update(kwargs)
+
+        def recover_ledger(self, *, observed_at: datetime) -> dict[str, Any]:
+            captured["observed_at"] = observed_at
+            return {"status": "captured"}
+
+    monkeypatch.setattr(dispatch_module, "Controller", CapturingController)
+    observed = _at(6, 2)
+    result = dispatch_module.recover_ledger(
+        runtime_root=tmp_path / "runtime",
+        manifest_path=tmp_path / "manifest.json",
+        observed_at=observed,
+        busy_timeout_ms=17,
+    )
+    assert result == {"status": "captured"}
+    assert captured["busy_timeout_ms"] == 17
+    assert captured["observed_at"] is observed
