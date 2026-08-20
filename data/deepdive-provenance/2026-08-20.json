@@ -1,0 +1,62 @@
+{
+  "articlePath": "digest/DeepDive/2026-08-20-DeepDive.md",
+  "articleSha256": "3de52c653630f15840f922079e15b1c6724e1f5ac540af4270f9a0a26b2c091c",
+  "issueDate": "2026-08-20",
+  "manifestSha256": "b5010aabfc8263de807dbce0759d126ff02cc3ade8e1c693c5e51e198fee1b55",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "54a6113b38b35c0fcd9a6c228d5d42bcba156ae700b23185f7ea9797a1eea1eb",
+  "sources": [
+    {
+      "contentSha256": "24a479f7b37f674e847ed1481e42efc195e985360e6be29a319e53030c596211",
+      "fetchedAt": "2026-08-20T04:39:20.604947+00:00",
+      "finalUrl": "https://monoist.itmedia.co.jp/mn/articles/2608/20/news030.html",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://monoist.itmedia.co.jp/mn/articles/2608/20/news030.html",
+      "url": "https://monoist.itmedia.co.jp/mn/articles/2608/20/news030.html"
+    },
+    {
+      "contentSha256": "4a1538f5f7b424d27afa733b7dde333527046907668acce4eef94b9074bf9640",
+      "fetchedAt": "2026-08-20T04:39:20.810683+00:00",
+      "finalUrl": "https://monoist.itmedia.co.jp/mn/articles/2608/20/news055.html",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://monoist.itmedia.co.jp/mn/articles/2608/20/news055.html",
+      "url": "https://monoist.itmedia.co.jp/mn/articles/2608/20/news055.html"
+    },
+    {
+      "contentSha256": "2b52972e2657b7eb9a20c8ad4b097262159db6ff27455389c9fd9f5f56e8d938",
+      "fetchedAt": "2026-08-20T04:39:21.158696+00:00",
+      "finalUrl": "https://wired.jp/article/sz-google-gemini-can-control-humanoid-robots/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://wired.jp/article/sz-google-gemini-can-control-humanoid-robots/",
+      "url": "https://wired.jp/article/sz-google-gemini-can-control-humanoid-robots/"
+    },
+    {
+      "contentSha256": "1fb2a6cfdedb80edd3744a59bffb3bac6cfb4d1de26d8b65ee57ee87a54d7d57",
+      "fetchedAt": "2026-08-20T04:39:21.657393+00:00",
+      "finalUrl": "https://www.gamebusiness.jp/article/2026/08/20/27749.html",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.gamebusiness.jp/article/2026/08/20/27749.html",
+      "url": "https://www.gamebusiness.jp/article/2026/08/20/27749.html"
+    }
+  ],
+  "status": "Green"
+}
