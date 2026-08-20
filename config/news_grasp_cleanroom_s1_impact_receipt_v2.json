@@ -1,0 +1,527 @@
+{
+  "schemaVersion": "TDD_IMPACT_ANALYSIS_RECEIPT_V1",
+  "receiptId": "ng-cleanroom-s1-entry-impact-v2",
+  "workPackage": "S1",
+  "status": "review_required_before_red",
+  "supersedes": {
+    "path": "config/news_grasp_cleanroom_s1_impact_receipt_v1.json",
+    "sha256": "8127c93297ce8d82528654751a4996c4ea085d91d888be651ea64ac5c3dd685c",
+    "reviewId": "ng-cleanroom-s1-impact-r1",
+    "closedBlockerIds": [
+      "S1-IMPACT-R1-CANONICAL-L1-L3-BINDING-DRIFT",
+      "S1-IMPACT-R1-API-AND-PERSISTENCE-SCHEMAS-INCOMPLETE",
+      "S1-IMPACT-R1-FAULT-RECOVERY-ORACLE-INCOMPLETE"
+    ]
+  },
+  "baselineCommit": "18fccddc3c7046d1d8e1fff5f49461b61b42333d",
+  "authoritativeInputs": {
+    "control": {
+      "path": "config/news_grasp_cleanroom_control_s0_v2.json",
+      "sha256": "2b76d2b0aa73d22a43e0279c93cea3eecf3dff0874da6384c6abb74ed61d3a91"
+    },
+    "attachment": {
+      "path": "<CODEX_ATTACHMENT>/pasted-text.txt",
+      "sha256": "b9104e23cb6b24d91788404b49fbf420d2ccc557f9fec3d97eb05370a9165d9d",
+      "lineRanges": ["397-434", "598-649", "709-739"]
+    },
+    "priorImpactReceipt": {
+      "path": "config/news_grasp_cleanroom_s1_impact_receipt_v1.json",
+      "sha256": "8127c93297ce8d82528654751a4996c4ea085d91d888be651ea64ac5c3dd685c"
+    }
+  },
+  "userOutcome": "06:00/06:40の起動消失、曖昧mode、二重ownerをなくし、全trigger/time/writer/crash組合せを単一slotへ収束させる",
+  "noCutoverScope": {
+    "currentLauncherSha256": "a095d2fe05ebf06129fc93095fa57e43239483a6c7caddc310347cecbf5c0aef",
+    "currentTaskObserved": {
+      "trigger": "06:00 Asia/Tokyo",
+      "mode": "runner",
+      "multipleInstancesPolicy": "IgnoreNew"
+    },
+    "forbiddenS1Mutations": [
+      "scripts/ops/news-grasp-task-launcher.pyw",
+      "Task Scheduler",
+      "installed runtime",
+      "model provider",
+      "public surfaces",
+      "notification"
+    ],
+    "externalEffectCount": 0
+  },
+  "canonicalBindings": [
+    {
+      "layer": "L1",
+      "currentState": "absent_expected_red",
+      "currentEntrypoints": [],
+      "plannedEntrypoints": [
+        {
+          "path": "tools/news_grasp_cleanroom_contracts.py",
+          "symbols": ["validate_manifest", "reconcile_slot"],
+          "plannedSchema": "NEWS_GRASP_CONTROL_MANIFEST_V1"
+        }
+      ],
+      "schemaIdentity": "NEWS_GRASP_CONTROL_MANIFEST_V1",
+      "fakeSubstitution": ["deterministic clock", "transport spy"],
+      "realRequired": ["production validator symbols"],
+      "parityNode": "test_s1_manifest_single_entry"
+    },
+    {
+      "layer": "L2",
+      "currentState": "absent_expected_red",
+      "currentEntrypoints": [],
+      "plannedEntrypoints": [
+        {
+          "path": "tools/news_grasp_cleanroom_ledger.py",
+          "symbols": ["ControlLedger"]
+        },
+        {
+          "path": "tools/news_grasp_cleanroom_wal.py",
+          "symbols": ["DurableWal"]
+        }
+      ],
+      "schemaIdentity": "CONTROL_LEDGER_SQLITE_V1 + WAL_EVENT_V1",
+      "fakeSubstitution": ["external provider"],
+      "realRequired": ["sqlite3 file", "fsync", "atomic replace"],
+      "parityNode": "test_s1_ledger_corruption_recovery"
+    },
+    {
+      "layer": "L3",
+      "currentState": "absent_expected_red",
+      "currentEntrypoints": [],
+      "plannedEntrypoints": [
+        {
+          "path": "tools/news_grasp_cleanroom_dispatch.py",
+          "symbols": ["dispatch"]
+        },
+        {
+          "path": "tools/news_grasp_cleanroom_controller.py",
+          "symbols": ["Controller.reconcile"]
+        }
+      ],
+      "schemaIdentity": "DISPATCH_DECISION_V1 + CONTROL_LEDGER_V1",
+      "fakeSubstitution": ["provider endpoint"],
+      "realRequired": ["production functions", "shared SQLite/WAL"],
+      "parityNode": "test_s6_l3_l7_real_boundary_manifest"
+    }
+  ],
+  "faultSeamRelationship": {
+    "boundaryHook": "S1-local deterministic crash seam; it is not a substitute for any L1-L3 fakeSubstitution or realRequired boundary",
+    "durabilityOps": "negative adversarial tests may inject one fsync, atomic replace or parent-flush failure; primary and recovery Green use the default real operations",
+    "productionDefaults": ["sqlite3", "os.fsync", "os.replace", "real parent directory flush", "production classes reopened from filesystem"]
+  },
+  "writeOwnership": {
+    "test_luna": {
+      "canonicalContext": "/root/playlist_repair_red",
+      "writes": [
+        "tests/test_news_grasp_cleanroom_s1_entry.py",
+        "tests/fixtures/news_grasp_cleanroom_s1_cases.json"
+      ]
+    },
+    "implementation_luna": {
+      "canonicalContext": "/root/implementation_luna_canary",
+      "writes": [
+        "config/news_grasp_cleanroom_task_manifest_v1.json",
+        "tools/news_grasp_cleanroom_contracts.py",
+        "tools/news_grasp_cleanroom_wal.py",
+        "tools/news_grasp_cleanroom_ledger.py",
+        "tools/news_grasp_cleanroom_dispatch.py",
+        "tools/news_grasp_cleanroom_controller.py"
+      ]
+    },
+    "independent_sol_reviewer": {
+      "canonicalContext": "/root/s0_independent_review",
+      "writes": []
+    },
+    "writeIntersectionCount": 0
+  },
+  "exactSchemas": {
+    "manifest": {
+      "schemaVersion": "NEWS_GRASP_CONTROL_MANIFEST_V1",
+      "topLevelKeys": ["schemaVersion", "scheduleId", "tasks"],
+      "scheduleId": "news-grasp-daily-v1",
+      "tasksLength": 1,
+      "taskKeys": ["taskPath", "taskName", "multipleInstancesPolicy", "triggers", "action"],
+      "task": {
+        "taskPath": "\\",
+        "taskName": "News-Grasp Production",
+        "multipleInstancesPolicy": "Parallel",
+        "triggers": [
+          {
+            "triggerId": "scheduled-0600",
+            "kind": "daily",
+            "localTime": "06:00:00",
+            "timeZone": "Asia/Tokyo"
+          },
+          {
+            "triggerId": "audit-0640",
+            "kind": "daily",
+            "localTime": "06:40:00",
+            "timeZone": "Asia/Tokyo"
+          }
+        ],
+        "action": {
+          "entryModule": "tools.news_grasp_cleanroom_dispatch",
+          "argv": ["dispatch", "--schedule-id", "news-grasp-daily-v1", "--intent", "reconcile"],
+          "workingDirectoryToken": "<RUNTIME_ROOT>"
+        }
+      },
+      "keyOrderSignificant": false,
+      "arrayOrderSignificant": true,
+      "extraOrMissingKeyPolicy": "NEWS_GRASP_ENTRY_MANIFEST_INVALID"
+    },
+    "rawArgv": {
+      "exact": ["dispatch", "--schedule-id", "news-grasp-daily-v1", "--intent", "reconcile"],
+      "unknownOptionOrArityReason": "NEWS_GRASP_ENTRY_ARGS_INVALID",
+      "unknownIntentReason": "NEWS_GRASP_ENTRY_UNKNOWN_INTENT",
+      "unknownScheduleReason": "NEWS_GRASP_ENTRY_UNKNOWN_SCHEDULE"
+    },
+    "writer": {
+      "exactKeys": ["writerId", "bootId", "pid", "processStartToken"],
+      "stringPattern": "^[A-Za-z0-9._:-]{1,128}$",
+      "pidRangeInclusive": [1, 2147483647],
+      "ownerKey": "sha256 of canonical UTF-8 JSON for all four fields",
+      "canonicalization": "ensure_ascii=false; sort_keys=true; separators=(',',':')",
+      "samePidDifferentProcessStartToken": "different ownerKey",
+      "invalidReason": "NEWS_GRASP_ENTRY_WRITER_INVALID"
+    },
+    "time": {
+      "requiredTzKey": "Asia/Tokyo",
+      "requiredUtcOffset": "+09:00",
+      "requiredFold": 0,
+      "naiveMismatchDstFoldReason": "NEWS_GRASP_ENTRY_TIME_INVALID",
+      "clockRollbackPredicate": "observed_at < persisted metadata.lastObservedAt",
+      "clockRollbackReason": "NEWS_GRASP_ENTRY_CLOCK_ROLLBACK",
+      "equalTimestampPolicy": "allowed idempotent replay"
+    },
+    "lease": {
+      "secondsRangeInclusive": [1, 3600],
+      "invalidReason": "NEWS_GRASP_ENTRY_LEASE_INVALID",
+      "expiryPredicate": "observed_at >= leaseExpiresAt",
+      "takeover": "same generation, fenceToken previous plus one, new ownerKey",
+      "activeDifferentWriter": "ATTACHED without owner or fence mutation"
+    },
+    "pathLayout": {
+      "controlRoot": "<runtime_root>/control",
+      "walRoot": "<runtime_root>/control/wal/<invocationId>",
+      "initialWal": "<runtime_root>/control/wal/<invocationId>/0001-initial.json",
+      "importedWal": "<runtime_root>/control/wal/<invocationId>/0002-imported.json",
+      "ledger": "<runtime_root>/control/control-ledger-v1.sqlite3",
+      "generationSeal": "<runtime_root>/control/generation-seal-v1.json",
+      "recoveryJournal": "<runtime_root>/control/recovery-journal-v1.json",
+      "quarantine": "<runtime_root>/control/quarantine/g<oldGeneration8>-to-g<newGeneration8>-<recoveryId>"
+    },
+    "walEvent": {
+      "schemaVersion": "WAL_EVENT_V1",
+      "exactKeys": [
+        "schemaVersion",
+        "eventType",
+        "phase",
+        "invocationId",
+        "sequence",
+        "receivedAt",
+        "rawArgv",
+        "rawArgvSha256",
+        "writer",
+        "previousEventSha256",
+        "eventSha256"
+      ],
+      "initialValues": {
+        "eventType": "INVOCATION_RECEIVED",
+        "phase": "INITIAL_DURABLE",
+        "sequence": 1,
+        "previousEventSha256": "64 lowercase zeroes"
+      },
+      "importedValues": {
+        "eventType": "INVOCATION_IMPORTED",
+        "phase": "LEDGER_IMPORTED",
+        "sequence": 2,
+        "previousEventSha256": "initial eventSha256"
+      },
+      "rawArgvSha256": "sha256 canonical UTF-8 JSON array",
+      "eventSha256": "sha256 canonical UTF-8 JSON object excluding eventSha256",
+      "canonicalization": "ensure_ascii=false; sort_keys=true; separators=(',',':')",
+      "zeroEntryDefinition": "valid 0001-initial.json exists, 0002-imported.json absent, and invocationId absent from ledger",
+      "zeroEntryRecovery": "next valid reconcile inserts invocation status RECOVERED_ZERO_ENTRY in the same SQLite transaction, commits it without slot mutation for that prior invocation, then writes idempotent imported WAL event",
+      "postCommitMarkerRecovery": "when invocationId already exists in ledger but 0002-imported.json is absent, next reconcile writes only the idempotent imported WAL event and never reinserts the invocation or slot"
+    },
+    "sqlite": {
+      "schemaVersion": "CONTROL_LEDGER_SQLITE_V1",
+      "connection": {
+        "journalMode": "WAL",
+        "synchronous": "FULL",
+        "foreignKeys": true,
+        "busyTimeoutMs": 1000,
+        "mutationBegin": "BEGIN IMMEDIATE"
+      },
+      "tables": {
+        "metadata": "CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
+        "invocations": "CREATE TABLE invocations (invocation_id TEXT PRIMARY KEY, received_at TEXT NOT NULL, raw_argv_sha256 TEXT NOT NULL, writer_key TEXT NOT NULL, wal_event_sha256 TEXT NOT NULL UNIQUE, imported_at TEXT NOT NULL, status TEXT NOT NULL CHECK(status IN ('CURRENT','RECOVERED_ZERO_ENTRY')))",
+        "slots": "CREATE TABLE slots (schedule_id TEXT NOT NULL, issue_date TEXT NOT NULL, slot_kind TEXT NOT NULL CHECK(slot_kind IN ('Scheduled','Audit')), generation INTEGER NOT NULL CHECK(generation >= 1), state TEXT NOT NULL CHECK(state IN ('ACTIVE','TERMINAL')), owner_key TEXT NOT NULL, fence_token INTEGER NOT NULL CHECK(fence_token >= 1), lease_expires_at TEXT, terminal_state TEXT CHECK(terminal_state IN ('SUCCEEDED','FAILED','MISSED_SCHEDULED')), result_hash TEXT, updated_at TEXT NOT NULL, PRIMARY KEY(schedule_id, issue_date, slot_kind))",
+        "events": "CREATE TABLE events (sequence INTEGER PRIMARY KEY, generation INTEGER NOT NULL CHECK(generation >= 1), event_type TEXT NOT NULL, slot_key TEXT, payload_json TEXT NOT NULL, previous_event_sha256 TEXT NOT NULL, event_sha256 TEXT NOT NULL UNIQUE)"
+      },
+      "requiredMetadata": {
+        "schemaVersion": "CONTROL_LEDGER_SQLITE_V1",
+        "generation": "positive decimal integer",
+        "lastObservedAt": "Asia/Tokyo ISO-8601 or empty before first decision",
+        "eventChainHead": "64 lowercase hex or 64 lowercase zeroes"
+      },
+      "eventHash": "sha256 canonical UTF-8 JSON of sequence,generation,eventType,slotKey,payload,previousEventSha256",
+      "eventChain": "sequences contiguous from 1, first previous hash 64 zeroes, every later previous hash equals prior event hash, metadata head equals last hash",
+      "corruptReason": "NEWS_GRASP_ENTRY_LEDGER_CORRUPT"
+    },
+    "slot": {
+      "slotKeyFormat": "news-grasp-daily-v1/YYYY-MM-DD/Scheduled|Audit",
+      "missedScheduledOwnerKey": "system:reconcile",
+      "missedScheduledFenceToken": 1,
+      "missedScheduledResultHash": "sha256 canonical UTF-8 JSON of scheduleId,issueDate,terminalState=MISSED_SCHEDULED",
+      "staleFenceReason": "NEWS_GRASP_ENTRY_STALE_FENCE",
+      "terminalConflictReason": "NEWS_GRASP_ENTRY_TERMINAL_CONFLICT"
+    },
+    "slotDecision": {
+      "schemaVersion": "SLOT_DECISION_V1",
+      "exactKeys": ["schemaVersion", "decision", "issueDate", "scheduleId", "scheduledState", "externalEffectCount"],
+      "decisionValues": ["NOT_DUE", "ENSURE_SCHEDULED", "MISSED_SCHEDULED_AND_ENSURE_AUDIT", "ENSURE_AUDIT_OBSERVING_SCHEDULED"],
+      "externalEffectCount": 0
+    },
+    "dispatchDecision": {
+      "schemaVersion": "DISPATCH_DECISION_V1",
+      "exactKeys": [
+        "schemaVersion",
+        "status",
+        "decision",
+        "issueDate",
+        "scheduleId",
+        "slotKind",
+        "slotKey",
+        "generation",
+        "ownerDisposition",
+        "ownerKey",
+        "fenceToken",
+        "leaseExpiresAt",
+        "scheduledState",
+        "externalEffectCount",
+        "invocationId",
+        "walEventSha256"
+      ],
+      "statusValues": ["accepted", "noop"],
+      "decisionValues": ["NOT_DUE", "ENSURE_SCHEDULED", "MISSED_SCHEDULED_AND_ENSURE_AUDIT", "ENSURE_AUDIT_OBSERVING_SCHEDULED"],
+      "ownerDispositionValues": ["NONE", "ACQUIRED", "ATTACHED", "TERMINAL_NOOP"],
+      "externalEffectCount": 0,
+      "nullPolicy": "NOT_DUE uses null for slotKind,slotKey,ownerKey,fenceToken,leaseExpiresAt and generation is current sealed generation"
+    },
+    "slotCommitResult": {
+      "schemaVersion": "SLOT_COMMIT_RESULT_V1",
+      "exactKeys": ["schemaVersion", "status", "slotKey", "generation", "fenceToken", "terminalState", "resultHash", "externalEffectCount"],
+      "statusValues": ["committed", "noop"],
+      "samePayloadReplay": "noop with byte-equivalent typed fields",
+      "externalEffectCount": 0
+    },
+    "controlState": {
+      "schemaVersion": "CONTROL_STATE_SNAPSHOT_V1",
+      "exactKeys": ["schemaVersion", "generation", "lastObservedAt", "eventChainHead", "invocations", "slots", "zeroEntryWal", "integrityStatus"],
+      "invocationRowKeys": ["invocationId", "receivedAt", "rawArgvSha256", "writerKey", "walEventSha256", "importedAt", "status"],
+      "slotRowKeys": ["scheduleId", "issueDate", "slotKind", "generation", "state", "ownerKey", "fenceToken", "leaseExpiresAt", "terminalState", "resultHash", "updatedAt"],
+      "ordering": "invocations by invocationId; slots by scheduleId,issueDate,slotKind; zeroEntryWal by invocationId",
+      "integrityStatus": "green only after WAL event and SQLite hash-chain verification"
+    },
+    "generationSeal": {
+      "schemaVersion": "CONTROL_LEDGER_GENERATION_SEAL_V1",
+      "exactKeys": ["schemaVersion", "generation", "ledgerRelativePath", "previousSealSha256", "createdAt", "sealSha256"],
+      "ledgerRelativePath": "control/control-ledger-v1.sqlite3",
+      "initialGeneration": 1,
+      "initialPreviousSealSha256": "64 lowercase zeroes",
+      "sealSha256": "sha256 canonical UTF-8 JSON object excluding sealSha256",
+      "canonicalization": "ensure_ascii=false; sort_keys=true; separators=(',',':')"
+    },
+    "recoveryJournal": {
+      "schemaVersion": "CONTROL_LEDGER_RECOVERY_JOURNAL_V1",
+      "exactKeys": ["schemaVersion", "recoveryId", "oldGeneration", "newGeneration", "quarantineRelativePath", "phase", "updatedAt", "journalSha256"],
+      "journalSha256": "sha256 canonical UTF-8 JSON object excluding journalSha256",
+      "canonicalization": "ensure_ascii=false; sort_keys=true; separators=(',',':')",
+      "terminalPolicy": "COMMITTED journal is retained as the unique recovery receipt; a later healthy recover call returns RECOVERY_NOT_REQUIRED"
+    },
+    "ledgerRecovery": {
+      "schemaVersion": "CONTROL_LEDGER_RECOVERY_V1",
+      "resultKeys": ["schemaVersion", "status", "oldGeneration", "newGeneration", "recoveryId", "quarantinePath", "resumed", "externalEffectCount"],
+      "status": "recovered",
+      "recoveryIdPattern": "^[0-9a-f]{32}$",
+      "externalEffectCount": 0,
+      "generationTransition": "newGeneration = old generation seal plus one exactly once",
+      "journalPhases": ["PREPARED", "QUARANTINED", "SEALED", "LEDGER_CREATED", "COMMITTED"],
+      "quarantineFiles": ["control-ledger-v1.sqlite3", "control-ledger-v1.sqlite3-wal", "control-ledger-v1.sqlite3-shm"],
+      "atomicOrder": [
+        "write and fsync PREPARED recovery journal through same-directory temp, os.replace, final-file fsync and parent flush",
+        "os.replace every existing ledger/wal/shm file into the one deterministic quarantine path and parent-flush source and destination",
+        "write and fsync QUARANTINED journal",
+        "write generation seal for exactly old plus one through temp, os.replace, final-file fsync and parent flush",
+        "write and fsync SEALED journal",
+        "create new SQLite schema with matching generation and append LEDGER_RECOVERED genesis event",
+        "write and fsync LEDGER_CREATED then COMMITTED journal",
+        "reopen production objects and verify generation, schema and event chain before return"
+      ],
+      "resumePolicy": "an existing non-COMMITTED journal resumes the same recoveryId, quarantine path and newGeneration; it never increments generation twice",
+      "directoryFlush": "POSIX uses directory fd plus os.fsync; Windows uses CreateFileW FILE_FLAG_BACKUP_SEMANTICS plus FlushFileBuffers; failure is typed recovery failure",
+      "failureReason": "NEWS_GRASP_ENTRY_LEDGER_RECOVERY_FAILED"
+    }
+  },
+  "exactPublicApis": {
+    "CleanroomEntryError": {
+      "module": "tools.news_grasp_cleanroom_contracts",
+      "base": "RuntimeError",
+      "attributes": ["reason"]
+    },
+    "validate_manifest": {
+      "module": "tools.news_grasp_cleanroom_contracts",
+      "signature": "validate_manifest(value: Mapping[str, Any]) -> dict[str, Any]",
+      "return": "deep canonical copy with the exact manifest schema",
+      "errorReasons": ["NEWS_GRASP_ENTRY_MANIFEST_INVALID"],
+      "sideEffects": "none"
+    },
+    "reconcile_slot": {
+      "module": "tools.news_grasp_cleanroom_contracts",
+      "signature": "reconcile_slot(*, manifest: Mapping[str, Any], observed_at: datetime, last_observed_at: datetime | None, scheduled_state: str) -> dict[str, Any]",
+      "scheduledStateValues": ["ABSENT", "ACTIVE", "TERMINAL"],
+      "returnSchema": "SLOT_DECISION_V1 with keys schemaVersion,decision,issueDate,scheduleId,scheduledState,externalEffectCount",
+      "errorReasons": ["NEWS_GRASP_ENTRY_TIME_INVALID", "NEWS_GRASP_ENTRY_CLOCK_ROLLBACK", "NEWS_GRASP_ENTRY_MANIFEST_INVALID"],
+      "sideEffects": "none"
+    },
+    "DurabilityOps": {
+      "module": "tools.news_grasp_cleanroom_wal",
+      "signature": "DurabilityOps(fsync=os.fsync, replace=os.replace, flush_parent=platform real parent flush)",
+      "restriction": "non-default injection only for negative fsync/replace/flush failure tests"
+    },
+    "DurableWal": {
+      "module": "tools.news_grasp_cleanroom_wal",
+      "constructor": "DurableWal(runtime_root: Path, *, durability_ops: DurabilityOps | None = None)",
+      "methods": [
+        "record_initial(*, raw_argv: Sequence[str], received_at: datetime, writer: Mapping[str, Any]) -> dict[str, Any] WAL_EVENT_V1",
+        "iter_zero_entries() -> tuple[dict[str, Any], ...]",
+        "mark_imported(initial_event: Mapping[str, Any], *, imported_at: datetime) -> dict[str, Any] WAL_EVENT_V1",
+        "verify() -> dict[str, Any]"
+      ],
+      "errors": ["NEWS_GRASP_ENTRY_INITIAL_WAL_FAILED", "NEWS_GRASP_ENTRY_WAL_FINALIZE_FAILED", "NEWS_GRASP_ENTRY_LEDGER_CORRUPT"]
+    },
+    "ControlLedger": {
+      "module": "tools.news_grasp_cleanroom_ledger",
+      "constructor": "ControlLedger(runtime_root: Path, *, busy_timeout_ms: int = 1000, boundary_hook: Callable[[str], None] | None = None)",
+      "methods": [
+        "reconcile(*, invocation_event, decision, writer, lease_seconds, observed_at) -> dict[str, Any] DISPATCH_DECISION_V1",
+        "commit_slot(*, slot_key, writer: Mapping[str, Any], fence_token, terminal_state, result_hash, observed_at) -> dict[str, Any]",
+        "inspect() -> dict[str, Any] CONTROL_STATE_SNAPSHOT_V1",
+        "verify() -> None",
+        "recover(*, observed_at, durability_ops=None) -> dict[str, Any] CONTROL_LEDGER_RECOVERY_V1"
+      ],
+      "errors": [
+        "NEWS_GRASP_ENTRY_LEDGER_BUSY",
+        "NEWS_GRASP_ENTRY_LEDGER_CORRUPT",
+        "NEWS_GRASP_ENTRY_STALE_FENCE",
+        "NEWS_GRASP_ENTRY_TERMINAL_CONFLICT",
+        "NEWS_GRASP_ENTRY_COMMIT_INVALID",
+        "NEWS_GRASP_ENTRY_LEDGER_RECOVERY_FAILED",
+        "NEWS_GRASP_ENTRY_RECOVERY_NOT_REQUIRED"
+      ]
+    },
+    "Controller": {
+      "module": "tools.news_grasp_cleanroom_controller",
+      "constructor": "Controller(*, runtime_root: Path, manifest_path: Path, durability_ops: DurabilityOps | None = None, boundary_hook: Callable[[str], None] | None = None, busy_timeout_ms: int = 1000)",
+      "methods": [
+        "reconcile(*, raw_argv: Sequence[str], observed_at: datetime, writer: Mapping[str, Any], lease_seconds: int = 120) -> dict[str, Any] DISPATCH_DECISION_V1",
+        "commit_slot(*, slot_key: str, writer: Mapping[str, Any], fence_token: int, terminal_state: str, result_hash: str, observed_at: datetime) -> dict[str, Any]",
+        "inspect_control_state() -> dict[str, Any] CONTROL_STATE_SNAPSHOT_V1",
+        "recover_ledger(*, observed_at: datetime) -> dict[str, Any] CONTROL_LEDGER_RECOVERY_V1"
+      ],
+      "ordering": "record_initial completes before raw argv parsing or manifest read; SQLite transaction imports pending WAL and commits decision; after_ledger_commit boundary fires before imported WAL markers; markers are then written idempotently; all orchestration delegates to production WAL/contracts/ledger"
+    },
+    "dispatchModule": {
+      "module": "tools.news_grasp_cleanroom_dispatch",
+      "functions": [
+        "dispatch(*, raw_argv, runtime_root, manifest_path, observed_at, writer, lease_seconds=120, durability_ops=None, boundary_hook=None, busy_timeout_ms=1000) -> DISPATCH_DECISION_V1",
+        "commit_slot(*, runtime_root, manifest_path, slot_key, writer, fence_token, terminal_state, result_hash, observed_at) -> dict[str, Any]",
+        "inspect_control_state(*, runtime_root, manifest_path) -> CONTROL_STATE_SNAPSHOT_V1",
+        "recover_ledger(*, runtime_root, manifest_path, observed_at, durability_ops=None) -> CONTROL_LEDGER_RECOVERY_V1"
+      ],
+      "role": "thin public wrappers over Controller; no second reconcile implementation"
+    }
+  },
+  "reasonBindings": [
+    {"condition": "initial WAL file fsync, atomic replace or parent flush fails", "reason": "NEWS_GRASP_ENTRY_INITIAL_WAL_FAILED", "durableState": "no final initial WAL, no SQLite mutation, externalEffectCount=0"},
+    {"condition": "imported WAL marker fsync, atomic replace or parent flush fails after SQLite commit", "reason": "NEWS_GRASP_ENTRY_WAL_FINALIZE_FAILED", "durableState": "SQLite invocation/decision remains committed; initial WAL remains verifiable; next call only finalizes the idempotent imported marker before attach/no-op"},
+    {"condition": "raw argv arity, token position or unknown option", "reason": "NEWS_GRASP_ENTRY_ARGS_INVALID", "durableState": "initial WAL only"},
+    {"condition": "intent is not reconcile", "reason": "NEWS_GRASP_ENTRY_UNKNOWN_INTENT", "durableState": "initial WAL only"},
+    {"condition": "schedule id is not the exact manifest scheduleId", "reason": "NEWS_GRASP_ENTRY_UNKNOWN_SCHEDULE", "durableState": "initial WAL only"},
+    {"condition": "manifest key/type/value/array order/multiplicity drift", "reason": "NEWS_GRASP_ENTRY_MANIFEST_INVALID", "durableState": "initial WAL only"},
+    {"condition": "writer fields invalid", "reason": "NEWS_GRASP_ENTRY_WRITER_INVALID", "durableState": "no WAL because writer envelope cannot identify the invocation"},
+    {"condition": "lease_seconds outside 1..3600 or non-int", "reason": "NEWS_GRASP_ENTRY_LEASE_INVALID", "durableState": "initial WAL only"},
+    {"condition": "naive, timezone key/offset mismatch or fold != 0", "reason": "NEWS_GRASP_ENTRY_TIME_INVALID", "durableState": "initial WAL only"},
+    {"condition": "observed_at earlier than persisted lastObservedAt", "reason": "NEWS_GRASP_ENTRY_CLOCK_ROLLBACK", "durableState": "initial WAL imported, no slot mutation"},
+    {"condition": "BEGIN IMMEDIATE remains locked for 1000 ms", "reason": "NEWS_GRASP_ENTRY_LEDGER_BUSY", "durableState": "initial WAL remains zero-entry, no SQLite mutation"},
+    {"condition": "SQLite header/schema/metadata/event chain/WAL verification invalid", "reason": "NEWS_GRASP_ENTRY_LEDGER_CORRUPT", "durableState": "no slot mutation"},
+    {"condition": "writer/fence differs from active slot", "reason": "NEWS_GRASP_ENTRY_STALE_FENCE", "durableState": "terminal state unchanged"},
+    {"condition": "slotKey grammar, writer, fenceToken, terminalState, resultHash or commit time is invalid", "reason": "NEWS_GRASP_ENTRY_COMMIT_INVALID", "durableState": "slot and event chain unchanged"},
+    {"condition": "terminal state or result hash differs from existing terminal", "reason": "NEWS_GRASP_ENTRY_TERMINAL_CONFLICT", "durableState": "existing terminal unchanged"},
+    {"condition": "recovery journal/quarantine/replace/fsync/parent flush/generation verification fails", "reason": "NEWS_GRASP_ENTRY_LEDGER_RECOVERY_FAILED", "durableState": "journal remains resumable at last fsynced phase; no second generation increment"},
+    {"condition": "explicit recover_ledger is called while ledger, WAL and event chain are healthy", "reason": "NEWS_GRASP_ENTRY_RECOVERY_NOT_REQUIRED", "durableState": "generation and filesystem unchanged"}
+  ],
+  "decisionTable": [
+    {"time": "before 06:00", "scheduledState": "any", "decision": "NOT_DUE", "slotMutation": "none", "ownerDisposition": "NONE"},
+    {"time": "06:00 <= t < 06:40", "scheduledState": "ABSENT", "decision": "ENSURE_SCHEDULED", "slot": "Scheduled", "ownerDisposition": "ACQUIRED"},
+    {"time": "06:00 <= t < 06:40", "scheduledState": "ACTIVE", "decision": "ENSURE_SCHEDULED", "slot": "Scheduled", "ownerDisposition": "ATTACHED"},
+    {"time": "06:00 <= t < 06:40", "scheduledState": "TERMINAL", "decision": "ENSURE_SCHEDULED", "slot": "Scheduled", "ownerDisposition": "TERMINAL_NOOP"},
+    {"time": "t >= 06:40", "scheduledState": "ABSENT", "decision": "MISSED_SCHEDULED_AND_ENSURE_AUDIT", "atomicMutations": ["Scheduled TERMINAL MISSED_SCHEDULED", "Audit acquire-or-attach"]},
+    {"time": "t >= 06:40", "scheduledState": "ACTIVE|TERMINAL", "decision": "ENSURE_AUDIT_OBSERVING_SCHEDULED", "slot": "Audit", "ownerDisposition": "ACQUIRED|ATTACHED|TERMINAL_NOOP"}
+  ],
+  "faultRecoveryOracle": [
+    {"boundary": "after_initial_wal_fsync", "exception": "caller crash exception preserved", "durableState": "initial WAL durable, SQLite invocation and slots absent", "nextCall": "imports prior invocation as RECOVERED_ZERO_ENTRY, marks imported after commit, then performs current decision exactly once"},
+    {"boundary": "after_ledger_begin", "exception": "caller crash exception preserved and transaction rolled back", "durableState": "initial WAL durable; no committed SQLite changes", "nextCall": "imports zero-entry and acquires exactly one slot"},
+    {"boundary": "after_invocation_import", "exception": "caller crash exception preserved and transaction rolled back", "durableState": "initial WAL durable; invocation import not committed", "nextCall": "imports once and acquires once"},
+    {"boundary": "after_slot_insert", "exception": "caller crash exception preserved and transaction rolled back", "durableState": "no slot row and no event committed", "nextCall": "creates fenceToken 1 once"},
+    {"boundary": "after_lease_update", "exception": "caller crash exception preserved and transaction rolled back", "durableState": "previous owner, lease and fence remain", "nextCall": "before expiry ATTACHED to previous owner; at/after expiry new owner ACQUIRED with previous fence plus one"},
+    {"boundary": "before_ledger_commit", "exception": "caller crash exception preserved and transaction rolled back", "durableState": "no decision mutation committed", "nextCall": "same as a fresh call against the prior committed state"},
+    {"boundary": "after_ledger_commit", "exception": "caller crash exception preserved", "durableState": "invocation, decision, slot and event chain committed; imported WAL marker may be absent", "nextCall": "writes only the missing idempotent imported marker, then returns ATTACHED or TERMINAL_NOOP; duplicate owner count zero and fence unchanged"},
+    {"boundary": "before_terminal_commit", "exception": "caller crash exception preserved and transaction rolled back", "durableState": "ACTIVE slot unchanged", "nextCall": "same current owner and fence may retry exact terminal commit"},
+    {"boundary": "after_terminal_commit", "exception": "caller crash exception preserved", "durableState": "terminal state, result hash and event committed", "nextCall": "same terminal payload idempotent no-op; different payload TERMINAL_CONFLICT"}
+  ],
+  "recoveryFaultOracle": [
+    {"fault": "initial fsync failure", "seam": "DurabilityOps.fsync negative only", "reason": "NEWS_GRASP_ENTRY_INITIAL_WAL_FAILED", "nextCall": "fresh invocation starts without importing the failed non-final WAL"},
+    {"fault": "initial atomic replace failure", "seam": "DurabilityOps.replace negative only", "reason": "NEWS_GRASP_ENTRY_INITIAL_WAL_FAILED", "nextCall": "fresh invocation starts; temp is ignored or quarantined"},
+    {"fault": "lock contention", "seam": "real second sqlite3 connection holds BEGIN IMMEDIATE", "reason": "NEWS_GRASP_ENTRY_LEDGER_BUSY after 1000 ms", "nextCall": "after lock release imports zero-entry and converges"},
+    {"fault": "stale lease or same PID with different processStartToken", "seam": "deterministic Asia/Tokyo observed_at", "reason": null, "nextCall": "new ownerKey acquires same generation with fence plus one; stale fence commit rejected"},
+    {"fault": "sqlite header corrupt", "seam": "real file bytes corrupted after close", "reason": "NEWS_GRASP_ENTRY_LEDGER_CORRUPT", "nextCall": "explicit recover_ledger quarantines and creates generation plus one; reopened dispatch converges"},
+    {"fault": "event payload/hash drift", "seam": "real sqlite row changed by adversarial fixture after close", "reason": "NEWS_GRASP_ENTRY_LEDGER_CORRUPT", "nextCall": "same explicit recovery path"},
+    {"fault": "recovery crash after QUARANTINED or SEALED", "seam": "negative boundary hook", "reason": "caller crash exception preserved", "nextCall": "resume same recoveryId and target generation; no double increment"},
+    {"fault": "recovery fsync/replace/parent flush failure", "seam": "one negative DurabilityOps operation", "reason": "NEWS_GRASP_ENTRY_LEDGER_RECOVERY_FAILED", "nextCall": "resume from last fsynced journal phase"}
+  ],
+  "redSuite": {
+    "testPath": "tests/test_news_grasp_cleanroom_s1_entry.py",
+    "fixturePath": "tests/fixtures/news_grasp_cleanroom_s1_cases.json",
+    "topLevelNodes": [
+      "test_s1_manifest_single_entry",
+      "test_s1_unknown_manifest_zero_effect",
+      "test_s1_terminal_slot_idempotent",
+      "test_s1_wal_precedes_parse",
+      "test_s1_wal_fsync_failure_zero_effect",
+      "test_s1_zero_entry_recovery",
+      "test_s1_three_writer_single_owner",
+      "test_s1_stale_fence_cannot_commit",
+      "test_s1_ledger_corruption_recovery",
+      "test_s1_time_window_primary",
+      "test_s1_clock_rollback_and_dst_fail_closed",
+      "test_s1_missed_scheduled_persists_then_audits",
+      "test_edge_writer_crash_primary",
+      "test_edge_writer_crash_adversarial",
+      "test_edge_writer_crash_recovery"
+    ],
+    "requirementNodeCount": 12,
+    "internalEdgeNodeCount": 3,
+    "expectedCollected": 15,
+    "primaryRecoveryRealProof": [
+      "temporary runtime contains a real SQLite file whose header is SQLite format 3",
+      "PRAGMA journal_mode returns wal and synchronous returns FULL",
+      "default DurabilityOps identity is os.fsync and os.replace with platform real parent flush",
+      "production Controller and ControlLedger objects are destroyed and reopened before recovery assertions",
+      "no monkeypatch of sqlite3, fsync, replace or production classes in primary/recovery Green"
+    ],
+    "negativeOnlySeams": ["one failing durability operation", "named boundary hook raising caller crash exception", "deterministic clock value", "real on-disk adversarial byte/row corruption"],
+    "expectedRed": "all 15 nodes fail because required S1 production symbols/files are absent; helper must preserve production exception traceback and must not contain a fallback implementation"
+  },
+  "admissionPredicate": "independent review confirms all three R1 blockers closed, canonical L1-L3 rows exact, API/schema/reason/fault oracles decision-complete, 15 nodes exact, write intersection zero and no-cutover scope before Test Luna mutation"
+}
