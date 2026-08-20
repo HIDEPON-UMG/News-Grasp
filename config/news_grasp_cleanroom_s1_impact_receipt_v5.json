@@ -1,0 +1,111 @@
+{
+  "schemaVersion": "TDD_IMPACT_ANALYSIS_RECEIPT_V1",
+  "receiptId": "ng-cleanroom-s1-entry-impact-v5",
+  "workPackage": "S1",
+  "status": "red_authoring_ready",
+  "baselineCommit": "482ba4f5232a5cf3e818eddc2c941d50d94613b1",
+  "inheritedContract": "all V2 through V4 requirements remain normative; V5 adds the eight R2/R2b fail-closed amendments",
+  "reviewPath": "config/news_grasp_cleanroom_s1_acceptance_review_r2.json",
+  "exactAmendments": {
+    "busyTimeout": {
+      "rangeInclusiveMs": [1, 60000],
+      "boolPolicy": "invalid",
+      "reason": "NEWS_GRASP_ENTRY_BUSY_TIMEOUT_INVALID",
+      "validationBoundary": "Controller construction before WAL or managed path creation and ControlLedger direct construction",
+      "publicSurfaces": ["dispatch", "recover_ledger", "Controller", "ControlLedger"]
+    },
+    "zeroEntryMonotonicity": {
+      "predicate": "inside import_zero_entries BEGIN IMMEDIATE, observed_at must be greater than or equal to persisted lastObservedAt before invocation inserts or metadata update",
+      "failureReason": "NEWS_GRASP_ENTRY_CLOCK_ROLLBACK",
+      "failureState": "prior initial WAL remains zero-entry; SQLite invocations, slots, events and lastObservedAt unchanged"
+    },
+    "walValidation": {
+      "initialExactKeys": ["schemaVersion", "eventType", "phase", "invocationId", "sequence", "receivedAt", "rawArgv", "rawArgvSha256", "writer", "previousEventSha256", "eventSha256"],
+      "invocationIdPattern": "^[0-9a-f]{32}$",
+      "initialValues": {"eventType": "INVOCATION_RECEIVED", "phase": "INITIAL_DURABLE", "sequence": 1, "previousEventSha256": "64 lowercase zeroes"},
+      "importedValues": {"eventType": "INVOCATION_IMPORTED", "phase": "LEDGER_IMPORTED", "sequence": 2},
+      "rawArgvPolicy": "JSON array with canonical SHA match; invalid tokens remain durable but non-array or non-JSON-serializable values fail typed before final WAL",
+      "writerPolicy": "exact validated writer object",
+      "directoryBinding": "initial invocationId equals its immediate WAL directory name",
+      "importedParity": "invocationId, rawArgv, rawArgvSha256 and writer equal initial event and previousEventSha256 equals initial eventSha256",
+      "failureReason": "NEWS_GRASP_ENTRY_LEDGER_CORRUPT"
+    },
+    "managedPath": {
+      "predicate": "every derived WAL, control, history, quarantine and SQLite path remains under canonical runtime_root; an existing symlink or Windows junction in runtime_root/control/wal ancestry is rejected before mutation",
+      "invocationPath": "only validated 32 lowercase hex invocationId is accepted",
+      "failureReason": "NEWS_GRASP_ENTRY_LEDGER_CORRUPT",
+      "outsideMutationCount": 0
+    },
+    "recoveryJournal": {
+      "exactKeys": ["schemaVersion", "recoveryId", "oldGeneration", "newGeneration", "quarantineRelativePath", "phase", "updatedAt", "journalSha256"],
+      "schemaVersion": "CONTROL_LEDGER_RECOVERY_JOURNAL_V1",
+      "phaseValues": ["PREPARED", "QUARANTINED", "SEALED", "LEDGER_CREATED", "COMMITTED"],
+      "generationPredicate": "oldGeneration positive int, newGeneration exactly old plus one, bool invalid",
+      "pathPredicate": "quarantineRelativePath exactly control/quarantine/g<old8>-to-g<new8>-<recoveryId>",
+      "timePredicate": "updatedAt valid Asia/Tokyo ISO timestamp",
+      "hashPredicate": "64 lowercase canonical hash excluding journalSha256",
+      "failureReason": "NEWS_GRASP_ENTRY_LEDGER_RECOVERY_FAILED"
+    },
+    "recoveryTransitionResume": {
+      "quarantinedWithNewSeal": "if journal is QUARANTINED and current valid seal is already newGeneration with previousSealSha256 equal to the prior seal hash, do not issue another seal; persist SEALED and continue",
+      "sealedWithGenesis": "if journal is SEALED and the generation-new SQLite ledger already contains the one matching LEDGER_RECOVERED genesis event, reuse it; do not insert sequence 1 twice",
+      "partialNewLedger": "an invalid generation-new recovery-owned SQLite file is moved inside the current quarantine before one clean recreate; no recursive deletion",
+      "terminalPredicate": "same recoveryId/newGeneration, one seal transition, one genesis event, COMMITTED journal and reopen verify Green"
+    },
+    "materializedState": {
+      "metadataKey": "materializedStateSha256",
+      "hashInput": "canonical ordered invocations, ordered slots and lastObservedAt",
+      "updateBoundary": "same SQLite transaction after every materialized mutation and before commit",
+      "verifyBoundary": "every _verify_connection compares stored hash with recomputed rows before use",
+      "failureReason": "NEWS_GRASP_ENTRY_LEDGER_CORRUPT"
+    },
+    "invalidTypeTotality": {
+      "rawArgvNonIterableReason": "NEWS_GRASP_ENTRY_ARGS_INVALID",
+      "observedAtNonDatetimeReason": "NEWS_GRASP_ENTRY_TIME_INVALID",
+      "scheduledStateUnhashableReason": "NEWS_GRASP_ENTRY_MANIFEST_INVALID",
+      "commitSlotKeyNonStringReason": "NEWS_GRASP_ENTRY_COMMIT_INVALID",
+      "markImportedTimeInvalidReason": "NEWS_GRASP_ENTRY_TIME_INVALID",
+      "untypedExceptionCount": 0,
+      "preValidationManagedWriteCount": 0
+    }
+  },
+  "redSuiteAmendment": {
+    "testPath": "tests/test_news_grasp_cleanroom_s1_entry.py",
+    "fixtureMutationAuthorized": false,
+    "existingNodeCount": 18,
+    "newNodes": [
+      "test_s1_recovery_journal_self_consistent_forgery_fails_closed",
+      "test_s1_busy_timeout_invalid_matrix_is_typed_before_write",
+      "test_s1_zero_entry_import_cannot_erase_clock_rollback",
+      "test_s1_wal_exact_schema_directory_and_imported_chain",
+      "test_s1_recovery_transition_gaps_resume_same_identity",
+      "test_s1_wal_managed_root_containment",
+      "test_s1_materialized_state_drift_is_corrupt",
+      "test_s1_public_invalid_type_matrix_is_total"
+    ],
+    "expectedCollected": 26,
+    "expectedRed": "existing 18 pass; exactly new eight nodes fail for their own blocker; unrelated zero",
+    "noSleep": true,
+    "noSubprocess": true,
+    "testWeakeningForbidden": true
+  },
+  "writeOwnership": {
+    "test_luna": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+    "implementation_luna_after_red": [
+      "tools/news_grasp_cleanroom_contracts.py",
+      "tools/news_grasp_cleanroom_wal.py",
+      "tools/news_grasp_cleanroom_ledger.py",
+      "tools/news_grasp_cleanroom_controller.py",
+      "tools/news_grasp_cleanroom_dispatch.py"
+    ],
+    "writeIntersectionCount": 0
+  },
+  "verificationOrder": [
+    "compile and collect exactly 26",
+    "new eight exact Red with blocker partition",
+    "full S1 existing 18 Green plus new eight Red",
+    "Ruff and diff-check",
+    "Expected Red receipt before production packet"
+  ],
+  "admissionPredicate": "Test Luna produces eight deterministic executable oracles without fixture or existing assertion changes and zero unrelated failure"
+}

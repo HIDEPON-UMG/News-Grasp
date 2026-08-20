@@ -1,0 +1,80 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_S1_ACCEPTANCE_REVIEW_V1",
+  "reviewId": "ng-cleanroom-s1-acceptance-r2",
+  "status": "BLOCK",
+  "reviewRole": "independent_sol_reviewer",
+  "reviewContext": "/root/s1_independent_acceptance",
+  "reviewedCommit": "482ba4f5232a5cf3e818eddc2c941d50d94613b1",
+  "probeSummary": {"r2Total": 34, "r2Green": 31, "r2Contrary": 3, "r2bAdditionalBlockerGroups": 5},
+  "closedPriorBlockerIds": [
+    "S1-ACCEPT-R1-TRANSACTIONAL-DECISION-DRIFT",
+    "S1-ACCEPT-R1-COMMITTED-JOURNAL-SECOND-CORRUPTION",
+    "S1-ACCEPT-R1-RECOVERY-WRAPPER-SIGNATURE-DRIFT"
+  ],
+  "blockers": [
+    {
+      "id": "S1-ACCEPT-R2-RECOVERY-JOURNAL-VALIDATION",
+      "severity": "HIGH",
+      "requirementIds": ["NG-A-R04"],
+      "evidence": "recovery journal validation checks only JSON and self-hash before using unvalidated fields as history and quarantine paths",
+      "requiredRed": "self-consistent missing/extra field, unknown phase, invalid generation, invalid recoveryId, traversal and absolute quarantine cases all fail typed before any outside mutation"
+    },
+    {
+      "id": "S1-ACCEPT-R2-BUSY-TIMEOUT-TOTALITY",
+      "severity": "HIGH",
+      "requirementIds": ["NG-A-R04"],
+      "evidence": "busy_timeout_ms accepts bool, zero and negative values and leaks TypeError for other non-integers",
+      "requiredRed": "True, 0, -1, 1.5, string and None all return one typed reason before managed writes"
+    },
+    {
+      "id": "S1-ACCEPT-R2-ZERO-ENTRY-CLOCK-ROLLBACK",
+      "severity": "HIGH",
+      "requirementIds": ["NG-A-R03", "NG-A-R05"],
+      "evidence": "import_zero_entries overwrites lastObservedAt with the current older time before transaction-local rollback evaluation",
+      "requiredRed": "persist 07:00, add prior zero-entry, dispatch 06:59, require typed rollback, 07:00 retained and no slot mutation"
+    },
+    {
+      "id": "S1-ACCEPT-R2-WAL-EXACT-SCHEMA-AND-CHAIN",
+      "severity": "HIGH",
+      "requirementIds": ["NG-A-R03", "NG-A-R04"],
+      "evidence": "WAL reader validates only schemaVersion and self-hash; exact fields/types/event values/raw hash/directory identity and imported payload parity are unchecked",
+      "requiredRed": "self-consistent malformed initial/imported WAL corpus is rejected as LEDGER_CORRUPT"
+    },
+    {
+      "id": "S1-ACCEPT-R2-RECOVERY-TRANSITION-GAPS",
+      "severity": "HIGH",
+      "requirementIds": ["NG-A-R04"],
+      "evidence": "seal durable before SEALED journal and SQLite genesis durable before LEDGER_CREATED journal cannot resume without seal drift or duplicate genesis",
+      "requiredRed": "two deterministic replace failures resume the same identity/generation to one seal, one genesis, COMMITTED and verified Green"
+    },
+    {
+      "id": "S1-ACCEPT-R2-MANAGED-ROOT-CONTAINMENT",
+      "severity": "HIGH",
+      "requirementIds": ["NG-A-R03", "NG-A-R04", "NG-A-R13"],
+      "evidence": "mark_imported accepts traversal invocationId and WAL/control reparse points can redirect managed writes outside runtime_root",
+      "requiredRed": "direct and forged traversal plus symlink or junction WAL root fail typed with outside write zero"
+    },
+    {
+      "id": "S1-ACCEPT-R2-MATERIALIZED-STATE-INTEGRITY",
+      "severity": "HIGH",
+      "requirementIds": ["NG-A-R04"],
+      "evidence": "verify checks event hash chain but not slots, invocations or lastObservedAt materialized rows, so direct row edits are projected Green",
+      "requiredRed": "slot owner/fence, invocation status and lastObservedAt edits with untouched events are all detected as LEDGER_CORRUPT"
+    },
+    {
+      "id": "S1-ACCEPT-R2-PUBLIC-INVALID-TYPE-TOTALITY",
+      "severity": "MEDIUM",
+      "requirementIds": ["NG-A-R02", "NG-A-R03", "NG-A-R04", "NG-A-R05"],
+      "evidence": "raw_argv, observed_at, scheduled_state, slot_key and imported_at invalid types can leak TypeError or AttributeError",
+      "requiredRed": "public invalid-type matrix produces exact typed reasons, no untyped exception, no slot or outside mutation"
+    }
+  ],
+  "confirmedGreen": [
+    "transaction-local decision authority",
+    "normal second recovery and history",
+    "positive busy_timeout signature and forwarding",
+    "S1 18 passed, S0 3 passed, Ruff, compile and accepted security"
+  ],
+  "mutationCount": 0,
+  "acceptanceIssued": false
+}
