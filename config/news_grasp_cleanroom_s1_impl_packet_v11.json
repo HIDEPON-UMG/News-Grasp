@@ -1,0 +1,103 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S1-GREEN-V11",
+  "todoId": "NG-CLEANROOM-S1-GREEN",
+  "role": "implementation_luna",
+  "canonicalContext": "/root/implementation_luna_canary",
+  "mutationMode": "close_three_acceptance_blockers",
+  "dependencyIds": [
+    "ng-cleanroom-s1-entry-impact-v4",
+    "NEWS_GRASP_CLEANROOM_S1_EXPECTED_RED_RECEIPT_V6"
+  ],
+  "requirementIds": ["NG-A-R04", "NG-A-R05"],
+  "baselineCommit": "aa68213ff37f2006597fcb5a35560edacf53988f",
+  "baselineReceiptPath": "config/news_grasp_cleanroom_s1_red_receipt_v6.json",
+  "baselineSha256": "4281527962f634832565911d9a906681d338a5a8504a108c3bc613e2fc08feb2",
+  "writeLease": {
+    "leaseId": "IMPL-LEASE-S1-V11",
+    "leaseSha256": "353bac05930c4220f5bb32ca0235998f24506d10d1db8e90345068328b438708",
+    "canonicalPayload": {
+      "leaseId": "IMPL-LEASE-S1-V11",
+      "role": "implementation_luna",
+      "canonicalContext": "/root/implementation_luna_canary",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-s1-h1",
+      "writes": [
+        "tools/news_grasp_cleanroom_controller.py",
+        "tools/news_grasp_cleanroom_ledger.py",
+        "tools/news_grasp_cleanroom_dispatch.py"
+      ],
+      "baselineCommit": "aa68213ff37f2006597fcb5a35560edacf53988f"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": [
+    "tools/news_grasp_cleanroom_controller.py",
+    "tools/news_grasp_cleanroom_ledger.py",
+    "tools/news_grasp_cleanroom_dispatch.py"
+  ],
+  "baselineSourceHashes": {
+    "tools/news_grasp_cleanroom_controller.py": "c5197c9c1899d72dd1eb15438b32cca814322538ee073af57283faf224d8be0d",
+    "tools/news_grasp_cleanroom_ledger.py": "8527d56c092b4d43ecc615f32cc8689224493475b669b4b706fcf441a7a342d9",
+    "tools/news_grasp_cleanroom_dispatch.py": "1d61e10ba6771834466b3def672be1d33e4fbb5236c398c7d80de54f02bc98af",
+    "tests/test_news_grasp_cleanroom_s1_entry.py": "e2d1e25e840c24a277838b428f9336e1714306f67f739de5350d848de5bfd6d0",
+    "tests/fixtures/news_grasp_cleanroom_s1_cases.json": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f"
+  },
+  "causalCorrections": [
+    {
+      "blockerId": "S1-ACCEPT-R1-TRANSACTIONAL-DECISION-DRIFT",
+      "targets": ["tools/news_grasp_cleanroom_controller.py", "tools/news_grasp_cleanroom_ledger.py"],
+      "requiredImplementation": [
+        "remove the final mutable-ledger decision probe from Controller; it may validate manifest/time before the ledger call but passes the canonical manifest into ControlLedger.reconcile",
+        "inside ControlLedger.reconcile, after BEGIN IMMEDIATE and connection verification, read metadata.lastObservedAt and the issue-date Scheduled row from that same connection",
+        "rehydrate persisted lastObservedAt with the existing Asia/Tokyo validation and derive ABSENT/ACTIVE/terminal Scheduled state from that same row",
+        "call contracts.reconcile_slot with canonical manifest, observed_at, transaction-local lastObservedAt and Scheduled state, then use that exact decision for slot mutation, event and returned projection",
+        "preserve WAL ordering, prior zero-entry import, crash hook names and exact DISPATCH_DECISION_V1 keys"
+      ],
+      "forbidden": "no typed busy fallback, no retry loop, no second connection read and no test-specific branch"
+    },
+    {
+      "blockerId": "S1-ACCEPT-R1-COMMITTED-JOURNAL-SECOND-CORRUPTION",
+      "targets": ["tools/news_grasp_cleanroom_ledger.py"],
+      "requiredImplementation": [
+        "retain the existing COMMITTED plus healthy RECOVERY_NOT_REQUIRED behavior",
+        "when the journal is valid COMMITTED and verify established unhealthy, durably preserve its exact JSON under control/recovery-history/<recoveryId>.json",
+        "if that history leaf already exists, require its parsed JSON to equal the committed journal or fail NEWS_GRASP_ENTRY_LEDGER_RECOVERY_FAILED",
+        "create one new PREPARED journal using current seal generation as oldGeneration, exactly old plus one as newGeneration, a new recoveryId and distinct quarantine path",
+        "continue the existing phase machine, reopen verify before return, and preserve all existing crash hooks and same-identity resume for a non-COMMITTED journal"
+      ],
+      "forbidden": "no deletion or overwrite of prior history, no reuse of the committed recoveryId, no generation skip and no success return before verify"
+    },
+    {
+      "blockerId": "S1-ACCEPT-R1-RECOVERY-WRAPPER-SIGNATURE-DRIFT",
+      "targets": ["tools/news_grasp_cleanroom_dispatch.py"],
+      "requiredImplementation": [
+        "add keyword-only busy_timeout_ms: int = 1000 to public recover_ledger",
+        "forward busy_timeout_ms unchanged into Controller construction",
+        "preserve all other parameter order, defaults and return behavior"
+      ],
+      "forbidden": "no test double detection or signature-only unused parameter"
+    }
+  ],
+  "verification": {
+    "newNodesCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py -k 'revalidates_scheduled_state_inside_transaction or recovery_after_committed_journal_repairs_new_corruption or recover_wrapper_exposes_and_forwards_busy_timeout'",
+    "newNodesExpected": "3 passed",
+    "fullS1Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "fullS1Expected": "18 passed",
+    "s0RegressionCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s0_contract.py",
+    "s0Expected": "3 passed",
+    "ruffCommand": "py -3.12 -m ruff check tools/news_grasp_cleanroom_controller.py tools/news_grasp_cleanroom_ledger.py tools/news_grasp_cleanroom_dispatch.py",
+    "compileCommand": "py -3.12 -m py_compile tools/news_grasp_cleanroom_controller.py tools/news_grasp_cleanroom_ledger.py tools/news_grasp_cleanroom_dispatch.py",
+    "security": "run the accepted NEWS_GRASP_CLEANROOM_SECURITY_SCAN_V1 over exact three changed production paths; denied imports/calls/private paths/secrets/external/network all zero and managed runtime-root writes inventory-only",
+    "other": ["git add exact three writeSet paths", "git diff --cached --check", "git status --short"]
+  },
+  "commitPolicy": {
+    "allowedOnlyAfterAllGreen": true,
+    "paths": "exact three writeSet paths",
+    "message": "fix: close S1 acceptance blockers"
+  },
+  "causalRetryCondition": "one implementation attempt and one ordered verification chain; stop on first non-Green without second edit or rerun",
+  "delivery": "three production files only, final hashes/bytes, authoring commit and exact verification evidence",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "persistentPolling": false, "rawProcessTermination": false}
+}
