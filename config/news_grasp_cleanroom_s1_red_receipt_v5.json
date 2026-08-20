@@ -1,0 +1,71 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_S1_EXPECTED_RED_RECEIPT_V1",
+  "generation": "V5",
+  "supersedes": "config/news_grasp_cleanroom_s1_red_receipt_v4.json",
+  "workPackage": "S1",
+  "requirementIds": ["NG-A-R02", "NG-A-R03", "NG-A-R04", "NG-A-R05"],
+  "itSuites": ["IT-01", "IT-06", "IT-07"],
+  "impactAdmission": {
+    "reviewId": "ng-cleanroom-s1-impact-r3",
+    "receiptSha256": "a484fc5a0c8486f096fbc19f340d9988067c9536517ce4ea437b0ddd11bb1087",
+    "decision": "accepted",
+    "blockerCount": 0,
+    "redAdmissionReady": true
+  },
+  "causalCorrection": {
+    "sourceAttemptReceipt": "config/news_grasp_cleanroom_s1_impl_attempt_v5_receipt.json",
+    "sourceAttemptReceiptSha256": "712a5b63f5601af6ba27786760da14fe71c4041d53137201482e7c8d24e4f6ac",
+    "executionPacketPath": "config/news_grasp_cleanroom_s1_test_packet_v5.json",
+    "executionPacketSha256": "879f92c723d007b11bbfa5f9d6ad7b958407321ac3147ca6c148ed3f45be4ef8",
+    "lineagePacketPath": "config/news_grasp_cleanroom_s1_test_packet_v6.json",
+    "lineagePacketSha256": "b989d79d4c9be6f78565620dbe85651940d61b2c50fde0161056c1e76a6b4d0e",
+    "correctedOracleDefect": "nine boundary rows now execute through six fresh reconcile, one expired takeover and two terminal commit production call sites",
+    "assertionWeakening": false,
+    "fixtureMutation": false
+  },
+  "testOwner": {
+    "role": "test_luna",
+    "canonicalContext": "/root/s1_edge_driver_red",
+    "authoringCommit": "2bcb5fdf63096c7d266e1f0c599345f7214108dc",
+    "integratedCommit": "ed3970be8b6ae11311cab40b1d42ca7989b32362",
+    "lineageDecision": "accepted",
+    "modelSubstitution": false
+  },
+  "testArtifacts": [
+    {"path": "tests/test_news_grasp_cleanroom_s1_entry.py", "sha256": "7de339dae51028a91c8b12ddeebd3b12f1144b1cfe89ccafe6fe09a14c21a8e0", "bytes": 37714},
+    {"path": "tests/fixtures/news_grasp_cleanroom_s1_cases.json", "sha256": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f", "bytes": 34435}
+  ],
+  "coverage": {
+    "topLevelNodeCount": 15,
+    "dispatchProjectionCaseCount": 13,
+    "dispatchCommitBoundaryCount": 9,
+    "boundaryDriverPartition": {"freshReconcile": 6, "expiredTakeover": 1, "terminalCommit": 2, "unknown": 0},
+    "recoveryHookCount": 5,
+    "invalidReasonCaseCount": 17,
+    "fixtureNormativeEquality": true,
+    "fallbackImplementationCount": 0
+  },
+  "collection": {"command": "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s1_entry.py", "exitCode": 0, "collected": 15},
+  "expectedRed": {
+    "command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "exitCode": 1,
+    "failed": 15,
+    "passed": 0,
+    "reason": "ModuleNotFoundError",
+    "message": "No module named 'tools.news_grasp_cleanroom_wal'",
+    "reasonMatchCount": 15,
+    "unrelatedFailureCount": 0,
+    "status": "expected_red"
+  },
+  "verification": {
+    "compileExitCode": 0,
+    "ruffExitCode": 0,
+    "diffCheckExitCode": 0,
+    "fixtureSelfValidationExitCode": 0,
+    "lineageReadOnlyAcceptance": true,
+    "externalModelCallCount": 0
+  },
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "networkCallCount": 0, "installedOrTaskMutation": false},
+  "measuredAt": "2026-08-20T18:38:32Z",
+  "status": "sealed"
+}
