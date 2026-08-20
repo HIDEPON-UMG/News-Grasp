@@ -1,0 +1,87 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S3-RED-V1",
+  "todoId": "NG-CLEANROOM-S3-RED",
+  "role": "test_luna",
+  "canonicalContext": "/root/s1_edge_driver_red",
+  "dependencyIds": ["NEWS_GRASP_CLEANROOM_S1_ACCEPTED_V1", "NG-CLEANROOM-S2-GREEN-V1-CONTRACT"],
+  "baselineCommit": "12ce725bde722a6cf318f30cb78953100eba14a4",
+  "dependencyState": "S2 public interface sealed; S2 implementation acceptance remains a promotion gate, not a test-authoring gate",
+  "impactAnalysisReceipt": {
+    "schemaVersion": "TDD_IMPACT_ANALYSIS_RECEIPT_V1",
+    "receiptId": "NG-CLEANROOM-S3-IMPACT-V1",
+    "requirementIds": ["NG-A-R09", "NG-A-R10"],
+    "primarySurfaces": ["required inventory", "surface bitmap", "publisher", "notification", "Scheduled/Recovery/Public/Readiness lineage", "scheduled-first report"],
+    "upstreamInputs": ["S2 RECONCILE_EXECUTION_RESULT_V1", "legacy publish inventory as adapter data only"],
+    "downstreamConsumers": ["S4 recovery/audit", "L4-L6 workflow", "operator report", "natural L9"],
+    "existingAssets": [
+      {"path": "tools/publish_inventory.py", "sha256": "7610fb347726c5d70dbec545040139984850a45afee44691c79d275ccfa62e35", "reuse": "required artifact adapter reference; not completion authority"},
+      {"path": "tools/news_grasp_completion_guard.py", "sha256": "276ef1e1c3da37b4040a5992df706834caeb9d80a41760c5652c62d60038bba1", "reuse": "legacy completion semantics and contrary evidence; clean-room state remains separate"}
+    ],
+    "plannedProduction": ["tools/news_grasp_cleanroom_public.py"],
+    "plannedDurableState": ["control/public-ledger-v1.sqlite3"],
+    "contraryEvidence": ["legacy completion mixes multiple evidence files", "no clean-room surface bitmap exists", "Scheduled/Public/Readiness immutable separation is not yet enforced by one authority"],
+    "unknownRoutePolicy": "fail_closed",
+    "impactStatus": "accepted_for_expected_red"
+  },
+  "writeLease": {
+    "leaseId": "TEST-LEASE-S3-V1",
+    "leaseSha256": "c3394eb5370689f0c3395656c25e6fb029fab1474e7bee97c54e02296d47e61f",
+    "canonicalPayload": {
+      "leaseId": "TEST-LEASE-S3-V1",
+      "role": "test_luna",
+      "canonicalContext": "/root/s1_edge_driver_red",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-s1-h1",
+      "writes": ["tests/test_news_grasp_cleanroom_s3_public.py", "tests/fixtures/news_grasp_cleanroom_s3_cases.json"],
+      "baselineCommit": "12ce725bde722a6cf318f30cb78953100eba14a4"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tests/test_news_grasp_cleanroom_s3_public.py", "tests/fixtures/news_grasp_cleanroom_s3_cases.json"],
+  "forbiddenWrites": ["tools", "config", "docs", "scripts", "all existing test and fixture files"],
+  "productionContract": {
+    "module": "tools.news_grasp_cleanroom_public",
+    "symbols": ["PublicController", "PublicControlError", "PublishResultUnknown", "render_scheduled_first_report"],
+    "constructor": "PublicController(runtime_root, publisher=object, notifier=object, boundary_hook=callable|None)",
+    "method": "reconcile(issue_date, scheduled_state, recovery_state, readiness_state, inventory, observed_at) -> PUBLIC_RECONCILE_RESULT_V1",
+    "inventory": "exact PUBLIC_SURFACE_INVENTORY_V1, exact required surface IDs, per-surface PENDING|CONFIRMED|NOT_REQUIRED|FAILED|UNKNOWN, canonical inventorySha256",
+    "publisher": "publish(request) returns exact PUBLIC_SURFACE_RECEIPT_V1 or raises PublishResultUnknown; query(idempotency_key) is query-first recovery",
+    "notifier": "notify(request) and query(idempotency_key) use one immutable public-terminal idempotency key",
+    "durableLineages": ["Scheduled", "Recovery", "Public", "Readiness"]
+  },
+  "requiredNodes": [
+    {"node": "test_s3_surface_bitmap_property", "oracle": "all fixture bitmap combinations are evaluated; Public Green only when every required surface is CONFIRMED or explicitly eligible NOT_REQUIRED; UNKNOWN never Green"},
+    {"node": "test_s3_completed_surface_skip", "oracle": "after a crash/partial failure, retry validates and skips durable CONFIRMED surfaces and publishes only absent surfaces with stable per-surface idempotency keys"},
+    {"node": "test_s3_partial_public_typed", "oracle": "FAILED/UNKNOWN/missing required surface yields typed PUBLIC_INCOMPLETE or MANUAL_RECONCILIATION_REQUIRED, Public non-Green and notification zero"},
+    {"node": "test_s3_public_never_overwrites_scheduled", "oracle": "Scheduled failure remains byte/hash-identical after Recovery Green and Public Green; four lineages have distinct immutable rows and terminal hashes"},
+    {"node": "test_s3_notification_exactly_once", "oracle": "notification is eligible only after Public terminal Green; lost response/crash resumes query-first with one key and one durable receipt; retries create no duplicate notification"},
+    {"node": "test_s3_report_scheduled_first", "oracle": "report projection orders Scheduled first and separately shows Recovery, Public, Readiness; Public Green with Scheduled failed or Readiness red is not collapsed into overall success"}
+  ],
+  "coverage": {
+    "requirements": {"NG-A-R09": [0, 1, 2], "NG-A-R10": [3, 4, 5]},
+    "internalEdges": ["publicationBitmap×replay", "lineage×terminal", "notification×response-loss"],
+    "valuePredicates": {"partialGreen": 0, "notificationDuplicate": 0, "scheduledOverwrite": 0}
+  },
+  "testDesignRules": [
+    "collect exactly six top-level nodes; parameterize full bitmap/fault matrices inside them",
+    "use a Japanese-named isolated tmp root, real SQLite/filesystem, deterministic aware Asia/Tokyo time and in-memory publisher/notifier only",
+    "dynamic import inside each test so collect succeeds and all six are causal Red while the production module is absent",
+    "assert exact state, call counts, idempotency keys, stored hashes and scheduled-first ordering",
+    "no network, subprocess, sleep, credentials or production artifact mutation"
+  ],
+  "verification": {
+    "compileCommand": "py -3.12 -m py_compile tests/test_news_grasp_cleanroom_s3_public.py",
+    "collectCommand": "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s3_public.py",
+    "collectExpected": 6,
+    "redCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s3_public.py",
+    "redExpected": "6 failed for absent production module/symbols, collection error zero",
+    "ruffCommand": "py -3.12 -m ruff check tests/test_news_grasp_cleanroom_s3_public.py",
+    "diffCommand": "git diff --check -- tests/test_news_grasp_cleanroom_s3_public.py tests/fixtures/news_grasp_cleanroom_s3_cases.json"
+  },
+  "commitPolicy": {"allowedOnlyAfterExpectedRed": true, "paths": ["tests/test_news_grasp_cleanroom_s3_public.py", "tests/fixtures/news_grasp_cleanroom_s3_cases.json"], "message": "test: define S3 public plane"},
+  "causalRetryCondition": "one authoring attempt and one ordered verification chain; one test-only correction allowed for packet mismatch",
+  "delivery": "two test-owned files, hashes/bytes, commit and exact Red partition",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "persistentPolling": false}
+}
