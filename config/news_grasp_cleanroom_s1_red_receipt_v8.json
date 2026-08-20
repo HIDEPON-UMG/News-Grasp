@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_S1_EXPECTED_RED_RECEIPT_V1",
+  "receiptId": "NEWS_GRASP_CLEANROOM_S1_EXPECTED_RED_RECEIPT_V8",
+  "packetId": "NG-CLEANROOM-S1-RED-R9",
+  "leaseId": "TEST-LEASE-S1-R9",
+  "authoringRole": "test_luna",
+  "canonicalContext": "/root/s1_edge_driver_red",
+  "baselineCommit": "74043ba7d8e5a974f21994704ddb171e9ffaaec0",
+  "authoringCommit": "5016974a2354a661fb0ff8790b93bad6a5f6ac88",
+  "integrationCommit": "2838274c5bb8e8d7edb5cee43820a3bb72487f50",
+  "testPath": "tests/test_news_grasp_cleanroom_s1_entry.py",
+  "testSha256": "1ca05904e46dd5574347c43a9e8e404929eb7c4f5b01d78255249afb21fed9b0",
+  "testBytes": 67376,
+  "fixturePath": "tests/fixtures/news_grasp_cleanroom_s1_cases.json",
+  "fixtureSha256": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f",
+  "fixtureChanged": false,
+  "changedPaths": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+  "verification": {
+    "compile": {"exitCode": 0},
+    "collect": {"exitCode": 0, "collected": 27},
+    "newNode": {
+      "exitCode": 1,
+      "failed": 1,
+      "node": "test_s1_atomic_publish_never_reopens_public_final_for_write",
+      "observed": "PermissionError on public 0001-initial.json r+b reopen wrapped as NEWS_GRASP_ENTRY_INITIAL_WAL_FAILED",
+      "expectedAfterRepair": "successful reconcile with zero public-final write reopen attempts",
+      "blockerId": "S1-ATOMIC-PUBLISH-NO-FINAL-REOPEN-V1"
+    },
+    "existingS1": {"exitCode": 0, "passed": 26, "failed": 0},
+    "ruff": {"exitCode": 0},
+    "diffCheck": {"exitCode": 0}
+  },
+  "coverage": {
+    "primaryBehavior": ["test_s1_atomic_publish_never_reopens_public_final_for_write"],
+    "adversarialBoundary": ["simulated Windows public-leaf sharing denial"],
+    "operationalRecovery": ["existing fsync/replace/flush_parent crash nodes retained unchanged"],
+    "existingGreenCount": 26,
+    "unrelatedFailureCount": 0,
+    "testWeakening": false
+  },
+  "productionMutationCount": 0,
+  "status": "expected_red",
+  "measuredAt": "2026-08-20T20:24:08.3410725Z"
+}
