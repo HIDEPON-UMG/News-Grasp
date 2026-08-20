@@ -1,0 +1,112 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S1-GREEN-V14",
+  "todoId": "NG-CLEANROOM-S1-GREEN",
+  "role": "implementation_luna",
+  "canonicalContext": "/root/implementation_luna_canary",
+  "mutationMode": "close_final_r3_integrity_and_authority_blockers",
+  "dependencyIds": ["ng-cleanroom-s1-entry-impact-v7", "NEWS_GRASP_CLEANROOM_S1_EXPECTED_RED_RECEIPT_V9"],
+  "requirementIds": ["NG-A-R03", "NG-A-R04", "NG-A-R13"],
+  "baselineCommit": "51d1a334fceabeafc18830bffcf9d983751b224c",
+  "baselineReceiptPath": "config/news_grasp_cleanroom_s1_red_receipt_v9.json",
+  "baselineSha256": "bd11610f7993bf933a994930bf376d737dc48c2e7f5f87650199f0028390d12b",
+  "writeLease": {
+    "leaseId": "IMPL-LEASE-S1-V14",
+    "leaseSha256": "6df03fe5f9ce3b4caefdb16cc6aab70bca2a06ce92b7439815fc1a8a1263486f",
+    "canonicalPayload": {
+      "leaseId": "IMPL-LEASE-S1-V14",
+      "role": "implementation_luna",
+      "canonicalContext": "/root/implementation_luna_canary",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-s1-h1",
+      "writes": ["tools/news_grasp_cleanroom_wal.py", "tools/news_grasp_cleanroom_ledger.py"],
+      "baselineCommit": "51d1a334fceabeafc18830bffcf9d983751b224c"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tools/news_grasp_cleanroom_wal.py", "tools/news_grasp_cleanroom_ledger.py"],
+  "forbiddenWrites": ["tests", "tests/fixtures", "tools/news_grasp_cleanroom_contracts.py", "tools/news_grasp_cleanroom_controller.py", "tools/news_grasp_cleanroom_dispatch.py", "config", "docs", "scripts"],
+  "baselineHashes": {
+    "tools/news_grasp_cleanroom_wal.py": "bfc58baf3f85c237bfe678eadf146030f6e8de5d73f7a5d0f8baf15b0ccabf2e",
+    "tools/news_grasp_cleanroom_ledger.py": "a17e881c7110619ae99170a853c3d3f9baa1b7af2890f8258bca00f0cee7d6ce",
+    "tests/test_news_grasp_cleanroom_s1_entry.py": "1b16ab1a54e63df2bc60a49ab571cb4d3d68951e59e1dda9cab27f8fa14c3c49",
+    "tests/fixtures/news_grasp_cleanroom_s1_cases.json": "eba6a10bfb7f8b6aea78025555cd8520221358f635765e07cec8726d60a6f"
+  },
+  "causalCorrections": [
+    {
+      "blockerId": "S1-ACCEPT-R3-GENERATION-SEAL-EXACTNESS",
+      "target": "tools/news_grasp_cleanroom_ledger.py",
+      "requiredImplementation": [
+        "_read_generation_seal requires exact keys schemaVersion,generation,ledgerRelativePath,previousSealSha256,createdAt,sealSha256",
+        "generation is positive int and bool invalid; ledgerRelativePath is exactly control/control-ledger-v1.sqlite3",
+        "previousSealSha256 is lowercase 64-hex; generation 1 requires zero hash and later generations require nonzero and not the current seal hash",
+        "createdAt parses as aware +09:00 and validates after conversion to ZoneInfo Asia/Tokyo with fold zero",
+        "sealSha256 is lowercase 64-hex and equals the canonical hash over exactly the other five fields",
+        "every mismatch raises NEWS_GRASP_ENTRY_LEDGER_CORRUPT without mutation"
+      ]
+    },
+    {
+      "blockerId": "S1-ACCEPT-R3-SQLITE-SCHEMA-EXACTNESS",
+      "target": "tools/news_grasp_cleanroom_ledger.py",
+      "requiredImplementation": [
+        "refactor the four existing CREATE TABLE bodies into canonical constants shared by _create_schema and schema verification so constraint text cannot drift",
+        "at the start of _verify_connection require exact non-internal sqlite_master objects: four tables metadata,invocations,slots,events and no user view,trigger,extra table or explicit index",
+        "compare whitespace-normalized sqlite_master SQL for all four tables against the canonical CREATE SQL, preserving every PRIMARY KEY, UNIQUE and CHECK clause",
+        "compare PRAGMA table_info exact ordered cid/name/type/notnull/default/pk signatures for all four tables",
+        "compare PRAGMA index_list/index_info exact canonical automatic indexes: metadata PK(key); invocations PK(invocation_id) plus UNIQUE(wal_event_sha256); slots composite PK(schedule_id,issue_date,slot_kind); events UNIQUE(event_sha256); no other index",
+        "schema mismatch is NEWS_GRASP_ENTRY_LEDGER_CORRUPT before metadata, event-chain or materialized-state trust"
+      ],
+      "canonicalTableInfo": {
+        "metadata": [[0, "key", "TEXT", 0, null, 1], [1, "value", "TEXT", 1, null, 0]],
+        "invocations": [[0, "invocation_id", "TEXT", 0, null, 1], [1, "received_at", "TEXT", 1, null, 0], [2, "raw_argv_sha256", "TEXT", 1, null, 0], [3, "writer_key", "TEXT", 1, null, 0], [4, "wal_event_sha256", "TEXT", 1, null, 0], [5, "imported_at", "TEXT", 1, null, 0], [6, "status", "TEXT", 1, null, 0]],
+        "slots": [[0, "schedule_id", "TEXT", 1, null, 1], [1, "issue_date", "TEXT", 1, null, 2], [2, "slot_kind", "TEXT", 1, null, 3], [3, "generation", "INTEGER", 1, null, 0], [4, "state", "TEXT", 1, null, 0], [5, "owner_key", "TEXT", 1, null, 0], [6, "fence_token", "INTEGER", 1, null, 0], [7, "lease_expires_at", "TEXT", 0, null, 0], [8, "terminal_state", "TEXT", 0, null, 0], [9, "result_hash", "TEXT", 0, null, 0], [10, "updated_at", "TEXT", 1, null, 0]],
+        "events": [[0, "sequence", "INTEGER", 0, null, 1], [1, "generation", "INTEGER", 1, null, 0], [2, "event_type", "TEXT", 1, null, 0], [3, "slot_key", "TEXT", 0, null, 0], [4, "payload_json", "TEXT", 1, null, 0], [5, "previous_event_sha256", "TEXT", 1, null, 0], [6, "event_sha256", "TEXT", 1, null, 0]]
+      }
+    },
+    {
+      "blockerId": "S1-ACCEPT-R3-IMPORTED-MARKER-CONCURRENT-IMMUTABILITY",
+      "target": "tools/news_grasp_cleanroom_wal.py",
+      "requiredImplementation": [
+        "add a defaulted DurabilityOps create-once publication callable without changing _write_json positional signature used by the test-owned wrapper",
+        "for 0002-imported.json only, publish the complete fsynced temp without replacing an existing destination: Windows os.rename no-replace; non-Windows same-directory os.link then temp unlink, both mapping destination-exists to FileExistsError",
+        "all other JSON leaves retain the existing replace behavior",
+        "on loser FileExistsError, _write_json cleans its temp and returns typed WAL_FINALIZE_FAILED; mark_imported then reads the winner",
+        "factor one imported-parity validator and use it for pre-existing marker, race loser and verify/iter paths; require invocationId, rawArgv, rawArgvSha256, writer and predecessor equality",
+        "winner and losers all return the exact winner event, no public overwrite and no temp residue"
+      ],
+      "forbidden": ["sleep", "polling", "process-local-only mutex", "reader retry", "test branch", "overwriting destination"]
+    },
+    {
+      "blockerId": "S1-R3-CONCURRENT-RECOVERY-SINGLE-AUTHORITY",
+      "target": "tools/news_grasp_cleanroom_ledger.py",
+      "requiredImplementation": [
+        "keep public recover signature and observed_at validation, then acquire the existing cross-process _bootstrap_lock for the entire health check, journal decision and phase machine",
+        "move the existing body into one private locked helper without changing crash hook names, journal phases or durability operations",
+        "the winner performs recovery; a waiter acquires after completion, observes healthy plus COMMITTED journal and returns RECOVERY_NOT_REQUIRED with the same recoveryId/newGeneration",
+        "lock releases on every exception so existing crash-resume tests continue to work; existing bounded busy timeout semantics remain"
+      ],
+      "forbidden": ["new lock file", "unbounded wait", "sleep beyond existing bootstrap lock", "return rewriting after concurrent work"]
+    }
+  ],
+  "verification": {
+    "newNodesCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py -k 'generation_seal_exact_schema_fails_closed or sqlite_exact_schema_fails_closed or imported_marker_concurrent_publish_is_immutable or concurrent_recovery_has_single_authority'",
+    "newNodesExpected": "4 passed",
+    "fullS1Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "fullS1Expected": "31 passed",
+    "s0Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s0_contract.py",
+    "s0Expected": "3 passed",
+    "ruffCommand": "py -3.12 -m ruff check tools/news_grasp_cleanroom_wal.py tools/news_grasp_cleanroom_ledger.py",
+    "compileCommand": "py -3.12 -m py_compile tools/news_grasp_cleanroom_wal.py tools/news_grasp_cleanroom_ledger.py",
+    "security": "NEWS_GRASP_CLEANROOM_SECURITY_SCAN_V1 on exact changed production paths; denied/private/secret/external/network counts zero",
+    "other": ["git diff --name-only exact subset of two-file lease", "git diff --check exact changed paths", "post-commit worktree clean"]
+  },
+  "commitPolicy": {
+    "allowedOnlyAfterAllGreen": true,
+    "paths": "exact changed subset of two-file writeSet",
+    "message": "fix: close S1 schema and authority gaps"
+  },
+  "causalRetryCondition": "one implementation attempt and one ordered verification chain; stop on first non-Green",
+  "delivery": "production paths only, hashes/bytes, commit and exact verification evidence",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "persistentPolling": false}
+}
