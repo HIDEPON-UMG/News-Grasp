@@ -97,39 +97,47 @@ class TaskAdapter:
         self.snapshots: list[dict[str, bool]] = []
         self.deny_operation: str | None = None
 
-    def _record(self, operation: str, name: str, **detail: Any) -> None:
+    def _check_denial(self, operation: str) -> None:
         if self.deny_operation == operation:
             raise self.module.PrivilegeDenied(f"test-owned privilege denial: {operation}")
+
+    def _record(self, operation: str, name: str, **detail: Any) -> None:
         self.history.append({"operation": operation, "name": name, **detail})
         self.snapshots.append(dict(self.enabled))
 
     def snapshot(self) -> dict[str, Any]:
+        self._check_denial("snapshot")
         self._record("snapshot", "all")
         return {"tasks": {name: {"enabled": value, "xml": self.xml.get(name)} for name, value in self.enabled.items()}}
 
     def register_disabled(self, name: str, definition: str, **kwargs: Any) -> None:
-        self._record("register_disabled", name, definition=definition, kwargs=kwargs)
+        self._check_denial("register_disabled")
         self.registered[name] = {"definition": definition, **kwargs}
         self.enabled[name] = False
         self.xml[name] = definition
+        self._record("register_disabled", name, definition=definition, kwargs=kwargs)
 
     def disable(self, name: str) -> None:
-        self._record("disable", name)
+        self._check_denial("disable")
         self.enabled[name] = False
+        self._record("disable", name)
 
     def enable(self, name: str) -> None:
-        self._record("enable", name)
+        self._check_denial("enable")
         self.enabled[name] = True
+        self._record("enable", name)
 
     def restore(self, name: str, definition: str) -> None:
-        self._record("restore", name, definition=definition)
+        self._check_denial("restore")
         self.xml[name] = definition
         self.enabled[name] = False
+        self._record("restore", name, definition=definition)
 
     def remove_candidate(self, name: str) -> None:
-        self._record("remove_candidate", name)
+        self._check_denial("remove_candidate")
         self.registered.pop(name, None)
         self.enabled[name] = False
+        self._record("remove_candidate", name)
 
     @property
     def dual_enabled_count(self) -> int:
@@ -177,6 +185,7 @@ def test_s5_cutover_crash_matrix(tmp_path: Path) -> None:
             with pytest.raises(Exception):
                 _stage(controller, manifest, source, installed, authority)
             _stage(controller, manifest, source, installed, authority)
+            _cutover(controller, authority)
         else:
             _stage(controller, manifest, source, installed, authority)
             try:
