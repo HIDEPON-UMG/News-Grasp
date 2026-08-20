@@ -1,0 +1,129 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S0-GREEN-V3",
+  "todoId": "NG-CLEANROOM-S0-GREEN",
+  "supersedes": {
+    "path": "config/news_grasp_cleanroom_s0_impl_packet_v2.json",
+    "sha256": "6bd3f516c6545d3f045ec8f2e2658dc303c9e7551b0a916a6a098ccfed580f6c",
+    "reason": "independent S0 acceptance review found exact actual-node and semantic-seal bypasses"
+  },
+  "role": "implementation_luna",
+  "canonicalContext": "/root/implementation_luna_canary",
+  "mutationMode": "product_mutation",
+  "dependencyIds": [
+    "ng-cleanroom-s0-impact-binding-r4",
+    "NEWS_GRASP_CLEANROOM_S0_EXPECTED_RED_RECEIPT_V1:V3",
+    "ng-cleanroom-s0-acceptance-r1"
+  ],
+  "reviewBlockersToClose": [
+    "S0-ACCEPT-R1-ACTUAL-NODE-SET-NOT-EXACT",
+    "S0-ACCEPT-R1-CATALOG-SEMANTIC-SEAL-BYPASS"
+  ],
+  "requirementIds": ["NG-A-R01"],
+  "redNodeIds": [
+    "test_s0_role_collision_rejected",
+    "test_s0_trace_gap_duplicate_orphan_rejected",
+    "test_s0_stale_seal_rejected"
+  ],
+  "baselineCommit": "61b5e87ee1c11f85ab7cc0c9b38579315ed70c2d",
+  "baselineSha256": "9bccc06e7ac000020ba4bdf4a8695440bca1ce570300faba08b71dde68ecbf9d",
+  "baselineReceiptPath": "config/news_grasp_cleanroom_s0_red_receipt_v3.json",
+  "writeLease": {
+    "leaseId": "IMPL-LEASE-S0-V3",
+    "leaseSha256": "ff9088629a66e2f02f16f6b80ad6ec3106ca30d8072591e4f8582b71fdabaa34",
+    "canonicalPayload": {
+      "leaseId": "IMPL-LEASE-S0-V3",
+      "role": "implementation_luna",
+      "canonicalContext": "/root/implementation_luna_canary",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-s0-h1",
+      "writes": ["tools/news_grasp_cleanroom_contracts.py"],
+      "baselineCommit": "61b5e87ee1c11f85ab7cc0c9b38579315ed70c2d"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tools/news_grasp_cleanroom_contracts.py"],
+  "targetSourceHashes": {
+    "tools/news_grasp_cleanroom_contracts.py": "469125c094299f469610defb21241495dc0e89569d9a72c7e26f58a1fccd1750"
+  },
+  "readOnlyInputs": {
+    "config/news_grasp_cleanroom_control_s0_v2.json": "2b76d2b0aa73d22a43e0279c93cea3eecf3dff0874da6384c6abb74ed61d3a91",
+    "config/news_grasp_cleanroom_s0_impact_review_v2.json": "7647135ca8ff015f12e576cde348f29aa531583d0362425e60dbafa836cab5a2",
+    "config/news_grasp_cleanroom_s0_red_receipt_v3.json": "9bccc06e7ac000020ba4bdf4a8695440bca1ce570300faba08b71dde68ecbf9d",
+    "tests/test_news_grasp_cleanroom_s0_contract.py": "36b7be69a45dea4e7e6a0583d0c24fc67c95d7ee0bc890fbfb1cbf36ec0acb83",
+    "tests/fixtures/news_grasp_cleanroom_s0_cases.json": "9893b630d6fe1bf8f4560dacd8c42fd34cb9f53930f0ff594dbac701d0186e22"
+  },
+  "implementationContract": {
+    "publicSymbolsUnchanged": ["CleanroomContractError", "validate_s0_admission"],
+    "requirementSchema": {
+      "exactKeys": ["id", "slice", "acceptance", "itSuite", "testNodes"],
+      "testNodes": "exactly three non-empty unique strings"
+    },
+    "reasonPrecedence": [
+      "validate role, write lease and structural trace first so existing missing, duplicate and orphan cases retain their specific reasons",
+      "validate lease seal and baseline file hashes",
+      "load the sealed control only from the already restricted exact controlPath",
+      "perform semantic seal equality",
+      "validate actual nodes last"
+    ],
+    "semanticSeal": {
+      "exactSubtrees": [
+        "requirements",
+        "requirementViewpointTrace",
+        "internalEdgeTrace"
+      ],
+      "plannedNodeCatalog": "derive the exact sorted catalog from sealed requirement viewpoint trace and sealed internal edge trace, then require exact equality",
+      "mismatchReason": "NEWS_GRASP_S0_BASELINE_DRIFT",
+      "unknownMissingExtraMismatch": "fail closed",
+      "allowedViewpoints": "bind to the exact sealed control mapping; do not accept an unsealed viewpoint or edge mapping"
+    },
+    "actualNodeSeal": {
+      "canonicalSource": "ordered testNodes tuple for active slice S0 in the sealed requirements",
+      "unknownReason": "NEWS_GRASP_S0_UNKNOWN_NODE",
+      "duplicateReason": "NEWS_GRASP_S0_TRACE_DUPLICATE",
+      "missingSubsetEmptyOrOrderDriftReason": "NEWS_GRASP_S0_TRACE_GAP",
+      "comparison": "ordered tuple equality after unknown and duplicate checks"
+    },
+    "security": {
+      "networkAllowed": false,
+      "subprocessAllowed": false,
+      "filesystemWritesAllowed": false,
+      "testImportsAllowed": false,
+      "testOrFixtureHashHardcodingAllowed": false
+    }
+  },
+  "command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s0_contract.py",
+  "expectedVerificationExit": 0,
+  "expectedOutputs": [
+    "3 passed",
+    "git diff --check exit 0",
+    "one production file only"
+  ],
+  "localVerification": [
+    "py -3.12 -m py_compile tools/news_grasp_cleanroom_contracts.py",
+    "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s0_contract.py",
+    "py -3.12 -m ruff check tools/news_grasp_cleanroom_contracts.py tests/test_news_grasp_cleanroom_s0_contract.py",
+    "git diff --check",
+    "git status --short"
+  ],
+  "causalRetryCondition": "one exact implementation attempt; return to Sol on any new contract decision or non-Green result",
+  "rollback": "restore only tools/news_grasp_cleanroom_contracts.py to its baseline blob in the isolated implementation worktree",
+  "snapshot": "return production SHA-256/bytes, exact 3 Green, commands/exits, failure reason coverage and write-set status",
+  "delivery": "production file only; tests, fixtures and all config inputs stay byte-identical",
+  "stopPolicy": "return_to_sol_before_execution",
+  "unresolvedDecisionIds": [],
+  "returnToSolConditions": [
+    "write_set_expansion",
+    "test_or_fixture_mutation_required",
+    "read_only_hash_drift",
+    "same_shape_retry",
+    "new_api_or_reason",
+    "network_or_external_process_required"
+  ],
+  "humanImpact": {
+    "noFocusTheft": true,
+    "noAutoOpen": true,
+    "noUserMonitoring": true,
+    "persistentPolling": false,
+    "rawProcessTermination": false
+  }
+}
