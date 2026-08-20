@@ -1,0 +1,72 @@
+{
+  "schemaVersion": "TDD_IMPACT_ANALYSIS_RECEIPT_V1",
+  "receiptId": "ng-cleanroom-s1-entry-impact-v7",
+  "workPackage": "S1",
+  "status": "red_authoring_ready",
+  "baselineCommit": "b11ea0d82e2649690c4c3decd951209030c96673",
+  "reviewPath": "config/news_grasp_cleanroom_s1_acceptance_review_r3.json",
+  "inheritedContract": "all S1 impact v2 through v6 requirements remain normative; v7 adds R3 exactness, immutable publish and concurrent recovery amendments",
+  "exactAmendments": {
+    "generationSeal": {
+      "exactKeys": ["schemaVersion", "generation", "ledgerRelativePath", "previousSealSha256", "createdAt", "sealSha256"],
+      "schemaVersion": "CONTROL_LEDGER_GENERATION_SEAL_V1",
+      "generation": "positive int, bool invalid",
+      "ledgerRelativePath": "control/control-ledger-v1.sqlite3",
+      "previousSealSha256": "64 lowercase hex; generation 1 exactly zero hash; later generations nonzero and not self hash",
+      "createdAt": "valid Asia/Tokyo ISO timestamp",
+      "sealSha256": "canonical 64 lowercase hash over exactly the other five fields",
+      "failureReason": "NEWS_GRASP_ENTRY_LEDGER_CORRUPT"
+    },
+    "sqliteSchema": {
+      "allowedObjects": "exact user tables metadata, invocations, slots, events; no user view, trigger, extra table or explicit index",
+      "tableSignature": "exact ordered columns, declared types, not-null flags, defaults and primary-key positions for all four tables",
+      "constraintSignature": "canonical sqlite_master SQL retains every PRIMARY KEY, UNIQUE and CHECK constraint declared by _create_schema",
+      "autoIndexes": "only SQLite autoindexes implied by the canonical primary-key and unique constraints",
+      "verifyBoundary": "_verify_connection checks schema before trusting metadata or materialized rows",
+      "failureReason": "NEWS_GRASP_ENTRY_LEDGER_CORRUPT"
+    },
+    "importedMarkerPublish": {
+      "predicate": "create-once publication: the first complete fsynced temp wins and an existing destination is never replaced",
+      "loserBehavior": "read and exact-validate the winner, then return that same event",
+      "resultPredicate": "all concurrent returns byte-equivalent to the one final public marker; one eventSha256; temp residue zero; WAL verify Green",
+      "durability": "private temp fsync/close, atomic no-replace publication and parent flush retained",
+      "failureReason": "NEWS_GRASP_ENTRY_WAL_FINALIZE_FAILED only when no valid winner exists"
+    },
+    "concurrentRecovery": {
+      "authority": "reuse the existing cross-process bootstrap lock around the complete verify/journal/phase-machine recovery decision",
+      "resultPredicate": "two concurrent callers against one corrupt ledger yield one recovered and one RECOVERY_NOT_REQUIRED, both bound to the same recoveryId/newGeneration, with no error",
+      "terminalPredicate": "one generation transition, one LEDGER_RECOVERED genesis, one COMMITTED journal, reopen verify Green",
+      "busyPolicy": "existing bounded busy timeout and NEWS_GRASP_ENTRY_LEDGER_BUSY remain normative when authority cannot be obtained within the configured timeout"
+    }
+  },
+  "redSuiteAmendment": {
+    "testPath": "tests/test_news_grasp_cleanroom_s1_entry.py",
+    "fixtureMutationAuthorized": false,
+    "existingNodeCount": 27,
+    "newNodes": [
+      "test_s1_generation_seal_exact_schema_fails_closed",
+      "test_s1_sqlite_exact_schema_fails_closed",
+      "test_s1_imported_marker_concurrent_publish_is_immutable",
+      "test_s1_concurrent_recovery_has_single_authority"
+    ],
+    "expectedCollected": 31,
+    "expectedRed": "existing 27 pass; exact new four fail for their own blocker; unrelated zero",
+    "noSleep": true,
+    "noSubprocess": true,
+    "testWeakeningForbidden": true
+  },
+  "writeOwnership": {
+    "test_luna": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+    "implementation_luna_after_red": ["tools/news_grasp_cleanroom_wal.py", "tools/news_grasp_cleanroom_ledger.py"],
+    "writeIntersectionCount": 0
+  },
+  "verificationOrder": [
+    "compile and collect exactly 31",
+    "new four exact causal Red",
+    "existing 27 Green",
+    "ruff and diff-check",
+    "Expected Red receipt before production packet"
+  ],
+  "unresolvedDecisionIds": [],
+  "admissionPredicate": "four deterministic oracles close all R3 blockers plus promoted parallel-recovery risk without changing existing tests or fixture"
+}

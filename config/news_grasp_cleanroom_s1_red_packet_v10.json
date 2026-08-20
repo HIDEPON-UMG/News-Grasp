@@ -1,0 +1,83 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S1-RED-R10",
+  "todoId": "NG-CLEANROOM-S1-RED",
+  "role": "test_luna",
+  "canonicalContext": "/root/s1_edge_driver_red",
+  "dependencyIds": ["ng-cleanroom-s1-entry-impact-v7", "NG-CLEANROOM-S1-ACCEPTANCE-R3"],
+  "baselineCommit": "b11ea0d82e2649690c4c3decd951209030c96673",
+  "writeLease": {
+    "leaseId": "TEST-LEASE-S1-R10",
+    "leaseSha256": "cc844890bed256439f200a288f34044ff86c1400d4e01740e21a7918c1728356",
+    "canonicalPayload": {
+      "leaseId": "TEST-LEASE-S1-R10",
+      "role": "test_luna",
+      "canonicalContext": "/root/s1_edge_driver_red",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-s1-h1",
+      "writes": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+      "baselineCommit": "b11ea0d82e2649690c4c3decd951209030c96673"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+  "forbiddenWrites": ["tools", "tests/fixtures", "config", "docs", "scripts"],
+  "baselineHashes": {
+    "tests/test_news_grasp_cleanroom_s1_entry.py": "1ca05904e46dd5574347c43a9e8e404929eb7c4f5b01d78255249afb21fed9b0",
+    "tests/fixtures/news_grasp_cleanroom_s1_cases.json": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f",
+    "tools/news_grasp_cleanroom_wal.py": "bfc58baf3f85c237bfe678eadf146030f6e8de5d73f7a5d0f8baf15b0ccabf2e",
+    "tools/news_grasp_cleanroom_ledger.py": "a17e881c7110619ae99170a853c3d3f9baa1b7af2890f8258bca00f0cee7d6ce"
+  },
+  "exactTasks": [
+    {
+      "node": "test_s1_generation_seal_exact_schema_fails_closed",
+      "oracle": "for each isolated normal ledger mutate one seal field case, recompute canonical sealSha256, then ControlLedger.verify must raise NEWS_GRASP_ENTRY_LEDGER_CORRUPT",
+      "cases": ["extra key", "missing ledgerRelativePath", "wrong ledgerRelativePath", "bool generation", "non-hex previousSealSha256", "generation-1 nonzero previousSealSha256", "invalid createdAt"],
+      "outsideMutation": 0
+    },
+    {
+      "node": "test_s1_sqlite_exact_schema_fails_closed",
+      "oracle": "after normal ledger initialization preserve all data and hashes while independently mutating SQLite schema; reopen verify must raise NEWS_GRASP_ENTRY_LEDGER_CORRUPT",
+      "cases": [
+        "unexpected user table",
+        "metadata rebuilt without PRIMARY KEY and NOT NULL",
+        "invocations unexpected column",
+        "slots unexpected explicit index",
+        "events unexpected column"
+      ],
+      "sqlitePolicy": "real sqlite only; close every connection before production verify; no writable_schema unless a standard DDL rebuild cannot express the case"
+    },
+    {
+      "node": "test_s1_imported_marker_concurrent_publish_is_immutable",
+      "oracle": "create one initial event, monkeypatch the WAL module _write_json wrapper only to Barrier.wait immediately before delegating for 0002-imported.json, call mark_imported from two threads with importedAt one second apart",
+      "expected": "both calls succeed; one unique returned eventSha256; each return equals the parsed final marker; verify Green; no temp residue",
+      "forbidden": "no sleep, no production edit, no weakening to merely valid-final"
+    },
+    {
+      "node": "test_s1_concurrent_recovery_has_single_authority",
+      "oracle": "initialize then corrupt one ledger; first recover boundary_hook blocks after PREPARED using Events, second worker signals attempted call, main releases first without sleep; collect both results",
+      "expected": "no exception; statuses are recovered and RECOVERY_NOT_REQUIRED; same recoveryId/newGeneration; committed journal; generation 2; one LEDGER_RECOVERED event; reopen inspect Green",
+      "forbidden": "no time.sleep, no probabilistic loop, no accepting LEDGER_BUSY or RECOVERY_FAILED under default timeout"
+    }
+  ],
+  "verification": {
+    "compileCommand": "py -3.12 -m py_compile tests/test_news_grasp_cleanroom_s1_entry.py",
+    "collectCommand": "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "collectExpected": 31,
+    "newNodesCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py -k 'generation_seal_exact_schema_fails_closed or sqlite_exact_schema_fails_closed or imported_marker_concurrent_publish_is_immutable or concurrent_recovery_has_single_authority'",
+    "newNodesExpected": "4 failed for exact distinct blockers",
+    "existingCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py -k 'not generation_seal_exact_schema_fails_closed and not sqlite_exact_schema_fails_closed and not imported_marker_concurrent_publish_is_immutable and not concurrent_recovery_has_single_authority'",
+    "existingExpected": "27 passed",
+    "ruffCommand": "py -3.12 -m ruff check tests/test_news_grasp_cleanroom_s1_entry.py",
+    "diffCommand": "git diff --check -- tests/test_news_grasp_cleanroom_s1_entry.py"
+  },
+  "commitPolicy": {
+    "allowedOnlyAfterExpectedRed": true,
+    "paths": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+    "message": "test: expose remaining S1 integrity races"
+  },
+  "causalRetryCondition": "one authoring attempt and one ordered verification chain; one test-setup-only causal correction allowed without changing oracles",
+  "delivery": "one test file only, commit/hash/bytes and exact verification partition",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "persistentPolling": false}
+}
