@@ -1819,3 +1819,62 @@ def test_s1_concurrent_recovery_has_single_authority(tmp_path: Path) -> None:
         assert connection.execute("SELECT COUNT(*) FROM events WHERE event_type='LEDGER_RECOVERED'").fetchone()[0] == 1
     assert _controller(production, runtime_root, manifest_path).inspect_control_state()["integrityStatus"] == "green"
     _assert_real_sqlite(runtime_root)
+
+
+def test_s1_imported_marker_parent_flush_failure_is_not_race_success(tmp_path: Path) -> None:
+    data = _load_fixture()
+    production = _production()
+    contracts = importlib.import_module("tools.news_grasp_cleanroom_contracts")
+    runtime_root = tmp_path / "runtime"
+    initial_wal = production["DurableWal"](runtime_root)
+    initial = initial_wal.record_initial(
+        raw_argv=data["normative"]["rawArgv"]["exact"],
+        received_at=_at(6, 1),
+        writer=_writer(1),
+    )
+
+    def fail_flush_parent(path: Path) -> None:
+        raise OSError(f"test-owned parent flush failure: {path}")
+
+    failing_operations = production["DurabilityOps"](flush_parent=fail_flush_parent)
+    failing_wal = production["DurableWal"](runtime_root, durability_ops=failing_operations)
+    imported_path = runtime_root / "control" / "wal" / initial["invocationId"] / "0002-imported.json"
+    _expect_reason(
+        production["error"],
+        "NEWS_GRASP_ENTRY_WAL_FINALIZE_FAILED",
+        lambda: failing_wal.mark_imported(initial, imported_at=_at(6, 2)),
+    )
+
+    assert imported_path.exists()
+    final_event = json.loads(imported_path.read_text(encoding="utf-8"))
+    assert set(final_event) == {
+        "schemaVersion",
+        "eventType",
+        "phase",
+        "invocationId",
+        "sequence",
+        "receivedAt",
+        "rawArgv",
+        "rawArgvSha256",
+        "writer",
+        "previousEventSha256",
+        "eventSha256",
+    }
+    assert final_event["schemaVersion"] == "WAL_EVENT_V1"
+    assert final_event["eventType"] == "INVOCATION_IMPORTED"
+    assert final_event["phase"] == "LEDGER_IMPORTED"
+    assert final_event["invocationId"] == initial["invocationId"]
+    assert final_event["sequence"] == 2
+    assert final_event["rawArgv"] == initial["rawArgv"]
+    assert final_event["rawArgvSha256"] == initial["rawArgvSha256"]
+    assert final_event["writer"] == initial["writer"]
+    assert final_event["previousEventSha256"] == initial["eventSha256"]
+    assert final_event["eventSha256"] == contracts._entry_canonical_sha256(
+        {key: value for key, value in final_event.items() if key != "eventSha256"}
+    )
+    assert not [path for path in imported_path.parent.iterdir() if path.is_file() and path.suffix == ".tmp"]
+
+    normal_wal = production["DurableWal"](runtime_root)
+    retry = normal_wal.mark_imported(initial, imported_at=_at(6, 3))
+    assert retry == final_event
+    assert normal_wal.verify()["status"] == "verified"
