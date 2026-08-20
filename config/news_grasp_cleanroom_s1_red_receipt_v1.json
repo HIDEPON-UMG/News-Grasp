@@ -1,0 +1,111 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_S1_EXPECTED_RED_RECEIPT_V1",
+  "generation": "V1",
+  "workPackage": "S1",
+  "requirementIds": ["NG-A-R02", "NG-A-R03", "NG-A-R04", "NG-A-R05"],
+  "itSuites": ["IT-01", "IT-06", "IT-07"],
+  "impactAdmission": {
+    "reviewId": "ng-cleanroom-s1-impact-r3",
+    "receiptPath": "config/news_grasp_cleanroom_s1_impact_review_v3.json",
+    "receiptSha256": "a484fc5a0c8486f096fbc19f340d9988067c9536517ce4ea437b0ddd11bb1087",
+    "decision": "accepted",
+    "blockerCount": 0,
+    "redAdmissionReady": true
+  },
+  "testOwner": {
+    "role": "test_luna",
+    "canonicalContext": "/root/playlist_repair_red",
+    "packetPath": "config/news_grasp_cleanroom_s1_test_packet_v1.json",
+    "packetSha256": "210f16e69ae9caa28ece1c3aae1c5c8483340c0bbac215b9ccdd3edc06ef1d47",
+    "leaseId": "TEST-LEASE-S1-V1",
+    "leaseSha256": "132a25014d138cc74bac45dcbd85051418afa76ec85b3e8018afd252bdd658da",
+    "authoringCommit": "c52138d3a6d8a44113366cec8b489ae5bad33f7e",
+    "integratedCommit": "eda376dfec18aa3ea9b8a171df5784a2cb0ffda2"
+  },
+  "productionBaseline": {
+    "commit": "ba6c8fe86fc3def0df1a9f4c0f779523f74ad0c7",
+    "targets": {
+      "config/news_grasp_cleanroom_task_manifest_v1.json": "ABSENT",
+      "tools/news_grasp_cleanroom_contracts.py": "b5e0904636085228f2e59a66c8cc4551ae78ce0db18f247fcc9d3b690668c6e2",
+      "tools/news_grasp_cleanroom_wal.py": "ABSENT",
+      "tools/news_grasp_cleanroom_ledger.py": "ABSENT",
+      "tools/news_grasp_cleanroom_dispatch.py": "ABSENT",
+      "tools/news_grasp_cleanroom_controller.py": "ABSENT"
+    }
+  },
+  "testArtifacts": [
+    {
+      "path": "tests/test_news_grasp_cleanroom_s1_entry.py",
+      "sha256": "c50cf1b49d6139ac23a0e4e2bb38165143b2f2a551cef5401e5eb499b0003060",
+      "bytes": 25636
+    },
+    {
+      "path": "tests/fixtures/news_grasp_cleanroom_s1_cases.json",
+      "sha256": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f",
+      "bytes": 34435
+    }
+  ],
+  "coverage": {
+    "topLevelNodeCount": 15,
+    "requirementNodeCount": 12,
+    "internalEdgeNodeCount": 3,
+    "dispatchProjectionCaseCount": 13,
+    "dispatchCommitBoundaryCount": 9,
+    "recoveryHookCount": 5,
+    "invalidReasonCaseCount": 17,
+    "fixtureNormativeEquality": true,
+    "fallbackImplementationCount": 0
+  },
+  "collection": {
+    "command": "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "exitCode": 0,
+    "collected": 15
+  },
+  "expectedRed": {
+    "command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "exitCode": 1,
+    "failed": 15,
+    "passed": 0,
+    "reason": "ModuleNotFoundError",
+    "message": "No module named 'tools.news_grasp_cleanroom_wal'",
+    "reasonMatchCount": 15,
+    "productionTracebackPreserved": true,
+    "unrelatedFailureCount": 0,
+    "status": "expected_red"
+  },
+  "verification": [
+    {
+      "command": "py -3.12 -m py_compile tests/test_news_grasp_cleanroom_s1_entry.py",
+      "exitCode": 0
+    },
+    {
+      "command": "py -3.12 -m ruff check tests/test_news_grasp_cleanroom_s1_entry.py",
+      "exitCode": 0,
+      "result": "All checks passed"
+    },
+    {
+      "command": "fixture self-validation through test loader",
+      "exitCode": 0,
+      "result": "V2/V3 exact equality; 15 nodes; 13 dispatch cases; 9 boundaries; 5 recovery hooks; 17 explicit reasons"
+    },
+    {
+      "command": "git diff --check",
+      "exitCode": 0
+    }
+  ],
+  "sharedConftestIsolation": {
+    "causalCorrection": "--noconftest",
+    "highCostBrokerInvocation": false,
+    "externalModelCallCount": 0
+  },
+  "humanImpact": {
+    "noFocusTheft": true,
+    "noAutoOpen": true,
+    "noUserMonitoring": true,
+    "networkCallCount": 0,
+    "subprocessCallCount": 0,
+    "installedOrTaskMutation": false
+  },
+  "measuredAt": "2026-08-20T17:28:56.0844548Z",
+  "status": "sealed"
+}
