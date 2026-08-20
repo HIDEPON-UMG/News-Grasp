@@ -36,7 +36,7 @@
     },
     {
       "node": "test_s3_persisted_notification_is_revalidated",
-      "oracle": "after durable notification CONFIRMED, independently mutate state, attempt_disposition, idempotency_key, terminal_hash or receipt_json syntax/schema/status/idempotencyKey/terminalHash; every retry raises PUBLIC_LEDGER_CORRUPT with notifier notify/query zero"
+      "oracle": "after durable notification CONFIRMED, independently mutate state, attempt_disposition, idempotency_key or receipt_json syntax/schema/status/idempotencyKey/terminalHash; every retry raises PUBLIC_LEDGER_CORRUPT with notifier notify/query zero; notifications has no standalone terminal_hash column"
     },
     {
       "node": "test_s3_persisted_lineage_columns_are_revalidated",
