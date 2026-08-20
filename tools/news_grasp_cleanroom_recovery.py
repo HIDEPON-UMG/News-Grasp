@@ -8,7 +8,9 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import shutil
 import sqlite3
+import tempfile
 from typing import Any, Callable, Mapping
 
 from .news_grasp_cleanroom_contracts import (
@@ -192,7 +194,7 @@ class LegacyReadOnlyAdapter:
             raise RecoveryControlError(LEGACY_STATE_INVALID, "legacy keys are invalid")
         if not isinstance(parsed.get("issueDate"), str) or _ISSUE_DATE.fullmatch(parsed["issueDate"]) is None:
             raise RecoveryControlError(LEGACY_STATE_INVALID, "legacy issueDate is invalid")
-        if not isinstance(parsed.get("status"), str) or not parsed["status"]:
+        if parsed.get("status") != "FAILED":
             raise RecoveryControlError(LEGACY_STATE_INVALID, "legacy status is invalid")
         payload_hash = parsed.get("payloadSha256")
         if not isinstance(payload_hash, str) or _HEX64.fullmatch(payload_hash) is None:
@@ -552,6 +554,7 @@ class RecoveryController:
         keys = {"schemaVersion", "issueDate", "recoveryId", "status", "attemptsUsed", "execution", "public", "recoveryHistory", "legacy", "legacyWriterCount"}
         if set(result) != keys or result.get("schemaVersion") != "RECOVERY_RECONCILE_RESULT_V1" or result.get("issueDate") != record["issue_date"] or result.get("recoveryId") != record["recovery_id"] or result.get("status") != "CONFIRMED" or result.get("attemptsUsed") != 1 or result.get("legacyWriterCount") != 0:
             raise RecoveryControlError(RECOVERY_LEDGER_CORRUPT, "result semantics are invalid")
+        self._validate_legacy_result(result.get("legacy"), record["issue_date"])
         if result.get("execution") != execution or result.get("public") != public or result.get("recoveryHistory") != history:
             raise RecoveryControlError(RECOVERY_LEDGER_CORRUPT, "result receipt/history binding is invalid")
 
@@ -633,13 +636,81 @@ class RecoveryController:
             raise RecoveryControlError(RECOVERY_CHILD_RECEIPT_INVALID, f"{lineage} child receipt is invalid")
         return receipt
 
-    def _read_legacy(self) -> dict[str, Any] | None:
+    def _validate_legacy_result(self, value: Any, issue_date: str, *, error_reason: str = RECOVERY_LEDGER_CORRUPT) -> dict[str, Any] | None:
+        if value is None:
+            return None
+        if not isinstance(value, Mapping) or set(value) != {"snapshot", "bytesSha256"}:
+            raise RecoveryControlError(error_reason, "legacy result shape is invalid")
+        snapshot = value.get("snapshot")
+        if not isinstance(snapshot, Mapping):
+            raise RecoveryControlError(error_reason, "legacy snapshot is invalid")
+        snapshot_value = dict(snapshot)
+        if snapshot_value.get("schemaVersion") != "LEGACY_RECOVERY_V3":
+            raise RecoveryControlError(error_reason, "legacy snapshot schema is invalid")
+        if set(snapshot_value) != _LEGACY_KEYS:
+            raise RecoveryControlError(error_reason, "legacy snapshot keys are invalid")
+        if snapshot_value.get("issueDate") != issue_date or snapshot_value.get("status") != "FAILED":
+            raise RecoveryControlError(error_reason, "legacy snapshot binding is invalid")
+        payload_hash = snapshot_value.get("payloadSha256")
+        if not isinstance(payload_hash, str) or _HEX64.fullmatch(payload_hash) is None:
+            raise RecoveryControlError(error_reason, "legacy payload hash is invalid")
+        if payload_hash != _sha({key: item for key, item in snapshot_value.items() if key != "payloadSha256"}):
+            raise RecoveryControlError(error_reason, "legacy payload hash drift")
+        bytes_hash = value.get("bytesSha256")
+        if not isinstance(bytes_hash, str) or _HEX64.fullmatch(bytes_hash) is None:
+            raise RecoveryControlError(error_reason, "legacy bytes hash is invalid")
+        return {"snapshot": snapshot_value, "bytesSha256": bytes_hash}
+
+    def _validate_live_legacy(self, result: Mapping[str, Any], legacy_value: dict[str, Any] | None) -> None:
+        if result.get("legacy") != legacy_value:
+            raise RecoveryControlError(RECOVERY_LEDGER_CORRUPT, "legacy result drift")
+
+    def _read_legacy(self, issue_date: str) -> dict[str, Any] | None:
         if self.legacy_reader is None:
             return None
         reader = getattr(self.legacy_reader, "read", None)
         if not callable(reader):
             raise RecoveryControlError(LEGACY_STATE_INVALID, "legacy reader is not read-only")
-        return reader()
+        value = reader()
+        return self._validate_legacy_result(value, issue_date, error_reason=LEGACY_STATE_INVALID)
+
+    @contextmanager
+    def _ledger_read_copy(self) -> Any:
+        with tempfile.TemporaryDirectory(prefix="news_grasp_s4_ledger_") as temporary_root:
+            copy_root = Path(temporary_root)
+            copy_path = copy_root / self.ledger_path.name
+            for suffix in ("", "-wal", "-shm"):
+                source = Path(f"{self.ledger_path}{suffix}")
+                if source.exists():
+                    shutil.copyfile(source, Path(f"{copy_path}{suffix}"))
+            yield copy_path
+
+    def _preflight_existing_record(self, issue_date: str, legacy_value: dict[str, Any] | None) -> None:
+        if not self.ledger_path.exists():
+            return
+        with self._ledger_read_copy() as copy_path:
+            uri = f"file:{copy_path.as_posix()}?mode=ro"
+            connection: sqlite3.Connection | None = None
+            try:
+                connection = sqlite3.connect(uri, uri=True)
+                connection.row_factory = sqlite3.Row
+                columns = [row[1] for row in connection.execute("PRAGMA table_info(recovery_records)").fetchall()]
+                if not columns:
+                    return
+                if tuple(columns) != _RECORD_COLUMNS:
+                    raise RecoveryControlError(RECOVERY_LEDGER_CORRUPT, "recovery ledger columns are invalid")
+                row = connection.execute("SELECT " + ",".join(_RECORD_COLUMNS) + " FROM recovery_records WHERE issue_date=?", (issue_date,)).fetchone()
+                if row is not None:
+                    validated = self._validate_record(self._row_dict(row))
+                    if self.legacy_reader is not None and validated["result"] is not None:
+                        self._validate_live_legacy(validated["result"], legacy_value)
+            except RecoveryControlError:
+                raise
+            except (sqlite3.Error, OSError) as exc:
+                raise RecoveryControlError(RECOVERY_LEDGER_CORRUPT, "recovery ledger cannot be inspected") from exc
+            finally:
+                if connection is not None:
+                    connection.close()
 
     def _load_rw_record(self, connection: sqlite3.Connection, issue_date: str) -> dict[str, Any] | None:
         row = connection.execute("SELECT " + ",".join(_RECORD_COLUMNS) + " FROM recovery_records WHERE issue_date=?", (issue_date,)).fetchone()
@@ -670,40 +741,43 @@ class RecoveryController:
                 "recordSha256": None,
                 "legacyWriterCount": 0,
             }
-        uri = f"file:{self.ledger_path.as_posix()}?mode=ro"
-        connection: sqlite3.Connection | None = None
-        try:
-            connection = sqlite3.connect(uri, uri=True)
-            connection.row_factory = sqlite3.Row
-            columns = [row[1] for row in connection.execute("PRAGMA table_info(recovery_records)").fetchall()]
-            if tuple(columns) != _RECORD_COLUMNS:
-                raise RecoveryControlError(RECOVERY_LEDGER_CORRUPT, "recovery ledger columns are invalid")
-            row = connection.execute("SELECT " + ",".join(_RECORD_COLUMNS) + " FROM recovery_records WHERE issue_date=?", (issue,)).fetchone()
-            if row is None:
-                raise RecoveryControlError(RECOVERY_LEDGER_CORRUPT, "recovery record is missing")
-            validated = self._validate_record(self._row_dict(row))
-            record = validated["record"]
-            return {
-                "schemaVersion": "RECOVERY_INSPECTION_V1",
-                "issueDate": issue,
-                "phase": record["phase"],
-                "attemptsUsed": record["attempts_used"],
-                "bindingSha256": record["binding_sha256"],
-                "authoritySha256": record["authority_sha256"],
-                "budgetSha256": record["budget_sha256"],
-                "executionReceiptSha256": record["execution_receipt_sha256"],
-                "publicReceiptSha256": record["public_receipt_sha256"],
-                "resultSha256": record["result_sha256"],
-                "recordSha256": record["record_sha256"],
-                "legacyWriterCount": 0,
-            }
-        except RecoveryControlError:
-            raise
-        except (sqlite3.Error, OSError) as exc:
-            raise RecoveryControlError(RECOVERY_LEDGER_CORRUPT, "recovery ledger cannot be inspected") from exc
-        finally:
-            if connection is not None:
-                connection.close()
+        with self._ledger_read_copy() as copy_path:
+            uri = f"file:{copy_path.as_posix()}?mode=ro"
+            connection: sqlite3.Connection | None = None
+            try:
+                connection = sqlite3.connect(uri, uri=True)
+                connection.row_factory = sqlite3.Row
+                columns = [row[1] for row in connection.execute("PRAGMA table_info(recovery_records)").fetchall()]
+                if tuple(columns) != _RECORD_COLUMNS:
+                    raise RecoveryControlError(RECOVERY_LEDGER_CORRUPT, "recovery ledger columns are invalid")
+                row = connection.execute("SELECT " + ",".join(_RECORD_COLUMNS) + " FROM recovery_records WHERE issue_date=?", (issue,)).fetchone()
+                if row is None:
+                    raise RecoveryControlError(RECOVERY_LEDGER_CORRUPT, "recovery record is missing")
+                validated = self._validate_record(self._row_dict(row))
+                if self.legacy_reader is not None and validated["result"] is not None:
+                    self._validate_live_legacy(validated["result"], self._read_legacy(issue))
+                record = validated["record"]
+                return {
+                    "schemaVersion": "RECOVERY_INSPECTION_V1",
+                    "issueDate": issue,
+                    "phase": record["phase"],
+                    "attemptsUsed": record["attempts_used"],
+                    "bindingSha256": record["binding_sha256"],
+                    "authoritySha256": record["authority_sha256"],
+                    "budgetSha256": record["budget_sha256"],
+                    "executionReceiptSha256": record["execution_receipt_sha256"],
+                    "publicReceiptSha256": record["public_receipt_sha256"],
+                    "resultSha256": record["result_sha256"],
+                    "recordSha256": record["record_sha256"],
+                    "legacyWriterCount": 0,
+                }
+            except RecoveryControlError:
+                raise
+            except (sqlite3.Error, OSError) as exc:
+                raise RecoveryControlError(RECOVERY_LEDGER_CORRUPT, "recovery ledger cannot be inspected") from exc
+            finally:
+                if connection is not None:
+                    connection.close()
 
     def audit(
         self,
@@ -720,18 +794,20 @@ class RecoveryController:
         authority_value = self._validate_authority(issue, parent_value, s1, authority)
         budget_value = self._validate_budget(authority_value, budget)
         binding = self._binding(issue, parent_value, authority_value, budget_value)
-        legacy_value: dict[str, Any] | None = None
+        legacy_value = self._read_legacy(issue)
+        self._preflight_existing_record(issue, legacy_value)
         connection: sqlite3.Connection | None = None
         try:
             connection = self._connect_rw()
             validated = self._load_rw_record(connection, issue)
             if validated is not None:
+                if self.legacy_reader is not None and validated["result"] is not None:
+                    self._validate_live_legacy(validated["result"], legacy_value)
                 stored_binding = validated["binding"]
                 if stored_binding["recoveryId"] != binding["recoveryId"] or stored_binding["authoritySha256"] != binding["authoritySha256"] or stored_binding["parentSha256"] != binding["parentSha256"]:
                     raise RecoveryControlError(RECOVERY_AUTHORITY_CONFLICT, "recovery authority conflicts with durable record")
                 record = validated["record"]
             else:
-                legacy_value = self._read_legacy()
                 with self._transaction(connection):
                     record = self._insert_record(connection, issue, binding, authority_value, budget_value)
                 validated = self._validate_record(record)
@@ -778,8 +854,6 @@ class RecoveryController:
                 execution = validated["execution"]
                 public = validated["public"]
             if record["phase"] == "PUBLIC_COMMITTED":
-                if legacy_value is None and self.legacy_reader is not None:
-                    legacy_value = self._read_legacy()
                 history = [
                     {
                         "lineage": "Recovery",
