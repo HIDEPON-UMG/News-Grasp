@@ -168,6 +168,7 @@ def _assert_rejected(
     authority: dict[str, Any],
     *,
     uploads_path: Path | None = None,
+    expected_deleted_playlist_item_ids: list[str] | None = None,
 ) -> None:
     before = uploads_path.read_bytes() if uploads_path else None
     entrypoint = _repair_entrypoint()
@@ -178,7 +179,8 @@ def _assert_rejected(
     else:
         assert result.get("status") != "ok", "invalid authority unexpectedly succeeded"
         assert result.get("ok") is not True, "invalid authority unexpectedly reported Green"
-    assert client.deleted_playlist_item_ids == []
+    expected_deleted = expected_deleted_playlist_item_ids or []
+    assert client.deleted_playlist_item_ids == expected_deleted
     assert client.video_deletion_calls == []
     if uploads_path:
         assert uploads_path.read_bytes() == before
@@ -304,7 +306,11 @@ def test_post_audit_residual_fails_closed_after_exactly_once_attempt(
     authority = _make_authority(client)
     client.calls.clear()
 
-    _assert_rejected(client, authority)
+    _assert_rejected(
+        client,
+        authority,
+        expected_deleted_playlist_item_ids=["item-unexpected"],
+    )
 
     assert client.deleted_playlist_item_ids == ["item-unexpected"]
     assert client.video_deletion_calls == []
