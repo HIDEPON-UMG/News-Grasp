@@ -297,6 +297,17 @@ class PublicController:
     def _surface_terminal_hash(self, issue_date: str, surface_id: str, artifact_hash: str, state: str) -> str:
         return _hash({"issueDate": issue_date, "surfaceId": surface_id, "artifactSha256": artifact_hash, "state": state})
 
+    def _surface_publish_request(self, issue_date: str, surface_id: str, artifact_hash: str, idempotency_key: str) -> dict[str, str]:
+        return {
+            "issueDate": issue_date,
+            "surfaceId": surface_id,
+            "artifactSha256": artifact_hash,
+            "idempotencyKey": idempotency_key,
+        }
+
+    def _published_terminal_hash(self, issue_date: str, surface_id: str, artifact_hash: str, idempotency_key: str) -> str:
+        return _hash(self._surface_publish_request(issue_date, surface_id, artifact_hash, idempotency_key))
+
     def _ensure_surface(self, connection: sqlite3.Connection, issue_date: str, row: Mapping[str, Any]) -> sqlite3.Row:
         surface_id = row["surfaceId"]
         artifact_hash = row["artifactSha256"]
@@ -357,15 +368,22 @@ class PublicController:
         if attempt_count != 1 or receipt_json is None:
             raise PublicControlError(PUBLIC_LEDGER_CORRUPT, "published surface columns are inconsistent")
         receipt = _persisted_object(receipt_json, "surface receipt")
+        expected_terminal = self._published_terminal_hash(issue_date, surface_id, artifact_hash, expected_key)
         try:
-            validated = self._surface_receipt(receipt, surface_id, expected_key)
+            validated = self._surface_receipt(receipt, surface_id, expected_key, expected_terminal)
         except PublicControlError as exc:
             raise PublicControlError(PUBLIC_LEDGER_CORRUPT, "persisted surface receipt is corrupt") from exc
-        if terminal_hash != validated["terminalHash"]:
+        if terminal_hash != expected_terminal or terminal_hash != validated["terminalHash"]:
             raise PublicControlError(PUBLIC_LEDGER_CORRUPT, "surface receipt hash is inconsistent")
         return row
 
-    def _surface_receipt(self, value: Any, surface_id: str, idempotency_key: str) -> dict[str, Any]:
+    def _surface_receipt(
+        self,
+        value: Any,
+        surface_id: str,
+        idempotency_key: str,
+        expected_terminal_hash: str | None = None,
+    ) -> dict[str, Any]:
         if not isinstance(value, Mapping):
             raise PublicControlError(PUBLIC_RECEIPT_INVALID, "surface receipt is not an object")
         receipt = dict(value)
@@ -375,10 +393,18 @@ class PublicController:
             raise PublicControlError(PUBLIC_RECEIPT_INVALID, "surface receipt binding is invalid")
         if not isinstance(receipt.get("terminalHash"), str) or _HEX64.fullmatch(receipt["terminalHash"]) is None:
             raise PublicControlError(PUBLIC_RECEIPT_INVALID, "surface terminal hash is invalid")
+        if expected_terminal_hash is not None and receipt["terminalHash"] != expected_terminal_hash:
+            raise PublicControlError(PUBLIC_RECEIPT_INVALID, "surface terminal hash does not match publish request")
         return receipt
 
     def _confirm_surface(self, connection: sqlite3.Connection, row: sqlite3.Row, receipt: Mapping[str, Any]) -> sqlite3.Row:
-        value = self._surface_receipt(receipt, row["surface_id"], row["idempotency_key"])
+        expected_terminal = self._published_terminal_hash(
+            row["issue_date"],
+            row["surface_id"],
+            row["artifact_sha256"],
+            row["idempotency_key"],
+        )
+        value = self._surface_receipt(receipt, row["surface_id"], row["idempotency_key"], expected_terminal)
         connection.execute(
             "UPDATE surfaces SET state='CONFIRMED',terminal_hash=?,receipt_json=?,attempt_disposition='TERMINAL' WHERE issue_date=? AND surface_id=?",
             (value["terminalHash"], _canonical(value), row["issue_date"], row["surface_id"]),
@@ -414,12 +440,12 @@ class PublicController:
         self._hook("before_surface_publish")
         try:
             receipt = self.publisher.publish(
-                {
-                    "issueDate": row["issue_date"],
-                    "surfaceId": row["surface_id"],
-                    "artifactSha256": row["artifact_sha256"],
-                    "idempotencyKey": row["idempotency_key"],
-                }
+                self._surface_publish_request(
+                    row["issue_date"],
+                    row["surface_id"],
+                    row["artifact_sha256"],
+                    row["idempotency_key"],
+                )
             )
         except PublishResultUnknown:
             raise
