@@ -2,13 +2,13 @@
   "articlePath": "digest/DeepDive/2026-08-20-DeepDive.md",
   "articleSha256": "010102cf733367d1caee65efcc42515bcc020729ec7f21e2a656982b796a0e08",
   "issueDate": "2026-08-20",
-  "manifestSha256": "c2ca75a273f8d518624f81a7959112fe724a288d4e41faa5f47bd4f0e6bee805",
+  "manifestSha256": "9a6cfcbf07e1bacabead3c0347a8ead1d499aba1c874791f0fb479ad79b11508",
   "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
-  "sourceSetSha256": "8d08d4f106601d8b58228f61922fa043820a9876ae787689355ee2aface01cb9",
+  "sourceSetSha256": "4ad849388d72e6e2074c9a4b785930a7e357c092a5e2fe61004f24c8874d41e9",
   "sources": [
     {
       "contentSha256": "a951e958dfc2c0f87a068d11bf1ddf257e16961a8afee7bf43d6544c151668fd",
-      "fetchedAt": "2026-08-20T04:53:06.102526+00:00",
+      "fetchedAt": "2026-08-20T05:04:20.697643+00:00",
       "finalUrl": "https://monoist.itmedia.co.jp/mn/articles/2608/20/news030.html",
       "httpStatus": 200,
       "locations": [
@@ -20,7 +20,7 @@
     },
     {
       "contentSha256": "12b120bc6722344ad6a2a0d492d24109201da895ec1ccab8fcff1794e74f89dd",
-      "fetchedAt": "2026-08-20T04:53:06.380416+00:00",
+      "fetchedAt": "2026-08-20T05:04:20.910381+00:00",
       "finalUrl": "https://monoist.itmedia.co.jp/mn/articles/2608/20/news055.html",
       "httpStatus": 200,
       "locations": [
@@ -33,7 +33,7 @@
     },
     {
       "contentSha256": "2b52972e2657b7eb9a20c8ad4b097262159db6ff27455389c9fd9f5f56e8d938",
-      "fetchedAt": "2026-08-20T04:53:06.790092+00:00",
+      "fetchedAt": "2026-08-20T05:04:21.190467+00:00",
       "finalUrl": "https://wired.jp/article/sz-google-gemini-can-control-humanoid-robots/",
       "httpStatus": 200,
       "locations": [
@@ -45,8 +45,8 @@
       "url": "https://wired.jp/article/sz-google-gemini-can-control-humanoid-robots/"
     },
     {
-      "contentSha256": "29ad6ed3911db7fb688254f8bd86f99412f8c9c7d9e0889f5db286f110607466",
-      "fetchedAt": "2026-08-20T04:53:07.098180+00:00",
+      "contentSha256": "f9e797431af3244981f76eced09ce0f9e2c3299a99388afc821c4591c9169d48",
+      "fetchedAt": "2026-08-20T05:04:21.743194+00:00",
       "finalUrl": "https://www.gamebusiness.jp/article/2026/08/20/27749.html",
       "httpStatus": 200,
       "locations": [
