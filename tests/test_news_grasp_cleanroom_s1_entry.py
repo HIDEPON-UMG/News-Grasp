@@ -8,6 +8,7 @@ normalization.
 
 from __future__ import annotations
 
+from contextlib import closing
 from copy import deepcopy
 from datetime import datetime, timezone
 import hashlib
@@ -188,7 +189,7 @@ def _expect_reason(error_type: type[Exception], expected: str, operation: Callab
 def _assert_real_sqlite(runtime_root: Path) -> None:
     ledger_path = runtime_root / "control" / "control-ledger-v1.sqlite3"
     assert ledger_path.read_bytes()[:16] == b"SQLite format 3\x00"
-    with sqlite3.connect(ledger_path) as connection:
+    with closing(sqlite3.connect(ledger_path)) as connection:
         assert connection.execute("PRAGMA journal_mode").fetchone()[0].lower() == "wal"
         assert connection.execute("PRAGMA synchronous").fetchone()[0] == 2
 
