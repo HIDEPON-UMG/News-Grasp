@@ -1,0 +1,105 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S3-GREEN-V1",
+  "todoId": "NG-CLEANROOM-S3-GREEN",
+  "role": "implementation_luna",
+  "canonicalContext": "/root/implementation_luna_canary",
+  "dependencyIds": ["NG-CLEANROOM-S2-GREEN-V1", "NG-CLEANROOM-S3-RED-V1"],
+  "requirementIds": ["NG-A-R09", "NG-A-R10"],
+  "baselineCommit": "abe4160d43c0e300a5962f3f360acb8a1fd5d0d1",
+  "expectedRedSeal": {
+    "authoringRole": "test_luna",
+    "canonicalContext": "/root/s1_edge_driver_red",
+    "authoringCommits": ["bf0bb11a940d558edd47d0b6b220dfb7aa3762d8", "4d25f82b09c3c26853abe0c6a50af971dd192919", "5102e33b6b8d3c2e26f6ba489ed6b22311c5dc61"],
+    "integrationCommit": "abe4160d43c0e300a5962f3f360acb8a1fd5d0d1",
+    "testPath": "tests/test_news_grasp_cleanroom_s3_public.py",
+    "testSha256": "81705f853f376b39928b3720f4ec055b0a5932212b5df0e91c90d7b11796a7cc",
+    "testBytes": 12175,
+    "fixturePath": "tests/fixtures/news_grasp_cleanroom_s3_cases.json",
+    "fixtureSha256": "b68965a94e001b12ea32ea63fcb866d62c5c849fcfe7df0be3b9b9add867ec93",
+    "fixtureBytes": 1345,
+    "collected": 6,
+    "failed": 6,
+    "cause": "tools.news_grasp_cleanroom_public is absent at each dynamic import; collection succeeds and both test-design contradictions were corrected before implementation"
+  },
+  "writeLease": {
+    "leaseId": "IMPL-LEASE-S3-V1",
+    "leaseSha256": "24e3b5560601f27f2a3f1af909c5cfad9c492ea0cbbedbe51fed1c74d8e50cf9",
+    "canonicalPayload": {
+      "leaseId": "IMPL-LEASE-S3-V1",
+      "role": "implementation_luna",
+      "canonicalContext": "/root/implementation_luna_canary",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-s1-h1",
+      "writes": ["tools/news_grasp_cleanroom_public.py"],
+      "baselineCommit": "abe4160d43c0e300a5962f3f360acb8a1fd5d0d1"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tools/news_grasp_cleanroom_public.py"],
+  "forbiddenWrites": ["tests", "tests/fixtures", "all other tools", "config", "docs", "scripts"],
+  "publicContract": {
+    "exports": ["PublicController", "PublicControlError", "PublishResultUnknown", "render_scheduled_first_report"],
+    "constructor": "PublicController(runtime_root, publisher, notifier, boundary_hook=None)",
+    "method": "reconcile(issue_date, scheduled_state, recovery_state, readiness_state, inventory, observed_at) returns PUBLIC_RECONCILE_RESULT_V1",
+    "error": "PublicControlError exposes exact .reason",
+    "responseLoss": "PublishResultUnknown is the only adapter response-loss signal"
+  },
+  "implementationDesign": {
+    "inventory": [
+      "validate exact PUBLIC_SURFACE_INVENTORY_V1 keys, canonical inventorySha256, issueDate equality, unique ordered required IDs, eligible subset, exact surface row keys/status/artifactSha256 and no extra surface",
+      "a required ID missing from surfaces is PUBLIC_INCOMPLETE; FAILED is PUBLIC_INCOMPLETE; UNKNOWN is MANUAL_RECONCILIATION_REQUIRED; no notification is attempted for either",
+      "NOT_REQUIRED is accepted only for an explicitly eligible ID; otherwise PUBLIC_INCOMPLETE"
+    ],
+    "durableState": [
+      "use separate real SQLite control/public-ledger-v1.sqlite3 and never modify S1/S2 ledgers",
+      "store immutable Scheduled,Recovery,Public,Readiness terminal rows with distinct lineage keys and terminal hashes; insertion conflict with different bytes/hash fails closed",
+      "store per-surface state,idempotency key,artifact hash,receipt and attempt disposition; unique by issueDate+surfaceId",
+      "store one notification state,key,receipt unique by issueDate; SQLite uses foreign_keys, busy_timeout and synchronous FULL transactions"
+    ],
+    "publication": [
+      "inventory CONFIRMED and eligible NOT_REQUIRED surfaces become durable without publisher calls",
+      "for PENDING derive a deterministic per-surface idempotency key, persist dispatch intent before publisher.publish, validate exact PUBLIC_SURFACE_RECEIPT_V1 and persist CONFIRMED",
+      "if publish raises PublishResultUnknown keep query-required state and re-raise; retry calls publisher.query first, validates a present receipt and never republishes that surface",
+      "a durable CONFIRMED/NOT_REQUIRED surface is validated and skipped on every retry",
+      "only after every required surface is terminal eligible insert immutable Public GREEN"
+    ],
+    "notification": [
+      "notification is ineligible until immutable Public GREEN exists",
+      "derive one deterministic public-terminal idempotency key and persist dispatch intent before notifier.notify",
+      "on PublishResultUnknown retain query-required state and re-raise; retry calls notifier.query first and never sends a second notify",
+      "validate exact PUBLIC_NOTIFICATION_RECEIPT_V1 and persist one confirmed receipt; later retries are no-op"
+    ],
+    "lineage": [
+      "derive a terminal hash from lineage+state when input is scalar; when mapping contains terminalHash preserve it exactly while hashing the full mapping for immutability checks",
+      "never open, replace or rewrite control/scheduled-terminal.json or any caller-owned source artifact",
+      "return lineages in exact Scheduled,Recovery,Public,Readiness order and never collapse their states",
+      "render_scheduled_first_report returns that exact order and overallState GREEN only when Scheduled,Recovery,Public,Readiness are all independently Green-equivalent"
+    ],
+    "result": [
+      "return exact PUBLIC_RECONCILE_RESULT_V1 with issueDate, publicState, requiredSurfaceIds, surfaceStates, lineages, notificationState and terminal hashes",
+      "Public GREEN does not imply overall Green when Scheduled failed or Readiness red"
+    ]
+  },
+  "typedReasons": ["PUBLIC_INVENTORY_INVALID", "PUBLIC_INCOMPLETE", "MANUAL_RECONCILIATION_REQUIRED", "PUBLIC_LINEAGE_CONFLICT", "PUBLIC_RECEIPT_INVALID", "PUBLIC_NOTIFICATION_INVALID", "PUBLIC_LEDGER_CORRUPT"],
+  "forbiddenImplementation": ["overwrite Scheduled source", "infer missing required surface as complete", "blind publish retry", "blind notification retry", "shared idempotency key across surfaces", "lineage collapse", "sleep/polling", "network/subprocess", "test-specific branch"],
+  "verification": {
+    "newSuiteCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s3_public.py",
+    "newSuiteExpected": "6 passed",
+    "s2Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s2_execution.py",
+    "s2Expected": "9 passed",
+    "s1Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "s1Expected": "32 passed",
+    "s0Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s0_contract.py",
+    "s0Expected": "3 passed",
+    "ruffCommand": "py -3.12 -m ruff check tools/news_grasp_cleanroom_public.py",
+    "compileCommand": "py -3.12 -m py_compile tools/news_grasp_cleanroom_public.py",
+    "security": "NEWS_GRASP_CLEANROOM_SECURITY_SCAN_V1 exact new path; denied/private/secret/external/network counts zero",
+    "other": ["git diff --name-only equals one-file lease", "git diff --check", "post-commit worktree clean"]
+  },
+  "commitPolicy": {"allowedOnlyAfterAllGreen": true, "paths": ["tools/news_grasp_cleanroom_public.py"], "message": "feat: implement S3 public plane"},
+  "causalRetryCondition": "one implementation attempt and one ordered verification chain; return to Sol at first non-Green",
+  "delivery": "one production file, hash/bytes, commit and exact verification evidence",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "persistentPolling": false}
+}
