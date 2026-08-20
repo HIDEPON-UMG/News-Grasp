@@ -1,0 +1,101 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_S0_EXPECTED_RED_RECEIPT_V1",
+  "generation": "V3",
+  "supersedes": {
+    "path": "config/news_grasp_cleanroom_s0_red_receipt_v2.json",
+    "sha256": "56fd085f716d976c132e8686c5dda05ea3b5cbbe2f48cbe6ca88d9bda1a13661",
+    "reason": "INDEPENDENT_S0_ACCEPTANCE_REVIEW_FOUND_TWO_SEMANTIC_BYPASSES"
+  },
+  "requirementId": "NG-A-R01",
+  "itSuite": "IT-00",
+  "reviewBlockers": [
+    "S0-ACCEPT-R1-ACTUAL-NODE-SET-NOT-EXACT",
+    "S0-ACCEPT-R1-CATALOG-SEMANTIC-SEAL-BYPASS"
+  ],
+  "testOwner": {
+    "role": "test_luna",
+    "canonicalContext": "/root/playlist_repair_red",
+    "packetId": "NG-CLEANROOM-S0-RED-V3",
+    "writeSet": [
+      "tests/test_news_grasp_cleanroom_s0_contract.py",
+      "tests/fixtures/news_grasp_cleanroom_s0_cases.json"
+    ]
+  },
+  "productionBaseline": {
+    "reviewedHead": "630fea891527684d459bf3be21f916328b2ce87f",
+    "path": "tools/news_grasp_cleanroom_contracts.py",
+    "sha256": "469125c094299f469610defb21241495dc0e89569d9a72c7e26f58a1fccd1750",
+    "bytes": 20604
+  },
+  "testAuthoringCommit": "dc912b92eeb549fbaf73fc4a8420e7935a2d8317",
+  "integratedTestCommit": "1940723d91e1c425e920c13004195741718f955b",
+  "reviewedInputs": {
+    "controlPath": "config/news_grasp_cleanroom_control_s0_v2.json",
+    "controlSha256": "2b76d2b0aa73d22a43e0279c93cea3eecf3dff0874da6384c6abb74ed61d3a91",
+    "impactReviewPath": "config/news_grasp_cleanroom_s0_impact_review_v2.json",
+    "impactReviewSha256": "7647135ca8ff015f12e576cde348f29aa531583d0362425e60dbafa836cab5a2",
+    "priorGreenReceiptPath": "config/news_grasp_cleanroom_s0_green_receipt_v1.json",
+    "priorGreenReceiptSha256": "f0dd065953d46b380660afb6d65f0826a3e1f9e749490f11e1296fd89af8f171"
+  },
+  "testArtifacts": [
+    {
+      "path": "tests/test_news_grasp_cleanroom_s0_contract.py",
+      "sha256": "36b7be69a45dea4e7e6a0583d0c24fc67c95d7ee0bc890fbfb1cbf36ec0acb83",
+      "bytes": 10846
+    },
+    {
+      "path": "tests/fixtures/news_grasp_cleanroom_s0_cases.json",
+      "sha256": "9893b630d6fe1bf8f4560dacd8c42fd34cb9f53930f0ff594dbac701d0186e22",
+      "bytes": 20192
+    }
+  ],
+  "catalog": {
+    "requirementCount": 15,
+    "requirementViewpointNodeCount": 45,
+    "internalEdgeNodeCount": 12,
+    "plannedNodeUnionCount": 57,
+    "actualS0NodeCount": 3,
+    "caseCount": 20,
+    "actualNodeNegativeCaseCount": 4,
+    "semanticSealNegativeCaseCount": 6
+  },
+  "collection": {
+    "command": "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s0_contract.py",
+    "exitCode": 0,
+    "collected": 3,
+    "nodes": [
+      "test_s0_role_collision_rejected",
+      "test_s0_trace_gap_duplicate_orphan_rejected",
+      "test_s0_stale_seal_rejected"
+    ]
+  },
+  "expectedRed": {
+    "command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s0_contract.py",
+    "exitCode": 1,
+    "failed": 3,
+    "passed": 0,
+    "reason": "NEWS_GRASP_S0_CONTRACT_INVALID",
+    "message": "requirements[0] fields are invalid",
+    "reasonMatchCount": 3,
+    "unrelatedFailureCount": 0,
+    "status": "expected_red"
+  },
+  "fixtureSelfValidation": {
+    "sealedRequirementsExact": true,
+    "caseIdsUnique": true,
+    "topLevelTestNodeCountUnchanged": true,
+    "productionHashUnchanged": true
+  },
+  "sharedConftestIsolation": {
+    "causalCorrection": "--noconftest",
+    "highCostBrokerInvocationBySealedSuite": false,
+    "externalModelCallCount": 0
+  },
+  "humanImpact": {
+    "noFocusTheft": true,
+    "noAutoOpen": true,
+    "noUserMonitoring": true
+  },
+  "measuredAt": "2026-08-20T16:33:34.0182901Z",
+  "status": "sealed"
+}
