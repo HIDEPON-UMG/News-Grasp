@@ -1,0 +1,122 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_S1_EXPECTED_RED_RECEIPT_V1",
+  "generation": "V2",
+  "supersedes": "config/news_grasp_cleanroom_s1_red_receipt_v1.json",
+  "workPackage": "S1",
+  "requirementIds": ["NG-A-R02", "NG-A-R03", "NG-A-R04", "NG-A-R05"],
+  "itSuites": ["IT-01", "IT-06", "IT-07"],
+  "impactAdmission": {
+    "reviewId": "ng-cleanroom-s1-impact-r3",
+    "receiptPath": "config/news_grasp_cleanroom_s1_impact_review_v3.json",
+    "receiptSha256": "a484fc5a0c8486f096fbc19f340d9988067c9536517ce4ea437b0ddd11bb1087",
+    "decision": "accepted",
+    "blockerCount": 0,
+    "redAdmissionReady": true
+  },
+  "causalCorrection": {
+    "sourceAttemptReceipt": "config/news_grasp_cleanroom_s1_impl_attempt_v1_receipt.json",
+    "sourceAttemptReceiptSha256": "80a4256135072bd37a4623a112684716f7899b3784380d93fea159780c7df299",
+    "packetPath": "config/news_grasp_cleanroom_s1_test_packet_v2.json",
+    "packetSha256": "4f397e900a0a946cfd784ab3eaeb90a11314962469cf98e06f4d5e6478286e81",
+    "correctedOracleDefects": [
+      "mutable production contracts.py is no longer pinned to its Red baseline live hash",
+      "same as scheduledPreState is resolved as a normative reference expression"
+    ],
+    "assertionWeakening": false,
+    "fixtureMutation": false
+  },
+  "testOwner": {
+    "role": "test_luna",
+    "canonicalContext": "/root/playlist_repair_red",
+    "leaseId": "TEST-LEASE-S1-V2",
+    "leaseSha256": "95808513936104003136953502fcff9afe96b87f04a12a1a79a45faf7c6eb9e6",
+    "authoringCommit": "d65e9af1218f22c4fa0e5aa3c35b10bd31d6fc88",
+    "integratedCommit": "36b17cdf957f2db27d35e74bc8daf2f7059d2ca0"
+  },
+  "productionBaseline": {
+    "commit": "36b17cdf957f2db27d35e74bc8daf2f7059d2ca0",
+    "targets": {
+      "config/news_grasp_cleanroom_task_manifest_v1.json": "ABSENT",
+      "tools/news_grasp_cleanroom_contracts.py": "b5e0904636085228f2e59a66c8cc4551ae78ce0db18f247fcc9d3b690668c6e2",
+      "tools/news_grasp_cleanroom_wal.py": "ABSENT",
+      "tools/news_grasp_cleanroom_ledger.py": "ABSENT",
+      "tools/news_grasp_cleanroom_dispatch.py": "ABSENT",
+      "tools/news_grasp_cleanroom_controller.py": "ABSENT"
+    }
+  },
+  "testArtifacts": [
+    {
+      "path": "tests/test_news_grasp_cleanroom_s1_entry.py",
+      "sha256": "023a8bc878e841e6992a8b3b33e9d3704337b30a5d71a852a5cc217ea373a944",
+      "bytes": 26066
+    },
+    {
+      "path": "tests/fixtures/news_grasp_cleanroom_s1_cases.json",
+      "sha256": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f",
+      "bytes": 34435
+    }
+  ],
+  "coverage": {
+    "topLevelNodeCount": 15,
+    "requirementNodeCount": 12,
+    "internalEdgeNodeCount": 3,
+    "dispatchProjectionCaseCount": 13,
+    "dispatchCommitBoundaryCount": 9,
+    "recoveryHookCount": 5,
+    "invalidReasonCaseCount": 17,
+    "fixtureNormativeEquality": true,
+    "fallbackImplementationCount": 0
+  },
+  "collection": {
+    "command": "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "exitCode": 0,
+    "collected": 15
+  },
+  "expectedRed": {
+    "command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "exitCode": 1,
+    "failed": 15,
+    "passed": 0,
+    "reason": "ModuleNotFoundError",
+    "message": "No module named 'tools.news_grasp_cleanroom_wal'",
+    "reasonMatchCount": 15,
+    "productionTracebackPreserved": true,
+    "unrelatedFailureCount": 0,
+    "status": "expected_red"
+  },
+  "verification": [
+    {
+      "command": "py -3.12 -m py_compile tests/test_news_grasp_cleanroom_s1_entry.py",
+      "exitCode": 0
+    },
+    {
+      "command": "py -3.12 -m ruff check tests/test_news_grasp_cleanroom_s1_entry.py",
+      "exitCode": 0,
+      "result": "All checks passed"
+    },
+    {
+      "command": "fixture self-validation through test loader",
+      "exitCode": 0,
+      "result": "V2/V3 exact equality; 15 nodes; 13 dispatch cases; 9 boundaries; 5 recovery hooks; 17 explicit reasons"
+    },
+    {
+      "command": "git diff --check",
+      "exitCode": 0
+    }
+  ],
+  "sharedConftestIsolation": {
+    "causalCorrection": "--noconftest",
+    "highCostBrokerInvocation": false,
+    "externalModelCallCount": 0
+  },
+  "humanImpact": {
+    "noFocusTheft": true,
+    "noAutoOpen": true,
+    "noUserMonitoring": true,
+    "networkCallCount": 0,
+    "subprocessCallCount": 0,
+    "installedOrTaskMutation": false
+  },
+  "measuredAt": "2026-08-20T17:55:32Z",
+  "status": "sealed"
+}
