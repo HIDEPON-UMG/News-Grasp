@@ -1,0 +1,101 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_S0_GREEN_RECEIPT_V1",
+  "requirementId": "NG-A-R01",
+  "itSuite": "IT-00",
+  "status": "green",
+  "impactAdmission": {
+    "reviewId": "ng-cleanroom-s0-impact-binding-r4",
+    "reviewedControlSha256": "2b76d2b0aa73d22a43e0279c93cea3eecf3dff0874da6384c6abb74ed61d3a91",
+    "receiptSha256": "7647135ca8ff015f12e576cde348f29aa531583d0362425e60dbafa836cab5a2",
+    "decision": "accepted",
+    "blockerCount": 0
+  },
+  "redSeal": {
+    "path": "config/news_grasp_cleanroom_s0_red_receipt_v2.json",
+    "sha256": "56fd085f716d976c132e8686c5dda05ea3b5cbbe2f48cbe6ca88d9bda1a13661",
+    "failed": 3,
+    "signature": "NGC_S0_EXPECTED_RED_PRODUCTION_VALIDATOR_ABSENT",
+    "unrelatedFailureCount": 0
+  },
+  "implementation": {
+    "ownerRole": "implementation_luna",
+    "canonicalContext": "/root/implementation_luna_canary",
+    "packetPath": "config/news_grasp_cleanroom_s0_impl_packet_v2.json",
+    "packetSha256": "6bd3f516c6545d3f045ec8f2e2658dc303c9e7551b0a916a6a098ccfed580f6c",
+    "leaseId": "IMPL-LEASE-S0-V2",
+    "leaseSha256": "027d70579a28d7f4830803e86896bcbdb2cebc664921f16338562822d8bb795a",
+    "authoringCommit": "0844d4c2b08e60b007a0f21f2f447f40cfefd126",
+    "integratedCommit": "517ef4d6d662fe4616dbae1b430f0326024039e9",
+    "path": "tools/news_grasp_cleanroom_contracts.py",
+    "sha256": "469125c094299f469610defb21241495dc0e89569d9a72c7e26f58a1fccd1750",
+    "bytes": 20604,
+    "publicSymbols": ["CleanroomContractError", "validate_s0_admission"],
+    "writeSetPathCount": 1
+  },
+  "tests": {
+    "ownerRole": "test_luna",
+    "canonicalContext": "/root/playlist_repair_red",
+    "testPath": "tests/test_news_grasp_cleanroom_s0_contract.py",
+    "testSha256": "3e40ddca263e8181c37cbe15a864c69a5abb1de2ee93123f4645fdac831a1e3f",
+    "fixturePath": "tests/fixtures/news_grasp_cleanroom_s0_cases.json",
+    "fixtureSha256": "75ef66b6e983e83205cc6fa77c2de3a845385d5c191d88180e3882e60f7b477a",
+    "collected": 3,
+    "passed": 3,
+    "failed": 0
+  },
+  "trace": {
+    "requirementCount": 15,
+    "requirementViewpointNodeCount": 45,
+    "internalEdgeNodeCount": 12,
+    "plannedNodeUnionCount": 57,
+    "actualS0NodeCount": 3,
+    "roleCollisionCount": 0,
+    "writeLeaseIntersectionCount": 0,
+    "traceGapCount": 0,
+    "staleSealCount": 0
+  },
+  "verification": [
+    {
+      "command": "py -3.12 -m py_compile tools/news_grasp_cleanroom_contracts.py",
+      "exitCode": 0
+    },
+    {
+      "command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s0_contract.py",
+      "exitCode": 0,
+      "result": "3 passed"
+    },
+    {
+      "command": "py -3.12 -m ruff check tools/news_grasp_cleanroom_contracts.py tests/test_news_grasp_cleanroom_s0_contract.py",
+      "exitCode": 0,
+      "result": "All checks passed"
+    },
+    {
+      "command": "AST static security check",
+      "exitCode": 0,
+      "forbiddenImportCount": 0,
+      "forbiddenCallCount": 0,
+      "filesystemWriteCallCount": 0
+    },
+    {
+      "command": "git diff --check",
+      "exitCode": 0
+    }
+  ],
+  "contraryEvidence": {
+    "relatedRegressionCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_luna_packets.py",
+    "candidateResult": "6 passed, 4 failed",
+    "candidateReason": "LUNA_PACKET_TARGET_HASH_DRIFT:tools/news_grasp_daily_control.py",
+    "baselineWorktreeCommit": "bf04d4e05b71027ee3cf1ccacc9938e37e5456d8",
+    "baselineResult": "6 passed, 4 failed with the same nodes and reason",
+    "classification": "pre_existing_baseline_failure_not_introduced_by_S0",
+    "carriedForward": true
+  },
+  "humanImpact": {
+    "noFocusTheft": true,
+    "noAutoOpen": true,
+    "noUserMonitoring": true,
+    "networkCallCount": 0,
+    "externalModelCallCount": 0
+  },
+  "verifiedAt": "2026-08-20T16:18:05.8741372Z"
+}
