@@ -89,10 +89,7 @@ def _load_fixture() -> dict[str, Any]:
     assert data["baseAdmission"]["leaseSeal"] == source["agentRoleAttestation"]["leaseSealReceipt"]
 
     catalog = data["catalog"]
-    source_requirements = [
-        {key: row[key] for key in ("id", "slice", "acceptance", "itSuite")}
-        for row in source["requirements"]
-    ]
+    source_requirements = deepcopy(source["requirements"])
     assert catalog["requirements"] == source_requirements
     assert catalog["requirementViewpointTrace"] == source["requirementViewpointTrace"]
     assert catalog["internalEdgeTrace"] == source["internalEdgeTrace"]
@@ -131,10 +128,21 @@ def _load_fixture() -> dict[str, Any]:
         "trace_duplicate",
         "trace_orphan",
         "trace_unknown",
+        "actual_nodes_empty",
+        "actual_nodes_subset",
+        "actual_nodes_order_drift",
+        "actual_nodes_duplicate",
+        "requirement_acceptance_drift",
+        "requirement_slice_drift",
+        "viewpoint_mapping_swap",
+        "edge_id_drift",
+        "edge_acceptance_drift",
+        "edge_viewpoint_drift",
         "lease_seal_stale",
         "baseline_commit_drift",
         "file_seal_drift",
     ]
+    assert len(case_ids) == len(set(case_ids))
     assert set(REQUIRED_REASON_KEYS) == {
         case["expectedReason"]
         for case in data["cases"]
@@ -178,12 +186,7 @@ def _cases_by_id(data: dict[str, Any]) -> dict[str, dict[str, Any]]:
 
 
 def _load_production_validator() -> tuple[Callable[..., Any], type[Exception]]:
-    try:
-        module = importlib.import_module("tools.news_grasp_cleanroom_contracts")
-    except ModuleNotFoundError as exc:
-        if exc.name == "tools.news_grasp_cleanroom_contracts":
-            pytest.fail("NGC_S0_EXPECTED_RED_PRODUCTION_VALIDATOR_ABSENT", pytrace=False)
-        raise
+    module = importlib.import_module("tools.news_grasp_cleanroom_contracts")
     validator = getattr(module, "validate_s0_admission", None)
     error_type = getattr(module, "CleanroomContractError", None)
     assert callable(validator), "S0 production validator API is missing"
@@ -231,9 +234,13 @@ def _assert_reason(
     *,
     actual_test_nodes: tuple[str, ...] = ACTUAL_TEST_NODES,
 ) -> None:
-    with pytest.raises(error_type) as caught:
+    try:
         _validate(validator, contract, actual_test_nodes=actual_test_nodes)
-    assert getattr(caught.value, "reason", None) == expected_reason
+    except error_type as caught:
+        if getattr(caught, "reason", None) != expected_reason:
+            raise
+    else:
+        pytest.fail(f"expected {expected_reason} from S0 validator")
 
 
 def test_s0_role_collision_rejected() -> None:
@@ -259,7 +266,16 @@ def test_s0_trace_gap_duplicate_orphan_rejected() -> None:
     data = _load_fixture()
     validator, error_type = _load_production_validator()
     cases = _cases_by_id(data)
-    for case_id in ("trace_missing", "trace_duplicate", "trace_orphan", "trace_unknown"):
+    for case_id in (
+        "trace_missing",
+        "trace_duplicate",
+        "trace_orphan",
+        "trace_unknown",
+        "actual_nodes_empty",
+        "actual_nodes_subset",
+        "actual_nodes_order_drift",
+        "actual_nodes_duplicate",
+    ):
         case = cases[case_id]
         _assert_reason(
             validator,
@@ -274,6 +290,16 @@ def test_s0_stale_seal_rejected() -> None:
     data = _load_fixture()
     validator, error_type = _load_production_validator()
     cases = _cases_by_id(data)
-    for case_id in ("lease_seal_stale", "baseline_commit_drift", "file_seal_drift"):
+    for case_id in (
+        "lease_seal_stale",
+        "baseline_commit_drift",
+        "file_seal_drift",
+        "requirement_acceptance_drift",
+        "requirement_slice_drift",
+        "viewpoint_mapping_swap",
+        "edge_id_drift",
+        "edge_acceptance_drift",
+        "edge_viewpoint_drift",
+    ):
         case = cases[case_id]
         _assert_reason(validator, error_type, _build_contract(data, case), case["expectedReason"])
