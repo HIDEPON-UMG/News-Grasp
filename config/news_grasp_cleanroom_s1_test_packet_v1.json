@@ -1,0 +1,191 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S1-RED-V1",
+  "todoId": "NG-CLEANROOM-S1-RED",
+  "role": "test_luna",
+  "canonicalContext": "/root/playlist_repair_red",
+  "mutationMode": "test_mutation",
+  "dependencyIds": [
+    "ng-cleanroom-s0-acceptance-r2",
+    "ng-cleanroom-s1-impact-r3"
+  ],
+  "requirementIds": ["NG-A-R02", "NG-A-R03", "NG-A-R04", "NG-A-R05"],
+  "internalEdgeIds": ["writer_crash_primary", "writer_crash_adversarial", "writer_crash_recovery"],
+  "baselineCommit": "76b5309d74887c86c863bf20a1b188c9f7d6fda7",
+  "baselineSha256": "a484fc5a0c8486f096fbc19f340d9988067c9536517ce4ea437b0ddd11bb1087",
+  "baselineReceiptPath": "config/news_grasp_cleanroom_s1_impact_review_v3.json",
+  "writeLease": {
+    "leaseId": "TEST-LEASE-S1-V1",
+    "leaseSha256": "132a25014d138cc74bac45dcbd85051418afa76ec85b3e8018afd252bdd658da",
+    "canonicalPayload": {
+      "leaseId": "TEST-LEASE-S1-V1",
+      "role": "test_luna",
+      "canonicalContext": "/root/playlist_repair_red",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-s1-h1",
+      "writes": [
+        "tests/test_news_grasp_cleanroom_s1_entry.py",
+        "tests/fixtures/news_grasp_cleanroom_s1_cases.json"
+      ],
+      "baselineCommit": "76b5309d74887c86c863bf20a1b188c9f7d6fda7"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": [
+    "tests/test_news_grasp_cleanroom_s1_entry.py",
+    "tests/fixtures/news_grasp_cleanroom_s1_cases.json"
+  ],
+  "targetSourceHashes": {
+    "tests/test_news_grasp_cleanroom_s1_entry.py": "ABSENT",
+    "tests/fixtures/news_grasp_cleanroom_s1_cases.json": "ABSENT"
+  },
+  "readOnlyInputs": {
+    "config/news_grasp_cleanroom_control_s0_v2.json": "2b76d2b0aa73d22a43e0279c93cea3eecf3dff0874da6384c6abb74ed61d3a91",
+    "config/news_grasp_cleanroom_s1_impact_receipt_v1.json": "8127c93297ce8d82528654751a4996c4ea085d91d888be651ea64ac5c3dd685c",
+    "config/news_grasp_cleanroom_s1_impact_receipt_v2.json": "fdd3f3bcc8b83c458a8df5f5a7a9767767871c098adfe9feedebd502a11850ef",
+    "config/news_grasp_cleanroom_s1_impact_receipt_v3.json": "6002f61ca6f7249e99db0b791aae5020883ff11e3f5aa4fb56f8f054846f1a08",
+    "config/news_grasp_cleanroom_s1_impact_review_v3.json": "a484fc5a0c8486f096fbc19f340d9988067c9536517ce4ea437b0ddd11bb1087",
+    "tools/news_grasp_cleanroom_contracts.py": "b5e0904636085228f2e59a66c8cc4551ae78ce0db18f247fcc9d3b690668c6e2"
+  },
+  "normativeContract": {
+    "base": "config/news_grasp_cleanroom_s1_impact_receipt_v2.json",
+    "projectionAndRecoveryOverlay": "config/news_grasp_cleanroom_s1_impact_receipt_v3.json",
+    "review": "config/news_grasp_cleanroom_s1_impact_review_v3.json",
+    "designChoiceAllowed": false
+  },
+  "topLevelTestNodes": [
+    "test_s1_manifest_single_entry",
+    "test_s1_unknown_manifest_zero_effect",
+    "test_s1_terminal_slot_idempotent",
+    "test_s1_wal_precedes_parse",
+    "test_s1_wal_fsync_failure_zero_effect",
+    "test_s1_zero_entry_recovery",
+    "test_s1_three_writer_single_owner",
+    "test_s1_stale_fence_cannot_commit",
+    "test_s1_ledger_corruption_recovery",
+    "test_s1_time_window_primary",
+    "test_s1_clock_rollback_and_dst_fail_closed",
+    "test_s1_missed_scheduled_persists_then_audits",
+    "test_edge_writer_crash_primary",
+    "test_edge_writer_crash_adversarial",
+    "test_edge_writer_crash_recovery"
+  ],
+  "fixtureContract": {
+    "copyExactlyFromNormativeContract": [
+      "manifest",
+      "rawArgv",
+      "writer",
+      "time",
+      "lease",
+      "pathLayout",
+      "reasonBindings",
+      "decisionTable",
+      "faultRecoveryOracle",
+      "recoveryFaultOracle",
+      "dispatchProjectionSchema",
+      "slotDecisionResultMatrix",
+      "dispatchResultValueMatrix",
+      "recoveryBoundaryHooks"
+    ],
+    "fixtureMustSelfValidate": [
+      "all 15 top-level node names exact and unique",
+      "all 13 dispatch case IDs exact and unique",
+      "all 9 dispatch/commit boundary names exact and unique",
+      "all 5 recovery hook names exact and unique",
+      "manifest and schema fragments equal the normative receipt",
+      "expected reason for every invalid input is explicit"
+    ]
+  },
+  "testImplementationContract": {
+    "productionImports": [
+      "tools.news_grasp_cleanroom_contracts.CleanroomEntryError",
+      "tools.news_grasp_cleanroom_contracts.validate_manifest",
+      "tools.news_grasp_cleanroom_contracts.reconcile_slot",
+      "tools.news_grasp_cleanroom_wal.DurabilityOps",
+      "tools.news_grasp_cleanroom_wal.DurableWal",
+      "tools.news_grasp_cleanroom_ledger.ControlLedger",
+      "tools.news_grasp_cleanroom_controller.Controller",
+      "tools.news_grasp_cleanroom_dispatch.dispatch",
+      "tools.news_grasp_cleanroom_dispatch.commit_slot",
+      "tools.news_grasp_cleanroom_dispatch.inspect_control_state",
+      "tools.news_grasp_cleanroom_dispatch.recover_ledger"
+    ],
+    "noFallback": true,
+    "preserveProductionTraceback": true,
+    "helperMayNotImplementProductionDecision": true,
+    "realPrimaryRecovery": [
+      "use tmp_path with real files",
+      "use default real sqlite3, os.fsync, os.replace and parent flush",
+      "destroy and reopen Controller/ControlLedger before recovery assertions",
+      "assert real SQLite format header and PRAGMA journal_mode=wal/synchronous=FULL"
+    ],
+    "negativeOnlySeams": [
+      "DurabilityOps with exactly one failing fsync/replace/parent flush call",
+      "boundary hook raising a test-owned crash exception at an exact normative hook",
+      "real second sqlite3 connection holding BEGIN IMMEDIATE",
+      "real closed-file byte corruption or real adversarial SQLite row mutation",
+      "deterministic ZoneInfo Asia/Tokyo datetime"
+    ],
+    "concurrency": "test_s1_three_writer_single_owner uses three real threads with separate production Controller instances against the same real runtime root; exact one ACQUIRED and two ATTACHED, one ownerKey/fence/slot",
+    "network": false,
+    "subprocess": false,
+    "externalEffects": false,
+    "installedOrTaskMutation": false
+  },
+  "nodeResponsibilities": {
+    "test_s1_manifest_single_entry": "exact manifest schema, one task, two ordered triggers, Parallel, one dispatch argv/action and strict extra/missing drift rejection",
+    "test_s1_unknown_manifest_zero_effect": "invalid argv/option/intent/schedule/manifest/writer/lease reasons and initial-WAL/no-slot ordering",
+    "test_s1_terminal_slot_idempotent": "same terminal commit noop and conflicting terminal/result typed conflict",
+    "test_s1_wal_precedes_parse": "invalid argv and manifest still have a verified initial WAL written before interpretation",
+    "test_s1_wal_fsync_failure_zero_effect": "negative first fsync/replace/parent-flush failures produce INITIAL_WAL_FAILED and no final WAL/SQLite/slot",
+    "test_s1_zero_entry_recovery": "crash after initial WAL and post-commit marker loss both converge without duplicate invocation or slot",
+    "test_s1_three_writer_single_owner": "three real writers converge one ACQUIRED/two ATTACHED with one owner/fence",
+    "test_s1_stale_fence_cannot_commit": "expired takeover, same PID different process token, monotonic fence and stale commit rejection",
+    "test_s1_ledger_corruption_recovery": "real header and event hash corruption fail closed, explicit journaled quarantine recovery increments generation once and reopened production passes",
+    "test_s1_time_window_primary": "05:59:59, 06:00:00, 06:39:59, 06:40:00 and delayed/manual decisions",
+    "test_s1_clock_rollback_and_dst_fail_closed": "naive, UTC, synthetic DST/fold and persisted rollback exact reasons with zero slot mutation",
+    "test_s1_missed_scheduled_persists_then_audits": "all >=06:40 Scheduled/Audit state branches follow 13-case projection including exact atomic missed row",
+    "test_edge_writer_crash_primary": "current fenced writer converges across all nine dispatch/commit boundaries",
+    "test_edge_writer_crash_adversarial": "stale writer cannot commit after any takeover or terminal boundary",
+    "test_edge_writer_crash_recovery": "all five recovery phase crashes resume same recoveryId/newGeneration and after COMMITTED becomes RECOVERY_NOT_REQUIRED"
+  },
+  "collectionCommand": "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s1_entry.py",
+  "redCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+  "expectedCollection": 15,
+  "expectedRed": {
+    "exitCode": 1,
+    "failed": 15,
+    "passed": 0,
+    "cause": "required S1 production manifest/modules/symbols are absent",
+    "unrelatedFailureCount": 0
+  },
+  "localVerification": [
+    "py -3.12 -m py_compile tests/test_news_grasp_cleanroom_s1_entry.py",
+    "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "py -3.12 -m ruff check tests/test_news_grasp_cleanroom_s1_entry.py",
+    "git diff --check",
+    "git status --short"
+  ],
+  "causalRetryCondition": "one test-authoring attempt; return to Sol for any production design choice, write-set expansion, read-only hash drift, collection mismatch or unrelated failure",
+  "rollback": "remove only the two untracked S1 test artifacts in the isolated Test Luna worktree",
+  "snapshot": "return both hashes/bytes, exact 15 collection, exact Expected Red failure reasons, fixture self-validation and write-set status",
+  "delivery": "two test-owned files only; no production/config/docs mutation",
+  "stopPolicy": "return_to_sol_before_execution",
+  "unresolvedDecisionIds": [],
+  "returnToSolConditions": [
+    "write_set_expansion",
+    "production_or_config_mutation_required",
+    "read_only_hash_drift",
+    "collection_not_15",
+    "unrelated_red_failure",
+    "same_shape_retry",
+    "network_subprocess_or_installed_mutation_required"
+  ],
+  "humanImpact": {
+    "noFocusTheft": true,
+    "noAutoOpen": true,
+    "noUserMonitoring": true,
+    "persistentPolling": false,
+    "rawProcessTermination": false
+  }
+}
