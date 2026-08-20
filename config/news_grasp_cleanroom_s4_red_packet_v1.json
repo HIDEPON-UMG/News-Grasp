@@ -1,0 +1,84 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S4-RED-V1",
+  "todoId": "NG-CLEANROOM-S4-RED",
+  "role": "test_luna",
+  "canonicalContext": "/root/s1_edge_driver_red",
+  "dependencyIds": ["NG-CLEANROOM-S2-GREEN-V1-CONTRACT", "NG-CLEANROOM-S3-GREEN-V1-CONTRACT"],
+  "baselineCommit": "acc766a97e43a00fe86393db67c3649a5c3feb83",
+  "dependencyState": "S2/S3 public contracts are sealed; their acceptance remains a promotion gate, not an isolated S4 test-authoring gate",
+  "impactAnalysisReceipt": {
+    "schemaVersion": "TDD_IMPACT_ANALYSIS_RECEIPT_V1",
+    "receiptId": "NG-CLEANROOM-S4-IMPACT-V1",
+    "requirementIds": ["NG-A-R11"],
+    "primarySurfaces": ["06:40 audit", "recovery parent/fence/budget/authority", "recovery retry", "lineage preservation", "history", "legacy read-only adapter"],
+    "upstreamInputs": ["S1 Scheduled/Audit slots", "S2 execution receipt", "S3 lineage/public receipt"],
+    "downstreamConsumers": ["scheduled-first operator report", "L5-L6 workflow", "L9 history"],
+    "existingAssets": [
+      {"path": "tools/audit_recovery_control.py", "sha256": "a780f58867c849ab06afe7bae33b0d88f1d1ad3e7b784d1ee9630f67dfc82ee8", "reuse": "legacy behavior and fault corpus reference only"},
+      {"path": "tools/news_grasp_recovery_transaction.py", "sha256": "8c94be3fd9637e8dc111a978f93bf564af215627f5a175e6d2c28786a8b331f3", "reuse": "transaction/journal semantic reference; not clean-room authority"},
+      {"path": "tools/batch_completion_history.py", "sha256": "4a19fb836df03cd3ad88fc225400669ee152a8f3b9389548dc57c8ff28104864", "reuse": "legacy history input adapter reference"}
+    ],
+    "plannedProduction": ["tools/news_grasp_cleanroom_recovery.py"],
+    "plannedDurableState": ["control/recovery-ledger-v1.sqlite3"],
+    "contraryEvidence": ["legacy recovery can consume multiple mutable files", "clean-room recovery authority and bounded retry do not exist", "legacy writer retirement is not yet enforced"],
+    "unknownRoutePolicy": "fail_closed",
+    "impactStatus": "accepted_for_expected_red"
+  },
+  "writeLease": {
+    "leaseId": "TEST-LEASE-S4-V1",
+    "leaseSha256": "c5d3f2b9cd7b2c7b36f60358137ff3fb98cc0fb62ec485339bda022c333fc6c0",
+    "canonicalPayload": {
+      "leaseId": "TEST-LEASE-S4-V1",
+      "role": "test_luna",
+      "canonicalContext": "/root/s1_edge_driver_red",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-s1-h1",
+      "writes": ["tests/test_news_grasp_cleanroom_s4_recovery.py", "tests/fixtures/news_grasp_cleanroom_s4_cases.json"],
+      "baselineCommit": "acc766a97e43a00fe86393db67c3649a5c3feb83"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tests/test_news_grasp_cleanroom_s4_recovery.py", "tests/fixtures/news_grasp_cleanroom_s4_cases.json"],
+  "forbiddenWrites": ["tools", "config", "docs", "scripts", "all existing test and fixture files"],
+  "productionContract": {
+    "module": "tools.news_grasp_cleanroom_recovery",
+    "symbols": ["RecoveryController", "RecoveryControlError", "LegacyReadOnlyAdapter"],
+    "constructor": "RecoveryController(runtime_root, execution_reconciler=callable, public_reconciler=callable, legacy_reader=LegacyReadOnlyAdapter|None, boundary_hook=callable|None)",
+    "method": "audit(issue_date, parent, authority, budget, observed_at) -> RECOVERY_RECONCILE_RESULT_V1",
+    "authority": "exact RECOVERY_AUTHORITY_V1 bound to issueDate, Scheduled parent terminal hash/generation, current Audit owner/fence, maxAttempts and canonical authoritySha256",
+    "budget": "exact RECOVERY_BUDGET_V1 bound to authority with remainingAttempts 0|1 and canonical budgetSha256",
+    "legacy": "LegacyReadOnlyAdapter(path).read() may snapshot pre-cutover V3 bytes/hash; it exposes no write operation"
+  },
+  "requiredNodes": [
+    {"node": "test_s4_recovery_authority_matrix", "oracle": "valid parent/current audit fence/budget=1 runs execution then public exactly once; malformed, wrong parent, stale generation/owner/fence, exhausted/mismatched budget and unknown route are distinct typed failures with child calls zero"},
+    {"node": "test_s4_recovery_retry_preserves_lineage", "oracle": "fault before/after execution receipt, public receipt and recovery commit resumes the same recoveryId, skips every durable completed child, consumes at most one attempt, leaves Scheduled terminal bytes/hash unchanged, and appends separate Recovery history"},
+    {"node": "test_s4_legacy_writer_zero", "oracle": "valid pre-cutover V3 is read-only snapshotted with byte hash; corrupt/unknown legacy is typed; audit and retries never change legacy bytes/mtime and inspection reports legacyWriterCount=0 with no legacy write API"}
+  ],
+  "coverage": {
+    "requirements": {"NG-A-R11": [0, 1, 2]},
+    "internalEdges": ["parent×fence×budget×authority", "child-stage×crash-point", "legacy-state×cutover-mode"],
+    "valuePredicates": {"scheduledOverwrite": 0, "duplicateRecoveryChild": 0, "legacyWriterCount": 0}
+  },
+  "testDesignRules": [
+    "collect exactly three top-level nodes; parameterize all matrices inside them",
+    "use Japanese-named isolated tmp roots, real SQLite/filesystem, deterministic aware Asia/Tokyo time and in-memory child reconcilers",
+    "construct real S1 Scheduled/Audit authority state through production interfaces or exact SQLite public contract, without monkeypatching recovery validation",
+    "dynamic import in each node so collect succeeds and all three are causal Red for absent production module",
+    "no network, subprocess, sleep, credentials or mutation outside tmp roots"
+  ],
+  "verification": {
+    "compileCommand": "py -3.12 -m py_compile tests/test_news_grasp_cleanroom_s4_recovery.py",
+    "collectCommand": "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s4_recovery.py",
+    "collectExpected": 3,
+    "redCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s4_recovery.py",
+    "redExpected": "3 failed for absent production module/symbols, collection error zero",
+    "ruffCommand": "py -3.12 -m ruff check tests/test_news_grasp_cleanroom_s4_recovery.py",
+    "diffCommand": "git diff --check -- tests/test_news_grasp_cleanroom_s4_recovery.py tests/fixtures/news_grasp_cleanroom_s4_cases.json"
+  },
+  "commitPolicy": {"allowedOnlyAfterExpectedRed": true, "paths": ["tests/test_news_grasp_cleanroom_s4_recovery.py", "tests/fixtures/news_grasp_cleanroom_s4_cases.json"], "message": "test: define S4 recovery plane"},
+  "causalRetryCondition": "one authoring attempt and one ordered verification chain; one test-only correction allowed for packet mismatch",
+  "delivery": "two test-owned files, hashes/bytes, commit and exact Red partition",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "persistentPolling": false}
+}
