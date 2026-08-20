@@ -1,0 +1,101 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S1-RED-R8",
+  "todoId": "NG-CLEANROOM-S1-GREEN",
+  "role": "test_luna",
+  "canonicalContext": "/root/s1_edge_driver_red",
+  "mutationMode": "add_eight_consolidated_adversarial_red_nodes",
+  "dependencyIds": ["ng-cleanroom-s1-entry-impact-v5", "ng-cleanroom-s1-acceptance-r2:BLOCK"],
+  "requirementIds": ["NG-A-R02", "NG-A-R03", "NG-A-R04", "NG-A-R05", "NG-A-R13"],
+  "baselineCommit": "effa05ccf753ccab2c51b70d7a4aa480b5d9203b",
+  "impactReceiptPath": "config/news_grasp_cleanroom_s1_impact_receipt_v5.json",
+  "impactReceiptSha256": "c2b794efd9795d19112cee63f940e14a07e39b9273570c69d157eeee90cc765a",
+  "acceptanceReviewPath": "config/news_grasp_cleanroom_s1_acceptance_review_r2.json",
+  "acceptanceReviewSha256": "bb6d5ce8dfb826ffe663303d3ae6540f6fc433a0aa37791cc710260af6cb064c",
+  "writeLease": {
+    "leaseId": "TEST-LEASE-S1-R8",
+    "leaseSha256": "2cd22d5acc6b828cc4d1d4d9c542427fe6e7c924cae8d7c27f423e958937f877",
+    "canonicalPayload": {
+      "leaseId": "TEST-LEASE-S1-R8",
+      "role": "test_luna",
+      "canonicalContext": "/root/s1_edge_driver_red",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-s1-h1",
+      "writes": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+      "baselineCommit": "effa05ccf753ccab2c51b70d7a4aa480b5d9203b"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+  "baselineSourceHashes": {
+    "tests/test_news_grasp_cleanroom_s1_entry.py": "e2d1e25e840c24a277838b428f9336e1714306f67f739de5350d848de5bfd6d0",
+    "tests/fixtures/news_grasp_cleanroom_s1_cases.json": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f",
+    "tools/news_grasp_cleanroom_contracts.py": "0387a283b4f3555d3622a70356f5c08ba828ed2a5bb6949f97eede21b7844fd2",
+    "tools/news_grasp_cleanroom_wal.py": "a4da9ea14331966f004461b4957975d58385f9368ea21e0250d697001e2fe29a",
+    "tools/news_grasp_cleanroom_ledger.py": "9f7fae4f4825df65d0ff488a838fdce319a3d85e68fcad87007b05bee2c9437f",
+    "tools/news_grasp_cleanroom_controller.py": "0e179747d16c25c307db3b8082b7b7dd48c2dcb02b2682a9d13f9372b1a3f4de",
+    "tools/news_grasp_cleanroom_dispatch.py": "c152c311017143abd18522b0d8f6ccc24a401c66dabebfc76ccf5a8929eabb99"
+  },
+  "newNodes": [
+    {
+      "name": "test_s1_recovery_journal_self_consistent_forgery_fails_closed",
+      "oracle": "for separate real runtimes, create a valid COMMITTED journal and corrupt ledger, then inject self-consistent missing or extra key, unknown phase, bool/nonconsecutive generation, invalid recoveryId, traversal and absolute quarantine path; recompute canonical journal hash; require NEWS_GRASP_ENTRY_LEDGER_RECOVERY_FAILED, original managed ledger and outside sentinels unchanged"
+    },
+    {
+      "name": "test_s1_busy_timeout_invalid_matrix_is_typed_before_write",
+      "oracle": "through real public dispatch and recover_ledger plus direct Controller and ControlLedger constructors, True, 0, -1, 1.5, '1000' and None all raise NEWS_GRASP_ENTRY_BUSY_TIMEOUT_INVALID before runtime_root exists or WAL/SQLite is created; 1 and 60000 remain accepted constructor values"
+    },
+    {
+      "name": "test_s1_zero_entry_import_cannot_erase_clock_rollback",
+      "oracle": "persist real lastObservedAt 07:00, create one valid prior initial-only WAL, invoke 06:59, require NEWS_GRASP_ENTRY_CLOCK_ROLLBACK, lastObservedAt stays 07:00, prior invocation remains unimported and slot/event materialized state unchanged"
+    },
+    {
+      "name": "test_s1_wal_exact_schema_directory_and_imported_chain",
+      "oracle": "loop isolated real WAL roots with self-consistent extra/missing key, wrong type, wrong eventType/phase/sequence, rawArgvSha mismatch, invocationId different from directory and imported marker whose predecessor is correct but copied rawArgv/writer/phase differs; every case raises NEWS_GRASP_ENTRY_LEDGER_CORRUPT from verify or iter_zero_entries"
+    },
+    {
+      "name": "test_s1_recovery_transition_gaps_resume_same_identity",
+      "oracle": "use real DurabilityOps with one deterministic replace failure selected by parsing the recovery journal temp payload for phase SEALED and LEDGER_CREATED; after the typed first failure, plain recover resumes the same recoveryId/newGeneration, preserves one generation seal whose previous hash is the old seal, has exactly one LEDGER_RECOVERED genesis, reaches COMMITTED and verifies Green"
+    },
+    {
+      "name": "test_s1_wal_managed_root_containment",
+      "oracle": "direct mark_imported and forged initial WAL with traversal invocationId are typed LEDGER_CORRUPT with outside write zero; when the platform can create a real directory symlink or junction for control/wal, dispatch rejects it before external target mutation, and inability to create it must not weaken the traversal assertions"
+    },
+    {
+      "name": "test_s1_materialized_state_drift_is_corrupt",
+      "oracle": "for isolated valid real ledgers, modify only slot owner/fence, only invocation status, and only valid-format lastObservedAt using sqlite3 after close while leaving events unchanged; each reopened verify/inspect raises NEWS_GRASP_ENTRY_LEDGER_CORRUPT"
+    },
+    {
+      "name": "test_s1_public_invalid_type_matrix_is_total",
+      "oracle": "exercise raw_argv None/noniterable, observed_at None/object, reconcile_slot unhashable scheduled_state, commit_slot non-string slot_key and mark_imported invalid imported_at; require exact V5 typed reason, zero untyped exceptions, no slot/outside mutation, and no WAL when a canonical initial envelope cannot be formed"
+    }
+  ],
+  "testConstraints": {
+    "existingNodeCount": 18,
+    "expectedCollected": 26,
+    "fixtureMutation": "forbidden",
+    "productionMutation": "forbidden",
+    "sleepBasedRace": "forbidden",
+    "subprocess": "forbidden",
+    "network": "forbidden",
+    "existingAssertions": "preserve all existing test bodies; only add imports/helpers required by new nodes",
+    "testWeakening": "forbidden"
+  },
+  "verification": {
+    "compileCommand": "py -3.12 -m py_compile tests/test_news_grasp_cleanroom_s1_entry.py",
+    "collectCommand": "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "newNodesCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py -k 'recovery_journal_self_consistent_forgery or busy_timeout_invalid_matrix or zero_entry_import_cannot or wal_exact_schema_directory or recovery_transition_gaps or wal_managed_root_containment or materialized_state_drift or public_invalid_type_matrix'",
+    "fullCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "ruffCommand": "py -3.12 -m ruff check tests/test_news_grasp_cleanroom_s1_entry.py",
+    "expected": "collect 26; exact new eight Red with causal partition; existing 18 Green; unrelated zero; Ruff and diff-check Green"
+  },
+  "commitPolicy": {
+    "allowedOnlyAfterExpectedRed": true,
+    "paths": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+    "message": "test: expose S1 adversarial integrity blockers"
+  },
+  "causalRetryCondition": "one authoring attempt and one ordered verification chain; stop without weakening or retry on existing failure, unexpected new pass or unrelated failure",
+  "delivery": "test file only, final hash/bytes, authoring commit and node-specific Expected Red evidence",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "persistentPolling": false, "rawProcessTermination": false}
+}
