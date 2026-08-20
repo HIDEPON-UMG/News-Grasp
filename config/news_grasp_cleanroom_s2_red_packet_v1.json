@@ -1,0 +1,137 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S2-RED-V1",
+  "todoId": "NG-CLEANROOM-S2-RED",
+  "role": "test_luna",
+  "canonicalContext": "/root/s1_edge_driver_red",
+  "dependencyIds": ["NEWS_GRASP_CLEANROOM_S1_ACCEPTED_V1"],
+  "baselineCommit": "008c13dc258934a90651c912360a255d6f297f47",
+  "impactAnalysisReceipt": {
+    "schemaVersion": "TDD_IMPACT_ANALYSIS_RECEIPT_V1",
+    "receiptId": "NG-CLEANROOM-S2-IMPACT-V1",
+    "requirementIds": ["NG-A-R06", "NG-A-R07", "NG-A-R08"],
+    "primarySurfaces": ["high-cost admission", "execution controller", "content stages", "checkpoint/resume", "external side-effect state machine"],
+    "upstreamAuthority": ["S1 active slot", "generation", "owner key", "fence token", "lease"],
+    "downstreamConsumers": ["S3 product/public", "S4 recovery/audit", "L3-L6 workflow verification"],
+    "existingAssets": [
+      {"path": "tools/news_grasp_checkpoint.py", "sha256": "3d20bb1774de83ba24b66269f585d29463c8fbd78d9aa2e12eae037575821581", "reuse": "semantic oracle only; current schema is not S1 fence-bound and is not the clean-room execution authority"},
+      {"path": "tools/high_cost_admission_receipt.py", "sha256": "531373092c196127041e1904b6ffdd1efd6857f318a7caee7792c9d88a160499", "reuse": "adapter contract reference; tests inject a deterministic adapter and make no external call"},
+      {"path": "tools/news_grasp_high_cost_binding.py", "sha256": "994ff2c373a1c7b4e4f4bae08ae7e7da8dc742c33ed02208992528f9d56b9ce6", "reuse": "installed adapter boundary reference; no subprocess is invoked by this Red suite"},
+      {"path": "tools/news_grasp_cleanroom_ledger.py", "sha256": "6e4a3b17b369550533096cb2632348c6c64a7c5e043368f67f6430036fbfa6a7", "reuse": "read-only active-slot generation/owner/fence/lease authority"}
+    ],
+    "plannedProduction": ["tools/news_grasp_cleanroom_execution.py"],
+    "plannedDurableState": ["control/execution-ledger-v1.sqlite3", "control/execution-checkpoints/<execution-id>/<stage>.json"],
+    "contraryEvidence": ["no clean-room S2 production module exists", "legacy checkpoint is not S1 fence-bound", "provider response-loss convergence is not connected to clean-room slot authority"],
+    "unknownRoutePolicy": "fail_closed",
+    "impactStatus": "accepted_for_expected_red"
+  },
+  "writeLease": {
+    "leaseId": "TEST-LEASE-S2-V1",
+    "leaseSha256": "fe31c213cea0c127962477bde09636de68180968f590f67b3fca00d8c4b82f1d",
+    "canonicalPayload": {
+      "leaseId": "TEST-LEASE-S2-V1",
+      "role": "test_luna",
+      "canonicalContext": "/root/s1_edge_driver_red",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-s1-h1",
+      "writes": ["tests/test_news_grasp_cleanroom_s2_execution.py", "tests/fixtures/news_grasp_cleanroom_s2_cases.json"],
+      "baselineCommit": "008c13dc258934a90651c912360a255d6f297f47"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tests/test_news_grasp_cleanroom_s2_execution.py", "tests/fixtures/news_grasp_cleanroom_s2_cases.json"],
+  "forbiddenWrites": ["tools", "config", "docs", "scripts", "all existing test and fixture files"],
+  "productionContract": {
+    "module": "tools.news_grasp_cleanroom_execution",
+    "symbols": ["ExecutionController", "ExecutionError", "ExternalResultUnknown"],
+    "constructor": "ExecutionController(runtime_root, admission_adapter=callable, provider=object, stage_runner=callable, durability_ops=DurabilityOps|None, boundary_hook=callable|None)",
+    "method": "execute(slot_key=str, issue_date=str, authority=mapping, payload=mapping, observed_at=datetime) -> RECONCILE_EXECUTION_RESULT_V1",
+    "authoritySchema": {
+      "schemaVersion": "EXECUTION_AUTHORITY_V1",
+      "exactFields": ["schemaVersion", "authorityId", "scheduleId", "issueDate", "slotKey", "generation", "ownerKey", "fenceToken", "maxDispatchAttempts", "authoritySha256"],
+      "binding": "authoritySha256 is canonical hash of the other exact fields and all slot/generation/owner/fence values equal the current S1 active slot"
+    },
+    "admissionAdapter": "callable(request) returns exact HIGH_COST_ADMISSION_DECISION_V1 with status GRANTED|DENIED|UNAVAILABLE and the same authority/idempotency binding",
+    "provider": {
+      "dispatch": "dispatch(request) returns CONFIRMED receipt or raises ExternalResultUnknown after an unknown response",
+      "query": "query(idempotency_key) returns PRESENT with receipt, ABSENT, AMBIGUOUS, or UNAVAILABLE"
+    },
+    "stageRunner": "callable(stage_id, input_payload) for harvest and finalize returns mapping with lowercase 64-hex outputHash or raises; model is provider-owned",
+    "stageOrder": ["harvest", "model", "finalize"],
+    "externalStates": ["PENDING", "RESERVED", "INTENT_DURABLE", "DISPATCHED", "CONFIRMED", "COMMITTED"],
+    "typedReasons": ["NEWS_GRASP_EXECUTION_AUTHORITY_INVALID", "NEWS_GRASP_EXECUTION_ADMISSION_DENIED", "NEWS_GRASP_EXECUTION_ADMISSION_UNAVAILABLE", "NEWS_GRASP_EXECUTION_ADMISSION_INVALID", "NEWS_GRASP_EXECUTION_CHECKPOINT_CORRUPT", "NEWS_GRASP_EXECUTION_CHECKPOINT_MISSING", "NEWS_GRASP_EXECUTION_CHILD_FAILED", "NEWS_GRASP_EXECUTION_RESULT_UNKNOWN", "NEWS_GRASP_EXECUTION_STALE_FENCE", "NEWS_GRASP_EXECUTION_DURABILITY_FAILED"]
+  },
+  "requiredNodes": [
+    {
+      "node": "test_s2_admission_grant_deny_unavailable",
+      "viewpoints": ["primary_behavior", "adversarial_boundary"],
+      "oracle": "GRANTED reserves once; DENIED/UNAVAILABLE/malformed are distinct typed outcomes with provider dispatch/query count zero"
+    },
+    {
+      "node": "test_s2_external_call_crash_boundaries",
+      "viewpoints": ["adversarial_boundary", "operational_recovery"],
+      "oracle": "fault immediately before/after INTENT_DURABLE, DISPATCHED, CONFIRMED, and COMMITTED; resume converges with one idempotency key and no duplicate confirmed effect"
+    },
+    {
+      "node": "test_s2_result_unknown_query_only",
+      "viewpoints": ["primary_behavior", "operational_recovery"],
+      "oracle": "lost response persists DISPATCHED/RESULT_UNKNOWN; next call queries first, PRESENT confirms without resend, AMBIGUOUS/UNAVAILABLE never resend, ABSENT may resend only the same key within maxDispatchAttempts"
+    },
+    {
+      "node": "test_s2_resume_skips_completed_stages",
+      "viewpoints": ["primary_behavior", "operational_recovery"],
+      "oracle": "after each durable checkpoint, resume skips every completed harvest/model stage and continues only at the next deterministic stage"
+    },
+    {
+      "node": "test_s2_checkpoint_corrupt_recovery",
+      "viewpoints": ["adversarial_boundary", "operational_recovery"],
+      "oracle": "tampered checkpoint is CHECKPOINT_CORRUPT; a missing checkpoint referenced by durable stage state is CHECKPOINT_MISSING; both have zero new provider effect"
+    },
+    {
+      "node": "test_s2_child_failure_each_stage",
+      "viewpoints": ["adversarial_boundary", "operational_recovery"],
+      "oracle": "harvest/model/finalize child failures are CHILD_FAILED with stage identity; retry does not replay earlier completed stages or consume a second admission"
+    },
+    {
+      "node": "test_s2_external_state_machine_property",
+      "viewpoints": ["primary_behavior", "adversarial_boundary"],
+      "oracle": "for the fault corpus, persisted transitions are an exact prefix of the canonical state list, never regress/skip, and terminal success ends COMMITTED"
+    },
+    {
+      "node": "test_s2_fsync_and_response_loss_faults",
+      "viewpoints": ["adversarial_boundary", "operational_recovery"],
+      "oracle": "fsync/parent-flush failure before INTENT_DURABLE yields DURABILITY_FAILED and dispatch zero; response loss is recovered only by provider query"
+    },
+    {
+      "node": "test_s2_stale_fence_external_commit_rejected",
+      "viewpoints": ["adversarial_boundary", "operational_recovery"],
+      "oracle": "after an external receipt but before COMMITTED, a changed S1 generation/owner/fence yields STALE_FENCE, never commits the checkpoint, and retry by stale authority has zero dispatch"
+    }
+  ],
+  "coverage": {
+    "requirements": {"NG-A-R06": [0, 1, 2], "NG-A-R07": [3, 4, 5], "NG-A-R08": [6, 7, 8]},
+    "internalEdges": ["authority×external-state", "stage×crash-point", "fence×commit-boundary", "checkpoint×resume"],
+    "valuePredicates": {"duplicateModelCall": 0, "completedStageReplay": 0, "unknownResultResendWithoutAbsent": 0}
+  },
+  "testDesignRules": [
+    "collect exactly nine top-level required nodes; parameterization may cover the full matrices inside them",
+    "use isolated Japanese-named tmp runtime, real SQLite/filesystem, deterministic aware Asia/Tokyo times, and in-memory deterministic adapters only",
+    "dynamically import the absent production module inside each test so collection succeeds and all nine nodes are causal Expected Red",
+    "assert exact reason strings, exact persisted state prefixes, adapter call counts, idempotency key identity, and checkpoint hashes",
+    "do not sleep, open windows, invoke subprocess, network, credentials, or high-cost broker"
+  ],
+  "verification": {
+    "compileCommand": "py -3.12 -m py_compile tests/test_news_grasp_cleanroom_s2_execution.py",
+    "collectCommand": "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s2_execution.py",
+    "collectExpected": 9,
+    "redCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s2_execution.py",
+    "redExpected": "9 failed because the production module/symbols are absent, with no unrelated collection failure",
+    "ruffCommand": "py -3.12 -m ruff check tests/test_news_grasp_cleanroom_s2_execution.py",
+    "diffCommand": "git diff --check -- tests/test_news_grasp_cleanroom_s2_execution.py tests/fixtures/news_grasp_cleanroom_s2_cases.json"
+  },
+  "commitPolicy": {"allowedOnlyAfterExpectedRed": true, "paths": ["tests/test_news_grasp_cleanroom_s2_execution.py", "tests/fixtures/news_grasp_cleanroom_s2_cases.json"], "message": "test: define S2 execution plane"},
+  "causalRetryCondition": "one authoring attempt and one ordered verification chain; one test-only correction allowed for a packet mismatch",
+  "delivery": "two test-owned files, hashes/bytes, commit and exact Red partition",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "persistentPolling": false}
+}
