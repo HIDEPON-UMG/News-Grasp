@@ -2,13 +2,13 @@
   "articlePath": "digest/DeepDive/2026-08-20-DeepDive.md",
   "articleSha256": "010102cf733367d1caee65efcc42515bcc020729ec7f21e2a656982b796a0e08",
   "issueDate": "2026-08-20",
-  "manifestSha256": "9a6cfcbf07e1bacabead3c0347a8ead1d499aba1c874791f0fb479ad79b11508",
+  "manifestSha256": "6e4c6d689417a7aeadfab6bb2de961bd6e1b509fc3b6f47261342081115dce95",
   "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
-  "sourceSetSha256": "4ad849388d72e6e2074c9a4b785930a7e357c092a5e2fe61004f24c8874d41e9",
+  "sourceSetSha256": "1135b8b4e0e3c48e4e0967f7b81e77839986af17dd6790d23224561eeec95f54",
   "sources": [
     {
-      "contentSha256": "a951e958dfc2c0f87a068d11bf1ddf257e16961a8afee7bf43d6544c151668fd",
-      "fetchedAt": "2026-08-20T05:04:20.697643+00:00",
+      "contentSha256": "2572f204dda9d09c5958c019562219dc975c34e7f24ea79ae52282da40dae618",
+      "fetchedAt": "2026-08-20T05:20:03.588427+00:00",
       "finalUrl": "https://monoist.itmedia.co.jp/mn/articles/2608/20/news030.html",
       "httpStatus": 200,
       "locations": [
@@ -19,8 +19,8 @@
       "url": "https://monoist.itmedia.co.jp/mn/articles/2608/20/news030.html"
     },
     {
-      "contentSha256": "12b120bc6722344ad6a2a0d492d24109201da895ec1ccab8fcff1794e74f89dd",
-      "fetchedAt": "2026-08-20T05:04:20.910381+00:00",
+      "contentSha256": "b59f5e881efa75b47af3e5ad099bdafb5282a126d1eb81442c54c47b9d33e1b6",
+      "fetchedAt": "2026-08-20T05:20:03.804529+00:00",
       "finalUrl": "https://monoist.itmedia.co.jp/mn/articles/2608/20/news055.html",
       "httpStatus": 200,
       "locations": [
@@ -33,7 +33,7 @@
     },
     {
       "contentSha256": "2b52972e2657b7eb9a20c8ad4b097262159db6ff27455389c9fd9f5f56e8d938",
-      "fetchedAt": "2026-08-20T05:04:21.190467+00:00",
+      "fetchedAt": "2026-08-20T05:20:04.070127+00:00",
       "finalUrl": "https://wired.jp/article/sz-google-gemini-can-control-humanoid-robots/",
       "httpStatus": 200,
       "locations": [
@@ -45,8 +45,8 @@
       "url": "https://wired.jp/article/sz-google-gemini-can-control-humanoid-robots/"
     },
     {
-      "contentSha256": "f9e797431af3244981f76eced09ce0f9e2c3299a99388afc821c4591c9169d48",
-      "fetchedAt": "2026-08-20T05:04:21.743194+00:00",
+      "contentSha256": "f0397a92c99a89ee296b4951d150dd2df258729677e2450e088b254314f49df9",
+      "fetchedAt": "2026-08-20T05:20:05.012440+00:00",
       "finalUrl": "https://www.gamebusiness.jp/article/2026/08/20/27749.html",
       "httpStatus": 200,
       "locations": [
