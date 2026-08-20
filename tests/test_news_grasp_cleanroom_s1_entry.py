@@ -19,7 +19,7 @@ import os
 from pathlib import Path
 import sqlite3
 from concurrent.futures import ThreadPoolExecutor
-from threading import Lock
+from threading import Barrier, Event, Lock
 from typing import Any, Callable
 from zoneinfo import ZoneInfo
 
@@ -1609,3 +1609,213 @@ def test_s1_atomic_publish_never_reopens_public_final_for_write(monkeypatch: pyt
     state = controller.inspect_control_state()
     assert state["integrityStatus"] == "green"
     assert forbidden_reopens == []
+
+
+def test_s1_generation_seal_exact_schema_fails_closed(tmp_path: Path) -> None:
+    data = _load_fixture()
+    production = _production()
+    contracts = importlib.import_module("tools.news_grasp_cleanroom_contracts")
+    mutations = (
+        ("extra_key", lambda seal: seal.update({"unexpected": "value"})),
+        ("missing_ledger_relative_path", lambda seal: seal.pop("ledgerRelativePath")),
+        ("wrong_ledger_relative_path", lambda seal: seal.update({"ledgerRelativePath": "control/other.sqlite3"})),
+        ("bool_generation", lambda seal: seal.update({"generation": True})),
+        ("non_hex_previous", lambda seal: seal.update({"previousSealSha256": "z" * 64})),
+        ("generation_one_nonzero_previous", lambda seal: seal.update({"previousSealSha256": "1" * 64})),
+        ("invalid_created_at", lambda seal: seal.update({"createdAt": "not-an-iso-timestamp"})),
+    )
+    for index, (case_name, mutate) in enumerate(mutations, start=1):
+        case_root = tmp_path / f"generation-seal-{index}-{case_name}"
+        case_root.mkdir(parents=True)
+        manifest_path = _write_manifest(case_root, data)
+        runtime_root = case_root / "runtime"
+        controller = _controller(production, runtime_root, manifest_path)
+        controller.reconcile(
+            raw_argv=data["normative"]["rawArgv"]["exact"],
+            observed_at=_at(6, 1),
+            writer=_writer(index),
+        )
+        generation_path = runtime_root / "control" / "generation-seal-v1.json"
+        seal = json.loads(generation_path.read_text(encoding="utf-8"))
+        mutate(seal)
+        seal["sealSha256"] = contracts._entry_canonical_sha256(
+            {key: value for key, value in seal.items() if key != "sealSha256"}
+        )
+        generation_path.write_text(
+            json.dumps(seal, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
+            encoding="utf-8",
+        )
+        _expect_reason(
+            production["error"],
+            "NEWS_GRASP_ENTRY_LEDGER_CORRUPT",
+            lambda runtime_root=runtime_root: production["ControlLedger"](runtime_root).verify(),
+        )
+
+
+def test_s1_sqlite_exact_schema_fails_closed(tmp_path: Path) -> None:
+    data = _load_fixture()
+    production = _production()
+    mutations = (
+        ("unexpected_table", lambda connection: connection.execute("CREATE TABLE unexpected_user_table (value TEXT)")),
+        (
+            "metadata_without_constraints",
+            lambda connection: (
+                connection.execute("ALTER TABLE metadata RENAME TO metadata_original"),
+                connection.execute("CREATE TABLE metadata (key TEXT, value TEXT)"),
+                connection.executemany(
+                    "INSERT INTO metadata(key,value) VALUES(?,?)",
+                    connection.execute("SELECT key,value FROM metadata_original ORDER BY key").fetchall(),
+                ),
+                connection.execute("DROP TABLE metadata_original"),
+            ),
+        ),
+        ("invocations_unexpected_column", lambda connection: connection.execute("ALTER TABLE invocations ADD COLUMN forged TEXT")),
+        ("slots_unexpected_index", lambda connection: connection.execute("CREATE INDEX forged_slots_index ON slots(issue_date)")),
+        ("events_unexpected_column", lambda connection: connection.execute("ALTER TABLE events ADD COLUMN forged TEXT")),
+    )
+
+    def materialized_snapshot(connection: sqlite3.Connection) -> dict[str, list[tuple[Any, ...]]]:
+        return {
+            "metadata": connection.execute("SELECT key,value FROM metadata ORDER BY key").fetchall(),
+            "invocations": connection.execute(
+                "SELECT invocation_id,received_at,raw_argv_sha256,writer_key,wal_event_sha256,imported_at,status FROM invocations ORDER BY invocation_id"
+            ).fetchall(),
+            "slots": connection.execute(
+                "SELECT schedule_id,issue_date,slot_kind,generation,state,owner_key,fence_token,lease_expires_at,terminal_state,result_hash,updated_at FROM slots ORDER BY schedule_id,issue_date,slot_kind"
+            ).fetchall(),
+            "events": connection.execute(
+                "SELECT sequence,generation,event_type,slot_key,payload_json,previous_event_sha256,event_sha256 FROM events ORDER BY sequence"
+            ).fetchall(),
+        }
+
+    for index, (case_name, mutate) in enumerate(mutations, start=1):
+        case_root = tmp_path / f"sqlite-schema-{index}-{case_name}"
+        case_root.mkdir(parents=True)
+        manifest_path = _write_manifest(case_root, data)
+        runtime_root = case_root / "runtime"
+        _controller(production, runtime_root, manifest_path).reconcile(
+            raw_argv=data["normative"]["rawArgv"]["exact"],
+            observed_at=_at(6, 1),
+            writer=_writer(index),
+        )
+        ledger_path = runtime_root / "control" / "control-ledger-v1.sqlite3"
+        with closing(sqlite3.connect(ledger_path)) as connection:
+            before = materialized_snapshot(connection)
+            mutate(connection)
+            connection.commit()
+            assert materialized_snapshot(connection) == before
+        _expect_reason(
+            production["error"],
+            "NEWS_GRASP_ENTRY_LEDGER_CORRUPT",
+            lambda runtime_root=runtime_root: production["ControlLedger"](runtime_root).verify(),
+        )
+
+
+def test_s1_imported_marker_concurrent_publish_is_immutable(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    data = _load_fixture()
+    production = _production()
+    wal_module = importlib.import_module("tools.news_grasp_cleanroom_wal")
+    runtime_root = tmp_path / "runtime"
+    initial_wal = production["DurableWal"](runtime_root)
+    initial = initial_wal.record_initial(
+        raw_argv=data["normative"]["rawArgv"]["exact"],
+        received_at=_at(6, 1),
+        writer=_writer(1),
+    )
+    original_write_json = wal_module._write_json
+    publish_barrier = Barrier(2)
+    replace_barrier = Barrier(2)
+    replace_lock = Lock()
+
+    def controlled_replace(source: str | os.PathLike[str], destination: str | os.PathLike[str]) -> None:
+        if Path(destination).name == "0002-imported.json":
+            replace_barrier.wait(timeout=10)
+            with replace_lock:
+                os.replace(source, destination)
+            return
+        os.replace(source, destination)
+
+    def barrier_write(path: Path, payload: dict[str, Any], operations: Any, reason: str) -> None:
+        if Path(path).name == "0002-imported.json":
+            publish_barrier.wait(timeout=10)
+        original_write_json(path, payload, operations, reason)
+
+    operations = production["DurabilityOps"](replace=controlled_replace)
+    wal = production["DurableWal"](runtime_root, durability_ops=operations)
+    monkeypatch.setattr(wal_module, "_write_json", barrier_write)
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = (
+            executor.submit(wal.mark_imported, initial, imported_at=_at(6, 2)),
+            executor.submit(wal.mark_imported, initial, imported_at=_at(6, 2, 1)),
+        )
+        returned = [future.result(timeout=10) for future in futures]
+
+    imported_path = runtime_root / "control" / "wal" / initial["invocationId"] / "0002-imported.json"
+    final_bytes = imported_path.read_bytes()
+    final_event = json.loads(final_bytes.decode("utf-8"))
+    assert len({event["eventSha256"] for event in returned}) == 1
+    for event in returned:
+        assert json.dumps(event, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8") == final_bytes
+    assert wal.verify()["status"] == "verified"
+    assert not [path for path in (runtime_root / "control" / "wal").rglob("*") if path.is_file() and path.suffix == ".tmp"]
+    assert final_event["eventSha256"] == returned[0]["eventSha256"]
+
+
+def test_s1_concurrent_recovery_has_single_authority(tmp_path: Path) -> None:
+    data = _load_fixture()
+    production = _production()
+    manifest_path = _write_manifest(tmp_path, data)
+    runtime_root = tmp_path / "runtime"
+    _controller(production, runtime_root, manifest_path).reconcile(
+        raw_argv=data["normative"]["rawArgv"]["exact"],
+        observed_at=_at(6, 1),
+        writer=_writer(1),
+    )
+    ledger_path = runtime_root / "control" / "control-ledger-v1.sqlite3"
+    corrupted = bytearray(ledger_path.read_bytes())
+    corrupted[:16] = b"not a sqlite file"
+    ledger_path.write_bytes(corrupted)
+
+    prepared = Event()
+    release = Event()
+    second_attempted = Event()
+
+    def first_hook(name: str) -> None:
+        if name == "after_recovery_journal_prepared":
+            prepared.set()
+            assert release.wait(timeout=10)
+
+    def first_worker() -> dict[str, Any]:
+        return _controller(production, runtime_root, manifest_path, boundary_hook=first_hook).recover_ledger(observed_at=_at(6, 2))
+
+    def second_worker() -> dict[str, Any]:
+        second_attempted.set()
+        return _controller(production, runtime_root, manifest_path).recover_ledger(observed_at=_at(6, 2, 1))
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        first_future = executor.submit(first_worker)
+        assert prepared.wait(timeout=10)
+        second_future = executor.submit(second_worker)
+        assert second_attempted.wait(timeout=10)
+        release.set()
+        outcomes: list[tuple[str, Any]] = []
+        for future in (first_future, second_future):
+            try:
+                outcomes.append(("ok", future.result(timeout=10)))
+            except Exception as exc:
+                outcomes.append(("error", exc))
+
+    assert all(kind == "ok" for kind, _ in outcomes)
+    results = [value for kind, value in outcomes if kind == "ok"]
+    assert sorted(result["status"] for result in results) == ["RECOVERY_NOT_REQUIRED", "recovered"]
+    assert len({result["recoveryId"] for result in results}) == 1
+    assert len({result["newGeneration"] for result in results}) == 1
+    recovery_journal = json.loads((runtime_root / "control" / "recovery-journal-v1.json").read_text(encoding="utf-8"))
+    assert recovery_journal["phase"] == "COMMITTED"
+    assert recovery_journal["recoveryId"] == results[0]["recoveryId"]
+    generation = json.loads((runtime_root / "control" / "generation-seal-v1.json").read_text(encoding="utf-8"))
+    assert generation["generation"] == 2
+    with closing(sqlite3.connect(ledger_path)) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM events WHERE event_type='LEDGER_RECOVERED'").fetchone()[0] == 1
+    assert _controller(production, runtime_root, manifest_path).inspect_control_state()["integrityStatus"] == "green"
+    _assert_real_sqlite(runtime_root)
