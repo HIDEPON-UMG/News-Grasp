@@ -1,6 +1,6 @@
 {
     "date":  "2026-08-20",
-    "pre_publish_commit":  "b8bd29cc27d113fc00ce8f624893f6f9e5a1ce98",
+    "pre_publish_commit":  "b0b9f8a117e2347e4000067682e9d9b6359c87a8",
     "publish_commit":  "",
     "publish_commit_resolution":  "post_push_verify",
     "same_publish_contract":  "pre_publish_commit_must_equal_verified_publish_commit",
@@ -8,5 +8,5 @@
     "deepdive_podcast_state":  "build/youtube-podcast-deepdive/uploads.json",
     "latest_audio_state":  "build/tts/latest_audio.json",
     "deepdive_audio_state":  "build/tts/deepdive/latest_audio.json",
-    "generated_at":  "2026-08-20T14:07:47.931+09:00"
+    "generated_at":  "2026-08-20T14:23:27.189+09:00"
 }
