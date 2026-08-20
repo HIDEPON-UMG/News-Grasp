@@ -1,0 +1,100 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_S1_IMPLEMENTATION_ATTEMPT_RECEIPT_V1",
+  "receiptId": "NG-CLEANROOM-S1-IMPL-ATTEMPT-V1",
+  "packetId": "NG-CLEANROOM-S1-GREEN-V1",
+  "leaseId": "IMPL-LEASE-S1-V1",
+  "role": "implementation_luna",
+  "canonicalContext": "/root/implementation_luna_canary",
+  "baselineCommit": "4f7485b4595349833a5e82661b6b05dea04574c0",
+  "attemptPolicy": {
+    "sameShapeRetryConsumed": true,
+    "retryAllowed": false,
+    "returnToSolRequired": true,
+    "nextAdmission": "separate oracle correction from production causal corrections and issue new packets"
+  },
+  "writeSet": [
+    {
+      "path": "config/news_grasp_cleanroom_task_manifest_v1.json",
+      "bytes": 872,
+      "sha256": "99888f219a8483e5d8c8698538444cf84d68fc36ab40e842962447982d86e641"
+    },
+    {
+      "path": "tools/news_grasp_cleanroom_contracts.py",
+      "bytes": 32191,
+      "sha256": "0387a283b4f3555d3622a70356f5c08ba828ed2a5bb6949f97eede21b7844fd2"
+    },
+    {
+      "path": "tools/news_grasp_cleanroom_wal.py",
+      "bytes": 8811,
+      "sha256": "6ac6c139adfb2d8f6d77303330348c6610799a18c97d41a2014fe06522a9ec"
+    },
+    {
+      "path": "tools/news_grasp_cleanroom_ledger.py",
+      "bytes": 35304,
+      "sha256": "812a50c3a51f75d1dcc6958faac809593ac30a1426f92a4029415c325de4f5b3"
+    },
+    {
+      "path": "tools/news_grasp_cleanroom_dispatch.py",
+      "bytes": 2125,
+      "sha256": "545325955b524ef9b7c7a5adc76ae83ee8fd9dcf3eb233576dd62b24299b2c2f"
+    },
+    {
+      "path": "tools/news_grasp_cleanroom_controller.py",
+      "bytes": 6790,
+      "sha256": "4510344e5b5256a88e7a786f8e538a58e506036becf6034d0684296982fe6c4d"
+    }
+  ],
+  "verification": [
+    {
+      "command": "py -3.12 -m py_compile tools/news_grasp_cleanroom_contracts.py tools/news_grasp_cleanroom_wal.py tools/news_grasp_cleanroom_ledger.py tools/news_grasp_cleanroom_dispatch.py tools/news_grasp_cleanroom_controller.py",
+      "exitCode": 0
+    },
+    {
+      "command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py -k manifest_single_entry or unknown_manifest_zero_effect or terminal_slot_idempotent or wal_precedes_parse or wal_fsync_failure_zero_effect",
+      "exitCode": 0,
+      "result": "5 passed"
+    },
+    {
+      "command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py -k zero_entry_recovery or three_writer_single_owner or stale_fence_cannot_commit or ledger_corruption_recovery or missed_scheduled_persists_then_audits",
+      "exitCode": 1,
+      "result": "1 passed, 4 failed"
+    }
+  ],
+  "causalClassification": [
+    {
+      "nodeId": "test_s1_time_window_primary",
+      "owner": "test_luna",
+      "defect": "the executable oracle compares the normative reference phrase same as scheduledPreState as a literal value",
+      "requiredCorrection": "resolve that reference to the actual scheduled_state test input before equality comparison; normative fixture remains byte-identical"
+    },
+    {
+      "nodeId": "test_s1_three_writer_single_owner",
+      "owner": "implementation_luna",
+      "defect": "generation seal bootstrap races across concurrent writers on Windows os.replace"
+    },
+    {
+      "nodeId": "test_s1_stale_fence_cannot_commit",
+      "owner": "implementation_luna",
+      "defect": "persisted Asia/Tokyo timestamp is parsed as a fixed-offset timezone and rejected by the strict boundary validator"
+    },
+    {
+      "nodeId": "test_s1_ledger_corruption_recovery",
+      "owner": "implementation_luna",
+      "defect": "an internal SQLite handle remains open while recovery quarantines the database on Windows"
+    },
+    {
+      "nodeId": "test_s1_missed_scheduled_persists_then_audits",
+      "owner": "implementation_luna",
+      "defect": "Controller recomputes the 06:40 decision after zero-entry import instead of preserving the pre-import decision"
+    },
+    {
+      "nodeId": "test_edge_writer_crash_recovery",
+      "owner": "implementation_luna",
+      "defect": "a healthy or already committed recovery currently raises NEWS_GRASP_ENTRY_RECOVERY_NOT_REQUIRED instead of returning the typed no-mutation recovery result required by the V3 next-call contract"
+    }
+  ],
+  "unrelatedFailureCount": 0,
+  "testFixtureReceiptDocsChangedByImplementation": false,
+  "status": "non_green_causally_classified",
+  "measuredAt": "2026-08-20T17:51:09.2758442Z"
+}

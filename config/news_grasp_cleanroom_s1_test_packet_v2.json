@@ -1,0 +1,68 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S1-RED-CORRECTION-V2",
+  "todoId": "NG-CLEANROOM-S1-RED",
+  "role": "test_luna",
+  "canonicalContext": "/root/playlist_repair_red",
+  "mutationMode": "oracle_correction",
+  "dependencyIds": [
+    "ng-cleanroom-s1-impact-r3",
+    "NG-CLEANROOM-S1-IMPL-ATTEMPT-V1"
+  ],
+  "requirementIds": ["NG-A-R02", "NG-A-R03", "NG-A-R04", "NG-A-R05"],
+  "baselineCommit": "c52138d3a6d8a44113366cec8b489ae5bad33f7e",
+  "writeLease": {
+    "leaseId": "TEST-LEASE-S1-V2",
+    "leaseSha256": "95808513936104003136953502fcff9afe96b87f04a12a1a79a45faf7c6eb9e6",
+    "canonicalPayload": {
+      "leaseId": "TEST-LEASE-S1-V2",
+      "role": "test_luna",
+      "canonicalContext": "/root/playlist_repair_red",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-s1-h1",
+      "writes": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+      "baselineCommit": "c52138d3a6d8a44113366cec8b489ae5bad33f7e"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+  "targetSourceHashes": {
+    "tests/test_news_grasp_cleanroom_s1_entry.py": "c50cf1b49d6139ac23a0e4e2bb38165143b2f2a551cef5401e5eb499b0003060"
+  },
+  "readOnlyInputs": {
+    "tests/fixtures/news_grasp_cleanroom_s1_cases.json": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f",
+    "config/news_grasp_cleanroom_s1_impact_receipt_v2.json": "fdd3f3bcc8b83c458a8df5f5a7a9767767871c098adfe9feedebd502a11850ef",
+    "config/news_grasp_cleanroom_s1_impact_receipt_v3.json": "6002f61ca6f7249e99db0b791aae5020883ff11e3f5aa4fb56f8f054846f1a08"
+  },
+  "causalCorrection": {
+    "nodeId": "test_s1_time_window_primary",
+    "observedDefect": "slotDecisionResultMatrix uses same as scheduledPreState as a normative reference expression, but the test compares it literally against production output",
+    "requiredEdit": "inside the existing primary time-window test, resolve result.scheduledState equal to same as scheduledPreState to the actual scheduled_state argument ABSENT before assertion",
+    "prohibitedEdits": [
+      "do not edit the fixture",
+      "do not weaken or delete any assertion",
+      "do not add fallback production code or imports",
+      "do not change node count, requirement coverage, dispatch boundaries, recovery hooks or invalid reason cases"
+    ]
+  },
+  "acceptance": {
+    "compileCommand": "py -3.12 -m py_compile tests/test_news_grasp_cleanroom_s1_entry.py",
+    "collectCommand": "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "expectedCollection": "15 tests collected",
+    "redCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "expectedRed": "15 failed with ModuleNotFoundError for tools.news_grasp_cleanroom_wal on the production baseline; unrelated failures zero",
+    "ruffCommand": "py -3.12 -m ruff check tests/test_news_grasp_cleanroom_s1_entry.py",
+    "fixtureHashMustRemain": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f",
+    "diffCheck": "git diff --check"
+  },
+  "causalRetryCondition": "one exact correction attempt; return to Sol on any unexpected collection, fixture drift, non-ModuleNotFoundError Red, or write-set expansion",
+  "delivery": "one corrected test file, resulting hash and bytes, exact commands and results, authoring commit",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {
+    "noFocusTheft": true,
+    "noAutoOpen": true,
+    "noUserMonitoring": true,
+    "networkCallCount": 0,
+    "externalModelCallCount": 0
+  }
+}
