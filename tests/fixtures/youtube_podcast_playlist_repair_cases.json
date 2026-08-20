@@ -1,0 +1,20 @@
+{
+  "issueDate": "2026-08-20",
+  "kind": "daily",
+  "playlistId": "playlist-daily-2026",
+  "videoId": "video-daily-2026",
+  "items": [
+    {
+      "playlistItemId": "item-keep",
+      "videoId": "video-daily-2026",
+      "title": "News-Grasp Daily News Briefing 2026-08-20",
+      "position": 0
+    },
+    {
+      "playlistItemId": "item-unexpected",
+      "videoId": "video-unexpected-2026",
+      "title": "News-Grasp Daily News Briefing 2026-08-20 (duplicate)",
+      "position": 1
+    }
+  ]
+}
