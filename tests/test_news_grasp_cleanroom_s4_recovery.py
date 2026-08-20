@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from datetime import datetime
 import hashlib
 import importlib
 import json
 from pathlib import Path
+import shutil
 import sqlite3
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -200,11 +202,27 @@ def _sqlite_json_value(value: Any) -> Any:
 
 
 def _s1_logical_dump(root: Path) -> list[dict[str, Any]]:
-    path = root / "control" / "control-ledger-v1.sqlite3"
-    if not path.exists():
+    source_control = root / "control"
+    source_path = source_control / "control-ledger-v1.sqlite3"
+    if not source_path.exists():
         return []
-    uri = f"file:{path.as_posix()}?mode=ro"
-    with sqlite3.connect(uri, uri=True) as connection:
+    # A read-only SQLite connection can still create/update a WAL SHM sidecar
+    # when it opens a WAL database.  Clone the closed triplet outside the
+    # observed runtime, query the clone, then remove only that test-owned clone.
+    clone_root = root.parent / f"{root.name}-logical-observation-clone"
+    if clone_root.exists():
+        shutil.rmtree(clone_root)
+    clone_control = clone_root / "control"
+    clone_control.mkdir(parents=True)
+    for suffix in ("", "-wal", "-shm"):
+        source = source_control / f"control-ledger-v1.sqlite3{suffix}"
+        if source.exists():
+            shutil.copy2(source, clone_control / source.name)
+    clone_path = clone_control / "control-ledger-v1.sqlite3"
+    uri = f"file:{clone_path.as_posix()}?mode=ro"
+    connection: sqlite3.Connection | None = None
+    try:
+        connection = sqlite3.connect(uri, uri=True)
         tables = connection.execute(
             "SELECT type,name,sql FROM sqlite_master WHERE type IN ('table','index','trigger','view') ORDER BY type,name"
         ).fetchall()
@@ -219,11 +237,44 @@ def _s1_logical_dump(root: Path) -> list[dict[str, Any]]:
                 item["rows"] = [[_sqlite_json_value(value) for value in row] for row in rows]
             dump.append(item)
         return dump
+    finally:
+        if connection is not None:
+            connection.close()
+        shutil.rmtree(clone_root, ignore_errors=True)
 
 
 def _s1_state(root: Path) -> tuple[dict[str, dict[str, Any]], list[dict[str, Any]]]:
     logical = _s1_logical_dump(root)
     return _s1_tree_snapshot(root), logical
+
+
+def _recovery_triplet_snapshot(root: Path) -> dict[str, tuple[bytes, int] | None]:
+    control = root / "control"
+    return {
+        suffix or "main": (
+            (control / f"recovery-ledger-v1.sqlite3{suffix}").read_bytes(),
+            (control / f"recovery-ledger-v1.sqlite3{suffix}").stat().st_mtime_ns,
+        )
+        if (control / f"recovery-ledger-v1.sqlite3{suffix}").exists()
+        else None
+        for suffix in ("", "-wal", "-shm")
+    }
+
+
+def _recovery_table_inventory(root: Path) -> tuple[bool, int]:
+    path = root / "control" / "recovery-ledger-v1.sqlite3"
+    if not path.exists():
+        return False, 0
+    with sqlite3.connect(path) as connection:
+        table = connection.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='recovery_records'"
+        ).fetchone()
+        count = (
+            connection.execute("SELECT COUNT(*) FROM recovery_records WHERE issue_date=?", ("2026-08-21",)).fetchone()[0]
+            if table is not None
+            else 0
+        )
+    return table is not None, int(count)
 
 
 def _recovery_record(root: Path) -> dict[str, Any]:
@@ -383,6 +434,61 @@ def _mutate_record(root: Path, issue_date: str, mutation: str) -> None:
         connection.commit()
 
 
+def _mutate_terminal_legacy(root: Path, issue_date: str, mutation: str) -> None:
+    """result.legacyだけをsemanticに変え、result/record sealはproduction同型で再計算する。"""
+
+    path = root / "control" / "recovery-ledger-v1.sqlite3"
+    with sqlite3.connect(path) as connection:
+        connection.row_factory = sqlite3.Row
+        row = connection.execute(
+            "SELECT " + ",".join(RECOVERY_RECORD_COLUMNS) + " FROM recovery_records WHERE issue_date=?",
+            (issue_date,),
+        ).fetchone()
+        if row is None:
+            raise AssertionError("recovery record is missing")
+        record = {column: row[column] for column in RECOVERY_RECORD_COLUMNS}
+        result = json.loads(record["result_json"])
+        assert isinstance(result, dict)
+        legacy = deepcopy(result["legacy"])
+        assert isinstance(legacy, dict)
+        if mutation == "malformed":
+            result["legacy"] = "not-an-object"
+        else:
+            snapshot = deepcopy(legacy["snapshot"])
+            if mutation == "missing_key":
+                snapshot.pop("status")
+            elif mutation == "extra_key":
+                snapshot["unexpected"] = "legacy-drift"
+            elif mutation == "unknown_schema":
+                snapshot["schemaVersion"] = "LEGACY_UNKNOWN_V9"
+            elif mutation == "wrong_issueDate":
+                snapshot["issueDate"] = "2026-08-20"
+            elif mutation == "wrong_status":
+                snapshot["status"] = "GREEN"
+            elif mutation == "payload_hash_drift":
+                snapshot["payloadSha256"] = "0" * 64
+            elif mutation == "bytes_hash_drift":
+                legacy["bytesSha256"] = "f" * 64
+                result["legacy"] = legacy
+                snapshot = None
+            else:
+                raise AssertionError(f"unknown legacy result mutation: {mutation}")
+            if snapshot is not None:
+                if mutation in {"wrong_issueDate", "wrong_status"}:
+                    snapshot["payloadSha256"] = _sha({key: value for key, value in snapshot.items() if key != "payloadSha256"})
+                legacy["snapshot"] = snapshot
+                result["legacy"] = legacy
+        record["result_json"] = json.dumps(result, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        record["result_sha256"] = _sha(result)
+        record["record_sha256"] = _record_sha(record)
+        assignments = ",".join(f"{column}=?" for column in RECOVERY_RECORD_COLUMNS if column != "issue_date")
+        connection.execute(
+            f"UPDATE recovery_records SET {assignments} WHERE issue_date=?",
+            [record[column] for column in RECOVERY_RECORD_COLUMNS if column != "issue_date"] + [issue_date],
+        )
+        connection.commit()
+
+
 class Child:
     def __init__(self, name: str, *, terminal: str = "CONFIRMED") -> None:
         self.name = name
@@ -427,8 +533,25 @@ def _legacy_file(root: Path, case: str) -> Path:
         path.write_text(json.dumps(payload, ensure_ascii=False, sort_keys=True), encoding="utf-8")
     elif case == "unknown_schema":
         path.write_text(json.dumps({"schemaVersion": "LEGACY_UNKNOWN_V9"}), encoding="utf-8")
-    else:
+    elif case == "corrupt_v3":
         path.write_bytes(b"not-json")
+    else:
+        payload = {"schemaVersion": "LEGACY_RECOVERY_V3", "issueDate": "2026-08-21", "status": "FAILED"}
+        if case == "missing_key":
+            payload.pop("status")
+        elif case == "extra_key":
+            payload["unexpected"] = "legacy-drift"
+        elif case == "wrong_issueDate":
+            payload["issueDate"] = "2026-08-20"
+        elif case == "wrong_status":
+            payload["status"] = "GREEN"
+        elif case == "payload_hash_drift":
+            payload["payloadSha256"] = "0" * 64
+        else:
+            raise AssertionError(f"unknown legacy case: {case}")
+        if "payloadSha256" not in payload:
+            payload["payloadSha256"] = _sha({key: value for key, value in payload.items() if key != "payloadSha256"})
+        path.write_text(json.dumps(payload, ensure_ascii=False, sort_keys=True), encoding="utf-8")
     return path
 
 
@@ -511,6 +634,8 @@ def test_s4_recovery_retry_preserves_lineage(tmp_path: Path) -> None:
         authority = _authority(cases, scheduled, audit)
         budget = _budget(cases, authority)
         before = _s1_state(root)
+        before_repeat = _s1_state(root)
+        assert before_repeat == before
         crashed = {"active": True}
         hook_calls: list[str] = []
 
@@ -629,6 +754,7 @@ def test_s4_recovery_retry_preserves_lineage(tmp_path: Path) -> None:
         authority = _authority(cases, scheduled, audit)
         budget = _budget(cases, authority)
         before = _s1_state(root)
+        assert _s1_state(root) == before
         _audit(
             _controller(module, root, Child("execution"), Child("public")),
             cases,
@@ -650,6 +776,52 @@ def test_s4_recovery_retry_preserves_lineage(tmp_path: Path) -> None:
         assert corrupted.value.reason == "RECOVERY_LEDGER_CORRUPT"
         assert not retry_execution.calls and not retry_public.calls
         assert _s1_state(root) == before
+
+    for mutation_index, mutation in enumerate(cases["legacyTerminalMutations"], start=1100):
+        root = _s1_runtime(tmp_path, mutation_index)
+        scheduled = _slot(root, "Scheduled")
+        audit = _slot(root, "Audit")
+        parent = _parent(cases, scheduled)
+        authority = _authority(cases, scheduled, audit)
+        budget = _budget(cases, authority)
+        legacy_path = _legacy_file(root, "valid_v3")
+        legacy_before = (legacy_path.read_bytes(), legacy_path.stat().st_mtime_ns)
+        _audit(
+            _controller(
+                module,
+                root,
+                Child("execution"),
+                Child("public"),
+                legacy=module.LegacyReadOnlyAdapter(legacy_path),
+            ),
+            cases,
+            parent,
+            authority,
+            budget,
+        )
+        _mutate_terminal_legacy(root, cases["issueDate"], mutation)
+        post_mutation_triplet = _recovery_triplet_snapshot(root)
+        post_mutation_s1 = _s1_state(root)
+        for action in ("audit", "inspect"):
+            execution = Child(f"legacy-{mutation}-execution-{action}")
+            public = Child(f"legacy-{mutation}-public-{action}")
+            controller = _controller(
+                module,
+                root,
+                execution,
+                public,
+                legacy=module.LegacyReadOnlyAdapter(legacy_path),
+            )
+            with pytest.raises(module.RecoveryControlError) as caught:
+                if action == "audit":
+                    _audit(controller, cases, parent, authority, budget)
+                else:
+                    controller.inspect(cases["issueDate"])
+            assert caught.value.reason == "RECOVERY_LEDGER_CORRUPT"
+            assert not execution.calls and not public.calls
+            assert _recovery_triplet_snapshot(root) == post_mutation_triplet
+            assert _s1_state(root) == post_mutation_s1
+            assert (legacy_path.read_bytes(), legacy_path.stat().st_mtime_ns) == legacy_before
 
 
 def test_s4_legacy_writer_zero(tmp_path: Path) -> None:
@@ -697,9 +869,14 @@ def test_s4_legacy_writer_zero(tmp_path: Path) -> None:
             assert retry == result
             assert not retry_execution.calls and not retry_public.calls
         else:
+            s1_before = _s1_state(root)
+            recovery_before = _recovery_triplet_snapshot(root)
             with pytest.raises(module.RecoveryControlError) as caught:
                 _audit(controller, cases, parent, authority, budget)
-            expected_reason = "LEGACY_STATE_INVALID" if legacy_case == "corrupt_v3" else "LEGACY_STATE_UNKNOWN"
+            expected_reason = "LEGACY_STATE_UNKNOWN" if legacy_case == "unknown_schema" else "LEGACY_STATE_INVALID"
             assert getattr(caught.value, "reason", None) == expected_reason
             assert not execution.calls and not public.calls
+            assert _recovery_triplet_snapshot(root) == recovery_before
+            assert _recovery_table_inventory(root) == (False, 0)
+            assert _s1_state(root) == s1_before
         assert (path.read_bytes(), path.stat().st_mtime_ns) == before

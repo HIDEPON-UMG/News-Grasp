@@ -37,7 +37,8 @@
     "before_recovery_commit",
     "after_recovery_commit"
   ],
-  "legacyCases": ["valid_v3", "corrupt_v3", "unknown_schema"],
+  "legacyCases": ["valid_v3", "corrupt_v3", "unknown_schema", "missing_key", "extra_key", "wrong_issueDate", "wrong_status", "payload_hash_drift"],
+  "legacyTerminalMutations": ["malformed", "missing_key", "extra_key", "unknown_schema", "wrong_issueDate", "wrong_status", "payload_hash_drift", "bytes_hash_drift"],
   "lineages": ["Scheduled", "Recovery", "Public", "Readiness"],
   "phaseExpectations": {
     "before_execution_receipt": {"phase": "ATTEMPT_DURABLE", "execution": false, "public": false, "result": false},
