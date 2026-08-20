@@ -420,14 +420,33 @@ class ExecutionController:
             ),
         )
 
+    def _validate_admission_decision(
+        self,
+        decision: Mapping[str, Any],
+        authority: Mapping[str, Any],
+        idempotency_key: str,
+    ) -> dict[str, Any]:
+        if not isinstance(decision, Mapping):
+            raise ExecutionError(ADMISSION_INVALID, "admission decision is not an object")
+        value = dict(decision)
+        if set(value) != _ADMISSION_KEYS or value.get("schemaVersion") != "HIGH_COST_ADMISSION_DECISION_V1":
+            raise ExecutionError(ADMISSION_INVALID, "admission decision schema is invalid")
+        if value.get("status") not in {"GRANTED", "DENIED", "UNAVAILABLE"}:
+            raise ExecutionError(ADMISSION_INVALID, "admission decision status is invalid")
+        if value.get("authorityId") != authority["authorityId"] or value.get("authoritySha256") != authority["authoritySha256"] or value.get("idempotencyKey") != idempotency_key:
+            raise ExecutionError(ADMISSION_INVALID, "admission decision binding is invalid")
+        decision_hash = value.get("decisionSha256")
+        if not isinstance(decision_hash, str) or _HEX64.fullmatch(decision_hash) is None or decision_hash != _entry_canonical_sha256({key: item for key, item in value.items() if key != "decisionSha256"}):
+            raise ExecutionError(ADMISSION_INVALID, "admission decision hash is invalid")
+        return value
+
     def _admission(self, connection: sqlite3.Connection, row: sqlite3.Row, authority: Mapping[str, Any], payload: Mapping[str, Any], observed: datetime) -> sqlite3.Row:
         if row["admission_json"]:
             try:
                 decision = json.loads(row["admission_json"])
             except (TypeError, UnicodeError, json.JSONDecodeError) as exc:
                 raise ExecutionError(ADMISSION_INVALID, "persisted admission is invalid") from exc
-            if not isinstance(decision, dict):
-                raise ExecutionError(ADMISSION_INVALID, "persisted admission is invalid")
+            decision = self._validate_admission_decision(decision, authority, row["idempotency_key"])
             status = decision.get("status")
             if status == "DENIED":
                 raise ExecutionError(ADMISSION_DENIED, "high-cost admission denied")
@@ -449,18 +468,7 @@ class ExecutionController:
             raw_decision = self.admission_adapter(request)
         except Exception as exc:
             raise ExecutionError(ADMISSION_UNAVAILABLE, "high-cost admission failed") from exc
-        if not isinstance(raw_decision, Mapping):
-            raise ExecutionError(ADMISSION_INVALID, "admission decision is not an object")
-        decision = dict(raw_decision)
-        if set(decision) != _ADMISSION_KEYS or decision.get("schemaVersion") != "HIGH_COST_ADMISSION_DECISION_V1":
-            raise ExecutionError(ADMISSION_INVALID, "admission decision schema is invalid")
-        if decision.get("status") not in {"GRANTED", "DENIED", "UNAVAILABLE"}:
-            raise ExecutionError(ADMISSION_INVALID, "admission decision status is invalid")
-        if decision.get("authorityId") != authority["authorityId"] or decision.get("authoritySha256") != authority["authoritySha256"] or decision.get("idempotencyKey") != row["idempotency_key"]:
-            raise ExecutionError(ADMISSION_INVALID, "admission decision binding is invalid")
-        decision_hash = decision.get("decisionSha256")
-        if not isinstance(decision_hash, str) or _HEX64.fullmatch(decision_hash) is None or decision_hash != _entry_canonical_sha256({key: item for key, item in decision.items() if key != "decisionSha256"}):
-            raise ExecutionError(ADMISSION_INVALID, "admission decision hash is invalid")
+        decision = self._validate_admission_decision(raw_decision, authority, row["idempotency_key"])
         self._mutate(
             connection,
             lambda: connection.execute(
