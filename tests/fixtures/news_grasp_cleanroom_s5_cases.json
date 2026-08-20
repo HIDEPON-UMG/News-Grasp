@@ -9,6 +9,7 @@
   "rollbackBoundaries": ["rollback_before_new_disable", "rollback_after_new_disable", "rollback_before_restore", "rollback_commit"],
   "pathCases": ["traversal", "absolute_escape", "symlink_reparse", "source_identity_swap", "hash_mismatch", "insecure_acl", "invalid_signer"],
   "secretCases": ["manifest_unknown_key", "shell_metacharacter", "control_byte", "secret_argv", "secret_diagnostic"],
+  "manifestNestedCases": ["action_unknown_key", "action_missing_key", "trigger_unknown_key", "trigger_missing_key"],
   "requiredManifestKeys": ["schemaVersion", "scheduleId", "tasks"],
   "lineage": "InstallCutover",
   "humanImpact": {
