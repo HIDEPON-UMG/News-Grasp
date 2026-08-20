@@ -1,0 +1,120 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S1-GREEN-V4",
+  "todoId": "NG-CLEANROOM-S1-GREEN",
+  "role": "implementation_luna",
+  "canonicalContext": "/root/implementation_luna_canary",
+  "mutationMode": "causal_resume_recovery_hook_identity",
+  "dependencyIds": [
+    "ng-cleanroom-s0-acceptance-r2",
+    "ng-cleanroom-s1-impact-r3",
+    "NEWS_GRASP_CLEANROOM_S1_EXPECTED_RED_RECEIPT_V3",
+    "NG-CLEANROOM-S1-IMPL-ATTEMPT-V3"
+  ],
+  "requirementIds": ["NG-A-R02", "NG-A-R03", "NG-A-R04", "NG-A-R05"],
+  "baselineCommit": "b8242490c2edf841848119cd64f9372314dd7af0",
+  "baselineReceiptPath": "config/news_grasp_cleanroom_s1_impl_attempt_v3_receipt.json",
+  "baselineSha256": "4a6d768ab71fb351f1bb40b4afcf351255c645a62d173bd02629df4aa11c54e7",
+  "resumeDraft": {
+    "snapshotCommit": "d765057eb89adcb209085f8cf69421473e6ff1f4",
+    "focusedGreenAlreadyObserved": [
+      "test_s1_three_writer_single_owner",
+      "test_s1_stale_fence_cannot_commit",
+      "test_s1_ledger_corruption_recovery",
+      "test_s1_missed_scheduled_persists_then_audits"
+    ],
+    "sameShapeRetryConsumed": true
+  },
+  "writeLease": {
+    "leaseId": "IMPL-LEASE-S1-V4",
+    "leaseSha256": "40b7ca5b65b0cbc40d88be8525b4531d9ffb8e33844dfd760c466776af1715ea",
+    "canonicalPayload": {
+      "leaseId": "IMPL-LEASE-S1-V4",
+      "role": "implementation_luna",
+      "canonicalContext": "/root/implementation_luna_canary",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-s1-h1",
+      "writes": [
+        "config/news_grasp_cleanroom_task_manifest_v1.json",
+        "tools/news_grasp_cleanroom_contracts.py",
+        "tools/news_grasp_cleanroom_wal.py",
+        "tools/news_grasp_cleanroom_ledger.py",
+        "tools/news_grasp_cleanroom_dispatch.py",
+        "tools/news_grasp_cleanroom_controller.py"
+      ],
+      "baselineCommit": "b8242490c2edf841848119cd64f9372314dd7af0"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": [
+    "config/news_grasp_cleanroom_task_manifest_v1.json",
+    "tools/news_grasp_cleanroom_contracts.py",
+    "tools/news_grasp_cleanroom_wal.py",
+    "tools/news_grasp_cleanroom_ledger.py",
+    "tools/news_grasp_cleanroom_dispatch.py",
+    "tools/news_grasp_cleanroom_controller.py"
+  ],
+  "targetSourceHashes": {
+    "config/news_grasp_cleanroom_task_manifest_v1.json": "99888f219a8483e5d8c8698538444cf84d68fc36ab40e842962447982d86e641",
+    "tools/news_grasp_cleanroom_contracts.py": "0387a283b4f3555d3622a70356f5c08ba828ed2a5bb6949f97eede21b7844fd2",
+    "tools/news_grasp_cleanroom_wal.py": "a4da9ea14331966f004461b4957975d58385f9368ea21e0250d697001e2fe29a",
+    "tools/news_grasp_cleanroom_ledger.py": "2bd7ef475dbf9fd03f403be82ac7f9df81c7a7b99763dc7060c5067547f366b5",
+    "tools/news_grasp_cleanroom_dispatch.py": "545325955b524ef9b7c7a5adc76ae83ee8fd9dcf3eb233576dd62b24299b2c2f",
+    "tools/news_grasp_cleanroom_controller.py": "6b13c146664923fa246f2aa19daf74419dc734b07c9b37c627ccc985b665e9ef"
+  },
+  "readOnlyInputs": {
+    "config/news_grasp_cleanroom_s1_impact_receipt_v2.json": "fdd3f3bcc8b83c458a8df5f5a7a9767767871c098adfe9feedebd502a11850ef",
+    "config/news_grasp_cleanroom_s1_impact_receipt_v3.json": "6002f61ca6f7249e99db0b791aae5020883ff11e3f5aa4fb56f8f054846f1a08",
+    "config/news_grasp_cleanroom_s1_red_receipt_v3.json": "5dd3a14cf6b21eb996ea55a88bad53753d5b9a23bbc6a3596095ca0bca3047a9",
+    "tests/test_news_grasp_cleanroom_s1_entry.py": "e5dcf72358caf167ad127a6939901a83ebf08bef6ec6804b7ec3386c90c20415",
+    "tests/fixtures/news_grasp_cleanroom_s1_cases.json": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f",
+    "tests/test_news_grasp_cleanroom_s0_contract.py": "36b7be69a45dea4e7e6a0583d0c24fc67c95d7ee0bc890fbfb1cbf36ec0acb83"
+  },
+  "causalCorrection": {
+    "id": "S1-CORR-07-RECOVERY-HOOK-IDENTITY",
+    "file": "tools/news_grasp_cleanroom_ledger.py",
+    "contract": "recoveryHookExceptionPolicy: caller-supplied boundary hook exception is preserved exactly",
+    "implementation": "inside recover, keep one local Exception-or-None hook_failure. Invoke each of the five recovery hooks through one local helper that records the exact caught Exception object and re-raises it. In the existing outer except Exception as exc, use bare raise when exc is hook_failure; otherwise retain the existing NEWS_GRASP_ENTRY_LEDGER_RECOVERY_FAILED wrapping. BaseException subclasses already bypass the Exception wrapper and remain unchanged.",
+    "forbidden": [
+      "no public exception wrapper or new reason",
+      "no matching by message, type or hook name",
+      "no suppression of os, sqlite, JSON or durability exceptions",
+      "no test, fixture or receipt mutation"
+    ]
+  },
+  "staticCorrection": {
+    "files": ["tools/news_grasp_cleanroom_dispatch.py"],
+    "implementation": "remove the extra EOF blank line reported by git diff --cached --check; run both staged and unstaged diff checks",
+    "behaviorChange": false
+  },
+  "authorizedExistingBehaviors": [
+    "all seven authorizedDraftBehaviors from packet V3 remain unchanged",
+    "no caller-handle production workaround",
+    "no additional retry or write path"
+  ],
+  "verification": {
+    "focusedCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py::test_edge_writer_crash_recovery",
+    "fullS1Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "fullS1Expected": "15 passed",
+    "s0RegressionCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s0_contract.py",
+    "s0Expected": "3 passed",
+    "compileCommand": "py -3.12 -m py_compile tools/news_grasp_cleanroom_contracts.py tools/news_grasp_cleanroom_wal.py tools/news_grasp_cleanroom_ledger.py tools/news_grasp_cleanroom_dispatch.py tools/news_grasp_cleanroom_controller.py",
+    "ruffCommand": "py -3.12 -m ruff check tools/news_grasp_cleanroom_contracts.py tools/news_grasp_cleanroom_wal.py tools/news_grasp_cleanroom_ledger.py tools/news_grasp_cleanroom_dispatch.py tools/news_grasp_cleanroom_controller.py",
+    "other": ["git diff --check", "git diff --cached --check", "git status --short", "production AST security scan"]
+  },
+  "expectedWriteSet": {
+    "pathCount": 6,
+    "testFixtureConfigReceiptDocsUnchanged": true,
+    "legacyLauncherTaskInstalledPublicUnchanged": true
+  },
+  "causalRetryCondition": "one exact V4 execution; stop before any second edit or rerun on focused, full S1, S0 or static non-Green",
+  "delivery": "six production files only, final hashes/bytes, authoring commit and exact verification evidence",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {
+    "noFocusTheft": true,
+    "noAutoOpen": true,
+    "noUserMonitoring": true,
+    "persistentPolling": false,
+    "rawProcessTermination": false
+  }
+}
