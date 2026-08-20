@@ -98,6 +98,22 @@ def _flush_parent_real(directory: Path) -> None:
         os.close(fd)
 
 
+def _publish_create_once_real(
+    source: str | os.PathLike[str], destination: str | os.PathLike[str]
+) -> None:
+    """既存の公開先を置換せず、同一ディレクトリへ一度だけ公開する。"""
+    if os.name == "nt":
+        os.rename(source, destination)
+        return
+    try:
+        os.link(source, destination)
+    except OSError as exc:
+        if getattr(exc, "errno", None) == 17:
+            raise FileExistsError(str(destination)) from exc
+        raise
+    os.unlink(source)
+
+
 @dataclass(frozen=True)
 class DurabilityOps:
     """filesystem durability operations; injection is negative-test-only."""
@@ -105,6 +121,7 @@ class DurabilityOps:
     fsync: Callable[[int], Any] = os.fsync
     replace: Callable[[str | os.PathLike[str], str | os.PathLike[str]], Any] = os.replace
     flush_parent: Callable[[Path], Any] = _flush_parent_real
+    publish_create_once: Callable[[str | os.PathLike[str], str | os.PathLike[str]], Any] = _publish_create_once_real
 
 
 def _event_hash(event: Mapping[str, Any]) -> str:
@@ -125,7 +142,8 @@ def _write_json(path: Path, payload: Mapping[str, Any], operations: DurabilityOp
                     _fsync_real(stream.fileno())
                 else:
                     raise
-        operations.replace(temp, path)
+        publisher = operations.publish_create_once if path.name == "0002-imported.json" else operations.replace
+        publisher(temp, path)
         operations.flush_parent(path.parent)
     except Exception as exc:
         try:
@@ -182,6 +200,18 @@ def _read_event(path: Path, *, event_type: str, phase: str, sequence: int) -> di
     if value.get("eventSha256") != _event_hash(value):
         raise CleanroomEntryError(LEDGER_CORRUPT, f"WAL event hash drift: {path}")
     return value
+
+
+def _validate_imported_parity(initial: Mapping[str, Any], imported: Mapping[str, Any]) -> dict[str, Any]:
+    if (
+        imported.get("invocationId") != initial.get("invocationId")
+        or imported.get("rawArgv") != initial.get("rawArgv")
+        or imported.get("rawArgvSha256") != initial.get("rawArgvSha256")
+        or imported.get("writer") != initial.get("writer")
+        or imported.get("previousEventSha256") != initial.get("eventSha256")
+    ):
+        raise CleanroomEntryError(LEDGER_CORRUPT, "WAL imported parity mismatch")
+    return dict(imported)
 
 
 class DurableWal:
@@ -252,8 +282,7 @@ class DurableWal:
                 zero.append(event)
             else:
                 imported = _read_event(imported_path, event_type="INVOCATION_IMPORTED", phase="LEDGER_IMPORTED", sequence=2)
-                if imported.get("invocationId") != event.get("invocationId") or imported.get("rawArgv") != event.get("rawArgv") or imported.get("rawArgvSha256") != event.get("rawArgvSha256") or imported.get("writer") != event.get("writer") or imported.get("previousEventSha256") != event.get("eventSha256"):
-                    raise CleanroomEntryError(LEDGER_CORRUPT, "WAL imported parity mismatch")
+                _validate_imported_parity(event, imported)
         return tuple(zero)
 
     def mark_imported(self, initial_event: Mapping[str, Any], *, imported_at: datetime) -> dict[str, Any]:
@@ -269,9 +298,7 @@ class DurableWal:
             raise CleanroomEntryError(LEDGER_CORRUPT, "initial WAL directory mismatch")
         if imported_path.exists():
             existing = _read_event(imported_path, event_type="INVOCATION_IMPORTED", phase="LEDGER_IMPORTED", sequence=2)
-            if existing.get("invocationId") != initial.get("invocationId") or existing.get("rawArgv") != initial.get("rawArgv") or existing.get("rawArgvSha256") != initial.get("rawArgvSha256") or existing.get("writer") != initial.get("writer") or existing.get("previousEventSha256") != initial.get("eventSha256"):
-                raise CleanroomEntryError(LEDGER_CORRUPT, "imported WAL parity drift")
-            return existing
+            return _validate_imported_parity(initial, existing)
         event: dict[str, Any] = {
             "schemaVersion": "WAL_EVENT_V1",
             "eventType": "INVOCATION_IMPORTED",
@@ -292,8 +319,7 @@ class DurableWal:
             # between the existence check and os.replace on Windows.
             if exc.reason == WAL_FINALIZE_FAILED and imported_path.exists():
                 existing = _read_event(imported_path, event_type="INVOCATION_IMPORTED", phase="LEDGER_IMPORTED", sequence=2)
-                if existing.get("previousEventSha256") == initial.get("eventSha256"):
-                    return existing
+                return _validate_imported_parity(initial, existing)
             raise
         return event
 
@@ -305,6 +331,5 @@ class DurableWal:
             imported_path = self._managed(initial_path.with_name("0002-imported.json"))
             if imported_path.exists():
                 imported = _read_event(imported_path, event_type="INVOCATION_IMPORTED", phase="LEDGER_IMPORTED", sequence=2)
-                if imported.get("invocationId") != initial.get("invocationId") or imported.get("rawArgv") != initial.get("rawArgv") or imported.get("rawArgvSha256") != initial.get("rawArgvSha256") or imported.get("writer") != initial.get("writer") or imported.get("previousEventSha256") != initial.get("eventSha256"):
-                    raise CleanroomEntryError(LEDGER_CORRUPT, "WAL event chain mismatch")
+                _validate_imported_parity(initial, imported)
         return {"status": "verified", "zeroEntryCount": len(self.iter_zero_entries())}

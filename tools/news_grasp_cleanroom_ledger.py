@@ -41,9 +41,86 @@ _HEX64 = re.compile(r"^[0-9a-f]{64}$")
 _RECOVERY_ID = re.compile(r"^[0-9a-f]{32}$")
 _RECOVERY_PHASES = {"PREPARED", "QUARANTINED", "SEALED", "LEDGER_CREATED", "COMMITTED"}
 _RECOVERY_KEYS = frozenset({"schemaVersion", "recoveryId", "oldGeneration", "newGeneration", "quarantineRelativePath", "phase", "updatedAt", "journalSha256"})
+_GENERATION_SEAL_KEYS = frozenset({"schemaVersion", "generation", "ledgerRelativePath", "previousSealSha256", "createdAt", "sealSha256"})
 _SLOT_KEY = re.compile(r"^news-grasp-daily-v1/(\d{4}-\d{2}-\d{2})/(Scheduled|Audit)$")
 _TERMINAL_STATES = {"SUCCEEDED", "FAILED", "MISSED_SCHEDULED"}
 _BOOTSTRAP_LOCK_NAME = "bootstrap-v1.lock"
+
+_CANONICAL_CREATE_SQL = {
+    "metadata": "CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
+    "invocations": """CREATE TABLE invocations (
+    invocation_id TEXT PRIMARY KEY,
+    received_at TEXT NOT NULL,
+    raw_argv_sha256 TEXT NOT NULL,
+    writer_key TEXT NOT NULL,
+    wal_event_sha256 TEXT NOT NULL UNIQUE,
+    imported_at TEXT NOT NULL,
+    status TEXT NOT NULL CHECK(status IN ('CURRENT','RECOVERED_ZERO_ENTRY'))
+)""",
+    "slots": """CREATE TABLE slots (
+    schedule_id TEXT NOT NULL,
+    issue_date TEXT NOT NULL,
+    slot_kind TEXT NOT NULL CHECK(slot_kind IN ('Scheduled','Audit')),
+    generation INTEGER NOT NULL CHECK(generation >= 1),
+    state TEXT NOT NULL CHECK(state IN ('ACTIVE','TERMINAL')),
+    owner_key TEXT NOT NULL,
+    fence_token INTEGER NOT NULL CHECK(fence_token >= 1),
+    lease_expires_at TEXT,
+    terminal_state TEXT CHECK(terminal_state IN ('SUCCEEDED','FAILED','MISSED_SCHEDULED')),
+    result_hash TEXT,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY(schedule_id, issue_date, slot_kind)
+)""",
+    "events": """CREATE TABLE events (
+    sequence INTEGER PRIMARY KEY,
+    generation INTEGER NOT NULL CHECK(generation >= 1),
+    event_type TEXT NOT NULL,
+    slot_key TEXT,
+    payload_json TEXT NOT NULL,
+    previous_event_sha256 TEXT NOT NULL,
+    event_sha256 TEXT NOT NULL UNIQUE
+)""",
+}
+_CANONICAL_TABLE_INFO = {
+    "metadata": ((0, "key", "TEXT", 0, None, 1), (1, "value", "TEXT", 1, None, 0)),
+    "invocations": (
+        (0, "invocation_id", "TEXT", 0, None, 1),
+        (1, "received_at", "TEXT", 1, None, 0),
+        (2, "raw_argv_sha256", "TEXT", 1, None, 0),
+        (3, "writer_key", "TEXT", 1, None, 0),
+        (4, "wal_event_sha256", "TEXT", 1, None, 0),
+        (5, "imported_at", "TEXT", 1, None, 0),
+        (6, "status", "TEXT", 1, None, 0),
+    ),
+    "slots": (
+        (0, "schedule_id", "TEXT", 1, None, 1),
+        (1, "issue_date", "TEXT", 1, None, 2),
+        (2, "slot_kind", "TEXT", 1, None, 3),
+        (3, "generation", "INTEGER", 1, None, 0),
+        (4, "state", "TEXT", 1, None, 0),
+        (5, "owner_key", "TEXT", 1, None, 0),
+        (6, "fence_token", "INTEGER", 1, None, 0),
+        (7, "lease_expires_at", "TEXT", 0, None, 0),
+        (8, "terminal_state", "TEXT", 0, None, 0),
+        (9, "result_hash", "TEXT", 0, None, 0),
+        (10, "updated_at", "TEXT", 1, None, 0),
+    ),
+    "events": (
+        (0, "sequence", "INTEGER", 0, None, 1),
+        (1, "generation", "INTEGER", 1, None, 0),
+        (2, "event_type", "TEXT", 1, None, 0),
+        (3, "slot_key", "TEXT", 0, None, 0),
+        (4, "payload_json", "TEXT", 1, None, 0),
+        (5, "previous_event_sha256", "TEXT", 1, None, 0),
+        (6, "event_sha256", "TEXT", 1, None, 0),
+    ),
+}
+_CANONICAL_INDEXES = {
+    "metadata": ((1, "pk", ("key",)),),
+    "invocations": ((1, "pk", ("invocation_id",)), (1, "u", ("wal_event_sha256",))),
+    "slots": ((1, "pk", ("schedule_id", "issue_date", "slot_kind")),),
+    "events": ((1, "u", ("event_sha256",)),),
+}
 
 
 def _iso(value: datetime) -> str:
@@ -79,6 +156,10 @@ def _event_hash(payload: Mapping[str, Any]) -> str:
     return _entry_canonical_sha256(payload)
 
 
+def _normalize_sql(sql: str) -> str:
+    return re.sub(r"\s+", " ", sql.strip().removesuffix(";").strip())
+
+
 class ControlLedger:
     """BEGIN IMMEDIATE と event hash chain を共有する制御台帳。"""
 
@@ -110,13 +191,38 @@ class ControlLedger:
             seal = json.loads(self.generation_path.read_text(encoding="utf-8"))
         except (OSError, UnicodeError, json.JSONDecodeError) as exc:
             raise CleanroomEntryError(LEDGER_CORRUPT, "generation seal is unreadable") from exc
-        if not isinstance(seal, dict) or seal.get("schemaVersion") != "CONTROL_LEDGER_GENERATION_SEAL_V1":
+        if not isinstance(seal, dict) or set(seal) != _GENERATION_SEAL_KEYS:
+            raise CleanroomEntryError(LEDGER_CORRUPT, "generation seal keys are invalid")
+        if seal.get("schemaVersion") != "CONTROL_LEDGER_GENERATION_SEAL_V1":
             raise CleanroomEntryError(LEDGER_CORRUPT, "generation seal schema is invalid")
-        unsigned = {key: value for key, value in seal.items() if key != "sealSha256"}
-        if seal.get("sealSha256") != _entry_canonical_sha256(unsigned):
-            raise CleanroomEntryError(LEDGER_CORRUPT, "generation seal hash drift")
         if isinstance(seal.get("generation"), bool) or not isinstance(seal.get("generation"), int) or seal["generation"] < 1:
             raise CleanroomEntryError(LEDGER_CORRUPT, "generation seal value is invalid")
+        if seal.get("ledgerRelativePath") != "control/control-ledger-v1.sqlite3":
+            raise CleanroomEntryError(LEDGER_CORRUPT, "generation ledger path is invalid")
+        previous = seal.get("previousSealSha256")
+        if not isinstance(previous, str) or _HEX64.fullmatch(previous) is None:
+            raise CleanroomEntryError(LEDGER_CORRUPT, "generation previous seal is invalid")
+        created_at = seal.get("createdAt")
+        if not isinstance(created_at, str):
+            raise CleanroomEntryError(LEDGER_CORRUPT, "generation createdAt is invalid")
+        try:
+            parsed_created_at = datetime.fromisoformat(created_at)
+            if parsed_created_at.tzinfo is None or parsed_created_at.utcoffset() != timedelta(hours=9) or parsed_created_at.fold != 0:
+                raise ValueError("generation createdAt timezone is invalid")
+            _validate_entry_time(parsed_created_at.astimezone(ZoneInfo("Asia/Tokyo")))
+        except (TypeError, ValueError, CleanroomEntryError) as exc:
+            raise CleanroomEntryError(LEDGER_CORRUPT, "generation createdAt is invalid") from exc
+        seal_hash = seal.get("sealSha256")
+        if not isinstance(seal_hash, str) or _HEX64.fullmatch(seal_hash) is None:
+            raise CleanroomEntryError(LEDGER_CORRUPT, "generation seal hash is invalid")
+        unsigned = {key: value for key, value in seal.items() if key != "sealSha256"}
+        if seal_hash != _entry_canonical_sha256(unsigned):
+            raise CleanroomEntryError(LEDGER_CORRUPT, "generation seal hash drift")
+        if seal["generation"] == 1:
+            if previous != _ZERO_HASH:
+                raise CleanroomEntryError(LEDGER_CORRUPT, "generation one previous seal is invalid")
+        elif previous == _ZERO_HASH or previous == seal_hash:
+            raise CleanroomEntryError(LEDGER_CORRUPT, "generation seal linkage is invalid")
         return seal
 
     def _write_generation_seal(self, generation: int, previous: str, created_at: datetime, operations: DurabilityOps) -> dict[str, Any]:
@@ -269,41 +375,10 @@ class ControlLedger:
 
     def _create_schema(self, connection: sqlite3.Connection, generation: int) -> None:
         connection.executescript(
-            """
-            CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL);
-            CREATE TABLE IF NOT EXISTS invocations (
-                invocation_id TEXT PRIMARY KEY,
-                received_at TEXT NOT NULL,
-                raw_argv_sha256 TEXT NOT NULL,
-                writer_key TEXT NOT NULL,
-                wal_event_sha256 TEXT NOT NULL UNIQUE,
-                imported_at TEXT NOT NULL,
-                status TEXT NOT NULL CHECK(status IN ('CURRENT','RECOVERED_ZERO_ENTRY'))
-            );
-            CREATE TABLE IF NOT EXISTS slots (
-                schedule_id TEXT NOT NULL,
-                issue_date TEXT NOT NULL,
-                slot_kind TEXT NOT NULL CHECK(slot_kind IN ('Scheduled','Audit')),
-                generation INTEGER NOT NULL CHECK(generation >= 1),
-                state TEXT NOT NULL CHECK(state IN ('ACTIVE','TERMINAL')),
-                owner_key TEXT NOT NULL,
-                fence_token INTEGER NOT NULL CHECK(fence_token >= 1),
-                lease_expires_at TEXT,
-                terminal_state TEXT CHECK(terminal_state IN ('SUCCEEDED','FAILED','MISSED_SCHEDULED')),
-                result_hash TEXT,
-                updated_at TEXT NOT NULL,
-                PRIMARY KEY(schedule_id, issue_date, slot_kind)
-            );
-            CREATE TABLE IF NOT EXISTS events (
-                sequence INTEGER PRIMARY KEY,
-                generation INTEGER NOT NULL CHECK(generation >= 1),
-                event_type TEXT NOT NULL,
-                slot_key TEXT,
-                payload_json TEXT NOT NULL,
-                previous_event_sha256 TEXT NOT NULL,
-                event_sha256 TEXT NOT NULL UNIQUE
-            );
-            """
+            "\n".join(
+                sql.replace("CREATE TABLE ", "CREATE TABLE IF NOT EXISTS ", 1) + ";"
+                for sql in _CANONICAL_CREATE_SQL.values()
+            )
         )
         existing = dict(connection.execute("SELECT key,value FROM metadata").fetchall())
         values = {
@@ -331,7 +406,33 @@ class ControlLedger:
                     connection.close()
             return int(seal["generation"])
 
+    def _verify_schema(self, connection: sqlite3.Connection) -> None:
+        try:
+            objects = [tuple(row) for row in connection.execute("SELECT type,name,sql FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY type,name").fetchall()]
+            expected_names = set(_CANONICAL_CREATE_SQL)
+            if len(objects) != len(expected_names) or any(object_type != "table" or name not in expected_names or sql is None for object_type, name, sql in objects):
+                raise ValueError("SQLite objects are not canonical")
+            actual_sql = {name: sql for _, name, sql in objects}
+            if set(actual_sql) != expected_names:
+                raise ValueError("SQLite table names are not canonical")
+            for name, expected_sql in _CANONICAL_CREATE_SQL.items():
+                if _normalize_sql(actual_sql[name]) != _normalize_sql(expected_sql):
+                    raise ValueError(f"SQLite CREATE SQL is not canonical for {name}")
+                table_info = tuple(tuple(row) for row in connection.execute(f"PRAGMA table_info({name})").fetchall())
+                if table_info != _CANONICAL_TABLE_INFO[name]:
+                    raise ValueError(f"SQLite table_info is not canonical for {name}")
+                actual_indexes = []
+                for index_row in connection.execute(f"PRAGMA index_list({name})").fetchall():
+                    index_name = str(index_row[1]).replace('"', '""')
+                    index_info = tuple((int(info_row[0]), info_row[2]) for info_row in connection.execute(f'PRAGMA index_info("{index_name}")').fetchall())
+                    actual_indexes.append((int(index_row[2]), str(index_row[3]), tuple(column for _, column in index_info)))
+                if tuple(sorted(actual_indexes)) != tuple(sorted(_CANONICAL_INDEXES[name])):
+                    raise ValueError(f"SQLite indexes are not canonical for {name}")
+        except (sqlite3.Error, ValueError, KeyError, TypeError) as exc:
+            raise CleanroomEntryError(LEDGER_CORRUPT, "SQLite schema integrity verification failed") from exc
+
     def _verify_connection(self, connection: sqlite3.Connection, generation: int | None = None) -> int:
+        self._verify_schema(connection)
         try:
             metadata = dict(connection.execute("SELECT key,value FROM metadata").fetchall())
             if metadata.get("schemaVersion") != "CONTROL_LEDGER_SQLITE_V1":
@@ -746,6 +847,10 @@ class ControlLedger:
     def recover(self, *, observed_at: datetime, durability_ops: DurabilityOps | None = None) -> dict[str, Any]:
         observed = _validate_entry_time(observed_at)
         operations = durability_ops or DurabilityOps()
+        with self._bootstrap_lock():
+            return self._recover_locked(observed=observed, operations=operations)
+
+    def _recover_locked(self, *, observed: datetime, operations: DurabilityOps) -> dict[str, Any]:
         hook_failure: Exception | None = None
 
         def recovery_hook(name: str) -> None:
