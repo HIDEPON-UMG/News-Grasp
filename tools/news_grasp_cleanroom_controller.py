@@ -12,10 +12,12 @@ from .news_grasp_cleanroom_contracts import (
     ENTRY_ARGS_INVALID,
     ENTRY_LEASE_INVALID,
     ENTRY_MANIFEST_INVALID,
+    ENTRY_TIME_INVALID,
     ENTRY_UNKNOWN_INTENT,
     ENTRY_UNKNOWN_SCHEDULE,
     _ENTRY_RAW_ARGV,
     _ENTRY_SCHEDULE_ID,
+    _validate_busy_timeout,
     _validate_entry_time,
     _validate_entry_writer,
     validate_manifest,
@@ -72,11 +74,11 @@ class Controller:
         boundary_hook: Callable[[str], None] | None = None,
         busy_timeout_ms: int = 1000,
     ) -> None:
+        self.busy_timeout_ms = _validate_busy_timeout(busy_timeout_ms)
         self.runtime_root = Path(runtime_root)
         self.manifest_path = Path(manifest_path)
         self.durability_ops = durability_ops
         self.boundary_hook = boundary_hook
-        self.busy_timeout_ms = busy_timeout_ms
 
     def _ledger(self) -> ControlLedger:
         return ControlLedger(
@@ -95,6 +97,8 @@ class Controller:
     ) -> dict[str, Any]:
         # The writer envelope is the sole semantic validation before an
         # invocation identity can be durably recorded.
+        if not isinstance(observed_at, datetime):
+            raise CleanroomEntryError(ENTRY_TIME_INVALID, "observed_at must be a datetime")
         _validate_entry_writer(writer)
         wal = DurableWal(self.runtime_root, durability_ops=self.durability_ops)
         initial_event = wal.record_initial(raw_argv=raw_argv, received_at=observed_at, writer=writer)

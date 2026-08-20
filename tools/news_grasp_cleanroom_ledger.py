@@ -18,6 +18,9 @@ from .news_grasp_cleanroom_contracts import (
     CleanroomEntryError,
     _entry_canonical_sha256,
     _ENTRY_SCHEDULE_ID,
+    ENTRY_CLOCK_ROLLBACK,
+    _managed_runtime_path,
+    _validate_busy_timeout,
     _validate_entry_time,
     _validate_entry_writer,
     _writer_owner_key,
@@ -36,6 +39,8 @@ RECOVERY_NOT_REQUIRED = "NEWS_GRASP_ENTRY_RECOVERY_NOT_REQUIRED"
 _ZERO_HASH = "0" * 64
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
 _RECOVERY_ID = re.compile(r"^[0-9a-f]{32}$")
+_RECOVERY_PHASES = {"PREPARED", "QUARANTINED", "SEALED", "LEDGER_CREATED", "COMMITTED"}
+_RECOVERY_KEYS = frozenset({"schemaVersion", "recoveryId", "oldGeneration", "newGeneration", "quarantineRelativePath", "phase", "updatedAt", "journalSha256"})
 _SLOT_KEY = re.compile(r"^news-grasp-daily-v1/(\d{4}-\d{2}-\d{2})/(Scheduled|Audit)$")
 _TERMINAL_STATES = {"SUCCEEDED", "FAILED", "MISSED_SCHEDULED"}
 _BOOTSTRAP_LOCK_NAME = "bootstrap-v1.lock"
@@ -92,14 +97,17 @@ class ControlLedger:
         busy_timeout_ms: int = 1000,
         boundary_hook: Callable[[str], None] | None = None,
     ):
+        self.busy_timeout_ms = _validate_busy_timeout(busy_timeout_ms)
         self.runtime_root = Path(runtime_root)
-        self.control_root = self.runtime_root / "control"
-        self.ledger_path = self.control_root / "control-ledger-v1.sqlite3"
-        self.generation_path = self.control_root / "generation-seal-v1.json"
-        self.recovery_path = self.control_root / "recovery-journal-v1.json"
-        self.bootstrap_lock_path = self.control_root / _BOOTSTRAP_LOCK_NAME
-        self.busy_timeout_ms = busy_timeout_ms
+        self.control_root = _managed_runtime_path(self.runtime_root, self.runtime_root / "control")
+        self.ledger_path = _managed_runtime_path(self.runtime_root, self.control_root / "control-ledger-v1.sqlite3")
+        self.generation_path = _managed_runtime_path(self.runtime_root, self.control_root / "generation-seal-v1.json")
+        self.recovery_path = _managed_runtime_path(self.runtime_root, self.control_root / "recovery-journal-v1.json")
+        self.bootstrap_lock_path = _managed_runtime_path(self.runtime_root, self.control_root / _BOOTSTRAP_LOCK_NAME)
         self.boundary_hook = boundary_hook
+
+    def _managed(self, path: Path) -> Path:
+        return _managed_runtime_path(self.runtime_root, path)
 
     def _hook(self, name: str) -> None:
         if self.boundary_hook is not None:
@@ -115,7 +123,7 @@ class ControlLedger:
         unsigned = {key: value for key, value in seal.items() if key != "sealSha256"}
         if seal.get("sealSha256") != _entry_canonical_sha256(unsigned):
             raise CleanroomEntryError(LEDGER_CORRUPT, "generation seal hash drift")
-        if not isinstance(seal.get("generation"), int) or seal["generation"] < 1:
+        if isinstance(seal.get("generation"), bool) or not isinstance(seal.get("generation"), int) or seal["generation"] < 1:
             raise CleanroomEntryError(LEDGER_CORRUPT, "generation seal value is invalid")
         return seal
 
@@ -200,6 +208,73 @@ class ControlLedger:
                     pass
             stream.close()
 
+    def _materialized_state_hash(self, connection: sqlite3.Connection) -> str:
+        invocations = [
+            tuple(row)
+            for row in connection.execute(
+                "SELECT invocation_id,received_at,raw_argv_sha256,writer_key,wal_event_sha256,imported_at,status FROM invocations ORDER BY invocation_id"
+            ).fetchall()
+        ]
+        slots = [
+            tuple(row)
+            for row in connection.execute(
+                "SELECT schedule_id,issue_date,slot_kind,generation,state,owner_key,fence_token,lease_expires_at,terminal_state,result_hash,updated_at FROM slots ORDER BY schedule_id,issue_date,slot_kind"
+            ).fetchall()
+        ]
+        metadata_row = connection.execute("SELECT value FROM metadata WHERE key='lastObservedAt'").fetchone()
+        last_observed_at = metadata_row[0] if metadata_row is not None else ""
+        return _entry_canonical_sha256({"invocations": invocations, "slots": slots, "lastObservedAt": last_observed_at})
+
+    def _update_materialized_state(self, connection: sqlite3.Connection) -> None:
+        connection.execute(
+            "UPDATE metadata SET value=? WHERE key='materializedStateSha256'",
+            (self._materialized_state_hash(connection),),
+        )
+
+    def _read_last_observed_from_connection(self, connection: sqlite3.Connection) -> datetime | None:
+        value = connection.execute("SELECT value FROM metadata WHERE key='lastObservedAt'").fetchone()
+        if value is None or not value[0]:
+            return None
+        try:
+            persisted = datetime.fromisoformat(value[0])
+            if persisted.tzinfo is None or persisted.utcoffset() != timedelta(hours=9) or persisted.fold != 0:
+                raise ValueError("persisted lastObservedAt timezone is invalid")
+            return _validate_entry_time(persisted.astimezone(ZoneInfo("Asia/Tokyo")))
+        except (TypeError, ValueError, CleanroomEntryError) as exc:
+            raise CleanroomEntryError(LEDGER_CORRUPT, "lastObservedAt is invalid") from exc
+
+    def _validate_recovery_journal(self, journal: Mapping[str, Any]) -> dict[str, Any]:
+        if not isinstance(journal, dict) or set(journal) != _RECOVERY_KEYS:
+            raise CleanroomEntryError(RECOVERY_FAILED, "recovery journal keys are invalid")
+        if journal.get("schemaVersion") != "CONTROL_LEDGER_RECOVERY_JOURNAL_V1":
+            raise CleanroomEntryError(RECOVERY_FAILED, "recovery journal schema is invalid")
+        if not isinstance(journal.get("recoveryId"), str) or _RECOVERY_ID.fullmatch(journal["recoveryId"]) is None:
+            raise CleanroomEntryError(RECOVERY_FAILED, "recovery id is invalid")
+        old_generation = journal.get("oldGeneration")
+        new_generation = journal.get("newGeneration")
+        if isinstance(old_generation, bool) or not isinstance(old_generation, int) or old_generation < 1:
+            raise CleanroomEntryError(RECOVERY_FAILED, "old generation is invalid")
+        if isinstance(new_generation, bool) or not isinstance(new_generation, int) or new_generation != old_generation + 1:
+            raise CleanroomEntryError(RECOVERY_FAILED, "new generation is invalid")
+        expected_quarantine = f"control/quarantine/g{old_generation:08d}-to-g{new_generation:08d}-{journal['recoveryId']}"
+        if journal.get("quarantineRelativePath") != expected_quarantine:
+            raise CleanroomEntryError(RECOVERY_FAILED, "quarantine path is invalid")
+        if not isinstance(journal.get("phase"), str) or journal["phase"] not in _RECOVERY_PHASES:
+            raise CleanroomEntryError(RECOVERY_FAILED, "recovery phase is invalid")
+        if not isinstance(journal.get("updatedAt"), str):
+            raise CleanroomEntryError(RECOVERY_FAILED, "recovery updatedAt is invalid")
+        try:
+            updated_at = datetime.fromisoformat(journal["updatedAt"])
+            if updated_at.tzinfo is None or updated_at.utcoffset() != timedelta(hours=9) or updated_at.fold != 0:
+                raise ValueError("recovery updatedAt timezone is invalid")
+            _validate_entry_time(updated_at.astimezone(ZoneInfo("Asia/Tokyo")))
+        except (TypeError, ValueError, CleanroomEntryError) as exc:
+            raise CleanroomEntryError(RECOVERY_FAILED, "recovery updatedAt is invalid") from exc
+        journal_hash = journal.get("journalSha256")
+        if not isinstance(journal_hash, str) or not _HEX64.fullmatch(journal_hash) or journal_hash != _entry_canonical_sha256({key: value for key, value in journal.items() if key != "journalSha256"}):
+            raise CleanroomEntryError(RECOVERY_FAILED, "recovery journal hash is invalid")
+        return dict(journal)
+
     def _create_schema(self, connection: sqlite3.Connection, generation: int) -> None:
         connection.executescript(
             """
@@ -244,9 +319,12 @@ class ControlLedger:
             "generation": str(generation),
             "lastObservedAt": existing.get("lastObservedAt", ""),
             "eventChainHead": existing.get("eventChainHead", _ZERO_HASH),
+            "materializedStateSha256": existing.get("materializedStateSha256", ""),
         }
         for key, value in values.items():
             connection.execute("INSERT INTO metadata(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", (key, value))
+        if not existing.get("materializedStateSha256"):
+            self._update_materialized_state(connection)
 
     def _ensure_initialized(self, observed_at: datetime) -> int:
         with self._bootstrap_lock():
@@ -291,6 +369,9 @@ class ControlLedger:
                 previous = digest
             if metadata["eventChainHead"] != previous:
                 raise ValueError("event head")
+            materialized = metadata.get("materializedStateSha256", "")
+            if not _HEX64.fullmatch(materialized) or materialized != self._materialized_state_hash(connection):
+                raise ValueError("materialized state")
             return current_generation
         except (sqlite3.Error, ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
             raise CleanroomEntryError(LEDGER_CORRUPT, "SQLite ledger integrity verification failed") from exc
@@ -332,7 +413,8 @@ class ControlLedger:
     def import_zero_entries(self, zero_entries: tuple[Mapping[str, Any], ...], *, observed_at: datetime) -> None:
         if not zero_entries:
             return
-        generation = self._ensure_initialized(observed_at)
+        observed = _validate_entry_time(observed_at)
+        generation = self._ensure_initialized(observed)
         connection = self._connect()
         try:
             try:
@@ -340,9 +422,13 @@ class ControlLedger:
             except sqlite3.OperationalError as exc:
                 raise CleanroomEntryError(LEDGER_BUSY, "SQLite ledger is busy") from exc
             self._verify_connection(connection, generation)
+            persisted = self._read_last_observed_from_connection(connection)
+            if persisted is not None and observed < persisted:
+                raise CleanroomEntryError(ENTRY_CLOCK_ROLLBACK, "observed_at precedes persisted lastObservedAt")
             for event in zero_entries:
-                self._import_invocation(connection, event, observed_at, status="RECOVERED_ZERO_ENTRY")
-            connection.execute("UPDATE metadata SET value=? WHERE key='lastObservedAt'", (_iso(observed_at),))
+                self._import_invocation(connection, event, observed, status="RECOVERED_ZERO_ENTRY")
+            connection.execute("UPDATE metadata SET value=? WHERE key='lastObservedAt'", (_iso(observed),))
+            self._update_materialized_state(connection)
             connection.commit()
         except CleanroomEntryError:
             connection.rollback()
@@ -510,6 +596,7 @@ class ControlLedger:
                 accepted = accepted or owner_changed
                 self._append_event(connection, generation, "SLOT_DECISION", slot_key, {"decision": decision_name, "ownerDisposition": owner_disposition, "ownerKey": owner_projection["ownerKey"], "fenceToken": owner_projection["fenceToken"], "scheduledState": scheduled_state})
             connection.execute("UPDATE metadata SET value=? WHERE key='lastObservedAt'", (_iso(observed_at),))
+            self._update_materialized_state(connection)
             self._hook("before_ledger_commit")
             connection.commit()
             committed = True
@@ -564,7 +651,7 @@ class ControlLedger:
             writer_value, owner_key = _validate_entry_writer(writer)
         except CleanroomEntryError:
             raise CleanroomEntryError(COMMIT_INVALID, "writer is invalid for terminal commit")
-        if _SLOT_KEY.fullmatch(slot_key) is None or isinstance(fence_token, bool) or not isinstance(fence_token, int) or fence_token < 1 or terminal_state not in {"SUCCEEDED", "FAILED"} or not isinstance(result_hash, str) or not _HEX64.fullmatch(result_hash):
+        if not isinstance(slot_key, str) or _SLOT_KEY.fullmatch(slot_key) is None or isinstance(fence_token, bool) or not isinstance(fence_token, int) or fence_token < 1 or terminal_state not in {"SUCCEEDED", "FAILED"} or not isinstance(result_hash, str) or not _HEX64.fullmatch(result_hash):
             raise CleanroomEntryError(COMMIT_INVALID, "terminal commit payload is invalid")
         generation = self._ensure_initialized(observed)
         connection = self._connect()
@@ -584,6 +671,7 @@ class ControlLedger:
             self._hook("before_terminal_commit")
             connection.execute("UPDATE slots SET state='TERMINAL',lease_expires_at=NULL,terminal_state=?,result_hash=?,updated_at=? WHERE schedule_id=? AND issue_date=? AND slot_kind=?", (terminal_state, result_hash, _iso(observed), _ENTRY_SCHEDULE_ID, slot_key.split("/")[1], slot_key.split("/")[2]))
             self._append_event(connection, generation, "SLOT_TERMINAL", slot_key, {"terminalState": terminal_state, "resultHash": result_hash, "ownerKey": owner_key, "fenceToken": fence_token})
+            self._update_materialized_state(connection)
             connection.commit()
             committed = True
             self._hook("after_terminal_commit")
@@ -619,6 +707,50 @@ class ControlLedger:
         finally:
             connection.close()
 
+    def _recovery_genesis_matches(self, recovery_id: str, old_generation: int, new_generation: int) -> bool:
+        if not self.ledger_path.exists():
+            return False
+        connection: sqlite3.Connection | None = None
+        try:
+            connection = self._connect()
+            self._verify_connection(connection, new_generation)
+            rows = connection.execute(
+                "SELECT sequence,generation,event_type,slot_key,payload_json,previous_event_sha256,event_sha256 FROM events ORDER BY sequence"
+            ).fetchall()
+            if len(rows) != 1:
+                return False
+            row = rows[0]
+            payload = json.loads(row["payload_json"])
+            expected_payload = {"recoveryId": recovery_id, "oldGeneration": old_generation, "newGeneration": new_generation}
+            return (
+                row["sequence"] == 1
+                and row["generation"] == new_generation
+                and row["event_type"] == "LEDGER_RECOVERED"
+                and row["slot_key"] is None
+                and payload == expected_payload
+                and row["previous_event_sha256"] == _ZERO_HASH
+            )
+        except (CleanroomEntryError, OSError, sqlite3.Error, TypeError, ValueError, json.JSONDecodeError):
+            return False
+        finally:
+            if connection is not None:
+                connection.close()
+
+    def _quarantine_partial_ledger(self, quarantine_path: Path, operations: DurabilityOps) -> None:
+        token = uuid.uuid4().hex
+        for source in (
+            self.ledger_path,
+            self.ledger_path.with_name(self.ledger_path.name + "-wal"),
+            self.ledger_path.with_name(self.ledger_path.name + "-shm"),
+        ):
+            source = self._managed(source)
+            if not source.exists():
+                continue
+            target = self._managed(quarantine_path / f"partial-{token}-{source.name}")
+            operations.replace(source, target)
+            operations.flush_parent(source.parent)
+            operations.flush_parent(target.parent)
+
     def recover(self, *, observed_at: datetime, durability_ops: DurabilityOps | None = None) -> dict[str, Any]:
         observed = _validate_entry_time(observed_at)
         operations = durability_ops or DurabilityOps()
@@ -640,15 +772,14 @@ class ControlLedger:
                 raise
         else:
             healthy = True
-        self.control_root.mkdir(parents=True, exist_ok=True)
         seal = self._read_generation_seal()
         journal: dict[str, Any]
         if self.recovery_path.exists():
             try:
-                journal = json.loads(self.recovery_path.read_text(encoding="utf-8"))
-                if journal.get("journalSha256") != _entry_canonical_sha256({key: value for key, value in journal.items() if key != "journalSha256"}):
-                    raise ValueError("journal hash")
-            except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
+                journal = self._validate_recovery_journal(json.loads(self.recovery_path.read_text(encoding="utf-8")))
+            except (OSError, UnicodeError, json.JSONDecodeError, ValueError, CleanroomEntryError) as exc:
+                if isinstance(exc, CleanroomEntryError) and exc.reason == RECOVERY_FAILED:
+                    raise
                 raise CleanroomEntryError(RECOVERY_FAILED, "recovery journal is invalid") from exc
             if journal.get("phase") == "COMMITTED" and healthy:
                 return {
@@ -662,7 +793,7 @@ class ControlLedger:
                     "externalEffectCount": 0,
                 }
             if journal.get("phase") == "COMMITTED":
-                history_path = self.control_root / "recovery-history" / f"{journal['recoveryId']}.json"
+                history_path = self._managed(self.control_root / "recovery-history" / f"{journal['recoveryId']}.json")
                 history_path.parent.mkdir(parents=True, exist_ok=True)
                 if history_path.exists():
                     try:
@@ -687,30 +818,34 @@ class ControlLedger:
                     "updatedAt": _iso(observed),
                 }
                 journal["journalSha256"] = _entry_canonical_sha256(journal)
+                journal = self._validate_recovery_journal(journal)
                 _durable_write(self.recovery_path, journal, operations, RECOVERY_FAILED)
                 recovery_hook("after_recovery_journal_prepared")
         else:
             if healthy:
                 raise CleanroomEntryError(RECOVERY_NOT_REQUIRED, "ledger is healthy")
+            self.control_root.mkdir(parents=True, exist_ok=True)
             old_generation = int(seal["generation"])
             recovery_id = uuid.uuid4().hex
             new_generation = old_generation + 1
             quarantine = f"control/quarantine/g{old_generation:08d}-to-g{new_generation:08d}-{recovery_id}"
             journal = {"schemaVersion": "CONTROL_LEDGER_RECOVERY_JOURNAL_V1", "recoveryId": recovery_id, "oldGeneration": old_generation, "newGeneration": new_generation, "quarantineRelativePath": quarantine, "phase": "PREPARED", "updatedAt": _iso(observed)}
             journal["journalSha256"] = _entry_canonical_sha256(journal)
+            journal = self._validate_recovery_journal(journal)
             _durable_write(self.recovery_path, journal, operations, RECOVERY_FAILED)
             recovery_hook("after_recovery_journal_prepared")
         old_generation = int(journal["oldGeneration"])
         recovery_id = journal["recoveryId"]
         new_generation = int(journal["newGeneration"])
-        quarantine_path = self.runtime_root / journal["quarantineRelativePath"]
+        quarantine_path = self._managed(self.runtime_root / journal["quarantineRelativePath"])
         phase = journal["phase"]
         try:
             if phase == "PREPARED":
                 quarantine_path.mkdir(parents=True, exist_ok=True)
                 for source in (self.ledger_path, self.ledger_path.with_name(self.ledger_path.name + "-wal"), self.ledger_path.with_name(self.ledger_path.name + "-shm")):
+                    source = self._managed(source)
                     if source.exists():
-                        target = quarantine_path / source.name
+                        target = self._managed(quarantine_path / source.name)
                         operations.replace(source, target)
                         operations.flush_parent(source.parent)
                         operations.flush_parent(target.parent)
@@ -721,7 +856,16 @@ class ControlLedger:
                 recovery_hook("after_recovery_quarantined")
                 phase = "QUARANTINED"
             if phase == "QUARANTINED":
-                self._write_generation_seal(new_generation, seal["sealSha256"], observed, operations)
+                current_seal = self._read_generation_seal()
+                if current_seal["generation"] == new_generation:
+                    previous_seal = current_seal.get("previousSealSha256")
+                    if not isinstance(previous_seal, str) or not _HEX64.fullmatch(previous_seal) or previous_seal == current_seal.get("sealSha256"):
+                        raise CleanroomEntryError(RECOVERY_FAILED, "recovery seal linkage is invalid")
+                    seal = current_seal
+                elif current_seal["generation"] == old_generation:
+                    seal = self._write_generation_seal(new_generation, current_seal["sealSha256"], observed, operations)
+                else:
+                    raise CleanroomEntryError(RECOVERY_FAILED, "recovery generation is not resumable")
                 journal["phase"] = "SEALED"
                 journal["updatedAt"] = _iso(observed)
                 journal["journalSha256"] = _entry_canonical_sha256({key: value for key, value in journal.items() if key != "journalSha256"})
@@ -729,18 +873,21 @@ class ControlLedger:
                 recovery_hook("after_recovery_generation_sealed")
                 phase = "SEALED"
             if phase == "SEALED":
-                connection = sqlite3.connect(self.ledger_path, isolation_level=None)
-                try:
-                    self._create_schema(connection, new_generation)
-                    event = {"sequence": 1, "generation": new_generation, "eventType": "LEDGER_RECOVERED", "slotKey": None, "payload": {"recoveryId": recovery_id, "oldGeneration": old_generation, "newGeneration": new_generation}, "previousEventSha256": _ZERO_HASH}
-                    digest = _event_hash(event)
-                    connection.execute("INSERT INTO events(sequence,generation,event_type,slot_key,payload_json,previous_event_sha256,event_sha256) VALUES(?,?,?,?,?,?,?)", (1, new_generation, "LEDGER_RECOVERED", None, json.dumps(event["payload"], sort_keys=True, separators=(",", ":")), _ZERO_HASH, digest))
-                    connection.execute("UPDATE metadata SET value=? WHERE key='eventChainHead'", (digest,))
-                    connection.execute("PRAGMA journal_mode=WAL")
-                    connection.execute("PRAGMA synchronous=FULL")
-                    connection.execute("PRAGMA wal_checkpoint(FULL)")
-                finally:
-                    connection.close()
+                if not self._recovery_genesis_matches(recovery_id, old_generation, new_generation):
+                    self._quarantine_partial_ledger(quarantine_path, operations)
+                    connection = sqlite3.connect(self.ledger_path, isolation_level=None)
+                    try:
+                        self._create_schema(connection, new_generation)
+                        event = {"sequence": 1, "generation": new_generation, "eventType": "LEDGER_RECOVERED", "slotKey": None, "payload": {"recoveryId": recovery_id, "oldGeneration": old_generation, "newGeneration": new_generation}, "previousEventSha256": _ZERO_HASH}
+                        digest = _event_hash(event)
+                        connection.execute("INSERT INTO events(sequence,generation,event_type,slot_key,payload_json,previous_event_sha256,event_sha256) VALUES(?,?,?,?,?,?,?)", (1, new_generation, "LEDGER_RECOVERED", None, json.dumps(event["payload"], sort_keys=True, separators=(",", ":")), _ZERO_HASH, digest))
+                        connection.execute("UPDATE metadata SET value=? WHERE key='eventChainHead'", (digest,))
+                        self._update_materialized_state(connection)
+                        connection.execute("PRAGMA journal_mode=WAL")
+                        connection.execute("PRAGMA synchronous=FULL")
+                        connection.execute("PRAGMA wal_checkpoint(FULL)")
+                    finally:
+                        connection.close()
                 self.verify()
                 journal["phase"] = "LEDGER_CREATED"
                 journal["updatedAt"] = _iso(observed)

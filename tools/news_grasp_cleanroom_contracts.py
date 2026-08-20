@@ -6,6 +6,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta
 from hashlib import sha256
 import json
+import os
 from pathlib import Path
 import re
 from collections.abc import Mapping
@@ -33,6 +34,7 @@ ENTRY_WRITER_INVALID = "NEWS_GRASP_ENTRY_WRITER_INVALID"
 ENTRY_LEASE_INVALID = "NEWS_GRASP_ENTRY_LEASE_INVALID"
 ENTRY_TIME_INVALID = "NEWS_GRASP_ENTRY_TIME_INVALID"
 ENTRY_CLOCK_ROLLBACK = "NEWS_GRASP_ENTRY_CLOCK_ROLLBACK"
+ENTRY_BUSY_TIMEOUT_INVALID = "NEWS_GRASP_ENTRY_BUSY_TIMEOUT_INVALID"
 
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
@@ -550,6 +552,44 @@ def _entry_fail(reason: str, message: str) -> None:
     raise CleanroomEntryError(reason, message)
 
 
+def _validate_busy_timeout(value: Any) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= 60000:
+        _entry_fail(ENTRY_BUSY_TIMEOUT_INVALID, "busy_timeout_ms must be an integer from 1 through 60000")
+    return value
+
+
+def _managed_runtime_path(runtime_root: Path, candidate: Path) -> Path:
+    """派生した管理対象pathがruntime_root内でリンクを跨がないことを検証する。"""
+    try:
+        root = Path(runtime_root).absolute()
+        path = Path(candidate)
+        if not path.is_absolute():
+            path = root / path
+        relative = path.relative_to(root)
+        current = root
+        components = [current]
+        for part in relative.parts:
+            current = current / part
+            components.append(current)
+        for component in components:
+            try:
+                if component.is_symlink():
+                    raise ValueError("managed path contains a symlink")
+                attributes = getattr(os.lstat(component), "st_file_attributes", 0)
+                if attributes & 0x400:
+                    raise ValueError("managed path contains a reparse point")
+            except FileNotFoundError:
+                continue
+        resolved_root = root.resolve(strict=False)
+        resolved_path = path.resolve(strict=False)
+        resolved_path.relative_to(resolved_root)
+        return path
+    except CleanroomEntryError:
+        raise
+    except (OSError, RuntimeError, ValueError) as exc:
+        raise CleanroomEntryError("NEWS_GRASP_ENTRY_LEDGER_CORRUPT", "managed path is outside or linked") from exc
+
+
 def _entry_canonical_sha256(value: Any) -> str:
     try:
         payload = json.dumps(
@@ -658,7 +698,7 @@ def reconcile_slot(
         previous = _validate_entry_time(last_observed_at)
         if observed < previous:
             _entry_fail(ENTRY_CLOCK_ROLLBACK, "observed_at precedes persisted lastObservedAt")
-    if scheduled_state not in {"ABSENT", "ACTIVE", "TERMINAL", "SUCCEEDED", "FAILED", "MISSED_SCHEDULED"}:
+    if not isinstance(scheduled_state, str) or scheduled_state not in {"ABSENT", "ACTIVE", "TERMINAL", "SUCCEEDED", "FAILED", "MISSED_SCHEDULED"}:
         _entry_fail(ENTRY_MANIFEST_INVALID, "scheduled state is invalid")
     local_time = observed.timetz().replace(tzinfo=None)
     if local_time < datetime.strptime("06:00:00", "%H:%M:%S").time():
