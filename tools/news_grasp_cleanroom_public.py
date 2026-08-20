@@ -99,6 +99,20 @@ def _terminal_value(lineage: str, value: Any) -> tuple[dict[str, Any], str, str]
     raise PublicControlError(PUBLIC_LINEAGE_CONFLICT, f"{lineage} state is invalid")
 
 
+def _persisted_object(value: Any, field: str) -> dict[str, Any]:
+    """Parse a stored JSON object without accepting a non-canonical row."""
+
+    if not isinstance(value, str):
+        raise PublicControlError(PUBLIC_LEDGER_CORRUPT, f"{field} is not JSON text")
+    try:
+        parsed = json.loads(value)
+    except (TypeError, ValueError) as exc:
+        raise PublicControlError(PUBLIC_LEDGER_CORRUPT, f"{field} is not valid JSON") from exc
+    if not isinstance(parsed, dict) or value != _canonical(parsed):
+        raise PublicControlError(PUBLIC_LEDGER_CORRUPT, f"{field} is not canonical")
+    return parsed
+
+
 class PublicController:
     """inventory を検証し、surface と通知を durable に収束させる。"""
 
@@ -243,6 +257,7 @@ class PublicController:
         lineage_hash = _hash(state_json)
         existing = connection.execute("SELECT * FROM lineages WHERE issue_date=? AND lineage=?", (issue_date, lineage)).fetchone()
         if existing is not None:
+            self._validate_lineage_row(existing, issue_date, lineage)
             if existing["state_json"] != _canonical(state_json) or existing["terminal_hash"] != terminal_hash or existing["lineage_hash"] != lineage_hash:
                 raise PublicControlError(PUBLIC_LINEAGE_CONFLICT, f"{lineage} lineage conflicts")
             return existing
@@ -254,6 +269,27 @@ class PublicController:
         except sqlite3.Error as exc:
             raise PublicControlError(PUBLIC_LINEAGE_CONFLICT, f"{lineage} lineage cannot be inserted") from exc
         return connection.execute("SELECT * FROM lineages WHERE issue_date=? AND lineage=?", (issue_date, lineage)).fetchone()
+
+    def _validate_lineage_row(self, row: sqlite3.Row, issue_date: str, lineage: str) -> sqlite3.Row:
+        if row["issue_date"] != issue_date or row["lineage"] != lineage:
+            raise PublicControlError(PUBLIC_LEDGER_CORRUPT, "lineage identity is corrupt")
+        state_json = _persisted_object(row["state_json"], "lineage state")
+        state = state_json.get("state")
+        if not isinstance(state, str) or not state:
+            raise PublicControlError(PUBLIC_LEDGER_CORRUPT, "lineage state is corrupt")
+        stored_terminal = state_json.get("terminalHash")
+        if stored_terminal is None:
+            expected_terminals = {
+                _hash({"lineage": lineage, "state": state_json}),
+                _hash({"lineage": lineage, "state": state}),
+            }
+        elif isinstance(stored_terminal, str) and stored_terminal:
+            expected_terminals = {stored_terminal}
+        else:
+            raise PublicControlError(PUBLIC_LEDGER_CORRUPT, "lineage terminal hash is corrupt")
+        if row["state"] != state or row["terminal_hash"] not in expected_terminals or row["lineage_hash"] != _hash(state_json):
+            raise PublicControlError(PUBLIC_LEDGER_CORRUPT, "lineage columns are inconsistent")
+        return row
 
     def _surface_key(self, issue_date: str, surface_id: str, artifact_hash: str) -> str:
         return _hash({"issueDate": issue_date, "surfaceId": surface_id, "artifactSha256": artifact_hash})
@@ -267,6 +303,7 @@ class PublicController:
         idempotency_key = self._surface_key(issue_date, surface_id, artifact_hash)
         existing = connection.execute("SELECT * FROM surfaces WHERE issue_date=? AND surface_id=?", (issue_date, surface_id)).fetchone()
         if existing is not None:
+            self._validate_surface_row(existing, issue_date, surface_id)
             if existing["artifact_sha256"] != artifact_hash or existing["idempotency_key"] != idempotency_key:
                 raise PublicControlError(PUBLIC_LEDGER_CORRUPT, "surface identity conflicts")
             return existing
@@ -277,7 +314,56 @@ class PublicController:
             "INSERT INTO surfaces(issue_date,surface_id,state,idempotency_key,artifact_sha256,terminal_hash,receipt_json,attempt_count,attempt_disposition) VALUES(?,?,?,?,?,?,?,?,?)",
             (issue_date, surface_id, status if terminal_hash is not None else "PENDING", idempotency_key, artifact_hash, terminal_hash, None, 0, disposition),
         )
-        return connection.execute("SELECT * FROM surfaces WHERE issue_date=? AND surface_id=?", (issue_date, surface_id)).fetchone()
+        created = connection.execute("SELECT * FROM surfaces WHERE issue_date=? AND surface_id=?", (issue_date, surface_id)).fetchone()
+        if created is None:
+            raise PublicControlError(PUBLIC_LEDGER_CORRUPT, "surface row was not persisted")
+        return self._validate_surface_row(created, issue_date, surface_id)
+
+    def _validate_surface_row(self, row: sqlite3.Row, issue_date: str, surface_id: str) -> sqlite3.Row:
+        if row["issue_date"] != issue_date or row["surface_id"] != surface_id:
+            raise PublicControlError(PUBLIC_LEDGER_CORRUPT, "surface identity is corrupt")
+        artifact_hash = row["artifact_sha256"]
+        if not isinstance(artifact_hash, str) or _HEX64.fullmatch(artifact_hash) is None:
+            raise PublicControlError(PUBLIC_LEDGER_CORRUPT, "surface artifact hash is corrupt")
+        expected_key = self._surface_key(issue_date, surface_id, artifact_hash)
+        if row["idempotency_key"] != expected_key:
+            raise PublicControlError(PUBLIC_LEDGER_CORRUPT, "surface idempotency key is corrupt")
+        state = row["state"]
+        disposition = row["attempt_disposition"]
+        attempt_count = row["attempt_count"]
+        if not isinstance(attempt_count, int) or isinstance(attempt_count, bool) or attempt_count < 0:
+            raise PublicControlError(PUBLIC_LEDGER_CORRUPT, "surface attempt count is corrupt")
+        receipt_json = row["receipt_json"]
+        terminal_hash = row["terminal_hash"]
+        if state == "PENDING":
+            if terminal_hash is not None or receipt_json is not None or (disposition, attempt_count) not in {
+                ("INTENT_DURABLE", 0),
+                ("QUERY_REQUIRED", 1),
+            }:
+                raise PublicControlError(PUBLIC_LEDGER_CORRUPT, "pending surface columns are inconsistent")
+            return row
+        if state == "NOT_REQUIRED":
+            expected_terminal = self._surface_terminal_hash(issue_date, surface_id, artifact_hash, "NOT_REQUIRED")
+            if disposition != "TERMINAL" or attempt_count != 0 or receipt_json is not None or terminal_hash != expected_terminal:
+                raise PublicControlError(PUBLIC_LEDGER_CORRUPT, "not-required surface columns are inconsistent")
+            return row
+        if state != "CONFIRMED" or disposition != "TERMINAL":
+            raise PublicControlError(PUBLIC_LEDGER_CORRUPT, "surface state is corrupt")
+        if attempt_count == 0:
+            expected_terminal = self._surface_terminal_hash(issue_date, surface_id, artifact_hash, "CONFIRMED")
+            if receipt_json is not None or terminal_hash != expected_terminal:
+                raise PublicControlError(PUBLIC_LEDGER_CORRUPT, "inventory surface columns are inconsistent")
+            return row
+        if attempt_count != 1 or receipt_json is None:
+            raise PublicControlError(PUBLIC_LEDGER_CORRUPT, "published surface columns are inconsistent")
+        receipt = _persisted_object(receipt_json, "surface receipt")
+        try:
+            validated = self._surface_receipt(receipt, surface_id, expected_key)
+        except PublicControlError as exc:
+            raise PublicControlError(PUBLIC_LEDGER_CORRUPT, "persisted surface receipt is corrupt") from exc
+        if terminal_hash != validated["terminalHash"]:
+            raise PublicControlError(PUBLIC_LEDGER_CORRUPT, "surface receipt hash is inconsistent")
+        return row
 
     def _surface_receipt(self, value: Any, surface_id: str, idempotency_key: str) -> dict[str, Any]:
         if not isinstance(value, Mapping):
@@ -309,6 +395,7 @@ class PublicController:
         return connection.execute("SELECT * FROM surfaces WHERE issue_date=? AND surface_id=?", (row["issue_date"], row["surface_id"])).fetchone()
 
     def _publish_surface(self, connection: sqlite3.Connection, row: sqlite3.Row) -> sqlite3.Row:
+        row = self._validate_surface_row(row, row["issue_date"], row["surface_id"])
         if row["state"] in {"CONFIRMED", "NOT_REQUIRED"}:
             return row
         if row["attempt_disposition"] == "QUERY_REQUIRED":
@@ -323,6 +410,7 @@ class PublicController:
             with self._transaction(connection):
                 return self._confirm_surface(connection, row, queried)
         row = self._prepare_surface_attempt(connection, row)
+        row = self._validate_surface_row(row, row["issue_date"], row["surface_id"])
         self._hook("before_surface_publish")
         try:
             receipt = self.publisher.publish(
@@ -364,8 +452,43 @@ class PublicController:
             raise PublicControlError(PUBLIC_NOTIFICATION_INVALID, "notification receipt binding is invalid")
         return receipt
 
+    def _notification_key(self, issue_date: str, public_hash: str) -> str:
+        return _hash({"issueDate": issue_date, "publicTerminalHash": public_hash})
+
+    def _validate_notification_row(self, row: sqlite3.Row, issue_date: str, public_hash: str) -> sqlite3.Row:
+        expected_key = self._notification_key(issue_date, public_hash)
+        if row["issue_date"] != issue_date or row["idempotency_key"] != expected_key:
+            raise PublicControlError(PUBLIC_LEDGER_CORRUPT, "notification identity is corrupt")
+        state = row["state"]
+        disposition = row["attempt_disposition"]
+        attempt_count = row["attempt_count"]
+        if not isinstance(attempt_count, int) or isinstance(attempt_count, bool) or attempt_count < 0:
+            raise PublicControlError(PUBLIC_LEDGER_CORRUPT, "notification attempt count is corrupt")
+        receipt_json = row["receipt_json"]
+        if state == "PENDING":
+            if receipt_json is not None or attempt_count != 1 or disposition not in {"INTENT_DURABLE", "QUERY_REQUIRED"}:
+                raise PublicControlError(PUBLIC_LEDGER_CORRUPT, "pending notification columns are inconsistent")
+            return row
+        if state != "CONFIRMED" or disposition != "TERMINAL" or attempt_count != 1 or receipt_json is None:
+            raise PublicControlError(PUBLIC_LEDGER_CORRUPT, "notification columns are inconsistent")
+        receipt = _persisted_object(receipt_json, "notification receipt")
+        try:
+            validated = self._notification_receipt(receipt, expected_key)
+        except PublicControlError as exc:
+            raise PublicControlError(PUBLIC_LEDGER_CORRUPT, "persisted notification receipt is corrupt") from exc
+        expected_terminal = _hash(
+            {
+                "issueDate": issue_date,
+                "idempotencyKey": expected_key,
+                "publicTerminalHash": public_hash,
+            }
+        )
+        if validated["terminalHash"] != expected_terminal:
+            raise PublicControlError(PUBLIC_LEDGER_CORRUPT, "notification receipt hash is inconsistent")
+        return row
+
     def _notify(self, connection: sqlite3.Connection, issue_date: str, public_hash: str) -> sqlite3.Row:
-        key = _hash({"issueDate": issue_date, "publicTerminalHash": public_hash})
+        key = self._notification_key(issue_date, public_hash)
         row = connection.execute("SELECT * FROM notifications WHERE issue_date=?", (issue_date,)).fetchone()
         if row is None:
             connection.execute(
@@ -373,8 +496,9 @@ class PublicController:
                 (issue_date, "PENDING", key, None, 1, "INTENT_DURABLE"),
             )
             row = connection.execute("SELECT * FROM notifications WHERE issue_date=?", (issue_date,)).fetchone()
-        elif row["idempotency_key"] != key:
-            raise PublicControlError(PUBLIC_LEDGER_CORRUPT, "notification identity conflicts")
+        if row is None:
+            raise PublicControlError(PUBLIC_LEDGER_CORRUPT, "notification row was not persisted")
+        self._validate_notification_row(row, issue_date, public_hash)
         if row["state"] == "CONFIRMED":
             return row
         if row["attempt_disposition"] == "QUERY_REQUIRED":
@@ -415,18 +539,26 @@ class PublicController:
         notification = connection.execute("SELECT * FROM notifications WHERE issue_date=?", (issue_date,)).fetchone()
         if any(row is None for row in surfaces) or any(row is None for row in lineages) or notification is None:
             raise PublicControlError(PUBLIC_LEDGER_CORRUPT, "public terminal projection is incomplete")
+        valid_surfaces = [self._validate_surface_row(row, issue_date, surface_id) for row, surface_id in zip(surfaces, required)]
+        valid_lineages = [self._validate_lineage_row(row, issue_date, lineage) for row, lineage in zip(lineages, _LINEAGES)]
+        public_row = next(row for row in valid_lineages if row["lineage"] == "Public")
+        valid_notification = self._validate_notification_row(
+            notification,
+            issue_date,
+            public_row["terminal_hash"],
+        )
         return {
             "schemaVersion": "PUBLIC_RECONCILE_RESULT_V1",
             "issueDate": issue_date,
-            "publicState": next(row["state"] for row in lineages if row["lineage"] == "Public"),
+            "publicState": public_row["state"],
             "requiredSurfaceIds": list(required),
-            "surfaceStates": {row["surface_id"]: row["state"] for row in surfaces},
+            "surfaceStates": {row["surface_id"]: row["state"] for row in valid_surfaces},
             "lineages": [
                 {"lineage": row["lineage"], "state": row["state"], "terminalHash": row["terminal_hash"], "lineageHash": row["lineage_hash"]}
-                for row in lineages
+                for row in valid_lineages
             ],
-            "notificationState": notification["state"],
-            "terminalHashes": {row["lineage"]: row["terminal_hash"] for row in lineages},
+            "notificationState": valid_notification["state"],
+            "terminalHashes": {row["lineage"]: row["terminal_hash"] for row in valid_lineages},
         }
 
     def reconcile(
