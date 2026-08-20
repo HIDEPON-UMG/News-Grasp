@@ -47,6 +47,10 @@ _WAL_KEYS = frozenset(
 )
 
 
+class _CreateOnceCollision(Exception):
+    """create-once 公開先の既存衝突だけを内部で伝播する。"""
+
+
 def _fsync_real(fd: int) -> None:
     """Windows Python の fsync(2) 不実装環境でも FlushFileBuffers を使う。"""
     try:
@@ -142,9 +146,20 @@ def _write_json(path: Path, payload: Mapping[str, Any], operations: DurabilityOp
                     _fsync_real(stream.fileno())
                 else:
                     raise
-        publisher = operations.publish_create_once if path.name == "0002-imported.json" else operations.replace
-        publisher(temp, path)
+        if path.name == "0002-imported.json":
+            try:
+                operations.publish_create_once(temp, path)
+            except FileExistsError as exc:
+                raise _CreateOnceCollision from exc
+        else:
+            operations.replace(temp, path)
         operations.flush_parent(path.parent)
+    except _CreateOnceCollision:
+        try:
+            temp.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise
     except Exception as exc:
         try:
             temp.unlink(missing_ok=True)
@@ -314,13 +329,9 @@ class DurableWal:
         event["eventSha256"] = _event_hash(event)
         try:
             _write_json(imported_path, event, self.operations, WAL_FINALIZE_FAILED)
-        except CleanroomEntryError as exc:
-            # Another controller may have published the same immutable marker
-            # between the existence check and os.replace on Windows.
-            if exc.reason == WAL_FINALIZE_FAILED and imported_path.exists():
-                existing = _read_event(imported_path, event_type="INVOCATION_IMPORTED", phase="LEDGER_IMPORTED", sequence=2)
-                return _validate_imported_parity(initial, existing)
-            raise
+        except _CreateOnceCollision:
+            existing = _read_event(imported_path, event_type="INVOCATION_IMPORTED", phase="LEDGER_IMPORTED", sequence=2)
+            return _validate_imported_parity(initial, existing)
         return event
 
     def verify(self) -> dict[str, Any]:
