@@ -642,8 +642,11 @@ def test_edge_writer_crash_recovery(tmp_path: Path) -> None:
         del crashed
         resumed = _controller(production, runtime_root, manifest_path)
         recovery = resumed.recover_ledger(observed_at=_at(6, 2, 1))
-        assert recovery["status"] == "recovered"
-        assert recovery["newGeneration"] == recovery["oldGeneration"] + 1
+        if hook_row["hook"] == "after_recovery_committed":
+            assert recovery["status"] == "RECOVERY_NOT_REQUIRED"
+        else:
+            assert recovery["status"] == "recovered"
+            assert recovery["newGeneration"] == recovery["oldGeneration"] + 1
         terminal = resumed.recover_ledger(observed_at=_at(6, 2, 2))
         assert terminal["status"] == "RECOVERY_NOT_REQUIRED"
         _assert_real_sqlite(runtime_root)
