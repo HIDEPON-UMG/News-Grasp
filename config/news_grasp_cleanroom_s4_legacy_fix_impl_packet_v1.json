@@ -1,0 +1,84 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S4-LEGACY-FIX-GREEN-V1",
+  "todoId": "NG-CLEANROOM-S4-GREEN-R1",
+  "role": "implementation_luna",
+  "canonicalContext": "/root/implementation_luna_canary",
+  "dependencyIds": ["NG-CLEANROOM-S4-RED-CORRECTION-V2"],
+  "baselineCommit": "7a58ec0b051cb65d2a8a0f5b541e843e963f6619",
+  "redSeal": {
+    "testCommit": "afcf773379c79b4ba460e4b5135fd42a7f191f13",
+    "integrationCommit": "7a58ec0b051cb65d2a8a0f5b541e843e963f6619",
+    "testPath": "tests/test_news_grasp_cleanroom_s4_recovery.py",
+    "testSha256": "2a926b2459b5ee6649eb979cad433993c573fdfa9e3ee5bdbbce79e481316fa8",
+    "fixturePath": "tests/fixtures/news_grasp_cleanroom_s4_cases.json",
+    "fixtureSha256": "6c56fd170591adb8995c0cf0baaafcf559de0dd1db088abfcd8bde8f588cba09",
+    "collected": 3,
+    "passed": 1,
+    "failed": 2,
+    "causes": [
+      "terminal result.legacy coordinated semantic reseal accepted by audit and inspect",
+      "invalid legacy creates recovery SQLite before typed rejection"
+    ],
+    "snapshotOracleStable": true
+  },
+  "writeLease": {
+    "leaseId": "IMPL-LEASE-S4-LEGACY-R1-V1",
+    "leaseSha256": "33d3c023e68b3edd42cf9f853f0d0ef90208c49216f967b9a70917fcf63ad34f",
+    "canonicalPayload": {
+      "leaseId": "IMPL-LEASE-S4-LEGACY-R1-V1",
+      "role": "implementation_luna",
+      "canonicalContext": "/root/implementation_luna_canary",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-s1-h1",
+      "writes": ["tools/news_grasp_cleanroom_recovery.py"],
+      "baselineCommit": "7a58ec0b051cb65d2a8a0f5b541e843e963f6619"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tools/news_grasp_cleanroom_recovery.py"],
+  "forbiddenWrites": ["tests", "tests/fixtures", "all other tools", "config", "docs", "scripts"],
+  "requiredChanges": [
+    {
+      "id": "S4-FIX-01",
+      "change": "add one shared semantic validator for persisted result.legacy: value is null or exact {snapshot,bytesSha256}; snapshot exact LEGACY_RECOVERY_V3 keys, schema, record issueDate, status exactly FAILED and canonical payloadSha256; bytesSha256 exact lowercase 64 hex; invoke it from _validate_result on every audit/inspect/phase validation before returning a stored result"
+    },
+    {
+      "id": "S4-FIX-02",
+      "change": "in audit, call _read_legacy exactly once after parent/S1/authority/budget validation but before _connect_rw; malformed/hash-drift/unknown-schema/wrong issueDate/wrong status must raise typed legacy error while recovery SQLite main/WAL/SHM remain absent; reuse the validated snapshot when building RESULT_DURABLE and remove late legacy reads"
+    },
+    {
+      "id": "S4-FIX-03",
+      "change": "preserve existing valid terminal retry, authority conflict ordering, six crash phases, S1 read-only behavior, child call counts, inspect read-only behavior and LegacyReadOnlyAdapter public method surface exactly read"
+    }
+  ],
+  "forbiddenImplementation": [
+    "repair/reseal a corrupt recovery row", "delete or rewrite legacy bytes", "open recovery DB before invalid legacy rejection",
+    "skip semantic validation on terminal fast path", "test edit or mutation-specific branch", "second child call", "network/subprocess/UI"
+  ],
+  "verification": {
+    "s4Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s4_recovery.py",
+    "s4Expected": "3 passed",
+    "s3Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s3_public.py",
+    "s3Expected": "9 passed",
+    "s2Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s2_execution.py",
+    "s2Expected": "10 passed",
+    "s1Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "s1Expected": "32 passed",
+    "s0Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s0_contract.py",
+    "s0Expected": "3 passed",
+    "ruffCommand": "py -3.12 -m ruff check tools/news_grasp_cleanroom_recovery.py",
+    "compileCommand": "py -3.12 -m py_compile tools/news_grasp_cleanroom_recovery.py",
+    "security": "exact path scan; denied/private/secret/external/network all zero",
+    "other": ["pre-stage sole production path", "cached exact path", "diff checks", "post-commit clean"]
+  },
+  "commitPolicy": {
+    "allowedOnlyAfterAllGreen": true,
+    "paths": ["tools/news_grasp_cleanroom_recovery.py"],
+    "message": "fix: bind S4 legacy integrity before ledger"
+  },
+  "causalRetryCondition": "one production patch and one ordered verification chain; return on first non-Green without test edits",
+  "delivery": "one production delta, hash/bytes, commit, exact Green chain and contrary evidence",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "persistentPolling": false}
+}
