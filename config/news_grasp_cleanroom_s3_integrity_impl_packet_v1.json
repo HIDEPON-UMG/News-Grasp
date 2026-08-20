@@ -1,0 +1,94 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S3-INTEGRITY-GREEN-V1",
+  "todoId": "NG-CLEANROOM-S3-R1-GREEN",
+  "role": "implementation_luna",
+  "canonicalContext": "/root/implementation_luna_canary",
+  "dependencyIds": ["NG-CLEANROOM-S3-GREEN-V1", "NG-CLEANROOM-S3-INTEGRITY-RED-V1"],
+  "baselineCommit": "531a05b7babd7fba30597aadfdfb9c46ec2eaed9",
+  "supersedesForCorrection": "config/news_grasp_cleanroom_s3_impl_packet_v1.json",
+  "redSeal": {
+    "reviewVerdict": "BLOCK",
+    "reviewBlockerCount": 3,
+    "testAuthoringCommits": ["e4f2847f7d7f5440ee23c6bb32e87dbdf0e84abd", "773a8a2841618b0737219076d689a4e2e873559f"],
+    "testPath": "tests/test_news_grasp_cleanroom_s3_public.py",
+    "testSha256": "fce4b2b333a19bd645a16d533f75e019b6650fffc4a9af8ba936d7d51979fc90",
+    "testBytes": 23565,
+    "partition": "existing 6 passed; new persisted-integrity 3 failed",
+    "surfaceMatrix": "INVENTORY_CONFIRMED, PUBLISHED_CONFIRMED and NOT_REQUIRED x 12 mutations",
+    "notificationMatrix": 8,
+    "lineageMatrix": 2
+  },
+  "writeLease": {
+    "leaseId": "IMPL-LEASE-S3-INTEGRITY-V1",
+    "leaseSha256": "404f25b428e4f34d1d817567bbf422c24bf7ff0141e6e8bde8309dc628e01ded",
+    "canonicalPayload": {
+      "leaseId": "IMPL-LEASE-S3-INTEGRITY-V1",
+      "role": "implementation_luna",
+      "canonicalContext": "/root/implementation_luna_canary",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-s1-h1",
+      "writes": ["tools/news_grasp_cleanroom_public.py"],
+      "baselineCommit": "531a05b7babd7fba30597aadfdfb9c46ec2eaed9"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tools/news_grasp_cleanroom_public.py"],
+  "forbiddenWrites": ["tests", "tests/fixtures", "all other tools", "config", "docs", "scripts"],
+  "correctionDesign": {
+    "common": [
+      "add small persisted-row validators called on every existing-row/replay path before any provider/notifier call or result projection",
+      "parse stored JSON with exact canonical round-trip; malformed, missing, extra, type, binding or hash mismatch raises PublicControlError(PUBLIC_LEDGER_CORRUPT)",
+      "do not rewrite, repair or normalize a corrupted row; fail closed with zero mutation",
+      "preserve fresh-write validators and all existing typed inventory/lineage source-conflict classifications"
+    ],
+    "lineage": [
+      "first validate existing row internally from its stored state_json: JSON object, canonical bytes, non-empty state, terminalHash semantics, state column exact, terminal_hash exact and lineage_hash equals canonical state_json hash",
+      "an internally inconsistent stored row is PUBLIC_LEDGER_CORRUPT",
+      "only after internal validity compare the current caller source state_json/terminal hash; a different but internally valid caller lineage remains PUBLIC_LINEAGE_CONFLICT",
+      "the returned/result projection may use a persisted lineage row only after this validator"
+    ],
+    "surface": [
+      "validate issue/surface/artifact/idempotency binding and exact state-specific disposition, terminal hash, receipt and attempt count before returning an existing row",
+      "NOT_REQUIRED requires input eligibility already validated, state NOT_REQUIRED, disposition TERMINAL, attempt_count 0, receipt_json null and the deterministic NOT_REQUIRED terminal hash",
+      "inventory CONFIRMED requires state CONFIRMED, disposition TERMINAL, attempt_count 0, receipt_json null and deterministic inventory CONFIRMED terminal hash",
+      "published CONFIRMED from PENDING requires state CONFIRMED, disposition TERMINAL, attempt_count 1, canonical exact PUBLIC_SURFACE_RECEIPT_V1, receipt binding to surface/idempotency, terminal_hash equal receipt terminalHash; artifact is bound through the deterministic idempotency key",
+      "PENDING requires terminal_hash and receipt_json null plus either INTENT_DURABLE/attempt_count 0 or QUERY_REQUIRED/attempt_count 1",
+      "all other state/disposition/count/receipt combinations are PUBLIC_LEDGER_CORRUPT; do not dispatch/query after corruption"
+    ],
+    "notification": [
+      "validate existing idempotency key against issueDate+publicTerminalHash before state branching",
+      "CONFIRMED requires disposition TERMINAL, attempt_count 1 and canonical exact PUBLIC_NOTIFICATION_RECEIPT_V1 bound to the idempotency key with 64-hex terminalHash",
+      "PENDING requires receipt_json null and either INTENT_DURABLE or QUERY_REQUIRED with attempt_count 1",
+      "any syntax/schema/status/idempotency/terminalHash/state/disposition/count mismatch is PUBLIC_LEDGER_CORRUPT before notify/query"
+    ],
+    "noRegression": [
+      "publisher and notifier response-loss still resume query-first with blind retry zero",
+      "opaque non-empty mapping terminalHash remains preserved while full mapping hash protects immutability",
+      "Scheduled/Recovery/Public/Readiness order and scheduled-first overall-state behavior remain unchanged",
+      "caller-owned Scheduled source bytes remain unchanged"
+    ]
+  },
+  "forbiddenImplementation": ["test-specific mutation name branch", "automatic repair of corrupt persisted evidence", "provider call before validator", "change SQLite schema", "weaken receipt exact keys", "network/subprocess", "edit tests"],
+  "verification": {
+    "targetNewCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s3_public.py -k persisted_",
+    "targetNewExpected": "3 passed",
+    "fullS3Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s3_public.py",
+    "fullS3Expected": "9 passed",
+    "s2Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s2_execution.py",
+    "s2Expected": "10 passed",
+    "s1Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "s1Expected": "32 passed",
+    "s0Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s0_contract.py",
+    "s0Expected": "3 passed",
+    "ruffCommand": "py -3.12 -m ruff check tools/news_grasp_cleanroom_public.py",
+    "compileCommand": "py -3.12 -m py_compile tools/news_grasp_cleanroom_public.py",
+    "security": "reuse NEWS_GRASP_CLEANROOM_SECURITY_SCAN_V1 exact path; denied/private/secret/external/network counts zero",
+    "other": ["git diff name-only exactly one tracked lease path", "git diff --check", "post-commit clean"]
+  },
+  "commitPolicy": {"allowedOnlyAfterAllGreen": true, "paths": ["tools/news_grasp_cleanroom_public.py"], "message": "fix: validate S3 persisted evidence"},
+  "causalRetryCondition": "one implementation attempt and one ordered verification chain; return at first non-Green with the exact failed mutation class",
+  "delivery": "one production file, hash and bytes, commit, target/full/regression evidence",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "persistentPolling": false}
+}
