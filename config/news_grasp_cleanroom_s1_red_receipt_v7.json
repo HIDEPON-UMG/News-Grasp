@@ -1,0 +1,99 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_S1_EXPECTED_RED_RECEIPT_V1",
+  "receiptId": "NEWS_GRASP_CLEANROOM_S1_EXPECTED_RED_RECEIPT_V7",
+  "packetId": "NG-CLEANROOM-S1-RED-R8",
+  "leaseId": "TEST-LEASE-S1-R8",
+  "authoringRole": "test_luna",
+  "canonicalContext": "/root/s1_edge_driver_red",
+  "baselineCommit": "4976d1120ea5b9ff30d192f624798004fd4308a5",
+  "authoringCommit": "62ab131d5959910bb5e81248cfccfbdcf72d77cf",
+  "testPath": "tests/test_news_grasp_cleanroom_s1_entry.py",
+  "testSha256": "5337c718abc04e9a88e9657236d0c79925eda7eaedee65bf1cf1dcb19307b5bb",
+  "testBytes": 66010,
+  "fixturePath": "tests/fixtures/news_grasp_cleanroom_s1_cases.json",
+  "fixtureSha256": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f",
+  "fixtureChanged": false,
+  "changedPaths": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+  "verification": {
+    "compile": {"exitCode": 0},
+    "collect": {"exitCode": 0, "collected": 26},
+    "newNodes": {
+      "exitCode": 1,
+      "failed": 8,
+      "passed": 0,
+      "failures": [
+        {
+          "node": "test_s1_recovery_journal_self_consistent_forgery_fails_closed",
+          "observed": "self-consistent forged journal accepted",
+          "expected": "NEWS_GRASP_ENTRY_LEDGER_RECOVERY_FAILED before managed or outside mutation",
+          "blockerId": "S1-ACCEPT-R2-RECOVERY-JOURNAL-EXACTNESS"
+        },
+        {
+          "node": "test_s1_busy_timeout_invalid_matrix_is_typed_before_write",
+          "observed": "invalid busy timeout accepted or leaked an untyped exception",
+          "expected": "NEWS_GRASP_ENTRY_BUSY_TIMEOUT_INVALID before any managed write",
+          "blockerId": "S1-ACCEPT-R2-BUSY-TIMEOUT-TOTALITY"
+        },
+        {
+          "node": "test_s1_zero_entry_import_cannot_erase_clock_rollback",
+          "observed": "zero-entry import rewound lastObservedAt and no rollback error was raised",
+          "expected": "NEWS_GRASP_ENTRY_CLOCK_ROLLBACK with SQLite unchanged",
+          "blockerId": "S1-ACCEPT-R2-ZERO-ENTRY-MONOTONICITY"
+        },
+        {
+          "node": "test_s1_wal_exact_schema_directory_and_imported_chain",
+          "observed": "self-consistent malformed WAL event accepted",
+          "expected": "NEWS_GRASP_ENTRY_LEDGER_CORRUPT for every exact-schema or chain violation",
+          "blockerId": "S1-ACCEPT-R2B-WAL-EXACTNESS"
+        },
+        {
+          "node": "test_s1_recovery_transition_gaps_resume_same_identity",
+          "observed": "resumed seal linked previousSealSha256 to the already-issued generation seal",
+          "expected": "same recovery identity with one seal transition and one genesis event",
+          "blockerId": "S1-ACCEPT-R2B-RECOVERY-TRANSITION-RESUME"
+        },
+        {
+          "node": "test_s1_wal_managed_root_containment",
+          "observed": "traversal or managed-root link path accepted",
+          "expected": "NEWS_GRASP_ENTRY_LEDGER_CORRUPT with outside mutation count zero",
+          "blockerId": "S1-ACCEPT-R2B-MANAGED-ROOT-CONTAINMENT"
+        },
+        {
+          "node": "test_s1_materialized_state_drift_is_corrupt",
+          "observed": "direct materialized-state drift remained integrityStatus green",
+          "expected": "NEWS_GRASP_ENTRY_LEDGER_CORRUPT before use",
+          "blockerId": "S1-ACCEPT-R2B-MATERIALIZED-STATE-INTEGRITY"
+        },
+        {
+          "node": "test_s1_public_invalid_type_matrix_is_total",
+          "observed": "invalid raw argv leaked TypeError",
+          "expected": "exact typed reason and zero pre-validation write for every invalid public input",
+          "blockerId": "S1-ACCEPT-R2B-PUBLIC-TYPE-TOTALITY"
+        }
+      ]
+    },
+    "fullS1": {"exitCode": 1, "passed": 18, "failed": 8, "failurePartition": "exact new eight only"},
+    "ruff": {"exitCode": 0},
+    "diffCheck": {"exitCode": 0}
+  },
+  "coverage": {
+    "primaryBehavior": [
+      "test_s1_busy_timeout_invalid_matrix_is_typed_before_write",
+      "test_s1_zero_entry_import_cannot_erase_clock_rollback",
+      "test_s1_public_invalid_type_matrix_is_total"
+    ],
+    "adversarialBoundary": [
+      "test_s1_recovery_journal_self_consistent_forgery_fails_closed",
+      "test_s1_wal_exact_schema_directory_and_imported_chain",
+      "test_s1_wal_managed_root_containment",
+      "test_s1_materialized_state_drift_is_corrupt"
+    ],
+    "operationalRecovery": ["test_s1_recovery_transition_gaps_resume_same_identity"],
+    "existingGreenCount": 18,
+    "unrelatedFailureCount": 0,
+    "testWeakening": false
+  },
+  "productionMutationCount": 0,
+  "status": "expected_red",
+  "measuredAt": "2026-08-20T19:55:51.9411962Z"
+}
