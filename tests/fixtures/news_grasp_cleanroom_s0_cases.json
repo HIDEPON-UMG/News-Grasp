@@ -1,0 +1,120 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_S0_CASES_V1",
+  "sourceArtifact": {
+    "path": "config/news_grasp_cleanroom_control_s0_v2.json",
+    "sha256": "2b76d2b0aa73d22a43e0279c93cea3eecf3dff0874da6384c6abb74ed61d3a91"
+  },
+  "impactReceipt": {
+    "path": "config/news_grasp_cleanroom_s0_impact_review_v2.json",
+    "sha256": "7647135ca8ff015f12e576cde348f29aa531583d0362425e60dbafa836cab5a2",
+    "decision": "accepted",
+    "blockerCount": 0
+  },
+  "activeSlice": "S0",
+  "baselineCommit": "bf04d4e05b71027ee3cf1ccacc9938e37e5456d8",
+  "actualTestNodes": [
+    "test_s0_role_collision_rejected",
+    "test_s0_trace_gap_duplicate_orphan_rejected",
+    "test_s0_stale_seal_rejected"
+  ],
+  "catalog": {
+    "requirements": [
+      {"id": "NG-A-R01", "slice": "S0", "acceptance": "role/context/worktree/write lease、requirement trace、sealをexact検証し、重複・alias・orphan・staleをfail-closed", "itSuite": "IT-00"},
+      {"id": "NG-A-R02", "slice": "S1", "acceptance": "一つのProduction Taskと一つのdispatch reconcile入口だけが06:00/06:40/manual/delayを解釈", "itSuite": "IT-01"},
+      {"id": "NG-A-R03", "slice": "S1", "acceptance": "入力解釈・外部副作用より前にinitial WALをfsyncし、zero-entryを拒否", "itSuite": "IT-01"},
+      {"id": "NG-A-R04", "slice": "S1", "acceptance": "SQLite ledgerのgeneration/lease/fencing/hash chainが3 writer・stale lease・PID再利用・terminal conflictを収束", "itSuite": "IT-06"},
+      {"id": "NG-A-R05", "slice": "S1", "acceptance": "06:00前NOT_DUE、06:00-06:40 Scheduled、06:40後miss/auditをtimezone-aware deterministic clockで判定", "itSuite": "IT-07"},
+      {"id": "NG-A-R06", "slice": "S2", "acceptance": "run/date/authority単位で高コストreservationとcallを一度だけ発行しlost responseをqueryで収束", "itSuite": "IT-02"},
+      {"id": "NG-A-R07", "slice": "S2", "acceptance": "checkpointからresumeし完了harvest/model callを再実行せず、invalid/missing checkpointはtyped recovery", "itSuite": "IT-03"},
+      {"id": "NG-A-R08", "slice": "S2", "acceptance": "全外部surfaceがPENDING→RESERVED→INTENT_DURABLE→DISPATCHED→CONFIRMED→COMMITTEDを共有", "itSuite": "IT-02"},
+      {"id": "NG-A-R09", "slice": "S3", "acceptance": "required inventoryとsurface bitmapが完全な場合だけPublic Green、partial/unknownはtyped incomplete", "itSuite": "IT-04"},
+      {"id": "NG-A-R10", "slice": "S3", "acceptance": "Scheduled/Recovery/Public/Readinessを別lineageに保存しnotification exactly-once、scheduled-firstで報告", "itSuite": "IT-11"},
+      {"id": "NG-A-R11", "slice": "S4", "acceptance": "Recovery/Auditがparent/fence/budget/authorityを検証しretry・history・legacy read-only adapterを収束", "itSuite": "IT-05"},
+      {"id": "NG-A-R12", "slice": "S5", "acceptance": "disabled install→old disable→new enableをjournalでatomic実行しdual-enabled 0、crash/UAC deny/rollbackを収束", "itSuite": "IT-08"},
+      {"id": "NG-A-R13", "slice": "S5", "acceptance": "path/reparse/TOCTOU/ACL/signer/secret/argv/UTF-8と子process treeのno-windowを強制", "itSuite": "IT-12"},
+      {"id": "NG-A-R14", "slice": "S6", "acceptance": "L3-L7がproduction interface/serialization/storage/subprocess/installed bytesを跨ぎ、L8一回でNoPublish vertical flowを証明", "itSuite": "IT-09/IT-13"},
+      {"id": "NG-A-R15", "slice": "S6", "acceptance": "自然06:00 Scheduled・06:40 Audit・Public・Readiness・historyをinstalled fresh runtimeで別state観測", "itSuite": "IT-10/IT-14"}
+    ],
+    "requirementViewpointTrace": [
+      {"requirementId": "NG-A-R01", "primary_behavior": "test_s0_role_collision_rejected", "adversarial_boundary": "test_s0_trace_gap_duplicate_orphan_rejected", "operational_recovery": "test_s0_stale_seal_rejected"},
+      {"requirementId": "NG-A-R02", "primary_behavior": "test_s1_manifest_single_entry", "adversarial_boundary": "test_s1_unknown_manifest_zero_effect", "operational_recovery": "test_s1_terminal_slot_idempotent"},
+      {"requirementId": "NG-A-R03", "primary_behavior": "test_s1_wal_precedes_parse", "adversarial_boundary": "test_s1_wal_fsync_failure_zero_effect", "operational_recovery": "test_s1_zero_entry_recovery"},
+      {"requirementId": "NG-A-R04", "primary_behavior": "test_s1_three_writer_single_owner", "adversarial_boundary": "test_s1_stale_fence_cannot_commit", "operational_recovery": "test_s1_ledger_corruption_recovery"},
+      {"requirementId": "NG-A-R05", "primary_behavior": "test_s1_time_window_primary", "adversarial_boundary": "test_s1_clock_rollback_and_dst_fail_closed", "operational_recovery": "test_s1_missed_scheduled_persists_then_audits"},
+      {"requirementId": "NG-A-R06", "primary_behavior": "test_s2_admission_grant_deny_unavailable", "adversarial_boundary": "test_s2_external_call_crash_boundaries", "operational_recovery": "test_s2_result_unknown_query_only"},
+      {"requirementId": "NG-A-R07", "primary_behavior": "test_s2_resume_skips_completed_stages", "adversarial_boundary": "test_s2_checkpoint_corrupt_recovery", "operational_recovery": "test_s2_child_failure_each_stage"},
+      {"requirementId": "NG-A-R08", "primary_behavior": "test_s2_external_state_machine_property", "adversarial_boundary": "test_s2_fsync_and_response_loss_faults", "operational_recovery": "test_s2_stale_fence_external_commit_rejected"},
+      {"requirementId": "NG-A-R09", "primary_behavior": "test_s3_surface_bitmap_property", "adversarial_boundary": "test_s3_completed_surface_skip", "operational_recovery": "test_s3_partial_public_typed"},
+      {"requirementId": "NG-A-R10", "primary_behavior": "test_s3_public_never_overwrites_scheduled", "adversarial_boundary": "test_s3_notification_exactly_once", "operational_recovery": "test_s3_report_scheduled_first"},
+      {"requirementId": "NG-A-R11", "primary_behavior": "test_s4_recovery_authority_matrix", "adversarial_boundary": "test_s4_recovery_retry_preserves_lineage", "operational_recovery": "test_s4_legacy_writer_zero"},
+      {"requirementId": "NG-A-R12", "primary_behavior": "test_s5_cutover_crash_matrix", "adversarial_boundary": "test_s5_dual_enabled_invariant", "operational_recovery": "test_s5_uac_and_rollback_recovery"},
+      {"requirementId": "NG-A-R13", "primary_behavior": "test_s5_path_security_matrix", "adversarial_boundary": "test_s5_secret_and_argument_injection", "operational_recovery": "test_s5_child_tree_human_impact"},
+      {"requirementId": "NG-A-R14", "primary_behavior": "test_s6_l3_l7_real_boundary_manifest", "adversarial_boundary": "test_s6_installed_bytes_args_workdir", "operational_recovery": "test_s6_l8_final_admission"},
+      {"requirementId": "NG-A-R15", "primary_behavior": "test_s6_history_coverage_and_legacy_zero", "adversarial_boundary": "test_s6_natural_receipt_schema", "operational_recovery": "test_s6_natural_states_non_substitutable"}
+    ],
+    "internalEdgeTrace": [
+      {"edgeId": "authority_state_primary", "requirementId": "NG-A-R06", "acceptance": "valid authority and initial state reserve once", "viewpoint": "primary_behavior", "plannedNode": "test_edge_authority_state_primary"},
+      {"edgeId": "authority_state_adversarial", "requirementId": "NG-A-R06", "acceptance": "stale/malformed authority across all states has zero external mutation", "viewpoint": "adversarial_boundary", "plannedNode": "test_edge_authority_state_adversarial"},
+      {"edgeId": "authority_state_recovery", "requirementId": "NG-A-R08", "acceptance": "lost response resumes through query without new authority", "viewpoint": "operational_recovery", "plannedNode": "test_edge_authority_state_recovery"},
+      {"edgeId": "writer_crash_primary", "requirementId": "NG-A-R04", "acceptance": "current fenced writer commits across each durable boundary", "viewpoint": "primary_behavior", "plannedNode": "test_edge_writer_crash_primary"},
+      {"edgeId": "writer_crash_adversarial", "requirementId": "NG-A-R04", "acceptance": "stale writer crash/restart never commits", "viewpoint": "adversarial_boundary", "plannedNode": "test_edge_writer_crash_adversarial"},
+      {"edgeId": "writer_crash_recovery", "requirementId": "NG-A-R04", "acceptance": "new fenced owner recovers every crash point exactly once", "viewpoint": "operational_recovery", "plannedNode": "test_edge_writer_crash_recovery"},
+      {"edgeId": "enable_cutover_primary", "requirementId": "NG-A-R12", "acceptance": "old-only transitions atomically to new-only", "viewpoint": "primary_behavior", "plannedNode": "test_edge_enable_cutover_primary"},
+      {"edgeId": "enable_cutover_adversarial", "requirementId": "NG-A-R12", "acceptance": "all enable-state/crash combinations keep dual-enabled count zero", "viewpoint": "adversarial_boundary", "plannedNode": "test_edge_enable_cutover_adversarial"},
+      {"edgeId": "enable_cutover_recovery", "requirementId": "NG-A-R12", "acceptance": "journal restores old-only or completes new-only after crash", "viewpoint": "operational_recovery", "plannedNode": "test_edge_enable_cutover_recovery"},
+      {"edgeId": "bitmap_replay_primary", "requirementId": "NG-A-R09", "acceptance": "complete bitmap replay skips confirmed surfaces", "viewpoint": "primary_behavior", "plannedNode": "test_edge_bitmap_replay_primary"},
+      {"edgeId": "bitmap_replay_adversarial", "requirementId": "NG-A-R09", "acceptance": "every partial/unknown bitmap remains non-Green", "viewpoint": "adversarial_boundary", "plannedNode": "test_edge_bitmap_replay_adversarial"},
+      {"edgeId": "bitmap_replay_recovery", "requirementId": "NG-A-R10", "acceptance": "resume confirms absent surface only and preserves prior lineage", "viewpoint": "operational_recovery", "plannedNode": "test_edge_bitmap_replay_recovery"}
+    ],
+    "plannedNodeCatalog": [
+      "test_edge_authority_state_adversarial", "test_edge_authority_state_primary", "test_edge_authority_state_recovery",
+      "test_edge_bitmap_replay_adversarial", "test_edge_bitmap_replay_primary", "test_edge_bitmap_replay_recovery",
+      "test_edge_enable_cutover_adversarial", "test_edge_enable_cutover_primary", "test_edge_enable_cutover_recovery",
+      "test_edge_writer_crash_adversarial", "test_edge_writer_crash_primary", "test_edge_writer_crash_recovery",
+      "test_s0_role_collision_rejected", "test_s0_stale_seal_rejected", "test_s0_trace_gap_duplicate_orphan_rejected",
+      "test_s1_clock_rollback_and_dst_fail_closed", "test_s1_ledger_corruption_recovery", "test_s1_manifest_single_entry",
+      "test_s1_missed_scheduled_persists_then_audits", "test_s1_stale_fence_cannot_commit", "test_s1_terminal_slot_idempotent",
+      "test_s1_three_writer_single_owner", "test_s1_time_window_primary", "test_s1_unknown_manifest_zero_effect",
+      "test_s1_wal_fsync_failure_zero_effect", "test_s1_wal_precedes_parse", "test_s1_zero_entry_recovery",
+      "test_s2_admission_grant_deny_unavailable", "test_s2_checkpoint_corrupt_recovery", "test_s2_child_failure_each_stage",
+      "test_s2_external_call_crash_boundaries", "test_s2_external_state_machine_property", "test_s2_fsync_and_response_loss_faults",
+      "test_s2_result_unknown_query_only", "test_s2_resume_skips_completed_stages", "test_s2_stale_fence_external_commit_rejected",
+      "test_s3_completed_surface_skip", "test_s3_notification_exactly_once", "test_s3_partial_public_typed",
+      "test_s3_public_never_overwrites_scheduled", "test_s3_report_scheduled_first", "test_s3_surface_bitmap_property",
+      "test_s4_legacy_writer_zero", "test_s4_recovery_authority_matrix", "test_s4_recovery_retry_preserves_lineage",
+      "test_s5_child_tree_human_impact", "test_s5_cutover_crash_matrix", "test_s5_dual_enabled_invariant",
+      "test_s5_path_security_matrix", "test_s5_secret_and_argument_injection", "test_s5_uac_and_rollback_recovery",
+      "test_s6_history_coverage_and_legacy_zero", "test_s6_installed_bytes_args_workdir", "test_s6_l3_l7_real_boundary_manifest",
+      "test_s6_l8_final_admission", "test_s6_natural_receipt_schema", "test_s6_natural_states_non_substitutable"
+    ]
+  },
+  "baseAdmission": {
+    "schemaVersion": "NEWS_GRASP_CLEANROOM_S0_ADMISSION_V1",
+    "slice": "S0",
+    "roleContexts": [
+      {"role": "test_luna", "canonicalContext": "/root/playlist_repair_red"},
+      {"role": "implementation_luna", "canonicalContext": "/root/implementation_luna_canary"},
+      {"role": "sol_codex_reviewer", "canonicalContext": "/root/s0_independent_review"}
+    ],
+    "writeLeases": [
+      {"leaseId": "TEST-LEASE-S0-V2", "leaseSha256": "3d704394d9f77ab74364ea0ea74e43e330cc6c05481c0575ef1aead86e4f74a1", "role": "test_luna", "canonicalContext": "/root/playlist_repair_red", "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-s0-h1", "writes": ["tests/test_news_grasp_cleanroom_s0_contract.py", "tests/fixtures/news_grasp_cleanroom_s0_cases.json"]},
+      {"leaseId": "IMPL-LEASE-P0-V1", "leaseSha256": "f04ac3de96ea94d78b50cee6aa0cfc667b1ab05a847d32d3d2ee4be7ecb9061e", "role": "implementation_luna", "canonicalContext": "/root/implementation_luna_canary", "writes": ["tools/youtube_podcast/upload_episode.py"], "state": "completed"},
+      {"leaseId": "REVIEW-LEASE-S0-V2", "leaseSha256": "ccd8e36d9660fa8fd631c653ca04440346cd6f4669ecbb916651ab18642ef457", "role": "sol_codex_reviewer", "canonicalContext": "/root/s0_independent_review", "writes": []}
+    ],
+    "leaseSeal": {"schemaVersion": "AGENT_ROLE_LEASE_SEAL_RECEIPT_V1", "leaseCount": 3, "leaseIdSealMapSha256": "9d9ae6873a83fdd85926535b48af970f67b3811fe3b5728688076c5bc7f490b7", "unknownLeaseCount": 0, "duplicateLeaseIdCount": 0, "sealMismatchCount": 0, "status": "green"},
+    "baselineSeal": {"generation": "H1", "commit": "bf04d4e05b71027ee3cf1ccacc9938e37e5456d8", "remoteHead": "bf04d4e05b71027ee3cf1ccacc9938e37e5456d8"},
+    "fileSeal": {"controlPath": "config/news_grasp_cleanroom_control_s0_v2.json", "controlSha256": "2b76d2b0aa73d22a43e0279c93cea3eecf3dff0874da6384c6abb74ed61d3a91", "impactPath": "config/news_grasp_cleanroom_s0_impact_review_v2.json", "impactSha256": "7647135ca8ff015f12e576cde348f29aa531583d0362425e60dbafa836cab5a2"}
+  },
+  "cases": [
+    {"id": "valid_base", "expected": "accepted", "mutations": []},
+    {"id": "role_context_collision", "expectedReason": "NEWS_GRASP_S0_ROLE_COLLISION", "mutations": [{"op": "replace", "path": ["roleContexts", 0, "canonicalContext"], "value": "/root/implementation_luna_canary"}]},
+    {"id": "write_overlap_alias", "expectedReason": "NEWS_GRASP_S0_WRITE_LEASE_OVERLAP", "mutations": [{"op": "replace", "path": ["writeLeases", 1, "writes", 0], "value": "tests/./test_news_grasp_cleanroom_s0_contract.py"}]},
+    {"id": "trace_missing", "expectedReason": "NEWS_GRASP_S0_TRACE_GAP", "mutations": [{"op": "remove", "path": ["requirementViewpointTrace", 14]}]},
+    {"id": "trace_duplicate", "expectedReason": "NEWS_GRASP_S0_TRACE_DUPLICATE", "mutations": [{"op": "duplicate", "path": ["requirementViewpointTrace", 0]}]},
+    {"id": "trace_orphan", "expectedReason": "NEWS_GRASP_S0_TRACE_ORPHAN", "mutations": [{"op": "append", "path": ["requirementViewpointTrace"], "value": {"requirementId": "NG-A-R99", "primary_behavior": "test_s0_orphan_primary", "adversarial_boundary": "test_s0_orphan_adversarial", "operational_recovery": "test_s0_orphan_recovery"}}]},
+    {"id": "trace_unknown", "expectedReason": "NEWS_GRASP_S0_UNKNOWN_NODE", "actualTestNodes": ["test_s0_role_collision_rejected", "test_s0_trace_gap_duplicate_orphan_rejected", "test_s0_stale_seal_rejected", "test_s0_unknown_node"], "mutations": []},
+    {"id": "lease_seal_stale", "expectedReason": "NEWS_GRASP_S0_LEASE_SEAL_STALE", "mutations": [{"op": "replace", "path": ["leaseSeal", "status"], "value": "stale"}]},
+    {"id": "baseline_commit_drift", "expectedReason": "NEWS_GRASP_S0_BASELINE_DRIFT", "mutations": [{"op": "replace", "path": ["baselineSeal", "commit"], "value": "0000000000000000000000000000000000000000"}]},
+    {"id": "file_seal_drift", "expectedReason": "NEWS_GRASP_S0_BASELINE_DRIFT", "mutations": [{"op": "replace", "path": ["fileSeal", "controlSha256"], "value": "0000000000000000000000000000000000000000000000000000000000000000"}]}
+  ]
+}
