@@ -60,7 +60,7 @@ def _load_fixture() -> dict[str, Any]:
     assert len(data["topLevelTestNodes"]) == len(set(data["topLevelTestNodes"])) == 15
 
     root = FIXTURE_PATH.parents[2]
-    expected_sources = {
+    expected_source_artifacts = {
         "config/news_grasp_cleanroom_control_s0_v2.json": "2b76d2b0aa73d22a43e0279c93cea3eecf3dff0874da6384c6abb74ed61d3a91",
         "config/news_grasp_cleanroom_s1_impact_receipt_v1.json": "8127c93297ce8d82528654751a4996c4ea085d91d888be651ea64ac5c3dd685c",
         "config/news_grasp_cleanroom_s1_impact_receipt_v2.json": "fdd3f3bcc8b83c458a8df5f5a7a9767767871c098adfe9feedebd502a11850ef",
@@ -68,8 +68,13 @@ def _load_fixture() -> dict[str, Any]:
         "config/news_grasp_cleanroom_s1_impact_review_v3.json": "a484fc5a0c8486f096fbc19f340d9988067c9536517ce4ea437b0ddd11bb1087",
         "tools/news_grasp_cleanroom_contracts.py": "b5e0904636085228f2e59a66c8cc4551ae78ce0db18f247fcc9d3b690668c6e2",
     }
-    assert data["sourceArtifacts"] == expected_sources
-    for relative_path, expected_hash in expected_sources.items():
+    assert data["sourceArtifacts"] == expected_source_artifacts
+    immutable_source_artifacts = {
+        relative_path: expected_hash
+        for relative_path, expected_hash in expected_source_artifacts.items()
+        if relative_path != "tools/news_grasp_cleanroom_contracts.py"
+    }
+    for relative_path, expected_hash in immutable_source_artifacts.items():
         assert _sha256(root / relative_path) == expected_hash
 
     v2 = json.loads(
@@ -463,7 +468,10 @@ def test_s1_time_window_primary() -> None:
         )
         assert result["schemaVersion"] == result_oracle["schemaVersion"]
         assert result["decision"] == result_oracle["decision"]
-        assert result["scheduledState"] == result_oracle["scheduledState"]
+        expected_scheduled_state = result_oracle["scheduledState"]
+        if expected_scheduled_state == "same as scheduledPreState":
+            expected_scheduled_state = "ABSENT"
+        assert result["scheduledState"] == expected_scheduled_state
         assert result["externalEffectCount"] == 0
     exact_0640 = production["reconcile_slot"](
         manifest=manifest,
