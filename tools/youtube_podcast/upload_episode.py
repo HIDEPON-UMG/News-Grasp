@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 import hashlib
 import json
 import os
@@ -30,6 +31,7 @@ class PodcastClient(Protocol):
     def update_video_privacy(self, *, video_id: str, privacy_status: str) -> dict[str, Any]: ...
     def add_video_to_playlist(self, *, video_id: str, playlist_id: str) -> str: ...
     def list_playlist_items(self, *, playlist_id: str) -> list[dict[str, Any]]: ...
+    def delete_playlist_item(self, playlist_item_id: str) -> dict[str, Any]: ...
 
 
 def _warn(message: str) -> None:
@@ -347,6 +349,10 @@ class YouTubePodcastClient:
             if not page_token:
                 return items
 
+    def delete_playlist_item(self, playlist_item_id: str) -> dict[str, Any]:
+        response = self.service.playlistItems().delete(id=playlist_item_id).execute()
+        return response if isinstance(response, dict) else {"id": playlist_item_id}
+
 
 def _mp4_and_hash(day: str, kind: str = "daily") -> tuple[Path, str]:
     if not _DATE_RE.match(day):
@@ -571,6 +577,147 @@ def audit_playlist_uniqueness(day: str, *, client: PodcastClient | None = None) 
     return {"ok": not issues, "date": day, "surfaces": surfaces, "issues": issues}
 
 
+PLAYLIST_REPAIR_AUTHORITY_SCHEMA = "NEWS_GRASP_PLAYLIST_MEMBERSHIP_REPAIR_AUTHORITY_V1"
+PLAYLIST_REPAIR_RESULT_SCHEMA = "NEWS_GRASP_PLAYLIST_MEMBERSHIP_REPAIR_RESULT_V1"
+_PLAYLIST_REPAIR_AUTHORITY_FIELDS = frozenset(
+    {
+        "schemaVersion",
+        "issueDate",
+        "action",
+        "playlistItemIds",
+        "preserveVideoObjects",
+        "issuedAt",
+        "expiresAt",
+        "auditSha256",
+        "receiptSha256",
+    }
+)
+_SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+
+
+def _canonical_sha256(value: Any) -> str:
+    payload = json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _authority_timestamp(value: Any, field: str) -> datetime:
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"playlist repair authority {field} must be an RFC3339 timestamp")
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError(f"playlist repair authority {field} is invalid") from exc
+    if parsed.tzinfo is None:
+        raise ValueError(f"playlist repair authority {field} must include a timezone")
+    return parsed.astimezone(timezone.utc)
+
+
+def _validate_playlist_repair_authority(
+    day: str,
+    authority: Any,
+    *,
+    now: datetime,
+) -> dict[str, Any]:
+    if not isinstance(authority, dict):
+        raise ValueError("playlist repair authority must be a JSON object")
+    if set(authority) != _PLAYLIST_REPAIR_AUTHORITY_FIELDS:
+        raise ValueError("playlist repair authority fields are incomplete or unknown")
+    if authority.get("schemaVersion") != PLAYLIST_REPAIR_AUTHORITY_SCHEMA:
+        raise ValueError("playlist repair authority schemaVersion is invalid")
+    if not isinstance(authority.get("issueDate"), str) or authority["issueDate"] != day:
+        raise ValueError("playlist repair authority issueDate does not match the requested date")
+    if not _DATE_RE.match(day):
+        raise ValueError(f"invalid date: {day}")
+    if authority.get("action") != "delete_playlist_memberships":
+        raise ValueError("playlist repair authority action is invalid")
+    playlist_item_ids = authority.get("playlistItemIds")
+    if not isinstance(playlist_item_ids, list) or not playlist_item_ids or any(
+        not isinstance(item_id, str) or not item_id for item_id in playlist_item_ids
+    ):
+        raise ValueError("playlist repair authority playlistItemIds must be non-empty strings")
+    if playlist_item_ids != sorted(set(playlist_item_ids)):
+        raise ValueError("playlist repair authority playlistItemIds must be sorted and unique")
+    if authority.get("preserveVideoObjects") is not True:
+        raise ValueError("playlist repair authority must preserve video objects")
+    issued_at = _authority_timestamp(authority.get("issuedAt"), "issuedAt")
+    expires_at = _authority_timestamp(authority.get("expiresAt"), "expiresAt")
+    if issued_at > expires_at or now < issued_at or now > expires_at:
+        raise ValueError("playlist repair authority is outside its validity window")
+    for field in ("auditSha256", "receiptSha256"):
+        value = authority.get(field)
+        if not isinstance(value, str) or not _SHA256_RE.fullmatch(value):
+            raise ValueError(f"playlist repair authority {field} is invalid")
+    unsigned = dict(authority)
+    unsigned.pop("receiptSha256", None)
+    if _canonical_sha256(unsigned) != authority["receiptSha256"]:
+        raise ValueError("playlist repair authority receiptSha256 does not match its contents")
+    return dict(authority)
+
+
+def _audited_unexpected_playlist_item_ids(audit: Any) -> list[str]:
+    if not isinstance(audit, dict) or not isinstance(audit.get("issues"), list):
+        raise ValueError("playlist audit result is invalid")
+    item_ids = {
+        str(issue["playlistItemId"])
+        for issue in audit["issues"]
+        if isinstance(issue, dict)
+        and issue.get("reason") == "podcast_playlist_unexpected_same_date_video"
+        and issue.get("playlistItemId")
+    }
+    return sorted(item_ids)
+
+
+def repair_playlist_memberships(
+    day: str,
+    authority: dict[str, Any],
+    *,
+    client: PodcastClient | None = None,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    """承認済みの playlist membership だけを削除し、動画オブジェクトは保持する。"""
+    now = datetime.now(timezone.utc)
+    validated_authority = _validate_playlist_repair_authority(day, authority, now=now)
+    active_client = client or YouTubePodcastClient.from_local_secrets()
+    audit_before = audit_playlist_uniqueness(day, client=active_client)
+    if _canonical_sha256(audit_before) != validated_authority["auditSha256"]:
+        raise ValueError("playlist repair authority auditSha256 does not match a fresh audit")
+    audited_ids = _audited_unexpected_playlist_item_ids(audit_before)
+    authorized_ids = validated_authority["playlistItemIds"]
+    if authorized_ids != audited_ids:
+        raise ValueError("playlist repair authority playlistItemIds do not match the fresh audit")
+
+    if dry_run:
+        return {
+            "schemaVersion": PLAYLIST_REPAIR_RESULT_SCHEMA,
+            "status": "ok",
+            "issueDate": day,
+            "dryRun": True,
+            "deletedPlaylistItemIds": [],
+            "auditBefore": audit_before,
+            "auditAfter": audit_before,
+        }
+
+    for playlist_item_id in authorized_ids:
+        active_client.delete_playlist_item(playlist_item_id)
+    audit_after = audit_playlist_uniqueness(day, client=active_client)
+    if not audit_after.get("ok"):
+        raise RuntimeError("playlist repair post-audit is not Green")
+    return {
+        "schemaVersion": PLAYLIST_REPAIR_RESULT_SCHEMA,
+        "status": "ok",
+        "issueDate": day,
+        "dryRun": False,
+        "deletedPlaylistItemIds": list(authorized_ids),
+        "auditBefore": audit_before,
+        "auditAfter": audit_after,
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="YouTube Podcast episode を dry-run または公開 upload します。")
     parser.add_argument("date", help="YYYY-MM-DD")
@@ -580,6 +727,8 @@ def main(argv: list[str] | None = None) -> int:
     mode.add_argument("--finalize", action="store_true", help="Web 公開確認後に public 化して playlist に追加する。")
     mode.add_argument("--publish", action="store_true", help="YouTube へ公開 upload して podcast playlist に追加する。")
     mode.add_argument("--audit-playlists", action="store_true", help="公開 playlist に同日重複や Deleted video item が残っていないか検査する。")
+    mode.add_argument("--repair-playlists", action="store_true", help="承認済み authority に従って playlist membership を修復する。")
+    parser.add_argument("--authority-file", type=Path, help="playlist membership repair authority JSON のパス。")
     parser.add_argument("--dry-run", action="store_true", help="YouTube API を呼ばず mp4 と metadata を検査する。")
     parser.add_argument("--privacy-status", default="public", choices=["public", "private", "unlisted"])
     args = parser.parse_args(argv)
@@ -588,6 +737,13 @@ def main(argv: list[str] | None = None) -> int:
             result = audit_playlist_uniqueness(args.date)
             print(json.dumps(result, ensure_ascii=False))
             return 0 if result.get("ok") else 1
+        if args.repair_playlists:
+            if args.authority_file is None:
+                raise ValueError("--repair-playlists requires --authority-file")
+            authority = _load_json(args.authority_file)
+            result = repair_playlist_memberships(args.date, authority, dry_run=args.dry_run)
+            print(json.dumps(result, ensure_ascii=False))
+            return 0 if result.get("status") == "ok" else 1
         if args.prepare:
             prepare(args.date, dry_run=args.dry_run, kind=args.kind)
         elif args.finalize:
