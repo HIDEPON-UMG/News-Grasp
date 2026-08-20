@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_S3_CASES_V1",
+  "packetId": "NG-CLEANROOM-S3-RED-V1",
+  "issueDate": "2026-08-21",
+  "requiredSurfaceIds": ["web", "archive", "podcast"],
+  "eligibleNotRequiredSurfaceIds": ["archive"],
+  "surfaceStatuses": ["PENDING", "CONFIRMED", "NOT_REQUIRED", "FAILED", "UNKNOWN"],
+  "bitmapCases": [
+    {"id": "all_confirmed", "statuses": {"web": "CONFIRMED", "archive": "CONFIRMED", "podcast": "CONFIRMED"}},
+    {"id": "eligible_not_required", "statuses": {"web": "CONFIRMED", "archive": "NOT_REQUIRED", "podcast": "CONFIRMED"}},
+    {"id": "pending_web", "statuses": {"web": "PENDING", "archive": "CONFIRMED", "podcast": "CONFIRMED"}},
+    {"id": "failed_archive", "statuses": {"web": "CONFIRMED", "archive": "FAILED", "podcast": "CONFIRMED"}},
+    {"id": "unknown_podcast", "statuses": {"web": "CONFIRMED", "archive": "CONFIRMED", "podcast": "UNKNOWN"}},
+    {"id": "all_pending", "statuses": {"web": "PENDING", "archive": "PENDING", "podcast": "PENDING"}}
+  ],
+  "replayCases": ["confirmed_web", "confirmed_archive", "confirmed_podcast"],
+  "partialCases": ["FAILED", "UNKNOWN", "MISSING_REQUIRED"],
+  "responseLossFaults": ["publish_response_lost", "notify_response_lost"],
+  "lineages": ["Scheduled", "Recovery", "Public", "Readiness"],
+  "reportOrder": ["Scheduled", "Recovery", "Public", "Readiness"]
+}
