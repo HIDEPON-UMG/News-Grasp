@@ -1,0 +1,86 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S4-RED-CORRECTION-V2",
+  "todoId": "NG-CLEANROOM-S4-RED-R2",
+  "role": "test_luna",
+  "canonicalContext": "/root/s1_edge_driver_red",
+  "dependencyIds": ["S4-INDEPENDENT-REVIEW-R1-BLOCK"],
+  "baselineCommit": "92fd56d9e1cc3733a7b25f3d105406dd99efd30a",
+  "reviewEvidence": {
+    "reviewerContext": "/root/s4_independent_acceptance_r1",
+    "reviewedCommit": "b7aa07f2874bf187d5cf2de97ec2e3bb5f3399fe",
+    "verdict": "BLOCK",
+    "blockerCount": 2,
+    "productionSha256": "7f51699b059788f14ec4d492bc31892fcb03692713507cd6ff4385febb27bfaa",
+    "blockers": ["persisted_result_legacy_self_reseal", "invalid_legacy_preflight_mutates_recovery_ledger"],
+    "testOracleDefect": "read-only logical SQLite observation mutates the observed SHM and makes consecutive full snapshots unstable"
+  },
+  "writeLease": {
+    "leaseId": "TEST-LEASE-S4-R2-V1",
+    "leaseSha256": "f026f42f754abd79462b5d069a9ad09356cacb217b2c0555f400df3ccbf9b0b9",
+    "canonicalPayload": {
+      "leaseId": "TEST-LEASE-S4-R2-V1",
+      "role": "test_luna",
+      "canonicalContext": "/root/s1_edge_driver_red",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-s1-h1",
+      "writes": [
+        "tests/test_news_grasp_cleanroom_s4_recovery.py",
+        "tests/fixtures/news_grasp_cleanroom_s4_cases.json"
+      ],
+      "baselineCommit": "92fd56d9e1cc3733a7b25f3d105406dd99efd30a"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": [
+    "tests/test_news_grasp_cleanroom_s4_recovery.py",
+    "tests/fixtures/news_grasp_cleanroom_s4_cases.json"
+  ],
+  "forbiddenWrites": ["tools", "config", "docs", "scripts", "all other tests and fixtures"],
+  "requiredCorrections": [
+    {
+      "id": "S4-R2-ORACLE-01",
+      "change": "make _s1_logical_dump side-effect-free for the observed S1 root by querying a test-owned exact clone of the closed SQLite main/WAL/SHM triplet; preserve the full raw tree snapshot of the original root and assert two consecutive _s1_state calls are byte/hash/mtime and all-table logically identical before recovery"
+    },
+    {
+      "id": "S4-R2-RED-01",
+      "change": "after a valid terminal result containing valid legacy, mutate result_json.legacy to malformed or semantically rebound data, recompute result_sha256 and record_sha256 exactly, then require audit and inspect to raise RECOVERY_LEDGER_CORRUPT, return no result, call no child and perform no repair; cover invalid legacy exact keys/schema/issueDate/status/payloadSha256/bytesSha256 semantics, not merely JSON/hash syntax"
+    },
+    {
+      "id": "S4-R2-RED-02",
+      "change": "for malformed/hash-drift/unknown-schema legacy on a previously absent recovery ledger, require the exact typed legacy reason plus recovery-ledger-v1.sqlite3, -wal and -shm all remain absent, no recovery_records table/row exists, child calls are zero and S1 raw/logical state is unchanged"
+    }
+  ],
+  "retainedOracles": [
+    "exactly three existing top-level test names; add matrices inside them",
+    "six recovery hook phases and completed child call count exactly one",
+    "23 existing persisted record mutations and all authority/fence/budget reasons",
+    "legacy public callable surface exactly read and valid bytes/mtime unchanged",
+    "Scheduled lineage unchanged, Recovery/Public separate, legacyWriterCount=0"
+  ],
+  "testDesignRules": [
+    "no production solution, source-text assertion or test-specific escape hatch",
+    "the SQLite clone used only for logical observation is outside the observed runtime tree and is deleted by the test; no mutation of the source DB triplet",
+    "keep Japanese temp paths and aware Asia/Tokyo times",
+    "every coordinated reseal mutation recomputes the same canonical hashes as production, so failure proves semantic binding",
+    "do not run S6, external E2E, Task Scheduler, UAC, network or UI"
+  ],
+  "verification": {
+    "compileCommand": "py -3.12 -m py_compile tests/test_news_grasp_cleanroom_s4_recovery.py",
+    "collectCommand": "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s4_recovery.py",
+    "collectExpected": 3,
+    "redCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s4_recovery.py",
+    "redExpected": "exactly two causal failures: persisted legacy coordinated reseal accepted and invalid legacy created recovery ledger; the prior snapshot flake is absent",
+    "ruffCommand": "py -3.12 -m ruff check tests/test_news_grasp_cleanroom_s4_recovery.py",
+    "diffCommand": "git diff --check -- tests/test_news_grasp_cleanroom_s4_recovery.py tests/fixtures/news_grasp_cleanroom_s4_cases.json"
+  },
+  "commitPolicy": {
+    "allowedOnlyAfterExpectedRed": true,
+    "paths": ["tests/test_news_grasp_cleanroom_s4_recovery.py", "tests/fixtures/news_grasp_cleanroom_s4_cases.json"],
+    "message": "test: bind S4 legacy integrity preflight"
+  },
+  "causalRetryCondition": "one correction attempt and one ordered verification chain; return on any count/cause/oracle mismatch",
+  "delivery": "test-owned delta, hashes/bytes, exact two-Red evidence, snapshot stability evidence and zero external mutation",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "persistentPolling": false}
+}
