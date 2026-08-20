@@ -2273,7 +2273,12 @@ function Invoke-CodexWrapper {
         [int] $SuccessProbeMinElapsedSec = 0
     )
     $callSequence = Acquire-RecoveryHighCostBudget -Stage "model:$FlowName"
-    if ($RunIntent -eq 'ScheduledRecoveryFull' -and -not $FinalizeVerifiedPublishManifest) {
+    if (
+        $RunIntent -eq 'ScheduledRecoveryFull' -and
+        (-not $FinalizeVerifiedPublishManifest) -and
+        (-not $script:UsesHighCostContinuationAdmission) -and
+        (-not ($ResumeFromStage -and $HighCostAdmissionPath))
+    ) {
         $remainingSeconds = [int][Math]::Floor((([DateTimeOffset]$script:RecoveryHardDeadline) - [DateTimeOffset]::Now).TotalSeconds)
         if ($remainingSeconds -le 0) {
             Assert-RecoveryOperationDeadline -HighCost -Stage "model:$FlowName"
@@ -2635,9 +2640,25 @@ $failureText
     $compoundGateFailure = ($GateId -in @('daily-quality', 'generation-quality') -and $issueCount -gt 1)
     $repairModel = Select-RepairModel -IssueCount $issueCount -PreviousClassifyFailed:$false -ScopeAmbiguous:$scopeAmbiguous -MissingArtifactGeneration:$missingArtifactGeneration -CompoundGateFailure:$compoundGateFailure
     $RepairReasoningEffort = Get-ModelPolicyValue -Role 'repair' -Key 'reasoning'
-    Write-Log "repair wrapper invoke START (agent=codex, gate=$GateId, Model=$repairModel, ReasoningEffort=$RepairReasoningEffort, issue_count=$issueCount, missing_artifact_generation=$missingArtifactGeneration, TimeoutSec=900)"
+    $repairFlowName = "repair:$GateId"
+    if ($HighCostAdmissionPath -and (Test-Path -LiteralPath $HighCostAdmissionPath -PathType Leaf)) {
+        try {
+            $activeAdmission = Get-Content -LiteralPath $HighCostAdmissionPath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+            if (
+                $GateId -eq 'generation-quality' -and
+                [string]$activeAdmission.schemaVersion -eq 'HIGH_COST_SCHEDULED_INCIDENT_REPAIR_V1' -and
+                $activeAdmission.PSObject.Properties.Name -contains 'allowedModelRoutes' -and
+                @($activeAdmission.allowedModelRoutes) -contains 'repair:incident-publication'
+            ) {
+                $repairFlowName = 'repair:incident-publication'
+            }
+        } catch {
+            Write-Log "WARN: high cost admission flow route inspection failed (gate=$GateId, reason=$($_.Exception.Message))"
+        }
+    }
+    Write-Log "repair wrapper invoke START (agent=codex, gate=$GateId, flow=$repairFlowName, Model=$repairModel, ReasoningEffort=$RepairReasoningEffort, issue_count=$issueCount, missing_artifact_generation=$missingArtifactGeneration, TimeoutSec=900)"
     Update-RunnerProgress -Phase 'repair' -Step "repair wrapper invoke: $GateId" -GateId $GateId -Category $Category
-    $repairRc = Invoke-CodexWrapper -PromptFile $repairPrompt -TimeoutSec 900 -IdleTimeoutSec 300 -Model $repairModel -ReasoningEffort $RepairReasoningEffort -FlowName "repair:$GateId"
+    $repairRc = Invoke-CodexWrapper -PromptFile $repairPrompt -TimeoutSec 900 -IdleTimeoutSec 300 -Model $repairModel -ReasoningEffort $RepairReasoningEffort -FlowName $repairFlowName
     Write-Log "repair wrapper invoke END (agent=codex, gate=$GateId, rc=$repairRc)"
     Update-RunnerProgress -Phase 'repair' -Step "repair wrapper done: $GateId rc=$repairRc" -GateId $GateId -Category $Category
     return $repairRc
@@ -2650,19 +2671,16 @@ function Get-RepairDecisionArtifacts {
     )
     $selected = New-Object System.Collections.Generic.List[string]
     if ($null -ne $RepairDecision) {
-        if ($RepairDecision.PSObject.Properties.Name -contains 'artifact_paths') {
-            foreach ($artifact in @($RepairDecision.artifact_paths)) {
-                $text = ([string] $artifact).Trim()
-                if ($text) { $selected.Add($text) }
-            }
-        }
-        if ($selected.Count -gt 0) {
-            return $selected.ToArray()
-        }
         if ($RepairDecision.PSObject.Properties.Name -contains 'selected_artifacts') {
             foreach ($artifact in @($RepairDecision.selected_artifacts)) {
                 $text = ([string] $artifact).Trim()
-                if ($text) { $selected.Add($text) }
+                if ($text -and -not $selected.Contains($text)) { $selected.Add($text) }
+            }
+        }
+        if ($RepairDecision.PSObject.Properties.Name -contains 'artifact_paths') {
+            foreach ($artifact in @($RepairDecision.artifact_paths)) {
+                $text = ([string] $artifact).Trim()
+                if ($text -and -not $selected.Contains($text)) { $selected.Add($text) }
             }
         }
     }
@@ -3736,6 +3754,11 @@ function Assert-HighCostOperationAdmission {
             ) -or (
                 $continuationSchema -eq 'HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1' -and
                 (-not $continuationResumeStage)
+            ) -or (
+                $continuationSchema -eq 'HIGH_COST_SCHEDULED_INCIDENT_REPAIR_V1' -and
+                (-not $continuationResumeStage) -and
+                $continuationAdmission.PSObject.Properties.Name -contains 'allowedModelRoutes' -and
+                @($continuationAdmission.allowedModelRoutes) -contains 'repair:incident-publication'
             )
             if (
                 (-not $validContinuationAdmission) -or
@@ -3823,7 +3846,7 @@ function Assert-HighCostOperationAdmission {
         $admission = $admissionJson | ConvertFrom-Json -ErrorAction Stop
         $authority = Get-Content -LiteralPath $ScheduledAuthorityEvidencePath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
         if (
-            $admission.schemaVersion -ne 'HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1' -or
+            [string]$admission.schemaVersion -notin @('HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1', 'HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1', 'HIGH_COST_SCHEDULED_INCIDENT_REPAIR_V1') -or
             $admission.operationKind -ne $operationKind -or
             $admission.issueDate -ne $DateStamp -or
             $admission.operationAuthoritySha256 -ne $authority.receiptSha256

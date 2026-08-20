@@ -20,7 +20,7 @@ from contextlib import contextmanager
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 
 TRANSACTION_SCHEMA_V2 = "AUDIT_RECOVERY_TRANSACTION_V2"
@@ -41,7 +41,10 @@ MISSION_PHASES = (
     "finalization_committed",
     "closed",
 )
-JST = ZoneInfo("Asia/Tokyo")
+try:
+    JST = ZoneInfo("Asia/Tokyo")
+except ZoneInfoNotFoundError:
+    JST = timezone(timedelta(hours=9))
 ISSUE_DATE_RE = re.compile(r"^20\d{2}-\d{2}-\d{2}$")
 LEASE_MINUTES = 5
 MAX_JOURNAL_EVENTS = 64
