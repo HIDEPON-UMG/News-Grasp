@@ -1,0 +1,116 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S6-RED-CORRECTION-V1",
+  "todoId": "NG-CLEANROOM-S6-RED-R1",
+  "role": "test_luna",
+  "canonicalContext": "/root/s1_edge_driver_red",
+  "dependencyIds": ["NG-CLEANROOM-S6-RED-V1", "S6-TEST-DESIGN-REVIEW-R1-BLOCK"],
+  "baselineCommit": "5b63214af3ef2aecab4ae9578d05ea82ac800870",
+  "reviewEvidence": {
+    "reviewerContext": "/root/s4_independent_acceptance_r1",
+    "reviewedCommit": "39a45d10cfa8a8dd07e2704b1b31b7e9ce092b23",
+    "verdict": "BLOCK",
+    "blockerCount": 7,
+    "classes": [
+      "l4_l5_self_reported_chain", "s0_interface_drift_unchecked", "l6_test_wrapper_substitution",
+      "l7_synthetic_unbound", "semantic_negative_not_resealed", "not_required_hash_contradiction",
+      "l8_l9_trusted_authority_absent"
+    ]
+  },
+  "writeLease": {
+    "leaseId": "TEST-LEASE-S6-R1-V1",
+    "leaseSha256": "68e045dc04fcc55158707daacfe3d3f376ed552323921bf11aab16ceac2d3c1f",
+    "canonicalPayload": {
+      "leaseId": "TEST-LEASE-S6-R1-V1",
+      "role": "test_luna",
+      "canonicalContext": "/root/s1_edge_driver_red",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-s1-h1",
+      "writes": [
+        "tests/test_news_grasp_cleanroom_s6_release.py",
+        "tests/fixtures/news_grasp_cleanroom_s6_cases.json"
+      ],
+      "baselineCommit": "5b63214af3ef2aecab4ae9578d05ea82ac800870"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": [
+    "tests/test_news_grasp_cleanroom_s6_release.py",
+    "tests/fixtures/news_grasp_cleanroom_s6_cases.json"
+  ],
+  "forbiddenWrites": ["tools", "config", "docs", "scripts", "all other tests and fixtures"],
+  "correctedValidatorContract": {
+    "module": "tools.news_grasp_cleanroom_release",
+    "error": "ReleaseEvidenceError exposes exact .reason",
+    "layer": "validate_layer_evidence(evidence, sealed_manifest, trusted_receipts, expected_context, installed_authority) -> LAYER_VALIDATION_RESULT_V1",
+    "l8": "admit_final_e2e(admission, trusted_receipts, expected_context, installed_authority) -> E2E_FINAL_ADMISSION_DECISION_V1",
+    "natural": "validate_natural_evidence(natural, trusted_receipts, expected_context, installed_authority) -> NATURAL_OPERATION_DECISION_V1",
+    "trustedReceipts": "separate exact mapping of S0 through S5 ACCEPTED receipt bytes/hash/schema/commit/source/test hashes; caller evidence cannot overwrite it",
+    "expectedContext": "exact issueDate, generation, scheduleId, sourceCommit and observedAt authority; cross-date/generation/commit rejected",
+    "installedAuthority": "exact source path/hash/commit, installed root/path/hash/generation receipt, Task XML/action hash, executable, ordered argv and workingDirectory"
+  },
+  "requiredCorrections": [
+    {
+      "id": "S6-R1-01",
+      "change": "L3 must execute production dispatch and Controller against one real Japanese temp runtime with real WAL/SQLite and exact S0 plannedEntrypoints; assert Scheduled and Audit rows/serializations from actual returned values and storage, never a realObserved string"
+    },
+    {
+      "id": "S6-R1-02",
+      "change": "L4/L5 must instantiate and execute actual S1 Controller/dispatch, S2 ExecutionController, S3 PublicController and S4 RecoveryController on the same runtime root; only admission/model/publisher/notifier/stage external protocols may be deterministic substitutes; bind actual terminal hashes, separate lineages, recovery non-overwrite and terminal retry child deltas zero into layer evidence"
+    },
+    {
+      "id": "S6-R1-03",
+      "change": "L6 must directly invoke `py -3.12 -m tools.news_grasp_cleanroom_dispatch` as the production CLI, not a test-owned wrapper; use exact base manifest argv plus explicit runtime-root/manifest-path/observed-at/writer-json test authority options, shell=false, CREATE_NO_WINDOW, UTF-8 and Japanese path; assert one stdout RECONCILE_RESULT_V1 JSON/exit0, one after-initial-WAL fault typed nonzero, real WAL/SQLite remains, filesystem restart without fault resumes to one terminal result and corrupt input maps to a distinct typed exit"
+    },
+    {
+      "id": "S6-R1-04",
+      "change": "L7 uses tracked scripts/ops/news-grasp-task-launcher.pyw bytes/hash as source, actual S5 InstallCutoverController.stage, its returned generation/journal/installed receipt and Task adapter registered definition; bind installed bytes, structured action, executable, ordered argv, workingDirectory and Task XML/action hash to installed_authority; arbitrary synthetic launcher/task dict must fail"
+    },
+    {
+      "id": "S6-R1-05",
+      "change": "replace all semantic negatives with recursive canonical reseal helpers: mutate the innermost semantic value, recompute its hash and every containing row/envelope hash; keep hash-drift as separate cases; apply schema/fake/realRequired/observed/status mutation to every L0-L7 row so hash-only or first-row-only validators die"
+    },
+    {
+      "id": "S6-R1-06",
+      "change": "Public NOT_REQUIRED positive must rebuild terminalHash, receiptSha256 and naturalEvidenceSha256 before acceptance; Scheduled and Audit remain exact GREEN and distinct; include correctly resealed substitution negatives for L8-as-L9, Recovery-as-Scheduled, Public-as-Readiness, prior date, prior generation and wrong installed hash"
+    },
+    {
+      "id": "S6-R1-07",
+      "change": "L8 admission compares against trusted S0-S5 receipt registry, current context and installed authority; history contains 30 exact daily evidence rows with per-lineage receipt hashes plus ledger provenance hashes and explicit missing/introduction/timezone semantics; 63+8 corpus entries carry case id/domain/receipt/hash/provenance rather than count self-report; every semantic negative is correctly resealed"
+    }
+  ],
+  "retainedNodes": [
+    "test_s6_l3_l7_real_boundary_manifest",
+    "test_s6_installed_bytes_args_workdir",
+    "test_s6_l8_final_admission",
+    "test_s6_history_coverage_and_legacy_zero",
+    "test_s6_natural_receipt_schema",
+    "test_s6_natural_states_non_substitutable"
+  ],
+  "testDesignRules": [
+    "retain exactly six top-level nodes and dynamically import release validator first so Expected Red remains six causal absent-module failures",
+    "do not encode a production implementation or accept source-text/count-only/self-reported evidence",
+    "all realRequired claims are computed from actual return values, filesystem bytes, SQLite rows, subprocess output or S5 receipts",
+    "all protocol fakes are exact S0 fakeSubstitution entries with public call/query observations and contract parity",
+    "no live Task Scheduler, UAC, network, public service, user window, credentials or path outside pytest temp roots",
+    "no L8 execution or L9 claim; validate admission/evidence only"
+  ],
+  "verification": {
+    "compileCommand": "py -3.12 -m py_compile tests/test_news_grasp_cleanroom_s6_release.py",
+    "collectCommand": "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s6_release.py",
+    "collectExpected": 6,
+    "redCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s6_release.py",
+    "redExpected": "exactly six failures caused only by absent tools.news_grasp_cleanroom_release; collection errors zero",
+    "ruffCommand": "py -3.12 -m ruff check tests/test_news_grasp_cleanroom_s6_release.py",
+    "diffCommand": "git diff --check -- tests/test_news_grasp_cleanroom_s6_release.py tests/fixtures/news_grasp_cleanroom_s6_cases.json"
+  },
+  "commitPolicy": {
+    "allowedOnlyAfterExpectedRed": true,
+    "paths": ["tests/test_news_grasp_cleanroom_s6_release.py", "tests/fixtures/news_grasp_cleanroom_s6_cases.json"],
+    "message": "test: bind S6 real release evidence"
+  },
+  "causalRetryCondition": "one correction attempt and one ordered verification chain; return on first interface/count/cause/static mismatch",
+  "delivery": "two test-owned files, hashes/bytes, exact six-Red, seven-blocker closure map and zero external mutation",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "noSharedProcessKill": true, "persistentPolling": false}
+}
