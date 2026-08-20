@@ -1575,3 +1575,37 @@ def test_s1_recover_wrapper_exposes_and_forwards_busy_timeout(monkeypatch: pytes
     assert result == {"status": "captured"}
     assert captured["busy_timeout_ms"] == 17
     assert captured["observed_at"] is observed
+
+
+def test_s1_atomic_publish_never_reopens_public_final_for_write(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    data = _load_fixture()
+    production = _production()
+    manifest_path = _write_manifest(tmp_path, data)
+    runtime_root = tmp_path / "runtime"
+    forbidden_reopens: list[Path] = []
+    original_open = Path.open
+
+    def guarded_open(path: Path, mode: str = "r", *args: Any, **kwargs: Any):
+        candidate = Path(path)
+        if (
+            mode == "r+b"
+            and candidate.exists()
+            and candidate.suffix == ".json"
+            and not candidate.name.startswith(".")
+            and candidate.is_relative_to(runtime_root / "control")
+        ):
+            forbidden_reopens.append(candidate)
+            raise PermissionError(f"simulated sharing denial for {candidate}")
+        return original_open(path, mode, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "open", guarded_open)
+    controller = _controller(production, runtime_root, manifest_path)
+    controller.reconcile(
+        raw_argv=data["normative"]["rawArgv"]["exact"],
+        observed_at=_at(6, 1),
+        writer=_writer(1),
+    )
+    assert production["DurableWal"](runtime_root).verify()["status"] == "verified"
+    state = controller.inspect_control_state()
+    assert state["integrityStatus"] == "green"
+    assert forbidden_reopens == []
