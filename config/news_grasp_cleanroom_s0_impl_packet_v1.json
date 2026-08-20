@@ -1,0 +1,127 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S0-GREEN-V1",
+  "todoId": "NG-CLEANROOM-S0-GREEN",
+  "role": "implementation_luna",
+  "canonicalContext": "/root/implementation_luna_canary",
+  "mutationMode": "product_mutation",
+  "dependencyIds": [
+    "ng-cleanroom-s0-impact-binding-r4",
+    "NEWS_GRASP_CLEANROOM_S0_EXPECTED_RED_RECEIPT_V1"
+  ],
+  "requirementIds": ["NG-A-R01"],
+  "acceptanceIds": [
+    "test_s0_role_collision_rejected",
+    "test_s0_trace_gap_duplicate_orphan_rejected",
+    "test_s0_stale_seal_rejected"
+  ],
+  "redNodeIds": [
+    "test_s0_role_collision_rejected",
+    "test_s0_trace_gap_duplicate_orphan_rejected",
+    "test_s0_stale_seal_rejected"
+  ],
+  "baselineCommit": "167823fbdf6c70163f590071004a95adaa81a625",
+  "baselineSha256": "bdbe7c801a4e299feb45d69d7059a850d621d199f2db89f2c841e8fc4bb2638e",
+  "baselineReceiptPath": "config/news_grasp_cleanroom_s0_red_receipt_v1.json",
+  "writeLease": {
+    "leaseId": "IMPL-LEASE-S0-V1",
+    "leaseSha256": "1f5fd15ed326d67a2ea56dc06c250f561591d3c6560a4a3f933074609de6b004",
+    "canonicalPayload": {
+      "leaseId": "IMPL-LEASE-S0-V1",
+      "role": "implementation_luna",
+      "canonicalContext": "/root/implementation_luna_canary",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-s0-h1",
+      "writes": ["tools/news_grasp_cleanroom_contracts.py"],
+      "baselineCommit": "167823fbdf6c70163f590071004a95adaa81a625"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tools/news_grasp_cleanroom_contracts.py"],
+  "targetSourceHashes": {
+    "tools/news_grasp_cleanroom_contracts.py": "ABSENT"
+  },
+  "readOnlyInputs": {
+    "config/news_grasp_cleanroom_control_s0_v2.json": "2b76d2b0aa73d22a43e0279c93cea3eecf3dff0874da6384c6abb74ed61d3a91",
+    "config/news_grasp_cleanroom_s0_impact_review_v2.json": "7647135ca8ff015f12e576cde348f29aa531583d0362425e60dbafa836cab5a2",
+    "config/news_grasp_cleanroom_s0_red_receipt_v1.json": "bdbe7c801a4e299feb45d69d7059a850d621d199f2db89f2c841e8fc4bb2638e",
+    "tests/test_news_grasp_cleanroom_s0_contract.py": "ffe785c0f3fbe95300fc1eef3eb7d4d7ae5ae3754bcabff56cc7fcbab4f0c7b9",
+    "tests/fixtures/news_grasp_cleanroom_s0_cases.json": "75ef66b6e983e83205cc6fa77c2de3a845385d5c191d88180e3882e60f7b477a"
+  },
+  "implementationContract": {
+    "module": "tools.news_grasp_cleanroom_contracts",
+    "symbols": ["CleanroomContractError", "validate_s0_admission"],
+    "signature": "validate_s0_admission(contract: dict, *, active_slice: str, actual_test_nodes: Iterable[str], baseline_commit: str) -> dict",
+    "errorReasons": [
+      "NEWS_GRASP_S0_ROLE_COLLISION",
+      "NEWS_GRASP_S0_WRITE_LEASE_OVERLAP",
+      "NEWS_GRASP_S0_TRACE_GAP",
+      "NEWS_GRASP_S0_TRACE_DUPLICATE",
+      "NEWS_GRASP_S0_TRACE_ORPHAN",
+      "NEWS_GRASP_S0_UNKNOWN_NODE",
+      "NEWS_GRASP_S0_LEASE_SEAL_STALE",
+      "NEWS_GRASP_S0_BASELINE_DRIFT",
+      "NEWS_GRASP_S0_CONTRACT_INVALID"
+    ],
+    "validResult": {
+      "schemaVersion": "NEWS_GRASP_CLEANROOM_S0_ADMISSION_RESULT_V1",
+      "status": "accepted",
+      "requirementCount": 15,
+      "plannedNodeCount": 57,
+      "actualNodeCount": 3,
+      "roleCollisionCount": 0,
+      "writeLeaseIntersectionCount": 0,
+      "traceGapCount": 0,
+      "staleSealCount": 0
+    },
+    "precedence": [
+      "schema/slice/type invalid -> CONTRACT_INVALID",
+      "role canonicalContext collision -> ROLE_COLLISION",
+      "normalized write path overlap or alias -> WRITE_LEASE_OVERLAP",
+      "missing requirement trace -> TRACE_GAP",
+      "duplicate requirement trace/node -> TRACE_DUPLICATE",
+      "trace row for missing requirement -> TRACE_ORPHAN",
+      "actual node outside active slice planned nodes -> UNKNOWN_NODE",
+      "lease row/hash/map/status mismatch -> LEASE_SEAL_STALE",
+      "baseline commit/remote/file hash mismatch -> BASELINE_DRIFT"
+    ],
+    "filesystemPolicy": "read and SHA-256 only for the two sealed config paths; no writes, network or subprocess",
+    "pathPolicy": "normalize slash, dot segment and case for write-set comparison; reject absolute, parent traversal and unknown path",
+    "unknownPolicy": "fail closed with NEWS_GRASP_S0_CONTRACT_INVALID"
+  },
+  "command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s0_contract.py",
+  "expectedFailureSignature": "NGC_S0_EXPECTED_RED_PRODUCTION_VALIDATOR_ABSENT",
+  "expectedVerificationExit": 0,
+  "expectedOutputs": [
+    "3 passed",
+    "production module SHA-256",
+    "git diff --check exit 0"
+  ],
+  "artifactPaths": ["tools/news_grasp_cleanroom_contracts.py"],
+  "localVerification": [
+    "py -3.12 -m py_compile tools/news_grasp_cleanroom_contracts.py",
+    "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s0_contract.py",
+    "git diff --check",
+    "git status --short"
+  ],
+  "causalRetryCondition": "only production syntax or logic defect evidenced by the exact three sealed tests; maximum one causal correction before returning to Sol",
+  "rollback": "remove only the newly added tools/news_grasp_cleanroom_contracts.py in the isolated implementation worktree before integration",
+  "snapshot": "return exact file SHA-256, bytes, commands, exit codes and write-set status; no commit or push",
+  "delivery": "production code only; tests, fixtures, config, docs and receipts remain byte-identical",
+  "stopPolicy": "return_to_sol_before_execution",
+  "unresolvedDecisionIds": [],
+  "returnToSolConditions": [
+    "write_set_expansion",
+    "new_contract_reason_or_api",
+    "test_or_fixture_mutation_required",
+    "baseline_or_read_only_hash_drift",
+    "network_or_external_process_required",
+    "unresolved_security_decision"
+  ],
+  "humanImpact": {
+    "noFocusTheft": true,
+    "noAutoOpen": true,
+    "noUserMonitoring": true,
+    "persistentPolling": false,
+    "rawProcessTermination": false
+  }
+}
