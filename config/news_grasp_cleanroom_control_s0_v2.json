@@ -1,0 +1,336 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_CONTROL_S0_V2",
+  "generation": "S0-H1",
+  "status": "impact_review_pending",
+  "productBehaviorComplete": false,
+  "redGenerationStatus": "not_started",
+  "supersedesBlockedArtifact": {
+    "path": "config/news_grasp_cleanroom_control_s0_v1.json",
+    "sha256": "f052df08a5eb5bef6e01dd54ae0aedf54cceecaf2d1c7bb20c98e93cb185bc4c",
+    "reviewId": "ng-cleanroom-s0-r1",
+    "verdict": "blocked",
+    "blockerCount": 9
+  },
+  "taskOperatingContract": {
+    "schemaVersion": "TASK_OPERATING_CONTRACT_V1",
+    "authority": "actual_user",
+    "primaryUser": "日々の情報収集時間を短縮し、公開成果と運用状態を信頼して利用する多忙なITコンサルタント",
+    "objective": "単一reconcile入口、WAL、SQLite ledger、lease/fence、分離lineage、atomic cutoverを持つNews-Grasp日次運用制御層を実装し、自然06:00/06:40 cycleで証明した後にだけ三役分離をProjectFolders全体へ展開する。",
+    "workstreamOrder": ["A_product_operationally_verified", "B_global_enforced"],
+    "affectedSurfaces": ["scheduler", "dispatch", "WAL", "SQLite ledger", "high-cost broker", "content resume", "publication", "playlist", "notification", "recovery", "audit", "history", "report", "installer", "cutover", "rollback"],
+    "nonGoals": ["記事内容生成アルゴリズムの刷新", "動画本体削除", "unrelated repository変更", "ProjectFolders global harnessのA完了前変更", "二回目のL8"],
+    "unresolvedDecisions": [],
+    "observabilityPlan": ["append-only WAL", "SQLite event/lease/terminal rows", "surface bitmap", "typed state projection", "install/cutover journal", "hash-bound receipts"],
+    "stopConditions": ["baseline drift", "test/implementation/review role collision", "write lease overlap", "unknown route", "stale fence", "external result unknown without provider query", "review blocker", "second L8 without new actual-user authority"],
+    "terminalEvidencePlan": ["L0-L7 Green", "independent value review accepted", "safe commit/push/remote HEAD", "exact installed bytes", "L8 once", "cutover sentinel", "natural L9", "separate Scheduled/Audit/Public/Readiness receipts"],
+    "stateMachine": ["IMPACT_CLOSED", "RED_SEALED", "IMPLEMENTED", "TESTED_GREEN", "VALUE_REVIEWED", "ACCEPTED", "INSTALLED", "CUTOVER", "OPERATIONALLY_VERIFIED"]
+  },
+  "authorityPreflight": {
+    "schemaVersion": "TASK_AUTHORITY_PREFLIGHT_V1",
+    "sourceStatus": "UserConfirmed",
+    "evidence": [
+      {"surface": "handoff_attachment", "path": "<CODEX_ATTACHMENT>/pasted-text.txt", "fileSha256": "b9104e23cb6b24d91788404b49fbf420d2ccc557f9fec3d97eb05370a9165d9d", "fileBytes": 31954, "canonicalization": "raw UTF-8 file bytes", "authoritySectionLines": "858-883", "sectionTextSha256": "60aae6950d05644ca0431bcfa8f4c888a63a0c7c71b5a4ffc07652760c45638e", "scope": "isolated implementation, three-role split, staged Task cutover, one L8, natural cycle, commit/push/remote verification"},
+      {"surface": "actual_user_turn", "text": "目的達成まで作業を中断するな。絶対にだ！！！", "textSha256": "2c97894c6f03a57ecc549d5655d7bfe754a0d2bb59fb106aadebcf3ed3a2df38"},
+      {"surface": "actual_user_turn", "text": "とまってんじゃねえか", "textSha256": "d479fa141046085ac423b1c619027aea10f9b15fe2b5848adb607e40a00d335f"}
+    ],
+    "authorized": ["isolated product source/test mutation", "Test Luna", "Implementation Luna", "independent Sol review", "commit", "push origin", "staged install", "Task Scheduler cutover", "one NoPublish L8", "natural L9 observation"],
+    "privilegePlan": {"uacMayBeRequired": true, "operations": ["staged Task install", "cutover", "rollback"], "approvalBatch": "handoff section 16", "midTaskAuthorityExpansion": false},
+    "notAuthorized": ["video deletion", "unrelated repo/global mutation before A", "second L8", "destructive reset/clean", "shared process kill", "user window enumeration or visibility change"],
+    "playlistRepairAlreadyExecuted": {"scopeTextSha256": "82908c096a2f6b467e32efefa1232c2a9ab714ce8e693dee69b20bf97e33f3f4", "executionReceiptSha256": "bf0df63a7ca3f66b2da4a7956a4df946af1c1db609fff5bf3b3e12b71b383408", "videoObjectsDeleted": 0}
+  },
+  "resourcePreflight": {
+    "schemaVersion": "TASK_RESOURCE_PREFLIGHT_V1",
+    "usageAuthority": "unknown",
+    "usageDisplay": "—",
+    "modelRoutes": {"requirementsImpactPlanSecurity": "gpt-5.6-sol max", "testsFixturesOracles": "gpt-5.6-luna max via test_luna", "productionCode": "gpt-5.6-luna max via implementation_luna", "independentReview": "gpt-5.6-sol max read-only"},
+    "groundedActiveTimeMinutes": {"optimistic": 1440, "expected": 2220, "pessimistic": 3360, "naturalWaitExcluded": true},
+    "naturalWait": "最初の完全な06:00/06:40 cycleまで最大24時間超。実行時間と分離する。",
+    "disk": {"drive": "C:", "observedFreeBytes": 170742190080, "observedFreeGiB": 159.02, "plannedTemporaryGiB": 5, "sufficient": true},
+    "memory": {"plannedPeakMiB": 2048, "fanOutLimit": 2, "largeInMemoryLogBuffering": false},
+    "externalMutationEstimate": {"gitPushes": "accepted generation単位で集約", "taskInstalls": 1, "cutovers": 1, "L8Runs": 1, "naturalRuns": 1, "notifications": "natural production runのみ"},
+    "evidenceReuse": ["H1 source hashes", "P0 playlist repair accepted review", "live Task XML/state", "existing 63+8 history corpus inventory"],
+    "highCostBudget": {"L8ApprovedAttempts": 1, "L8Consumed": 0, "secondAttemptRequiresActualUser": true, "implementationExternalModelCalls": 0, "testExternalModelCalls": 0},
+    "maximumEfficiencyOrder": ["static", "contract", "component", "integration", "workflow", "fault/recovery", "installed sentinel", "final-only L8", "natural L9"],
+    "parallelism": {"maxChildren": 2, "nestedDelegation": false, "onlyIndependentBoundedWork": true}
+    ,"readyForPlanning": true
+  },
+  "humanImpactContract": {
+    "schemaVersion": "HUMAN_IMPACT_CONTRACT_V1",
+    "noFocusTheft": true,
+    "noAutoOpen": true,
+    "noUserMonitoring": true,
+    "noSharedProcessKill": true,
+    "userWindowEnumeration": false,
+    "windowsProcessBoundary": {"shell": false, "creationFlags": "CREATE_NO_WINDOW", "includeChildTree": true, "encoding": "UTF-8", "japanesePaths": true},
+    "uiApprovalNotification": {"requiredBeforeUac": true, "notificationAttemptCount": 1, "noFocusTheft": true},
+    "affectedSurfaces": ["PowerShell/Python subprocess tree", "Task Scheduler", "filesystem journals", "SQLite/WAL", "NoPublish wrapper", "natural production run"],
+    "logPlan": ["bounded UTF-8 append-only logs", "no secret/stdout bulk logging", "per-run IDs and typed reason codes"],
+    "statePlan": ["isolated test roots", "production ledger", "install/cutover journal", "separate Scheduled/Audit/Public/Readiness projections"],
+    "stopMonitoring": ["timeout", "lease loss", "stale fence", "unexpected window/process behavior", "unknown external result"],
+    "terminalMonitoring": ["child exit", "receipt hash", "no orphan process", "state terminal", "external side-effect bitmap"],
+    "verification": ["static argv/flags", "subprocess integration", "installed Task action", "L7 sentinel"]
+  },
+  "pathTokenRegistry": {
+    "schemaVersion": "NEWS_GRASP_PORTABLE_PATH_TOKEN_REGISTRY_V1",
+    "<PROJECT_FOLDERS>": {"resolver": "workspace root parent selected at admission", "scope": "machine-local evidence only"},
+    "<USERPROFILE>": {"resolver": "Path.home() resolved without shell expansion", "scope": "installed runtime and evidence"},
+    "<CODEX_ATTACHMENT>": {"resolver": "interactive authority source; committed consumers use fileSha256 and sectionTextSha256", "scope": "private source path is never committed"},
+    "resolutionPolicy": "resolve tokens before filesystem access; unresolved/unknown token fails closed; resolved path is never serialized to a public tracked artifact"
+  },
+  "portablePathValidationReceipt": {
+    "schemaVersion": "NEWS_GRASP_PORTABLE_PATH_VALIDATION_RECEIPT_V1",
+    "registeredTokens": ["<PROJECT_FOLDERS>", "<USERPROFILE>", "<CODEX_ATTACHMENT>"],
+    "usedTokens": ["<PROJECT_FOLDERS>", "<USERPROFILE>", "<CODEX_ATTACHMENT>"],
+    "unknownTokens": [],
+    "unusedTokens": [],
+    "privateUsernamePathMatchCount": 0,
+    "privateAttachmentPathMatchCount": 0,
+    "status": "green"
+  },
+  "modelCapabilityEvidence": {
+    "schemaVersion": "MODEL_CAPABILITY_EVIDENCE_V1",
+    "hostSurface": "collaboration.spawn_agent agent_type role metadata",
+    "hostContract": {"test_luna": {"model": "gpt-5.6-luna", "reasoningEffort": "max"}, "implementation_luna": {"model": "gpt-5.6-luna", "reasoningEffort": "max"}, "reviewer": {"model": "gpt-5.6-sol", "reasoningEffort": "max"}},
+    "actualContexts": [
+      {"role": "Test Luna", "canonicalTask": "/root/playlist_repair_red", "terminalChildContextCreated": true, "commit": "3c84d5bcbaed92138d77ecb77da1bf5d7a2d0fc0"},
+      {"role": "Implementation Luna", "canonicalTask": "/root/implementation_luna_canary", "terminalChildContextCreated": true, "commit": "bf04d4e05b71027ee3cf1ccacc9938e37e5456d8"},
+      {"role": "Independent Reviewer", "canonicalTask": "/root/s0_independent_review", "terminalChildContextCreated": true, "reviewIds": ["ng-cleanroom-s0-r1", "ng-public-playlist-repair-r1"]}
+    ],
+    "providerProcessOrSessionId": {"state": "not_exposed_by_host_surface", "usedAsClaim": false},
+    "userSelector": "not_generalized", "api": "not_generalized", "taskRoleRegistry": "present", "collaborationOverride": "host_fixed", "brokerLaunch": "actual_terminal_children",
+    "roleFileSha256": {"test_luna": "4154ae91ae023e7cf4cb3fd87667264b0720cd85f2155cacda180ec662bbe519", "implementation_luna": "aeab3ace48626db95559117b75cef2df0ed8828847548235b01780097857fdc1"},
+    "configSha256": "886c6c777819fdf99694ed2bfa487d84d99ec3fb4feadcbcf1604eaf4bce4b25",
+    "taskRoleRegistrySha256": "5b3bb1f2ddb3dcc811fab1101f825766e33ba7bf24e4bf0cdac682866841b063"
+  },
+  "agentRoleAttestation": {
+    "schemaVersion": "AGENT_ROLE_ATTESTATION_V1",
+    "leaseHashAlgorithm": "SHA-256",
+    "leaseCanonicalPayload": "each lease row excluding leaseSha256",
+    "leaseCanonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':')",
+    "leases": [
+      {"leaseId": "TEST-LEASE-S0-V2", "leaseSha256": "3d704394d9f77ab74364ea0ea74e43e330cc6c05481c0575ef1aead86e4f74a1", "role": "test_luna", "canonicalContext": "/root/playlist_repair_red", "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-s0-h1", "writes": ["tests/test_news_grasp_cleanroom_s0_contract.py", "tests/fixtures/news_grasp_cleanroom_s0_cases.json"]},
+      {"leaseId": "IMPL-LEASE-P0-V1", "leaseSha256": "f04ac3de96ea94d78b50cee6aa0cfc667b1ab05a847d32d3d2ee4be7ecb9061e", "role": "implementation_luna", "canonicalContext": "/root/implementation_luna_canary", "writes": ["tools/youtube_podcast/upload_episode.py"], "state": "completed"},
+      {"leaseId": "REVIEW-LEASE-S0-V2", "leaseSha256": "ccd8e36d9660fa8fd631c653ca04440346cd6f4669ecbb916651ab18642ef457", "role": "sol_codex_reviewer", "canonicalContext": "/root/s0_independent_review", "writes": []}
+    ],
+    "leaseSealReceipt": {
+      "schemaVersion": "AGENT_ROLE_LEASE_SEAL_RECEIPT_V1",
+      "leaseCount": 3,
+      "leaseIdSealMapSha256": "9d9ae6873a83fdd85926535b48af970f67b3811fe3b5728688076c5bc7f490b7",
+      "unknownLeaseCount": 0,
+      "duplicateLeaseIdCount": 0,
+      "sealMismatchCount": 0,
+      "status": "green"
+    },
+    "exactWriteSetIntersectionCount": 0,
+    "testImplementationContextDistinct": true,
+    "reviewContextDistinct": true,
+    "selfApprovalAllowed": false,
+    "aliasPolicy": "canonical task exact match only"
+  },
+  "baselineGeneration": {
+    "id": "H1",
+    "reason": "H0 eec6920dへ独立受理済み同日playlist repair P0をfast-forwardしたfresh origin/main",
+    "commit": "bf04d4e05b71027ee3cf1ccacc9938e37e5456d8",
+    "remoteHead": "bf04d4e05b71027ee3cf1ccacc9938e37e5456d8",
+    "candidateWorktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-20260820-v1",
+    "candidateBranch": "codex/news-grasp-cleanroom-control-20260820",
+    "sourceHashes": {"docs/spec.md": "8f8119221292a5853c56afe6937f46f52a70987353e107400e604f8a58c24e8f", "tools/news_grasp_daily_control.py": "878e5743577c7d81a27b538c528b504539edbd0d698af5ded57395a69918251d", "tools/audit_recovery_control.py": "a780f58867c849ab06afe7bae33b0d88f1d1ad3e7b784d1ee9630f67dfc82ee8", "tools/youtube_podcast/upload_episode.py": "12703122057ea6bf10da8c820c81742371c5081838a8fe1bc0746754689b73ee", "tools/repair_coverage_matrix.py": "c48d39d2fbe85faa0efe71d5eb4fa2fe090860be22f4c6f4a33eff525e8500f5", "tools/repair_registry.py": "e72cd37508eda9cf53537403ee9a6e9640803b375a2032ff72098c8f31897a38", "scripts/ops/news-grasp-runner.ps1": "ee3dbbfa92e117605e85e19e37ecd541402b2d727fe2ef9451e9b74b827962ca"},
+    "userDirtyWorktree": {"path": "<PROJECT_FOLDERS>/News-Grasp", "head": "e6c94016a074774a04bc5d92b72582925e38e127", "preserved": true, "dirtyPathCount": 8, "mutationCountByThisTask": 0}
+  },
+  "liveStateSnapshot": {
+    "observedAt": "2026-08-20T15:05:52.1886831Z",
+    "scheduled": {"status": "failed", "lastTaskResult": 1, "immutable": true},
+    "recoveryRunner": {"status": "distribution_failed", "phase": "podcast-playlist-audit", "projectionFreshness": "stale_after_external_repair"},
+    "publicCompletion": {"status": "green", "verifier": "tools.daily_self_heal.verify_publish_complete", "producerState": "<USERPROFILE>/bin/news-grasp-runner-state.json"},
+    "playlist": {"status": "green", "surfaceCount": 3, "matchedCounts": [1, 1, 1], "unexpectedCounts": [0, 0, 0], "deletedItemCounts": [0, 0, 0]},
+    "readiness": {"status": "red", "reason": "HIGH_COST_IDENTITY_DRIFT", "failedGate": "canary_failed", "sameShapeRetryAllowed": false},
+    "incidentProjection": {"status": "audit_major_incident_open", "publicStatus": "incomplete", "freshness": "stale_after_external_repair", "mustNotBeRewrittenAdHoc": true}
+  },
+  "liveEvidenceRegistry": [
+    {"evidenceId": "P0-AUTHORITY", "path": "<PROJECT_FOLDERS>/News-Grasp/build/recovery-worktrees/2026-08-20/build/implementation-control/2026-08-20-playlist-membership-repair-authority-v1.json", "fileSha256": "0b3bb2326fcda1cd4712ca3f95dfb2b6ae8aab3c9b3b0043259f64024822e045", "schemaVersion": "NEWS_GRASP_PLAYLIST_MEMBERSHIP_REPAIR_AUTHORITY_V1", "sourceCommit": "bf04d4e05b71027ee3cf1ccacc9938e37e5456d8"},
+    {"evidenceId": "P0-EXECUTION", "path": "<PROJECT_FOLDERS>/News-Grasp/build/recovery-worktrees/2026-08-20/build/implementation-control/2026-08-20-playlist-membership-repair-execution-v1.json", "fileSha256": "c6072e90a2f48a26487a8b15d5de9bf8f399d620ee893575ed8155ab625a7d1a", "receiptSha256": "bf0df63a7ca3f66b2da4a7956a4df946af1c1db609fff5bf3b3e12b71b383408", "command": "py -3.12 -m tools.youtube_podcast.upload_episode 2026-08-20 --repair-playlists --authority-file build/implementation-control/2026-08-20-playlist-membership-repair-authority-v1.json", "exitCode": 0, "observedAt": "2026-08-20T15:03:27Z"},
+    {"evidenceId": "P0-VERIFICATION", "path": "<PROJECT_FOLDERS>/News-Grasp/build/recovery-worktrees/2026-08-20/build/implementation-control/2026-08-20-playlist-membership-repair-verification-v1.json", "fileSha256": "115b1861711913526b040590b72198e19011271bae1cb36d0ee8365ecda98a44", "receiptSha256": "cbd1bba47844dfc7fae5fc044785af1423bb2ec1243de24206de62735bc8dd8d", "playlistAuditCommand": "py -3.12 -m tools.youtube_podcast.upload_episode 2026-08-20 --audit-playlists", "playlistAuditExitCode": 0, "publicVerifierCommand": "py -3.12 -m tools.daily_self_heal verify-publish-complete --repo-root <PROJECT_FOLDERS>/News-Grasp/build/recovery-worktrees/2026-08-20 --ops-repo-root <USERPROFILE>/.news-grasp-runtime/production-runtime --date 2026-08-20 --wait-sec 0 --poll-sec 1 --producer-state <USERPROFILE>/bin/news-grasp-runner-state.json", "publicVerifierExitCode": 1, "publicCompletionStatus": "green", "nextRunReadinessStatus": "red", "observedAt": "2026-08-20T15:05:52.1886831Z"},
+    {"evidenceId": "PRODUCER-STATE", "path": "<USERPROFILE>/bin/news-grasp-runner-state.json", "fileSha256": "f6e6d0cdedc39c410ef8b58678e2ee38a459db9969145e1364faac90f31c03cf", "updatedAt": "2026-08-20T14:24:52.429+09:00", "freshness": "stale projection used only for producer lineage; not current repair terminal"},
+    {"evidenceId": "PUBLIC-VERIFIER-BYTES", "path": "<USERPROFILE>/.news-grasp-runtime/production-runtime/tools/daily_self_heal.py", "fileSha256": "ad83d22f136b2402f17165f29aa0f0c8eec3d2dafc221ddbda53fe3e706fc6df", "loadedProcessFreshness": "new py -3.12 process for the recorded command"},
+    {"evidenceId": "PLAYLIST-REPAIR-BYTES", "path": "<PROJECT_FOLDERS>/News-Grasp/build/recovery-worktrees/2026-08-20/tools/youtube_podcast/upload_episode.py", "fileSha256": "12703122057ea6bf10da8c820c81742371c5081838a8fe1bc0746754689b73ee", "sourceCommit": "bf04d4e05b71027ee3cf1ccacc9938e37e5456d8", "remoteHeadMatch": true}
+  ],
+  "tddImpactAnalysisReceipt": {
+    "schemaVersion": "TDD_IMPACT_ANALYSIS_RECEIPT_V1",
+    "generation": "S0-H1",
+    "sourceOfTruth": ["handoff attachment SHA-bound authority", "docs/spec.md", "AGENTS.md", "CLAUDE.md", "live Task Scheduler", "live runner state", "fresh public verifier", "fresh playlist audit", "origin/main H1"],
+    "productionSurfaces": ["single production task manifest", "dispatch reconcile", "WAL-before-interpretation", "SQLite ledger", "lease/fencing", "high-cost admission", "controller/checkpoint", "external side-effect state machine", "product inventory/gate", "publication/notification", "recovery/audit", "history/reporting", "installer/cutover/rollback"],
+    "consumers": ["Task Scheduler 06:00", "Task Scheduler 06:40", "manual", "delayed/duplicate", "deadman compatibility adapter", "Codex", "Claude", "noninteractive", "API", "direct invocation", "unknown fail-closed"],
+    "dependentHarnesses": ["completion guard", "audit recovery transaction", "high-cost broker", "Task launcher", "bootstrap", "watcher", "NoPublish wrapper", "installed verifier"],
+    "contraryEvidence": ["Scheduled failure and Public Green coexist", "runner/incident projection is stale after public repair", "Readiness remains Red while public is Green", "old scheduler exposes distinct legacy entry semantics", "S0 v1 review found nine admission defects", "provider process/session ID is not exposed and therefore is not claimed"],
+    "failureCorpus": ["missing invocation", "duplicate/manual/delayed trigger", "clock rollback/DST/timezone drift", "WAL zero entry or parse-before-write", "stale lease/fence/PID reuse", "high-cost lost response/duplicate call", "checkpoint missing/corrupt/replay", "partial public bitmap", "notification duplicate", "recovery overwrites scheduled", "ledger corruption/terminal conflict", "cutover crash/dual enabled/UAC deny", "path/reparse/TOCTOU/argument injection", "unknown route", "stale attestation/seal", "public Green with readiness Red", "stale incident projection"],
+    "impactClosed": true,
+    "closedAt": "2026-08-20T15:08:18.6619955Z",
+    "redMayStartOnlyAfter": "independent impact-admission accepted",
+    "reopenTriggers": ["new production surface", "unmapped requirement/internal edge", "baseline drift", "fake/real parity gap", "review blocker"]
+  },
+  "requirements": [
+    {"id": "NG-A-R01", "slice": "S0", "acceptance": "role/context/worktree/write lease、requirement trace、sealをexact検証し、重複・alias・orphan・staleをfail-closed", "itSuite": "IT-00", "testNodes": ["test_s0_role_collision_rejected", "test_s0_trace_gap_duplicate_orphan_rejected", "test_s0_stale_seal_rejected"]},
+    {"id": "NG-A-R02", "slice": "S1", "acceptance": "一つのProduction Taskと一つのdispatch reconcile入口だけが06:00/06:40/manual/delayを解釈", "itSuite": "IT-01", "testNodes": ["test_s1_manifest_single_entry", "test_s1_unknown_manifest_zero_effect", "test_s1_terminal_slot_idempotent"]},
+    {"id": "NG-A-R03", "slice": "S1", "acceptance": "入力解釈・外部副作用より前にinitial WALをfsyncし、zero-entryを拒否", "itSuite": "IT-01", "testNodes": ["test_s1_wal_precedes_parse", "test_s1_wal_fsync_failure_zero_effect", "test_s1_zero_entry_recovery"]},
+    {"id": "NG-A-R04", "slice": "S1", "acceptance": "SQLite ledgerのgeneration/lease/fencing/hash chainが3 writer・stale lease・PID再利用・terminal conflictを収束", "itSuite": "IT-06", "testNodes": ["test_s1_three_writer_single_owner", "test_s1_stale_fence_cannot_commit", "test_s1_ledger_corruption_recovery"]},
+    {"id": "NG-A-R05", "slice": "S1", "acceptance": "06:00前NOT_DUE、06:00-06:40 Scheduled、06:40後miss/auditをtimezone-aware deterministic clockで判定", "itSuite": "IT-07", "testNodes": ["test_s1_time_window_primary", "test_s1_clock_rollback_and_dst_fail_closed", "test_s1_missed_scheduled_persists_then_audits"]},
+    {"id": "NG-A-R06", "slice": "S2", "acceptance": "run/date/authority単位で高コストreservationとcallを一度だけ発行しlost responseをqueryで収束", "itSuite": "IT-02", "testNodes": ["test_s2_admission_grant_deny_unavailable", "test_s2_external_call_crash_boundaries", "test_s2_result_unknown_query_only"]},
+    {"id": "NG-A-R07", "slice": "S2", "acceptance": "checkpointからresumeし完了harvest/model callを再実行せず、invalid/missing checkpointはtyped recovery", "itSuite": "IT-03", "testNodes": ["test_s2_resume_skips_completed_stages", "test_s2_checkpoint_corrupt_recovery", "test_s2_child_failure_each_stage"]},
+    {"id": "NG-A-R08", "slice": "S2", "acceptance": "全外部surfaceがPENDING→RESERVED→INTENT_DURABLE→DISPATCHED→CONFIRMED→COMMITTEDを共有", "itSuite": "IT-02", "testNodes": ["test_s2_external_state_machine_property", "test_s2_fsync_and_response_loss_faults", "test_s2_stale_fence_external_commit_rejected"]},
+    {"id": "NG-A-R09", "slice": "S3", "acceptance": "required inventoryとsurface bitmapが完全な場合だけPublic Green、partial/unknownはtyped incomplete", "itSuite": "IT-04", "testNodes": ["test_s3_surface_bitmap_property", "test_s3_completed_surface_skip", "test_s3_partial_public_typed"]},
+    {"id": "NG-A-R10", "slice": "S3", "acceptance": "Scheduled/Recovery/Public/Readinessを別lineageに保存しnotification exactly-once、scheduled-firstで報告", "itSuite": "IT-11", "testNodes": ["test_s3_public_never_overwrites_scheduled", "test_s3_notification_exactly_once", "test_s3_report_scheduled_first"]},
+    {"id": "NG-A-R11", "slice": "S4", "acceptance": "Recovery/Auditがparent/fence/budget/authorityを検証しretry・history・legacy read-only adapterを収束", "itSuite": "IT-05", "testNodes": ["test_s4_recovery_authority_matrix", "test_s4_recovery_retry_preserves_lineage", "test_s4_legacy_writer_zero"]},
+    {"id": "NG-A-R12", "slice": "S5", "acceptance": "disabled install→old disable→new enableをjournalでatomic実行しdual-enabled 0、crash/UAC deny/rollbackを収束", "itSuite": "IT-08", "testNodes": ["test_s5_cutover_crash_matrix", "test_s5_dual_enabled_invariant", "test_s5_uac_and_rollback_recovery"]},
+    {"id": "NG-A-R13", "slice": "S5", "acceptance": "path/reparse/TOCTOU/ACL/signer/secret/argv/UTF-8と子process treeのno-windowを強制", "itSuite": "IT-12", "testNodes": ["test_s5_path_security_matrix", "test_s5_secret_and_argument_injection", "test_s5_child_tree_human_impact"]},
+    {"id": "NG-A-R14", "slice": "S6", "acceptance": "L3-L7がproduction interface/serialization/storage/subprocess/installed bytesを跨ぎ、L8一回でNoPublish vertical flowを証明", "itSuite": "IT-09/IT-13", "testNodes": ["test_s6_l3_l7_real_boundary_manifest", "test_s6_installed_bytes_args_workdir", "test_s6_l8_final_admission"]},
+    {"id": "NG-A-R15", "slice": "S6", "acceptance": "自然06:00 Scheduled・06:40 Audit・Public・Readiness・historyをinstalled fresh runtimeで別state観測", "itSuite": "IT-10/IT-14", "testNodes": ["test_s6_history_coverage_and_legacy_zero", "test_s6_natural_receipt_schema", "test_s6_natural_states_non_substitutable"]}
+  ],
+  "requirementEvidenceRegistry": [
+    {"requirementIds": ["NG-A-R01"], "sourcePath": "<CODEX_ATTACHMENT>/pasted-text.txt", "sourceFileSha256": "b9104e23cb6b24d91788404b49fbf420d2ccc557f9fec3d97eb05370a9165d9d", "lineRange": "297-379,561-597", "approvalClass": "local_product_governance"},
+    {"requirementIds": ["NG-A-R02", "NG-A-R03", "NG-A-R04", "NG-A-R05"], "sourcePath": "<CODEX_ATTACHMENT>/pasted-text.txt", "sourceFileSha256": "b9104e23cb6b24d91788404b49fbf420d2ccc557f9fec3d97eb05370a9165d9d", "lineRange": "397-434,598-649", "approvalClass": "product_entry_plane"},
+    {"requirementIds": ["NG-A-R06", "NG-A-R07", "NG-A-R08"], "sourcePath": "<CODEX_ATTACHMENT>/pasted-text.txt", "sourceFileSha256": "b9104e23cb6b24d91788404b49fbf420d2ccc557f9fec3d97eb05370a9165d9d", "lineRange": "435-453,605-617,709-739", "approvalClass": "product_execution_plane"},
+    {"requirementIds": ["NG-A-R09", "NG-A-R10"], "sourcePath": "<CODEX_ATTACHMENT>/pasted-text.txt", "sourceFileSha256": "b9104e23cb6b24d91788404b49fbf420d2ccc557f9fec3d97eb05370a9165d9d", "lineRange": "454-472,618-624,674-679", "approvalClass": "product_public_plane"},
+    {"requirementIds": ["NG-A-R11"], "sourcePath": "<CODEX_ATTACHMENT>/pasted-text.txt", "sourceFileSha256": "b9104e23cb6b24d91788404b49fbf420d2ccc557f9fec3d97eb05370a9165d9d", "lineRange": "473-487,625-640,665-679", "approvalClass": "product_recovery_audit_plane"},
+    {"requirementIds": ["NG-A-R12", "NG-A-R13"], "sourcePath": "<CODEX_ATTACHMENT>/pasted-text.txt", "sourceFileSha256": "b9104e23cb6b24d91788404b49fbf420d2ccc557f9fec3d97eb05370a9165d9d", "lineRange": "488-512,650-689", "approvalClass": "install_cutover_security_human_impact"},
+    {"requirementIds": ["NG-A-R14", "NG-A-R15"], "sourcePath": "<CODEX_ATTACHMENT>/pasted-text.txt", "sourceFileSha256": "b9104e23cb6b24d91788404b49fbf420d2ccc557f9fec3d97eb05370a9165d9d", "lineRange": "513-559,691-707,831-856", "approvalClass": "release_e2e_natural"}
+  ],
+  "requirementViewpointTrace": [
+    {"requirementId": "NG-A-R01", "primary_behavior": "test_s0_role_collision_rejected", "adversarial_boundary": "test_s0_trace_gap_duplicate_orphan_rejected", "operational_recovery": "test_s0_stale_seal_rejected"},
+    {"requirementId": "NG-A-R02", "primary_behavior": "test_s1_manifest_single_entry", "adversarial_boundary": "test_s1_unknown_manifest_zero_effect", "operational_recovery": "test_s1_terminal_slot_idempotent"},
+    {"requirementId": "NG-A-R03", "primary_behavior": "test_s1_wal_precedes_parse", "adversarial_boundary": "test_s1_wal_fsync_failure_zero_effect", "operational_recovery": "test_s1_zero_entry_recovery"},
+    {"requirementId": "NG-A-R04", "primary_behavior": "test_s1_three_writer_single_owner", "adversarial_boundary": "test_s1_stale_fence_cannot_commit", "operational_recovery": "test_s1_ledger_corruption_recovery"},
+    {"requirementId": "NG-A-R05", "primary_behavior": "test_s1_time_window_primary", "adversarial_boundary": "test_s1_clock_rollback_and_dst_fail_closed", "operational_recovery": "test_s1_missed_scheduled_persists_then_audits"},
+    {"requirementId": "NG-A-R06", "primary_behavior": "test_s2_admission_grant_deny_unavailable", "adversarial_boundary": "test_s2_external_call_crash_boundaries", "operational_recovery": "test_s2_result_unknown_query_only"},
+    {"requirementId": "NG-A-R07", "primary_behavior": "test_s2_resume_skips_completed_stages", "adversarial_boundary": "test_s2_checkpoint_corrupt_recovery", "operational_recovery": "test_s2_child_failure_each_stage"},
+    {"requirementId": "NG-A-R08", "primary_behavior": "test_s2_external_state_machine_property", "adversarial_boundary": "test_s2_fsync_and_response_loss_faults", "operational_recovery": "test_s2_stale_fence_external_commit_rejected"},
+    {"requirementId": "NG-A-R09", "primary_behavior": "test_s3_surface_bitmap_property", "adversarial_boundary": "test_s3_completed_surface_skip", "operational_recovery": "test_s3_partial_public_typed"},
+    {"requirementId": "NG-A-R10", "primary_behavior": "test_s3_public_never_overwrites_scheduled", "adversarial_boundary": "test_s3_notification_exactly_once", "operational_recovery": "test_s3_report_scheduled_first"},
+    {"requirementId": "NG-A-R11", "primary_behavior": "test_s4_recovery_authority_matrix", "adversarial_boundary": "test_s4_recovery_retry_preserves_lineage", "operational_recovery": "test_s4_legacy_writer_zero"},
+    {"requirementId": "NG-A-R12", "primary_behavior": "test_s5_cutover_crash_matrix", "adversarial_boundary": "test_s5_dual_enabled_invariant", "operational_recovery": "test_s5_uac_and_rollback_recovery"},
+    {"requirementId": "NG-A-R13", "primary_behavior": "test_s5_path_security_matrix", "adversarial_boundary": "test_s5_secret_and_argument_injection", "operational_recovery": "test_s5_child_tree_human_impact"},
+    {"requirementId": "NG-A-R14", "primary_behavior": "test_s6_l3_l7_real_boundary_manifest", "adversarial_boundary": "test_s6_installed_bytes_args_workdir", "operational_recovery": "test_s6_l8_final_admission"},
+    {"requirementId": "NG-A-R15", "primary_behavior": "test_s6_history_coverage_and_legacy_zero", "adversarial_boundary": "test_s6_natural_receipt_schema", "operational_recovery": "test_s6_natural_states_non_substitutable"}
+  ],
+  "internalEdgeTrace": [
+    {"edgeId": "authority_state_primary", "requirementId": "NG-A-R06", "acceptance": "valid authority and initial state reserve once", "viewpoint": "primary_behavior", "plannedNode": "test_edge_authority_state_primary"},
+    {"edgeId": "authority_state_adversarial", "requirementId": "NG-A-R06", "acceptance": "stale/malformed authority across all states has zero external mutation", "viewpoint": "adversarial_boundary", "plannedNode": "test_edge_authority_state_adversarial"},
+    {"edgeId": "authority_state_recovery", "requirementId": "NG-A-R08", "acceptance": "lost response resumes through query without new authority", "viewpoint": "operational_recovery", "plannedNode": "test_edge_authority_state_recovery"},
+    {"edgeId": "writer_crash_primary", "requirementId": "NG-A-R04", "acceptance": "current fenced writer commits across each durable boundary", "viewpoint": "primary_behavior", "plannedNode": "test_edge_writer_crash_primary"},
+    {"edgeId": "writer_crash_adversarial", "requirementId": "NG-A-R04", "acceptance": "stale writer crash/restart never commits", "viewpoint": "adversarial_boundary", "plannedNode": "test_edge_writer_crash_adversarial"},
+    {"edgeId": "writer_crash_recovery", "requirementId": "NG-A-R04", "acceptance": "new fenced owner recovers every crash point exactly once", "viewpoint": "operational_recovery", "plannedNode": "test_edge_writer_crash_recovery"},
+    {"edgeId": "enable_cutover_primary", "requirementId": "NG-A-R12", "acceptance": "old-only transitions atomically to new-only", "viewpoint": "primary_behavior", "plannedNode": "test_edge_enable_cutover_primary"},
+    {"edgeId": "enable_cutover_adversarial", "requirementId": "NG-A-R12", "acceptance": "all enable-state/crash combinations keep dual-enabled count zero", "viewpoint": "adversarial_boundary", "plannedNode": "test_edge_enable_cutover_adversarial"},
+    {"edgeId": "enable_cutover_recovery", "requirementId": "NG-A-R12", "acceptance": "journal restores old-only or completes new-only after crash", "viewpoint": "operational_recovery", "plannedNode": "test_edge_enable_cutover_recovery"},
+    {"edgeId": "bitmap_replay_primary", "requirementId": "NG-A-R09", "acceptance": "complete bitmap replay skips confirmed surfaces", "viewpoint": "primary_behavior", "plannedNode": "test_edge_bitmap_replay_primary"},
+    {"edgeId": "bitmap_replay_adversarial", "requirementId": "NG-A-R09", "acceptance": "every partial/unknown bitmap remains non-Green", "viewpoint": "adversarial_boundary", "plannedNode": "test_edge_bitmap_replay_adversarial"},
+    {"edgeId": "bitmap_replay_recovery", "requirementId": "NG-A-R10", "acceptance": "resume confirms absent surface only and preserves prior lineage", "viewpoint": "operational_recovery", "plannedNode": "test_edge_bitmap_replay_recovery"}
+  ],
+  "traceRules": {
+    "testNodeStatus": "planned_pre_red",
+    "requiredViewpointsPerRequirement": ["primary_behavior", "adversarial_boundary", "operational_recovery"],
+    "internalEdgeCoverage": ["authority×state", "writer×crashPoint", "taskEnableState×cutover", "publicationBitmap×replay"],
+    "failClosed": ["requirement missing/renamed/duplicate", "orphan test", "unknown test/route", "stale Red seal", "baseline mismatch"],
+    "plannedNodeSet": "exact union(requirementViewpointTrace values, internalEdgeTrace plannedNode)",
+    "validatorPredicate": "requirement IDs exact; each requirement has exactly one node per viewpoint; each internal edge has one acceptance/viewpoint/node row; node IDs unique; no orphan/unknown; Red seal baseline and hashes current",
+    "actualNodeInventoryRequiredBeforeS0Acceptance": true
+  },
+  "valueOracles": [
+    {"workPackage": "S0", "userOutcome": "三役分離と要件traceのない変更がproductionへ到達しない", "operatorAudience": "News-Grasp maintainer", "nonGoal": "product behavior完成", "failureImpact": "自己承認またはcoverage gapで欠陥を導入", "measurableSignals": ["roleCollisionRejected", "writeLeaseIntersection=0", "traceGapCount=0"], "counterevidence": ["host process ID非公開", "S0 v1 blocked"], "passPredicate": "machine validatorがrole/lease/trace/sealの正負unknown fixtureを全て期待どおり判定"},
+    {"workPackage": "S1", "userOutcome": "06:00/06:40の起動消失・二重実行がなくなる", "operatorAudience": "daily operations", "nonGoal": "記事生成品質変更", "failureImpact": "日次欠落または二重課金", "measurableSignals": ["invocationLoss=0", "duplicateOwner=0", "ambiguousMode=0"], "counterevidence": ["現行Production LastTaskResult=1"], "passPredicate": "全trigger/time/writer/crash組合せが単一slot terminalへ収束"},
+    {"workPackage": "S2", "userOutcome": "復旧でも完了済み高コスト処理を繰り返さない", "operatorAudience": "cost and recovery owner", "nonGoal": "model出力改善", "failureImpact": "Usage浪費と不整合", "measurableSignals": ["duplicateModelCall=0", "completedStageReplay=0", "unknownResultResend=0"], "counterevidence": ["readiness HIGH_COST_IDENTITY_DRIFT"], "passPredicate": "reservation/checkpoint/external state machineのfault corpusで重複副作用0"},
+    {"workPackage": "S3", "userOutcome": "公開物が揃ったかを信頼でき、Scheduled失敗も隠れない", "operatorAudience": "reader and operator", "nonGoal": "readinessをpublicへ流用", "failureImpact": "欠損公開または誤報", "measurableSignals": ["partialGreen=0", "notificationDuplicate=0", "scheduledOverwrite=0"], "counterevidence": ["Public Greenとstale incident incompleteが共存"], "passPredicate": "bitmap全組合せとreplayでlineage/terminalが独立"},
+    {"workPackage": "S4", "userOutcome": "同日回復しつつ本線失敗の原因と次行動が残る", "operatorAudience": "incident operator", "nonGoal": "scheduled history書換え", "failureImpact": "回復不能または原因喪失", "measurableSignals": ["recoveryAuthorityMismatch=0", "scheduledFailureRetained=true", "legacyWriter=0"], "counterevidence": ["現行terminalはstale"], "passPredicate": "recovery/audit/history/report chainが全failure corpusでtyped terminal"},
+    {"workPackage": "S5", "userOutcome": "Task切替で日次運用を止めず、拒否/crashから戻せる", "operatorAudience": "Windows task owner", "nonGoal": "既存Pull自動削除", "failureImpact": "dual enabled、起動不能、黒窓", "measurableSignals": ["dualEnabled=0", "partialEnable=0", "visibleWindow=0"], "counterevidence": ["現行legacy task群が複数"], "passPredicate": "install/cutover/rollback全crash pointがold-onlyまたはnew-onlyへ収束"},
+    {"workPackage": "S6", "userOutcome": "実installed runtimeと自然日次で上記価値を確認できる", "operatorAudience": "user and operator", "nonGoal": "unit Greenの完了扱い", "failureImpact": "机上Green、実運用失敗", "measurableSignals": ["installedHashParity=true", "L8Attempts=1", "naturalStatesVerified=4"], "counterevidence": ["readiness Red", "natural L9未実施"], "passPredicate": "L0-L9を代替せず、独立receiptが全てGreen"}
+  ],
+  "fakeRealBoundaryManifest": [
+    {"layer": "L0", "fakeSubstitution": [], "realRequired": ["filesystem bytes", "git blob"], "schemaIdentity": "canonical JSON sorted UTF-8 and docs/spec contract", "parityNode": "test_s6_l3_l7_real_boundary_manifest"},
+    {"layer": "L1", "fakeSubstitution": ["deterministic clock", "transport spy"], "realRequired": ["production validator symbols"], "schemaIdentity": "NEWS_GRASP_CONTROL_MANIFEST_V1", "parityNode": "test_s1_manifest_single_entry"},
+    {"layer": "L2", "fakeSubstitution": ["external provider"], "realRequired": ["sqlite3 file", "fsync", "atomic replace"], "schemaIdentity": "CONTROL_LEDGER_SQLITE_V1 + WAL_EVENT_V1", "parityNode": "test_s1_ledger_corruption_recovery"},
+    {"layer": "L3", "fakeSubstitution": ["provider endpoint"], "realRequired": ["production functions", "shared SQLite/WAL"], "schemaIdentity": "DISPATCH_DECISION_V1 + CONTROL_LEDGER_V1", "parityNode": "test_s6_l3_l7_real_boundary_manifest"},
+    {"layer": "L4", "fakeSubstitution": ["model transport", "public transport", "notification transport"], "realRequired": ["vertical production components"], "schemaIdentity": "EXTERNAL_SIDE_EFFECT_STATE_V1 + PUBLIC_BITMAP_V1", "parityNode": "test_s3_surface_bitmap_property"},
+    {"layer": "L5", "fakeSubstitution": ["external receipt response"], "realRequired": ["dispatch", "ledger", "controller", "product gate", "recovery"], "schemaIdentity": "RECONCILE_RESULT_V1", "parityNode": "test_s4_recovery_authority_matrix"},
+    {"layer": "L6", "fakeSubstitution": ["fault injector only"], "realRequired": ["subprocess", "WAL", "SQLite", "filesystem restart"], "schemaIdentity": "stdout RECONCILE_RESULT_V1 single JSON + typed exit map", "parityNode": "test_s2_external_call_crash_boundaries"},
+    {"layer": "L7", "fakeSubstitution": ["STOP_BEFORE_RESERVE provider"], "realRequired": ["installed bytes", "Task Scheduler action"], "schemaIdentity": "Task XML + installed generation receipt", "parityNode": "test_s6_installed_bytes_args_workdir"},
+    {"layer": "L8", "fakeSubstitution": ["external commit suppression only"], "realRequired": ["installed production-equivalent flow"], "schemaIdentity": "NoPublish terminal receipt + E2E runner terminal authority", "parityNode": "test_s6_l8_final_admission"},
+    {"layer": "L9", "fakeSubstitution": [], "realRequired": ["actual time", "actual Task Scheduler", "actual installed runtime", "actual public surfaces"], "schemaIdentity": "Natural Scheduled/Audit/Public/Readiness receipts", "parityNode": "test_s6_natural_states_non_substitutable"}
+  ],
+  "fakeRealExactBindings": [
+    {"layer": "L0", "currentState": "present", "currentEntrypoints": [{"path": "docs/spec.md", "sha256": "8f8119221292a5853c56afe6937f46f52a70987353e107400e604f8a58c24e8f"}, {"path": "config/news_grasp_0640_impact_analysis_v1.json", "sha256": "106662b1a09fe7f5b625df8aec7ec33b7c732609c288a6b05e2c9748a67ad5ce"}], "plannedEntrypoints": [{"path": "config/news_grasp_cleanroom_control_s0_v2.json", "hashAuthority": "independent reviewed artifact SHA-256"}], "schemaIdentity": "canonical JSON sorted UTF-8 and docs/spec contract", "fakeSubstitution": [], "realRequired": ["filesystem bytes", "git blob"], "parityNode": "test_s6_l3_l7_real_boundary_manifest"},
+    {"layer": "L1", "currentState": "absent_expected_red", "currentEntrypoints": [], "plannedEntrypoints": [{"path": "tools/news_grasp_cleanroom_contracts.py", "symbols": ["validate_manifest", "reconcile_slot"], "plannedSchema": "NEWS_GRASP_CONTROL_MANIFEST_V1"}], "schemaIdentity": "NEWS_GRASP_CONTROL_MANIFEST_V1", "fakeSubstitution": ["deterministic clock", "transport spy"], "realRequired": ["production validator symbols"], "parityNode": "test_s1_manifest_single_entry"},
+    {"layer": "L2", "currentState": "absent_expected_red", "currentEntrypoints": [], "plannedEntrypoints": [{"path": "tools/news_grasp_cleanroom_ledger.py", "symbols": ["ControlLedger"]}, {"path": "tools/news_grasp_cleanroom_wal.py", "symbols": ["DurableWal"]}], "schemaIdentity": "CONTROL_LEDGER_SQLITE_V1 + WAL_EVENT_V1", "fakeSubstitution": ["external provider"], "realRequired": ["sqlite3 file", "fsync", "atomic replace"], "parityNode": "test_s1_ledger_corruption_recovery"},
+    {"layer": "L3", "currentState": "absent_expected_red", "currentEntrypoints": [], "plannedEntrypoints": [{"path": "tools/news_grasp_cleanroom_dispatch.py", "symbols": ["dispatch"]}, {"path": "tools/news_grasp_cleanroom_controller.py", "symbols": ["Controller.reconcile"]}], "schemaIdentity": "DISPATCH_DECISION_V1 + CONTROL_LEDGER_V1", "fakeSubstitution": ["provider endpoint"], "realRequired": ["production functions", "shared SQLite/WAL"], "parityNode": "test_s6_l3_l7_real_boundary_manifest"},
+    {"layer": "L4", "currentState": "absent_expected_red", "currentEntrypoints": [], "plannedEntrypoints": [{"path": "tools/news_grasp_cleanroom_controller.py", "symbols": ["run_vertical_slice"]}, {"path": "tools/news_grasp_cleanroom_public.py", "symbols": ["evaluate_surface_bitmap"]}], "schemaIdentity": "EXTERNAL_SIDE_EFFECT_STATE_V1 + PUBLIC_BITMAP_V1", "fakeSubstitution": ["model transport", "public transport", "notification transport"], "realRequired": ["vertical production components"], "parityNode": "test_s3_surface_bitmap_property"},
+    {"layer": "L5", "currentState": "absent_expected_red", "currentEntrypoints": [], "plannedEntrypoints": [{"module": "tools.news_grasp_cleanroom_dispatch", "argv": ["dispatch", "--schedule-id", "news-grasp-daily-v1", "--intent", "reconcile"]}, {"path": "tools/news_grasp_cleanroom_recovery.py", "symbols": ["reconcile_recovery"]}], "schemaIdentity": "RECONCILE_RESULT_V1", "fakeSubstitution": ["external receipt response"], "realRequired": ["dispatch", "ledger", "controller", "product gate", "recovery"], "parityNode": "test_s4_recovery_authority_matrix"},
+    {"layer": "L6", "currentState": "absent_expected_red", "currentEntrypoints": [], "plannedEntrypoints": [{"executable": "<USERPROFILE>/AppData/Local/Programs/Python/Python312/python.exe", "module": "tools.news_grasp_cleanroom_dispatch", "argv": ["dispatch", "--schedule-id", "news-grasp-daily-v1", "--intent", "reconcile"]}, {"executable": "pwsh.exe", "path": "scripts/ops/news-grasp-cleanroom-entry.ps1"}], "schemaIdentity": "stdout RECONCILE_RESULT_V1 single JSON + typed exit map", "fakeSubstitution": ["fault injector only"], "realRequired": ["subprocess", "WAL", "SQLite", "filesystem restart"], "parityNode": "test_s2_external_call_crash_boundaries"},
+    {"layer": "L7", "currentState": "legacy_present_expected_red", "currentEntrypoints": [{"path": "scripts/ops/news-grasp-task-launcher.pyw", "sha256": "a095d2fe05ebf06129fc93095fa57e43239483a6c7caddc310347cecbf5c0aef", "installedPath": "<USERPROFILE>/bin/news-grasp-task-launcher.pyw", "installedSha256": "a095d2fe05ebf06129fc93095fa57e43239483a6c7caddc310347cecbf5c0aef", "currentMode": "runner"}], "plannedEntrypoints": [{"installedExecutable": "<USERPROFILE>/AppData/Local/Programs/Python/Python312/pythonw.exe", "installedScript": "<USERPROFILE>/bin/news-grasp-task-launcher.pyw", "argv": ["dispatch", "--schedule-id", "news-grasp-daily-v1", "--intent", "reconcile"], "workingDirectory": "<USERPROFILE>/.news-grasp-runtime/production-runtime"}], "schemaIdentity": "Task XML + installed generation receipt", "fakeSubstitution": ["STOP_BEFORE_RESERVE provider"], "realRequired": ["installed bytes", "Task Scheduler action"], "parityNode": "test_s6_installed_bytes_args_workdir"},
+    {"layer": "L8", "currentState": "legacy_wrapper_present_expected_red", "currentEntrypoints": [{"path": "scripts/ops/invoke-scheduled-equivalent-nopublish.ps1", "sha256": "0bf0968068f616ef56ba63b210d927735ad9259b8455738c928b7397dab239a8"}, {"path": "tools/e2e_final_admission_bridge.py", "sha256": "0ae34ee89c329a81945a6602272b2567c2a6648996812f18d1e9ed9e88b5195a"}, {"path": "tools/news_grasp_nopublish.py", "sha256": "af317487f751176f641b2ffcf67ddda61f5b19b722549280e52db8bb71cadcc7"}], "plannedEntrypoints": [{"installedExecutable": "pwsh.exe", "installedPath": "<USERPROFILE>/bin/invoke-scheduled-equivalent-nopublish.ps1", "argv": ["-Intent", "reconcile", "-ScheduleId", "news-grasp-daily-v1"], "admissionSchema": "E2E_FINAL_ADMISSION_V1"}], "schemaIdentity": "NoPublish terminal receipt + E2E runner terminal authority", "fakeSubstitution": ["external commit suppression only"], "realRequired": ["installed production-equivalent flow"], "parityNode": "test_s6_l8_final_admission"},
+    {"layer": "L9", "currentState": "legacy_task_present_expected_red", "currentEntrypoints": [{"taskPath": "\\", "taskName": "News-Grasp Production", "triggers": ["06:00"], "installedScript": "<USERPROFILE>/bin/news-grasp-task-launcher.pyw", "mode": "runner"}], "plannedEntrypoints": [{"taskPath": "\\", "taskName": "News-Grasp Production", "triggers": ["06:00", "06:40"], "executable": "<USERPROFILE>/AppData/Local/Programs/Python/Python312/pythonw.exe", "installedScript": "<USERPROFILE>/bin/news-grasp-task-launcher.pyw", "argv": ["dispatch", "--schedule-id", "news-grasp-daily-v1", "--intent", "reconcile"], "workingDirectory": "<USERPROFILE>/.news-grasp-runtime/production-runtime"}], "schemaIdentity": "Natural Scheduled/Audit/Public/Readiness receipts", "fakeSubstitution": [], "realRequired": ["actual time", "actual Task Scheduler", "actual installed runtime", "actual public surfaces"], "parityNode": "test_s6_natural_states_non_substitutable"}
+  ],
+  "materialReplan": {
+    "id": "CANONICAL_FAKE_REAL_BINDING_V1",
+    "reason": "generic layer proseをconsumer authorityにせず、current bytesとplanned targetを分離したexact bindingを唯一のcanonical inputへ変更する",
+    "material": true,
+    "priorReviewSeries": {"lastReviewId": "ng-cleanroom-s0-impact-r3", "verdict": "blocked", "closed": true},
+    "newReviewSeriesAllowedBecause": "test/consumerが読むcanonical source-of-truthとplanned production entrypoint identityを変更するarchitecture decision"
+  },
+  "portablePathReplan": {
+    "id": "PUBLIC_ARTIFACT_PORTABLE_PATH_BINDING_V1",
+    "trigger": "pre-commit PII scan detected machine-local user name in absolute paths before Red generation",
+    "decision": "tracked S0 artifacts retain hashes and semantic locations but serialize only registered portable path tokens",
+    "privatePathRetention": false,
+    "redGenerationBeforeReviewAllowed": false,
+    "reviewRequired": true
+  },
+  "fakeRealBindingAuthority": {
+    "schemaVersion": "NEWS_GRASP_FAKE_REAL_BINDING_V1",
+    "canonicalConsumerInput": "fakeRealCurrentPlannedBindings",
+    "genericManifestRole": "noncanonical generated human projection",
+    "generationRule": "fakeRealExactBindings is the identity projection; fakeRealBoundaryManifest is the ordered field projection [layer,fakeSubstitution,realRequired,schemaIdentity,parityNode] of fakeRealCurrentPlannedBindings; canonical JSON uses UTF-8, sort_keys=true and compact separators",
+    "projectionSchema": {
+      "fakeRealExactBindings": ["layer", "currentState", "currentEntrypoints", "plannedEntrypoints", "schemaIdentity", "fakeSubstitution", "realRequired", "parityNode"],
+      "fakeRealBoundaryManifest": ["layer", "fakeSubstitution", "realRequired", "schemaIdentity", "parityNode"]
+    },
+    "driftPredicate": "layer set, fake scope, real-required boundary, schema identity and parity node must exact-match; unknown/missing/extra row fails closed"
+  },
+  "fakeRealCurrentPlannedBindings": [
+    {"layer": "L0", "currentState": "present", "currentEntrypoints": [{"path": "docs/spec.md", "sha256": "8f8119221292a5853c56afe6937f46f52a70987353e107400e604f8a58c24e8f"}, {"path": "config/news_grasp_0640_impact_analysis_v1.json", "sha256": "106662b1a09fe7f5b625df8aec7ec33b7c732609c288a6b05e2c9748a67ad5ce"}], "plannedEntrypoints": [{"path": "config/news_grasp_cleanroom_control_s0_v2.json", "hashAuthority": "independent reviewed artifact SHA-256"}], "schemaIdentity": "canonical JSON sorted UTF-8 and docs/spec contract", "fakeSubstitution": [], "realRequired": ["filesystem bytes", "git blob"], "parityNode": "test_s6_l3_l7_real_boundary_manifest"},
+    {"layer": "L1", "currentState": "absent_expected_red", "currentEntrypoints": [], "plannedEntrypoints": [{"path": "tools/news_grasp_cleanroom_contracts.py", "symbols": ["validate_manifest", "reconcile_slot"], "plannedSchema": "NEWS_GRASP_CONTROL_MANIFEST_V1"}], "schemaIdentity": "NEWS_GRASP_CONTROL_MANIFEST_V1", "fakeSubstitution": ["deterministic clock", "transport spy"], "realRequired": ["production validator symbols"], "parityNode": "test_s1_manifest_single_entry"},
+    {"layer": "L2", "currentState": "absent_expected_red", "currentEntrypoints": [], "plannedEntrypoints": [{"path": "tools/news_grasp_cleanroom_ledger.py", "symbols": ["ControlLedger"]}, {"path": "tools/news_grasp_cleanroom_wal.py", "symbols": ["DurableWal"]}], "schemaIdentity": "CONTROL_LEDGER_SQLITE_V1 + WAL_EVENT_V1", "fakeSubstitution": ["external provider"], "realRequired": ["sqlite3 file", "fsync", "atomic replace"], "parityNode": "test_s1_ledger_corruption_recovery"},
+    {"layer": "L3", "currentState": "absent_expected_red", "currentEntrypoints": [], "plannedEntrypoints": [{"path": "tools/news_grasp_cleanroom_dispatch.py", "symbols": ["dispatch"]}, {"path": "tools/news_grasp_cleanroom_controller.py", "symbols": ["Controller.reconcile"]}], "schemaIdentity": "DISPATCH_DECISION_V1 + CONTROL_LEDGER_V1", "fakeSubstitution": ["provider endpoint"], "realRequired": ["production functions", "shared SQLite/WAL"], "parityNode": "test_s6_l3_l7_real_boundary_manifest"},
+    {"layer": "L4", "currentState": "absent_expected_red", "currentEntrypoints": [], "plannedEntrypoints": [{"path": "tools/news_grasp_cleanroom_controller.py", "symbols": ["run_vertical_slice"]}, {"path": "tools/news_grasp_cleanroom_public.py", "symbols": ["evaluate_surface_bitmap"]}], "schemaIdentity": "EXTERNAL_SIDE_EFFECT_STATE_V1 + PUBLIC_BITMAP_V1", "fakeSubstitution": ["model transport", "public transport", "notification transport"], "realRequired": ["vertical production components"], "parityNode": "test_s3_surface_bitmap_property"},
+    {"layer": "L5", "currentState": "absent_expected_red", "currentEntrypoints": [], "plannedEntrypoints": [{"module": "tools.news_grasp_cleanroom_dispatch", "argv": ["dispatch", "--schedule-id", "news-grasp-daily-v1", "--intent", "reconcile"]}, {"path": "tools/news_grasp_cleanroom_recovery.py", "symbols": ["reconcile_recovery"]}], "schemaIdentity": "RECONCILE_RESULT_V1", "fakeSubstitution": ["external receipt response"], "realRequired": ["dispatch", "ledger", "controller", "product gate", "recovery"], "parityNode": "test_s4_recovery_authority_matrix"},
+    {"layer": "L6", "currentState": "absent_expected_red", "currentEntrypoints": [], "plannedEntrypoints": [{"executable": "<USERPROFILE>/AppData/Local/Programs/Python/Python312/python.exe", "module": "tools.news_grasp_cleanroom_dispatch", "argv": ["dispatch", "--schedule-id", "news-grasp-daily-v1", "--intent", "reconcile"]}, {"executable": "pwsh.exe", "path": "scripts/ops/news-grasp-cleanroom-entry.ps1"}], "schemaIdentity": "stdout RECONCILE_RESULT_V1 single JSON + typed exit map", "fakeSubstitution": ["fault injector only"], "realRequired": ["subprocess", "WAL", "SQLite", "filesystem restart"], "parityNode": "test_s2_external_call_crash_boundaries"},
+    {"layer": "L7", "currentState": "legacy_present_expected_red", "currentEntrypoints": [{"path": "scripts/ops/news-grasp-task-launcher.pyw", "sha256": "a095d2fe05ebf06129fc93095fa57e43239483a6c7caddc310347cecbf5c0aef", "installedPath": "<USERPROFILE>/bin/news-grasp-task-launcher.pyw", "installedSha256": "a095d2fe05ebf06129fc93095fa57e43239483a6c7caddc310347cecbf5c0aef", "currentMode": "runner"}], "plannedEntrypoints": [{"installedExecutable": "<USERPROFILE>/AppData/Local/Programs/Python/Python312/pythonw.exe", "installedScript": "<USERPROFILE>/bin/news-grasp-task-launcher.pyw", "argv": ["dispatch", "--schedule-id", "news-grasp-daily-v1", "--intent", "reconcile"], "workingDirectory": "<USERPROFILE>/.news-grasp-runtime/production-runtime"}], "schemaIdentity": "Task XML + installed generation receipt", "fakeSubstitution": ["STOP_BEFORE_RESERVE provider"], "realRequired": ["installed bytes", "Task Scheduler action"], "parityNode": "test_s6_installed_bytes_args_workdir"},
+    {"layer": "L8", "currentState": "legacy_wrapper_present_expected_red", "currentEntrypoints": [{"path": "scripts/ops/invoke-scheduled-equivalent-nopublish.ps1", "sha256": "0bf0968068f616ef56ba63b210d927735ad9259b8455738c928b7397dab239a8"}, {"path": "tools/e2e_final_admission_bridge.py", "sha256": "0ae34ee89c329a81945a6602272b2567c2a6648996812f18d1e9ed9e88b5195a"}, {"path": "tools/news_grasp_nopublish.py", "sha256": "af317487f751176f641b2ffcf67ddda61f5b19b722549280e52db8bb71cadcc7"}], "plannedEntrypoints": [{"installedExecutable": "pwsh.exe", "installedPath": "<USERPROFILE>/bin/invoke-scheduled-equivalent-nopublish.ps1", "argv": ["-Intent", "reconcile", "-ScheduleId", "news-grasp-daily-v1"], "admissionSchema": "E2E_FINAL_ADMISSION_V1"}], "schemaIdentity": "NoPublish terminal receipt + E2E runner terminal authority", "fakeSubstitution": ["external commit suppression only"], "realRequired": ["installed production-equivalent flow"], "parityNode": "test_s6_l8_final_admission"},
+    {"layer": "L9", "currentState": "legacy_task_present_expected_red", "currentEntrypoints": [{"taskPath": "\\", "taskName": "News-Grasp Production", "triggers": ["06:00"], "installedScript": "<USERPROFILE>/bin/news-grasp-task-launcher.pyw", "mode": "runner"}], "plannedEntrypoints": [{"taskPath": "\\", "taskName": "News-Grasp Production", "triggers": ["06:00", "06:40"], "executable": "<USERPROFILE>/AppData/Local/Programs/Python/Python312/pythonw.exe", "installedScript": "<USERPROFILE>/bin/news-grasp-task-launcher.pyw", "argv": ["dispatch", "--schedule-id", "news-grasp-daily-v1", "--intent", "reconcile"], "workingDirectory": "<USERPROFILE>/.news-grasp-runtime/production-runtime"}], "schemaIdentity": "Natural Scheduled/Audit/Public/Readiness receipts", "fakeSubstitution": [], "realRequired": ["actual time", "actual Task Scheduler", "actual installed runtime", "actual public surfaces"], "parityNode": "test_s6_natural_states_non_substitutable"}
+  ],
+  "fakeRealProjectionReceipt": {
+    "schemaVersion": "NEWS_GRASP_FAKE_REAL_PROJECTION_RECEIPT_V1",
+    "canonicalRowCount": 10,
+    "exactProjectionRowCount": 10,
+    "boundaryProjectionRowCount": 10,
+    "canonicalRowsSha256": "94e05b1fdce46af6c25118c73830a2edd623276f862c1b180078e58e4d76e720",
+    "exactProjectionSha256": "94e05b1fdce46af6c25118c73830a2edd623276f862c1b180078e58e4d76e720",
+    "boundaryProjectionSha256": "20107bbaa9cd5b30ee1a5d5229583f05867adf1f0ea47ebe9a893300d0cdf4ca",
+    "exactIdentityMatch": true,
+    "boundaryFieldProjectionMatch": true,
+    "unknownCount": 0,
+    "missingCount": 0,
+    "extraCount": 0,
+    "mismatchCount": 0,
+    "status": "green"
+  },
+  "rollbackMatrix": [
+    {"mutation": "source/test commit", "preimage": "parent commit and file hashes", "owner": "work package integrator", "rollback": "forward revert commit only", "verification": "tests plus remote HEAD", "irreversible": false},
+    {"mutation": "origin push", "preimage": "remote main SHA", "owner": "release integrator", "rollback": "forward revert; no force push", "verification": "git ls-remote", "irreversible": false},
+    {"mutation": "staged install", "preimage": "installed bytes/task export", "owner": "installer", "rollback": "journal removes disabled candidate", "verification": "installed hash/task query", "irreversible": false},
+    {"mutation": "cutover", "preimage": "old task XML, enable state, pointer", "owner": "cutover controller", "rollback": "disable new then restore old from journal", "verification": "dual-enabled count=0 and L7", "irreversible": false},
+    {"mutation": "playlist membership repair P0", "preimage": "50ac18e0a19ff82b8c872e248faee9b86edcf875909255156e5abc71ae97ab2e", "owner": "News-Grasp Operations", "rollback": "semantic re-add same video to same playlist", "verification": "fresh playlist audit", "irreversible": true, "irreversiblePart": "original playlistItem IDs"},
+    {"mutation": "notification send", "preimage": "notification reservation/idempotency key and unsent state", "owner": "publication controller", "rollback": "sent notification cannot be retracted; suppress duplicate and append compensation/correction only when content is wrong", "compensation": "typed correction notification under a new explicit authority; never resend same key", "verification": "provider query/receipt plus notification bitmap exactly once", "irreversible": true, "irreversibleAuthority": "natural production authority and external side-effect state machine"},
+    {"mutation": "L8 NoPublish", "preimage": "admission receipt", "owner": "E2E runner", "rollback": "isolated root disposal after evidence seal", "verification": "external publish count=0", "irreversible": false},
+    {"mutation": "natural L9 publication", "preimage": "scheduled/public receipts", "owner": "production controller", "rollback": "normal typed recovery only; history immutable", "verification": "separate Scheduled/Audit/Public/Readiness state", "irreversible": true}
+  ],
+  "impactAdmissionReview": {"status": "pending", "reviewerContext": "/root/s0_independent_review", "requiredVerdict": "accepted", "redBeforeAcceptedAllowed": false},
+  "s0AcceptanceReview": {"status": "not_started", "requires": ["impact admission accepted", "Test Luna fresh Red seal", "actual test node inventory", "trace validator Green"]}
+}

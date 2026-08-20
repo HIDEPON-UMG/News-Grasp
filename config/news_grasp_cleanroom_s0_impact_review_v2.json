@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_S0_IMPACT_REVIEW_V1",
+  "reviewId": "ng-cleanroom-s0-impact-binding-r4",
+  "reviewerContext": "/root/s0_independent_review",
+  "reviewerRole": "sol_codex_reviewer",
+  "reviewedPath": "config/news_grasp_cleanroom_control_s0_v2.json",
+  "reviewedSha256": "2b76d2b0aa73d22a43e0279c93cea3eecf3dff0874da6384c6abb74ed61d3a91",
+  "reviewedBytes": 57958,
+  "baselineCommit": "bf04d4e05b71027ee3cf1ccacc9938e37e5456d8",
+  "decision": "accepted",
+  "blockerCount": 0,
+  "closedBlockers": [
+    "S0-BINDING-R1-GENERATED-PROJECTION-DRIFT",
+    "S0-BINDING-R3-UNKNOWN-PATH-TOKENS",
+    "S0-BINDING-R3-LEASE-SEAL-STALE-OR-UNBOUND"
+  ],
+  "independentChecks": {
+    "registeredTokenCount": 3,
+    "usedTokenCount": 3,
+    "unknownTokenCount": 0,
+    "unusedTokenCount": 0,
+    "privatePathMatchCount": 0,
+    "leaseCount": 3,
+    "leaseSealMismatchCount": 0,
+    "leaseIdSealMapSha256": "9d9ae6873a83fdd85926535b48af970f67b3811fe3b5728688076c5bc7f490b7",
+    "canonicalRowsSha256": "94e05b1fdce46af6c25118c73830a2edd623276f862c1b180078e58e4d76e720",
+    "exactProjectionSha256": "94e05b1fdce46af6c25118c73830a2edd623276f862c1b180078e58e4d76e720",
+    "boundaryProjectionSha256": "20107bbaa9cd5b30ee1a5d5229583f05867adf1f0ea47ebe9a893300d0cdf4ca"
+  },
+  "redGenerationAdmission": "accepted",
+  "mutationPerformedByReviewer": false
+}
