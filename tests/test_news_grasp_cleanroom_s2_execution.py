@@ -418,3 +418,80 @@ def test_s2_stale_fence_external_commit_rejected(tmp_path: Path) -> None:
     assert "COMMITTED" not in _persisted_states(runtime_root)
     _expect_reason(execution, "NEWS_GRASP_EXECUTION_STALE_FENCE", lambda: _execute(controller, cases, authority))
     assert len(provider.dispatch_calls) == 1
+
+
+def test_s2_persisted_admission_is_revalidated_before_resume(tmp_path: Path) -> None:
+    execution = importlib.import_module("tools.news_grasp_cleanroom_execution")
+    cases = _cases()
+    mutations = ("schema_missing", "decision_hash_tamper", "authority_binding_drift", "idempotency_binding_drift")
+    observations: list[dict[str, Any]] = []
+    for index, mutation in enumerate(mutations, start=900):
+        runtime_root = _runtime(tmp_path, index)
+        authority = _authority(cases, runtime_root)
+        admission = Admission("GRANTED")
+        provider = Provider()
+        crashed = {"active": True}
+
+        def hook(name: str) -> None:
+            if crashed["active"] and name == "before_INTENT_DURABLE":
+                crashed["active"] = False
+                raise RuntimeError("test-owned crash before INTENT_DURABLE")
+
+        controller = _controller(execution, runtime_root, admission, provider, StageRunner(), boundary_hook=hook)
+        with pytest.raises(RuntimeError):
+            _execute(controller, cases, authority)
+        database = runtime_root / "control" / "execution-ledger-v1.sqlite3"
+        with sqlite3.connect(database) as connection:
+            connection.row_factory = sqlite3.Row
+            row = connection.execute("SELECT execution_id,admission_json FROM executions").fetchone()
+            assert row is not None and row["admission_json"]
+            decision = json.loads(row["admission_json"])
+            if mutation == "schema_missing":
+                decision.pop("schemaVersion")
+            elif mutation == "decision_hash_tamper":
+                decision["decisionSha256"] = "0" * 64
+            elif mutation == "authority_binding_drift":
+                decision["authorityId"] = "drifted-authority"
+                decision["decisionSha256"] = _sha({key: value for key, value in decision.items() if key != "decisionSha256"})
+            else:
+                decision["idempotencyKey"] = "drifted-idempotency-key"
+                decision["decisionSha256"] = _sha({key: value for key, value in decision.items() if key != "decisionSha256"})
+            connection.execute(
+                "UPDATE executions SET admission_json=? WHERE execution_id=?",
+                (json.dumps(decision, ensure_ascii=False, sort_keys=True, separators=(",", ":")), row["execution_id"]),
+            )
+            connection.commit()
+        try:
+            result = _execute(controller, cases, authority)
+        except Exception as caught:
+            observations.append(
+                {
+                    "mutation": mutation,
+                    "reason": getattr(caught, "reason", type(caught).__name__),
+                    "dispatch": len(provider.dispatch_calls),
+                    "query": len(provider.query_calls),
+                    "states": _persisted_states(runtime_root),
+                    "admissionCalls": len(admission.calls),
+                }
+            )
+        else:
+            observations.append(
+                {
+                    "mutation": mutation,
+                    "reason": f"returned:{result.get('externalState')}",
+                    "dispatch": len(provider.dispatch_calls),
+                    "query": len(provider.query_calls),
+                    "states": _persisted_states(runtime_root),
+                    "admissionCalls": len(admission.calls),
+                }
+            )
+    assert [item["mutation"] for item in observations] == list(mutations)
+    assert [item["reason"] for item in observations] == [
+        "NEWS_GRASP_EXECUTION_ADMISSION_INVALID"
+    ] * len(mutations), observations
+    assert all(item["dispatch"] == 0 and item["query"] == 0 for item in observations)
+    assert all(item["admissionCalls"] == 1 for item in observations)
+    assert all(
+        not set(item["states"]) & {"INTENT_DURABLE", "DISPATCHED", "CONFIRMED", "COMMITTED"}
+        for item in observations
+    )
