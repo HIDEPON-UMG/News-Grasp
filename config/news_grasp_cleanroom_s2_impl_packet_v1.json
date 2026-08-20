@@ -1,0 +1,110 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S2-GREEN-V1",
+  "todoId": "NG-CLEANROOM-S2-GREEN",
+  "role": "implementation_luna",
+  "canonicalContext": "/root/implementation_luna_canary",
+  "dependencyIds": ["NEWS_GRASP_CLEANROOM_S1_ACCEPTED_V1", "NG-CLEANROOM-S2-RED-V1"],
+  "requirementIds": ["NG-A-R06", "NG-A-R07", "NG-A-R08"],
+  "baselineCommit": "4d032dd1265a55ce96c7eeb135cae3c63c55cc81",
+  "expectedRedSeal": {
+    "authoringRole": "test_luna",
+    "canonicalContext": "/root/s1_edge_driver_red",
+    "authoringCommit": "c7323e5bad2cda8edb31a457a9941a9f8bcdd242",
+    "integrationCommit": "4d032dd1265a55ce96c7eeb135cae3c63c55cc81",
+    "testPath": "tests/test_news_grasp_cleanroom_s2_execution.py",
+    "testSha256": "b135cbdb0c62d0423bc3c97c03931279f734f01527ec579ba1c319294f6cddf",
+    "testBytes": 19289,
+    "fixturePath": "tests/fixtures/news_grasp_cleanroom_s2_cases.json",
+    "fixtureSha256": "a7a1bd955f08ecd877de80c8bb1583d353931ca1a7917eb8b3826c44cf7607cb",
+    "fixtureBytes": 1372,
+    "collected": 9,
+    "failed": 9,
+    "cause": "tools.news_grasp_cleanroom_execution is absent at each dynamic import; collection succeeds and no unrelated failure exists"
+  },
+  "writeLease": {
+    "leaseId": "IMPL-LEASE-S2-V1",
+    "leaseSha256": "c2d50947525a2a1da0e13ca889550aeab6281234c4c453e245583a1017549340",
+    "canonicalPayload": {
+      "leaseId": "IMPL-LEASE-S2-V1",
+      "role": "implementation_luna",
+      "canonicalContext": "/root/implementation_luna_canary",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-s1-h1",
+      "writes": ["tools/news_grasp_cleanroom_execution.py"],
+      "baselineCommit": "4d032dd1265a55ce96c7eeb135cae3c63c55cc81"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tools/news_grasp_cleanroom_execution.py"],
+  "forbiddenWrites": ["tests", "tests/fixtures", "all other tools", "config", "docs", "scripts"],
+  "publicContract": {
+    "exports": ["ExecutionController", "ExecutionError", "ExternalResultUnknown"],
+    "constructor": "ExecutionController(runtime_root, admission_adapter, provider, stage_runner, durability_ops=None, boundary_hook=None)",
+    "method": "execute(slot_key, issue_date, authority, payload, observed_at) returns RECONCILE_EXECUTION_RESULT_V1",
+    "error": "ExecutionError exposes exact .reason and, for child failures, .stage",
+    "externalResultUnknown": "provider-only signal mapped to NEWS_GRASP_EXECUTION_RESULT_UNKNOWN"
+  },
+  "implementationDesign": {
+    "authority": [
+      "require the exact EXECUTION_AUTHORITY_V1 field set and canonical authoritySha256",
+      "read the current S1 control ledger and require an ACTIVE slot whose schedule/date/slot/generation/owner/fence and unexpired lease match",
+      "syntactic/schema/hash mismatch is AUTHORITY_INVALID; a well-formed authority that no longer matches current S1 state is STALE_FENCE",
+      "validate once before any S2 mutation and again immediately before COMMITTED"
+    ],
+    "durableState": [
+      "use one separate real SQLite control/execution-ledger-v1.sqlite3; do not change the exact S1 ledger schema",
+      "use UNIQUE execution identity bound to issueDate+slotKey+authoritySha256+payload hash and UNIQUE transition sequence/state ordering",
+      "persist an exact monotonic prefix PENDING,RESERVED,INTENT_DURABLE,DISPATCHED,CONFIRMED,COMMITTED in a table with columns sequence and state",
+      "persist admission decision, idempotency key, dispatch attempt count, confirmed receipt, completed stages and checkpoint bindings so restart needs no process memory",
+      "SQLite transactions use busy timeout, foreign keys, synchronous FULL and a bounded atomic transaction for every transition"
+    ],
+    "admission": [
+      "derive one deterministic idempotency key from execution identity and call admission_adapter only when no durable decision exists",
+      "validate exact HIGH_COST_ADMISSION_DECISION_V1 fields and decisionSha256 plus authority/idempotency equality",
+      "GRANTED appends RESERVED once; DENIED,UNAVAILABLE,malformed map to their exact typed reasons with provider count zero",
+      "a retry reuses the durable GRANTED decision and never calls admission again"
+    ],
+    "checkpoints": [
+      "stage order is exactly harvest,model,finalize; call stage_runner for every stage, including model preparation/validation",
+      "model is the only provider-owned high-cost external effect and occurs after its stage_runner succeeds",
+      "write exact hashed JSON checkpoints under control/execution-checkpoints/<execution-id>/<stage>.json using temp, injected fsync, atomic replace and parent flush; clean temp on failure",
+      "persist the checkpoint binding in SQLite only after the final checkpoint is durable",
+      "on resume every durable completed-stage row must have a present exact-valid checkpoint; missing and corrupt are distinct typed failures with no new provider effect",
+      "skip all valid completed stages; a child failure records no completion for that stage and retry starts there without replaying earlier stages"
+    ],
+    "externalState": [
+      "invoke boundary_hook at before_ and after_ each of INTENT_DURABLE,DISPATCHED,CONFIRMED,COMMITTED; after hooks run only after the corresponding durable transition",
+      "append INTENT_DURABLE before dispatch eligibility and DISPATCHED before provider.dispatch",
+      "when durable state is DISPATCHED, query the provider before any resend",
+      "PRESENT validates and persists the receipt; AMBIGUOUS or UNAVAILABLE raises RESULT_UNKNOWN without resend; ABSENT may call dispatch again only with the same key and only while dispatch attempts are below authority.maxDispatchAttempts",
+      "provider ExternalResultUnknown leaves DISPATCHED durable and raises RESULT_UNKNOWN",
+      "validate exact EXTERNAL_RESULT_RECEIPT_V1 confirmation, same idempotency key and lowercase 64-hex effectHash before CONFIRMED",
+      "write the model checkpoint after CONFIRMED, run/finalize its checkpoint, revalidate S1 authority, then append COMMITTED",
+      "an already COMMITTED execution returns the same terminal projection without admission, stage or provider calls"
+    ],
+    "result": [
+      "return exact RECONCILE_EXECUTION_RESULT_V1 with status, executionId, issueDate, slotKey, authoritySha256, idempotencyKey, externalState, completedStages, checkpoint hashes, external receipt and dispatchAttempts",
+      "externalState is COMMITTED only after the fence recheck and durable COMMITTED transition"
+    ]
+  },
+  "typedReasons": ["NEWS_GRASP_EXECUTION_AUTHORITY_INVALID", "NEWS_GRASP_EXECUTION_ADMISSION_DENIED", "NEWS_GRASP_EXECUTION_ADMISSION_UNAVAILABLE", "NEWS_GRASP_EXECUTION_ADMISSION_INVALID", "NEWS_GRASP_EXECUTION_CHECKPOINT_CORRUPT", "NEWS_GRASP_EXECUTION_CHECKPOINT_MISSING", "NEWS_GRASP_EXECUTION_CHILD_FAILED", "NEWS_GRASP_EXECUTION_RESULT_UNKNOWN", "NEWS_GRASP_EXECUTION_STALE_FENCE", "NEWS_GRASP_EXECUTION_DURABILITY_FAILED"],
+  "forbiddenImplementation": ["process-local authority", "second idempotency key", "blind resend", "checkpoint overwrite without exact validation", "S1 schema change", "sleep or polling", "subprocess", "network", "test-specific branch", "catch-all success"],
+  "verification": {
+    "newSuiteCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s2_execution.py",
+    "newSuiteExpected": "9 passed",
+    "s1Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "s1Expected": "32 passed",
+    "s0Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s0_contract.py",
+    "s0Expected": "3 passed",
+    "ruffCommand": "py -3.12 -m ruff check tools/news_grasp_cleanroom_execution.py",
+    "compileCommand": "py -3.12 -m py_compile tools/news_grasp_cleanroom_execution.py",
+    "security": "NEWS_GRASP_CLEANROOM_SECURITY_SCAN_V1 exact new path; denied/private/secret/external/network counts zero",
+    "other": ["git diff --name-only equals the one-file lease", "git diff --check", "post-commit worktree clean"]
+  },
+  "commitPolicy": {"allowedOnlyAfterAllGreen": true, "paths": ["tools/news_grasp_cleanroom_execution.py"], "message": "feat: implement S2 execution plane"},
+  "causalRetryCondition": "one implementation attempt and one ordered verification chain; return to Sol on the first non-Green for causal replan",
+  "delivery": "one production file, hash/bytes, commit and exact verification evidence",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "persistentPolling": false}
+}
