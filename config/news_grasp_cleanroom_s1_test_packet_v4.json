@@ -1,0 +1,59 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S1-RED-CORRECTION-V4",
+  "todoId": "NG-CLEANROOM-S1-RED",
+  "role": "test_luna",
+  "canonicalContext": "/root/playlist_repair_red",
+  "mutationMode": "oracle_hook_specific_resume_correction",
+  "dependencyIds": ["ng-cleanroom-s1-impact-r3", "NG-CLEANROOM-S1-IMPL-ATTEMPT-V4"],
+  "requirementIds": ["NG-A-R02", "NG-A-R03", "NG-A-R04", "NG-A-R05"],
+  "baselineCommit": "63562002bf0320dcee6a13e47ad437b91e5c7c4a",
+  "writeLease": {
+    "leaseId": "TEST-LEASE-S1-V4",
+    "leaseSha256": "131c5b73962df0a0f3154a506c038a1945d813d9c5034a0f20b72801377678ed",
+    "canonicalPayload": {
+      "leaseId": "TEST-LEASE-S1-V4",
+      "role": "test_luna",
+      "canonicalContext": "/root/playlist_repair_red",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-s1-h1",
+      "writes": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+      "baselineCommit": "63562002bf0320dcee6a13e47ad437b91e5c7c4a"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+  "targetSourceHashes": {
+    "tests/test_news_grasp_cleanroom_s1_entry.py": "e5dcf72358caf167ad127a6939901a83ebf08bef6ec6804b7ec3386c90c20415"
+  },
+  "readOnlyInputs": {
+    "tests/fixtures/news_grasp_cleanroom_s1_cases.json": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f",
+    "config/news_grasp_cleanroom_s1_impact_receipt_v2.json": "fdd3f3bcc8b83c458a8df5f5a7a9767767871c098adfe9feedebd502a11850ef",
+    "config/news_grasp_cleanroom_s1_impact_receipt_v3.json": "6002f61ca6f7249e99db0b791aae5020883ff11e3f5aa4fb56f8f054846f1a08"
+  },
+  "causalCorrection": {
+    "nodeId": "test_edge_writer_crash_recovery",
+    "observedDefect": "the loop hardcodes recovered after all five hooks and ignores each fixture row's exact nextCall; after_recovery_committed is already durable terminal and its next explicit call is RECOVERY_NOT_REQUIRED",
+    "requiredEdit": "for the first resumed result, expect RECOVERY_NOT_REQUIRED when hook_row.hook equals after_recovery_committed and recovered plus generation increment for the other four hooks; keep the second terminal call expectation RECOVERY_NOT_REQUIRED for every hook",
+    "prohibitedEdits": [
+      "do not edit fixture, production, receipt or docs",
+      "do not weaken crash propagation or the other four recovered assertions",
+      "do not add skip, xfail, retry, fallback or platform conditional",
+      "do not change any hook row, node count, reason or boundary"
+    ]
+  },
+  "acceptance": {
+    "compileCommand": "py -3.12 -m py_compile tests/test_news_grasp_cleanroom_s1_entry.py",
+    "collectCommand": "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "expectedCollection": "15 tests collected",
+    "redCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "expectedRed": "15 failed with ModuleNotFoundError for tools.news_grasp_cleanroom_wal; unrelated failures zero",
+    "ruffCommand": "py -3.12 -m ruff check tests/test_news_grasp_cleanroom_s1_entry.py",
+    "fixtureHashMustRemain": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f",
+    "diffCheck": "git diff --check"
+  },
+  "causalRetryCondition": "one exact correction attempt; return to Sol on unexpected collection, fixture drift, non-ModuleNotFoundError Red or write-set expansion",
+  "delivery": "one corrected test file, hash/bytes, exact results and authoring commit",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "networkCallCount": 0, "externalModelCallCount": 0}
+}
