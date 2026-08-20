@@ -1,0 +1,64 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S3-SELF-RESEAL-GREEN-V1",
+  "todoId": "NG-CLEANROOM-S3-R2-GREEN",
+  "role": "implementation_luna",
+  "canonicalContext": "/root/implementation_luna_canary",
+  "dependencyIds": ["NG-CLEANROOM-S3-SELF-RESEAL-RED-V1"],
+  "baselineCommit": "fb5dddd1074c9d69144af3f2f8ffe58ea52cf3e1",
+  "redSeal": {
+    "testCommit": "d45247f0645ac60e2b9e5aba9a9086f5543bf577",
+    "testPath": "tests/test_news_grasp_cleanroom_s3_public.py",
+    "testSha256": "c3d4e72615dbb0dc251a2a8c032c41536816547b7c608c2e8c653cb971622c48",
+    "testBytes": 24980,
+    "topLevelNodes": 9,
+    "partition": "existing six Green; persisted surface node Red because coordinated row/receipt terminal self-reseal is not PUBLIC_LEDGER_CORRUPT",
+    "productionSha256": "c47d7fdc0676e0b3220c29a773b332135073fe1567bf4f8ca37a99eab7f757af"
+  },
+  "writeLease": {
+    "leaseId": "IMPL-LEASE-S3-SELF-RESEAL-V1",
+    "leaseSha256": "b3e6ab85245d75f7ab4c000bb33d1fa95f88edaedc9423269765313a201b53db",
+    "canonicalPayload": {
+      "leaseId": "IMPL-LEASE-S3-SELF-RESEAL-V1",
+      "role": "implementation_luna",
+      "canonicalContext": "/root/implementation_luna_canary",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-s1-h1",
+      "writes": ["tools/news_grasp_cleanroom_public.py"],
+      "baselineCommit": "fb5dddd1074c9d69144af3f2f8ffe58ea52cf3e1"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tools/news_grasp_cleanroom_public.py"],
+  "forbiddenWrites": ["tests", "tests/fixtures", "all other tools", "config", "docs", "scripts"],
+  "correctionDesign": {
+    "expectedTerminalHash": "canonical SHA-256 of exact mapping {issueDate,surfaceId,artifactSha256,idempotencyKey}",
+    "freshReceipt": "during publisher receipt validation require receipt terminalHash equals expectedTerminalHash before persisting CONFIRMED",
+    "persistedReceipt": "during published CONFIRMED replay require both canonical receipt terminalHash and row terminal_hash equal expectedTerminalHash, in addition to all existing exact schema/binding/count/disposition checks",
+    "inventoryTerminal": "inventory-confirmed and NOT_REQUIRED deterministic terminal rules remain unchanged",
+    "failure": "any mismatch is PUBLIC_LEDGER_CORRUPT on persisted replay before publish/query/notify/result; a fresh invalid provider receipt remains PUBLIC_RECEIPT_INVALID before persistence",
+    "noSchemaChange": true
+  },
+  "forbiddenImplementation": ["row/receipt mutual equality as sole anchor", "accept arbitrary valid 64hex", "automatic repair", "test mutation-name branch", "schema change", "test edit", "network/subprocess"],
+  "verification": {
+    "targetCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s3_public.py -k persisted_surface",
+    "targetExpected": "1 passed",
+    "fullS3Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s3_public.py",
+    "fullS3Expected": "9 passed",
+    "s2Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s2_execution.py",
+    "s2Expected": "10 passed",
+    "s1Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "s1Expected": "32 passed",
+    "s0Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s0_contract.py",
+    "s0Expected": "3 passed",
+    "ruffCommand": "py -3.12 -m ruff check tools/news_grasp_cleanroom_public.py",
+    "compileCommand": "py -3.12 -m py_compile tools/news_grasp_cleanroom_public.py",
+    "security": "NEWS_GRASP_CLEANROOM_SECURITY_SCAN_V1 exact path counts remain zero",
+    "other": ["exact one-file lease", "git diff --check", "post-commit clean"]
+  },
+  "commitPolicy": {"allowedOnlyAfterAllGreen": true, "paths": ["tools/news_grasp_cleanroom_public.py"], "message": "fix: bind S3 published terminal hash"},
+  "causalRetryCondition": "one minimal implementation attempt and one ordered verification chain; return at first non-Green",
+  "delivery": "one production file, hash and bytes, commit and target/full/regression evidence",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "persistentPolling": false}
+}
