@@ -1,0 +1,67 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S1-GREEN-V15",
+  "todoId": "NG-CLEANROOM-S1-GREEN",
+  "role": "implementation_luna",
+  "canonicalContext": "/root/implementation_luna_canary",
+  "mutationMode": "separate_create_once_collision_from_durability_failure",
+  "dependencyIds": ["ng-cleanroom-s1-entry-impact-v8", "NEWS_GRASP_CLEANROOM_S1_EXPECTED_RED_RECEIPT_V10"],
+  "requirementIds": ["NG-A-R03", "NG-A-R04"],
+  "baselineCommit": "a1e5573e2b4c39c2e5aee46d1a9517e2adbb6300",
+  "baselineReceiptPath": "config/news_grasp_cleanroom_s1_red_receipt_v10.json",
+  "baselineSha256": "87b99067f3afd6a5cfc9b86d6303f54a57828c881e82cb56cb9031aa1e67adb3",
+  "writeLease": {
+    "leaseId": "IMPL-LEASE-S1-V15",
+    "leaseSha256": "b831c62170513ad369a4768d6622769880dd3f09de3e74c518d6bba96ecfccb5",
+    "canonicalPayload": {
+      "leaseId": "IMPL-LEASE-S1-V15",
+      "role": "implementation_luna",
+      "canonicalContext": "/root/implementation_luna_canary",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-s1-h1",
+      "writes": ["tools/news_grasp_cleanroom_wal.py"],
+      "baselineCommit": "a1e5573e2b4c39c2e5aee46d1a9517e2adbb6300"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tools/news_grasp_cleanroom_wal.py"],
+  "forbiddenWrites": ["tests", "tests/fixtures", "tools/news_grasp_cleanroom_contracts.py", "tools/news_grasp_cleanroom_ledger.py", "tools/news_grasp_cleanroom_controller.py", "tools/news_grasp_cleanroom_dispatch.py", "config", "docs", "scripts"],
+  "baselineHashes": {
+    "tools/news_grasp_cleanroom_wal.py": "0270f125bbeeb104b0781b1730429973dd31302943990ed495e6d50e6b6a85eb",
+    "tests/test_news_grasp_cleanroom_s1_entry.py": "5d62ff2192780e19bfa197915af553f1224f641e33a40264dc978791fedea580",
+    "tests/fixtures/news_grasp_cleanroom_s1_cases.json": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f"
+  },
+  "causalCorrection": {
+    "blockerId": "S1-ACCEPT-R4-IMPORTED-MARKER-DURABILITY-FAILURE-MASKED",
+    "requiredImplementation": [
+      "introduce one private internal collision outcome type used only when create-once publication reports destination-exists",
+      "inside _write_json catch FileExistsError only around the imported-marker publisher call, clean the temp, and raise that private collision outcome unchanged",
+      "all other failures including flush_parent after successful publication must remain CleanroomEntryError with NEWS_GRASP_ENTRY_WAL_FINALIZE_FAILED even when the final marker exists",
+      "mark_imported catches only the private collision outcome, reads the immutable winner, and validates exact imported parity",
+      "remove the broad CleanroomEntryError plus final-exists success branch",
+      "retain normal pre-existing-marker retry behavior and all public signatures"
+    ],
+    "forbidden": ["change tests", "change public error codes", "replace an existing imported marker", "poll", "sleep", "retry inside the first failing call", "treat final existence alone as collision proof"]
+  },
+  "verification": {
+    "newNodeCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py::test_s1_imported_marker_parent_flush_failure_is_not_race_success",
+    "newNodeExpected": "1 passed",
+    "fullS1Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "fullS1Expected": "32 passed",
+    "s0Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s0_contract.py",
+    "s0Expected": "3 passed",
+    "ruffCommand": "py -3.12 -m ruff check tools/news_grasp_cleanroom_wal.py",
+    "compileCommand": "py -3.12 -m py_compile tools/news_grasp_cleanroom_wal.py",
+    "security": "NEWS_GRASP_CLEANROOM_SECURITY_SCAN_V1 on the exact production path; denied/private/secret/external/network counts zero",
+    "other": ["git diff --name-only equals the one-file lease", "git diff --check", "post-commit worktree clean"]
+  },
+  "commitPolicy": {
+    "allowedOnlyAfterAllGreen": true,
+    "paths": ["tools/news_grasp_cleanroom_wal.py"],
+    "message": "fix: preserve WAL durability failure"
+  },
+  "causalRetryCondition": "one implementation attempt and one ordered verification chain; stop on first non-Green",
+  "delivery": "one production file only, hash/bytes, commit and exact verification evidence",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "persistentPolling": false}
+}
