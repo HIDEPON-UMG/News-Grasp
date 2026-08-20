@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "TDD_IMPACT_ANALYSIS_RECEIPT_V1",
+  "receiptId": "ng-cleanroom-s1-entry-impact-v8",
+  "workPackage": "S1",
+  "status": "red_authoring_ready",
+  "baselineCommit": "a5f8f432929309603cd3a7f62a49a614132591bb",
+  "reviewPath": "config/news_grasp_cleanroom_s1_acceptance_review_r4.json",
+  "inheritedContract": "all S1 impact v2 through v7 requirements remain normative; v8 separates create-once collision from durability failure",
+  "exactAmendment": {
+    "contractId": "S1-IMPORTED-PUBLISH-OUTCOME-TYPING-V1",
+    "collision": "only destination-already-exists from the create-once publication boundary is an internal collision outcome; mark_imported may exact-validate and return that winner",
+    "winnerDurabilityFailure": "temp fsync, publish, or parent flush failure is NEWS_GRASP_ENTRY_WAL_FINALIZE_FAILED even if a valid public final marker now exists",
+    "normalRetry": "a later call enters through the pre-existing-marker branch, exact-validates the immutable winner and returns it without another publish",
+    "forbidden": ["reason-string plus path-exists inference", "broad OSError suppression", "retry loop", "marker overwrite", "test-specific branch"]
+  },
+  "redSuiteAmendment": {
+    "testPath": "tests/test_news_grasp_cleanroom_s1_entry.py",
+    "fixtureMutationAuthorized": false,
+    "existingNodeCount": 31,
+    "newNode": "test_s1_imported_marker_parent_flush_failure_is_not_race_success",
+    "expectedCollected": 32,
+    "expectedRed": "new exact node fails because first call returns success; existing 31 remain Green",
+    "noSleep": true,
+    "noSubprocess": true,
+    "testWeakeningForbidden": true
+  },
+  "writeOwnership": {
+    "test_luna": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+    "implementation_luna_after_red": ["tools/news_grasp_cleanroom_wal.py"],
+    "writeIntersectionCount": 0
+  },
+  "verificationOrder": ["compile and collect exactly 32", "new exact causal Red", "existing 31 Green", "ruff and diff-check", "Expected Red receipt before production packet"],
+  "unresolvedDecisionIds": [],
+  "admissionPredicate": "one deterministic fault-injection oracle distinguishes collision from post-publish durability failure without changing existing tests"
+}

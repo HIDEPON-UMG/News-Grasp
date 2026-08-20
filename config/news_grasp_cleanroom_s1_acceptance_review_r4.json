@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_INDEPENDENT_ACCEPTANCE_REVIEW_V1",
+  "reviewId": "NG-CLEANROOM-S1-ACCEPTANCE-R4",
+  "reviewRole": "independent_sol",
+  "canonicalContext": "/root/s1_independent_acceptance",
+  "candidateCommit": "a5f8f432929309603cd3a7f62a49a614132591bb",
+  "status": "BLOCK",
+  "blockerCount": 1,
+  "blockers": [
+    {
+      "id": "S1-ACCEPT-R4-IMPORTED-MARKER-DURABILITY-FAILURE-MASKED",
+      "severity": "HIGH",
+      "requirements": ["NG-A-R03", "NG-A-R04"],
+      "evidence": "mark_imported converts any WAL_FINALIZE_FAILED into race success when the final marker exists, including a winner parent-flush failure",
+      "causalRed": "inject parent flush OSError after create-once publication; first call must return NEWS_GRASP_ENTRY_WAL_FINALIZE_FAILED even though final exists, and only a later normal retry may validate and return the existing marker"
+    }
+  ],
+  "targetedEvidence": {"r3NewNodes": "4 passed"},
+  "mutationCount": 0,
+  "knownUntrackedFilesOpened": false,
+  "unconfirmedRisks": ["POSIX hard-link publication crash between link and temp unlink can leave a temp leaf; not bound to the current acceptance oracle"]
+}

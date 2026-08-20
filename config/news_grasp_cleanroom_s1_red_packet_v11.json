@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S1-RED-R11",
+  "todoId": "NG-CLEANROOM-S1-RED",
+  "role": "test_luna",
+  "canonicalContext": "/root/s1_edge_driver_red",
+  "dependencyIds": ["ng-cleanroom-s1-entry-impact-v8", "NG-CLEANROOM-S1-ACCEPTANCE-R4"],
+  "baselineCommit": "a5f8f432929309603cd3a7f62a49a614132591bb",
+  "writeLease": {
+    "leaseId": "TEST-LEASE-S1-R11",
+    "leaseSha256": "4ea3d84772b3bcb773c0065817fc6d165552b4b0b653735d35ee9c934d325d0f",
+    "canonicalPayload": {
+      "leaseId": "TEST-LEASE-S1-R11",
+      "role": "test_luna",
+      "canonicalContext": "/root/s1_edge_driver_red",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-s1-h1",
+      "writes": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+      "baselineCommit": "a5f8f432929309603cd3a7f62a49a614132591bb"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tests/test_news_grasp_cleanroom_s1_entry.py"],
+  "forbiddenWrites": ["tools", "tests/fixtures", "config", "docs", "scripts"],
+  "baselineHashes": {
+    "tests/test_news_grasp_cleanroom_s1_entry.py": "1b16ab1a54e63df2bc60a49ab571cb4d3d68951e59e1dda9cab27f8fa14c3c49",
+    "tests/fixtures/news_grasp_cleanroom_s1_cases.json": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f",
+    "tools/news_grasp_cleanroom_wal.py": "0270f125bbeeb104b0781b1730429973dd31302943990ed495e6d50e6b6a85eb"
+  },
+  "exactTask": {
+    "newNode": "test_s1_imported_marker_parent_flush_failure_is_not_race_success",
+    "setup": [
+      "create one normal initial WAL with default DurabilityOps",
+      "construct a second DurableWal on the same runtime with DurabilityOps whose flush_parent raises OSError and all other operations are real defaults",
+      "call mark_imported once and require exact NEWS_GRASP_ENTRY_WAL_FINALIZE_FAILED",
+      "assert the complete final 0002-imported.json exists, is exact-valid against the initial event, and no temp leaf remains",
+      "construct a normal DurableWal and retry mark_imported; it must return the existing event unchanged and verify Green"
+    ],
+    "expectedCurrentFailure": "the first call returns success because mark_imported masks the typed finalize failure when final path exists",
+    "forbidden": ["monkeypatch production exception type", "delete final marker", "sleep", "retry inside first call", "weaken to final-valid-only"]
+  },
+  "verification": {
+    "compileCommand": "py -3.12 -m py_compile tests/test_news_grasp_cleanroom_s1_entry.py",
+    "collectCommand": "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "collectExpected": 32,
+    "newNodeCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py::test_s1_imported_marker_parent_flush_failure_is_not_race_success",
+    "newNodeExpected": "1 failed for masked durability failure",
+    "existingCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py -k 'not imported_marker_parent_flush_failure_is_not_race_success'",
+    "existingExpected": "31 passed",
+    "ruffCommand": "py -3.12 -m ruff check tests/test_news_grasp_cleanroom_s1_entry.py",
+    "diffCommand": "git diff --check -- tests/test_news_grasp_cleanroom_s1_entry.py"
+  },
+  "commitPolicy": {"allowedOnlyAfterExpectedRed": true, "paths": ["tests/test_news_grasp_cleanroom_s1_entry.py"], "message": "test: expose masked WAL durability failure"},
+  "causalRetryCondition": "one authoring attempt and one ordered verification chain; one setup-only correction allowed",
+  "delivery": "one test file only, commit/hash/bytes and exact verification partition",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {"noFocusTheft": true, "noAutoOpen": true, "noUserMonitoring": true, "persistentPolling": false}
+}
