@@ -1,0 +1,168 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S1-GREEN-V12",
+  "todoId": "NG-CLEANROOM-S1-GREEN",
+  "role": "implementation_luna",
+  "canonicalContext": "/root/implementation_luna_canary",
+  "mutationMode": "close_eight_r2_r2b_integrity_blockers",
+  "dependencyIds": [
+    "ng-cleanroom-s1-entry-impact-v5",
+    "NEWS_GRASP_CLEANROOM_S1_EXPECTED_RED_RECEIPT_V7"
+  ],
+  "requirementIds": ["NG-A-R02", "NG-A-R03", "NG-A-R04", "NG-A-R05", "NG-A-R13"],
+  "baselineCommit": "5f0d52750b8fcf093497760695ebb063b477082d",
+  "baselineReceiptPath": "config/news_grasp_cleanroom_s1_red_receipt_v7.json",
+  "baselineSha256": "6ec670ac3fd0386b3b4b2f9c036d49a639614ef3797bf44e59fe849261b217bc",
+  "writeLease": {
+    "leaseId": "IMPL-LEASE-S1-V12",
+    "leaseSha256": "81ea5a6e029dce1e743401f0b4d761dbd862ceee534c9b0d2771e1e231526dd2",
+    "canonicalPayload": {
+      "leaseId": "IMPL-LEASE-S1-V12",
+      "role": "implementation_luna",
+      "canonicalContext": "/root/implementation_luna_canary",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-s1-h1",
+      "writes": [
+        "tools/news_grasp_cleanroom_contracts.py",
+        "tools/news_grasp_cleanroom_wal.py",
+        "tools/news_grasp_cleanroom_ledger.py",
+        "tools/news_grasp_cleanroom_controller.py"
+      ],
+      "baselineCommit": "5f0d52750b8fcf093497760695ebb063b477082d"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": [
+    "tools/news_grasp_cleanroom_contracts.py",
+    "tools/news_grasp_cleanroom_wal.py",
+    "tools/news_grasp_cleanroom_ledger.py",
+    "tools/news_grasp_cleanroom_controller.py"
+  ],
+  "forbiddenWrites": [
+    "tests/test_news_grasp_cleanroom_s1_entry.py",
+    "tests/fixtures/news_grasp_cleanroom_s1_cases.json",
+    "tools/news_grasp_cleanroom_dispatch.py",
+    "config"
+  ],
+  "baselineSourceHashes": {
+    "tools/news_grasp_cleanroom_contracts.py": "0387a283b4f3555d3622a70356f5c08ba828ed2a5bb6949f97eede21b7844fd2",
+    "tools/news_grasp_cleanroom_wal.py": "a4da9ea14331966f004461b4957975d58385f9368ea21e0250d697001e2fe29a",
+    "tools/news_grasp_cleanroom_ledger.py": "9f7fae4f4825df65d0ff488a838fdce319a3d85e68fcad87007b05bee2c9437f",
+    "tools/news_grasp_cleanroom_controller.py": "0e179747d16c25c307db3b8082b7b7dd48c2dcb02b2682a9d13f9372b1a3f4de",
+    "tools/news_grasp_cleanroom_dispatch.py": "c152c311017143abd18522b0d8f6ccc24a401c66dabebfc76ccf5a8929eabb99",
+    "tests/test_news_grasp_cleanroom_s1_entry.py": "5337c718abc04e9a88e9657236d0c79925eda7eaedee65bf1cf1dcb19307b5bb",
+    "tests/fixtures/news_grasp_cleanroom_s1_cases.json": "eba6a10bfb7f8b6aea78025555cd8520221358f635765265e07cec8726d60a6f"
+  },
+  "causalCorrections": [
+    {
+      "blockerId": "S1-ACCEPT-R2-BUSY-TIMEOUT-TOTALITY",
+      "targets": ["tools/news_grasp_cleanroom_contracts.py", "tools/news_grasp_cleanroom_controller.py", "tools/news_grasp_cleanroom_ledger.py"],
+      "requiredImplementation": [
+        "define NEWS_GRASP_ENTRY_BUSY_TIMEOUT_INVALID and one shared validator: int but not bool, inclusive 1..60000",
+        "Controller validates before constructing DurableWal or ControlLedger; ControlLedger direct construction validates before storing paths or performing writes",
+        "dispatch and recover_ledger inherit the typed result through the existing Controller forwarding; do not edit dispatch"
+      ]
+    },
+    {
+      "blockerId": "S1-ACCEPT-R2-ZERO-ENTRY-MONOTONICITY",
+      "targets": ["tools/news_grasp_cleanroom_ledger.py"],
+      "requiredImplementation": [
+        "inside import_zero_entries BEGIN IMMEDIATE, verify connection then parse persisted lastObservedAt",
+        "if observed_at precedes persisted value, raise NEWS_GRASP_ENTRY_CLOCK_ROLLBACK before invocation insert, event append or metadata update",
+        "rollback leaves invocations, slots, events and lastObservedAt byte-equivalent at the logical SQLite level and leaves the initial WAL unimported"
+      ]
+    },
+    {
+      "blockerId": "S1-ACCEPT-R2B-WAL-EXACTNESS",
+      "targets": ["tools/news_grasp_cleanroom_wal.py"],
+      "requiredImplementation": [
+        "validate exact initial/imported key sets, field types, fixed eventType/phase/sequence values, lowercase 32-hex invocationId, Asia/Tokyo aware receivedAt, lowercase 64-hex hashes and exact validated writer",
+        "recompute rawArgvSha256 over a JSON array, bind initial invocationId to its immediate directory name, and require imported invocation/raw argv/hash/writer parity plus predecessor hash",
+        "record_initial validates raw_argv is a non-string iterable of JSON-serializable tokens and received_at is datetime before creating runtime paths; mark_imported validates imported_at before writing",
+        "all malformed stored WAL yields NEWS_GRASP_ENTRY_LEDGER_CORRUPT; invalid public raw argv/time yields the exact typed input reason"
+      ]
+    },
+    {
+      "blockerId": "S1-ACCEPT-R2B-MANAGED-ROOT-CONTAINMENT",
+      "targets": ["tools/news_grasp_cleanroom_contracts.py", "tools/news_grasp_cleanroom_wal.py", "tools/news_grasp_cleanroom_ledger.py"],
+      "requiredImplementation": [
+        "centralize a canonical containment check for every derived control, WAL, SQLite, journal, history and quarantine path",
+        "reject traversal, escape after resolve, symlink and Windows junction/reparse ancestry before mutation using platform-safe standard-library checks",
+        "mark_imported accepts only lowercase 32-hex invocationId and iter_zero_entries binds directory identity; outside mutation count remains zero"
+      ],
+      "forbidden": "no recursive delete, no subprocess, no following an existing managed-root link"
+    },
+    {
+      "blockerId": "S1-ACCEPT-R2-RECOVERY-JOURNAL-EXACTNESS",
+      "targets": ["tools/news_grasp_cleanroom_ledger.py"],
+      "requiredImplementation": [
+        "journal reader requires the exact eight keys and CONTROL_LEDGER_RECOVERY_JOURNAL_V1",
+        "recoveryId is lowercase 32-hex; generations are positive non-bool ints and newGeneration equals oldGeneration plus one; phase is one of PREPARED, QUARANTINED, SEALED, LEDGER_CREATED, COMMITTED",
+        "quarantineRelativePath equals control/quarantine/g<old8>-to-g<new8>-<recoveryId>, updatedAt is a valid Asia/Tokyo timestamp, and journalSha256 is the canonical lowercase hash over the other fields",
+        "any mismatch raises NEWS_GRASP_ENTRY_LEDGER_RECOVERY_FAILED before managed or outside mutation"
+      ]
+    },
+    {
+      "blockerId": "S1-ACCEPT-R2B-RECOVERY-TRANSITION-RESUME",
+      "targets": ["tools/news_grasp_cleanroom_ledger.py"],
+      "requiredImplementation": [
+        "when journal is QUARANTINED and the current valid seal already is newGeneration linked to the prior seal, reuse it and persist SEALED without issuing another seal",
+        "when journal is SEALED and the generation-new SQLite ledger already contains exactly one matching LEDGER_RECOVERED genesis, reuse it and persist LEDGER_CREATED without inserting sequence 1 twice",
+        "move any invalid recovery-owned partial new ledger into the current quarantine with a unique non-overwriting leaf, then recreate once",
+        "preserve recoveryId/newGeneration, exactly one seal transition, exactly one genesis event, COMMITTED journal and reopen Green"
+      ]
+    },
+    {
+      "blockerId": "S1-ACCEPT-R2B-MATERIALIZED-STATE-INTEGRITY",
+      "targets": ["tools/news_grasp_cleanroom_ledger.py"],
+      "requiredImplementation": [
+        "add metadata materializedStateSha256 computed from canonical ordered invocations, ordered slots and lastObservedAt",
+        "initialize it for an empty ledger and update it in the same SQLite transaction after every invocation, slot or lastObservedAt mutation and before commit",
+        "every _verify_connection recomputes rows and rejects mismatch with NEWS_GRASP_ENTRY_LEDGER_CORRUPT",
+        "hash computation must not mutate row objects or depend on unordered database output"
+      ]
+    },
+    {
+      "blockerId": "S1-ACCEPT-R2B-PUBLIC-TYPE-TOTALITY",
+      "targets": ["tools/news_grasp_cleanroom_contracts.py", "tools/news_grasp_cleanroom_wal.py", "tools/news_grasp_cleanroom_ledger.py", "tools/news_grasp_cleanroom_controller.py"],
+      "requiredImplementation": [
+        "raw_argv None or non-iterable gives NEWS_GRASP_ENTRY_ARGS_INVALID and observed_at non-datetime gives NEWS_GRASP_ENTRY_TIME_INVALID before path creation",
+        "reconcile_slot validates scheduled_state is str before membership and returns NEWS_GRASP_ENTRY_MANIFEST_INVALID",
+        "commit_slot validates slot_key is str before regex and returns NEWS_GRASP_ENTRY_COMMIT_INVALID before ledger creation",
+        "mark_imported invalid imported_at returns NEWS_GRASP_ENTRY_TIME_INVALID and writes no imported marker",
+        "preserve WAL-before-parse for serializable array raw argv and the existing naive-time durable-WAL behavior; no broad catch masking domain errors"
+      ]
+    }
+  ],
+  "verification": {
+    "newNodesCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py -k 'recovery_journal_self_consistent_forgery_fails_closed or busy_timeout_invalid_matrix_is_typed_before_write or zero_entry_import_cannot_erase_clock_rollback or wal_exact_schema_directory_and_imported_chain or recovery_transition_gaps_resume_same_identity or wal_managed_root_containment or materialized_state_drift_is_corrupt or public_invalid_type_matrix_is_total'",
+    "newNodesExpected": "8 passed",
+    "fullS1Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "fullS1Expected": "26 passed",
+    "s0RegressionCommand": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s0_contract.py",
+    "s0Expected": "3 passed",
+    "ruffCommand": "py -3.12 -m ruff check tools/news_grasp_cleanroom_contracts.py tools/news_grasp_cleanroom_wal.py tools/news_grasp_cleanroom_ledger.py tools/news_grasp_cleanroom_controller.py",
+    "compileCommand": "py -3.12 -m py_compile tools/news_grasp_cleanroom_contracts.py tools/news_grasp_cleanroom_wal.py tools/news_grasp_cleanroom_ledger.py tools/news_grasp_cleanroom_controller.py",
+    "security": "NEWS_GRASP_CLEANROOM_SECURITY_SCAN_V1 on exact four changed production paths: denied imports/calls, external/network, private absolute paths, secrets and unbounded delete all zero",
+    "other": [
+      "git diff --name-only equals the four-file writeSet subset and never includes tests, fixture, dispatch or config",
+      "git diff --check over exact changed production paths",
+      "git status --short"
+    ]
+  },
+  "commitPolicy": {
+    "allowedOnlyAfterAllGreen": true,
+    "paths": "exact changed subset of four-file writeSet",
+    "message": "fix: enforce S1 ledger integrity boundaries"
+  },
+  "causalRetryCondition": "one implementation attempt and one ordered verification chain; stop on first non-Green with evidence and no second edit or rerun",
+  "delivery": "production files only, final hashes and bytes, authoring commit, exact verification evidence and residuals",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": [],
+  "humanImpact": {
+    "noFocusTheft": true,
+    "noAutoOpen": true,
+    "noUserMonitoring": true,
+    "persistentPolling": false,
+    "rawProcessTermination": false
+  }
+}
