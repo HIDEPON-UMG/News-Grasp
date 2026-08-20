@@ -293,15 +293,19 @@ def test_s3_report_scheduled_first() -> None:
     assert report["overallState"] != "GREEN"
 
 
-def _surface_integrity_receipt(row: Any, mutation: str) -> str:
-    receipt: dict[str, Any] = {
-        "schemaVersion": "PUBLIC_SURFACE_RECEIPT_V1",
-        "surfaceId": row["surface_id"],
-        "artifactSha256": row["artifact_sha256"],
-        "idempotencyKey": row["idempotency_key"],
-        "status": "CONFIRMED",
-        "terminalHash": row["terminal_hash"] or ("a" * 64),
-    }
+def _surface_integrity_receipt(row: Any, receipt_json: str | None, mutation: str) -> str:
+    if receipt_json is None:
+        receipt: dict[str, Any] = {
+            "schemaVersion": "PUBLIC_SURFACE_RECEIPT_V1",
+            "surfaceId": row["surface_id"],
+            "idempotencyKey": row["idempotency_key"],
+            "status": "CONFIRMED",
+            "terminalHash": row["terminal_hash"] or ("a" * 64),
+        }
+    else:
+        parsed = json.loads(receipt_json)
+        assert isinstance(parsed, dict)
+        receipt = parsed
     if mutation == "syntax":
         return "{not-json"
     if mutation == "schema":
@@ -359,15 +363,17 @@ def test_s3_persisted_surface_rows_are_revalidated(tmp_path: Path) -> None:
         "receipt_terminalHash",
     )
     outcomes: list[dict[str, Any]] = []
-    for status_index, baseline_status in enumerate(("CONFIRMED", "NOT_REQUIRED")):
+    baseline_classes = (
+        ("INVENTORY_CONFIRMED", "web", "CONFIRMED"),
+        ("PUBLISHED_CONFIRMED", "web", "PENDING"),
+        ("NOT_REQUIRED", "archive", "NOT_REQUIRED"),
+    )
+    for class_index, (baseline_class, surface_id, target_status) in enumerate(baseline_classes):
         for mutation_index, mutation in enumerate(mutations):
-            index = status_index * 100 + mutation_index
+            index = class_index * 100 + mutation_index
             root = _runtime_root(tmp_path, index)
             statuses = {surface_id: "CONFIRMED" for surface_id in data["requiredSurfaceIds"]}
-            surface_id = "web"
-            if baseline_status == "NOT_REQUIRED":
-                surface_id = "archive"
-                statuses[surface_id] = "NOT_REQUIRED"
+            statuses[surface_id] = target_status
             publisher = _Publisher(module.PublishResultUnknown)
             notifier = _Notifier(module.PublishResultUnknown)
             _reconcile(_controller(module, root, publisher, notifier), _inventory(data, statuses))
@@ -378,6 +384,13 @@ def test_s3_persisted_surface_rows_are_revalidated(tmp_path: Path) -> None:
                     (data["issueDate"], surface_id),
                 ).fetchone()
                 assert row is not None
+                if baseline_class == "PUBLISHED_CONFIRMED":
+                    assert len(publisher.calls) == 1
+                    assert row["receipt_json"] is not None
+                    assert isinstance(json.loads(row["receipt_json"]), dict)
+                else:
+                    assert not publisher.calls
+                    assert row["receipt_json"] is None
                 if mutation == "state":
                     connection.execute("UPDATE surfaces SET state=? WHERE issue_date=? AND surface_id=?", ("PENDING", data["issueDate"], surface_id))
                 elif mutation == "attempt_disposition":
@@ -391,7 +404,7 @@ def test_s3_persisted_surface_rows_are_revalidated(tmp_path: Path) -> None:
                     connection.execute(f"UPDATE surfaces SET {column}=? WHERE issue_date=? AND surface_id=?", (value, data["issueDate"], surface_id))
                 else:
                     receipt_case = mutation.removeprefix("receipt_")
-                    connection.execute("UPDATE surfaces SET receipt_json=? WHERE issue_date=? AND surface_id=?", (_surface_integrity_receipt(row, receipt_case), data["issueDate"], surface_id))
+                    connection.execute("UPDATE surfaces SET receipt_json=? WHERE issue_date=? AND surface_id=?", (_surface_integrity_receipt(row, row["receipt_json"], receipt_case), data["issueDate"], surface_id))
                 connection.commit()
             retry_publisher = _Publisher(module.PublishResultUnknown)
             retry_notifier = _Notifier(module.PublishResultUnknown)
@@ -401,7 +414,7 @@ def test_s3_persisted_surface_rows_are_revalidated(tmp_path: Path) -> None:
                 reason = caught.reason
             else:
                 reason = "RETURNED"
-            outcomes.append({"status": baseline_status, "mutation": mutation, "reason": reason, "publish": len(retry_publisher.calls), "query": len(retry_publisher.queries), "notify": len(retry_notifier.calls), "notifyQuery": len(retry_notifier.queries)})
+            outcomes.append({"class": baseline_class, "mutation": mutation, "reason": reason, "publish": len(retry_publisher.calls), "query": len(retry_publisher.queries), "notify": len(retry_notifier.calls), "notifyQuery": len(retry_notifier.queries)})
     assert all(item["reason"] == "PUBLIC_LEDGER_CORRUPT" for item in outcomes), outcomes
     assert all(item["publish"] == 0 and item["query"] == 0 and item["notify"] == 0 and item["notifyQuery"] == 0 for item in outcomes)
 
