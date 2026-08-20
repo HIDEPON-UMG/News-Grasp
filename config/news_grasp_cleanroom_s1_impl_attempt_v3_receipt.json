@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_S1_IMPLEMENTATION_ATTEMPT_RECEIPT_V1",
+  "receiptId": "NG-CLEANROOM-S1-IMPL-ATTEMPT-V3",
+  "packetId": "NG-CLEANROOM-S1-GREEN-V3",
+  "leaseId": "IMPL-LEASE-S1-V3",
+  "role": "implementation_luna",
+  "canonicalContext": "/root/implementation_luna_canary",
+  "baselineCommit": "5f86f9d8722214c873a85aca74f438f099cea227",
+  "draftSnapshotCommit": "d765057eb89adcb209085f8cf69421473e6ff1f4",
+  "attemptPolicy": {
+    "sameShapeRetryConsumed": true,
+    "retryAllowed": false,
+    "returnToSolRequired": true,
+    "nextAdmission": "preserve caller hook exceptions by exact identity through the recovery wrapper, then resume remaining verification"
+  },
+  "writeSet": [
+    {"path": "config/news_grasp_cleanroom_task_manifest_v1.json", "bytes": 872, "sha256": "99888f219a8483e5d8c8698538444cf84d68fc36ab40e842962447982d86e641"},
+    {"path": "tools/news_grasp_cleanroom_contracts.py", "bytes": 32191, "sha256": "0387a283b4f3555d3622a70356f5c08ba828ed2a5bb6949f97eede21b7844fd2"},
+    {"path": "tools/news_grasp_cleanroom_wal.py", "bytes": 9289, "sha256": "a4da9ea14331966f004461b4957975d58385f9368ea21e0250d697001e2fe29a"},
+    {"path": "tools/news_grasp_cleanroom_ledger.py", "bytes": 38572, "sha256": "2bd7ef475dbf9fd03f403be82ac7f9df81c7a7b99763dc7060c5067547f366b5"},
+    {"path": "tools/news_grasp_cleanroom_dispatch.py", "bytes": 2125, "sha256": "545325955b524ef9b7c7a5adc76ae83ee8fd9dcf3eb233576dd62b24299b2c2f"},
+    {"path": "tools/news_grasp_cleanroom_controller.py", "bytes": 6481, "sha256": "6b13c146664923fa246f2aa19daf74419dc734b07c9b37c627ccc985b665e9ef"}
+  ],
+  "focusedVerification": [
+    {"nodeId": "test_s1_ledger_corruption_recovery", "exitCode": 0, "status": "passed"},
+    {"nodeId": "test_s1_missed_scheduled_persists_then_audits", "exitCode": 0, "status": "passed"},
+    {
+      "nodeId": "test_edge_writer_crash_recovery",
+      "exitCode": 1,
+      "status": "non_green",
+      "reason": "test-owned OwnedCrash at after_recovery_quarantined is wrapped by the broad recovery exception handler as NEWS_GRASP_ENTRY_LEDGER_RECOVERY_FAILED"
+    }
+  ],
+  "causalClassification": {
+    "owner": "implementation_luna",
+    "contractBinding": "config/news_grasp_cleanroom_s1_impact_receipt_v3.json recoveryHookExceptionPolicy",
+    "defect": "the broad operational recovery wrapper cannot distinguish an injected caller boundary-hook exception from an os/sqlite/durability exception",
+    "requiredCorrection": "record the exact Exception object raised by each recovery hook and, in the outer handler, bare-raise when the caught object is that same recorded object; wrap only non-hook operational exceptions",
+    "newPublicTypeOrReasonAllowed": false
+  },
+  "staticDebt": {
+    "command": "git diff --cached --check",
+    "finding": "tools/news_grasp_cleanroom_dispatch.py has one extra blank line at EOF",
+    "requiredCorrection": "remove the extra EOF blank line before final commit"
+  },
+  "unrelatedFailureCount": 0,
+  "testFixtureReceiptDocsChangedByImplementation": false,
+  "fullS1Run": "not run after focused failure",
+  "s0Regression": "not run after focused failure",
+  "status": "non_green_causally_classified",
+  "measuredAt": "2026-08-20T18:12:00Z"
+}
