@@ -591,6 +591,7 @@ def test_sec_s1_wal_event_and_retention_limits_fail_closed(monkeypatch: pytest.M
         lambda: event_wal.iter_zero_entries(),
     )
 
+    monkeypatch.setattr(wal_module, "MAX_WAL_EVENT_BYTES", 65536)
     count_root = tmp_path / "count"
     count_wal = production["DurableWal"](count_root)
     count_wal.record_initial(
@@ -598,7 +599,6 @@ def test_sec_s1_wal_event_and_retention_limits_fail_closed(monkeypatch: pytest.M
         received_at=_at(6, 1),
         writer=_writer(104),
     )
-    monkeypatch.setattr(wal_module, "MAX_WAL_EVENT_BYTES", 65536)
     monkeypatch.setattr(wal_module, "MAX_WAL_ZERO_ENTRIES", 0)
     _expect_reason(
         production["error"],
@@ -825,6 +825,14 @@ def test_sec_s1_compaction_crash_persists_receipt_before_remove_and_resumes(
         for key, value in _tree_snapshot(wal_root).items()
         if not key.startswith(".compaction-quarantine/")
     }
+    selected_ids = {item["invocationId"] for item in authorization["batch"]}
+
+    def _is_selected(path_key: str) -> bool:
+        return any(path_key == item or path_key.startswith(f"{item}/") for item in selected_ids)
+
+    before_unselected = {
+        key: value for key, value in before_live.items() if not _is_selected(key)
+    }
     try:
         crashing.compact_imported(authorization, observed_at=base + timedelta(seconds=902))
     except production["error"] as exc:
@@ -839,11 +847,16 @@ def test_sec_s1_compaction_crash_persists_receipt_before_remove_and_resumes(
     assert receipt["selfHash"] == contracts._entry_canonical_sha256(
         {key: value for key, value in receipt.items() if key != "selfHash"}
     )
-    assert {
+    after_tree = _tree_snapshot(wal_root)
+    after_unselected = {
         key: value
-        for key, value in _tree_snapshot(wal_root).items()
-        if not key.startswith(".compaction-quarantine/")
-    } == before_live
+        for key, value in after_tree.items()
+        if not _is_selected(key)
+        and key != "compaction-head-v1.json"
+        and not key.startswith(".compaction-quarantine")
+    }
+    assert after_unselected == before_unselected
+    assert all(not (wal_root / invocation_id).exists() for invocation_id in selected_ids)
     quarantine = wal_root / ".compaction-quarantine" / authorization["authorizationId"]
     assert quarantine.exists()
     assert zero_path.exists() and zero_path.read_bytes() == zero_bytes

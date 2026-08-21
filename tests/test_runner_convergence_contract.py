@@ -1609,7 +1609,8 @@ def test_post_reporter_resume_reuses_verified_reporter_artifacts_without_refanou
     assert "skipping reporter fan-out; verifying existing reporter artifacts" in reporter_body
     assert "$retryCategories = @()" in reporter_body
     assert "HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1" in runner
-    assert "SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_INVALID" in runner
+    assert "validate-scheduled-admission" in runner
+    assert "HIGH_COST_SCHEDULED_ADMISSION_INVALID" in runner
 
 
 def test_recovery_continuation_admission_covers_deepdive_resume_boundary() -> None:
@@ -1625,7 +1626,7 @@ def test_recovery_continuation_admission_covers_deepdive_resume_boundary() -> No
     )[0]
 
     assert "if ($HighCostAdmissionPath)" in admission_block
-    assert "[string]$continuationAdmission.resumeStage -ne $ResumeFromStage" in admission_block
+    assert "[string]$continuationAdmission.resumeStage -cne $ResumeFromStage" in admission_block
     assert "$script:UsesHighCostContinuationAdmission = $true" in admission_block
     assert "scheduled recovery stage start boundary satisfied by HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1" in resume_block
     assert "start-news-grasp-recovery-stage" in resume_block
@@ -1808,7 +1809,9 @@ def test_editor_materialization_uses_one_production_boundary_and_recovers_before
     assert "EDITOR_OUTPUT_TRANSACTION_RECOVERY_REQUIRED" in editor_flow
     assert "tools.validate_editor_output_preview' $editorOutputPreview '--date'" not in runner
     assert editor_flow.rfind("--recover-only") < editor_flow.rfind("$gateAttemptDir =") or "$gateAttemptDir =" not in editor_flow
-    assert "Python312\\python.exe" in runner
+    assert "Resolve-NewsGraspTrustedPython" in runner
+    assert "NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1" in runner
+    assert "Python312\\python.exe" not in runner
     assert "$env:PYTHONSAFEPATH = '1'" in runner
     assert "$env:PYTHONNOUSERSITE = '1'" in runner
     assert "$env:PYTHONPATH = $RepoDir" in runner
@@ -4607,7 +4610,9 @@ def test_sec_continuation_revalidates_product_local_authority_before_return() ->
     """ResumeFromStage はcanonical authorityを再検証してからだけ継続する。"""
 
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
-    continuation = runner.split("if ($ResumeFromStage) {", 1)[1].split(
+    continuation = runner.split(
+        "    $script:UsesHighCostContinuationAdmission = $false", 1
+    )[1].split(
         "if (-not $ScheduledAuthorityEvidencePath)", 1
     )[0]
     for marker in (
@@ -4624,7 +4629,7 @@ def test_sec_continuation_revalidates_product_local_authority_before_return() ->
     ):
         assert marker in continuation
     validator_index = continuation.index("validate-scheduled-admission")
-    return_index = continuation.index("return")
+    return_index = continuation.rindex("return")
     assert validator_index < return_index
     assert "receiptSha256" in continuation
     assert "operationAuthoritySha256" in continuation
@@ -4638,7 +4643,7 @@ def test_sec_runner_binds_trusted_python_before_any_python_invocation_for_both_i
     first_python_call = runner.index("& $PyExe")
     assert resolver_index < first_python_call
     assert re.search(r"\$PyExe\s*=\s*Resolve-NewsGraspTrustedPython", runner)
-    assert "NEWS_GRASP_RUNTIME_BINDING_V1" in runner[resolver_index:]
+    assert "NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1" in runner[resolver_index:]
     for marker in (
         "pythonExeSha256",
         "Get-AuthenticodeSignature",
