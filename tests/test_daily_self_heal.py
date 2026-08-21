@@ -4925,3 +4925,37 @@ def test_readiness_freshness_marks_descriptor_drift_stale(tmp_path: Path) -> Non
     )
     assert stale["status"] == "stale"
     assert stale["reasonCode"] == "readiness_proof_stale"
+
+
+def test_parallel_hotfix_future_readiness_permit_date_is_not_future(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """未来のreadiness rootと当日JSTのpermit/log日付を分離する。"""
+    captured: dict[str, list[str]] = {}
+
+    def fake_run(command, **_kwargs):
+        captured["command"] = list(command)
+        state_file = Path(command[command.index("-StateFile") + 1])
+        log_dir = Path(command[command.index("-LogDir") + 1])
+        log_dir.mkdir(parents=True, exist_ok=True)
+        state_file.write_text(json.dumps({"status": "smoke_ok"}), encoding="utf-8")
+        permit_date = command[command.index("-DateStamp") + 1]
+        (log_dir / f"{permit_date}.log").write_text(
+            "news-grasp-runner.ps1 SMOKE OK\n", encoding="utf-8"
+        )
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(dsh.subprocess, "run", fake_run)
+    future_date = "2026-08-25"
+    current_date = "2026-08-21"
+    result = dsh._run_live_startup_canary(
+        repo_root=tmp_path,
+        startup_path=tmp_path / "bootstrap.ps1",
+        date=future_date,
+        permit_issue_date=current_date,
+        powershell_exe="powershell.exe",
+    )
+    assert result["ok"] is True
+    assert future_date in result["state_file"]
+    assert result["log_file"].endswith(f"{current_date}.log")
+    assert captured["command"][captured["command"].index("-DateStamp") + 1] == current_date

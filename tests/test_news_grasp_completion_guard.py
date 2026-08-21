@@ -342,3 +342,64 @@ def test_completion_guard_rejects_readiness_proof_after_deadman_drift(tmp_path: 
     assert guard._readiness_freshness_is_current({"freshness": proof}) is True
     deadman.write_text("deadman-v2\n", encoding="utf-8")
     assert guard._readiness_freshness_is_current({"freshness": proof}) is False
+
+
+def test_parallel_hotfix_completion_ok_with_slo_debt_exits_zero_and_non_ok_exits_two(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """SLO debtはsidecarへ残し、公開okだけはCLI成功として扱う。"""
+    guard = _guard()
+    artifact_root = tmp_path / "artifact"
+    output = artifact_root / "build" / "publish-complete" / "2026-08-21.automation-guard.json"
+    calls = iter((True, False))
+    manifest = {
+        "live_runner_readiness": {"ok": True},
+    }
+    state = {"updated_at": "2026-08-21T08:00:00+09:00"}
+
+    def fake_evaluate(*_args, **_kwargs):
+        ok = next(calls)
+        return (
+            {
+                "schemaVersion": "NEWS_GRASP_640_COMPLETION_GUARD_V1",
+                "ok": ok,
+                "scheduled_attempt_status": "failed_then_recovered",
+                "recovery_attempt_status": "succeeded",
+            },
+            {
+                "issueDate": "2026-08-21",
+                "manifestPath": str(tmp_path / "manifest.json"),
+                "publicGreenAt": "2026-08-21T07:00:00+09:00",
+                "auditAcceptedAt": "2026-08-21T06:40:00+09:00",
+                "completionGuardOutputPath": str(output),
+                "receiptSha256": "a" * 64,
+                "_validatedManifestSnapshot": manifest,
+                "_validatedRunnerStateSnapshot": state,
+            },
+        )
+
+    monkeypatch.setattr(guard, "evaluate_finalization_receipt", fake_evaluate)
+    monkeypatch.setattr(
+        guard,
+        "build_completion_outcome_envelope",
+        lambda **_kwargs: {
+            "schemaVersion": "COMPLETION_OUTCOME_ENVELOPE_V1",
+            "sloStatus": "slo_failed",
+            "readinessDebt": None,
+            "processExitCode": 2,
+        },
+    )
+    artifact_root.mkdir(parents=True)
+    common = [
+        "--finalization-receipt", str(tmp_path / "receipt.json"),
+        "--artifact-root", str(artifact_root),
+        "--ops-root", str(tmp_path / "ops"),
+        "--production-runtime-root", str(tmp_path / "runtime"),
+        "--live-bin-root", str(tmp_path / "live"),
+        "--runner-state", str(tmp_path / "state.json"),
+        "--runner-script", str(tmp_path / "runner.ps1"),
+    ]
+    assert guard.main(common) == 0
+    envelope_path = artifact_root / "build" / "publish-complete" / "2026-08-21.completion-outcome.json"
+    assert json.loads(envelope_path.read_text(encoding="utf-8"))["sloStatus"] == "slo_failed"
+    assert guard.main(common) == 2

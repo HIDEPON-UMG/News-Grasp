@@ -2861,3 +2861,17 @@ def test_runtime_recovery_capacity_admission_precedes_runtime_move_and_bounds_me
             source_repo=source, runtime_root=runtime_root, origin_sha=origin_sha
         )
     assert (runtime / "tracked.txt").read_text(encoding="utf-8") == "capacity preserved\n"
+
+
+def test_parallel_hotfix_daily_audit_startup_ledger_fallback_uses_canonical_python_and_ops_root() -> None:
+    """startup失敗はbroker ledger/failure receiptへ戻り、canonical実行面だけを使う。"""
+    import inspect
+    from tools import audit_recovery_control, news_grasp_daily_control
+
+    daily_source = inspect.getsource(news_grasp_daily_control.prepare_recovery)
+    audit_source = inspect.getsource(audit_recovery_control.execute_audit_recovery)
+    assert "startup_failure" in daily_source
+    assert "failureReceiptSha256" in daily_source
+    assert "canonical_python" in audit_source
+    assert "production_runtime_root" in audit_source
+    assert "ops_root" in audit_source
