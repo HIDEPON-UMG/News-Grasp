@@ -2870,7 +2870,7 @@ def test_parallel_hotfix_daily_audit_startup_ledger_fallback_uses_canonical_pyth
 
     daily_source = inspect.getsource(news_grasp_daily_control.prepare_recovery)
     audit_source = inspect.getsource(audit_recovery_control.execute_audit_recovery)
-    assert "startup_failure" in daily_source
+    assert "blocked_startup_self_repair_failed" in daily_source
     assert "failureReceiptSha256" in daily_source
     assert "canonical_python" in audit_source
     assert "production_runtime_root" in audit_source
