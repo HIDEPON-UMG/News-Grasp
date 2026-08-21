@@ -331,6 +331,21 @@ def _file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _canonical_python_executable() -> str:
+    candidates = [
+        CANONICAL_REPO_ROOT / ".venv" / "Scripts" / "python.exe",
+        Path.home() / "AppData" / "Local" / "Programs" / "Python" / "Python312" / "python.exe",
+    ]
+    for candidate in candidates:
+        resolved = candidate.resolve()
+        if resolved.is_file() and not resolved.is_symlink():
+            return str(resolved)
+    current = Path(sys.executable)
+    if current.is_file() and not current.is_symlink():
+        return str(current)
+    return "python"
+
+
 def _typed_completion_hashes(
     *, issue_date: str, payload: dict[str, Any], evidence: object
 ) -> dict[str, str]:
@@ -961,7 +976,7 @@ def _inspect_attempt_via_broker(*, issue_date: str) -> dict[str, Any]:
         raise ValueError("SCHEDULED_ATTEMPT_BROKER_UNAVAILABLE")
     return_code, stdout = _run_bounded(
         [
-            sys.executable,
+            _canonical_python_executable(),
             str(CANONICAL_BROKER_PATH),
             "inspect-news-grasp-attempt",
             "--issue-date",
@@ -1046,7 +1061,7 @@ def _validate_recovery_authority_via_broker(
         raise ValueError("RECOVERY_AUTHORITY_BROKER_UNAVAILABLE")
     return_code, stdout = _run_bounded(
         [
-            sys.executable,
+            _canonical_python_executable(),
             str(CANONICAL_BROKER_PATH),
             "validate-news-grasp-recovery-authority",
             "--issue-date",
@@ -1871,8 +1886,10 @@ def decide_audit_recovery(payload: object) -> dict[str, Any]:
                     CANONICAL_RUNNER_STATE_PATH,
                     expected_root=CANONICAL_RUNNER_STATE_PATH.parent,
                 )
-                observed_repo = Path(str(observed_state.get("repo_dir") or "")).resolve()
-                if observed_repo != CANONICAL_REPO_ROOT.resolve():
+                if str(observed_state.get("date") or "") not in {"", issue_date}:
+                    observed_state = {}
+                observed_repo_raw = str(observed_state.get("repo_dir") or "").strip()
+                if observed_repo_raw and Path(observed_repo_raw).resolve() != CANONICAL_REPO_ROOT.resolve():
                     observed_state = {}
             log_path = observed_state.get("log_path")
             if log_path:
@@ -2273,7 +2290,7 @@ def _issue_recovery_execution_receipt(
                 receipt_path=receipt_path,
                 issue_date=issue_date,
                 artifact_root=artifact_repo_root,
-                ops_root=CANONICAL_REPO_ROOT,
+                ops_root=production_runtime_root,
                 production_runtime_root=production_runtime_root,
                 live_bin_root=live_bin_root,
                 runner_state_path=CANONICAL_RUNNER_STATE_PATH,
@@ -2291,7 +2308,7 @@ def _issue_recovery_execution_receipt(
     receipt = news_grasp_recovery_receipts.create_recovery_execution_receipt(
         issue_date=issue_date,
         artifact_root=artifact_repo_root,
-        ops_root=CANONICAL_REPO_ROOT,
+        ops_root=production_runtime_root,
         production_runtime_root=production_runtime_root,
         live_bin_root=live_bin_root,
         runner_state_path=CANONICAL_RUNNER_STATE_PATH,
@@ -2659,7 +2676,7 @@ def execute_audit_recovery(payload: object) -> dict[str, Any]:
             receipt_path=execution_receipt,
             issue_date=issue_date,
             artifact_root=artifact_repo_root,
-            ops_root=CANONICAL_REPO_ROOT,
+            ops_root=production_runtime_root,
             production_runtime_root=production_runtime_root,
             live_bin_root=live_bin_root,
             runner_state_path=CANONICAL_RUNNER_STATE_PATH,

@@ -984,6 +984,26 @@ try {
             }
             $nextSuccessProbeUtc = $nowUtc.AddSeconds([Math]::Max(1, $SuccessProbeIntervalSec))
         }
+
+        if ($TimeoutSec -gt 0 -and $elapsedSec -ge $TimeoutSec) {
+            Add-WrapperLog "TIMEOUT hit: elapsed=$elapsedSec limit=$TimeoutSec"
+            if ($ownedJobHandle -ne [IntPtr]::Zero) {
+                try { [NewsGraspOwnedJob]::CloseOwnedJob($ownedJobHandle) } catch { }
+                $ownedJobHandle = [IntPtr]::Zero
+            }
+            try { $proc.WaitForExit(30000) | Out-Null } catch { }
+            exit 124
+        }
+
+        if ($IdleTimeoutSec -gt 0 -and $idleSec -ge $IdleTimeoutSec) {
+            Add-WrapperLog "IDLE TIMEOUT hit: idle=$idleSec limit=$IdleTimeoutSec elapsed=$elapsedSec"
+            if ($ownedJobHandle -ne [IntPtr]::Zero) {
+                try { [NewsGraspOwnedJob]::CloseOwnedJob($ownedJobHandle) } catch { }
+                $ownedJobHandle = [IntPtr]::Zero
+            }
+            try { $proc.WaitForExit(30000) | Out-Null } catch { }
+            exit 124
+        }
     }
 
     $capturedBytes = (Get-Item -LiteralPath $stdoutFile).Length + (Get-Item -LiteralPath $stderrFile).Length

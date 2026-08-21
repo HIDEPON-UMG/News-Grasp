@@ -143,6 +143,8 @@ def _local_startup_unblocker_rejection(state: Mapping[str, Any]) -> bool:
         return True
     if status == "blocked_recovery_model_budget" and str(state.get("phase") or "") == "reporter":
         return True
+    if status == "blocked_startup_self_repair_failed":
+        return True
     return status == "error" and "ARTIFACT_EXECUTABLE_TREE_INVALID" in message
 
 
@@ -574,7 +576,7 @@ class ProductionBackend:
         binding = audit_recovery_control.resolve_live_high_cost_binding(self.bin_dir)
         broker_path = Path(str(binding["brokerInstalledPath"])).resolve(strict=True)
         completed = subprocess.run(
-            [sys.executable, str(broker_path), *args],
+            [audit_recovery_control._canonical_python_executable(), str(broker_path), *args],
             cwd=self.repo_root,
             capture_output=True,
             check=False,
@@ -724,15 +726,10 @@ class ProductionBackend:
     def admit_scheduled_recovery(
         self, *, issue_date: str, recovery_authority_path: Path
     ) -> Path:
-        path = (
-            self.repo_root
-            / "build"
-            / "high-cost-operation-admissions"
-            / issue_date
-            / "audit-0640-scheduled_recovery.json"
-        )
-        if path.is_file() and not path.is_symlink():
-            admission = json.loads(path.read_text(encoding="utf-8-sig"))
+        def matching_existing_admission(candidate: Path) -> dict[str, Any] | None:
+            if not candidate.is_file() or candidate.is_symlink():
+                return None
+            admission = json.loads(candidate.read_text(encoding="utf-8-sig"))
             authority = json.loads(recovery_authority_path.read_text(encoding="utf-8-sig"))
             if (
                 admission.get("schemaVersion") == "HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1"
@@ -741,6 +738,30 @@ class ProductionBackend:
                 and admission.get("operationAuthoritySha256")
                 == authority.get("receiptSha256")
             ):
+                return admission
+            return None
+
+        path = (
+            self.repo_root
+            / "build"
+            / "high-cost-operation-admissions"
+            / issue_date
+            / "audit-0640-scheduled_recovery.json"
+        )
+        admission = matching_existing_admission(path)
+        if admission is not None:
+            return path.resolve()
+        if self.evidence_root is not None and self.evidence_root != self.repo_root:
+            evidence_path = (
+                self.evidence_root
+                / "build"
+                / "high-cost-operation-admissions"
+                / issue_date
+                / "audit-0640-scheduled_recovery.json"
+            )
+            admission = matching_existing_admission(evidence_path)
+            if admission is not None:
+                _atomic_json(path, admission)
                 return path.resolve()
         admission = self._run_broker(
             "admit",
@@ -981,7 +1002,46 @@ def prepare_recovery(
     if trigger not in {"production_failure", "audit_0640"}:
         raise ValueError("RECOVERY_TRIGGER_INVALID")
     actual = backend or ProductionBackend()
-    state = actual.load_state(issue_date)
+    preloaded_witness: dict[str, Any] | None = None
+    preloaded_failure: dict[str, Any] | None = None
+    preloaded_failure_path: Path | None = None
+    try:
+        state = actual.load_state(issue_date)
+    except ValueError as error:
+        if trigger != "audit_0640":
+            raise
+        try:
+            try:
+                actual.reconcile_task_history(issue_date)
+            except ValueError as reconcile_error:
+                if "SCHEDULED_PRE_ADMISSION_RECONCILE_REPLAY" not in str(
+                    reconcile_error
+                ):
+                    raise
+            preloaded_witness = actual.inspect_attempt(issue_date)
+            preloaded_failure_path = actual.resolve_failure_receipt(
+                issue_date,
+                str(preloaded_witness.get("failureReceiptSha256") or ""),
+            )
+            preloaded_failure = json.loads(
+                preloaded_failure_path.read_text(encoding="utf-8-sig")
+            )
+        except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as inner:
+            raise ValueError("RUNNER_STATE_EVIDENCE_INVALID") from inner
+        if (
+            preloaded_witness.get("scheduledAttemptStatus") != "failed"
+            or preloaded_failure.get("receiptSha256")
+            != preloaded_witness.get("failureReceiptSha256")
+        ):
+            raise ValueError("RUNNER_STATE_EVIDENCE_INVALID") from error
+        state = {
+            "status": "blocked_startup_self_repair_failed",
+            "date": issue_date,
+            "run_intent": "ScheduledProduction",
+            "phase": "pre_admission",
+            "exit_code": process_exit_code,
+            "scheduled_failure_receipt_path": str(preloaded_failure_path),
+        }
     if hasattr(actual, "probe_external_control_plane"):
         external_readiness = actual.probe_external_control_plane()
         if str(external_readiness.get("status") or "") != "ready":
@@ -1028,7 +1088,7 @@ def prepare_recovery(
     pre_admission_failure: dict[str, Any] | None = None
     pre_admission_failure_path: Path | None = None
     try:
-        witness = actual.inspect_attempt(issue_date)
+        witness = preloaded_witness or actual.inspect_attempt(issue_date)
     except ValueError:
         if trigger == "production_failure":
             pre_admission_failure, pre_admission_failure_path = (
@@ -1149,9 +1209,10 @@ def prepare_recovery(
             output = actual.repo_root / "build" / "recovery" / "control" / f"{issue_date}-{trigger}.json"
             _atomic_json(output, plan)
             return {**plan, "decisionPath": str(output.resolve())}
+    observed_exit_code = int(state.get("exit_code") or process_exit_code)
     classification = classify_observed_failure(
         runner_state=state,
-        process_exit_code=process_exit_code,
+        process_exit_code=observed_exit_code,
         log_text=log_text,
     )
     if trigger == "audit_0640" and classification != "incident_required":
@@ -1159,7 +1220,10 @@ def prepare_recovery(
     elif trigger == "audit_0640" and str(state.get("status") or "") == "publish_complete":
         classification = "recoverable"
     failure_path = actual.repo_root / "build" / "recovery" / "authority" / f"{issue_date}-scheduled-failure.json"
-    if pre_admission_failure is not None and pre_admission_failure_path is not None:
+    if preloaded_failure is not None and preloaded_failure_path is not None:
+        failure = preloaded_failure
+        failure_path = preloaded_failure_path
+    elif pre_admission_failure is not None and pre_admission_failure_path is not None:
         failure = pre_admission_failure
         failure_path = pre_admission_failure_path
     elif witness.get("scheduledAttemptStatus") == "reserved":
@@ -1699,7 +1763,9 @@ def _execute_audit_0640_owned(
                             if decision.get("resumeStage")
                             else None
                         ),
-                        python_executable_path=Path(sys.executable),
+                        python_executable_path=Path(
+                            audit_recovery_control._canonical_python_executable()
+                        ),
                         capability_reservation_path=Path(
                             str(high_cost_binding["bindingPath"])
                         ),

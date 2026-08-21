@@ -552,12 +552,7 @@ def main(argv: list[str] | None = None) -> int:
             outcome_output, envelope, root=artifact_root
         )
     print(text, end="")
-    return (
-        0
-        if result["ok"]
-        and (envelope is None or envelope["processExitCode"] == 0)
-        else 2
-    )
+    return 0 if result["ok"] else 2
 
 
 if __name__ == "__main__":

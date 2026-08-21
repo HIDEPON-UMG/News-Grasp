@@ -2460,9 +2460,15 @@ function Set-TypedRepairTerminalState {
     $externalSystem = ''
     $externalDetail = ''
     if ($null -ne $Decision) {
-        $externalKind = [string]$Decision.external_kind
-        $externalSystem = [string]$Decision.external_system
-        $externalDetail = [string]$Decision.reason
+        if ($Decision.PSObject.Properties.Name -contains 'external_kind') {
+            $externalKind = [string]$Decision.external_kind
+        }
+        if ($Decision.PSObject.Properties.Name -contains 'external_system') {
+            $externalSystem = [string]$Decision.external_system
+        }
+        if ($Decision.PSObject.Properties.Name -contains 'reason') {
+            $externalDetail = [string]$Decision.reason
+        }
     }
     Set-RunnerState `
         -Status $terminalStatus `

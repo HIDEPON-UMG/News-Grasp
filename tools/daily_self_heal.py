@@ -1466,6 +1466,7 @@ def _run_live_startup_canary(
     ops_repo_root: Path | None = None,
     startup_path: Path,
     date: str,
+    permit_issue_date: str | None = None,
     live_runner_path: Path | None = None,
     high_cost_binding_path: Path | None = None,
     high_cost_binding_receipt_sha256: str = "",
@@ -1477,7 +1478,11 @@ def _run_live_startup_canary(
     canary_root = repo_root / "build" / "live-runner-canary" / date
     log_dir = canary_root / "logs"
     state_file = canary_root / "state.json"
-    log_file = log_dir / f"{date}.log"
+    effective_permit_issue_date = permit_issue_date or date
+    current_issue_date = _current_jst_date()
+    if effective_permit_issue_date > current_issue_date:
+        effective_permit_issue_date = current_issue_date
+    log_file = log_dir / f"{effective_permit_issue_date}.log"
     canary_root.mkdir(parents=True, exist_ok=True)
     log_dir.mkdir(parents=True, exist_ok=True)
     if state_file.exists():
@@ -1502,7 +1507,7 @@ def _run_live_startup_canary(
         "-TimeoutMinutes",
         "2",
         "-DateStamp",
-        date,
+        effective_permit_issue_date,
         "-LogDir",
         str(log_dir),
         "-StateFile",
@@ -1615,6 +1620,7 @@ def _run_live_startup_canary(
         "status": status,
         "state_file": str(state_file),
         "log_file": str(log_file),
+        "permit_issue_date": effective_permit_issue_date,
         "log_smoke_ok": log_smoke_ok,
         "stdout": proc.stdout[-2000:],
         "stderr": stderr_tail,
