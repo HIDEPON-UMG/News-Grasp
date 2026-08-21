@@ -1,8 +1,8 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 2804,
-  "collectedNodeSetSha256": "83e9fcd3be9e0924161e3c51bfaae99a4857f0f5b4ef3f6d1e78224dd889a8ba",
+  "collectedNodeCount": 2805,
+  "collectedNodeSetSha256": "d83999462dc07a1995d50ef338c1c1d7bc147c447bf8a8c525976cf5f9aa0520",
   "files": [
     {
       "path": "tests/test_20260813_control_plane_repair.py",
@@ -3065,11 +3065,12 @@
     },
     {
       "path": "tests/test_operational_redesign_r5_contract.py",
-      "sha256": "a2b8044ff68bf027dc16f084505f7efb88a56c965e27829ddeffce2f06b7fe13",
-      "nodeCount": 11,
+      "sha256": "2d3ed15b5eaa532d66e5b094e9aeeef5b4b4f2aef5baae3dfc8f4781712e4435",
+      "nodeCount": 12,
       "nodeIds": [
         "tests/test_operational_redesign_r5_contract.py::test_ng3_a15_adversarial_external_readiness_input_rejected",
         "tests/test_operational_redesign_r5_contract.py::test_ng3_a15_external_probe_maps_installed_drift_without_shared_reads",
+        "tests/test_operational_redesign_r5_contract.py::test_ng3_a15_external_probe_reads_bound_files_after_authority_seal",
         "tests/test_operational_redesign_r5_contract.py::test_ng3_a15_external_probe_rejects_path_escape_without_mutation",
         "tests/test_operational_redesign_r5_contract.py::test_ng3_a15_prepare_recovery_external_red_is_typed_deferred",
         "tests/test_operational_redesign_r5_contract.py::test_ng3_a15_primary_external_drift_defers_without_spawn",
@@ -4065,7 +4066,7 @@
     },
     {
       "path": "tests/test_runner_wrapper_smoke.py",
-      "sha256": "f79a6264105c828b8b93580aff4bd02dfc2fa968bcf9815bf890eff23123996e",
+      "sha256": "817e28b0aff8de5bd692154f1fc9a3eb33426e62442b520571e77570da9d096b",
       "nodeCount": 15,
       "nodeIds": [
         "tests/test_runner_wrapper_smoke.py::test_codex_wrapper_has_no_legacy_agent_parameters",

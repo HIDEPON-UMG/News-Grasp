@@ -409,6 +409,23 @@ def probe_external_readiness(
             "receiptSha256": "",
         }
     source = dict(fixture_source or {})
+    production_probe = fixture_source is None and not fixture_mode
+    production_bound_shas: dict[str, str] = {}
+    artifact_read_error = ""
+    if production_probe:
+        # 本番probeは、authorityが束縛した3 artifactを同一handleのbounded readで
+        # 実測する。宣言済みhashだけを再利用せず、broker起動や外部書込みも行わない。
+        for key, authority_key in (
+            ("descriptor", "canonicalDescriptorPath"),
+            ("source", "sourceBrokerPath"),
+            ("installed", "installedBrokerPath"),
+        ):
+            try:
+                identity = _file_identity(Path(str(authority[authority_key])))
+            except ExternalControlPlaneError as error:
+                artifact_read_error = artifact_read_error or str(error)
+                continue
+            production_bound_shas[key] = str(identity["contentSha256"]).lower()
     try:
         _validate_fixture_identities(source)
     except ExternalControlPlaneError as error:
@@ -423,10 +440,33 @@ def probe_external_readiness(
             "modelLaunchCount": 0,
             "receiptSha256": "",
         }
-    actual_source = str(source.get("sourceBrokerSha256") or authority.get("sourceBrokerSha256"))
-    actual_installed = str(source.get("installedBrokerSha256") or authority.get("installedBrokerSha256"))
-    if actual_source != actual_installed:
+    actual_descriptor = (
+        production_bound_shas.get("descriptor", "")
+        if production_probe
+        else str(authority["canonicalDescriptorSha256"])
+    )
+    actual_source = (
+        production_bound_shas.get("source", "")
+        if production_probe
+        else str(source.get("sourceBrokerSha256") or authority.get("sourceBrokerSha256"))
+    )
+    actual_installed = (
+        production_bound_shas.get("installed", "")
+        if production_probe
+        else str(source.get("installedBrokerSha256") or authority.get("installedBrokerSha256"))
+    )
+    if artifact_read_error:
+        reason = artifact_read_error
+        status = "unavailable"
+    elif actual_source != actual_installed:
         reason = "installed_source_drift"
+        status = "unavailable"
+    elif production_probe and (
+        actual_descriptor != str(authority["canonicalDescriptorSha256"])
+        or actual_source != str(authority["sourceBrokerSha256"])
+        or actual_installed != str(authority["installedBrokerSha256"])
+    ):
+        reason = "external_authority_artifact_drift"
         status = "unavailable"
     elif source.get("dependencyGenerationHash") not in (None, authority.get("dependencyGenerationHash")):
         reason = "dependency_pin_drift"
@@ -438,7 +478,7 @@ def probe_external_readiness(
         "authorityReceiptSha256": checked["receiptSha256"],
         "authorityGeneration": checked["authorityGeneration"],
         "authorityLineageId": checked["authorityLineageId"],
-        "canonicalDescriptorSha256": authority["canonicalDescriptorSha256"],
+        "canonicalDescriptorSha256": actual_descriptor,
         "sourceBrokerSha256": actual_source,
         "installedBrokerSha256": actual_installed,
         "dependencyGenerationHash": authority["dependencyGenerationHash"],
@@ -449,7 +489,7 @@ def probe_external_readiness(
         "status": status,
         "reasonCode": reason,
         "canonicalDescriptorPath": authority["canonicalDescriptorPath"],
-        "canonicalDescriptorSha256": authority["canonicalDescriptorSha256"],
+        "canonicalDescriptorSha256": actual_descriptor,
         "sourceBrokerPath": authority["sourceBrokerPath"],
         "sourceBrokerSha256": actual_source,
         "installedBrokerPath": authority["installedBrokerPath"],

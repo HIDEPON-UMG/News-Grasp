@@ -1,6 +1,6 @@
 {
   "schemaVersion": "NEWS_GRASP_ACTIVE_OBJECT_CATALOG_V1",
-  "sourceCommit": "541e16c88aad13d19f980da8fe69596c3210285f",
+  "sourceCommit": "354ce5a0e60f45dc6ba4065b93f52f8371a73fec",
   "discoveryMode": "git_index_plus_untracked_wip_plus_route_reference_scan",
   "objects": [
     {
@@ -2559,7 +2559,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "e21cbffb7ec97e67fc72193d6cfc0958a957f9ba4186137ccec7e2ec4a6dd168",
+      "sha256": "9d2e027c75dad85cb30cb12040a475367a1704bcf3541461b18ea604a87e5f04",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -2577,7 +2577,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "8555e6e7121555e998f73da978db793238a09d3fa9e8d3c661638cbe891c710b",
+      "sha256": "640e1c2fa8073f6f18eb3101798b5225e243024fddc900370144765500c7b8a6",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -5455,7 +5455,7 @@
         "NGC-C06",
         "NGC-C14"
       ],
-      "sha256": "a2b8044ff68bf027dc16f084505f7efb88a56c965e27829ddeffce2f06b7fe13",
+      "sha256": "2d3ed15b5eaa532d66e5b094e9aeeef5b4b4f2aef5baae3dfc8f4781712e4435",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -5983,7 +5983,7 @@
         "NGC-C06",
         "NGC-C14"
       ],
-      "sha256": "f79a6264105c828b8b93580aff4bd02dfc2fa968bcf9815bf890eff23123996e",
+      "sha256": "817e28b0aff8de5bd692154f1fc9a3eb33426e62442b520571e77570da9d096b",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -7886,5 +7886,5 @@
   "activeObjectCount": 424,
   "unlinkedActiveObjectCount": 0,
   "objectPathSetSha256": "8953137d1d920ffd14ae643e5a430b6c8f03c58d5e83da4863dd702faa9096ad",
-  "testNodeSetSha256": "83e9fcd3be9e0924161e3c51bfaae99a4857f0f5b4ef3f6d1e78224dd889a8ba"
+  "testNodeSetSha256": "d83999462dc07a1995d50ef338c1c1d7bc147c447bf8a8c525976cf5f9aa0520"
 }

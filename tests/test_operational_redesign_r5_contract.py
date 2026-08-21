@@ -142,6 +142,44 @@ def test_ng3_a15_external_probe_maps_installed_drift_without_shared_reads() -> N
     assert readiness["modelLaunchCount"] == 0
 
 
+def test_ng3_a15_external_probe_reads_bound_files_after_authority_seal(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    descriptor = tmp_path / "descriptor.json"
+    source = tmp_path / "source-broker.py"
+    installed = tmp_path / "installed-broker.py"
+    authority_path = tmp_path / "external-health-authority-v1.json"
+    descriptor.write_text('{"generation":1}\n', encoding="utf-8")
+    source.write_text("broker-v1\n", encoding="utf-8")
+    installed.write_text("broker-v1\n", encoding="utf-8")
+
+    sha256 = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+    authority = _authority_body()
+    authority.update(
+        {
+            "canonicalDescriptorPath": str(descriptor),
+            "canonicalDescriptorSha256": sha256(descriptor),
+            "sourceBrokerPath": str(source),
+            "sourceBrokerSha256": sha256(source),
+            "installedBrokerPath": str(installed),
+            "installedBrokerSha256": sha256(installed),
+        }
+    )
+    authority["receiptSha256"] = external_control.authority_receipt_sha256(authority)
+    authority_path.write_text(
+        json.dumps(authority, ensure_ascii=False, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    installed.write_text("installed-v2\n", encoding="utf-8")
+    monkeypatch.setattr(external_control, "fixed_authority_path", lambda: authority_path)
+
+    readiness = external_control.probe_external_readiness()
+
+    assert readiness["status"] == "unavailable"
+    assert readiness["reasonCode"] == "installed_source_drift"
+    assert readiness["modelLaunchCount"] == 0
+
+
 def test_ng3_a15_external_probe_rejects_path_escape_without_mutation(tmp_path: Path) -> None:
     outside = tmp_path.parent / "outside.txt"
     outside.write_text("outside\n", encoding="utf-8")

@@ -34,18 +34,23 @@ def _write_external_health_authority(profile: Path, broker: Path) -> None:
     """外部制御面のRedを隠さず、隔離fixtureでのみGreenへ束縛する。"""
     authority_path = profile / ".codex" / "state" / "high-cost-operation" / "external-health-authority-v1.json"
     authority_path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor_path = (profile / "external-control-plane-descriptor.json").resolve()
+    descriptor_path.write_text('{"fixture":"external-control-plane"}\n', encoding="utf-8")
+    descriptor_sha256 = hashlib.sha256(descriptor_path.read_bytes()).hexdigest()
+    broker_path = broker.resolve()
+    broker_sha256 = hashlib.sha256(broker_path.read_bytes()).hexdigest()
     body = {
         "schemaVersion": "EXTERNAL_CONTROL_PLANE_HEALTH_AUTHORITY_V1",
         "authorityLineageId": "lineage-a",
         "authorityLineageDerivation": "sha256-utf8-lf-v1",
         "authorityGeneration": 1,
         "previousReceiptSha256": "0" * 64,
-        "canonicalDescriptorPath": str((profile / "descriptor.json").resolve()),
-        "canonicalDescriptorSha256": "1" * 64,
-        "sourceBrokerPath": str(broker.resolve()),
-        "sourceBrokerSha256": "2" * 64,
-        "installedBrokerPath": str(broker.resolve()),
-        "installedBrokerSha256": "2" * 64,
+        "canonicalDescriptorPath": str(descriptor_path),
+        "canonicalDescriptorSha256": descriptor_sha256,
+        "sourceBrokerPath": str(broker_path),
+        "sourceBrokerSha256": broker_sha256,
+        "installedBrokerPath": str(broker_path),
+        "installedBrokerSha256": broker_sha256,
         "dependencyGenerationHash": "3" * 64,
         "routeGenerationHash": "4" * 64,
         "ledgerGenerationId": "ledger-fixture",
