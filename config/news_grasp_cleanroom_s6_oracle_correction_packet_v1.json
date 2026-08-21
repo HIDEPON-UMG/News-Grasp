@@ -1,0 +1,106 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S6-ORACLE-CORRECTION-V1",
+  "status": "active",
+  "executionAllowed": true,
+  "role": "test_luna",
+  "canonicalContext": "/root/s1_edge_driver_red",
+  "todoId": "No.10/A-10 through No.14/A-14",
+  "baselineCommit": "ae5dd8fb75a07e1524226fcda18310c73cb579a4",
+  "dependencies": [
+    "NG-CLEANROOM-S6-INSTALLED-CLOSURE-RED-V1",
+    "NG-CLEANROOM-S6-RELEASE-IMPL-V1",
+    "S5-terminal-resume-hardened"
+  ],
+  "writeLease": {
+    "leaseId": "TEST-LEASE-S6-ORACLE-CORRECTION-V1",
+    "leaseSha256": "2020d90b5d618c717064492830edcb58aa3e34b0eabc94ab65dc9b863a600da0",
+    "canonicalPayload": {
+      "leaseId": "TEST-LEASE-S6-ORACLE-CORRECTION-V1",
+      "role": "test_luna",
+      "canonicalContext": "/root/s1_edge_driver_red",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-s6-hotfix",
+      "writes": [
+        "tests/test_news_grasp_cleanroom_s6_release.py",
+        "tests/fixtures/news_grasp_cleanroom_s6_cases.json"
+      ],
+      "baselineCommit": "ae5dd8fb75a07e1524226fcda18310c73cb579a4"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": [
+    "tests/test_news_grasp_cleanroom_s6_release.py",
+    "tests/fixtures/news_grasp_cleanroom_s6_cases.json"
+  ],
+  "forbiddenWrites": [
+    "tools/**",
+    "config/**",
+    "docs/**",
+    "scripts/**",
+    "ProjectFolders workspace-global harness",
+    "live runtime, Task Scheduler, network, external model or public state"
+  ],
+  "observedContradictions": [
+    {
+      "id": "S6-ORACLE-01",
+      "cause": "_Stage hashes {'stage':stage_id,'payload':payload} but ExecutionController contract and S2 oracle hash {'stage':stage_id,'input':input_payload}",
+      "correction": "change only the S6 _Stage helper hash key payload to input"
+    },
+    {
+      "id": "S6-ORACLE-02",
+      "cause": "natural receipts and generated daily lineages are Scheduled,Audit,Public,Readiness but fixture history.requiredLineages and helper missing map use Recovery instead of Audit",
+      "correction": "change fixture history.requiredLineages and helper daily missing key Recovery to Audit; do not change recovery production semantics"
+    },
+    {
+      "id": "S6-ORACLE-03",
+      "cause": "missing_layer_hash pops layerEvidenceSha256 and then _reseal_admission restores it, yielding a value identical to positive",
+      "correction": "after recursive reseal remove layerEvidenceSha256 again and recompute only admissionSha256 so the negative has valid outer sealing but the required inner aggregate is absent"
+    },
+    {
+      "id": "S6-ORACLE-04",
+      "cause": "Public NOT_REQUIRED positive reseals the top receipt but leaves history daily Public receipt/provenance hashes tied to the former GREEN receipt",
+      "correction": "for that positive setup only, rebuild historyCoverage with _history_coverage(cases, receipts) before _reseal_natural; do not globally rebuild history in negative mutations"
+    }
+  ],
+  "retention": {
+    "nodeNamesExact": [
+      "test_s6_l3_l7_real_boundary_manifest",
+      "test_s6_installed_bytes_args_workdir",
+      "test_s6_l8_final_admission",
+      "test_s6_history_coverage_and_legacy_zero",
+      "test_s6_natural_receipt_schema",
+      "test_s6_natural_states_non_substitutable"
+    ],
+    "nodeCount": 6,
+    "installedClosureCases": 20,
+    "rule": "retain import-first release boundary, all sealed negative sets, actual L3-L7 calls and exact six nodes; no weakened assertion, skip, xfail or broad exception"
+  },
+  "expectedRedAfterCorrection": {
+    "collected": 6,
+    "passed": 5,
+    "failed": 1,
+    "node": "test_s6_installed_bytes_args_workdir",
+    "cause": "tools.news_grasp_cleanroom_dispatch has no CLI/fault boundary, so --fault-after-initial-wal returns exit 0",
+    "meaning": "production dispatch CLI implementation required; not permission to weaken the fault assertion"
+  },
+  "verification": {
+    "compile": "py -3.12 -m py_compile tests/test_news_grasp_cleanroom_s6_release.py",
+    "collect": "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s6_release.py; exact 6",
+    "red": "$env:NEWS_GRASP_HIGH_COST_BINDING_PATH=[Environment]::ExpandEnvironmentVariables('%USERPROFILE%\\bin\\news-grasp-high-cost-binding-v1.json'); py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s6_release.py; expect exact 5 pass/1 dispatch CLI failure",
+    "json": "fixture parses and exact requiredLineages is Scheduled,Audit,Public,Readiness",
+    "ruff": "py -3.12 -m ruff check tests/test_news_grasp_cleanroom_s6_release.py",
+    "diff": "git diff --check and exact two owned paths only"
+  },
+  "commitPolicy": {
+    "allowedOnlyAfterExpectedRed": true,
+    "paths": [
+      "tests/test_news_grasp_cleanroom_s6_release.py",
+      "tests/fixtures/news_grasp_cleanroom_s6_cases.json"
+    ],
+    "message": "test: correct S6 cross-layer oracles"
+  },
+  "causalRetry": "one authoring attempt and one causal correction only; unexpected failure returns to Sol without production edits",
+  "delivery": "two hashes/bytes, exact six collection and 5/1 Red evidence, commit and clean status",
+  "stopPolicy": "return to Sol; do not implement dispatch CLI",
+  "unresolvedDecisionIds": []
+}
