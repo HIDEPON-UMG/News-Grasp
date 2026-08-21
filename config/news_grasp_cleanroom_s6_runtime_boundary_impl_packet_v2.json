@@ -1,0 +1,86 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S6-RUNTIME-BOUNDARY-IMPL-V2",
+  "status": "active",
+  "executionAllowed": true,
+  "supersedes": "NG-CLEANROOM-S6-DISPATCH-CLI-IMPL-V1",
+  "role": "implementation_luna",
+  "canonicalContext": "/root/s6_runtime_boundary_impl",
+  "todoId": "No.13/A-13",
+  "baselineCommit": "78b2a614d1c299b3fd18dab58df900282a060014",
+  "writeLease": {
+    "leaseId": "IMPL-LEASE-S6-RUNTIME-BOUNDARY-V2",
+    "leaseSha256": "1d6bc8ab679b27a6da19526d1566495be01f64e5285833638ab97caa757b3062",
+    "canonicalPayload": {
+      "leaseId": "IMPL-LEASE-S6-RUNTIME-BOUNDARY-V2",
+      "role": "implementation_luna",
+      "canonicalContext": "/root/s6_runtime_boundary_impl",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-s6-dispatch",
+      "writes": [
+        "tools/news_grasp_cleanroom_dispatch.py",
+        "tools/news_grasp_cleanroom_release.py"
+      ],
+      "baselineCommit": "78b2a614d1c299b3fd18dab58df900282a060014"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": [
+    "tools/news_grasp_cleanroom_dispatch.py",
+    "tools/news_grasp_cleanroom_release.py"
+  ],
+  "forbiddenWrites": [
+    "tests/**",
+    "config/**",
+    "docs/**",
+    "scripts/**",
+    "all other production modules",
+    "ProjectFolders workspace-global harness",
+    "live runtime, Task Scheduler, network, external model or public state"
+  ],
+  "sourceOfTruth": {
+    "naturalLineagesExact": [
+      "Scheduled",
+      "Audit",
+      "Public",
+      "Readiness"
+    ],
+    "basis": "S0 v2 terminal evidence, S6 natural.requiredLineages, _natural_evidence receipts and user-required separate Scheduled/Audit/Public/Readiness states",
+    "notRecovery": "Recovery remains a distinct recovery lineage elsewhere; it must not replace the natural Audit receipt in daily history missing keys"
+  },
+  "releaseCorrection": {
+    "observed": "tools/news_grasp_cleanroom_release.py _HISTORY_MISSING_LINEAGES currently contains Recovery and rejects all corrected positive daily history rows",
+    "required": "change only that closed-world history missing-lineage constant from Recovery to Audit; preserve all other release validators and hashes",
+    "expected": "the five history-dependent S6 nodes no longer fail at dailyEvidence[0].missing"
+  },
+  "dispatchContractSource": "config/news_grasp_cleanroom_s6_dispatch_cli_impl_packet_v1.json",
+  "dispatchRequired": [
+    "preserve dispatch,commit_slot,inspect_control_state,recover_ledger APIs",
+    "add import-safe main(argv=None) and __main__ SystemExit boundary",
+    "parse exact dispatch/schedule/intent/runtime-root/manifest-path/observed-at/writer-json and optional --fault-after-initial-wal",
+    "map to existing dispatch raw_argv and parsed timezone-aware datetime/writer mapping without duplicating Controller logic",
+    "success emits exactly one compact JSON line stdout exit0",
+    "failure emits only one typed NEWS_GRASP_ENTRY_* reason stderr, no traceback/path/secret/value",
+    "fault flag raises NEWS_GRASP_ENTRY_FAULT_AFTER_INITIAL_WAL only at after_initial_wal_fsync, leaving initial WAL durable and returning nonzero",
+    "module launches no process/UI, uses no shell/network/environment trust and performs no live mutation outside supplied temp/runtime arguments"
+  ],
+  "verification": {
+    "compile": "py -3.12 -m py_compile tools/news_grasp_cleanroom_dispatch.py tools/news_grasp_cleanroom_release.py",
+    "ruff": "py -3.12 -m ruff check tools/news_grasp_cleanroom_dispatch.py tools/news_grasp_cleanroom_release.py",
+    "s1": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py; exact 32 passed",
+    "s6Current": "$env:NEWS_GRASP_HIGH_COST_BINDING_PATH=[Environment]::ExpandEnvironmentVariables('%USERPROFILE%\\bin\\news-grasp-high-cost-binding-v1.json'); py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s6_release.py; current worktree lacks pending Test Luna oracle diff, so independently probe the CLI fault/nonfault/corrupt-manifest paths and the corrected history validator",
+    "postIntegrationExpected": "after Test Luna oracle commit integration exact S6 6 passed",
+    "diff": "git diff --check and exact two owned paths only"
+  },
+  "commitPolicy": {
+    "allowedOnlyAfter": "compile, Ruff, S1 and direct runtime-boundary probes Green",
+    "paths": [
+      "tools/news_grasp_cleanroom_dispatch.py",
+      "tools/news_grasp_cleanroom_release.py"
+    ],
+    "message": "fix: close S6 runtime boundaries"
+  },
+  "causalRetry": "one implementation attempt and one causally distinct correction only; do not change tests",
+  "delivery": "two hashes/bytes, S1 count, direct probe evidence, commit and clean status",
+  "stopPolicy": "return to Sol; no test/live/global mutation",
+  "unresolvedDecisionIds": []
+}
