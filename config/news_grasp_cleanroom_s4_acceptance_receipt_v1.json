@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "IMPLEMENT_TEST_REVIEW_RECEIPT_V1",
+  "receiptId": "NG-CLEANROOM-S4-ACCEPTED-V1",
+  "workPackage": "S4",
+  "requirementIds": ["NG-A-R11"],
+  "candidateCommit": "ae195a2458c4940f676f319155ac9f835a09b273",
+  "roles": {
+    "test": {"role": "test_luna", "context": "/root/s1_edge_driver_red"},
+    "implementation": {"role": "implementation_luna", "context": "/root/implementation_luna_canary"},
+    "review": {"role": "sol_codex_reviewer", "context": "/root/s4_acceptance_r2"}
+  },
+  "source": {
+    "path": "tools/news_grasp_cleanroom_recovery.py",
+    "sha256": "9b7fe091e627d3444798d652879cd45c69953f5681432dab4249eada3f16410b",
+    "bytes": 46391
+  },
+  "test": {
+    "path": "tests/test_news_grasp_cleanroom_s4_recovery.py",
+    "sha256": "2a926b2459b5ee6649eb979cad433993c573fdfa9e3ee5bdbbce79e481316fa8",
+    "fixturePath": "tests/fixtures/news_grasp_cleanroom_s4_cases.json",
+    "fixtureSha256": "6c56fd170591adb8995c0cf0baaafcf559de0dd1db088abfcd8bde8f588cba09",
+    "freshRedFailures": 2,
+    "implementationGreenPassed": 3,
+    "parentGreenPassed": 3
+  },
+  "valueOutcome": {
+    "legacySemanticSelfResealBypass": 0,
+    "invalidLegacyRecoveryLedgerMutation": 0,
+    "duplicateRecoveryChildCall": 0,
+    "scheduledLineageOverwrite": 0,
+    "legacyWriterCount": 0
+  },
+  "review": {
+    "reviewRound": "R2",
+    "verdict": "ACCEPT",
+    "blockerCount": 0,
+    "mutationCount": 0,
+    "trackedDiff": false,
+    "fullSuitePassed": 3,
+    "selfResealRejected": true,
+    "invalidLegacyPreflightMutationCount": 0,
+    "validRetryChildCallCount": 0,
+    "s1RawAndLogicalInvariant": true
+  },
+  "constraints": {
+    "externalE2EClaimed": false,
+    "operationalCompletionClaimed": false,
+    "taskSchedulerMutationClaimed": false
+  },
+  "nextState": "S5_IMPLEMENTATION_ADMITTED",
+  "status": "ACCEPTED"
+}

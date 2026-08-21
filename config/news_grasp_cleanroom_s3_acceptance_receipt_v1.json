@@ -2,7 +2,7 @@
   "schemaVersion": "IMPLEMENT_TEST_REVIEW_RECEIPT_V1",
   "receiptId": "NG-CLEANROOM-S3-ACCEPTED-V1",
   "workPackage": "S3",
-  "requirementIds": ["NG-A-R09", "NG-A-R10", "NG-A-R11"],
+  "requirementIds": ["NG-A-R09", "NG-A-R10"],
   "candidateCommit": "a2c81814aca5dd7bd8689a7e2917d53ddb21326c",
   "roles": {
     "test": {"role": "test_luna", "context": "/root/s1_edge_driver_red"},
