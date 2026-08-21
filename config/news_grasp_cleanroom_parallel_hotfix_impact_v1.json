@@ -1,0 +1,252 @@
+{
+  "schemaVersion": "TDD_IMPACT_ANALYSIS_RECEIPT_V1",
+  "receiptId": "ng-cleanroom-parallel-hotfix-impact-v1",
+  "workPackage": "S0-REOPEN-S5-S6-AMENDMENT",
+  "status": "independent_review_required",
+  "baselineCommit": "078676cb9aeeb3f1f0c2720f1cc9e1fa6d3ea7db",
+  "observedAt": "2026-08-21T09:13:26+09:00",
+  "sourceInput": {
+    "pathToken": "<CODEX_ATTACHMENT>/f9eab272-dd8c-4700-a233-1e0a8ceeb414/pasted-text.txt",
+    "sha256": "3bd09a2ba9034104b091212a3cdec25af31aaeeb0128f3e3b497e2680fb1aa33",
+    "reportedChangeCount": 12,
+    "authority": "actual-user parallel-operation correction"
+  },
+  "sourcePatchSnapshot": {
+    "rule": "these hashes identify the exact time-bound user-worktree bytes that may be carried forward; any later mismatch requires a new read-only diff and must not be silently merged",
+    "paths": [
+      {"path": "tools/daily_self_heal.py", "workingSha256": "0c3532ec5177092342ae7c891dcead4708d599bfa9404cceb0941b7ff5d12b6a", "baseBlob": "85824f73e2ce6f413a81cb32b12b3c2efb854e6b", "added": 7, "deleted": 2},
+      {"path": "tools/news_grasp_completion_guard.py", "workingSha256": "2265ba74625318c29bd3c8ef26744656444f29262a5cb7976ddf3a0d19efde97", "baseBlob": "8593de39edd273b536549cf1b59287b6f41b9ac0", "added": 1, "deleted": 6},
+      {"path": "scripts/ops/news-grasp-runner.ps1", "workingSha256": "d4c01f0085839b18e5556ea271dd6c5c97d604904150f50296b256071cab033f", "baseBlob": "d9899c0a807f2d8954d7b54c6c3d6176a1799e44", "added": 45, "deleted": 16},
+      {"path": "scripts/ops/run_codex_with_timeout.ps1", "workingSha256": "652f6cc8db67f746870505a3f90a515885749ca5d9af88cf7ea6e89ef751b1ff", "baseBlob": "4f3809b22bcc70f4db1da286e6c50aa1b17ccc18", "added": 20, "deleted": 0},
+      {"path": "tools/news_grasp_daily_control.py", "workingSha256": "b3d99ed0049d0990f65cfc5d13ec3a34804bdfe5c78e8ad5912dbd695b909f5c", "baseBlob": "96b23168632979a8c5f22a853ac741b80e443642", "added": 81, "deleted": 15},
+      {"path": "tools/audit_recovery_control.py", "workingSha256": "d945bf4590f6d99633c499a91bb3f9e2f6dbc092bfc8df8ca9ecfaa7a579eb58", "baseBlob": "b68b2759d514ed7d19949988fc64aa5de5df2ddf", "added": 24, "deleted": 7},
+      {"path": "tests/test_news_grasp_daily_control.py", "workingSha256": "63ee410738a2a72433554c53f3c554aff65042dc0e79db3ecdd0ea9c4f97e554", "baseBlob": "a9081538dd8bdb7e31fcebd7fa915c901270041f", "added": 108, "deleted": 0},
+      {"path": "tests/test_audit_recovery_control.py", "workingSha256": "47a5974c954f64198ca063c8eb538aff4c54cbdc7f63cca69e509ad31aba6b85", "baseBlob": "29d6da56045840440e9b9570c3bc9b88ef0c32b5", "added": 35, "deleted": 0}
+    ]
+  },
+  "incomingItemLedger": [
+    {"itemId": 1, "reportedBehavior": "future readiness date uses current JST permit issue date and matching log date while retaining the future canary evidence root", "pathsOrSurfaces": ["tools/daily_self_heal.py", "production-runtime/tools/daily_self_heal.py"], "class": "canonical_source_and_regression_required", "disposition": "include the reported canary correction and resolve the installed-only next-task-date delta through NG-HFX-D01", "requirementId": "NG-A-R16"},
+    {"itemId": 2, "reportedBehavior": "public completion remains successful when only SLO debt exists and the debt remains in structured output", "pathsOrSurfaces": ["tools/news_grasp_completion_guard.py", "production-runtime/tools/news_grasp_completion_guard.py"], "class": "canonical_source_and_regression_required", "disposition": "include; ok=false remains exit 2 and SLO debt is not erased", "requirementId": "NG-A-R16"},
+    {"itemId": 3, "reportedBehavior": "PowerShell strict mode does not crash when optional repair decision fields are absent", "pathsOrSurfaces": ["scripts/ops/news-grasp-runner.ps1:Set-TypedRepairTerminalState"], "class": "canonical_source_and_regression_required", "disposition": "include for migration rollback and legacy recovery compatibility", "requirementId": "NG-A-R16"},
+    {"itemId": 4, "reportedBehavior": "exact scheduled, continuation and incident-repair admission schemas are accepted and incident publication uses its authorized route without full-recovery deadline substitution", "pathsOrSurfaces": ["scripts/ops/news-grasp-runner.ps1:Assert-HighCostOperationAdmission", "scripts/ops/news-grasp-runner.ps1:Invoke-CodexWrapper", "scripts/ops/news-grasp-runner.ps1:Invoke-TargetedRepair"], "class": "canonical_source_and_regression_required", "disposition": "include exact three-schema allowlist; unknown schemas and unauthorized routes remain fail-closed", "requirementId": "NG-A-R16"},
+    {"itemId": 5, "reportedBehavior": "repair selected_artifacts precede artifact_paths and duplicate paths are removed with stable first-seen order", "pathsOrSurfaces": ["scripts/ops/news-grasp-runner.ps1:Get-RepairDecisionArtifacts"], "class": "canonical_source_and_regression_required", "disposition": "include and supersede the old artifact_paths-first test contract", "requirementId": "NG-A-R16"},
+    {"itemId": 6, "reportedBehavior": "wrapper wall and idle timeouts close only the owned job tree and exit 124", "pathsOrSurfaces": ["scripts/ops/run_codex_with_timeout.ps1", "<USERPROFILE>/bin/run_codex_with_timeout.ps1"], "class": "canonical_source_and_regression_required", "disposition": "include source fix; installed copy must be regenerated and byte-verified rather than hand-patched", "requirementId": "NG-A-R16"},
+    {"itemId": 7, "reportedBehavior": "daily control recovers startup failure from broker ledger/failure receipt, uses canonical Python and reuses a matching evidence-root admission", "pathsOrSurfaces": ["tools/news_grasp_daily_control.py", "tests/test_news_grasp_daily_control.py"], "class": "canonical_source_and_regression_required", "disposition": "include reported production and test hunks; preserve scheduled failure lineage", "requirementId": "NG-A-R16"},
+    {"itemId": 8, "reportedBehavior": "audit recovery uses canonical Python, production-runtime ops root and ignores stale date or foreign repo runner state", "pathsOrSurfaces": ["tools/audit_recovery_control.py", "tests/test_audit_recovery_control.py"], "class": "canonical_source_and_regression_required", "disposition": "include reported production and test hunks; runtime path must remain authority-bound", "requirementId": "NG-A-R16"},
+    {"itemId": 9, "reportedBehavior": "broker, canonical root, external health, high-cost binding, recovery binding and Scheduled Task actions were resealed together", "pathsOrSurfaces": ["<USERPROFILE>/.codex/state/high-cost-operation", "<USERPROFILE>/bin", "Scheduled Task/News-Grasp Bootstrap", "Scheduled Task/News-Grasp Production"], "class": "generated_installed_state_not_source", "disposition": "exclude mutable JSON and Task state from git; regenerate through the two-owner installation pipeline and verify their sealed hashes at L7", "requirementId": "NG-A-R17"},
+    {"itemId": 10, "reportedBehavior": "production runtime was directly patched because finalizer consumed installed bytes rather than the source worktree", "pathsOrSurfaces": ["<USERPROFILE>/.news-grasp-runtime/production-runtime/tools/daily_self_heal.py", "<USERPROFILE>/.news-grasp-runtime/production-runtime/tools/news_grasp_completion_guard.py"], "class": "generated_installed_state_not_source", "disposition": "exclude runtime-only bytes from canonical source; canonicalize behavior first, rebuild the immutable runtime generation and reject any remaining parity drift", "requirementId": "NG-A-R17"},
+    {"itemId": 11, "reportedBehavior": "the dated DeepDive diagram, provenance and rendered HTML were minimally corrected and published", "pathsOrSurfaces": ["build/recovery-worktrees/2026-08-21/digest/DeepDive/2026-08-21-DeepDive.md", "build/recovery-worktrees/2026-08-21/data/deepdive-provenance/2026-08-21.json", "build/recovery-worktrees/2026-08-21/docs/deepdive/2026-08-21/index.html"], "class": "immutable_public_history", "disposition": "exclude dated payload from clean-room production code; retain commit/provenance as Public lineage evidence and never republish automatically", "requirementId": "NG-A-R18"},
+    {"itemId": 12, "reportedBehavior": "daily/deepdive video, notifications, publish-complete and finalization were publicly completed under recovery", "pathsOrSurfaces": ["public YouTube IDs Svq2je781S8 and oKOXoU_iyL4", "notification 3/3", "2026-08-21 publish-complete/finalization/runner-state"], "class": "immutable_public_history", "disposition": "retain as Recovery/Public evidence; no deletion, playlist mutation, duplicate notification or rewrite of the failed Scheduled attempt", "requirementId": "NG-A-R18"}
+  ],
+  "causalTraceMatrix": [
+    {"itemIds": [1], "requirementIds": ["NG-A-R16", "NG-A-R18"], "stages": ["S5A", "S6", "L7", "L9"], "producer": "tools.daily_self_heal._next_scheduled_task_issue_date and _run_live_startup_canary", "consumer": "verify_publish_complete next-run readiness and News-Grasp Bootstrap permit admission", "evidence": "future-readiness Red/Green plus installed Readiness receipt with readinessDate and permitIssueDate", "failureSuccessor": "block source promotion or L7; do not issue a future-date permit"},
+    {"itemIds": [2], "requirementIds": ["NG-A-R16", "NG-A-R18"], "stages": ["S5A", "S6", "L7", "L9"], "producer": "tools.news_grasp_completion_guard.main", "consumer": "runner finalizer and audit completion", "evidence": "CLI exit pair and structured SLO debt in completion receipt", "failureSuccessor": "keep Public evidence immutable, return typed completion failure only when ok=false"},
+    {"itemIds": [3, 4, 5], "requirementIds": ["NG-A-R16"], "stages": ["S5A", "S5B", "L7"], "producer": "scripts/ops/news-grasp-runner.ps1 legacy recovery helpers", "consumer": "rollback generation and same-day legacy recovery", "evidence": "PowerShell parse plus exact helper/admission/route contract tests and installed runner hash", "failureSuccessor": "deny recovery worker launch and retain old task/runtime preimage"},
+    {"itemIds": [6], "requirementIds": ["NG-A-R16", "NG-A-R17"], "stages": ["S5A", "S5B", "L7"], "producer": "scripts/ops/run_codex_with_timeout.ps1", "consumer": "installed runner model wrapper", "evidence": "wall and idle timeout exit 124 with source/installed wrapper byte parity", "failureSuccessor": "close owned job only, record typed timeout and do not same-shape retry"},
+    {"itemIds": [7, 8], "requirementIds": ["NG-A-R16", "NG-A-R18"], "stages": ["S5A", "S6", "L7", "L9"], "producer": "tools.news_grasp_daily_control.prepare_recovery and tools.audit_recovery_control", "consumer": "06:40 audit and recovery execution receipt", "evidence": "ledger-backed scheduled failure, canonical Python path, production-runtime ops root and separate Audit/Recovery receipts", "failureSuccessor": "typed startup evidence invalid; never invent a recovery authority from stale runner state"},
+    {"itemIds": [9, 10], "requirementIds": ["NG-A-R17", "NG-A-R18"], "stages": ["S5B", "S6", "L7", "L8", "L9"], "producer": "launcher runtime lifecycle plus install-news-grasp-ops.ps1", "consumer": "S5 InstallCutoverController, Task Scheduler and release validator", "evidence": "PRODUCTION_GENERATION_MANIFEST_V2, NEWS_GRASP_ACTIVE_GENERATION_V2, NEWS_GRASP_OPS_INSTALL_JOURNAL_V1, NEWS_GRASP_PHYSICAL_DELIVERY_STATE_V1 and exact Task action hashes", "failureSuccessor": "remain old-only, quarantine dirty runtime, restore owner preimage and reject cutover"},
+    {"itemIds": [11, 12], "requirementIds": ["NG-A-R18"], "stages": ["S6", "L8", "L9"], "producer": "2026-08-21 recovery/public receipts", "consumer": "history coverage and natural evidence validator", "evidence": "three published commit IDs, public IDs, notification bitmap and separate Scheduled/Recovery/Public states", "failureSuccessor": "report contrary evidence; never republish, delete or alter playlist membership"}
+  ],
+  "installedDeltaDecision": {
+    "decisionId": "NG-HFX-D01",
+    "status": "resolved_by_oracle",
+    "observation": "installed daily_self_heal.py derives readinessDate from the next Scheduled Task run while the reported source patch only adjusts permitIssueDate inside the canary",
+    "decision": "adopt the two-date behavior into tracked source only when one Red proves next Scheduled Task date drives readinessDate and a second assertion proves current JST drives permitIssueDate/log name; reject any other installed-only delta",
+    "testNode": "test_parallel_hotfix_future_readiness_permit_date_is_not_future",
+    "productionSymbols": ["tools.daily_self_heal._next_scheduled_task_issue_date", "tools.daily_self_heal._run_live_startup_canary", "tools.daily_self_heal.verify_publish_complete"],
+    "negativeOracle": "future readiness evidence root is retained, but passing the future date to permit issuance or reading a future-date log fails",
+    "unresolved": false
+  },
+  "installationOwnerContracts": [
+    {"ownerId": "runtime_generation_owner", "path": "scripts/ops/news-grasp-task-launcher.pyw", "symbols": ["converge_production_runtime", "_converge_production_runtime_locked", "_seal_active_production_generation"], "receipts": ["PRODUCTION_GENERATION_MANIFEST_V2", "NEWS_GRASP_ACTIVE_GENERATION_V2", "NEWS_GRASP_PRODUCTION_RUNTIME_RECOVERY_V1"], "preimage": "previousGenerationId plus recovery authority/journal and quarantinePath", "consumer": "install-news-grasp-ops.ps1 generation binding and S5/L7 validators"},
+    {"ownerId": "ops_install_owner", "path": "scripts/ops/install-news-grasp-ops.ps1", "symbols": ["Write-NewsGraspInstallJournal", "Assert-NewsGraspInstalledState"], "receipts": ["NEWS_GRASP_OPS_INSTALL_JOURNAL_V1", "NEWS_GRASP_PHYSICAL_DELIVERY_STATE_V1", "STABLE_TASK_AUTHORITY_V1", "NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1"], "preimage": "build/live-runner-backups/<transaction>/install-manifest.json plus file backups and exported Task XML", "consumer": "S5 InstallCutoverController and S6 L7 release evidence"}
+  ],
+  "ownerGapDecision": {
+    "currentEvidence": "existing scripts already generate the named runtime pointer, generation manifest, install journal, physical delivery state, stable task authority and recovery binding",
+    "redGate": "if the S5 drift Red cannot obtain exact critical file hashes, binding hashes and both Task action hashes from these receipts, production write set expands only to scripts/ops/install-news-grasp-ops.ps1 and scripts/ops/install-news-grasp-ops-guard.ps1 before S5 implementation",
+    "forbidden": "a third installer, copying mutable machine receipts into git, or self-resealing a caller-supplied receipt"
+  },
+  "redSuiteCoverage": [
+    {"requirementIds": ["NG-A-R16", "NG-A-R18"], "coverageClass": "primary_behavior", "testPath": "tests/test_daily_self_heal.py", "testNode": "test_parallel_hotfix_future_readiness_permit_date_is_not_future", "productionConsumer": "_next_scheduled_task_issue_date -> _run_live_startup_canary -> verify_publish_complete", "preChangeFailureSignature": "missing helper or future -DateStamp/log selection assertion", "oracle": "readinessDate=next scheduled date and permitIssueDate=current JST with future evidence directory retained", "counterevidence": "installed-only helper is not trusted without source Red/Green"},
+    {"requirementIds": ["NG-A-R16"], "coverageClass": "primary_behavior", "testPath": "tests/test_news_grasp_completion_guard.py", "testNode": "test_parallel_hotfix_completion_ok_with_slo_debt_exits_zero_and_non_ok_exits_two", "productionConsumer": "news_grasp_completion_guard.main", "preChangeFailureSignature": "ok true plus outcomeEnvelope processExitCode 2 returns CLI 2", "oracle": "exit pair 0/2 while structured SLO debt remains", "counterevidence": "evaluate-only Green does not prove CLI finalizer semantics"},
+    {"requirementIds": ["NG-A-R16"], "coverageClass": "adversarial_boundary", "testPath": "tests/test_runner_convergence_contract.py", "testNode": "test_parallel_hotfix_runner_optional_fields_three_admission_schemas_and_artifact_priority_dedupe", "productionConsumer": "Set-TypedRepairTerminalState, Assert-HighCostOperationAdmission, Invoke-CodexWrapper, Get-RepairDecisionArtifacts", "preChangeFailureSignature": "direct optional property access, one-schema allowlist or artifact_paths-first ordering", "oracle": "missing optional fields safe, exact three schemas only, selected-first stable dedupe and unauthorized route no spawn", "counterevidence": "PowerShell parse alone cannot prove route or ordering semantics"},
+    {"requirementIds": ["NG-A-R16"], "coverageClass": "operational_recovery", "testPath": "tests/test_runner_wrapper_smoke.py", "testNode": "test_parallel_hotfix_wrapper_wall_and_idle_timeout_map_exit_124", "productionConsumer": "run_codex_with_timeout.ps1 polling loop", "preChangeFailureSignature": "owned child continues beyond wall or idle limit and no exit 124", "oracle": "both timeout types close only owned job, exit 124, record kind and launch count one", "counterevidence": "presence of TimeoutSec parameters is not runtime enforcement"},
+    {"requirementIds": ["NG-A-R16", "NG-A-R18"], "coverageClass": "operational_recovery", "testPath": "tests/test_scheduled_high_cost_separation.py", "testNode": "test_parallel_hotfix_daily_audit_startup_ledger_fallback_uses_canonical_python_and_ops_root", "productionConsumer": "news_grasp_daily_control.prepare_recovery and audit_recovery_control recovery receipt issuance", "preChangeFailureSignature": "RUNNER_STATE_EVIDENCE_INVALID or sys.executable/canonical repo ops-root substitution", "oracle": "ledger-backed failure, canonical Python and production-runtime ops root with zero invented authority/model calls", "counterevidence": "fresh runner-state-only fixture does not cover startup failure"},
+    {"requirementIds": ["NG-A-R17", "NG-A-R18"], "coverageClass": "adversarial_boundary", "testPath": "tests/test_news_grasp_cleanroom_s5_install.py", "testNode": "test_s5_preflight_rejects_source_install_binding_task_action_drift_before_mutation", "productionConsumer": "InstallCutoverController.stage", "preChangeFailureSignature": "single launcher copy can register candidate without two owner receipts or exact closure parity", "oracle": "source, installed, binding and Task action drift each fail before filesystem/pointer/Task mutation", "counterevidence": "launcher byte equality alone is insufficient L7 evidence"},
+    {"requirementIds": ["NG-A-R17"], "coverageClass": "primary_behavior", "testPath": "tests/test_news_grasp_cleanroom_s5_install.py", "testNode": "test_s5_requires_both_owner_receipts_before_candidate_registration", "productionConsumer": "InstallCutoverController.stage", "preChangeFailureSignature": "candidate Task can be registered after launcher copy without both runtime-generation and ops-install receipt chains", "oracle": "PRODUCTION_GENERATION_MANIFEST_V2/NEWS_GRASP_ACTIVE_GENERATION_V2 and NEWS_GRASP_OPS_INSTALL_JOURNAL_V1/NEWS_GRASP_PHYSICAL_DELIVERY_STATE_V1 exact-validate before the first TaskAdapter mutation and their hashes enter the S5 journal", "counterevidence": "one owner receipt or an unsealed mapping cannot substitute for the other"},
+    {"requirementIds": ["NG-A-R17"], "coverageClass": "operational_recovery", "testPath": "tests/test_news_grasp_cleanroom_s5_install.py", "testNode": "test_s5_two_owner_crash_and_privilege_failure_restore_exact_preimages", "productionConsumer": "InstallCutoverController.stage, cutover and rollback", "preChangeFailureSignature": "runtime/ops receipt boundaries are absent from the journal so crash or privilege denial cannot restore both owner preimages", "oracle": "each owner preimage hash is retained, rollback is ordered new-disable then ops restore then runtime previous-generation restore, retry is idempotent and no caller receipt is self-resealed", "counterevidence": "Task-only rollback does not prove installed runtime or binding recovery"}
+  ],
+  "redMutationGate": {
+    "contractId": "RED_SUITE_COVERAGE_V2",
+    "productionMutationAllowed": false,
+    "unlockPredicate": "all eight exact nodes are collected and observed failing for their stated preChangeFailureSignature while unrelated focused baseline remains Green",
+    "sameFixtureThroughGreen": true,
+    "testWeakeningForbidden": true
+  },
+  "reasonForReopen": "S5 Red and implementation packet only bind one launcher file. Parallel recovery proved that publication completion also depends on tracked product tools, installed runtime bytes, installed wrapper bytes, high-cost binding receipts and Scheduled Task action hashes. Continuing the old packet would permit a false installed Green and repeat direct runtime patching.",
+  "preservedCompletedWork": ["S1", "S2", "S3", "S4"],
+  "affectedPendingWork": ["S5", "S6", "L7", "L8", "L9", "staged-install", "independent-acceptance"],
+  "supersededPacketEnforcement": {
+    "path": "config/news_grasp_cleanroom_s5_impl_packet_v1.json",
+    "requiredStatus": "superseded",
+    "executionAllowed": false,
+    "issuerValidatorPredicate": "reject before delegation or production mutation when status != active or executionAllowed != true",
+    "successor": "a new S5 implementation packet bound to the eight-node Red seal and both installation-owner receipts"
+  },
+  "incomingSurfaceClassification": [
+    {
+      "ids": [1, 2, 3, 4, 5, 6, 7, 8],
+      "class": "canonical_source_and_regression_required",
+      "sourcePaths": [
+        "tools/daily_self_heal.py",
+        "tools/news_grasp_completion_guard.py",
+        "scripts/ops/news-grasp-runner.ps1",
+        "scripts/ops/run_codex_with_timeout.ps1",
+        "tools/news_grasp_daily_control.py",
+        "tools/audit_recovery_control.py"
+      ],
+      "testPaths": [
+        "tests/test_daily_self_heal.py",
+        "tests/test_news_grasp_completion_guard.py",
+        "tests/test_runner_convergence_contract.py",
+        "tests/test_high_cost_operation_admission_contract.py",
+        "tests/test_codex_runner_contract.py",
+        "tests/test_news_grasp_daily_control.py",
+        "tests/test_audit_recovery_control.py"
+      ],
+      "decision": "carry only the explicitly reported recovery hunks plus the minimum causal tests into the clean-room branch; do not import unrelated dirty paths"
+    },
+    {
+      "ids": [9, 10],
+      "class": "generated_installed_state_not_source",
+      "surfaces": [
+        "<USERPROFILE>/.news-grasp-runtime/production-runtime",
+        "<USERPROFILE>/bin/run_codex_with_timeout.ps1",
+        "<USERPROFILE>/bin/news-grasp-high-cost-binding-v1.json",
+        "<USERPROFILE>/bin/news-grasp-recovery-runtime-binding-v1.json",
+        "<USERPROFILE>/.codex/state/high-cost-operation/canonical-root-v1.json",
+        "<USERPROFILE>/.codex/state/high-cost-operation/external-health-authority-v1.json",
+        "Scheduled Task/News-Grasp Bootstrap",
+        "Scheduled Task/News-Grasp Production"
+      ],
+      "decision": "never copy mutable receipts into git and never bless current machine hashes as timeless constants; regenerate bin assets/bindings/Task actions through scripts/ops/install-news-grasp-ops.ps1 plus its guard, regenerate production-runtime through the tracked launcher runtime-lifecycle transaction, then bind both receipts and Task action hashes into S5 journal and L7 evidence"
+    },
+    {
+      "ids": [11, 12],
+      "class": "immutable_public_history",
+      "publicCommitIds": [
+        "2fff81dca04982581c70c1d20701a15df859c51d",
+        "320ddb2e6c0b343a5834dc10b9a966d319c59bb8",
+        "285453008a1b97f44e4fc13c438f93dae2e90154"
+      ],
+      "decision": "preserve as dated Scheduled/Recovery/Public lineage evidence; do not republish, delete or use recovered Public Green to rewrite the scheduled failure"
+    }
+  ],
+  "timeBoundContraryEvidence": {
+    "sourceDailySelfHealSha256": "0c3532ec5177092342ae7c891dcead4708d599bfa9404cceb0941b7ff5d12b6a",
+    "installedDailySelfHealSha256": "c4c9d0094bf43ba30dcd61605c59763ebbac7d4f887160378c413a86cca10fca",
+    "dailySelfHealParity": false,
+    "sourceCompletionGuardSha256": "2265ba74625318c29bd3c8ef26744656444f29262a5cb7976ddf3a0d19efde97",
+    "installedCompletionGuardSha256": "2265ba74625318c29bd3c8ef26744656444f29262a5cb7976ddf3a0d19efde97",
+    "completionGuardParity": true,
+    "sourceCodexWrapperSha256": "652f6cc8db67f746870505a3f90a515885749ca5d9af88cf7ea6e89ef751b1ff",
+    "installedCodexWrapperSha256": "688f6f8f7b306f28953c2f785c93a484e9ede8990cadb7af2fc09ab3a790c40b",
+    "codexWrapperParity": false,
+    "unreportedInstalledDelta": "installed daily_self_heal.py additionally derives verify-publish-complete readiness date from the next Scheduled Task run while the reported source patch does not; this behavior requires a causal oracle and must not be copied on hash difference alone",
+    "taskActionObservation": {
+      "bootstrapArgumentSha256": "1f09e12fd708864a7dcc6cf36281ca6839a6a6269a6aa0a23fd8718e2abf5904",
+      "productionArgumentSha256": "e950bab9501095b004b0fd6aa8824bb69b5238ffa60059c4fc27a8885f35d51e"
+    },
+    "interpretation": "the user report is directionally authoritative but installed state is still moving and already contradicts two claimed source/install parity points; final acceptance must remeasure, not trust prose"
+  },
+  "requirementAmendments": [
+    {
+      "requirementId": "NG-A-R16",
+      "slice": "S5A",
+      "primary_behavior": "future readiness keeps the future canary evidence directory while permit issue date and log date use current JST; public Green with SLO debt exits success while preserving typed SLO debt",
+      "adversarial_boundary": "ok=false remains failure; same-day readiness is unchanged; stale or malformed runner state cannot override a ledger-backed scheduled failure",
+      "operational_recovery": "legacy rollback path accepts only the three explicit high-cost admission schemas, preserves optional repair fields, selects artifacts deterministically and enforces wall/idle timeout exit 124"
+    },
+    {
+      "requirementId": "NG-A-R17",
+      "slice": "S5B",
+      "primary_behavior": "one canonical installation pipeline has two explicit owners: launcher runtime-lifecycle transaction for production-runtime and install-news-grasp-ops.ps1 for bin assets/generated bindings/Task actions; S5 observes both sealed receipts before candidate Task registration",
+      "adversarial_boundary": "any source/install/binding/task-action hash drift, unknown asset, direct-runtime-only patch or receipt substitution fails before Task mutation",
+      "operational_recovery": "journal stores exact runtime-generation and ops-installer receipt/preimage hashes; retry resumes idempotently and rollback delegates to the recorded owner transaction without reconstructing or self-resealing machine receipts"
+    },
+    {
+      "requirementId": "NG-A-R18",
+      "slice": "S6-L7-L9",
+      "primary_behavior": "L7 remeasures the installed production runtime closure, wrapper, bindings and both Scheduled Task actions from the post-install generation",
+      "adversarial_boundary": "a one-file launcher copy, source-only hash, stale runtime process or recovered Public state cannot satisfy installed/natural evidence",
+      "operational_recovery": "L8 remains final-only once; L9 records Scheduled, Recovery, Audit, Public and Readiness separately and preserves 2026-08-21 public mutations as immutable history"
+    }
+  ],
+  "planAmendment": {
+    "S5A": [
+      "author causal Red for the explicitly reported source fixes",
+      "apply only the reported production hunks from the user worktree into the candidate branch",
+      "run focused regressions before the clean-room installer work resumes"
+    ],
+    "S5B": [
+      "replace the single-launcher installed Green with exact runtime-generation and ops-installer receipt gates",
+      "extend crash, privilege and rollback tests across runtime receipt and binding/task action boundaries",
+      "issue a new decision-complete implementation packet; the old S5 packet is superseded and must not execute"
+    ],
+    "S6": [
+      "amend L7 installed authority and S6 release evidence to bind the full installed closure and current task action hashes",
+      "retain final-only L8 and natural L9 order"
+    ],
+    "B": "unchanged and remains gated on A operational verification"
+  },
+  "preventionLayerMatrix": {
+    "upstream_prevention": "tracked causal fixes plus explicit runtime-closure requirement",
+    "entry_gate": "runtime-generation and ops-installer receipts exact validation before Task registration",
+    "runtime_detection": "L7 source/installed/binding/task hash parity and loaded-runtime freshness",
+    "recovery": "installer backup preimage plus S5 journaled rollback",
+    "reporting": "separate Scheduled/Recovery/Audit/Public/Readiness evidence"
+  },
+  "writeOwnership": {
+    "test_luna": ["tests and test fixtures only"],
+    "implementation_luna": ["explicitly packeted production files only"],
+    "parent_sol": ["config impact/packet/acceptance receipts and integration commits"],
+    "writeIntersectionCount": 0
+  },
+  "redAdmission": {
+    "requiredBeforeProductionMutation": true,
+    "minimumCausalGroups": [
+      "next-run permit date",
+      "SLO debt versus completion",
+      "legacy strict-mode/admission/artifact selection",
+      "wrapper wall and idle timeout",
+      "startup ledger fallback and canonical Python/ops root",
+      "source/install/binding/task-action drift"
+    ],
+    "expectedState": "new nodes fail for the missing production behavior while unrelated existing nodes remain Green"
+  },
+  "highCostPolicy": {
+    "externalModels": "none for Red/Green",
+    "activeExecutionWindow": {
+      "startedAt": "2026-08-21T06:23:00+09:00",
+      "deadline": "2026-08-21T12:23:00+09:00",
+      "activeExecutionHardCapMinutes": 360,
+      "deadlineSuccessor": "seal and submit verified state and residuals; do not start or retry a high-cost operation after the deadline"
+    },
+    "L8": {
+      "runIntent": "ScheduledEquivalentNoPublish",
+      "externalMutation": false,
+      "forbiddenMutations": ["upload", "publish", "git push", "playlist deletion", "playlist mutation", "notification send"],
+      "maxFullE2EAttempts": 1,
+      "maxExternalModelCalls": 1,
+      "duplicateExternalModelCalls": 0,
+      "sameShapeRetry": false,
+      "admission": "E2E_FINAL_ADMISSION_V1 only after L0-L7, independent review, commit/push/remote HEAD, installed bytes and Task action parity",
+      "deadlineSuccessor": "if not admitted and started before 2026-08-21T12:23:00+09:00, do not run L8; submit the typed unverified residual without substituting a cheaper production run"
+    },
+    "fullE2E": "one final-only ScheduledEquivalentNoPublish L8; no external publication side effects",
+    "naturalWait": "L9 is passive observation only at the real 06:40 window and does not consume active execution time or start a model",
+    "maximumEfficiencyOrder": ["static", "focused contract", "component", "installed staging", "final-only L8", "natural L9"]
+  },
+  "unresolvedDecisionIds": [],
+  "admissionPredicate": "independent Sol confirms that every reported change is classified, no mutable machine receipt is promoted to source, the old S5 packet is superseded, and Red coverage precedes further production mutation"
+}

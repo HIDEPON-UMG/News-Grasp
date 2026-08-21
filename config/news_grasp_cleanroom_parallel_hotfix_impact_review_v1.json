@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_PARALLEL_HOTFIX_IMPACT_REVIEW_V1",
+  "reviewId": "ng-cleanroom-parallel-hotfix-impact-r2",
+  "reviewerContext": "/root/hotfix_impact_review",
+  "reviewerRole": "sol_codex_reviewer",
+  "reviewedPath": "config/news_grasp_cleanroom_parallel_hotfix_impact_v1.json",
+  "reviewedSha256": "84c61f1e7f6a94c2946c849de2f91c0c0bcc14693aa652a27a3aabe86cfe7177",
+  "supersededPacketPath": "config/news_grasp_cleanroom_s5_impl_packet_v1.json",
+  "supersededPacketSha256": "cfc21da692113128c926de699e2a2c294a50bb21d884760ce0c07fc8365c0a31",
+  "baselineCommit": "078676cb9aeeb3f1f0c2720f1cc9e1fa6d3ea7db",
+  "decision": "accepted",
+  "blockerCount": 0,
+  "closedBlockers": [
+    "NG-HFX-01 TWELVE_ITEM_CLASSIFICATION_NOT_SELF_CONTAINED",
+    "NG-HFX-02 STAGE_CAUSAL_TRACE_NOT_EXACT",
+    "NG-HFX-03 INSTALLED_DELTA_AND_TWO_OWNER_EXECUTION_UNCLOSED",
+    "NG-HFX-04 RED_ADMISSION_PROSE_ONLY",
+    "NG-HFX-05 L8_PUBLIC_AND_RESOURCE_BOUNDARY_MISSING",
+    "NG-HFX-R1-01 RED_SUITE_R17_PERSPECTIVE_GAP",
+    "NG-HFX-R1-02 SUPERSEDED_PACKET_EXECUTION_FLAG_MISSING"
+  ],
+  "independentChecks": {
+    "incomingItemCount": 12,
+    "incomingItemIds": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    "causalTraceRowCount": 7,
+    "redNodeCount": 8,
+    "r17CoverageClasses": ["primary_behavior", "adversarial_boundary", "operational_recovery"],
+    "oldPacketStatus": "superseded",
+    "oldPacketExecutionAllowed": false,
+    "l8RunIntent": "ScheduledEquivalentNoPublish",
+    "l8ExternalMutation": false,
+    "l8AttemptBudget": 1,
+    "activeExecutionHardCapMinutes": 360,
+    "l9Mode": "passive_natural_observation"
+  },
+  "redAuthoringAdmission": "accepted",
+  "productionMutationAdmission": "denied_until_eight_exact_red_nodes_are_observed",
+  "mutationPerformedByReviewer": false
+}

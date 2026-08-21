@@ -1,6 +1,10 @@
 {
   "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
   "packetId": "NG-CLEANROOM-S5-GREEN-V1",
+  "status": "superseded",
+  "executionAllowed": false,
+  "supersededBy": "ng-cleanroom-parallel-hotfix-impact-v1",
+  "executionForbiddenReason": "parallel operational hotfixes exposed unbound runtime-generation, ops-install, binding and Task-action surfaces; issue a new Red seal and implementation packet before production mutation",
   "todoId": "NG-CLEANROOM-S5-GREEN",
   "role": "implementation_luna",
   "canonicalContext": "/root/implementation_luna_canary",
