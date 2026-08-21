@@ -92,8 +92,14 @@ def _write_external_health_authority(profile: Path, *, installed_broker: Path | 
 
 
 @pytest.fixture
-def canonical_model_broker(tmp_path: Path) -> tuple[list[str], dict[str, str]]:
+def canonical_model_broker(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[list[str], dict[str, str]]:
     """本番wrapperと同じcanonical broker境界を外部modelなしで再演する。"""
+    for env_name in tuple(os.environ):
+        if env_name.casefold() == "psmodulepath":
+            monkeypatch.delenv(env_name, raising=False)
     broker = tmp_path / "bin" / "ai-model-spawn-broker.py"
     workspace = tmp_path / "workspace"
     registry = workspace / "docs" / "harness" / "high_cost_model_routes_v1.json"
@@ -103,6 +109,7 @@ def canonical_model_broker(tmp_path: Path) -> tuple[list[str], dict[str, str]]:
     registry.parent.mkdir(parents=True, exist_ok=True)
     budget_validator.parent.mkdir(parents=True, exist_ok=True)
     broker.write_text(
+        "import hashlib\n"
         "import json\n"
         "import subprocess\n"
         "import sys\n"
@@ -112,7 +119,9 @@ def canonical_model_broker(tmp_path: Path) -> tuple[list[str], dict[str, str]]:
         "    issue_date = args[args.index('--issue-date') + 1]\n"
         "    authority_path = args[args.index('--authority-evidence') + 1]\n"
         "    with open(authority_path, encoding='utf-8-sig') as stream: authority = json.load(stream)\n"
-        "    print(json.dumps({'schemaVersion': 'HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1', 'operationKind': operation_kind, 'issueDate': issue_date, 'operationAuthoritySha256': authority['receiptSha256'], 'taskIdentity': '5' * 64, 'latestActualUserEventHash': '6' * 64}))\n"
+        "    body = {'schemaVersion': 'HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1', 'productId': 'News-Grasp', 'authorityKind': 'scheduled_news_grasp', 'operationKind': operation_kind, 'issueDate': issue_date, 'operationAuthoritySha256': authority['receiptSha256'], 'taskIdentity': '5' * 64, 'latestActualUserEventHash': '6' * 64, 'taskState': 'running', 'maxExternalModelCalls': 1, 'attemptReservation': {'attemptId': issue_date, 'eventSequence': 1, 'idempotent': False}}\n"
+        "    body['receiptSha256'] = hashlib.sha256(json.dumps(body, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode('utf-8')).hexdigest()\n"
+        "    print(json.dumps(body))\n"
         "    raise SystemExit(0)\n"
         "if not args or args[0] != 'exec':\n"
         "    raise SystemExit(97)\n"
