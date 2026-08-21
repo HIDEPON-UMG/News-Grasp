@@ -588,7 +588,7 @@ class InstallCutoverController:
         else:
             self._validate_resume(journal, authority, source, installed, source_hash, candidate)
             if journal["phase"] == "COMMITTED":
-                return self._result("INSTALL_STAGE_RESULT_V1", journal)
+                return self._stage_result(authority, journal)
             if journal["phase"] == "ROLLED_BACK":
                 raise InstallControlError("stage_after_rollback")
 
@@ -628,7 +628,7 @@ class InstallCutoverController:
             self._hook("pointer")
             journal["phase"] = "POINTER_DURABLE"
             self._write_journal(journal)
-        return self._result("INSTALL_STAGE_RESULT_V1", journal)
+        return self._stage_result(authority, journal)
 
     def cutover(self, authority: Mapping[str, Any], observed_at: datetime | str) -> dict[str, Any]:
         journal = self._load_journal()
@@ -815,6 +815,31 @@ class InstallCutoverController:
         os.replace(temporary, target)
         if _file_sha(target) != hashlib.sha256(data).hexdigest():
             raise InstallControlError("installed_hash_mismatch")
+
+    @staticmethod
+    def _stage_result(authority: Mapping[str, Any], journal: Mapping[str, Any]) -> dict[str, Any]:
+        """検証済みauthorityとdurable journalからsealed stage evidenceを構成する。"""
+        installed_receipt = {
+            "schemaVersion": "INSTALL_STAGED_RECEIPT_V1",
+            "authorityId": authority["authorityId"],
+            "generation": authority["generation"],
+            "installedRoot": journal["installedRoot"],
+            "sourceSha256": journal["sourceSha256"],
+            "installedSha256": journal["installedSha256"],
+            "ownerReceiptHashes": deepcopy(dict(journal["ownerReceiptHashes"])),
+            "journalSha256": journal["journalSha256"],
+        }
+        installed_receipt["receiptSha256"] = _sha(installed_receipt)
+        return {
+            "schemaVersion": "INSTALL_STAGE_RESULT_V1",
+            "phase": journal["phase"],
+            "authorityId": authority["authorityId"],
+            "generation": authority["generation"],
+            "journalSha256": journal["journalSha256"],
+            "journal": deepcopy(dict(journal)),
+            "installedReceipt": installed_receipt,
+            "dualEnabledCount": 0,
+        }
 
     @staticmethod
     def _result(schema: str, journal: Mapping[str, Any]) -> dict[str, Any]:
