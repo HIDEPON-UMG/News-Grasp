@@ -458,6 +458,8 @@ def _validate_layer_rows(evidence: Any, sealed_manifest: list[dict[str, Any]] | 
         required = _list(row["realRequired"], f"layerEvidence[{index}].realRequired")
         observed = _list(row["realObserved"], f"layerEvidence[{index}].realObserved")
         fake = _list(row["fakeUsed"], f"layerEvidence[{index}].fakeUsed")
+        if len(observed) < len(required):
+            _error("LAYERS", f"layerEvidence[{index}] incomplete real boundary")
         if not required or not observed:
             _error("LAYERS", f"layerEvidence[{index}] empty boundary")
         for item in required + observed + fake:
