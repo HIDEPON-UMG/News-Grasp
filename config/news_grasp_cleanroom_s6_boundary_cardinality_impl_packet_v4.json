@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S6-BOUNDARY-CARDINALITY-IMPL-V4",
+  "status": "active",
+  "executionAllowed": true,
+  "role": "implementation_luna",
+  "canonicalContext": "/root/s5_stage_evidence_impl",
+  "todoId": "No.10/A-10 through No.14/A-14",
+  "baselineCommit": "d166049d073d5de9212e836b33e378b75e5189cb",
+  "writeLease": {
+    "leaseId": "IMPL-LEASE-S6-BOUNDARY-CARDINALITY-V4",
+    "leaseSha256": "3b57da9dc142f38e678580892dc219a57e536f47ba2b9002013a686d586ba2f0",
+    "canonicalPayload": {
+      "leaseId": "IMPL-LEASE-S6-BOUNDARY-CARDINALITY-V4",
+      "role": "implementation_luna",
+      "canonicalContext": "/root/s5_stage_evidence_impl",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-s5-stage-result",
+      "writes": ["tools/news_grasp_cleanroom_release.py"],
+      "baselineCommit": "d166049d073d5de9212e836b33e378b75e5189cb"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tools/news_grasp_cleanroom_release.py"],
+  "forbiddenWrites": ["tests/**", "config/**", "docs/**", "scripts/**", "all other production files", "ProjectFolders workspace-global harness", "live runtime, Task Scheduler, network, external model or public state"],
+  "sourceBaseline": {
+    "sha256": "6ee39e06878c653e0403540cfdcaef66733688612d5cab7d16a0b881ac29b438",
+    "bytes": 38688
+  },
+  "redEvidence": {
+    "suite": "S6 exact six",
+    "result": "5 passed, 1 failed",
+    "node": "test_s6_l3_l7_real_boundary_manifest",
+    "acceptedNegativeExact": ["real_boundary_missing"],
+    "rejectedNegativeCount": 10,
+    "cause": "_validate_layer_rows checks only non-empty observed lists; removing one observation from every layer remains accepted when each list is still non-empty"
+  },
+  "requiredImplementation": {
+    "target": "_validate_layer_rows after realRequired, realObserved and fakeUsed list validation",
+    "rule": "reject with existing LAYERS typed error when len(realObserved) < len(realRequired)",
+    "meaning": "each sealed required real boundary needs at least one observation slot; surplus evidence remains permitted",
+    "preserve": "all exact keys, hashes, manifest equality, unbound rejection, trusted receipts, installed authority, admission and natural validators",
+    "prohibited": "no schema expansion, test change, special-case case ID, string-prefix heuristic, assertion weakening or change to error surface outside the existing typed LAYERS class"
+  },
+  "verification": {
+    "compile": "py -3.12 -m py_compile tools/news_grasp_cleanroom_release.py",
+    "ruff": "py -3.12 -m ruff check tools/news_grasp_cleanroom_release.py",
+    "directNegativeMatrix": "using existing test helpers, positive validates, real_boundary_missing rejects LAYERS, and all eleven layerEvidenceCases reject",
+    "s6AfterIntegration": "Test Luna owns authoritative exact six pass after cherry-pick",
+    "diff": "git diff --check and exact one owned production path"
+  },
+  "commitPolicy": {
+    "allowedOnlyAfterCompileRuffMatrixGreen": true,
+    "paths": ["tools/news_grasp_cleanroom_release.py"],
+    "message": "fix: reject incomplete S6 real boundaries"
+  },
+  "causalRetry": "one implementation attempt only; any unrelated failure returns to Sol without test edits",
+  "delivery": "source hash/bytes, positive and 11-negative evidence, commit and clean status",
+  "stopPolicy": "return to Sol; no tests/live/global mutation",
+  "unresolvedDecisionIds": []
+}
