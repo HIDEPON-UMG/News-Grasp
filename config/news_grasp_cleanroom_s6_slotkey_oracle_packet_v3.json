@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S6-SLOTKEY-ORACLE-V3",
+  "status": "active",
+  "executionAllowed": true,
+  "amends": "NG-CLEANROOM-S6-ORACLE-AMENDMENT-V2",
+  "role": "test_luna",
+  "canonicalContext": "/root/s1_edge_driver_red",
+  "todoId": "No.10/A-10 through No.14/A-14",
+  "baselineCommit": "c55c8441da2290bcf7369704711eed1a1c2f13a2",
+  "writeLease": {
+    "leaseId": "TEST-LEASE-S6-SLOTKEY-ORACLE-V3",
+    "leaseSha256": "1c9e22667b6407909a1f7dd9906885afcb70206cee0f820503d55ccab2e0539e",
+    "canonicalPayload": {
+      "leaseId": "TEST-LEASE-S6-SLOTKEY-ORACLE-V3",
+      "role": "test_luna",
+      "canonicalContext": "/root/s1_edge_driver_red",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-s6-hotfix",
+      "writes": ["tests/test_news_grasp_cleanroom_s6_release.py", "tests/fixtures/news_grasp_cleanroom_s6_cases.json"],
+      "baselineCommit": "c55c8441da2290bcf7369704711eed1a1c2f13a2"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tests/test_news_grasp_cleanroom_s6_release.py", "tests/fixtures/news_grasp_cleanroom_s6_cases.json"],
+  "forbiddenWrites": ["tools/**", "config/**", "docs/**", "scripts/**", "ProjectFolders workspace-global harness", "live runtime, Task Scheduler, network, external model or public state"],
+  "ownedDirtyBaseline": {
+    "testSha256": "446a832d039040178e81d9a56dd18d6f0d42b440621ef4cc2723b980f2b2c83f",
+    "testBytes": 74379,
+    "fixtureSha256": "b56d28d578a4d8acd93f6bf03e4b68ae3a17fa7b965116ed9c7de820c762eebb",
+    "fixtureBytes": 4430,
+    "meaning": "retain all five previously approved oracle corrections"
+  },
+  "sourceOfTruth": {
+    "schema": "CONTROL_STATE_SNAPSHOT_V1",
+    "slotRowKeysExact": ["scheduleId", "issueDate", "slotKind", "generation", "state", "ownerKey", "fenceToken", "leaseExpiresAt", "terminalState", "resultHash", "updatedAt"],
+    "slotKeyFormat": "scheduleId/issueDate/slotKind",
+    "evidence": "config/news_grasp_cleanroom_s1_impact_receipt_v2.json controlState and slot contracts",
+    "decision": "do not add slotKey to production inspection rows because that violates the closed-world S1 contract"
+  },
+  "correction": {
+    "id": "S6-ORACLE-06",
+    "target": "_observations_from_dispatch exact two slot-key assertions",
+    "required": "derive each inspection row key as f'{scheduleId}/{issueDate}/{slotKind}' and compare it to the corresponding dispatch decision slotKey",
+    "prohibited": "no assertion deletion, weakening, fallback, get/default, production change or change to other observations"
+  },
+  "acceptance": {
+    "compile": "py -3.12 -m py_compile tests/test_news_grasp_cleanroom_s6_release.py",
+    "collectExact": 6,
+    "pytest": "$env:NEWS_GRASP_HIGH_COST_BINDING_PATH=[Environment]::ExpandEnvironmentVariables('%USERPROFILE%\\bin\\news-grasp-high-cost-binding-v1.json'); py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s6_release.py",
+    "passedExact": 6,
+    "skipXfailExact": 0,
+    "fixtureLineagesExact": ["Scheduled", "Audit", "Public", "Readiness"],
+    "ruff": "py -3.12 -m ruff check tests/test_news_grasp_cleanroom_s6_release.py",
+    "diff": "git diff --check and exact two owned dirty paths"
+  },
+  "commitPolicy": {
+    "allowedOnlyAfterAllGreen": true,
+    "paths": ["tests/test_news_grasp_cleanroom_s6_release.py", "tests/fixtures/news_grasp_cleanroom_s6_cases.json"],
+    "message": "test: correct S6 cross-layer oracles"
+  },
+  "causalRetry": "one correction and one run; any deeper unexpected failure returns exact evidence to Sol without weakening",
+  "delivery": "hashes/bytes, exact six pass, commit and clean status",
+  "stopPolicy": "return to Sol on unexpected failure; no production/live/global mutation",
+  "unresolvedDecisionIds": []
+}
