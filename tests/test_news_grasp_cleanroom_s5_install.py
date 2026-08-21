@@ -10,6 +10,8 @@ import inspect
 import json
 import os
 from pathlib import Path
+import re
+import subprocess
 from typing import Any, Mapping
 from zoneinfo import ZoneInfo
 
@@ -254,7 +256,16 @@ class ProcessAdapter:
 
     def launch(self, argv: list[str], cwd: Path, **kwargs: Any) -> dict[str, Any]:
         self._launches.append({"argv": list(argv), "cwd": str(cwd), **deepcopy(kwargs)})
-        return {"status": "succeeded", "exitCode": 0, "pid": 9001}
+        receipt = {
+            "schemaVersion": "NEWS_GRASP_INSTALL_CANARY_RECEIPT_V1",
+            "status": "succeeded",
+            "exitCode": 0,
+            "processId": 9001,
+            "installedSha256": hashlib.sha256(Path(argv[1]).read_bytes()).hexdigest(),
+            "argvSha256": _sha(argv),
+        }
+        receipt["receiptSha256"] = _sha(receipt)
+        return receipt
 
     def kill(self, process: Any) -> None:
         self._kills.append(process)
@@ -399,6 +410,36 @@ def _outside_sentinel(tmp_path: Path, index: int) -> Path:
     (outside / "sentinel.txt").write_text("must-not-change\n", encoding="utf-8")
     (outside / "nested" / "data.bin").write_bytes(b"outside-data")
     return outside
+
+
+def _mk_junction(link: Path, target: Path) -> None:
+    """実Windows junctionを、shellなし・黒窓なしで作るtest-owned seam。"""
+
+    subprocess.run(
+        ["cmd.exe", "/d", "/c", "mklink", "/J", str(link), str(target)],
+        shell=False,
+        check=True,
+        creationflags=CREATE_NO_WINDOW,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        encoding="utf-8",
+    )
+
+
+def _remove_junction(link: Path) -> None:
+    """junction自身だけをrmdirし、リンク先treeを削除しない。"""
+
+    subprocess.run(
+        ["cmd.exe", "/d", "/c", "rmdir", str(link)],
+        shell=False,
+        check=True,
+        creationflags=CREATE_NO_WINDOW,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        encoding="utf-8",
+    )
 
 
 def _mutate_manifest(manifest: dict[str, Any], case: str) -> dict[str, Any]:
@@ -973,3 +1014,182 @@ def test_sec_s5_stage_cutover_rollback_dual_count_is_measured(monkeypatch: pytes
     result_source = inspect.getsource(module.InstallCutoverController._result)
     assert '"dualEnabledCount": 0' not in stage_source
     assert '"dualEnabledCount": 0' not in result_source
+
+
+def _swap_parent_to_junction(module: Any, parent: Path, outside: Path, backup: Path, state: dict[str, Any], reason: str) -> None:
+    """parent rename→junction差替えを試み、拒否以外はtest-owned typed failureにする。"""
+
+    state["called"] = True
+    try:
+        os.replace(parent, backup)
+    except OSError:
+        state["swap"] = "rejected"
+        raise module.InstallControlError(reason)
+    state["swap"] = "succeeded"
+    _mk_junction(parent, outside)
+    raise module.InstallControlError(reason)
+
+
+def test_sec_s5_installer_parent_pin_rejects_junction_swap_before_task_mutation(tmp_path: Path) -> None:
+    """_copy_launcherのdestination parentはdelete-shareなしhandleでpinする。"""
+
+    module = importlib.import_module("tools.news_grasp_cleanroom_install")
+    source_text = Path(module.__file__).read_text(encoding="utf-8")
+    assert "CreateFileW" in source_text
+    assert "FILE_FLAG_BACKUP_SEMANTICS" in source_text
+    assert "FILE_FLAG_OPEN_REPARSE_POINT" in source_text
+    assert not re.search(r"FILE_SHARE_READ\s*\|\s*FILE_SHARE_WRITE\s*\|\s*FILE_SHARE_DELETE", source_text)
+
+    root, source, _content, manifest, authority = _roots(tmp_path, 190)
+    installed = root / "installed"
+    outside = _outside_sentinel(tmp_path, 190)
+    outside_before = _inventory(outside)
+    backup = root / "installed-real"
+    state: dict[str, Any] = {"called": False, "swap": "not-attempted"}
+    task = TaskAdapter(module)
+
+    def hook(name: str) -> None:
+        if name == "before_install_parent_swap" and not state["called"]:
+            _swap_parent_to_junction(module, installed, outside, backup, state, "install_parent_identity_swap")
+
+    controller = _controller(module, root, task, boundary_hook=hook)
+    try:
+        with pytest.raises(module.InstallControlError) as captured:
+            _stage(controller, manifest, source, installed, authority)
+        assert captured.value.reason == "install_parent_identity_swap"
+    finally:
+        if installed.is_symlink():
+            _remove_junction(installed)
+        if backup.exists() and not installed.exists():
+            os.replace(backup, installed)
+    assert state == {"called": True, "swap": "rejected"}
+    assert task.history_rows() == []
+    assert _inventory(outside) == outside_before
+
+
+def test_sec_s5_journal_parent_pin_rejects_junction_swap_before_task_mutation(tmp_path: Path) -> None:
+    """journal parentも同一のno-delete-share pin境界を通る。"""
+
+    module = importlib.import_module("tools.news_grasp_cleanroom_install")
+    root, source, _content, manifest, authority = _roots(tmp_path, 191)
+    journal_parent = root / "control" / "install-cutover-v1"
+    journal_parent.mkdir(parents=True)
+    outside = _outside_sentinel(tmp_path, 191)
+    outside_before = _inventory(outside)
+    backup = root / "journal-parent-real"
+    state: dict[str, Any] = {"called": False, "swap": "not-attempted"}
+    task = TaskAdapter(module)
+
+    def hook(name: str) -> None:
+        if name == "before_journal_parent_swap" and not state["called"]:
+            _swap_parent_to_junction(module, journal_parent, outside, backup, state, "journal_parent_identity_swap")
+
+    controller = _controller(module, root, task, boundary_hook=hook)
+    try:
+        with pytest.raises(module.InstallControlError) as captured:
+            _stage(controller, manifest, source, root / "installed", authority)
+        assert captured.value.reason == "journal_parent_identity_swap"
+    finally:
+        if journal_parent.is_symlink():
+            _remove_junction(journal_parent)
+        if backup.exists() and not journal_parent.exists():
+            os.replace(backup, journal_parent)
+    assert state == {"called": True, "swap": "rejected"}
+    assert task.history_rows() == []
+    assert _inventory(outside) == outside_before
+
+
+def _reseal_journal(journal: dict[str, Any]) -> None:
+    body = {key: value for key, value in journal.items() if key != "journalSha256"}
+    journal["journalSha256"] = _sha(body)
+
+
+def test_sec_s5_canary_receipt_is_full_sealed_evidence_and_tamper_is_typed(tmp_path: Path) -> None:
+    """canaryはboolではなくcanonical receipt全体をstage/cutoverで再検証する。"""
+
+    module = importlib.import_module("tools.news_grasp_cleanroom_install")
+    root, source, _content, manifest, authority = _roots(tmp_path, 192)
+    installed = root / "installed"
+    task = TaskAdapter(module)
+    controller = _controller(module, root, task, process=ProcessAdapter())
+    _stage(controller, manifest, source, installed, authority)
+    journal_path = root / "control" / "install-cutover-v1" / "journal.json"
+    journal = json.loads(journal_path.read_text(encoding="utf-8"))
+    canary = journal.get("canaryReceipt")
+    assert isinstance(canary, dict)
+    assert canary["schemaVersion"] == "NEWS_GRASP_INSTALL_CANARY_RECEIPT_V1"
+    assert canary["status"] == "succeeded" and canary["exitCode"] == 0 and canary["processId"] > 0
+    assert canary["installedSha256"] == journal["installedSha256"]
+    assert journal["canaryReceiptSha256"] == _sha(canary)
+
+    for index, tamper in enumerate(("installed", "argv", "receipt"), start=193):
+        case_root, case_source, _case_content, case_manifest, case_authority = _roots(tmp_path, index)
+        case_installed = case_root / "installed"
+        case_task = TaskAdapter(module)
+        case_controller = _controller(module, case_root, case_task, process=ProcessAdapter())
+        _stage(case_controller, case_manifest, case_source, case_installed, case_authority)
+        case_journal_path = case_root / "control" / "install-cutover-v1" / "journal.json"
+        mutated = json.loads(case_journal_path.read_text(encoding="utf-8"))
+        mutated_canary = mutated["canaryReceipt"]
+        if tamper == "installed":
+            mutated_canary["installedSha256"] = "0" * 64
+        elif tamper == "argv":
+            mutated_canary["argvSha256"] = "1" * 64
+        else:
+            mutated_canary["receiptSha256"] = "2" * 64
+        mutated["canaryReceiptSha256"] = _sha(mutated_canary)
+        _reseal_journal(mutated)
+        case_journal_path.write_text(json.dumps(mutated, ensure_ascii=False, sort_keys=True, separators=(",", ":")), encoding="utf-8")
+        history_before = case_task.history_rows()
+        with pytest.raises(module.InstallControlError) as stage_error:
+            _stage(case_controller, case_manifest, case_source, case_installed, case_authority)
+        assert stage_error.value.reason == "canary_receipt_invalid"
+        assert case_task.history_rows() == history_before
+        with pytest.raises(module.InstallControlError) as cutover_error:
+            _cutover(case_controller, case_authority)
+        assert cutover_error.value.reason == "canary_receipt_invalid"
+        assert case_task.history_rows() == history_before
+
+
+def test_sec_s5_canary_receipt_replay_and_legacy_cutover_are_fail_closed(tmp_path: Path) -> None:
+    """別installed/argvへの再sealとlegacy V1の新cutoverを許可しない。"""
+
+    module = importlib.import_module("tools.news_grasp_cleanroom_install")
+    root, source, _content, manifest, authority = _roots(tmp_path, 198)
+    installed = root / "installed"
+    task = TaskAdapter(module)
+    controller = _controller(module, root, task, process=ProcessAdapter(), owner_adapter=OwnerAdapter(module, task))
+    _stage(controller, manifest, source, installed, authority)
+    journal_path = root / "control" / "install-cutover-v1" / "journal.json"
+    replay = json.loads(journal_path.read_text(encoding="utf-8"))
+    replay["canaryReceipt"]["installedSha256"] = "3" * 64
+    replay["canaryReceipt"]["argvSha256"] = "4" * 64
+    replay["canaryReceipt"]["receiptSha256"] = _sha(replay["canaryReceipt"])
+    replay["canaryReceiptSha256"] = _sha(replay["canaryReceipt"])
+    _reseal_journal(replay)
+    journal_path.write_text(json.dumps(replay, ensure_ascii=False, sort_keys=True, separators=(",", ":")), encoding="utf-8")
+    history_before = task.history_rows()
+    with pytest.raises(module.InstallControlError) as captured:
+        _cutover(controller, authority)
+    assert captured.value.reason == "canary_receipt_invalid"
+    assert task.history_rows() == history_before
+
+    legacy_root, legacy_source, _legacy_content, legacy_manifest, legacy_authority = _roots(tmp_path, 199)
+    legacy_installed = legacy_root / "installed"
+    legacy_task = TaskAdapter(module)
+    legacy_owner = OwnerAdapter(module, legacy_task)
+    legacy_controller = _controller(module, legacy_root, legacy_task, process=ProcessAdapter(), owner_adapter=legacy_owner)
+    _stage(legacy_controller, legacy_manifest, legacy_source, legacy_installed, legacy_authority)
+    legacy_journal_path = legacy_root / "control" / "install-cutover-v1" / "journal.json"
+    legacy = json.loads(legacy_journal_path.read_text(encoding="utf-8"))
+    # V1 legacy journal has no sealed canary receipt; rollback remains the only legal path.
+    legacy.pop("canaryReceipt", None)
+    legacy.pop("canaryReceiptSha256", None)
+    legacy["schemaVersion"] = "INSTALL_CUTOVER_JOURNAL_V1"
+    legacy["phase"] = "COMMITTED"
+    _reseal_journal(legacy)
+    legacy_journal_path.write_text(json.dumps(legacy, ensure_ascii=False, sort_keys=True, separators=(",", ":")), encoding="utf-8")
+    with pytest.raises(module.InstallControlError):
+        _cutover(legacy_controller, legacy_authority)
+    rollback = _rollback(legacy_controller, legacy_authority, minute=3)
+    assert rollback["schemaVersion"] == "ROLLBACK_RESULT_V1"

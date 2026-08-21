@@ -9,7 +9,7 @@ import inspect
 import json
 from pathlib import Path
 import sqlite3
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -130,6 +130,7 @@ class Provider:
         self.dispatch_calls: list[dict[str, Any]] = []
         self.query_calls: list[str] = []
         self.unknown_once = False
+        self.on_dispatch: Callable[[], None] | None = None
 
     def _receipt(self, key: str) -> dict[str, Any]:
         return {
@@ -148,7 +149,10 @@ class Provider:
             if self.unknown_type is None:
                 raise RuntimeError("provider response unknown")
             raise self.unknown_type("provider response unknown")
-        return self._receipt(key)
+        receipt = self._receipt(key)
+        if self.on_dispatch is not None:
+            self.on_dispatch()
+        return receipt
 
     def query(self, idempotency_key: str) -> dict[str, Any]:
         self.query_calls.append(idempotency_key)
@@ -181,13 +185,25 @@ def _controller(execution: Any, runtime_root: Path, admission: Admission, provid
     )
 
 
-def _execute(controller: Any, cases: dict[str, Any], authority: dict[str, Any]) -> Any:
+def _execute(
+    controller: Any,
+    cases: dict[str, Any],
+    authority: dict[str, Any],
+    *,
+    observed_at: datetime | None = None,
+    writer: Mapping[str, Any] | None = None,
+) -> Any:
+    kwargs: dict[str, Any] = {
+        "slot_key": cases["slotKey"],
+        "issue_date": cases["issueDate"],
+        "authority": authority,
+        "payload": _payload(cases),
+        "observed_at": observed_at or _at(6, 1),
+    }
+    if writer is not None:
+        kwargs["writer"] = writer
     return controller.execute(
-        slot_key=cases["slotKey"],
-        issue_date=cases["issueDate"],
-        authority=authority,
-        payload=_payload(cases),
-        observed_at=_at(6, 1),
+        **kwargs,
     )
 
 
@@ -507,6 +523,127 @@ def test_s2_persisted_admission_is_revalidated_before_resume(tmp_path: Path) -> 
         not set(item["states"]) & {"INTENT_DURABLE", "DISPATCHED", "CONFIRMED", "COMMITTED"}
         for item in observations
     )
+
+
+class _ExecutionWriterAttestor:
+    """S2 execution用OS writer attestation seam。"""
+
+    def __init__(self, valid: bool = True) -> None:
+        self.valid = valid
+        self.calls: list[dict[str, Any]] = []
+
+    def validate(self, writer: Mapping[str, Any]) -> bool:
+        self.calls.append(dict(writer))
+        return self.valid
+
+
+class _MutableClock:
+    def __init__(self, current: datetime) -> None:
+        self.current = current
+        self.calls: list[datetime] = []
+
+    def __call__(self) -> datetime:
+        self.calls.append(self.current)
+        return self.current
+
+
+def _execution_writer(index: int) -> dict[str, Any]:
+    return {
+        "writerId": f"s2-execution-{index}",
+        "bootId": "s2-execution-boot",
+        "pid": 8000 + index,
+        "processStartToken": f"s2-execution-process-{index}",
+    }
+
+
+def test_sec_s2_current_writer_and_clock_fence_is_reproved_around_provider_and_commit(tmp_path: Path) -> None:
+    """callerの古いobserved_atを信用せず、provider前/COMMITTED内でwriter・fence・clockを再証明する。"""
+
+    execution = importlib.import_module("tools.news_grasp_cleanroom_execution")
+    ledger_module = importlib.import_module("tools.news_grasp_cleanroom_ledger")
+    cases = _cases()
+
+    # A stale caller timestamp remains admissible while the OS-current clock is inside the lease.
+    runtime_root = _runtime(tmp_path, 1200)
+    authority = _authority(cases, runtime_root)
+    attestor = _ExecutionWriterAttestor()
+    clock = _MutableClock(_at(6, 2))
+    controller = _controller(
+        execution,
+        runtime_root,
+        Admission("GRANTED"),
+        Provider(),
+        StageRunner(),
+        writer_attestor=attestor,
+        clock=clock,
+    )
+    result = _execute(
+        controller,
+        cases,
+        authority,
+        observed_at=_at(6, 1),
+        writer=_execution_writer(1200),
+    )
+    assert result["externalState"] == "COMMITTED"
+    assert len(attestor.calls) >= 2
+    assert len(clock.calls) >= 2
+
+    # Expiry during provider work must stop before COMMITTED even though caller time is old.
+    runtime_root = _runtime(tmp_path, 1201)
+    authority = _authority(cases, runtime_root)
+    attestor = _ExecutionWriterAttestor()
+    clock = _MutableClock(_at(6, 2))
+    provider = Provider()
+    provider.on_dispatch = lambda: setattr(clock, "current", _at(6, 4))
+    controller = _controller(
+        execution,
+        runtime_root,
+        Admission("GRANTED"),
+        provider,
+        StageRunner(),
+        writer_attestor=attestor,
+        clock=clock,
+    )
+    _expect_reason(
+        execution,
+        "NEWS_GRASP_EXECUTION_STALE_FENCE",
+        lambda: _execute(controller, cases, authority, observed_at=_at(6, 1), writer=_execution_writer(1201)),
+    )
+    assert provider.dispatch_calls and "COMMITTED" not in _persisted_states(runtime_root)
+
+    # A ledger takeover during provider work must be rejected inside the final commit fence.
+    runtime_root = _runtime(tmp_path, 1202)
+    authority = _authority(cases, runtime_root)
+    attestor = _ExecutionWriterAttestor()
+    clock = _MutableClock(_at(6, 2))
+    provider = Provider()
+
+    def takeover() -> None:
+        database = runtime_root / "control" / "control-ledger-v1.sqlite3"
+        with sqlite3.connect(database) as connection:
+            connection.execute(
+                "UPDATE slots SET generation=generation+1,owner_key=?,fence_token=fence_token+1 WHERE schedule_id=? AND issue_date=? AND slot_kind='Scheduled'",
+                ("s2-takeover-owner", cases["scheduleId"], cases["issueDate"]),
+            )
+            ledger_module.ControlLedger(runtime_root)._update_materialized_state(connection)
+            connection.commit()
+
+    provider.on_dispatch = takeover
+    controller = _controller(
+        execution,
+        runtime_root,
+        Admission("GRANTED"),
+        provider,
+        StageRunner(),
+        writer_attestor=attestor,
+        clock=clock,
+    )
+    _expect_reason(
+        execution,
+        "NEWS_GRASP_EXECUTION_STALE_FENCE",
+        lambda: _execute(controller, cases, authority, observed_at=_at(6, 1), writer=_execution_writer(1202)),
+    )
+    assert provider.dispatch_calls and "COMMITTED" not in _persisted_states(runtime_root)
 
 
 def test_sec_s2_max_dispatch_attempts_above_three_is_authority_invalid(tmp_path: Path) -> None:
