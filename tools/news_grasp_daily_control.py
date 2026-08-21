@@ -86,6 +86,8 @@ RESUME_STAGES = {
     "post-daily-quality",
     "post-deepdive",
     "generation-quality-repair",
+    "post-reporter",
+    "editor",
 }
 
 
@@ -1384,6 +1386,10 @@ def validate_decision(path: Path) -> dict[str, Any]:
         or value.get("noUserMonitoring") is not True
     ):
         raise ValueError("RECOVERY_DECISION_INVALID")
+    if value.get("recoveryBranch") == "ResumeFromStage":
+        resume_stage = value.get("resumeStage")
+        if not isinstance(resume_stage, str) or resume_stage not in RESUME_STAGES:
+            raise ValueError("RECOVERY_DECISION_INVALID")
     return {**value, "decisionPath": str(path.resolve())}
 
 

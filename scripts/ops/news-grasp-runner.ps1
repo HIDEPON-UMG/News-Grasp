@@ -538,6 +538,8 @@ $script:HighCostExpectedOperationKind = ''
 $script:HighCostExpectedIssueDate = ''
 $script:HighCostAdmissionPath = $HighCostAdmissionPath
 $script:UsesHighCostContinuationAdmission = $false
+$script:ScheduledRecoveryStageBrokerPath = ''
+$script:ScheduledRecoveryStageDecisionReceiptPath = ''
 $script:HighCostParentAuthorityPath = $HighCostParentAuthorityPath
 $script:HighCostParentAuthoritySha256 = ''
 $script:E2EFinalAdmissionPath = $E2EFinalAdmissionPath
@@ -3579,6 +3581,8 @@ function Set-ScheduledHighCostAuthorityEnvironment {
 
 function Assert-HighCostOperationAdmission {
     Clear-ScheduledHighCostAuthorityEnvironment
+    $script:ScheduledRecoveryStageBrokerPath = ''
+    $script:ScheduledRecoveryStageDecisionReceiptPath = ''
     if ($SmokeTest -or $PreflightOnly -or $FinalizeVerifiedPublishManifest) { return }
     $modelSpawnBroker = [System.IO.Path]::GetFullPath($HighCostBudgetToolPath)
     if ((-not $HighCostWorkspaceRoot) -or (-not (Test-Path -LiteralPath $modelSpawnBroker -PathType Leaf))) {
@@ -3971,6 +3975,10 @@ function Assert-HighCostOperationAdmission {
         $script:HighCostExpectedOperationKind = $operationKind
         $script:HighCostExpectedIssueDate = $DateStamp
         Set-ScheduledHighCostAuthorityEnvironment -Admission $admission -ExpectedOperationKind $operationKind -ExpectedIssueDate $DateStamp
+        if ($ResumeFromStage -and $stageDecisionReceipt) {
+            $script:ScheduledRecoveryStageBrokerPath = [System.IO.Path]::GetFullPath($modelSpawnBroker)
+            $script:ScheduledRecoveryStageDecisionReceiptPath = [System.IO.Path]::GetFullPath($stageDecisionReceipt)
+        }
         if ($continuationAdmissionValidated) {
             # cutoff bypassはcontinuation単体ではなく、decision/fresh brokerの
             # 検証済み連鎖が成立した後だけ有効にする。
@@ -4406,16 +4414,23 @@ if ($SmokeTest) {
     Exit-Runner -Status 'smoke_ok' -Message 'news-grasp-runner.ps1 SMOKE OK' -ExitCode 0
 }
 
-if ($RecoverOnly) {
-    $recoverOnlyInputManifest = Write-RecoverOnlyInputManifest
-    Write-Log "RecoverOnly input manifest: $recoverOnlyInputManifest"
-    Write-Log 'RecoverOnly mode: skipping digest codex; using current local digest/data commits and files'
-} elseif ($ResumeFromPostDailyQuality -or $ResumeAfterDeepDive -or $ResumeGenerationQualityRepair) {
-    # 事前admissionではdecisionを消費しない。ここが実際のResume stage開始境界であり、
-    # このstate書込より前のcrashでは同じdecisionを未開始として安全に再利用できる。
+# ResumeFromStage は stage-specific 分岐より先に一度だけ開始境界を通す。
+# admission gate が検証済みの script-scope path だけを後段へ渡し、ローカル変数の
+# dynamic-scope 依存による broker / decision receipt の取り違えを閉じる。
+if ($ResumeFromStage) {
+    if (
+        (-not [System.IO.Path]::IsPathFullyQualified([string]$script:ScheduledRecoveryStageBrokerPath)) -or
+        (-not [System.IO.Path]::IsPathFullyQualified([string]$script:ScheduledRecoveryStageDecisionReceiptPath)) -or
+        (-not (Test-Path -LiteralPath $script:ScheduledRecoveryStageBrokerPath -PathType Leaf)) -or
+        (-not (Test-Path -LiteralPath $script:ScheduledRecoveryStageDecisionReceiptPath -PathType Leaf))
+    ) {
+        Write-Log 'ERROR: scheduled recovery stage start paths are invalid'
+        Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'SCHEDULED_RECOVERY_STAGE_START_PATHS_INVALID' -ExitCode 76 -Phase 'resume' -Step 'stage-start-boundary'
+        exit 76
+    }
     Set-RunnerState -Status 'running' -Message 'scheduled recovery stage start boundary' -ExitCode -1 -Phase 'resume' -Step 'stage-start-boundary' -ResumeStageCheckpoint $ResumeFromStage
     try {
-        $stageWitnessJson = (& $PyExe -I $modelSpawnBroker 'start-news-grasp-recovery-stage' '--decision' $stageDecisionReceipt '--recovery-authority' $ScheduledAuthorityEvidencePath '--consumer-run-id' $RunId 2>&1 | Out-String).Trim()
+        $stageWitnessJson = (& $PyExe -I $script:ScheduledRecoveryStageBrokerPath 'start-news-grasp-recovery-stage' '--decision' $script:ScheduledRecoveryStageDecisionReceiptPath '--recovery-authority' $ScheduledAuthorityEvidencePath '--consumer-run-id' $RunId 2>&1 | Out-String).Trim()
         if ($LASTEXITCODE -ne 0) {
             throw "SCHEDULED_RECOVERY_STAGE_START_FAILED exit=$LASTEXITCODE"
         }
@@ -4425,7 +4440,7 @@ if ($RecoverOnly) {
             [string]$stageWitness.issueDate -ne $DateStamp -or
             [string]$stageWitness.resumeStage -ne $ResumeFromStage -or
             [string]$stageWitness.consumerRunId -ne $RunId -or
-            [string]$stageWitness.decisionReceiptSha256 -ne [string](Get-FileSha256Hex -Path $stageDecisionReceipt)
+            [string]$stageWitness.decisionReceiptSha256 -ne [string](Get-FileSha256Hex -Path $script:ScheduledRecoveryStageDecisionReceiptPath)
         ) {
             throw 'SCHEDULED_RECOVERY_STAGE_START_WITNESS_INVALID'
         }
@@ -4437,6 +4452,13 @@ if ($RecoverOnly) {
     if ($script:UsesHighCostContinuationAdmission) {
         Write-Log "scheduled recovery stage start boundary satisfied by continuation + recovery decision + fresh broker + stage witness for ResumeFromStage=$ResumeFromStage"
     }
+}
+
+if ($RecoverOnly) {
+    $recoverOnlyInputManifest = Write-RecoverOnlyInputManifest
+    Write-Log "RecoverOnly input manifest: $recoverOnlyInputManifest"
+    Write-Log 'RecoverOnly mode: skipping digest codex; using current local digest/data commits and files'
+} elseif ($ResumeFromPostDailyQuality -or $ResumeAfterDeepDive -or $ResumeGenerationQualityRepair) {
     if ($ResumeGenerationQualityRepair) {
         Write-Log "ResumeFromStage=${ResumeFromStage}: reusing Stage0/Reporter/Editor/daily-quality; starting at missing-artifact generation repair"
     } elseif ($ResumeAfterDeepDive) {

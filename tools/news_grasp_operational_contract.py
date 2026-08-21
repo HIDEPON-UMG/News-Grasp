@@ -154,7 +154,14 @@ SCHEDULED_ADMISSION_MAX_MODEL_CALLS = 64
 SCHEDULED_ADMISSION_MAX_EVENT_SEQUENCE = 1_000_000
 SCHEDULED_ADMISSION_MAX_TEXT = 256
 SCHEDULED_ADMISSION_RESUME_STAGES = frozenset(
-    {"deepdive", "post-daily-quality", "post-deepdive", "generation-quality-repair"}
+    {
+        "deepdive",
+        "post-daily-quality",
+        "post-deepdive",
+        "generation-quality-repair",
+        "post-reporter",
+        "editor",
+    }
 )
 SCHEDULED_ADMISSION_RESERVATION_KEYS = frozenset(
     {"attemptId", "eventSequence", "idempotent"}
