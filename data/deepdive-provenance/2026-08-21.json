@@ -1,0 +1,74 @@
+{
+  "articlePath": "digest/DeepDive/2026-08-21-DeepDive.md",
+  "articleSha256": "ff5194ee95af8669c4095e4acad2490308a7a9b8b63411c5c26441cf2a15a5b3",
+  "issueDate": "2026-08-21",
+  "manifestSha256": "0a13d5b4880dba927e415e10e4c1fe062ee203c0723d74858690d6c06112e62d",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "54a1e4e4e8fef35592cf99c3f2f6f56d698e6d2a0618205fbd9a4c7dc6818c64",
+  "sources": [
+    {
+      "contentSha256": "da4b4a506d8db6388a6aa5aeeaf46ca80e02123de11679ab7c45a9e63141c85b",
+      "fetchedAt": "2026-08-20T23:05:15.610402+00:00",
+      "finalUrl": "https://news.web.nhk/newsweb/na/nd-20260821de45432",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://news.web.nhk/newsweb/na/nd-20260821de45432",
+      "url": "https://news.web.nhk/newsweb/na/nd-20260821de45432"
+    },
+    {
+      "contentSha256": "ad8bef93ac43fb9fb6a4732018085acd643c3fd72cb707926f3c31afbe1b26d2",
+      "fetchedAt": "2026-08-20T23:05:15.958870+00:00",
+      "finalUrl": "https://news.yahoo.co.jp/articles/39b08c0275069399bcb9c7435f25114cdae16bce",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://news.yahoo.co.jp/articles/39b08c0275069399bcb9c7435f25114cdae16bce",
+      "url": "https://news.yahoo.co.jp/articles/39b08c0275069399bcb9c7435f25114cdae16bce"
+    },
+    {
+      "contentSha256": "179756ab60a4d0d5b98edb214af72ff0d32d7c0d7f734ee95809bd53ee6e5d1b",
+      "fetchedAt": "2026-08-20T23:05:16.277640+00:00",
+      "finalUrl": "https://www.itmedia.co.jp/business/articles/2608/21/news050.html",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.itmedia.co.jp/business/articles/2608/21/news050.html",
+      "url": "https://www.itmedia.co.jp/business/articles/2608/21/news050.html"
+    },
+    {
+      "contentSha256": "f76bfc43183b2fb9a661147a73f3ce615ec3ca7e3d31c9dc45ae76e63e4af9f5",
+      "fetchedAt": "2026-08-20T23:05:16.504473+00:00",
+      "finalUrl": "https://www.nikkei.com/article/DGXZQOGM141080U6A810C2000000/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.nikkei.com/article/DGXZQOGM141080U6A810C2000000/",
+      "url": "https://www.nikkei.com/article/DGXZQOGM141080U6A810C2000000/"
+    },
+    {
+      "contentSha256": "40fb75b5984c70b4e010ae91cc7911e1f8ddd2d2fd4279740dd337826b035642",
+      "fetchedAt": "2026-08-20T23:05:16.860240+00:00",
+      "finalUrl": "https://xtech.nikkei.com/atcl/nxt/column/18/00001/11972/",
+      "httpStatus": 200,
+      "locations": [
+        "refs"
+      ],
+      "publicHref": "https://xtech.nikkei.com/atcl/nxt/column/18/00001/11972/",
+      "url": "https://xtech.nikkei.com/atcl/nxt/column/18/00001/11972/"
+    }
+  ],
+  "status": "Green"
+}
