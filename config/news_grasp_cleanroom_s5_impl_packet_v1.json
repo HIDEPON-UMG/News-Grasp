@@ -1,0 +1,120 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S5-GREEN-V1",
+  "todoId": "NG-CLEANROOM-S5-GREEN",
+  "role": "implementation_luna",
+  "canonicalContext": "/root/implementation_luna_canary",
+  "dependencyIds": ["NG-CLEANROOM-S4-ACCEPTED-V1", "NG-CLEANROOM-S5-RED-CORRECTION-V1"],
+  "baselineCommit": "e36adb6632df2f1f9baec740f95fd253110d4a3c",
+  "promotionGate": "execute only after S4 independent ACCEPT and acceptance receipt commit",
+  "redSeal": {
+    "testCommit": "9a726bc5e0e052cc03664b38e201e1e7ed7fcd14",
+    "integrationCommit": "4cec7fe6e6b7940af84763d3b0b05de28754cbe6",
+    "testPath": "tests/test_news_grasp_cleanroom_s5_install.py",
+    "testSha256": "2be8dbbd1bb22eb15c60bfd49e5cf723edde689c7dc759ba62e0081e526c402e",
+    "testBytes": 26481,
+    "fixturePath": "tests/fixtures/news_grasp_cleanroom_s5_cases.json",
+    "fixtureSha256": "aa9136e45e6fd18352925547db6750a60d52db7cbbe4f560cb5030f8d793dba5",
+    "fixtureBytes": 1121,
+    "collected": 6,
+    "failed": 6,
+    "cause": "tools.news_grasp_cleanroom_install absent at six dynamic imports",
+    "review": "Parent Sol closed the exact six prior design blockers before integration"
+  },
+  "writeLease": {
+    "leaseId": "IMPL-LEASE-S5-V1",
+    "leaseSha256": "455bb247f032bf0d43540f1531cd1d2f93499e83ac9c5e9163d1f51871e37348",
+    "canonicalPayload": {
+      "leaseId": "IMPL-LEASE-S5-V1",
+      "role": "implementation_luna",
+      "canonicalContext": "/root/implementation_luna_canary",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-s1-h1",
+      "writes": ["tools/news_grasp_cleanroom_install.py"],
+      "baselineCommit": "e36adb6632df2f1f9baec740f95fd253110d4a3c"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tools/news_grasp_cleanroom_install.py"],
+  "forbiddenWrites": ["tests", "tests/fixtures", "all other tools", "config", "docs", "scripts"],
+  "publicContract": {
+    "exports": ["InstallCutoverController", "InstallControlError", "PrivilegeDenied"],
+    "constructor": "InstallCutoverController(runtime_root, task_adapter, pythonw_path, process_adapter=None, security_adapter=None, boundary_hook=None)",
+    "stage": "stage(manifest, source_root, installed_root, authority, observed_at) -> INSTALL_STAGE_RESULT_V1",
+    "cutover": "cutover(authority, observed_at) -> CUTOVER_RESULT_V1",
+    "rollback": "rollback(authority, observed_at) -> ROLLBACK_RESULT_V1",
+    "inspect": "inspect() -> INSTALL_INSPECTION_V1 with no secret-bearing inputs or diagnostics",
+    "errors": "PrivilegeDenied is preserved or wrapped as typed InstallControlError; InstallControlError exposes exact .reason"
+  },
+  "durableDesign": {
+    "root": "runtime_root/control/install-cutover-v1",
+    "journal": "canonical UTF-8 JSON with schemaVersion=INSTALL_CUTOVER_JOURNAL_V1, authority binding/hash, source identity/hash, installed identity/hash, exact old preimage plus hash, structured candidate Task definition, phase and journalSha256",
+    "writeRule": "atomic temp-write, flush/fsync, os.replace and parent-directory flush for every phase; parse/exact-key/type/semantic/canonical-round-trip/hash validate before any resume mutation",
+    "phases": ["PREIMAGE_DURABLE", "STAGED", "INSTALLED", "POINTER_DURABLE", "OLD_DISABLED", "NEW_ENABLED", "COMMITTED", "ROLLBACK_NEW_DISABLED", "ROLLBACK_OLD_RESTORED", "ROLLED_BACK"],
+    "corruption": "unknown/missing/extra key or phase, hash/authority/preimage/path drift fails closed with no task or installed mutation",
+    "idempotency": "stage/cutover/rollback reopen the journal and resume; completed filesystem copy, register, disable, enable or restore operation is never repeated"
+  },
+  "manifestAndTask": {
+    "canonicalManifest": "tracked NEWS_GRASP_CONTROL_MANIFEST_V1 exact top/task/action/trigger keys; one News-Grasp Production task; triggers scheduled-0600 and audit-0640; unknown/missing nested key fails closed",
+    "taskDefinition": "exact TASK_DEFINITION_V1 mapping: taskPath,taskName,enabled=false,executable=pythonw_path,arguments=manifest action argv in order,workingDirectory=runtime_root,triggers exact,multipleInstancesPolicy exact",
+    "stageInvariant": "stage copies launcher.pyw with exact bytes/hash, registers candidate disabled exactly once, and returns old enabled/new disabled; if initial state is new-only or both its first mutation disables new, then it may enable old; both-disabled enables old; stage never disables old, enables new or calls cutover",
+    "cutoverInvariant": "disable old before enable new; every mutation snapshot has dual-enabled zero; Pull and Inventory remain disabled and are never deleted",
+    "rollbackInvariant": "capture and seal the exact old definition before stage; rollback disables new before restoring and enabling that exact preimage; every crash/retry converges to old-only"
+  },
+  "hookContract": {
+    "stageApi": ["stage", "install", "pointer"],
+    "cutoverApi": ["old_disable", "new_enable", "commit"],
+    "rollbackApi": ["rollback_before_new_disable", "rollback_after_new_disable", "rollback_before_restore", "rollback_commit"],
+    "rule": "invoke each named hook at its durable boundary exactly as sealed tests expect; a hook crash propagates before the next irreversible operation and retry resumes safely"
+  },
+  "securityContract": {
+    "authority": "exact INSTALL_AUTHORITY_V1, authoritySha256 canonical binding, issueDate/generation/sourceRoot/sourceSha256; source root and launcher must remain under the authorized resolved root",
+    "path": "reject traversal, absolute working-directory escape, reparse, source identity change between capture/verify, content hash drift, insecure ACL and untrusted pythonw signer before task/install mutation",
+    "adapter": "use injected public security_adapter capture_identity/verify_identity/is_reparse/acl_is_secure/signer_is_trusted; default adapter must provide equivalent fail-closed checks without subprocess",
+    "secretArgv": "reject control bytes, shell metacharacters, secret-looking argv/diagnostics, unknown keys and non-token argv; diagnostics never echo secret values",
+    "outside": "no operation resolves outside runtime/source/installed authorized roots"
+  },
+  "humanImpact": {
+    "processAdapter": "when a process_adapter is supplied, stage runs one installed canary after exact byte installation and before pointer durability; launch ordered argv with shell=false, CREATE_NO_WINDOW, encoding=utf-8, includeChildTree=true, noFocusTheft=true, noAutoOpen=true, noUserMonitoring=true; a missing adapter never falls back to visible subprocess",
+    "noFocusTheft": true,
+    "noAutoOpen": true,
+    "noUserMonitoring": true,
+    "noSharedProcessKill": true,
+    "persistentPolling": false,
+    "japanesePath": true
+  },
+  "inspectionContract": {
+    "required": "exact INSTALL_INSPECTION_V1 including phase, dualEnabledCount=0, autoDeletedPullTaskCount=0, focusTheftCount=0, sharedProcessKillCount=0 and sealed installed/task hashes",
+    "readOnly": "inspect performs no task, filesystem, process or journal mutation and contains no source authority secret or argv secret"
+  },
+  "forbiddenImplementation": [
+    "stage auto-cutover", "shell command string", "subprocess shell=true", "visible process", "shared process kill",
+    "delete Pull/Inventory", "enable new before old disabled", "unsealed old preimage", "repair corrupt journal",
+    "test edit or test-specific branch", "network/UAC/Task Scheduler call from unit suite"
+  ],
+  "verification": {
+    "s5Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s5_install.py",
+    "s5Expected": "6 passed",
+    "s4Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s4_recovery.py",
+    "s4Expected": "3 passed",
+    "s3Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s3_public.py",
+    "s3Expected": "9 passed",
+    "s2Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s2_execution.py",
+    "s2Expected": "10 passed",
+    "s1Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py",
+    "s1Expected": "32 passed",
+    "s0Command": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s0_contract.py",
+    "s0Expected": "3 passed",
+    "ruffCommand": "py -3.12 -m ruff check tools/news_grasp_cleanroom_install.py",
+    "compileCommand": "py -3.12 -m py_compile tools/news_grasp_cleanroom_install.py",
+    "other": ["security scan exact new path", "pre-stage status exactly one production path", "cached exact path", "diff checks", "post-commit clean"]
+  },
+  "commitPolicy": {
+    "allowedOnlyAfterAllGreen": true,
+    "paths": ["tools/news_grasp_cleanroom_install.py"],
+    "message": "feat: implement S5 install cutover plane"
+  },
+  "causalRetryCondition": "one implementation attempt and one ordered verification chain; return at first non-Green with exact phase/mutation evidence",
+  "delivery": "one production file, hash/bytes, commit, exact verification and contrary evidence",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": []
+}
