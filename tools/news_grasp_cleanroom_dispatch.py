@@ -19,6 +19,7 @@ from .news_grasp_cleanroom_contracts import (
     _validate_entry_time,
 )
 from .news_grasp_cleanroom_wal import DurabilityOps
+from .news_grasp_entry_identity import EntryWriterAttestor, SystemEntryWriterAttestor
 
 
 ENTRY_FAULT_AFTER_INITIAL_WAL = "NEWS_GRASP_ENTRY_FAULT_AFTER_INITIAL_WAL"
@@ -82,6 +83,8 @@ def dispatch(
     durability_ops: DurabilityOps | None = None,
     boundary_hook: Callable[[str], None] | None = None,
     busy_timeout_ms: int = 1000,
+    writer_attestor: EntryWriterAttestor | None = None,
+    clock: Callable[[], datetime] | Any | None = None,
 ) -> dict[str, Any]:
     return Controller(
         runtime_root=runtime_root,
@@ -89,6 +92,8 @@ def dispatch(
         durability_ops=durability_ops,
         boundary_hook=boundary_hook,
         busy_timeout_ms=busy_timeout_ms,
+        writer_attestor=writer_attestor,
+        clock=clock,
     ).reconcile(raw_argv=raw_argv, observed_at=observed_at, writer=writer, lease_seconds=lease_seconds)
 
 
@@ -102,8 +107,10 @@ def commit_slot(
     terminal_state: str,
     result_hash: str,
     observed_at: datetime,
+    writer_attestor: EntryWriterAttestor | None = None,
+    clock: Callable[[], datetime] | Any | None = None,
 ) -> dict[str, Any]:
-    return Controller(runtime_root=runtime_root, manifest_path=manifest_path).commit_slot(
+    return Controller(runtime_root=runtime_root, manifest_path=manifest_path, writer_attestor=writer_attestor, clock=clock).commit_slot(
         slot_key=slot_key,
         writer=writer,
         fence_token=fence_token,
@@ -125,6 +132,8 @@ def recover_ledger(
     durability_ops: DurabilityOps | None = None,
     boundary_hook: Callable[[str], None] | None = None,
     busy_timeout_ms: int = 1000,
+    writer_attestor: EntryWriterAttestor | None = None,
+    clock: Callable[[], datetime] | Any | None = None,
 ) -> dict[str, Any]:
     return Controller(
         runtime_root=runtime_root,
@@ -132,6 +141,8 @@ def recover_ledger(
         durability_ops=durability_ops,
         boundary_hook=boundary_hook,
         busy_timeout_ms=busy_timeout_ms,
+        writer_attestor=writer_attestor,
+        clock=clock,
     ).recover_ledger(observed_at=observed_at)
 
 
@@ -215,7 +226,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     """production CLI boundary; stdout/stderr are intentionally single-line."""
     try:
         parsed = _parse_cli(sys.argv[1:] if argv is None else argv)
-        raw_argv, runtime_root, manifest_path, observed, writer, fault = parsed
+        raw_argv, runtime_root, manifest_path, observed, supplied_writer, fault = parsed
+        attestor = SystemEntryWriterAttestor()
+        writer = attestor.bind(supplied_writer)
+        if writer is None:
+            raise CleanroomEntryError(ENTRY_WRITER_INVALID, ENTRY_WRITER_INVALID)
         result = dispatch(
             raw_argv=raw_argv,
             runtime_root=runtime_root,
@@ -223,6 +238,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             observed_at=observed,
             writer=writer,
             boundary_hook=_fault_after_initial_wal if fault else None,
+            writer_attestor=attestor,
         )
         decision = _stable_decision(result)
         decision_bytes = json.dumps(

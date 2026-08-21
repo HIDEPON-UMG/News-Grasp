@@ -27,6 +27,12 @@ from .news_grasp_cleanroom_contracts import (
 INITIAL_WAL_FAILED = "NEWS_GRASP_ENTRY_INITIAL_WAL_FAILED"
 WAL_FINALIZE_FAILED = "NEWS_GRASP_ENTRY_WAL_FINALIZE_FAILED"
 LEDGER_CORRUPT = "NEWS_GRASP_ENTRY_LEDGER_CORRUPT"
+WAL_RETENTION_LIMIT = "NEWS_GRASP_ENTRY_WAL_RETENTION_LIMIT"
+WAL_COMPACTION_AUTHORIZED = "WAL_COMPACTION_AUTHORIZED"
+WAL_COMPACTION_COMPLETED = "WAL_COMPACTION_COMPLETED"
+MAX_WAL_EVENT_BYTES = 65536
+MAX_WAL_ZERO_ENTRIES = 32
+MAX_WAL_IMPORTED_ENTRIES = 800
 _ZERO_HASH = "0" * 64
 _INVOCATION_ID_RE = re.compile(r"^[0-9a-f]{32}$")
 _HASH_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -118,6 +124,14 @@ def _publish_create_once_real(
     os.unlink(source)
 
 
+def _remove_real(path: str | os.PathLike[str]) -> None:
+    target = Path(path)
+    if target.is_dir():
+        target.rmdir()
+    else:
+        target.unlink()
+
+
 @dataclass(frozen=True)
 class DurabilityOps:
     """filesystem durability operations; injection is negative-test-only."""
@@ -126,6 +140,7 @@ class DurabilityOps:
     replace: Callable[[str | os.PathLike[str], str | os.PathLike[str]], Any] = os.replace
     flush_parent: Callable[[Path], Any] = _flush_parent_real
     publish_create_once: Callable[[str | os.PathLike[str], str | os.PathLike[str]], Any] = _publish_create_once_real
+    remove: Callable[[str | os.PathLike[str]], Any] = _remove_real
 
 
 def _event_hash(event: Mapping[str, Any]) -> str:
@@ -172,7 +187,12 @@ def _write_json(path: Path, payload: Mapping[str, Any], operations: DurabilityOp
 
 def _read_event(path: Path, *, event_type: str, phase: str, sequence: int) -> dict[str, Any]:
     try:
-        value = json.loads(path.read_text(encoding="utf-8"))
+        raw = path.read_bytes()
+        if len(raw) > MAX_WAL_EVENT_BYTES:
+            raise CleanroomEntryError(WAL_RETENTION_LIMIT, f"WAL event exceeds {MAX_WAL_EVENT_BYTES} bytes: {path}")
+        value = json.loads(raw.decode("utf-8"))
+    except CleanroomEntryError:
+        raise
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise CleanroomEntryError(LEDGER_CORRUPT, f"invalid WAL JSON: {path}") from exc
     if not isinstance(value, dict) or set(value) != _WAL_KEYS or value.get("schemaVersion") != "WAL_EVENT_V1":
@@ -286,8 +306,187 @@ class DurableWal:
         paths = sorted(self.wal_root.glob("*/0001-initial.json"))
         return [self._managed(path) for path in paths]
 
+    def _all_imported_events(self) -> tuple[dict[str, Any], ...]:
+        """cap検査を迂回せず、明示compactionのparity計算用に全イベントを読む。"""
+        events: list[dict[str, Any]] = []
+        for initial_path in self._initial_paths():
+            initial = _read_event(initial_path, event_type="INVOCATION_RECEIVED", phase="INITIAL_DURABLE", sequence=1)
+            if initial_path.parent.name != initial["invocationId"]:
+                raise CleanroomEntryError(LEDGER_CORRUPT, "WAL directory invocation mismatch")
+            imported_path = self._managed(initial_path.with_name("0002-imported.json"))
+            if not imported_path.exists():
+                continue
+            imported = _read_event(imported_path, event_type="INVOCATION_IMPORTED", phase="LEDGER_IMPORTED", sequence=2)
+            _validate_imported_parity(initial, imported)
+            imported["_initialPath"] = str(initial_path)
+            imported["_importedPath"] = str(imported_path)
+            events.append(imported)
+        events.sort(key=lambda event: (str(event.get("receivedAt", "")), str(event.get("invocationId", ""))))
+        return tuple(events)
+
+    def imported_event_records(self) -> tuple[dict[str, Any], ...]:
+        """検証済みimportedイベントを返す明示compaction用のread-only API。"""
+        return self._all_imported_events()
+
+    def retention_counts(self) -> dict[str, int]:
+        """WAL retentionの明示operation用にzero/imported件数を返す。"""
+        imported = len(self._all_imported_events())
+        zero = 0
+        for initial_path in self._initial_paths():
+            initial = _read_event(initial_path, event_type="INVOCATION_RECEIVED", phase="INITIAL_DURABLE", sequence=1)
+            if not self._managed(initial_path.with_name("0002-imported.json")).exists():
+                zero += 1
+        return {"zeroEntryCount": zero, "importedEntryCount": imported}
+
+    def _read_compaction_head(self) -> dict[str, Any] | None:
+        path = self._managed(self.wal_root / "compaction-head-v1.json")
+        if not path.exists():
+            return None
+        try:
+            raw = path.read_bytes()
+            if len(raw) > MAX_WAL_EVENT_BYTES:
+                raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction receipt exceeds size limit")
+            value = json.loads(raw.decode("utf-8"))
+        except CleanroomEntryError:
+            raise
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction receipt is unreadable") from exc
+        if not isinstance(value, dict) or value.get("schemaVersion") != "WAL_COMPACTION_HEAD_V1":
+            raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction receipt schema is invalid")
+        digest = value.get("selfHash")
+        unsigned = {key: item for key, item in value.items() if key != "selfHash"}
+        if not isinstance(digest, str) or digest != _entry_canonical_sha256(unsigned):
+            raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction receipt hash drift")
+        previous = value.get("previousReceipt")
+        if not isinstance(previous, str) or _HASH_RE.fullmatch(previous) is None:
+            raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction previous receipt is invalid")
+        return value
+
+    def compact_imported(
+        self,
+        authorization: Mapping[str, Any],
+        *,
+        observed_at: datetime | None = None,
+    ) -> dict[str, Any]:
+        """ledgerの明示authorizationに束縛された古いimported WALだけをcompactする。"""
+        if not isinstance(authorization, Mapping):
+            raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction authorization is invalid")
+        value = dict(authorization)
+        if value.get("schemaVersion") != "WAL_COMPACTION_AUTHORIZATION_V1":
+            raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction authorization schema is invalid")
+        batch = value.get("batch")
+        if not isinstance(batch, list) or not 1 <= len(batch) <= MAX_WAL_ZERO_ENTRIES:
+            raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction batch is invalid")
+        batch_digest = value.get("batchDigest")
+        expected_batch_digest = _entry_canonical_sha256(batch)
+        if batch_digest != expected_batch_digest:
+            raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction batch hash drift")
+        ledger_event_hash = value.get("ledgerEventSha256")
+        if not isinstance(ledger_event_hash, str) or _HASH_RE.fullmatch(ledger_event_hash) is None:
+            raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction ledger parity is unknown")
+        previous_head = self._read_compaction_head()
+        previous_receipt = value.get("previousReceipt", _ZERO_HASH)
+        expected_previous = previous_head.get("selfHash", _ZERO_HASH) if previous_head else _ZERO_HASH
+        if previous_receipt != expected_previous:
+            raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction receipt chain is stale")
+        try:
+            counts = self.retention_counts()
+            if counts["zeroEntryCount"] > MAX_WAL_ZERO_ENTRIES:
+                raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL zero-entry retention limit exceeded")
+            all_events = list(self._all_imported_events())
+        except CleanroomEntryError:
+            raise
+        if len(all_events) <= MAX_WAL_IMPORTED_ENTRIES:
+            raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL imported retention does not require compaction")
+        eligible = all_events[:-MAX_WAL_IMPORTED_ENTRIES]
+        eligible_keys = {(event["invocationId"], event["eventSha256"]) for event in eligible}
+        requested_keys: list[tuple[str, str]] = []
+        for item in batch:
+            if not isinstance(item, Mapping) or set(item) != {"invocationId", "eventSha256"}:
+                raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction batch item is invalid")
+            invocation_id = item.get("invocationId")
+            event_hash = item.get("eventSha256")
+            if not isinstance(invocation_id, str) or _INVOCATION_ID_RE.fullmatch(invocation_id) is None or not isinstance(event_hash, str) or _HASH_RE.fullmatch(event_hash) is None:
+                raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction batch item is invalid")
+            requested_keys.append((invocation_id, event_hash))
+        if len(set(requested_keys)) != len(requested_keys) or not set(requested_keys) <= eligible_keys:
+            raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction batch is not an eligible prefix")
+
+        compaction_id = value.get("authorizationId")
+        if not isinstance(compaction_id, str) or _INVOCATION_ID_RE.fullmatch(compaction_id) is None:
+            raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction authorization id is invalid")
+        quarantine_root = self._managed(self.wal_root / ".compaction-quarantine" / compaction_id)
+        quarantine_root.mkdir(parents=True, exist_ok=True)
+        moved: list[Path] = []
+        try:
+            for invocation_id, event_hash in requested_keys:
+                source = self._managed(self.wal_root / invocation_id)
+                if not source.is_dir():
+                    raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction source directory is missing")
+                target = self._managed(quarantine_root / invocation_id)
+                self.operations.replace(source, target)
+                self.operations.flush_parent(source.parent)
+                self.operations.flush_parent(target.parent)
+                moved.append(target)
+            for target in moved:
+                for child in sorted(target.iterdir()):
+                    if child.is_dir():
+                        raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction source has unexpected nested directory")
+                    self.operations.remove(child)
+                self.operations.remove(target)
+                self.operations.flush_parent(target.parent)
+            try:
+                self.operations.remove(quarantine_root)
+                self.operations.flush_parent(quarantine_root.parent)
+            except OSError:
+                # A retained quarantine is safer than claiming completed loss.
+                pass
+        except CleanroomEntryError:
+            for target in reversed(moved):
+                source = self._managed(self.wal_root / target.name)
+                if target.exists() and not source.exists():
+                    try:
+                        self.operations.replace(target, source)
+                        self.operations.flush_parent(source.parent)
+                    except Exception:
+                        pass
+            raise
+        except Exception as exc:
+            for target in reversed(moved):
+                source = self._managed(self.wal_root / target.name)
+                if target.exists() and not source.exists():
+                    try:
+                        self.operations.replace(target, source)
+                        self.operations.flush_parent(source.parent)
+                    except Exception:
+                        pass
+            raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction deletion failed") from exc
+
+        completed_at = (
+            _validate_entry_time(observed_at).isoformat()
+            if observed_at is not None
+            else datetime.now(ZoneInfo("Asia/Tokyo")).isoformat()
+        )
+        receipt: dict[str, Any] = {
+            "schemaVersion": "WAL_COMPACTION_HEAD_V1",
+            "compactionId": compaction_id,
+            "completedAt": completed_at,
+            "previousReceipt": expected_previous,
+            "batch": [{"invocationId": item[0], "eventSha256": item[1]} for item in requested_keys],
+            "batchDigest": expected_batch_digest,
+            "ledgerEventSha256": ledger_event_hash,
+        }
+        receipt["selfHash"] = _entry_canonical_sha256(receipt)
+        _write_json(self._managed(self.wal_root / "compaction-head-v1.json"), receipt, self.operations, WAL_RETENTION_LIMIT)
+        return receipt
+
+    # Short alias retained for callers that expose the explicit operation as
+    # ``compact`` while keeping all normal dispatch paths untouched.
+    compact = compact_imported
+
     def iter_zero_entries(self) -> tuple[dict[str, Any], ...]:
         zero: list[dict[str, Any]] = []
+        imported_count = 0
         for initial_path in self._initial_paths():
             event = _read_event(initial_path, event_type="INVOCATION_RECEIVED", phase="INITIAL_DURABLE", sequence=1)
             if initial_path.parent.name != event["invocationId"]:
@@ -295,7 +494,12 @@ class DurableWal:
             imported_path = self._managed(initial_path.with_name("0002-imported.json"))
             if not imported_path.exists():
                 zero.append(event)
+                if len(zero) > MAX_WAL_ZERO_ENTRIES:
+                    raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL zero-entry retention limit exceeded")
             else:
+                imported_count += 1
+                if imported_count > MAX_WAL_IMPORTED_ENTRIES:
+                    raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL imported-entry retention limit exceeded")
                 imported = _read_event(imported_path, event_type="INVOCATION_IMPORTED", phase="LEDGER_IMPORTED", sequence=2)
                 _validate_imported_parity(event, imported)
         return tuple(zero)

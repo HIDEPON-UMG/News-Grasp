@@ -11,7 +11,7 @@ import re
 import sqlite3
 import time
 import uuid
-from typing import Any, Callable, Mapping
+from typing import Any, Callable, Mapping, Sequence
 from zoneinfo import ZoneInfo
 
 from .news_grasp_cleanroom_contracts import (
@@ -26,7 +26,14 @@ from .news_grasp_cleanroom_contracts import (
     _writer_owner_key,
     reconcile_slot,
 )
-from .news_grasp_cleanroom_wal import DurabilityOps, _fsync_real
+from .news_grasp_cleanroom_wal import (
+    DurabilityOps,
+    DurableWal,
+    WAL_COMPACTION_AUTHORIZED,
+    WAL_COMPACTION_COMPLETED,
+    _fsync_real,
+)
+from .news_grasp_entry_identity import EntryWriterAttestor, SystemEntryWriterAttestor
 
 
 LEDGER_BUSY = "NEWS_GRASP_ENTRY_LEDGER_BUSY"
@@ -36,6 +43,7 @@ TERMINAL_CONFLICT = "NEWS_GRASP_ENTRY_TERMINAL_CONFLICT"
 COMMIT_INVALID = "NEWS_GRASP_ENTRY_COMMIT_INVALID"
 RECOVERY_FAILED = "NEWS_GRASP_ENTRY_LEDGER_RECOVERY_FAILED"
 RECOVERY_NOT_REQUIRED = "NEWS_GRASP_ENTRY_RECOVERY_NOT_REQUIRED"
+WAL_COMPACTION_FAILED = "NEWS_GRASP_ENTRY_WAL_RETENTION_LIMIT"
 _ZERO_HASH = "0" * 64
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
 _RECOVERY_ID = re.compile(r"^[0-9a-f]{32}$")
@@ -169,6 +177,8 @@ class ControlLedger:
         *,
         busy_timeout_ms: int = 1000,
         boundary_hook: Callable[[str], None] | None = None,
+        writer_attestor: EntryWriterAttestor | None = None,
+        clock: Callable[[], datetime] | Any | None = None,
     ):
         self.busy_timeout_ms = _validate_busy_timeout(busy_timeout_ms)
         self.runtime_root = Path(runtime_root)
@@ -178,6 +188,32 @@ class ControlLedger:
         self.recovery_path = _managed_runtime_path(self.runtime_root, self.control_root / "recovery-journal-v1.json")
         self.bootstrap_lock_path = _managed_runtime_path(self.runtime_root, self.control_root / _BOOTSTRAP_LOCK_NAME)
         self.boundary_hook = boundary_hook
+        self.writer_attestor = writer_attestor or SystemEntryWriterAttestor()
+        self.clock = clock if clock is not None else (
+            None if writer_attestor is not None and not isinstance(self.writer_attestor, SystemEntryWriterAttestor)
+            else (lambda: datetime.now(ZoneInfo("Asia/Tokyo")))
+        )
+
+    def _clock_now(self, fallback: datetime | None = None) -> datetime:
+        if self.clock is None:
+            if fallback is None:
+                raise CleanroomEntryError(STALE_FENCE, "current clock is unavailable")
+            return fallback
+        try:
+            value = self.clock() if callable(self.clock) else self.clock.now()
+            return _validate_entry_time(value)
+        except CleanroomEntryError:
+            raise
+        except Exception as exc:
+            raise CleanroomEntryError(STALE_FENCE, "current clock is invalid") from exc
+
+    def _attest_writer(self, writer: Mapping[str, Any], *, reason: str = STALE_FENCE) -> None:
+        try:
+            valid = bool(self.writer_attestor.validate(writer))
+        except Exception:
+            valid = False
+        if not valid:
+            raise CleanroomEntryError(reason, "writer identity is not current process")
 
     def _managed(self, path: Path) -> Path:
         return _managed_runtime_path(self.runtime_root, path)
@@ -489,6 +525,180 @@ class ControlLedger:
         connection.execute("UPDATE metadata SET value=? WHERE key='eventChainHead'", (digest,))
         return digest
 
+    def authorize_wal_compaction(
+        self,
+        *,
+        wal: DurableWal | None = None,
+        wal_event_hashes: Sequence[str] | None = None,
+        batch_size: int = 32,
+        observed_at: datetime | None = None,
+    ) -> dict[str, Any]:
+        """SQLite/WAL parityを確認して、明示compactionのbatchだけをauthorizeする。"""
+        if isinstance(batch_size, bool) or not isinstance(batch_size, int) or not 1 <= batch_size <= 32:
+            raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL compaction batch size is invalid")
+        observed = _validate_entry_time(observed_at) if observed_at is not None else self._clock_now()
+        wal_value = wal or DurableWal(self.runtime_root)
+        try:
+            counts = wal_value.retention_counts()
+            if counts["zeroEntryCount"] > 32:
+                raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL zero-entry retention limit exceeded")
+            records = list(wal_value.imported_event_records())
+        except CleanroomEntryError:
+            raise
+        if len(records) <= 800:
+            raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL imported retention does not require compaction")
+        connection = self._connect()
+        committed = False
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            generation = self._verify_connection(connection)
+            ledger_rows = [
+                tuple(row)
+                for row in connection.execute(
+                    "SELECT invocation_id,raw_argv_sha256,writer_key,wal_event_sha256 FROM invocations ORDER BY invocation_id"
+                ).fetchall()
+            ]
+            wal_rows = sorted(
+                (
+                    str(event["invocationId"]),
+                    str(event["rawArgvSha256"]),
+                    _writer_owner_key(event["writer"]),
+                    str(event["eventSha256"]),
+                )
+                for event in records
+            )
+            if sorted(ledger_rows) != wal_rows:
+                raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL and SQLite parity is not exact")
+            eligible = records[:-800]
+            if wal_event_hashes is None:
+                selected = eligible[:batch_size]
+            else:
+                requested = list(wal_event_hashes)
+                if len(requested) == 0 or len(requested) > batch_size or any(not isinstance(item, str) or _HEX64.fullmatch(item) is None for item in requested):
+                    raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL compaction hash batch is invalid")
+                requested_set = set(requested)
+                if len(requested_set) != len(requested):
+                    raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL compaction hash batch is duplicated")
+                selected = [event for event in eligible if event["eventSha256"] in requested_set]
+                if len(selected) != len(requested):
+                    raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL compaction hash is not eligible")
+            batch = [{"invocationId": event["invocationId"], "eventSha256": event["eventSha256"]} for event in selected]
+            batch_digest = _entry_canonical_sha256(batch)
+            try:
+                previous_head = wal_value._read_compaction_head()
+            except AttributeError:
+                previous_head = None
+            previous_receipt = previous_head.get("selfHash", _ZERO_HASH) if previous_head else _ZERO_HASH
+            authorization_id = uuid.uuid4().hex
+            parity_digest = _entry_canonical_sha256(wal_rows)
+            payload = {
+                "authorizationId": authorization_id,
+                "batch": batch,
+                "batchDigest": batch_digest,
+                "previousReceipt": previous_receipt,
+                "ledgerParitySha256": parity_digest,
+            }
+            event_hash = self._append_event(connection, generation, WAL_COMPACTION_AUTHORIZED, None, payload)
+            connection.execute("UPDATE metadata SET value=? WHERE key='lastObservedAt'", (_iso(observed),))
+            self._update_materialized_state(connection)
+            connection.commit()
+            committed = True
+            return {
+                "schemaVersion": "WAL_COMPACTION_AUTHORIZATION_V1",
+                "authorizationId": authorization_id,
+                "authorizedAt": _iso(observed),
+                "batch": batch,
+                "batchDigest": batch_digest,
+                "previousReceipt": previous_receipt,
+                "ledgerParitySha256": parity_digest,
+                "ledgerEventSha256": event_hash,
+            }
+        except CleanroomEntryError:
+            if not committed:
+                connection.rollback()
+            raise
+        except sqlite3.OperationalError as exc:
+            if not committed:
+                connection.rollback()
+            raise CleanroomEntryError(LEDGER_BUSY, "SQLite ledger operation is busy") from exc
+        except Exception as exc:
+            if not committed:
+                connection.rollback()
+            raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL compaction authorization failed") from exc
+        finally:
+            connection.close()
+
+    def complete_wal_compaction(
+        self,
+        receipt: Mapping[str, Any],
+        *,
+        observed_at: datetime | None = None,
+    ) -> dict[str, Any]:
+        """WALのdurable compaction receiptをledger eventとしてcompleteする。"""
+        if not isinstance(receipt, Mapping):
+            raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL compaction receipt is invalid")
+        value = dict(receipt)
+        if value.get("schemaVersion") != "WAL_COMPACTION_HEAD_V1":
+            raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL compaction receipt schema is invalid")
+        receipt_hash = value.get("selfHash")
+        if not isinstance(receipt_hash, str) or _HEX64.fullmatch(receipt_hash) is None or receipt_hash != _entry_canonical_sha256({key: item for key, item in value.items() if key != "selfHash"}):
+            raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL compaction receipt hash drift")
+        auth_hash = value.get("ledgerEventSha256")
+        batch = value.get("batch")
+        batch_digest = value.get("batchDigest")
+        if not isinstance(auth_hash, str) or _HEX64.fullmatch(auth_hash) is None or not isinstance(batch, list) or not isinstance(batch_digest, str) or batch_digest != _entry_canonical_sha256(batch):
+            raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL compaction receipt parity is invalid")
+        observed = _validate_entry_time(observed_at) if observed_at is not None else self._clock_now()
+        connection = self._connect()
+        committed = False
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            generation = self._verify_connection(connection)
+            auth_row = connection.execute(
+                "SELECT sequence,payload_json,event_sha256 FROM events WHERE event_sha256=? AND event_type=?",
+                (auth_hash, WAL_COMPACTION_AUTHORIZED),
+            ).fetchone()
+            if auth_row is None:
+                raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL compaction authorization is missing")
+            auth_payload = json.loads(auth_row["payload_json"])
+            if auth_payload.get("authorizationId") != value.get("compactionId") or auth_payload.get("batch") != batch or auth_payload.get("batchDigest") != batch_digest:
+                raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL compaction authorization parity is invalid")
+            existing = connection.execute(
+                "SELECT event_sha256 FROM events WHERE event_type=? AND payload_json LIKE ?",
+                (WAL_COMPACTION_COMPLETED, f'%"receiptSha256":"{receipt_hash}"%'),
+            ).fetchone()
+            if existing is not None:
+                return {"schemaVersion": "WAL_COMPACTION_COMPLETION_V1", "status": "noop", "receiptSha256": receipt_hash, "ledgerEventSha256": existing[0]}
+            payload = {
+                "compactionId": value.get("compactionId"),
+                "receiptSha256": receipt_hash,
+                "batchDigest": batch_digest,
+                "ledgerAuthorizationEventSha256": auth_hash,
+            }
+            event_hash = self._append_event(connection, generation, WAL_COMPACTION_COMPLETED, None, payload)
+            connection.execute("UPDATE metadata SET value=? WHERE key='lastObservedAt'", (_iso(observed),))
+            self._update_materialized_state(connection)
+            connection.commit()
+            committed = True
+            return {"schemaVersion": "WAL_COMPACTION_COMPLETION_V1", "status": "completed", "receiptSha256": receipt_hash, "ledgerEventSha256": event_hash}
+        except CleanroomEntryError:
+            if not committed:
+                connection.rollback()
+            raise
+        except sqlite3.OperationalError as exc:
+            if not committed:
+                connection.rollback()
+            raise CleanroomEntryError(LEDGER_BUSY, "SQLite ledger operation is busy") from exc
+        except Exception as exc:
+            if not committed:
+                connection.rollback()
+            raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL compaction completion failed") from exc
+        finally:
+            connection.close()
+
+    authorize_compaction = authorize_wal_compaction
+    complete_compaction = complete_wal_compaction
+
     def _import_invocation(self, connection: sqlite3.Connection, invocation_event: Mapping[str, Any], observed_at: datetime, status: str = "CURRENT") -> bool:
         invocation_id = str(invocation_event["invocationId"])
         existing = connection.execute("SELECT invocation_id FROM invocations WHERE invocation_id=?", (invocation_id,)).fetchone()
@@ -752,17 +962,32 @@ class ControlLedger:
         try:
             connection.execute("BEGIN IMMEDIATE")
             self._verify_connection(connection, generation)
+            # Re-attest inside the write transaction so a validated envelope
+            # cannot be replayed across a process identity boundary.
+            self._attest_writer(writer)
+            current = self._clock_now(observed)
             row = self._slot_row(connection, slot_key)
             if row is None:
                 raise CleanroomEntryError(COMMIT_INVALID, "slot does not exist")
             if row["state"] == "TERMINAL":
+                if row["owner_key"] != owner_key or row["fence_token"] != fence_token:
+                    raise CleanroomEntryError(STALE_FENCE, "writer or fence is stale")
                 if row["terminal_state"] == terminal_state and row["result_hash"] == result_hash:
                     return {"schemaVersion": "SLOT_COMMIT_RESULT_V1", "status": "noop", "slotKey": slot_key, "generation": row["generation"], "fenceToken": row["fence_token"], "terminalState": row["terminal_state"], "resultHash": row["result_hash"], "externalEffectCount": 0}
                 raise CleanroomEntryError(TERMINAL_CONFLICT, "terminal payload conflicts")
             if row["owner_key"] != owner_key or row["fence_token"] != fence_token:
                 raise CleanroomEntryError(STALE_FENCE, "writer or fence is stale")
+            expiry_text = row["lease_expires_at"]
+            if not isinstance(expiry_text, str):
+                raise CleanroomEntryError(STALE_FENCE, "lease is absent")
+            try:
+                expiry = datetime.fromisoformat(expiry_text)
+            except (TypeError, ValueError) as exc:
+                raise CleanroomEntryError(STALE_FENCE, "lease is invalid") from exc
+            if expiry.tzinfo is None or current >= expiry:
+                raise CleanroomEntryError(STALE_FENCE, "lease is expired")
             self._hook("before_terminal_commit")
-            connection.execute("UPDATE slots SET state='TERMINAL',lease_expires_at=NULL,terminal_state=?,result_hash=?,updated_at=? WHERE schedule_id=? AND issue_date=? AND slot_kind=?", (terminal_state, result_hash, _iso(observed), _ENTRY_SCHEDULE_ID, slot_key.split("/")[1], slot_key.split("/")[2]))
+            connection.execute("UPDATE slots SET state='TERMINAL',lease_expires_at=NULL,terminal_state=?,result_hash=?,updated_at=? WHERE schedule_id=? AND issue_date=? AND slot_kind=?", (terminal_state, result_hash, _iso(current), _ENTRY_SCHEDULE_ID, slot_key.split("/")[1], slot_key.split("/")[2]))
             self._append_event(connection, generation, "SLOT_TERMINAL", slot_key, {"terminalState": terminal_state, "resultHash": result_hash, "ownerKey": owner_key, "fenceToken": fence_token})
             self._update_materialized_state(connection)
             connection.commit()

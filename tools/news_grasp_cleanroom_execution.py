@@ -158,6 +158,8 @@ class ExecutionController:
             field_value = value.get(field)
             if isinstance(field_value, bool) or not isinstance(field_value, int) or field_value < 1:
                 raise ExecutionError(AUTHORITY_INVALID, f"authority {field} is invalid")
+        if not 1 <= value["maxDispatchAttempts"] <= 2:
+            raise ExecutionError(AUTHORITY_INVALID, "authority maxDispatchAttempts is invalid")
         if not isinstance(value.get("ownerKey"), str) or not value["ownerKey"]:
             raise ExecutionError(AUTHORITY_INVALID, "authority owner is invalid")
         authority_hash = value.get("authoritySha256")

@@ -5,7 +5,8 @@ from __future__ import annotations
 from datetime import datetime
 import json
 from pathlib import Path
-from typing import Any, Callable, Mapping, Sequence
+from typing import Any, Callable, Mapping, Protocol, Sequence
+from zoneinfo import ZoneInfo
 
 from .news_grasp_cleanroom_contracts import (
     CleanroomEntryError,
@@ -13,6 +14,7 @@ from .news_grasp_cleanroom_contracts import (
     ENTRY_LEASE_INVALID,
     ENTRY_MANIFEST_INVALID,
     ENTRY_TIME_INVALID,
+    ENTRY_WRITER_INVALID,
     ENTRY_UNKNOWN_INTENT,
     ENTRY_UNKNOWN_SCHEDULE,
     _ENTRY_RAW_ARGV,
@@ -24,6 +26,15 @@ from .news_grasp_cleanroom_contracts import (
 )
 from .news_grasp_cleanroom_ledger import ControlLedger
 from .news_grasp_cleanroom_wal import DurableWal, DurabilityOps, WAL_FINALIZE_FAILED
+from .news_grasp_entry_identity import EntryWriterAttestor, SystemEntryWriterAttestor
+
+
+class _Clock(Protocol):
+    def __call__(self) -> datetime: ...
+
+
+def _default_clock() -> datetime:
+    return datetime.now(ZoneInfo("Asia/Tokyo"))
 
 
 def _read_manifest(path: Path) -> dict[str, Any]:
@@ -73,19 +84,37 @@ class Controller:
         durability_ops: DurabilityOps | None = None,
         boundary_hook: Callable[[str], None] | None = None,
         busy_timeout_ms: int = 1000,
+        writer_attestor: EntryWriterAttestor | None = None,
+        clock: _Clock | Any | None = None,
     ) -> None:
         self.busy_timeout_ms = _validate_busy_timeout(busy_timeout_ms)
         self.runtime_root = Path(runtime_root)
         self.manifest_path = Path(manifest_path)
         self.durability_ops = durability_ops
         self.boundary_hook = boundary_hook
+        self.writer_attestor = writer_attestor or SystemEntryWriterAttestor()
+        # An explicit attestor is the deterministic test seam; callers that
+        # omit both dependencies use the real OS clock in production.
+        self.clock = clock if clock is not None else (
+            None if writer_attestor is not None and not isinstance(self.writer_attestor, SystemEntryWriterAttestor) else _default_clock
+        )
 
     def _ledger(self) -> ControlLedger:
         return ControlLedger(
             self.runtime_root,
             busy_timeout_ms=self.busy_timeout_ms,
             boundary_hook=self.boundary_hook,
+            writer_attestor=self.writer_attestor,
+            clock=self.clock,
         )
+
+    def _attest_writer(self, writer: Mapping[str, Any]) -> None:
+        try:
+            valid = bool(self.writer_attestor.validate(writer))
+        except Exception:
+            valid = False
+        if not valid:
+            raise CleanroomEntryError(ENTRY_WRITER_INVALID, "writer identity is not current process")
 
     def reconcile(
         self,
@@ -100,6 +129,7 @@ class Controller:
         if not isinstance(observed_at, datetime):
             raise CleanroomEntryError(ENTRY_TIME_INVALID, "observed_at must be a datetime")
         _validate_entry_writer(writer)
+        self._attest_writer(writer)
         wal = DurableWal(self.runtime_root, durability_ops=self.durability_ops)
         initial_event = wal.record_initial(raw_argv=raw_argv, received_at=observed_at, writer=writer)
         if self.boundary_hook is not None:
@@ -164,4 +194,6 @@ class Controller:
             self.runtime_root,
             busy_timeout_ms=self.busy_timeout_ms,
             boundary_hook=self.boundary_hook,
+            writer_attestor=self.writer_attestor,
+            clock=self.clock,
         ).recover(observed_at=observed_at, durability_ops=self.durability_ops)
