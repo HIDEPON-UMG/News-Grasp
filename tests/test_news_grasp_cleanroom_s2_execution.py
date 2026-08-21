@@ -176,6 +176,11 @@ class StageRunner:
 
 
 def _controller(execution: Any, runtime_root: Path, admission: Admission, provider: Provider, runner: StageRunner, **kwargs: Any) -> Any:
+    # Existing S2 fixtures are deterministic at 06:01 with a two-minute lease;
+    # explicitly bind the current-clock and writer-attestation seams so they do
+    # not consult the host OS identity or wall clock.
+    kwargs.setdefault("writer_attestor", _ExecutionWriterAttestor())
+    kwargs.setdefault("clock", lambda: _at(6, 2))
     return execution.ExecutionController(
         runtime_root,
         admission_adapter=admission,
@@ -202,6 +207,10 @@ def _execute(
     }
     if writer is not None:
         kwargs["writer"] = writer
+    else:
+        # Legacy deterministic callers predate the explicit writer argument;
+        # bind them to a valid test envelope instead of host OS identity.
+        kwargs["writer"] = _execution_writer(0)
     return controller.execute(
         **kwargs,
     )
