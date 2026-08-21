@@ -1,0 +1,56 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_STAGE_ACCEPTANCE_V1",
+  "receiptId": "NG-CLEANROOM-S5A-ACCEPTED-V1",
+  "stage": "S5A",
+  "status": "accepted",
+  "observedAt": "2026-08-21T10:30:17+09:00",
+  "candidateCommit": "c3509375a34c14fd6e426e2d409ecb35c5d009bc",
+  "implementationCommit": "8d6ab0c3766fc6a28cc084d8d821acad882429ef",
+  "oracleCorrectionCommit": "9e72100514b4362fd37237f4a5e09ad691caf084",
+  "modelSeparation": {
+    "impactAndAcceptance": "Sol",
+    "testAndOracle": "Test Luna",
+    "productionImplementation": "Implementation Luna",
+    "writeIntersectionCount": 0
+  },
+  "verification": {
+    "correctedS5aNodes": {
+      "count": 9,
+      "passed": 9,
+      "failed": 0,
+      "exitCode": 0
+    },
+    "s5bSentinel": {
+      "count": 3,
+      "passed": 0,
+      "failed": 3,
+      "exitCode": 1,
+      "onlyFailure": "ModuleNotFoundError: tools.news_grasp_cleanroom_install"
+    },
+    "pythonCompileExitCode": 0,
+    "powershellParseExitCode": 0,
+    "diffCheckExitCode": 0,
+    "ruffContraryEvidence": "pre-existing F401 signal in tools/audit_recovery_control.py; no new production diagnostic"
+  },
+  "productionArtifacts": [
+    {"path": "scripts/ops/news-grasp-runner.ps1", "sha256": "d4c01f0085839b18e5556ea271dd6c5c97d604904150f50296b256071cab033f", "bytes": 334054},
+    {"path": "scripts/ops/run_codex_with_timeout.ps1", "sha256": "652f6cc8db67f746870505a3f90a515885749ca5d9af88cf7ea6e89ef751b1ff", "bytes": 53031},
+    {"path": "tools/audit_recovery_control.py", "sha256": "d945bf4590f6d99633c499a91bb3f9e2f6dbc092bfc8df8ca9ecfaa7a579eb58", "bytes": 142257},
+    {"path": "tools/daily_self_heal.py", "sha256": "abbd031c1514f550d36a196e2871041113647e0267038c6b8749c0b263b7ea2d", "bytes": 187727},
+    {"path": "tools/news_grasp_completion_guard.py", "sha256": "2265ba74625318c29bd3c8ef26744656444f29262a5cb7976ddf3a0d19efde97", "bytes": 23771},
+    {"path": "tools/news_grasp_daily_control.py", "sha256": "b3d99ed0049d0990f65cfc5d13ec3a34804bdfe5c78e8ad5912dbd695b909f5c", "bytes": 79812}
+  ],
+  "worktreeEvidence": {
+    "preHead": "c3509375a34c14fd6e426e2d409ecb35c5d009bc",
+    "postHead": "c3509375a34c14fd6e426e2d409ecb35c5d009bc",
+    "trackedDiffCount": 0,
+    "historicalUntrackedCount": 2,
+    "historicalUntrackedContentsOpened": false
+  },
+  "decision": {
+    "s5aAccepted": true,
+    "s5bProductionMutationAllowed": true,
+    "s5OverallAccepted": false,
+    "successor": "implement tools/news_grasp_cleanroom_install.py against the unchanged nine S5 tests"
+  }
+}
