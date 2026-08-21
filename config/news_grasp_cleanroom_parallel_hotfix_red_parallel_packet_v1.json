@@ -29,14 +29,15 @@
   ],
   "sequentialCorrections": [
     {
-      "leaseId": "TEST-LEASE-S5-HOTFIX-C-V1",
-      "leaseSha256": "7f61aa367f4ace29a1e2e6834a84eb597a5f9307b5be43647f6c3f2d7c716250",
+      "leaseId": "TEST-LEASE-S5-HOTFIX-C2-V1",
+      "leaseSha256": "3a121f788e32406c948bc513f9eaca59f907c3e3c7bdf2143bafdf1af5356311",
+      "supersedesLeaseId": "TEST-LEASE-S5-HOTFIX-C-V1",
       "sequentialTo": "TEST-LEASE-S5-HOTFIX-A-V1",
       "reason": "the first A delivery used a source-string sentinel and did not carry the reported behavioral tests from the time-bound user worktree",
       "canonicalPayload": {
-        "leaseId": "TEST-LEASE-S5-HOTFIX-C-V1",
+        "leaseId": "TEST-LEASE-S5-HOTFIX-C2-V1",
         "role": "test_luna",
-        "canonicalContext": "/root/s1_edge_driver_red",
+        "canonicalContext": "/root/s5_hotfix_red_b",
         "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-s1-h1",
         "writes": [
           "tests/test_news_grasp_daily_control.py",
@@ -117,7 +118,7 @@
     }
   ],
   "writeIntersectionCount": 0,
-  "integrationOrder": ["TEST-LEASE-S5-HOTFIX-A-V1", "TEST-LEASE-S5-HOTFIX-C-V1", "TEST-LEASE-S5-HOTFIX-B2-V1"],
+  "integrationOrder": ["TEST-LEASE-S5-HOTFIX-A-V1", "TEST-LEASE-S5-HOTFIX-C2-V1", "TEST-LEASE-S5-HOTFIX-B2-V1"],
   "redAdmission": "all eight impact nodes plus the four exact imported operational assertions fail for the impact-bound production cause; all three completed commits are required before any S5A/S5B production packet",
   "unresolvedDecisionIds": []
 }
