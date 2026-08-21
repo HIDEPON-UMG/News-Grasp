@@ -240,7 +240,7 @@ class _DirectoryPin:
             if current_key != handle_key:
                 raise InstallControlError(f"{self.label}_identity_swap")
             if _pin_path_key(self._final_path) != _pin_path_key(self.path):
-                raise InstallControlError(f"{self.label}_path_swap")
+                raise InstallControlError(f"{self.label}_identity_swap")
             self._identity = handle_key
         except Exception:
             self.close()
@@ -298,7 +298,7 @@ class _DirectoryPin:
                     raise InstallControlError(f"{self.label}_pin_invalid")
                 final_path = self._get_final_path()
                 if _pin_path_key(final_path) != _pin_path_key(self.path):
-                    raise InstallControlError(f"{self.label}_path_swap")
+                    raise InstallControlError(f"{self.label}_identity_swap")
                 if self._get_file_identity() != self._identity:
                     raise InstallControlError(f"{self.label}_identity_swap")
                 current = os.lstat(self.path)
@@ -925,7 +925,15 @@ class InstallCutoverController:
             self._write_journal(journal)
             self._hook("stage")
         else:
-            self._validate_resume(journal, authority, source, installed, source_hash, candidate)
+            self._validate_resume(
+                journal,
+                authority,
+                source,
+                installed,
+                source_hash,
+                candidate,
+                require_canary=(journal["phase"] == "COMMITTED"),
+            )
             if journal["phase"] == "COMMITTED":
                 return self._stage_result(authority, journal)
             if journal["phase"] == "ROLLED_BACK":

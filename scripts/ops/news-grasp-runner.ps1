@@ -3811,6 +3811,7 @@ function Assert-HighCostOperationAdmission {
 
     $stageDecisionReceipt = ''
     $script:UsesHighCostContinuationAdmission = $false
+    $continuationAdmissionValidated = $false
     if ($ResumeFromStage) {
         if ($HighCostAdmissionPath) {
             # A continuation receipt is not a caller bypass.  It must be
@@ -3870,11 +3871,9 @@ function Assert-HighCostOperationAdmission {
                 Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_SCHEDULED_ADMISSION_INVALID' -ExitCode 76
                 exit 76
             }
-            Set-ScheduledHighCostAuthorityEnvironment -Admission $continuationAdmission -ExpectedOperationKind $operationKind -ExpectedIssueDate $DateStamp
-            $script:UsesHighCostContinuationAdmission = $true
-            $script:HighCostExpectedOperationKind = $operationKind
-            $script:HighCostExpectedIssueDate = $DateStamp
-            return
+            # ここでは継続receiptをauthorityへ昇格させない。既存の
+            # RecoveryDecisionPath検証とfresh broker admissionへ必ず流す。
+            $continuationAdmissionValidated = $true
         }
         if ($RunIntent -ne 'ScheduledRecoveryFull' -or (-not $RecoveryDecisionPath) -or (-not $ScheduledAuthorityEvidencePath)) {
             Add-RunnerLogLine -Text 'ERROR: SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_REQUIRED'
@@ -3972,6 +3971,11 @@ function Assert-HighCostOperationAdmission {
         $script:HighCostExpectedOperationKind = $operationKind
         $script:HighCostExpectedIssueDate = $DateStamp
         Set-ScheduledHighCostAuthorityEnvironment -Admission $admission -ExpectedOperationKind $operationKind -ExpectedIssueDate $DateStamp
+        if ($continuationAdmissionValidated) {
+            # cutoff bypassはcontinuation単体ではなく、decision/fresh brokerの
+            # 検証済み連鎖が成立した後だけ有効にする。
+            $script:UsesHighCostContinuationAdmission = $true
+        }
     } catch {
         if ($admissionValidationPath -and (Test-Path -LiteralPath $admissionValidationPath -PathType Leaf)) {
             Remove-Item -LiteralPath $admissionValidationPath -Force -ErrorAction SilentlyContinue
@@ -4410,29 +4414,28 @@ if ($RecoverOnly) {
     # 事前admissionではdecisionを消費しない。ここが実際のResume stage開始境界であり、
     # このstate書込より前のcrashでは同じdecisionを未開始として安全に再利用できる。
     Set-RunnerState -Status 'running' -Message 'scheduled recovery stage start boundary' -ExitCode -1 -Phase 'resume' -Step 'stage-start-boundary' -ResumeStageCheckpoint $ResumeFromStage
-    if ($script:UsesHighCostContinuationAdmission) {
-        Write-Log "scheduled recovery stage start boundary satisfied by HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1 for ResumeFromStage=$ResumeFromStage"
-    } else {
-        try {
-            $stageWitnessJson = (& $PyExe -I $modelSpawnBroker 'start-news-grasp-recovery-stage' '--decision' $stageDecisionReceipt '--recovery-authority' $ScheduledAuthorityEvidencePath '--consumer-run-id' $RunId 2>&1 | Out-String).Trim()
-            if ($LASTEXITCODE -ne 0) {
-                throw "SCHEDULED_RECOVERY_STAGE_START_FAILED exit=$LASTEXITCODE"
-            }
-            $stageWitness = $stageWitnessJson | ConvertFrom-Json -ErrorAction Stop
-            if (
-                [string]$stageWitness.schemaVersion -ne 'SCHEDULED_RECOVERY_STAGE_STARTED_V1' -or
-                [string]$stageWitness.issueDate -ne $DateStamp -or
-                [string]$stageWitness.resumeStage -ne $ResumeFromStage -or
-                [string]$stageWitness.consumerRunId -ne $RunId -or
-                [string]$stageWitness.decisionReceiptSha256 -ne [string]$decision.brokerStageDecisionReceiptSha256
-            ) {
-                throw 'SCHEDULED_RECOVERY_STAGE_START_WITNESS_INVALID'
-            }
-        } catch {
-            Write-Log "ERROR: scheduled recovery stage start boundary failed: $($_.Exception.Message)"
-            Set-RunnerState -Status 'failed' -Message 'scheduled recovery stage start boundary failed' -ExitCode 76 -Phase 'resume' -Step 'stage-start-boundary'
-            exit 76
+    try {
+        $stageWitnessJson = (& $PyExe -I $modelSpawnBroker 'start-news-grasp-recovery-stage' '--decision' $stageDecisionReceipt '--recovery-authority' $ScheduledAuthorityEvidencePath '--consumer-run-id' $RunId 2>&1 | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0) {
+            throw "SCHEDULED_RECOVERY_STAGE_START_FAILED exit=$LASTEXITCODE"
         }
+        $stageWitness = $stageWitnessJson | ConvertFrom-Json -ErrorAction Stop
+        if (
+            [string]$stageWitness.schemaVersion -ne 'SCHEDULED_RECOVERY_STAGE_STARTED_V1' -or
+            [string]$stageWitness.issueDate -ne $DateStamp -or
+            [string]$stageWitness.resumeStage -ne $ResumeFromStage -or
+            [string]$stageWitness.consumerRunId -ne $RunId -or
+            [string]$stageWitness.decisionReceiptSha256 -ne [string](Get-FileSha256Hex -Path $stageDecisionReceipt)
+        ) {
+            throw 'SCHEDULED_RECOVERY_STAGE_START_WITNESS_INVALID'
+        }
+    } catch {
+        Write-Log "ERROR: scheduled recovery stage start boundary failed: $($_.Exception.Message)"
+        Set-RunnerState -Status 'failed' -Message 'scheduled recovery stage start boundary failed' -ExitCode 76 -Phase 'resume' -Step 'stage-start-boundary'
+        exit 76
+    }
+    if ($script:UsesHighCostContinuationAdmission) {
+        Write-Log "scheduled recovery stage start boundary satisfied by continuation + recovery decision + fresh broker + stage witness for ResumeFromStage=$ResumeFromStage"
     }
     if ($ResumeGenerationQualityRepair) {
         Write-Log "ResumeFromStage=${ResumeFromStage}: reusing Stage0/Reporter/Editor/daily-quality; starting at missing-artifact generation repair"
