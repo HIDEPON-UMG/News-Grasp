@@ -457,7 +457,8 @@ def test_ng813_recovery_python_entrypoints_are_isolated_direct_scripts() -> None
     assert "$controlPlaneArgs = @('-I', '-S', '-B', $controlPlaneVerifier" in bootstrap
     assert "& $PythonExe @controlPlaneArgs" in bootstrap
     assert "& $PyExe '-I' '-S' '-B' $recoveryReceiptTool" in runner
-    assert "& $PyExe '-I' '-S' '-B' $completionGuardTool" in runner
+    # completion guard は tzdata を解決できるよう -S を除外する（2f626c28）。
+    assert "& $PyExe '-I' '-B' $completionGuardTool" in runner
     assert "& $PyExe '-I' '-S' '-B' $dailySelfHealTool" in runner
     assert "'-P' '-m' 'tools.news_grasp_recovery_receipts'" not in bootstrap
     assert "'-P' '-m' 'tools.news_grasp_recovery_receipts'" not in runner

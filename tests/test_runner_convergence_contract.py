@@ -792,10 +792,10 @@ def test_runner_scopes_each_compound_repair_to_primary_issue_artifacts() -> None
         "function Invoke-DeterministicRegistryRepair", 1
     )[0]
 
+    selected_artifacts = helper.index("'selected_artifacts'")
     artifact_paths = helper.index("'artifact_paths'")
     primary_return = helper.index("return $selected.ToArray()")
-    selected_artifacts = helper.index("'selected_artifacts'")
-    assert artifact_paths < primary_return < selected_artifacts
+    assert selected_artifacts < artifact_paths < primary_return
 
 
 def test_parallel_hotfix_runner_optional_fields_three_admission_schemas_and_artifact_priority_dedupe() -> None:

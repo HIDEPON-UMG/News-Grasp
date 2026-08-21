@@ -180,9 +180,20 @@ def test_runner_records_codex_usage_by_flow() -> None:
         '-FlowName "reporter:$Category"',
         "-FlowName 'newsroom_editor'",
         "-FlowName 'deepdive'",
-        '-FlowName "repair:$GateId"',
     ]:
         assert flow in runner
+
+    repair_body = runner.split("function Invoke-TargetedRepair", 1)[1].split(
+        "function Get-RepairDecisionArtifacts", 1
+    )[0]
+    assert '$repairFlowName = "repair:$GateId"' in repair_body
+    assert "-FlowName $repairFlowName" in repair_body
+
+    wrapper = runner.split("function Invoke-CodexWrapper", 1)[1].split(
+        "function ", 1
+    )[0]
+    assert "'FlowName' = $FlowName" in wrapper
+    assert "'UsageLog' = $CodexUsageLog" in wrapper
 
 
 def test_runner_records_codex_usage_window_snapshots() -> None:
