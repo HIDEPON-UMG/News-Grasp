@@ -1,0 +1,161 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S6-RELEASE-IMPL-V1",
+  "status": "active",
+  "executionAllowed": true,
+  "role": "implementation_luna",
+  "canonicalContext": "/root/s6_release_impl",
+  "todoId": "No.10/A-10 through No.14/A-14",
+  "baselineCommit": "f667527e5281a2b341ff8fdc4bb824452852774e",
+  "dependencies": [
+    "NG-CLEANROOM-S6-INSTALLED-CLOSURE-RED-V1",
+    "NG-CLEANROOM-S5A-ACCEPTED-V1",
+    "NG-CLEANROOM-S5B-INSTALL-CUTOVER-V2-R1"
+  ],
+  "dependencyState": {
+    "s6Red": "sealed_exact_six_module_not_found",
+    "s5a": "accepted",
+    "s5b": "implementation_in_parallel_not_yet_integrated",
+    "rule": "implement the release module now; do not edit or emulate S5B; an S5 import/failure after the release module loads is a typed external dependency, not permission to weaken S6"
+  },
+  "writeLease": {
+    "leaseId": "IMPL-LEASE-S6-RELEASE-V1",
+    "leaseSha256": "8352cd280ed75f10fe667e6c3ef7de0838f7e0443db0f0273cf62f7e7477f30e",
+    "canonicalPayload": {
+      "leaseId": "IMPL-LEASE-S6-RELEASE-V1",
+      "role": "implementation_luna",
+      "canonicalContext": "/root/s6_release_impl",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-s6-hotfix",
+      "writes": [
+        "tools/news_grasp_cleanroom_release.py"
+      ],
+      "baselineCommit": "f667527e5281a2b341ff8fdc4bb824452852774e"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": [
+    "tools/news_grasp_cleanroom_release.py"
+  ],
+  "forbiddenWrites": [
+    "tests/**",
+    "config/**",
+    "docs/**",
+    "scripts/**",
+    "all existing production modules including tools/news_grasp_cleanroom_install.py",
+    "ProjectFolders workspace-global harness",
+    "live runtime, bin, Task Scheduler, network, external model or public state"
+  ],
+  "publicApi": {
+    "exception": "ReleaseEvidenceError",
+    "functions": [
+      "validate_layer_evidence(evidence, sealed_manifest, trusted_receipts, expected_context, installed_authority)",
+      "admit_final_e2e(admission, trusted_receipts, expected_context, installed_authority)",
+      "validate_natural_evidence(evidence, trusted_receipts, expected_context, installed_authority)"
+    ],
+    "sideEffects": "none; validators return detached plain dictionaries and never mutate caller values or filesystem"
+  },
+  "canonicalHash": "SHA-256 over UTF-8 JSON with ensure_ascii=false, sort_keys=true and separators=(',',':')",
+  "closedWorldRules": [
+    "reject bool where an integer is required, non-finite or negative counts, malformed ISO timestamps and non-lowercase 64-hex SHA-256 values",
+    "reject unknown, missing, duplicate or reordered closed-world rows; reject path traversal, absolute closure rows and separator aliases",
+    "when an optional outer authoritySha256 is present validate it over all other authority keys; its absence is valid for the original positive fixture",
+    "reject placeholder digests composed of one repeated hex character, including substituted preimage hashes",
+    "compare structures and hashes independently so a recursively resealed semantic negative still fails for its semantic cause"
+  ],
+  "installedAuthorityContract": {
+    "schemaVersion": "INSTALLED_AUTHORITY_V1",
+    "closurePathsExactSorted": [
+      "scripts/ops/news-grasp-runner.ps1",
+      "scripts/ops/news-grasp-task-launcher.pyw",
+      "scripts/ops/run_codex_with_timeout.ps1",
+      "tools/audit_recovery_control.py",
+      "tools/daily_self_heal.py",
+      "tools/news_grasp_completion_guard.py",
+      "tools/news_grasp_daily_control.py"
+    ],
+    "bindingPathsExactSorted": [
+      "bin/news-grasp-high-cost-binding-v1.json",
+      "bin/news-grasp-recovery-runtime-binding-v1.json"
+    ],
+    "taskNamesExactOrder": [
+      "News-Grasp Bootstrap",
+      "News-Grasp Production"
+    ],
+    "ownerReceiptsExact": {
+      "runtime_generation_owner": [
+        "PRODUCTION_GENERATION_MANIFEST_V2",
+        "NEWS_GRASP_ACTIVE_GENERATION_V2"
+      ],
+      "ops_install_owner": [
+        "NEWS_GRASP_OPS_INSTALL_JOURNAL_V1",
+        "NEWS_GRASP_PHYSICAL_DELIVERY_STATE_V1"
+      ]
+    },
+    "validation": [
+      "source and installed launcher bytes must exist and match their declared hashes; source and installed digests must match",
+      "generationReceipt and its hash must bind generation and sourceSha256",
+      "taskXml bytes/hash, taskAction, executable, argv and workingDirectory must be internally consistent",
+      "each closure row has exact keys path,sha256,bytes and matches actual bytes under installedRoot; aggregate hash matches",
+      "each binding row has exact keys schemaVersion,relativePath,sha256, schema NEWS_GRASP_RUNTIME_BINDING_V1 and matches actual bytes; aggregate hash matches",
+      "each Task row has exact taskName/action/actionSha256, exact structured executable/arguments/workingDirectory semantics and aggregate hash",
+      "each owner receipt has exact ownerId,receiptSchemas,sourceSha256,installedSha256,taskActionSha256,preimageSha256,receiptSha256; values bind the enclosing authority and aggregate hash",
+      "loadedFreshness must be fresh and loadedGeneration must equal authority generation and expected context generation"
+    ]
+  },
+  "layerEvidenceContract": [
+    "sealed manifest and evidence are exact L0 through L7 in order with no duplicates",
+    "each evidence row exact-matches sealed realRequired, fakeSubstitution as fakeUsed and schemaIdentity, has non-empty realObserved, GREEN status and valid evidenceSha256",
+    "trusted receipt registry is exact S0 through S5; receiptId, schema, ACCEPTED status, issue date, generation, source commit, receipt bytes hash and receiptSha256 bind expected_context",
+    "installed authority is fully validated before GREEN is returned",
+    "return schemaVersion LAYER_EVIDENCE_V1, status GREEN and ordered layer names"
+  ],
+  "finalAdmissionContract": [
+    "admission is exact E2E_FINAL_ADMISSION_V1 and admissionSha256 is valid",
+    "issueDate/generation bind expected_context; acceptedReceipts exactly bind trusted S0 through S5 with no caller registry overwrite",
+    "layerEvidence and aggregate hash are valid exact L0 through L7 evidence",
+    "installedSourceSha256, installedHashSha256 and installedAuthoritySha256 bind fully validated installed authority",
+    "externalMutationSuppressed=true, externalMutationCount=0, attemptBudget=1, attemptsUsed=0, independentBlockerCount=0 and mode=final_confirmation_only",
+    "return a detached copy with status ADMITTED and no mutation"
+  ],
+  "naturalEvidenceContract": [
+    "natural evidence exact schema NATURAL_OPERATION_EVIDENCE_V1, valid naturalEvidenceSha256, issueDate/generation matching context",
+    "installed commit/hash/freshness bind expected context and fully validated installed authority",
+    "receipts are exact Scheduled,Audit,Public,Readiness; each exact NATURAL_OPERATION_RECEIPT_V1 with matching lineage/date/generation, terminalHash and receiptSha256",
+    "Scheduled, Audit and Readiness must be GREEN; Public may be GREEN or NOT_REQUIRED only with Scheduled GREEN",
+    "history is exact HISTORY_COVERAGE_V1: Asia/Tokyo, introduction 2026-07-23, 30 unique consecutive dates through issueDate, no missing days, counts Scheduled=63 and Audit=8, 30 sealed daily rows, 71 exact corpus rows, legacyWriterCount=0",
+    "daily and corpus provenance hashes must be recomputed from their semantic fields and referenced receipt hashes"
+  ],
+  "negativeCoverage": [
+    "all fixture layerEvidenceCases",
+    "all fixture l8AdmissionCases and authorityCases",
+    "all fixture historyCases, naturalCases and nonSubstitutionCases",
+    "all 20 installedClosureCases including recursively resealed semantic drift",
+    "caller inputs and temp filesystem inventory unchanged on every rejection"
+  ],
+  "verification": {
+    "compile": "py -3.12 -m py_compile tools/news_grasp_cleanroom_release.py",
+    "ruff": "py -3.12 -m ruff check tools/news_grasp_cleanroom_release.py",
+    "exactS6": "$env:NEWS_GRASP_HIGH_COST_BINDING_PATH=[Environment]::ExpandEnvironmentVariables('%USERPROFILE%\\bin\\news-grasp-high-cost-binding-v1.json'); py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s6_release.py",
+    "expectedBeforeS5BIntegration": "release module must import and validators must execute; failures caused solely by absent tools.news_grasp_cleanroom_install are an allowed typed dependency, never a Green claim",
+    "expectedAfterS5BIntegration": "exact 6 passed",
+    "regression": "run S0 through S5 clean-room exact suites after S5B integration",
+    "diff": "git diff --check and exact one owned path only"
+  },
+  "implementationRules": [
+    "use stdlib only and no environment reads except paths supplied in arguments",
+    "small pure validation helpers are preferred; no test imports, fixture hardcoding by case name or mutation-case branching",
+    "all failures raise ReleaseEvidenceError with non-secret typed diagnostics",
+    "do not modify a caller registry, normalize an invalid value into validity or silently ignore unknown keys"
+  ],
+  "commitPolicy": {
+    "allowedOnlyAfter": "compile, Ruff, diff and the strongest dependency-aware S6 evidence available",
+    "paths": [
+      "tools/news_grasp_cleanroom_release.py"
+    ],
+    "message": "feat: implement S6 release evidence plane"
+  },
+  "causalRetry": "one implementation attempt and one causally distinct correction only; never weaken tests or accept a same-shape retry",
+  "delivery": "file hash/bytes, test evidence including typed S5 dependency if present, commit and clean status",
+  "stopPolicy": "return to Sol after commit; no S5, install, live, global harness or test changes",
+  "unresolvedDecisionIds": []
+}
