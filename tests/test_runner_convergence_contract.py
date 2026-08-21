@@ -4830,3 +4830,89 @@ def test_sec_all_resume_stages_share_stage_witness_before_stage_specific_work() 
         assert witness_call < branch_match.start(), (
             "stage-specific resume work precedes the common stage witness"
         )
+
+
+def test_sec_resume_stage_contract_is_exactly_six_across_consumers_and_rejects_unknown_decision(
+    tmp_path: Path,
+) -> None:
+    """resume stage集合を全consumerで一致させ、未知値をdecision validatorで拒否する。"""
+
+    expected_stages = {
+        "post-reporter",
+        "editor",
+        "deepdive",
+        "post-daily-quality",
+        "post-deepdive",
+        "generation-quality-repair",
+    }
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    launcher = (OPS_DIR / "news-grasp-task-launcher.pyw").read_text(encoding="utf-8")
+    daily_control_source = (ROOT / "tools" / "news_grasp_daily_control.py").read_text(
+        encoding="utf-8"
+    )
+    operational_contract_source = (
+        ROOT / "tools" / "news_grasp_operational_contract.py"
+    ).read_text(encoding="utf-8")
+
+    runner_match = re.search(
+        r"\[ValidateSet\('',\s*(?P<body>.*?)\)\]\s*\r?\n\s*\[string\]\s+\$ResumeFromStage",
+        runner,
+        re.IGNORECASE | re.DOTALL,
+    )
+    assert runner_match
+    runner_stages = set(re.findall(r"'([^']+)'", runner_match.group("body")))
+
+    launcher_match = re.search(
+        r"if\s+resume_stage\s+not\s+in\s+\{(?P<body>.*?)\}",
+        launcher,
+        re.IGNORECASE | re.DOTALL,
+    )
+    assert launcher_match
+    launcher_stages = set(re.findall(r'"([^"]+)"', launcher_match.group("body")))
+
+    daily_match = re.search(
+        r"RESUME_STAGES\s*=\s*\{(?P<body>.*?)\}",
+        daily_control_source,
+        re.DOTALL,
+    )
+    assert daily_match
+    daily_stages = set(re.findall(r'"([^"]+)"', daily_match.group("body")))
+
+    operational_match = re.search(
+        r"SCHEDULED_ADMISSION_RESUME_STAGES\s*=\s*frozenset\(\s*\{(?P<body>.*?)\}\s*\)",
+        operational_contract_source,
+        re.DOTALL,
+    )
+    assert operational_match
+    operational_stages = set(
+        re.findall(r'"([^"]+)"', operational_match.group("body"))
+    )
+
+    assert runner_stages == expected_stages
+    assert launcher_stages == expected_stages
+    assert daily_stages == expected_stages
+    assert operational_stages == expected_stages
+
+    from tools import news_grasp_daily_control as daily_control
+
+    invalid_decision = daily_control._sealed(
+        {
+            "schemaVersion": daily_control.SCHEMA,
+            "issuer": daily_control.ISSUER,
+            "issueDate": "2026-08-21",
+            "action": "launch_recovery",
+            "recoveryBranch": "ResumeFromStage",
+            "resumeStage": "unknown-resume-stage",
+            "maxAutomaticRecoveryAttempts": 1,
+            "noFocusTheft": True,
+            "noAutoOpen": True,
+            "noUserMonitoring": True,
+        }
+    )
+    invalid_path = tmp_path / "invalid-resume-stage-decision.json"
+    invalid_path.write_text(
+        json.dumps(invalid_decision, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError):
+        daily_control.validate_decision(invalid_path)
