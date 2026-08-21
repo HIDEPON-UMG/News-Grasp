@@ -1006,3 +1006,39 @@ def test_codex_wrapper_rejects_success_probe_early_termination(tmp_path: Path) -
     assert "SUCCESS_PROBE_EARLY_TERMINATION_FORBIDDEN" in log
     assert not sentinel.exists()
     assert not usage_log.exists()
+
+
+def test_parallel_hotfix_wrapper_wall_and_idle_timeout_map_exit_124(tmp_path: Path) -> None:
+    """wall/idle timeoutはowned child treeだけを閉じ、両方rc=124へ型付けする。"""
+    for timeout_args, label in ((["-TimeoutSec", "1", "-IdleTimeoutSec", "0"], "wall"),
+                                (["-TimeoutSec", "0", "-IdleTimeoutSec", "1"], "idle")):
+        root = tmp_path / label
+        root.mkdir()
+        prompt = root / "prompt.md"
+        log = root / "wrapper.log"
+        child = root / "sleep-child.ps1"
+        prompt.write_text("bounded timeout child\n", encoding="utf-8")
+        child.write_text("Start-Sleep -Seconds 3\nexit 0\n", encoding="utf-8")
+        high_cost_args, env = _canonical_test_broker(root, wrapper_path=REPO_WRAPPER)
+        result = subprocess.run(
+            [
+                POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass",
+                "-File", str(REPO_WRAPPER),
+                "-CodexExe", str(child),
+                "-PromptFile", str(prompt),
+                "-LogFile", str(log),
+                "-WorkingDirectory", str(ROOT),
+                "-FlowName", f"timeout:{label}",
+                *timeout_args,
+                *high_cost_args,
+            ],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=8,
+            env=env,
+        )
+        log_text = log.read_text(encoding="utf-8", errors="replace") if log.exists() else ""
+        assert result.returncode == 124, result.stderr + result.stdout + log_text
+        assert "timeout" in log_text.lower()

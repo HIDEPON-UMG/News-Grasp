@@ -798,6 +798,50 @@ def test_runner_scopes_each_compound_repair_to_primary_issue_artifacts() -> None
     assert artifact_paths < primary_return < selected_artifacts
 
 
+def test_parallel_hotfix_runner_optional_fields_three_admission_schemas_and_artifact_priority_dedupe() -> None:
+    """optional decision fields、3 admission schema、selected-first fallbackを束縛する。"""
+    fixture = json.loads(
+        (ROOT / "tests" / "fixtures" / "news_grasp_cleanroom_parallel_hotfix_cases.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    helper = runner.split("function Get-RepairDecisionArtifacts", 1)[1].split(
+        "function Invoke-DeterministicRegistryRepair", 1
+    )[0]
+    assert all(schema in runner for schema in fixture["admissionSchemas"])
+    assert "HIGH_COST_SCHEDULED_UNKNOWN_V1" not in runner
+    assert helper.index("'selected_artifacts'") < helper.index("'artifact_paths'")
+    assert "FallbackArtifacts" in helper
+
+    script = r"""
+$runner = Get-Content -LiteralPath $env:NEWS_GRASP_RUNNER_PATH -Raw -Encoding UTF8
+$start = $runner.IndexOf('function Get-RepairDecisionArtifacts')
+$end = $runner.IndexOf('function Invoke-DeterministicRegistryRepair', $start)
+if ($start -lt 0 -or $end -lt 0) { exit 2 }
+Invoke-Expression $runner.Substring($start, $end - $start)
+$decision = [pscustomobject]@{ selected_artifacts=@('one','two','one'); artifact_paths=@('two','three') }
+$selected = @(Get-RepairDecisionArtifacts -RepairDecision $decision -FallbackArtifacts @('fallback','one'))
+$fallback = @(Get-RepairDecisionArtifacts -RepairDecision ([pscustomobject]@{}) -FallbackArtifacts @('fallback','one'))
+[pscustomobject]@{ selected=$selected; fallback=$fallback } | ConvertTo-Json -Compress
+"""
+    env = os.environ.copy()
+    env["NEWS_GRASP_RUNNER_PATH"] = str(RUNNER_PS1)
+    result = subprocess.run(
+        [POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=30,
+        env=env,
+    )
+    assert result.returncode == 0, result.stderr
+    value = json.loads(result.stdout)
+    assert value["selected"] == ["one", "two", "three"]
+    assert value["fallback"] == ["fallback", "one"]
+
+
 def test_runner_does_not_report_registry_noop_as_repair_success() -> None:
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
 

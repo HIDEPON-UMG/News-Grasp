@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "NEWS_GRASP_CLEANROOM_PARALLEL_HOTFIX_CASES_V1",
+  "admissionSchemas": [
+    "HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1",
+    "HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1",
+    "HIGH_COST_SCHEDULED_INCIDENT_REPAIR_V1"
+  ],
+  "unknownAdmissionSchemas": ["HIGH_COST_SCHEDULED_UNKNOWN_V1"],
+  "driftCases": [
+    "source_sha256",
+    "installed_sha256",
+    "binding_receipt_sha256",
+    "task_action_sha256"
+  ],
+  "ownerReceiptSchemas": [
+    "PRODUCTION_GENERATION_MANIFEST_V2",
+    "NEWS_GRASP_ACTIVE_GENERATION_V2",
+    "NEWS_GRASP_OPS_INSTALL_JOURNAL_V1",
+    "NEWS_GRASP_PHYSICAL_DELIVERY_STATE_V1"
+  ],
+  "ownerBoundaries": ["launcher_runtime_lifecycle", "install_news_grasp_ops"],
+  "forbiddenExternalMutations": [
+    "network",
+    "model",
+    "task",
+    "publish",
+    "upload",
+    "notification"
+  ]
+}

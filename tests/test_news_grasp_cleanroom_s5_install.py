@@ -608,3 +608,83 @@ def test_s5_child_tree_human_impact(tmp_path: Path) -> None:
         "noUserMonitoring": True,
         "noSharedProcessKill": True,
     }
+
+
+def test_s5_preflight_rejects_source_install_binding_task_action_drift_before_mutation(
+    tmp_path: Path,
+) -> None:
+    """source/install/binding/Task actionのdriftは最初のTask mutation前に拒否する。"""
+    module = importlib.import_module("tools.news_grasp_cleanroom_install")
+    parallel = json.loads(
+        (Path(__file__).parent / "fixtures" / "news_grasp_cleanroom_parallel_hotfix_cases.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert parallel["driftCases"] == [
+        "source_sha256", "installed_sha256", "binding_receipt_sha256", "task_action_sha256"
+    ]
+    cases = _cases()
+    for index, drift in enumerate(parallel["driftCases"], start=120):
+        root, source, content, manifest, authority = _roots(tmp_path, index)
+        installed = root / "installed"
+        if drift == "source_sha256":
+            source.joinpath("launcher.pyw").write_bytes(content + b"drift")
+        elif drift == "installed_sha256":
+            installed.mkdir(parents=True, exist_ok=True)
+            installed.joinpath("launcher.pyw").write_bytes(b"installed-drift")
+        elif drift == "binding_receipt_sha256":
+            authority["authoritySha256"] = "0" * 64
+        else:
+            manifest["tasks"][0]["action"]["entryModule"] = "foreign.module"
+        task = TaskAdapter(module)
+        controller = _controller(module, root, task)
+        with pytest.raises(module.InstallControlError):
+            _stage(controller, manifest, source, installed, authority)
+        assert task.history_rows() == [], drift
+    assert cases["lineage"] == "InstallCutover"
+
+
+def test_s5_requires_both_owner_receipts_before_candidate_registration(tmp_path: Path) -> None:
+    """runtime-generationとops-installの両owner receiptがcandidate登録を先行する。"""
+    module = importlib.import_module("tools.news_grasp_cleanroom_install")
+    parallel = json.loads(
+        (Path(__file__).parent / "fixtures" / "news_grasp_cleanroom_parallel_hotfix_cases.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    root, source, _content, manifest, authority = _roots(tmp_path, 140)
+    authority["ownerReceipts"] = {
+        parallel["ownerBoundaries"][0]: {
+            "schemaVersion": parallel["ownerReceiptSchemas"][0]
+        }
+    }
+    task = TaskAdapter(module)
+    controller = _controller(module, root, task)
+    with pytest.raises(module.InstallControlError):
+        _stage(controller, manifest, source, root / "installed", authority)
+    assert task.history_rows() == []
+
+
+def test_s5_two_owner_crash_and_privilege_failure_restore_exact_preimages(tmp_path: Path) -> None:
+    """owner transaction crash/privilege failureはTaskとruntime preimageを順序付き復元する。"""
+    module = importlib.import_module("tools.news_grasp_cleanroom_install")
+    parallel = json.loads(
+        (Path(__file__).parent / "fixtures" / "news_grasp_cleanroom_parallel_hotfix_cases.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert parallel["ownerBoundaries"] == ["launcher_runtime_lifecycle", "install_news_grasp_ops"]
+    root, source, content, manifest, authority = _roots(tmp_path, 160)
+    task = TaskAdapter(module)
+    controller = _controller(module, root, task)
+    _stage(controller, manifest, source, root / "installed", authority)
+    old_preimage = task.task_definition(OLD_TASK)
+    task.set_denial("disable")
+    with pytest.raises((module.PrivilegeDenied, module.InstallControlError)):
+        _cutover(controller, authority)
+    task.set_denial(None)
+    _cutover(controller, authority)
+    _rollback(controller, authority)
+    assert task.task_definition(OLD_TASK) == old_preimage
+    assert (root / "installed" / "launcher.pyw").read_bytes() == content
+    assert task.dual_enabled_count == 0
