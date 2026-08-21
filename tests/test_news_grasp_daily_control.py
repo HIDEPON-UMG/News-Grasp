@@ -720,6 +720,82 @@ def test_operational_truth_separates_admission_file_hash_from_ledger_receipt(
     )
     assert truth["sourceAdmissionSha256"] == admission_receipt
     assert truth["sourceAdmissionFileSha256"] == admission_file_sha
+
+
+def test_invalid_existing_scheduled_admission_is_not_copied_or_reused(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """sealed検証に失敗する既存/evidence admissionはbroker再発行へ戻し、再利用しない。"""
+
+    control = _control()
+    issue_date = "2026-08-21"
+    repo = tmp_path / "current"
+    evidence = tmp_path / "evidence"
+    authority_path = tmp_path / "recovery-authority.json"
+    authority = control._sealed(
+        {
+            "schemaVersion": "SCHEDULED_RECOVERY_AUTHORITY_V1",
+            "productId": "News-Grasp",
+            "issueDate": issue_date,
+            "operationKind": "scheduled_recovery",
+        }
+    )
+    authority_path.write_text(json.dumps(authority), encoding="utf-8")
+    existing = {
+        "schemaVersion": "HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1",
+        "productId": "News-Grasp",
+        "issueDate": issue_date,
+        "authorityKind": "scheduled_news_grasp",
+        "taskIdentity": "d" * 64,
+        "latestActualUserEventHash": "d" * 64,
+        "operationKind": "scheduled_recovery",
+        "operationAuthoritySha256": authority["receiptSha256"],
+        "maxExternalModelCalls": 9,
+        "attemptReservation": {
+            "attemptId": issue_date,
+            "eventSequence": 1,
+            "idempotent": False,
+        },
+        "taskState": "running",
+        "receiptSha256": "0" * 64,
+    }
+    existing_path = (
+        evidence
+        / "build"
+        / "high-cost-operation-admissions"
+        / issue_date
+        / "audit-0640-scheduled_recovery.json"
+    )
+    existing_path.parent.mkdir(parents=True)
+    existing_path.write_text(json.dumps(existing), encoding="utf-8")
+    broker_calls: list[tuple[str, ...]] = []
+    replacement = dict(existing)
+    replacement["receiptSha256"] = control._sha(
+        {key: value for key, value in replacement.items() if key != "receiptSha256"}
+    )
+    backend = control.ProductionBackend(repo_root=repo, evidence_root=evidence)
+    monkeypatch.setattr(
+        backend,
+        "_run_broker",
+        lambda *args: broker_calls.append(tuple(args)) or replacement,
+    )
+
+    result = backend.admit_scheduled_recovery(
+        issue_date=issue_date,
+        recovery_authority_path=authority_path,
+    )
+
+    assert broker_calls, "invalid existing admission must not suppress broker admission"
+    assert result == (
+        repo
+        / "build"
+        / "high-cost-operation-admissions"
+        / issue_date
+        / "audit-0640-scheduled_recovery.json"
+    ).resolve()
+    assert json.loads(result.read_text(encoding="utf-8"))["receiptSha256"] == replacement[
+        "receiptSha256"
+    ]
     assert truth["resumeStage"] == "generation-quality-repair"
 
 

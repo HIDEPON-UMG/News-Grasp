@@ -2608,3 +2608,27 @@ def test_sec_audit_broker_requires_exact_bound_python_and_trust_anchor() -> None
     assert "return \"python\"" not in executable_source
     assert "Path.home() / \"AppData\"" not in executable_source
     assert "RECOVERY_PYTHON_IDENTITY_INVALID" in executable_source or "RECOVERY_PYTHON_IDENTITY_INVALID" in broker_source
+
+
+def test_canonical_python_executable_delegates_to_live_runtime_resolver(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """監査brokerは独自fallbackでなくlive binding resolverの結果だけを使う。"""
+
+    control = _control("RECOVERY_PYTHON_IDENTITY_INVALID")
+    from tools import e2e_final_admission_bridge as bridge
+
+    bound_python = tmp_path / "live-bin" / "python.exe"
+    bound_python.parent.mkdir(parents=True)
+    bound_python.write_bytes(b"bound-python")
+    calls: list[dict[str, object]] = []
+
+    def fake_resolver(**kwargs: object) -> Path:
+        calls.append(kwargs)
+        return bound_python.resolve()
+
+    monkeypatch.setattr(bridge, "resolve_production_runtime_python", fake_resolver)
+    resolved = control._canonical_python_executable()
+
+    assert Path(resolved).resolve() == bound_python.resolve()
+    assert calls

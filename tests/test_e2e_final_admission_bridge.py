@@ -2598,3 +2598,93 @@ def test_issue_allows_safe_missing_output_ancestors_after_preflight(tmp_path: Pa
     )
     assert output.is_file()
     assert not (output_parent / "admission.high-cost-parent-authority.json").exists()
+
+
+def _runtime_binding_fixture(tmp_path: Path) -> tuple[Path, Path, dict[str, object]]:
+    live_bin = tmp_path / "live-bin"
+    live_bin.mkdir()
+    executable = live_bin / "python.exe"
+    executable.write_bytes(b"trusted production python fixture\n")
+    binding = {
+        "schemaVersion": "NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1",
+        "pythonExe": str(executable.resolve()),
+        "pythonExeSha256": _sha256(executable),
+        "pythonTrustAnchor": bridge_module.PYTHON_TRUST_ANCHOR,
+        "pythonSignerSubject": bridge_module.PYTHON_SIGNER_SUBJECT,
+        "pythonSignerThumbprint": bridge_module.PYTHON_SIGNER_THUMBPRINT,
+    }
+    (live_bin / "news-grasp-recovery-runtime-binding-v1.json").write_text(
+        json.dumps(binding, sort_keys=True), encoding="utf-8"
+    )
+    return live_bin, executable, binding
+
+
+def test_resolve_production_runtime_python_accepts_fresh_bound_signed_live_binary(
+    tmp_path: Path,
+) -> None:
+    """live-bin bindingと注入Authenticode readerが完全一致する実体だけを返す。"""
+
+    resolver = getattr(bridge_module, "resolve_production_runtime_python", None)
+    assert callable(resolver), "RED_PRODUCTION_RUNTIME_PYTHON_RESOLVER_MISSING"
+    live_bin, executable, _binding = _runtime_binding_fixture(tmp_path)
+    resolved = resolver(
+        live_bin_root=live_bin,
+        authenticode_reader=lambda _path: {
+            "status": "Valid",
+            "subject": bridge_module.PYTHON_SIGNER_SUBJECT,
+            "thumbprint": bridge_module.PYTHON_SIGNER_THUMBPRINT,
+        },
+    )
+    assert resolved == executable.resolve()
+
+
+def test_resolve_production_runtime_python_rejects_identity_drift_and_reparse(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """hash/署名/status/reparse driftはRECOVERY_PYTHON_IDENTITY_INVALIDで起動0にする。"""
+
+    resolver = getattr(bridge_module, "resolve_production_runtime_python", None)
+    assert callable(resolver), "RED_PRODUCTION_RUNTIME_PYTHON_RESOLVER_MISSING"
+    drift_fields = (
+        ("pythonExeSha256", "0" * 64),
+        ("pythonSignerSubject", "CN=forged"),
+        ("pythonSignerThumbprint", "0" * 40),
+    )
+    for field, value in drift_fields:
+        live_bin, _executable, binding = _runtime_binding_fixture(tmp_path / field)
+        binding[field] = value
+        (live_bin / "news-grasp-recovery-runtime-binding-v1.json").write_text(
+            json.dumps(binding, sort_keys=True), encoding="utf-8"
+        )
+        with pytest.raises(Exception, match="RECOVERY_PYTHON_IDENTITY_INVALID"):
+            resolver(
+                live_bin_root=live_bin,
+                authenticode_reader=lambda _path: {
+                    "status": "Valid",
+                    "subject": bridge_module.PYTHON_SIGNER_SUBJECT,
+                    "thumbprint": bridge_module.PYTHON_SIGNER_THUMBPRINT,
+                },
+            )
+
+    live_bin, _executable, _binding = _runtime_binding_fixture(tmp_path / "status")
+    with pytest.raises(Exception, match="RECOVERY_PYTHON_IDENTITY_INVALID"):
+        resolver(
+            live_bin_root=live_bin,
+            authenticode_reader=lambda _path: {
+                "status": "NotSigned",
+                "subject": bridge_module.PYTHON_SIGNER_SUBJECT,
+                "thumbprint": bridge_module.PYTHON_SIGNER_THUMBPRINT,
+            },
+        )
+
+    live_bin, _executable, _binding = _runtime_binding_fixture(tmp_path / "reparse")
+    monkeypatch.setattr(bridge_module, "_has_reparse_component", lambda *_args, **_kwargs: True)
+    with pytest.raises(Exception, match="RECOVERY_PYTHON_IDENTITY_INVALID"):
+        resolver(
+            live_bin_root=live_bin,
+            authenticode_reader=lambda _path: {
+                "status": "Valid",
+                "subject": bridge_module.PYTHON_SIGNER_SUBJECT,
+                "thumbprint": bridge_module.PYTHON_SIGNER_THUMBPRINT,
+            },
+        )
