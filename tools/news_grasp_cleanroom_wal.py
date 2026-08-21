@@ -112,13 +112,10 @@ def _publish_create_once_real(
     source: str | os.PathLike[str], destination: str | os.PathLike[str]
 ) -> None:
     """既存の公開先を置換せず、同一ディレクトリへ一度だけ公開する。"""
-    if os.name == "nt":
-        os.rename(source, destination)
-        return
     try:
         os.link(source, destination)
     except OSError as exc:
-        if getattr(exc, "errno", None) == 17:
+        if getattr(exc, "errno", None) == 17 or getattr(exc, "winerror", None) == 183:
             raise FileExistsError(str(destination)) from exc
         raise
     os.unlink(source)
