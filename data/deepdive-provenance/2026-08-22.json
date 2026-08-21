@@ -1,0 +1,77 @@
+{
+  "articlePath": "digest/DeepDive/2026-08-22-DeepDive.md",
+  "articleSha256": "43c67a561eb94d3291fef53f8eb3b8ddfab5316faab7921620592bcb140eb01f",
+  "issueDate": "2026-08-22",
+  "manifestSha256": "b4f88756563509ec9613372a7662ba55c1d58326d90da5a9f6b092951390a4d8",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "884b91931a69cec82c7e91f52f9d695b6e8bd63c2ce62f1176ae60f381200907",
+  "sources": [
+    {
+      "contentSha256": "b6ba753933b57e94eb06c78fc5f2948c4d56abcd0e58ab4d44ab61be7fd40f93",
+      "fetchedAt": "2026-08-21T23:28:04.538818+00:00",
+      "finalUrl": "https://current.ndl.go.jp/car/283665",
+      "httpStatus": 200,
+      "locations": [
+        "refs"
+      ],
+      "publicHref": "https://current.ndl.go.jp/car/283665",
+      "url": "https://current.ndl.go.jp/car/283665"
+    },
+    {
+      "contentSha256": "1784b0c890e0d658d0f50ccaad973dc9a4da35ec4523275364cb108ae6119a56",
+      "fetchedAt": "2026-08-21T23:28:04.805350+00:00",
+      "finalUrl": "https://techtarget.itmedia.co.jp/tt/news/2608/22/news01.html",
+      "httpStatus": 200,
+      "locations": [
+        "refs"
+      ],
+      "publicHref": "https://techtarget.itmedia.co.jp/tt/news/2608/22/news01.html",
+      "url": "https://techtarget.itmedia.co.jp/tt/news/2608/22/news01.html"
+    },
+    {
+      "contentSha256": "dd9364a7f4314ca9d7e1544aebeadd38196593326d2c0617c66bdea9ba6092ed",
+      "fetchedAt": "2026-08-21T23:28:05.622724+00:00",
+      "finalUrl": "https://www.gartner.co.jp/ja/articles/allocate-your-it-budget-instead-of-cutting-it",
+      "httpStatus": 206,
+      "locations": [
+        "refs"
+      ],
+      "publicHref": "https://www.gartner.co.jp/ja/articles/allocate-your-it-budget-instead-of-cutting-it",
+      "url": "https://www.gartner.co.jp/ja/articles/allocate-your-it-budget-instead-of-cutting-it"
+    },
+    {
+      "contentSha256": "b7eec29be898d646ef16258e133fe1ab1aeabb7081f7e86a7b7dd2e0db3bb971",
+      "fetchedAt": "2026-08-21T23:28:05.856613+00:00",
+      "finalUrl": "https://www.nikkei.com/article/DGXZQOUC039I50T00C26A8000000/",
+      "httpStatus": 200,
+      "locations": [
+        "refs"
+      ],
+      "publicHref": "https://www.nikkei.com/article/DGXZQOUC039I50T00C26A8000000/",
+      "url": "https://www.nikkei.com/article/DGXZQOUC039I50T00C26A8000000/"
+    },
+    {
+      "contentSha256": "01d8fb74616fbd78cbcf3ae27ac24c0d37217f12530a2df54098780be79a6c40",
+      "fetchedAt": "2026-08-21T23:28:06.080205+00:00",
+      "finalUrl": "https://www.sankei.com/article/20260821-KUITXA5LHZOWXPBK3FK6VFK57Y/",
+      "httpStatus": 200,
+      "locations": [
+        "refs"
+      ],
+      "publicHref": "https://www.sankei.com/article/20260821-KUITXA5LHZOWXPBK3FK6VFK57Y/",
+      "url": "https://www.sankei.com/article/20260821-KUITXA5LHZOWXPBK3FK6VFK57Y/"
+    },
+    {
+      "contentSha256": "d3934077a60e85cf9d19362bf7df2c6ec97194d7046096e20791d482a7584aa6",
+      "fetchedAt": "2026-08-21T23:28:06.306784+00:00",
+      "finalUrl": "https://www.yomiuri.co.jp/national/20260821-GYT1T00339/",
+      "httpStatus": 200,
+      "locations": [
+        "refs"
+      ],
+      "publicHref": "https://www.yomiuri.co.jp/national/20260821-GYT1T00339/",
+      "url": "https://www.yomiuri.co.jp/national/20260821-GYT1T00339/"
+    }
+  ],
+  "status": "Green"
+}
