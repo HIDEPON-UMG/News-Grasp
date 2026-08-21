@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "TASK_SCOPE_AMENDMENT_V1",
+  "amendmentId": "NG-CLEANROOM-20260821-GLOBAL-HARNESS-OUT-OF-SCOPE",
+  "status": "user_confirmed",
+  "observedAt": "2026-08-21T10:04:43+09:00",
+  "sourceStatus": "UserConfirmed",
+  "approvalQuote": "「[B] 全体ハーネスの目的・効率・強制力是正」がToDoにあるが、別セッションで修正しているため、ここでは全体ハーネスをいじらないように。",
+  "scopeBoundary": {
+    "included": "News-Grasp candidate branchのS5からL9までのproduct-local実装・検証・導入証跡",
+    "excluded": "ProjectFolders workspace-global harness、共有consumer、共有snapshot、global contractおよびB0からB4の変更",
+    "parallelOwner": "別セッション",
+    "crossSessionMerge": false
+  },
+  "outOfScopeApproved": [
+    {
+      "requirement_id": "B0",
+      "todoId": "No.20/B-01",
+      "approver": "user",
+      "approval_quote_or_ref": "approvalQuote",
+      "scope_boundary": "global harness inventoryを本セッションで実施・変更しない",
+      "evidence_ids": ["actual-user-scope-amendment-20260821"]
+    },
+    {
+      "requirement_id": "B1",
+      "todoId": "No.21/B-02",
+      "approver": "user",
+      "approval_quote_or_ref": "approvalQuote",
+      "scope_boundary": "root-principle global contractを本セッションで変更しない",
+      "evidence_ids": ["actual-user-scope-amendment-20260821"]
+    },
+    {
+      "requirement_id": "B2",
+      "todoId": "No.22/B-03",
+      "approver": "user",
+      "approval_quote_or_ref": "approvalQuote",
+      "scope_boundary": "global consumer route enforcementを本セッションで変更しない",
+      "evidence_ids": ["actual-user-scope-amendment-20260821"]
+    },
+    {
+      "requirement_id": "B3",
+      "todoId": "No.23/B-04",
+      "approver": "user",
+      "approval_quote_or_ref": "approvalQuote",
+      "scope_boundary": "global migration・snapshot syncを本セッションで変更しない",
+      "evidence_ids": ["actual-user-scope-amendment-20260821"]
+    },
+    {
+      "requirement_id": "B4",
+      "todoId": "No.24/B-05",
+      "approver": "user",
+      "approval_quote_or_ref": "approvalQuote",
+      "scope_boundary": "global harness acceptanceを本セッションで実行しない",
+      "evidence_ids": ["actual-user-scope-amendment-20260821"]
+    }
+  ],
+  "enforcement": {
+    "globalHarnessWritesAllowed": false,
+    "newsGraspProductWritesAllowed": true,
+    "todoRetention": "No.20からNo.24は履歴IDを削除せずout_of_scope_approvedとして閉じる",
+    "completionDenominator": 19
+  }
+}
