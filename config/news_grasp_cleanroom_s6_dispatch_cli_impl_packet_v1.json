@@ -1,0 +1,110 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S6-DISPATCH-CLI-IMPL-V1",
+  "status": "active",
+  "executionAllowed": true,
+  "role": "implementation_luna",
+  "canonicalContext": "/root/s6_dispatch_cli_impl",
+  "todoId": "No.13/A-13",
+  "baselineCommit": "c458fbb4f43c22b5641b4350d714e8d867575973",
+  "dependencies": [
+    "NG-CLEANROOM-S1-GREEN",
+    "NG-CLEANROOM-S6-RELEASE-IMPL-V1",
+    "NG-CLEANROOM-S6-ORACLE-CORRECTION-V1"
+  ],
+  "writeLease": {
+    "leaseId": "IMPL-LEASE-S6-DISPATCH-CLI-V1",
+    "leaseSha256": "319c30e8e8bc71c1fb72f1e5741d4102cf5b73de99f076802e9c6bd2eab8dfb6",
+    "canonicalPayload": {
+      "leaseId": "IMPL-LEASE-S6-DISPATCH-CLI-V1",
+      "role": "implementation_luna",
+      "canonicalContext": "/root/s6_dispatch_cli_impl",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-s6-dispatch",
+      "writes": [
+        "tools/news_grasp_cleanroom_dispatch.py"
+      ],
+      "baselineCommit": "c458fbb4f43c22b5641b4350d714e8d867575973"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": [
+    "tools/news_grasp_cleanroom_dispatch.py"
+  ],
+  "forbiddenWrites": [
+    "tests/**",
+    "config/**",
+    "docs/**",
+    "scripts/**",
+    "all other production modules",
+    "ProjectFolders workspace-global harness",
+    "live runtime, Task Scheduler, network, external model or public state"
+  ],
+  "observedRed": {
+    "node": "tests/test_news_grasp_cleanroom_s6_release.py::test_s6_installed_bytes_args_workdir",
+    "command": "py -3.12 -m tools.news_grasp_cleanroom_dispatch dispatch ... --fault-after-initial-wal",
+    "actual": "exit 0 with no CLI output because module exposes functions only and has no module entrypoint",
+    "expected": "nonzero typed NEWS_GRASP_ENTRY fault after durable initial WAL; subsequent normal invocation resumes and emits one JSON result line"
+  },
+  "preserveApi": [
+    "dispatch",
+    "commit_slot",
+    "inspect_control_state",
+    "recover_ledger"
+  ],
+  "cliContract": {
+    "entry": "main(argv=None) plus if __name__ == '__main__': raise SystemExit(main())",
+    "argv": [
+      "dispatch",
+      "--schedule-id <value>",
+      "--intent <value>",
+      "--runtime-root <absolute path>",
+      "--manifest-path <absolute path>",
+      "--observed-at <timezone-aware ISO-8601>",
+      "--writer-json <absolute existing JSON path>",
+      "optional --fault-after-initial-wal"
+    ],
+    "mapping": "call existing dispatch with raw_argv exactly ['dispatch','--schedule-id',scheduleId,'--intent',intent], Path runtime/manifest, parsed datetime, parsed writer mapping and optional boundary_hook",
+    "success": "write exactly one compact UTF-8 JSON object line to stdout and return 0; no stderr",
+    "failure": "write exactly one stable typed NEWS_GRASP_ENTRY_* reason line to stderr, no traceback/path/secret/value echo, return nonzero",
+    "fault": "when flag is present, boundary_hook raises only at after_initial_wal_fsync with typed reason NEWS_GRASP_ENTRY_FAULT_AFTER_INITIAL_WAL; initial WAL remains durable and no later parse/SQLite action occurs",
+    "manifest": "corrupt/missing manifest preserves existing CleanroomEntryError.reason NEWS_GRASP_ENTRY_MANIFEST_INVALID and is distinguishable from fault injection",
+    "input": "reject invalid command shape, path, writer JSON, datetime or unknown option before calling dispatch using a stable NEWS_GRASP_ENTRY_ARGS_INVALID or existing typed reason"
+  },
+  "humanImpact": {
+    "shell": false,
+    "CREATE_NO_WINDOW": "caller-owned; module launches no subprocess or UI",
+    "noFocusTheft": true,
+    "noAutoOpen": true,
+    "noUserMonitoring": true,
+    "noSharedProcessKill": true
+  },
+  "security": [
+    "stdlib only; no shell, eval, dynamic import, environment trust or command string",
+    "read only the explicitly supplied writer and manifest paths; controller remains authority for manifest semantics",
+    "never include raw argv, writer contents, paths or exception text in stderr",
+    "do not catch KeyboardInterrupt/SystemExit as application failures"
+  ],
+  "verification": {
+    "compile": "py -3.12 -m py_compile tools/news_grasp_cleanroom_dispatch.py",
+    "ruff": "py -3.12 -m ruff check tools/news_grasp_cleanroom_dispatch.py",
+    "s1": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py; exact 32 passed",
+    "s6": "$env:NEWS_GRASP_HIGH_COST_BINDING_PATH=[Environment]::ExpandEnvironmentVariables('%USERPROFILE%\\bin\\news-grasp-high-cost-binding-v1.json'); py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s6_release.py; if oracle correction commit is not yet present, run the exact L6 helper/node and report remaining oracle dependencies without editing them",
+    "diff": "git diff --check and exact one owned path only"
+  },
+  "implementationRules": [
+    "extend the current thin wrapper; do not duplicate Controller reconciliation logic",
+    "keep imports side-effect free; main runs only under module execution",
+    "test-specific case names and weakening existing function API are forbidden"
+  ],
+  "commitPolicy": {
+    "allowedOnlyAfter": "compile, Ruff, S1 and strongest available S6 CLI evidence",
+    "paths": [
+      "tools/news_grasp_cleanroom_dispatch.py"
+    ],
+    "message": "feat: add S6 dispatch CLI boundary"
+  },
+  "causalRetry": "one implementation attempt and one causally distinct correction only; do not change tests",
+  "delivery": "file hash/bytes, exact commands/counts, commit and clean status",
+  "stopPolicy": "return to Sol; no other production, test, live or global mutation",
+  "unresolvedDecisionIds": []
+}
