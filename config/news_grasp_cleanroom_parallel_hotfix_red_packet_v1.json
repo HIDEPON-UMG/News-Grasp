@@ -1,8 +1,10 @@
 {
   "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
   "packetId": "NG-CLEANROOM-S5-HOTFIX-RED-V1",
-  "status": "active",
-  "executionAllowed": true,
+  "status": "superseded",
+  "executionAllowed": false,
+  "supersededBy": "NG-CLEANROOM-S5-HOTFIX-RED-PARALLEL-V1",
+  "executionForbiddenReason": "single Test Luna packet produced no file mutation after design completion; split into two non-overlapping Luna leases",
   "todoId": "NG-CLEANROOM-S5-HOTFIX-RED",
   "role": "test_luna",
   "canonicalContext": "/root/s1_edge_driver_red",

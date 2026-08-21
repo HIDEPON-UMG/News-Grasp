@@ -1,0 +1,76 @@
+{
+  "schemaVersion": "LUNA_PARALLEL_EXECUTION_PACKET_V1",
+  "packetId": "NG-CLEANROOM-S5-HOTFIX-RED-PARALLEL-V1",
+  "status": "active",
+  "executionAllowed": true,
+  "baselineCommit": "28b6386d8f8f79684389d07d53677095adbab6c2",
+  "supersedes": "NG-CLEANROOM-S5-HOTFIX-RED-V1",
+  "impactPath": "config/news_grasp_cleanroom_parallel_hotfix_impact_v1.json",
+  "impactSha256": "84c61f1e7f6a94c2946c849de2f91c0c0bcc14693aa652a27a3aabe86cfe7177",
+  "sharedRules": {
+    "role": "test_luna",
+    "productionWrites": false,
+    "configWrites": false,
+    "externalModelCalls": 0,
+    "networkCalls": 0,
+    "liveTaskOrRuntimeMutation": false,
+    "wrapperChild": "local, hidden, owned, <=5 seconds",
+    "verification": "compile, exact-node collect, one focused Red, ruff, diff; commit only owned files after causal Red",
+    "stop": "unexpected Green or fixture error returns to Sol without weakening"
+  },
+  "leases": [
+    {
+      "leaseId": "TEST-LEASE-S5-HOTFIX-A-V1",
+      "leaseSha256": "e1570ed99c61996584a963d5de7e6b98cea3b77367269de96e5c8b120da4246b",
+      "canonicalPayload": {
+        "leaseId": "TEST-LEASE-S5-HOTFIX-A-V1",
+        "role": "test_luna",
+        "canonicalContext": "/root/s1_edge_driver_red",
+        "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-s1-h1",
+        "writes": [
+          "tests/test_daily_self_heal.py",
+          "tests/test_news_grasp_completion_guard.py",
+          "tests/test_scheduled_high_cost_separation.py",
+          "tests/test_news_grasp_daily_control.py",
+          "tests/test_audit_recovery_control.py"
+        ],
+        "baselineCommit": "28b6386d8f8f79684389d07d53677095adbab6c2"
+      },
+      "nodes": [
+        "test_parallel_hotfix_future_readiness_permit_date_is_not_future",
+        "test_parallel_hotfix_completion_ok_with_slo_debt_exits_zero_and_non_ok_exits_two",
+        "test_parallel_hotfix_daily_audit_startup_ledger_fallback_uses_canonical_python_and_ops_root"
+      ],
+      "commitMessage": "test: bind parallel recovery Python hotfixes"
+    },
+    {
+      "leaseId": "TEST-LEASE-S5-HOTFIX-B-V1",
+      "leaseSha256": "ca754c5fdcb35622fe94d161b8139187bb32aa68ee1a17a1ee056c737c83856e",
+      "canonicalPayload": {
+        "leaseId": "TEST-LEASE-S5-HOTFIX-B-V1",
+        "role": "test_luna",
+        "canonicalContext": "/root/s5_hotfix_red_b",
+        "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-hotfix-b",
+        "writes": [
+          "tests/test_runner_convergence_contract.py",
+          "tests/test_runner_wrapper_smoke.py",
+          "tests/test_news_grasp_cleanroom_s5_install.py",
+          "tests/fixtures/news_grasp_cleanroom_parallel_hotfix_cases.json"
+        ],
+        "baselineCommit": "28b6386d8f8f79684389d07d53677095adbab6c2"
+      },
+      "nodes": [
+        "test_parallel_hotfix_runner_optional_fields_three_admission_schemas_and_artifact_priority_dedupe",
+        "test_parallel_hotfix_wrapper_wall_and_idle_timeout_map_exit_124",
+        "test_s5_preflight_rejects_source_install_binding_task_action_drift_before_mutation",
+        "test_s5_requires_both_owner_receipts_before_candidate_registration",
+        "test_s5_two_owner_crash_and_privilege_failure_restore_exact_preimages"
+      ],
+      "commitMessage": "test: bind parallel recovery cutover hotfixes"
+    }
+  ],
+  "writeIntersectionCount": 0,
+  "integrationOrder": ["TEST-LEASE-S5-HOTFIX-A-V1", "TEST-LEASE-S5-HOTFIX-B-V1"],
+  "redAdmission": "all eight exact nodes fail for the impact-bound production cause; both commits are required before any S5A/S5B production packet",
+  "unresolvedDecisionIds": []
+}
