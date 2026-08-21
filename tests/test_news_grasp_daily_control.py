@@ -319,6 +319,18 @@ def test_failure_classification_is_derived_from_observed_state_only() -> None:
         )
         == "incident_required"
     )
+    assert (
+        control.classify_observed_failure(
+            runner_state={
+                "status": "blocked_startup_self_repair_failed",
+                "exit_code": 72,
+                "scheduled_failure_receipt_path": "C:/evidence/2026-08-19-bootstrap-run.json",
+            },
+            process_exit_code=72,
+            log_text="pre-run bootstrap failed exit=1",
+        )
+        == "recoverable"
+    )
 
 
 def test_codex_auth_block_is_typed_external_deferred_without_recovery_reentry() -> None:
@@ -334,6 +346,102 @@ def test_codex_auth_block_is_typed_external_deferred_without_recovery_reentry() 
         )
         == "external_control_plane_unavailable"
     )
+
+
+def test_startup_self_repair_failure_keeps_recovery_attempt_available() -> None:
+    control = _control()
+    assert control._local_startup_unblocker_rejection(
+        {"status": "blocked_startup_self_repair_failed"}
+    )
+
+
+def test_audit_uses_broker_failure_when_runner_state_is_stale(
+    monkeypatch, tmp_path: Path
+) -> None:
+    control = _control()
+    failure = control._sealed(
+        {
+            "schemaVersion": "SCHEDULED_FAILURE_RECEIPT_V1",
+            "issueDate": "2026-08-21",
+            "scheduledAttemptStatus": "failed",
+        }
+    )
+    failure_path = tmp_path / "build" / "recovery" / "authority" / "2026-08-21-scheduled-failure.json"
+    failure_path.parent.mkdir(parents=True)
+    failure_path.write_text(json.dumps(failure), encoding="utf-8")
+    authority = control._sealed(
+        {
+            "schemaVersion": "SCHEDULED_RECOVERY_AUTHORITY_V1",
+            "issueDate": "2026-08-21",
+            "runIntent": "ScheduledRecoveryFull",
+        }
+    )
+    authority_path = tmp_path / "build" / "recovery" / "authority" / "2026-08-21-recovery-authority.json"
+
+    class Backend:
+        repo_root = tmp_path
+
+        def load_state(self, issue_date: str) -> dict[str, object]:
+            raise ValueError("RUNNER_STATE_EVIDENCE_INVALID")
+
+        def probe_external_control_plane(self) -> dict[str, object]:
+            return {"status": "ready"}
+
+        def reconcile_task_history(self, issue_date: str) -> dict[str, object]:
+            return {"status": "reconciled"}
+
+        def inspect_attempt(self, issue_date: str) -> dict[str, object]:
+            return {
+                "scheduledAttemptStatus": "failed",
+                "recoveryAttemptStatus": "not_started",
+                "failureReceiptSha256": failure["receiptSha256"],
+            }
+
+        def resolve_failure_receipt(self, issue_date: str, receipt_sha256: str) -> Path:
+            assert receipt_sha256 == failure["receiptSha256"]
+            return failure_path
+
+        def log_text(self, issue_date: str) -> str:
+            return ""
+
+        def derive_authority(
+            self, *, issue_date: str, failure_path: Path
+        ) -> tuple[dict[str, object], Path]:
+            authority_path.write_text(json.dumps(authority), encoding="utf-8")
+            return authority, authority_path
+
+    monkeypatch.setattr(
+        control.audit_recovery_control,
+        "decide_audit_recovery",
+        lambda payload: {
+            "action": "scheduled_recovery",
+            "reasonCode": "SCHEDULED_RECOVERY_REQUIRED",
+        },
+    )
+    monkeypatch.setattr(
+        control.audit_recovery_control,
+        "_observe_operational_truth",
+        lambda *, issue_date, attempt_witness: {
+            "receiptSha256": "2" * 64,
+            "resumeStage": "",
+            "sourceAdmissionSha256": "",
+            "minimalUnblockerPublicProofSha256": "",
+        },
+    )
+    monkeypatch.setattr(
+        control, "select_recovery_branch_from_truth", lambda truth: "ScheduledRecoveryFull"
+    )
+
+    plan = control.prepare_recovery(
+        issue_date="2026-08-21",
+        trigger="audit_0640",
+        process_exit_code=66,
+        backend=Backend(),
+    )
+
+    assert plan["action"] == "launch_recovery"
+    assert plan["recoveryBranch"] == "ScheduledRecoveryFull"
+    assert plan["scheduledFailureReceiptPath"] == str(failure_path.resolve())
 
 
 def test_recovery_plan_is_bounded_and_preserves_scheduled_failure() -> None:

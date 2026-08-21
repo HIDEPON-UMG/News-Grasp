@@ -281,6 +281,41 @@ def test_recoverable_failure_uses_ledger_backed_authority_not_deferred(
     assert decision["recoveryAuthorityLedgerWitnessSha256"]
 
 
+def test_startup_terminal_state_without_repo_dir_can_enter_scheduled_recovery(
+    monkeypatch, tmp_path: Path
+) -> None:
+    control = _control("STARTUP_TERMINAL_STATE_REPO_DIR_REQUIRED_FALSE_RED")
+    failure_path, authority_path = _failure_context(control, monkeypatch, tmp_path)
+    state_path = tmp_path / "runner-state.json"
+    state_path.write_text(
+        json.dumps(
+            {
+                "status": "blocked_startup_self_repair_failed",
+                "date": "2026-08-02",
+                "run_intent": "ScheduledProduction",
+                "run_id": "startup-run",
+                "phase": "startup_self_repair",
+                "exit_code": 72,
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(control, "CANONICAL_RUNNER_STATE_PATH", state_path)
+    monkeypatch.setattr(control, "_verify_same_date_completion", lambda **_: None)
+
+    decision = control.decide_audit_recovery(
+        {
+            "issueDate": "2026-08-02",
+            "scheduledFailureReceiptPath": str(failure_path),
+            "recoveryAuthorityPath": str(authority_path),
+        }
+    )
+
+    assert decision["action"] == "scheduled_recovery"
+    assert decision["terminal"] is None
+    assert decision["recoveryBranch"] == "ScheduledRecoveryFull"
+
+
 def test_external_readiness_reopens_typed_recovery(monkeypatch, tmp_path: Path) -> None:
     control = _control("RED_EXTERNAL_READINESS_RECOVERY_REOPEN_MISSING")
     repo = tmp_path / "repo"
