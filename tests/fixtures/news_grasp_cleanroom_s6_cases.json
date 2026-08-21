@@ -12,6 +12,8 @@
     "schema_drift",
     "fake_not_sealed",
     "real_boundary_missing",
+    "real_required_drift",
+    "observed_drift",
     "hash_drift",
     "status_not_green",
     "unknown_key"
@@ -39,6 +41,9 @@
     "scheduled_count_drift",
     "audit_count_drift",
     "legacy_writer_nonzero",
+    "daily_receipt_hash_drift",
+    "daily_ledger_hash_drift",
+    "corpus_provenance_hash_drift",
     "unknown_key"
   ],
   "naturalCases": [
@@ -53,6 +58,7 @@
     "stale_freshness",
     "public_not_required_without_green_scheduled",
     "receipt_schema_drift",
+    "receipt_hash_drift",
     "unknown_key"
   ],
   "nonSubstitutionCases": [
@@ -63,12 +69,30 @@
     "previous_issue_date",
     "installed_stale"
   ],
+  "authorityCases": [
+    "missing_trusted_receipt",
+    "unknown_trusted_receipt",
+    "trusted_receipt_source_drift",
+    "trusted_receipt_test_drift",
+    "context_date_drift",
+    "context_generation_drift",
+    "context_commit_drift",
+    "installed_authority_source_drift",
+    "installed_authority_hash_drift",
+    "installed_authority_task_action_drift",
+    "caller_registry_overwrite"
+  ],
   "history": {
     "introductionDate": "2026-07-23",
     "expectedDays": 30,
     "scheduledCorpusCount": 63,
     "auditCorpusCount": 8,
     "legacyWriterCount": 0,
+    "requiredLineages": ["Scheduled", "Recovery", "Public", "Readiness"],
+    "ledgerProvenanceSchema": "LEDGER_PROVENANCE_V1",
+    "corpusEntryKeys": ["caseId", "domain", "issueDate", "receiptSha256", "ledgerProvenanceSha256"],
+    "dailyEvidenceEntryKeys": ["issueDate", "timezone", "introductionDate", "missing", "lineages", "ledgerProvenanceSha256"],
+    "explicitSemantics": ["missing", "introductionDate", "timezone"],
     "dates": [
       "2026-07-23",
       "2026-07-24",
