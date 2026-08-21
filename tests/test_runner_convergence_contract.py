@@ -4723,3 +4723,110 @@ def test_sec_runner_binds_trusted_python_before_any_python_invocation_for_both_i
     ):
         assert marker in runner[resolver_index:]
     assert "AppData\\Local\\Programs\\Python\\Python312\\python.exe" not in runner
+
+
+def test_sec_validated_admission_paths_survive_function_scope_for_stage_witness() -> None:
+    """admission関数内の検証済みpathを関数外のstage witnessへ確実に搬送する。"""
+
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    function_start = runner.index("function Assert-HighCostOperationAdmission {")
+    function_boundary = runner.index(
+        "\n# ===== 外部制御面pure readiness =====",
+        function_start,
+    )
+    admission_function = runner[function_start:function_boundary]
+    post_function = runner[function_boundary:]
+    stage_block = post_function.split(
+        "scheduled recovery stage start boundary",
+        1,
+    )[1].split("if ($ResumeGenerationQualityRepair)", 1)[0]
+
+    # witnessはadmission関数のreturn後に実行される。両値はlocalの
+    # regular-file検証成功後にscript scopeへ搬送し、関数localの寿命に
+    # 依存せず、stage witnessがそのscript-scoped値を消費しなければならない。
+    bridges: dict[str, str] = {}
+    for local_name in ("modelSpawnBroker", "stageDecisionReceipt"):
+        leaf_marker = (
+            rf"Test-Path\s+-LiteralPath\s+\${local_name}\s+-PathType\s+Leaf"
+        )
+        leaf_match = re.search(leaf_marker, admission_function, re.IGNORECASE)
+        assert leaf_match, f"missing validated regular-file check for ${local_name}"
+        bridge_match = re.search(
+            rf"(?m)^\s*\$script:(?P<bridge>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*\${local_name}\b",
+            admission_function,
+            re.IGNORECASE,
+        )
+        assert bridge_match, f"${local_name} is not exported to script scope"
+        assert bridge_match.start() > leaf_match.start()
+        bridge_name = bridge_match.group("bridge")
+        assert re.search(
+            rf"\$(?:script:)?{re.escape(bridge_name)}\b",
+            stage_block,
+            re.IGNORECASE,
+        ), f"stage witness does not consume script-scoped ${bridge_name}"
+        bridges[local_name] = bridge_name
+
+    assert len(bridges) == 2
+
+
+def test_sec_all_resume_stages_share_stage_witness_before_stage_specific_work() -> None:
+    """6種類すべてのResumeFromStageを共通stage witnessへ束ねる。"""
+
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    expected_stages = {
+        "post-reporter",
+        "editor",
+        "deepdive",
+        "post-daily-quality",
+        "post-deepdive",
+        "generation-quality-repair",
+    }
+    validate_match = re.search(
+        r"\[ValidateSet\('',\s*(?P<body>.*?)\)\]\s*\r?\n\s*\[string\]\s+\$ResumeFromStage",
+        runner,
+        re.IGNORECASE | re.DOTALL,
+    )
+    assert validate_match, "ResumeFromStage ValidateSet is missing"
+    declared_stages = set(re.findall(r"'([^']+)'", validate_match.group("body")))
+    assert declared_stages == expected_stages
+
+    witness_call = runner.index("start-news-grasp-recovery-stage")
+    guard_candidates = list(
+        re.finditer(
+            r"(?m)^\s*(?:if|elseif)\s*\(",
+            runner[:witness_call],
+            re.IGNORECASE,
+        )
+    )
+    assert guard_candidates, "stage witness guard is missing"
+    common_guard = runner[guard_candidates[-1].start() : witness_call]
+    for marker in (
+        "$ResumeAfterReporter",
+        "$ResumeFromPostDailyQuality",
+        "$ResumeAfterDeepDive",
+        "$ResumeGenerationQualityRepair",
+    ):
+        assert marker in common_guard
+
+    for marker in (
+        "SCHEDULED_RECOVERY_STAGE_STARTED_V1",
+        "stageWitness.issueDate",
+        "stageWitness.resumeStage",
+        "stageWitness.consumerRunId",
+        "stageWitness.decisionReceiptSha256",
+    ):
+        assert marker in common_guard + runner[witness_call:]
+
+    # 現状post-reporter/editorは共通witnessより先にネットワーク/成果物の
+    # stage固有分岐へ入る。この分岐の最初の文は共通
+    # start-news-grasp-recovery-stage検証後へ移さなければならない。
+    for pattern in (
+        r"(?m)^\s*\}\s*elseif\s*\(\$ResumeAfterReporter\b",
+        r"(?m)^\s*if\s*\(\$Stage2EditorSmokeOnly\s+-or\s+\$ResumeAfterReporter\b",
+        r"(?m)^\s*if\s*\(\$ResumeAfterReporter\s*\)\s*\{",
+    ):
+        branch_match = re.search(pattern, runner, re.IGNORECASE)
+        assert branch_match, f"missing stage-specific branch for {pattern}"
+        assert witness_call < branch_match.start(), (
+            "stage-specific resume work precedes the common stage witness"
+        )
