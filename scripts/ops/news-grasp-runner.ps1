@@ -3840,6 +3840,7 @@ function Assert-HighCostOperationAdmission {
             exit 76
         }
         $admissionJson = (Get-Content -LiteralPath $HighCostAdmissionPath -Raw -Encoding UTF8).Trim()
+        $admissionValidationPath = [System.IO.Path]::GetFullPath($HighCostAdmissionPath)
     } else {
         $admissionJson = (& $PyExe -I $modelSpawnBroker 'admit' '--operation-kind' $operationKind '--attempt-id' $DateStamp '--issue-date' $DateStamp '--authority-evidence' $ScheduledAuthorityEvidencePath '--expected-task-action-sha256' $taskActionSha256 '--expected-runner-sha256' $runnerSha256 2>&1 | Out-String).Trim()
         if ($LASTEXITCODE -ne 0) {
@@ -3847,10 +3848,19 @@ function Assert-HighCostOperationAdmission {
             Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_OPERATION_ADMISSION_REJECTED; local critical path remains available' -ExitCode 76
             exit 76
         }
+        # brokerのstdoutはproduct-local validatorでGreenになるまでcanonical
+        # receiptへcopyせず、一時候補だけを検証する。
+        $admissionValidationPath = Join-Path $admissionDir ".${RunId}-${operationKind}.candidate.json"
+        [System.IO.File]::WriteAllText($admissionValidationPath, ($admissionJson + [Environment]::NewLine), [System.Text.UTF8Encoding]::new($false))
     }
     try {
-        $admission = $admissionJson | ConvertFrom-Json -ErrorAction Stop
         $authority = Get-Content -LiteralPath $ScheduledAuthorityEvidencePath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+        $validationOutput = (& $PyExe -I -B (Join-Path $RepoDir 'tools\news_grasp_operational_contract.py') 'validate-scheduled-admission' '--path' $admissionValidationPath '--expected-operation-kind' $operationKind '--expected-issue-date' $DateStamp '--expected-operation-authority-sha256' ([string]$authority.receiptSha256) 2>&1 | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0) {
+            throw "product-local scheduled admission validation failed: $validationOutput"
+        }
+        $admissionJson = $validationOutput
+        $admission = $admissionJson | ConvertFrom-Json -ErrorAction Stop
         if (
             [string]$admission.schemaVersion -notin @('HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1', 'HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1', 'HIGH_COST_SCHEDULED_INCIDENT_REPAIR_V1') -or
             $admission.operationKind -ne $operationKind -or
@@ -3860,11 +3870,17 @@ function Assert-HighCostOperationAdmission {
             throw 'scheduled admission identity drift'
         }
         [System.IO.File]::WriteAllText($admissionReceipt, ($admissionJson + [Environment]::NewLine), [System.Text.UTF8Encoding]::new($false))
+        if (-not $HighCostAdmissionPath -and (Test-Path -LiteralPath $admissionValidationPath -PathType Leaf)) {
+            Remove-Item -LiteralPath $admissionValidationPath -Force -ErrorAction SilentlyContinue
+        }
         $script:HighCostAdmissionPath = $admissionReceipt
         $script:HighCostExpectedOperationKind = $operationKind
         $script:HighCostExpectedIssueDate = $DateStamp
         Set-ScheduledHighCostAuthorityEnvironment -Admission $admission -ExpectedOperationKind $operationKind -ExpectedIssueDate $DateStamp
     } catch {
+        if ($admissionValidationPath -and (Test-Path -LiteralPath $admissionValidationPath -PathType Leaf)) {
+            Remove-Item -LiteralPath $admissionValidationPath -Force -ErrorAction SilentlyContinue
+        }
         Add-RunnerLogLine -Text "ERROR: HIGH_COST_SCHEDULED_ADMISSION_INVALID reason=$($_.Exception.Message)"
         Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_SCHEDULED_ADMISSION_INVALID' -ExitCode 76
         exit 76

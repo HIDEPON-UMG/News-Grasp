@@ -332,18 +332,13 @@ def _file_sha256(path: Path) -> str:
 
 
 def _canonical_python_executable() -> str:
-    candidates = [
-        CANONICAL_REPO_ROOT / ".venv" / "Scripts" / "python.exe",
-        Path.home() / "AppData" / "Local" / "Programs" / "Python" / "Python312" / "python.exe",
-    ]
-    for candidate in candidates:
-        resolved = candidate.resolve()
-        if resolved.is_file() and not resolved.is_symlink():
-            return str(resolved)
-    current = Path(sys.executable)
-    if current.is_file() and not current.is_symlink():
-        return str(current)
-    return "python"
+    # resolver enforces binding.pythonExeSha256, pythonTrustAnchor and the
+    # RECOVERY_PYTHON_IDENTITY_INVALID fail-closed boundary before launch.
+    from tools.e2e_final_admission_bridge import resolve_production_runtime_python
+
+    return str(
+        resolve_production_runtime_python(live_bin_root=CANONICAL_LIVE_BIN_ROOT)
+    )
 
 
 def _typed_completion_hashes(

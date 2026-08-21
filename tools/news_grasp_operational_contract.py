@@ -76,6 +76,257 @@ def _sha(value: object) -> str:
     return hashlib.sha256(_canonical(value)).hexdigest()
 
 
+# Scheduled high-cost admission receipts are product-local authority.  Keep the
+# schema contracts here (rather than trusting the global broker's shape) so all
+# callers validate the same canonical bytes before copying or launching work.
+SCHEDULED_ADMISSION_SCHEMAS: dict[str, frozenset[str]] = {
+    "HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1": frozenset(
+        {
+            "attemptReservation",
+            "authorityKind",
+            "issueDate",
+            "latestActualUserEventHash",
+            "maxExternalModelCalls",
+            "operationAuthoritySha256",
+            "operationKind",
+            "productId",
+            "receiptSha256",
+            "schemaVersion",
+            "taskIdentity",
+            "taskState",
+        }
+    ),
+    "HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1": frozenset(
+        {
+            "allowedModelRoutes",
+            "attemptReservation",
+            "authorityKind",
+            "continuationEventSequence",
+            "issueDate",
+            "latestActualUserEventHash",
+            "maxExternalModelCalls",
+            "operationAuthoritySha256",
+            "operationKind",
+            "productId",
+            "receiptSha256",
+            "resumeStage",
+            "schemaVersion",
+            "sourceAdmissionReceiptSha256",
+            "sourceRunId",
+            "sourceRunnerStateSha256",
+            "sourceTerminalStatus",
+            "taskIdentity",
+            "taskState",
+        }
+    ),
+    "HIGH_COST_SCHEDULED_INCIDENT_REPAIR_V1": frozenset(
+        {
+            "allowedArtifactHashes",
+            "allowedModelRoutes",
+            "attemptReservation",
+            "authorityKind",
+            "incidentBudgetEventSequence",
+            "issueDate",
+            "latestActualUserEventHash",
+            "maxExternalModelCalls",
+            "operationAuthoritySha256",
+            "operationKind",
+            "productId",
+            "receiptSha256",
+            "schemaVersion",
+            "sourceAdmissionReceiptSha256",
+            "sourceRunId",
+            "sourceRunnerStateSha256",
+            "sourceTerminalStatus",
+            "taskIdentity",
+            "taskState",
+        }
+    ),
+}
+SCHEDULED_ADMISSION_BASE_SCHEMAS = frozenset(
+    {
+        "HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1",
+        "HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1",
+        "HIGH_COST_SCHEDULED_INCIDENT_REPAIR_V1",
+    }
+)
+SCHEDULED_ADMISSION_MAX_MODEL_CALLS = 64
+SCHEDULED_ADMISSION_MAX_EVENT_SEQUENCE = 1_000_000
+SCHEDULED_ADMISSION_MAX_TEXT = 256
+SCHEDULED_ADMISSION_RESUME_STAGES = frozenset(
+    {"deepdive", "post-daily-quality", "post-deepdive", "generation-quality-repair"}
+)
+SCHEDULED_ADMISSION_RESERVATION_KEYS = frozenset(
+    {"attemptId", "eventSequence", "idempotent"}
+)
+
+
+def _scheduled_admission_invalid() -> ValueError:
+    return ValueError("HIGH_COST_SCHEDULED_ADMISSION_INVALID")
+
+
+def _scheduled_admission_hex(value: object, *, length: int = 64) -> bool:
+    return isinstance(value, str) and re.fullmatch(rf"[0-9a-f]{{{length}}}", value) is not None
+
+
+def _scheduled_admission_text(value: object, *, maximum: int = SCHEDULED_ADMISSION_MAX_TEXT) -> bool:
+    return isinstance(value, str) and bool(value) and len(value) <= maximum
+
+
+def _validate_scheduled_admission_body(
+    value: object,
+    *,
+    expected_operation_kind: str,
+    expected_issue_date: str,
+    expected_operation_authority_sha256: str,
+    require_receipt: bool,
+) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise _scheduled_admission_invalid()
+    schema = value.get("schemaVersion")
+    expected_keys = SCHEDULED_ADMISSION_SCHEMAS.get(str(schema))
+    if not require_receipt and expected_keys is not None:
+        expected_keys = expected_keys - {"receiptSha256"}
+    if expected_keys is None or set(value) != expected_keys:
+        raise _scheduled_admission_invalid()
+    if (
+        value.get("productId") != "News-Grasp"
+        or value.get("authorityKind") != "scheduled_news_grasp"
+        or value.get("operationKind") != expected_operation_kind
+        or value.get("issueDate") != expected_issue_date
+        or not isinstance(expected_issue_date, str)
+        or re.fullmatch(r"20\d{2}-\d{2}-\d{2}", expected_issue_date) is None
+        or value.get("operationAuthoritySha256") != expected_operation_authority_sha256
+        or not _scheduled_admission_hex(expected_operation_authority_sha256)
+        or value.get("taskState") != "running"
+        or not _scheduled_admission_hex(value.get("taskIdentity"))
+        or not _scheduled_admission_hex(value.get("latestActualUserEventHash"))
+    ):
+        raise _scheduled_admission_invalid()
+    max_calls = value.get("maxExternalModelCalls")
+    if (
+        isinstance(max_calls, bool)
+        or not isinstance(max_calls, int)
+        or max_calls <= 0
+        or max_calls > SCHEDULED_ADMISSION_MAX_MODEL_CALLS
+    ):
+        raise _scheduled_admission_invalid()
+    reservation = value.get("attemptReservation")
+    if (
+        not isinstance(reservation, dict)
+        or set(reservation) != SCHEDULED_ADMISSION_RESERVATION_KEYS
+        or not _scheduled_admission_text(reservation.get("attemptId"))
+        or isinstance(reservation.get("eventSequence"), bool)
+        or not isinstance(reservation.get("eventSequence"), int)
+        or reservation["eventSequence"] <= 0
+        or reservation["eventSequence"] > SCHEDULED_ADMISSION_MAX_EVENT_SEQUENCE
+        or reservation.get("idempotent") is not False
+    ):
+        raise _scheduled_admission_invalid()
+
+    if schema == "HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1":
+        routes = value.get("allowedModelRoutes")
+        sequence = value.get("continuationEventSequence")
+        if (
+            not isinstance(routes, list)
+            or len(routes) > 32
+            or any(not _scheduled_admission_text(route, maximum=128) for route in routes)
+            or len(set(routes)) != len(routes)
+            or isinstance(sequence, bool)
+            or not isinstance(sequence, int)
+            or sequence <= 0
+            or sequence > SCHEDULED_ADMISSION_MAX_EVENT_SEQUENCE
+            or value.get("resumeStage") not in SCHEDULED_ADMISSION_RESUME_STAGES
+        ):
+            raise _scheduled_admission_invalid()
+    elif schema == "HIGH_COST_SCHEDULED_INCIDENT_REPAIR_V1":
+        routes = value.get("allowedModelRoutes")
+        artifacts = value.get("allowedArtifactHashes")
+        sequence = value.get("incidentBudgetEventSequence")
+        if (
+            not isinstance(routes, list)
+            or not routes
+            or len(routes) > 32
+            or any(not _scheduled_admission_text(route, maximum=128) for route in routes)
+            or len(set(routes)) != len(routes)
+            or not isinstance(artifacts, dict)
+            or not artifacts
+            or len(artifacts) > 256
+            or any(
+                not _scheduled_admission_text(path, maximum=512)
+                or not _scheduled_admission_hex(digest)
+                for path, digest in artifacts.items()
+            )
+            or isinstance(sequence, bool)
+            or not isinstance(sequence, int)
+            or sequence <= 0
+            or sequence > SCHEDULED_ADMISSION_MAX_EVENT_SEQUENCE
+        ):
+            raise _scheduled_admission_invalid()
+
+    if schema != "HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1":
+        if (
+            not _scheduled_admission_hex(value.get("sourceAdmissionReceiptSha256"))
+            or not _scheduled_admission_hex(value.get("sourceRunnerStateSha256"))
+            or not _scheduled_admission_hex(value.get("sourceRunId"), length=32)
+            or not _scheduled_admission_text(value.get("sourceTerminalStatus"))
+        ):
+            raise _scheduled_admission_invalid()
+
+    if require_receipt:
+        receipt = value.get("receiptSha256")
+        body = {key: item for key, item in value.items() if key != "receiptSha256"}
+        if not _scheduled_admission_hex(receipt) or receipt != _sha(body):
+            raise _scheduled_admission_invalid()
+    return dict(value)
+
+
+def validate_scheduled_admission_receipt(
+    value: object,
+    *,
+    expected_operation_kind: str,
+    expected_issue_date: str,
+    expected_operation_authority_sha256: str,
+) -> dict[str, Any]:
+    """scheduled/recovery/incidentのsealed receiptSha256をexact schemaで検証する。"""
+
+    return _validate_scheduled_admission_body(
+        value,
+        expected_operation_kind=expected_operation_kind,
+        expected_issue_date=expected_issue_date,
+        expected_operation_authority_sha256=expected_operation_authority_sha256,
+        require_receipt=True,
+    )
+
+
+def seal_fresh_broker_admission(
+    value: object,
+    *,
+    expected_operation_kind: str,
+    expected_issue_date: str,
+    expected_operation_authority_sha256: str,
+) -> dict[str, Any]:
+    """fresh brokerの未seal bodyを一度だけcanonical JSON hashで封印する。"""
+
+    if not isinstance(value, dict) or "receiptSha256" in value:
+        raise _scheduled_admission_invalid()
+    _validate_scheduled_admission_body(
+        value,
+        expected_operation_kind=expected_operation_kind,
+        expected_issue_date=expected_issue_date,
+        expected_operation_authority_sha256=expected_operation_authority_sha256,
+        require_receipt=False,
+    )
+    sealed = dict(value)
+    sealed["receiptSha256"] = _sha(value)
+    return validate_scheduled_admission_receipt(
+        sealed,
+        expected_operation_kind=expected_operation_kind,
+        expected_issue_date=expected_issue_date,
+        expected_operation_authority_sha256=expected_operation_authority_sha256,
+    )
+
+
 def validate_operational_truth_receipt(value: object) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError("OPERATIONAL_TRUTH_RECEIPT_INVALID")
@@ -634,12 +885,40 @@ def validate_canonical_operational_registry(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=("validate-registry",))
+    parser.add_argument(
+        "command", choices=("validate-registry", "validate-scheduled-admission")
+    )
     parser.add_argument("--repo-root", type=Path, default=None)
+    parser.add_argument("--path", type=Path, default=None)
+    parser.add_argument("--expected-operation-kind", default=None)
+    parser.add_argument("--expected-issue-date", default=None)
+    parser.add_argument("--expected-operation-authority-sha256", default=None)
     args = parser.parse_args(argv)
-    result = validate_canonical_operational_registry(args.repo_root)
+    if args.command == "validate-registry":
+        result = validate_canonical_operational_registry(args.repo_root)
+        print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+        return 0 if result.get("status") == "Green" else 2
+    try:
+        if (
+            args.path is None
+            or not args.expected_operation_kind
+            or not args.expected_issue_date
+            or not args.expected_operation_authority_sha256
+        ):
+            raise _scheduled_admission_invalid()
+        raw = args.path.resolve(strict=True).read_text(encoding="utf-8-sig")
+        value = json.loads(raw)
+        result = validate_scheduled_admission_receipt(
+            value,
+            expected_operation_kind=args.expected_operation_kind,
+            expected_issue_date=args.expected_issue_date,
+            expected_operation_authority_sha256=args.expected_operation_authority_sha256,
+        )
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as error:
+        print(str(error) or "HIGH_COST_SCHEDULED_ADMISSION_INVALID", file=sys.stderr)
+        return 2
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))
-    return 0 if result.get("status") == "Green" else 2
+    return 0
 
 
 if __name__ == "__main__":

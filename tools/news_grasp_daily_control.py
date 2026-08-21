@@ -15,7 +15,12 @@ from tools import audit_recovery_control
 from tools import news_grasp_external_control as external_control
 from tools import news_grasp_convergence as convergence
 from tools import operational_recovery_registry
-from tools.news_grasp_operational_contract import evaluate_completion_v3, select_recovery_branch_from_truth
+from tools.news_grasp_operational_contract import (
+    evaluate_completion_v3,
+    seal_fresh_broker_admission,
+    select_recovery_branch_from_truth,
+    validate_scheduled_admission_receipt,
+)
 from tools.news_grasp_owned_process import OwnedProcessError, run_owned_bounded
 
 
@@ -726,20 +731,30 @@ class ProductionBackend:
     def admit_scheduled_recovery(
         self, *, issue_date: str, recovery_authority_path: Path
     ) -> Path:
+        try:
+            authority = json.loads(
+                recovery_authority_path.read_text(encoding="utf-8-sig")
+            )
+        except (OSError, UnicodeError, json.JSONDecodeError) as error:
+            raise ValueError("HIGH_COST_SCHEDULED_ADMISSION_INVALID") from error
+        if not isinstance(authority, dict):
+            raise ValueError("HIGH_COST_SCHEDULED_ADMISSION_INVALID")
+        expected_authority_sha = str(authority.get("receiptSha256") or "")
+
         def matching_existing_admission(candidate: Path) -> dict[str, Any] | None:
             if not candidate.is_file() or candidate.is_symlink():
                 return None
-            admission = json.loads(candidate.read_text(encoding="utf-8-sig"))
-            authority = json.loads(recovery_authority_path.read_text(encoding="utf-8-sig"))
-            if (
-                admission.get("schemaVersion") == "HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1"
-                and admission.get("operationKind") == "scheduled_recovery"
-                and admission.get("issueDate") == issue_date
-                and admission.get("operationAuthoritySha256")
-                == authority.get("receiptSha256")
-            ):
-                return admission
-            return None
+            try:
+                admission = json.loads(candidate.read_text(encoding="utf-8-sig"))
+                return validate_scheduled_admission_receipt(
+                    admission,
+                    expected_operation_kind="scheduled_recovery",
+                    expected_issue_date=issue_date,
+                    expected_operation_authority_sha256=expected_authority_sha,
+                )
+            except (OSError, UnicodeError, json.JSONDecodeError, ValueError):
+                # Invalid local/evidence receipts are never copied or reused.
+                return None
 
         path = (
             self.repo_root
@@ -778,15 +793,23 @@ class ProductionBackend:
             "--expected-runner-sha256",
             _file_sha(self.runner_path),
         )
-        authority = json.loads(recovery_authority_path.read_text(encoding="utf-8-sig"))
-        if (
-            admission.get("schemaVersion") != "HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1"
-            or admission.get("operationKind") != "scheduled_recovery"
-            or admission.get("issueDate") != issue_date
-            or admission.get("operationAuthoritySha256")
-            != authority.get("receiptSha256")
-        ):
-            raise ValueError("HIGH_COST_SCHEDULED_ADMISSION_INVALID")
+        try:
+            if "receiptSha256" in admission:
+                admission = validate_scheduled_admission_receipt(
+                    admission,
+                    expected_operation_kind="scheduled_recovery",
+                    expected_issue_date=issue_date,
+                    expected_operation_authority_sha256=expected_authority_sha,
+                )
+            else:
+                admission = seal_fresh_broker_admission(
+                    admission,
+                    expected_operation_kind="scheduled_recovery",
+                    expected_issue_date=issue_date,
+                    expected_operation_authority_sha256=expected_authority_sha,
+                )
+        except ValueError as error:
+            raise ValueError("HIGH_COST_SCHEDULED_ADMISSION_INVALID") from error
         _atomic_json(path, admission)
         return path.resolve()
 

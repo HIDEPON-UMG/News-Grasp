@@ -22,7 +22,7 @@ import time
 from contextlib import contextmanager
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 
 MODULE_ROOT = Path(__file__).resolve().parents[1]
@@ -522,6 +522,86 @@ def _read_authenticode_identity(path: Path) -> dict[str, str]:
         }
     except (OSError, ValueError, subprocess.SubprocessError, json.JSONDecodeError) as error:
         raise E2EFinalAdmissionError("E2E_AUTHORITY_PYTHON_INVALID") from error
+
+
+def resolve_production_runtime_python(
+    *,
+    live_bin_root: Path | None = None,
+    authenticode_reader: Callable[[Path], dict[str, str]] | None = None,
+) -> Path:
+    """live-bin bindingが指す署名済みPython実体を唯一のproduction runtimeにする。"""
+
+    invalid_code = "RECOVERY_PYTHON_IDENTITY_INVALID"
+    root = Path(live_bin_root) if live_bin_root is not None else Path.home() / "bin"
+    try:
+        root = Path(os.path.abspath(os.fspath(root)))
+        root_stat = root.lstat()
+        if (
+            not root.is_absolute()
+            or not stat.S_ISDIR(root_stat.st_mode)
+            or stat.S_ISLNK(root_stat.st_mode)
+            or _has_reparse_component(root)
+        ):
+            raise OSError("live runtime root is not trusted")
+        binding_path = root / "news-grasp-recovery-runtime-binding-v1.json"
+        binding_bytes = _read_stable_bytes(
+            binding_path,
+            max_bytes=1024 * 1024,
+            code=invalid_code,
+            trusted_root=root,
+        )
+        binding = json.loads(binding_bytes.decode("utf-8-sig"))
+        expected_keys = {
+            "schemaVersion",
+            "pythonExe",
+            "pythonExeSha256",
+            "pythonTrustAnchor",
+            "pythonSignerSubject",
+            "pythonSignerThumbprint",
+        }
+        if not isinstance(binding, dict) or set(binding) != expected_keys:
+            raise ValueError("runtime binding schema drift")
+        if (
+            binding.get("schemaVersion") != "NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1"
+            or binding.get("pythonTrustAnchor") != PYTHON_TRUST_ANCHOR
+            or binding.get("pythonSignerSubject") != PYTHON_SIGNER_SUBJECT
+            or str(binding.get("pythonSignerThumbprint") or "").lower()
+            != PYTHON_SIGNER_THUMBPRINT
+        ):
+            raise ValueError("runtime trust anchor drift")
+        raw_python = binding.get("pythonExe")
+        if not isinstance(raw_python, str) or not os.path.isabs(raw_python):
+            raise ValueError("runtime python path invalid")
+        python_path = _canonical_file(
+            Path(raw_python),
+            code=invalid_code,
+            max_bytes=MAX_EXECUTABLE_BYTES,
+        )
+        bound_path = Path(raw_python).resolve(strict=True)
+        if python_path != bound_path:
+            raise ValueError("runtime python path drift")
+        bound_sha = str(binding.get("pythonExeSha256") or "").lower()
+        if HEX_64_RE.fullmatch(bound_sha) is None or _file_sha256(python_path) != bound_sha:
+            raise ValueError("runtime python hash drift")
+        reader = authenticode_reader or _read_authenticode_identity
+        signature = reader(python_path)
+        if not isinstance(signature, dict):
+            raise ValueError("runtime authenticode response invalid")
+        actual_subject = str(signature.get("subject") or "")
+        actual_thumbprint = re.sub(
+            r"\s+", "", str(signature.get("thumbprint") or "")
+        ).lower()
+        if (
+            str(signature.get("status") or "") != "Valid"
+            or actual_subject != PYTHON_SIGNER_SUBJECT
+            or actual_thumbprint != PYTHON_SIGNER_THUMBPRINT
+        ):
+            raise ValueError("runtime authenticode identity drift")
+        return python_path
+    except Exception as error:
+        if isinstance(error, E2EFinalAdmissionError) and str(error) == invalid_code:
+            raise
+        raise E2EFinalAdmissionError(invalid_code) from error
 
 
 def _validate_runtime_python_identity(
