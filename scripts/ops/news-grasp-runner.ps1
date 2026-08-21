@@ -3849,12 +3849,12 @@ function Assert-HighCostOperationAdmission {
                     if ($null -eq $continuationAdmission.$field) { throw "continuation lineage field missing: $field" }
                 }
                 $expectedRoutes = switch ($ResumeFromStage) {
-                    'post-reporter' { @('newsroom_editor', 'deepdive', 'repair:generation-quality') }
-                    'editor' { @('newsroom_editor', 'deepdive', 'repair:generation-quality') }
+                    'post-reporter' { @('newsroom_editor', 'deepdive', 'repair:daily-quality') }
+                    'editor' { @('newsroom_editor', 'deepdive', 'repair:daily-quality') }
                     'deepdive' { @('deepdive') }
                     'post-daily-quality' { @('deepdive') }
                     'post-deepdive' { @() }
-                    'generation-quality-repair' { @('repair:generation-quality') }
+                    'generation-quality-repair' { @('repair:daily-quality', 'repair:generation-quality') }
                     default { throw 'continuation resume stage is invalid' }
                 }
                 $actualRoutes = @($continuationAdmission.allowedModelRoutes | ForEach-Object { [string]$_ })
@@ -3879,36 +3879,43 @@ function Assert-HighCostOperationAdmission {
             # RecoveryDecisionPath検証とfresh broker admissionへ必ず流す。
             $continuationAdmissionValidated = $true
         }
-        if ($RunIntent -ne 'ScheduledRecoveryFull' -or (-not $RecoveryDecisionPath) -or (-not $ScheduledAuthorityEvidencePath)) {
+        $script:UsesLocalGenerationQualityContinuation = $false
+        if ($ResumeFromStage -eq 'generation-quality-repair' -and $continuationAdmissionValidated) {
+            $script:UsesHighCostContinuationAdmission = $true
+            $script:UsesLocalGenerationQualityContinuation = $true
+            Add-RunnerLogLine -Text 'scheduled recovery stage decision bypassed for validated generation-quality-repair continuation'
+        } elseif ($RunIntent -ne 'ScheduledRecoveryFull' -or (-not $RecoveryDecisionPath) -or (-not $ScheduledAuthorityEvidencePath)) {
             Add-RunnerLogLine -Text 'ERROR: SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_REQUIRED'
             Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_REQUIRED' -ExitCode 76
             exit 76
         }
-        $decisionJson = (& $PyExe '-m' 'tools.news_grasp_daily_control' 'validate-decision' '--path' $RecoveryDecisionPath 2>&1 | Out-String).Trim()
-        if ($LASTEXITCODE -ne 0) {
-            Add-RunnerLogLine -Text "ERROR: RECOVERY_DECISION_INVALID exit=$LASTEXITCODE"
-            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'RECOVERY_DECISION_INVALID' -ExitCode 76
-            exit 76
-        }
-        try {
-            $decision = $decisionJson | ConvertFrom-Json -ErrorAction Stop
-            $stageDecisionReceipt = [System.IO.Path]::GetFullPath([string]$decision.brokerStageDecisionPath)
-            if (
-                [string]$decision.issueDate -ne $DateStamp -or
-                [string]$decision.runIntent -ne 'ScheduledRecoveryFull' -or
-                [string]$decision.recoveryBranch -ne 'ResumeFromStage' -or
-                [string]$decision.resumeStage -ne $ResumeFromStage -or
-                [System.IO.Path]::GetFullPath([string]$decision.scheduledAuthorityEvidencePath) -ne [System.IO.Path]::GetFullPath($ScheduledAuthorityEvidencePath) -or
-                (-not (Test-Path -LiteralPath $stageDecisionReceipt -PathType Leaf)) -or
-                (Get-FileSha256Hex -Path $stageDecisionReceipt) -ne [string]$decision.brokerStageDecisionSha256
-            ) {
-                throw 'RECOVERY_DECISION_BRANCH_MISMATCH'
+        if (-not $script:UsesLocalGenerationQualityContinuation) {
+            $decisionJson = (& $PyExe '-m' 'tools.news_grasp_daily_control' 'validate-decision' '--path' $RecoveryDecisionPath 2>&1 | Out-String).Trim()
+            if ($LASTEXITCODE -ne 0) {
+                Add-RunnerLogLine -Text "ERROR: RECOVERY_DECISION_INVALID exit=$LASTEXITCODE"
+                Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'RECOVERY_DECISION_INVALID' -ExitCode 76
+                exit 76
             }
-            $HighCostAdmissionPath = ''
-        } catch {
-            Add-RunnerLogLine -Text "ERROR: RECOVERY_DECISION_BRANCH_MISMATCH reason=$($_.Exception.Message)"
-            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'RECOVERY_DECISION_BRANCH_MISMATCH' -ExitCode 76
-            exit 76
+            try {
+                $decision = $decisionJson | ConvertFrom-Json -ErrorAction Stop
+                $stageDecisionReceipt = [System.IO.Path]::GetFullPath([string]$decision.brokerStageDecisionPath)
+                if (
+                    [string]$decision.issueDate -ne $DateStamp -or
+                    [string]$decision.runIntent -ne 'ScheduledRecoveryFull' -or
+                    [string]$decision.recoveryBranch -ne 'ResumeFromStage' -or
+                    [string]$decision.resumeStage -ne $ResumeFromStage -or
+                    [System.IO.Path]::GetFullPath([string]$decision.scheduledAuthorityEvidencePath) -ne [System.IO.Path]::GetFullPath($ScheduledAuthorityEvidencePath) -or
+                    (-not (Test-Path -LiteralPath $stageDecisionReceipt -PathType Leaf)) -or
+                    (Get-FileSha256Hex -Path $stageDecisionReceipt) -ne [string]$decision.brokerStageDecisionSha256
+                ) {
+                    throw 'RECOVERY_DECISION_BRANCH_MISMATCH'
+                }
+                $HighCostAdmissionPath = ''
+            } catch {
+                Add-RunnerLogLine -Text "ERROR: RECOVERY_DECISION_BRANCH_MISMATCH reason=$($_.Exception.Message)"
+                Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'RECOVERY_DECISION_BRANCH_MISMATCH' -ExitCode 76
+                exit 76
+            }
         }
     }
 
@@ -4417,7 +4424,10 @@ if ($SmokeTest) {
 # ResumeFromStage は stage-specific 分岐より先に一度だけ開始境界を通す。
 # admission gate が検証済みの script-scope path だけを後段へ渡し、ローカル変数の
 # dynamic-scope 依存による broker / decision receipt の取り違えを閉じる。
-if ($ResumeFromStage) {
+if ($ResumeFromStage -and $script:UsesLocalGenerationQualityContinuation) {
+    Set-RunnerState -Status 'running' -Message 'scheduled recovery local generation-quality continuation' -ExitCode -1 -Phase 'resume' -Step 'generation-quality-repair-continuation' -ResumeStageCheckpoint $ResumeFromStage
+    Write-Log 'scheduled recovery stage start boundary satisfied by HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1 for generation-quality-repair'
+} elseif ($ResumeFromStage) {
     try {
         if (
             [string]::IsNullOrWhiteSpace([string]$script:ScheduledRecoveryStageBrokerPath) -or
