@@ -1016,18 +1016,21 @@ def test_sec_s5_stage_cutover_rollback_dual_count_is_measured(monkeypatch: pytes
     assert '"dualEnabledCount": 0' not in result_source
 
 
-def _swap_parent_to_junction(module: Any, parent: Path, outside: Path, backup: Path, state: dict[str, Any], reason: str) -> None:
-    """parent rename→junction差替えを試み、拒否以外はtest-owned typed failureにする。"""
+class _ParentSwapRejected(RuntimeError):
+    """test-owned signal for an OS-level no-delete-share rename rejection."""
+
+
+def _swap_parent_to_junction(parent: Path, outside: Path, backup: Path, state: dict[str, Any]) -> None:
+    """parent rename→junction差替えを試み、OS拒否だけをtest-private signalにする。"""
 
     state["called"] = True
     try:
         os.replace(parent, backup)
-    except OSError:
+    except OSError as exc:
         state["swap"] = "rejected"
-        raise module.InstallControlError(reason)
+        raise _ParentSwapRejected from exc
     state["swap"] = "succeeded"
     _mk_junction(parent, outside)
-    raise module.InstallControlError(reason)
 
 
 def test_sec_s5_installer_parent_pin_rejects_junction_swap_before_task_mutation(tmp_path: Path) -> None:
@@ -1050,13 +1053,19 @@ def test_sec_s5_installer_parent_pin_rejects_junction_swap_before_task_mutation(
 
     def hook(name: str) -> None:
         if name == "before_install_parent_swap" and not state["called"]:
-            _swap_parent_to_junction(module, installed, outside, backup, state, "install_parent_identity_swap")
+            _swap_parent_to_junction(installed, outside, backup, state)
 
     controller = _controller(module, root, task, boundary_hook=hook)
     try:
-        with pytest.raises(module.InstallControlError) as captured:
+        try:
             _stage(controller, manifest, source, installed, authority)
-        assert captured.value.reason == "install_parent_identity_swap"
+        except _ParentSwapRejected:
+            assert state["swap"] == "rejected"
+        except module.InstallControlError as captured:
+            assert state["swap"] == "succeeded"
+            assert captured.reason == "install_parent_identity_swap"
+        else:
+            pytest.fail("installer accepted the parent junction swap")
     finally:
         if installed.is_symlink():
             _remove_junction(installed)
@@ -1083,13 +1092,19 @@ def test_sec_s5_journal_parent_pin_rejects_junction_swap_before_task_mutation(tm
 
     def hook(name: str) -> None:
         if name == "before_journal_parent_swap" and not state["called"]:
-            _swap_parent_to_junction(module, journal_parent, outside, backup, state, "journal_parent_identity_swap")
+            _swap_parent_to_junction(journal_parent, outside, backup, state)
 
     controller = _controller(module, root, task, boundary_hook=hook)
     try:
-        with pytest.raises(module.InstallControlError) as captured:
+        try:
             _stage(controller, manifest, source, root / "installed", authority)
-        assert captured.value.reason == "journal_parent_identity_swap"
+        except _ParentSwapRejected:
+            assert state["swap"] == "rejected"
+        except module.InstallControlError as captured:
+            assert state["swap"] == "succeeded"
+            assert captured.reason == "journal_parent_identity_swap"
+        else:
+            pytest.fail("journal writer accepted the parent junction swap")
     finally:
         if journal_parent.is_symlink():
             _remove_junction(journal_parent)
