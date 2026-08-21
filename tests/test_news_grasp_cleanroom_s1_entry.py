@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from contextlib import closing
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import hashlib
 import inspect
 import importlib
@@ -228,6 +228,46 @@ def _result_hash(schedule_id: str, issue_date: str, terminal_state: str) -> str:
         separators=(",", ":"),
     ).encode("utf-8")
     return hashlib.sha256(payload).hexdigest()
+
+
+def _require_wal_compaction_api(production: dict[str, Any]) -> None:
+    for owner, name in (
+        (production["DurableWal"], "retention_counts"),
+        (production["DurableWal"], "imported_event_records"),
+        (production["DurableWal"], "compact_imported"),
+        (production["ControlLedger"], "authorize_wal_compaction"),
+        (production["ControlLedger"], "complete_wal_compaction"),
+    ):
+        if not hasattr(owner, name):
+            pytest.fail(f"{owner.__name__}.{name} compaction API seam is missing")
+
+
+def _seed_compaction_runtime(
+    production: dict[str, Any],
+    data: dict[str, Any],
+    runtime_root: Path,
+    *,
+    imported_count: int = 801,
+) -> tuple[Any, Any, tuple[dict[str, Any], ...], datetime]:
+    """801件のimported WALと対応するSQLite invocationを、明示操作用に用意する。"""
+
+    wal = production["DurableWal"](runtime_root)
+    ledger = production["ControlLedger"](runtime_root)
+    base = _at(6, 1)
+    imported: list[dict[str, Any]] = []
+    for index in range(imported_count):
+        observed = base + timedelta(seconds=index)
+        initial = wal.record_initial(
+            raw_argv=data["normative"]["rawArgv"]["exact"],
+            received_at=observed,
+            writer=_writer(1000 + index),
+        )
+        imported.append(wal.mark_imported(initial, imported_at=observed))
+    ledger.import_zero_entries(
+        tuple(imported),
+        observed_at=base + timedelta(seconds=imported_count),
+    )
+    return wal, ledger, tuple(imported), base
 
 
 def test_s1_manifest_single_entry() -> None:
@@ -560,6 +600,159 @@ def test_sec_s1_wal_event_and_retention_limits_fail_closed(monkeypatch: pytest.M
         "NEWS_GRASP_ENTRY_WAL_RETENTION_LIMIT",
         lambda: count_wal.iter_zero_entries(),
     )
+
+
+def test_sec_s1_wal_compaction_requires_exact_sqlite_parity(tmp_path: Path) -> None:
+    """WAL/SQLiteの一件でも改竄・欠落したcompaction指定は、削除前に拒否する。"""
+
+    data = _load_fixture()
+    production = _production()
+    _require_wal_compaction_api(production)
+    runtime_root = tmp_path / "runtime"
+    wal, ledger, imported, base = _seed_compaction_runtime(production, data, runtime_root)
+    assert wal.retention_counts() == {"zeroEntryCount": 0, "importedEntryCount": 801}
+    assert len(wal.imported_event_records()) == 801
+
+    wal_root = runtime_root / "control" / "wal"
+    before_authorization = _tree_snapshot(wal_root)
+    requested_hashes = [event["eventSha256"] for event in imported[:32]]
+    tampered_hashes = list(requested_hashes)
+    tampered_hashes[0] = "f" * 64
+    _expect_reason(
+        production["error"],
+        "NEWS_GRASP_ENTRY_WAL_RETENTION_LIMIT",
+        lambda: ledger.authorize_wal_compaction(
+            wal=wal,
+            wal_event_hashes=tampered_hashes,
+            batch_size=32,
+            observed_at=base + timedelta(seconds=802),
+        ),
+    )
+    assert _tree_snapshot(wal_root) == before_authorization
+
+    authorization = ledger.authorize_wal_compaction(
+        wal=wal,
+        wal_event_hashes=requested_hashes,
+        batch_size=32,
+        observed_at=base + timedelta(seconds=802),
+    )
+    before_invalid_receipts = _tree_snapshot(wal_root)
+
+    forged_hash = deepcopy(authorization)
+    forged_hash["batch"][0]["eventSha256"] = "e" * 64
+    _expect_reason(
+        production["error"],
+        "NEWS_GRASP_ENTRY_WAL_RETENTION_LIMIT",
+        lambda: wal.compact_imported(forged_hash, observed_at=base + timedelta(seconds=803)),
+    )
+    assert _tree_snapshot(wal_root) == before_invalid_receipts
+
+    omitted_hash = deepcopy(authorization)
+    omitted_hash["batch"] = omitted_hash["batch"][1:]
+    _expect_reason(
+        production["error"],
+        "NEWS_GRASP_ENTRY_WAL_RETENTION_LIMIT",
+        lambda: wal.compact_imported(omitted_hash, observed_at=base + timedelta(seconds=803)),
+    )
+    assert _tree_snapshot(wal_root) == before_invalid_receipts
+    assert wal.retention_counts() == {"zeroEntryCount": 0, "importedEntryCount": 801}
+    assert not (wal_root / "compaction-head-v1.json").exists()
+
+
+def test_sec_s1_wal_compaction_preserves_zero_and_emits_chained_receipt(tmp_path: Path) -> None:
+    """明示authorize→compact→completeだけが32件を削除し、receipt chainを残す。"""
+
+    data = _load_fixture()
+    production = _production()
+    _require_wal_compaction_api(production)
+    runtime_root = tmp_path / "runtime"
+    wal, ledger, imported, base = _seed_compaction_runtime(production, data, runtime_root)
+    wal_root = runtime_root / "control" / "wal"
+    assert wal.retention_counts() == {"zeroEntryCount": 0, "importedEntryCount": 801}
+    assert not (wal_root / "compaction-head-v1.json").exists()
+
+    zero_event = wal.record_initial(
+        raw_argv=data["normative"]["rawArgv"]["exact"],
+        received_at=base + timedelta(seconds=801),
+        writer=_writer(9999),
+    )
+    zero_path = wal_root / zero_event["invocationId"] / "0001-initial.json"
+    zero_bytes = zero_path.read_bytes()
+    assert wal.retention_counts() == {"zeroEntryCount": 1, "importedEntryCount": 801}
+
+    requested_hashes = [event["eventSha256"] for event in wal.imported_event_records()[:32]]
+    authorization = ledger.authorize_wal_compaction(
+        wal=wal,
+        wal_event_hashes=requested_hashes,
+        batch_size=32,
+        observed_at=base + timedelta(seconds=802),
+    )
+    assert authorization["schemaVersion"] == "WAL_COMPACTION_AUTHORIZATION_V1"
+    assert len(authorization["batch"]) <= 32
+    assert authorization["batchDigest"] == importlib.import_module(
+        "tools.news_grasp_cleanroom_contracts"
+    )._entry_canonical_sha256(authorization["batch"])
+
+    receipt = wal.compact_imported(authorization, observed_at=base + timedelta(seconds=803))
+    completion = ledger.complete_wal_compaction(receipt, observed_at=base + timedelta(seconds=804))
+    assert completion["schemaVersion"] == "WAL_COMPACTION_COMPLETION_V1"
+    assert completion["status"] == "completed"
+    assert completion["receiptSha256"] == receipt["selfHash"]
+    assert completion["ledgerEventSha256"]
+
+    contracts = importlib.import_module("tools.news_grasp_cleanroom_contracts")
+    head_path = runtime_root / "control" / "wal" / "compaction-head-v1.json"
+    assert head_path.exists()
+    assert receipt == json.loads(head_path.read_text(encoding="utf-8"))
+    assert head_path.read_bytes() == json.dumps(
+        receipt,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    assert receipt["schemaVersion"] == "WAL_COMPACTION_HEAD_V1"
+    assert receipt["previousReceipt"] == "0" * 64
+    assert receipt["batch"] == authorization["batch"]
+    assert len(receipt["batch"]) <= 32
+    assert receipt["batchDigest"] == contracts._entry_canonical_sha256(receipt["batch"])
+    assert receipt["ledgerEventSha256"] == authorization["ledgerEventSha256"]
+    assert receipt["selfHash"] == contracts._entry_canonical_sha256(
+        {key: value for key, value in receipt.items() if key != "selfHash"}
+    )
+    assert not [path for path in wal_root.rglob("*.tmp")]
+
+    counts = wal.retention_counts()
+    assert counts == {"zeroEntryCount": 1, "importedEntryCount": 769}
+    assert counts["importedEntryCount"] <= 800
+    assert zero_path.exists()
+    assert zero_path.read_bytes() == zero_bytes
+    for batch_item in receipt["batch"]:
+        assert not (wal_root / batch_item["invocationId"]).exists()
+
+    ledger.verify()
+    ledger_path = runtime_root / "control" / "control-ledger-v1.sqlite3"
+    with closing(sqlite3.connect(ledger_path)) as connection:
+        connection.row_factory = sqlite3.Row
+        rows = connection.execute(
+            "SELECT sequence,generation,event_type,slot_key,payload_json,previous_event_sha256,event_sha256 "
+            "FROM events WHERE event_type IN (?,?) ORDER BY sequence",
+            ("WAL_COMPACTION_AUTHORIZED", "WAL_COMPACTION_COMPLETED"),
+        ).fetchall()
+    assert [row["event_type"] for row in rows] == [
+        "WAL_COMPACTION_AUTHORIZED",
+        "WAL_COMPACTION_COMPLETED",
+    ]
+    authorized_row, completed_row = rows
+    authorized_payload = json.loads(authorized_row["payload_json"])
+    completed_payload = json.loads(completed_row["payload_json"])
+    assert authorized_row["event_sha256"] == authorization["ledgerEventSha256"]
+    assert authorized_payload["batch"] == authorization["batch"]
+    assert authorized_payload["batchDigest"] == authorization["batchDigest"]
+    assert completed_row["previous_event_sha256"] == authorized_row["event_sha256"]
+    assert completed_payload["receiptSha256"] == receipt["selfHash"]
+    assert completed_payload["batchDigest"] == receipt["batchDigest"]
+    assert completed_payload["ledgerAuthorizationEventSha256"] == authorized_row["event_sha256"]
+    assert completed_row["event_sha256"] == completion["ledgerEventSha256"]
 
 
 def test_s1_ledger_corruption_recovery(tmp_path: Path) -> None:
