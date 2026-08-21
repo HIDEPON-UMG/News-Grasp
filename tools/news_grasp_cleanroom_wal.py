@@ -293,6 +293,21 @@ class DurableWal:
             "previousEventSha256": _ZERO_HASH,
         }
         event["eventSha256"] = _event_hash(event)
+        # WAL のファイルツリーを作る前に、eventSha256 を含む完全な event
+        # を実際に書き込む canonical UTF-8 bytes へ固定し、上限を検査する。
+        # ここで拒否すれば _write_json (mkdir を含む) は一度も実行されず、
+        # oversized event が空の WAL tree を残すこともない。
+        serialized_event = json.dumps(
+            event,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        if len(serialized_event) > MAX_WAL_EVENT_BYTES:
+            raise CleanroomEntryError(
+                WAL_RETENTION_LIMIT,
+                f"WAL event exceeds {MAX_WAL_EVENT_BYTES} bytes",
+            )
         path = self._managed(self.wal_root / invocation_id / "0001-initial.json")
         _write_json(path, event, self.operations, INITIAL_WAL_FAILED)
         return event
@@ -359,6 +374,44 @@ class DurableWal:
             raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction previous receipt is invalid")
         return value
 
+    def _restore_compaction_quarantine_before_head(self, quarantine_root: Path) -> None:
+        """head がまだ durable でない残骸だけを live tree へ戻す。"""
+        if not quarantine_root.exists():
+            return
+        try:
+            for target in sorted(quarantine_root.iterdir(), key=lambda item: item.name):
+                if not target.is_dir() or _INVOCATION_ID_RE.fullmatch(target.name) is None:
+                    raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction quarantine is invalid")
+                source = self._managed(self.wal_root / target.name)
+                if source.exists():
+                    raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction quarantine/live collision")
+                self.operations.replace(target, source)
+                self.operations.flush_parent(source.parent)
+                self.operations.flush_parent(target.parent)
+            if quarantine_root.exists() and not any(quarantine_root.iterdir()):
+                self.operations.remove(quarantine_root)
+                self.operations.flush_parent(quarantine_root.parent)
+        except CleanroomEntryError:
+            raise
+        except Exception as exc:
+            raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction quarantine restore failed") from exc
+
+    def _cleanup_compaction_quarantine(self, quarantine_root: Path) -> None:
+        """head durable 後の cleanup。失敗時は quarantine を残して再開可能にする。"""
+        if not quarantine_root.exists():
+            return
+        for target in sorted(quarantine_root.iterdir(), key=lambda item: item.name):
+            if not target.is_dir() or _INVOCATION_ID_RE.fullmatch(target.name) is None:
+                raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction quarantine is invalid")
+            for child in sorted(target.iterdir(), key=lambda item: item.name):
+                if child.is_dir():
+                    raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction source has unexpected nested directory")
+                self.operations.remove(child)
+            self.operations.remove(target)
+            self.operations.flush_parent(target.parent)
+        self.operations.remove(quarantine_root)
+        self.operations.flush_parent(quarantine_root.parent)
+
     def compact_imported(
         self,
         authorization: Mapping[str, Any],
@@ -383,6 +436,30 @@ class DurableWal:
             raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction ledger parity is unknown")
         previous_head = self._read_compaction_head()
         previous_receipt = value.get("previousReceipt", _ZERO_HASH)
+        compaction_id = value.get("authorizationId")
+        if not isinstance(compaction_id, str) or _INVOCATION_ID_RE.fullmatch(compaction_id) is None:
+            raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction authorization id is invalid")
+
+        # A crash after head publication is resumed by the same authorization.
+        # The durable head is authoritative; do not move anything back to live
+        # and do not create a second receipt for that authorization.
+        if previous_head and previous_head.get("compactionId") == compaction_id:
+            if (
+                previous_head.get("previousReceipt") != previous_receipt
+                or previous_head.get("batch") != batch
+                or previous_head.get("batchDigest") != expected_batch_digest
+                or previous_head.get("ledgerEventSha256") != ledger_event_hash
+            ):
+                raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction durable head authorization drift")
+            quarantine_root = self._managed(self.wal_root / ".compaction-quarantine" / compaction_id)
+            try:
+                self._cleanup_compaction_quarantine(quarantine_root)
+            except CleanroomEntryError:
+                raise
+            except Exception as exc:
+                raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction cleanup failed") from exc
+            return previous_head
+
         expected_previous = previous_head.get("selfHash", _ZERO_HASH) if previous_head else _ZERO_HASH
         if previous_receipt != expected_previous:
             raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction receipt chain is stale")
@@ -409,56 +486,13 @@ class DurableWal:
         if len(set(requested_keys)) != len(requested_keys) or not set(requested_keys) <= eligible_keys:
             raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction batch is not an eligible prefix")
 
-        compaction_id = value.get("authorizationId")
-        if not isinstance(compaction_id, str) or _INVOCATION_ID_RE.fullmatch(compaction_id) is None:
-            raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction authorization id is invalid")
         quarantine_root = self._managed(self.wal_root / ".compaction-quarantine" / compaction_id)
+        # A process can die between quarantine moves and head publication.
+        # Restore that pre-head residue before attempting this authorization
+        # again; after a durable head, the branch above never restores it.
+        self._restore_compaction_quarantine_before_head(quarantine_root)
         quarantine_root.mkdir(parents=True, exist_ok=True)
         moved: list[Path] = []
-        try:
-            for invocation_id, event_hash in requested_keys:
-                source = self._managed(self.wal_root / invocation_id)
-                if not source.is_dir():
-                    raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction source directory is missing")
-                target = self._managed(quarantine_root / invocation_id)
-                self.operations.replace(source, target)
-                self.operations.flush_parent(source.parent)
-                self.operations.flush_parent(target.parent)
-                moved.append(target)
-            for target in moved:
-                for child in sorted(target.iterdir()):
-                    if child.is_dir():
-                        raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction source has unexpected nested directory")
-                    self.operations.remove(child)
-                self.operations.remove(target)
-                self.operations.flush_parent(target.parent)
-            try:
-                self.operations.remove(quarantine_root)
-                self.operations.flush_parent(quarantine_root.parent)
-            except OSError:
-                # A retained quarantine is safer than claiming completed loss.
-                pass
-        except CleanroomEntryError:
-            for target in reversed(moved):
-                source = self._managed(self.wal_root / target.name)
-                if target.exists() and not source.exists():
-                    try:
-                        self.operations.replace(target, source)
-                        self.operations.flush_parent(source.parent)
-                    except Exception:
-                        pass
-            raise
-        except Exception as exc:
-            for target in reversed(moved):
-                source = self._managed(self.wal_root / target.name)
-                if target.exists() and not source.exists():
-                    try:
-                        self.operations.replace(target, source)
-                        self.operations.flush_parent(source.parent)
-                    except Exception:
-                        pass
-            raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction deletion failed") from exc
-
         completed_at = (
             _validate_entry_time(observed_at).isoformat()
             if observed_at is not None
@@ -474,7 +508,61 @@ class DurableWal:
             "ledgerEventSha256": ledger_event_hash,
         }
         receipt["selfHash"] = _entry_canonical_sha256(receipt)
-        _write_json(self._managed(self.wal_root / "compaction-head-v1.json"), receipt, self.operations, WAL_RETENTION_LIMIT)
+        head_durable = False
+
+        def restore_moved_before_head() -> None:
+            for target in reversed(moved):
+                source = self._managed(self.wal_root / target.name)
+                if target.exists() and not source.exists():
+                    self.operations.replace(target, source)
+                    self.operations.flush_parent(source.parent)
+            if quarantine_root.exists() and not any(quarantine_root.iterdir()):
+                self.operations.remove(quarantine_root)
+                self.operations.flush_parent(quarantine_root.parent)
+
+        try:
+            for invocation_id, event_hash in requested_keys:
+                source = self._managed(self.wal_root / invocation_id)
+                if not source.is_dir():
+                    raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction source directory is missing")
+                target = self._managed(quarantine_root / invocation_id)
+                self.operations.replace(source, target)
+                self.operations.flush_parent(source.parent)
+                self.operations.flush_parent(target.parent)
+                moved.append(target)
+            # The head receipt is the irreversible boundary.  _write_json
+            # fsyncs its temp file and parent before we permit any deletion.
+            _write_json(self._managed(self.wal_root / "compaction-head-v1.json"), receipt, self.operations, WAL_RETENTION_LIMIT)
+            head_durable = True
+            self._cleanup_compaction_quarantine(quarantine_root)
+        except CleanroomEntryError:
+            if not head_durable:
+                try:
+                    persisted = self._read_compaction_head()
+                    head_durable = bool(persisted and persisted.get("selfHash") == receipt["selfHash"])
+                except CleanroomEntryError:
+                    head_durable = False
+            if not head_durable:
+                try:
+                    restore_moved_before_head()
+                except Exception:
+                    # Preserve the original typed failure; a subsequent
+                    # invocation can inspect the pre-head quarantine.
+                    pass
+            raise
+        except Exception as exc:
+            if not head_durable:
+                try:
+                    persisted = self._read_compaction_head()
+                    head_durable = bool(persisted and persisted.get("selfHash") == receipt["selfHash"])
+                except CleanroomEntryError:
+                    head_durable = False
+            if not head_durable:
+                try:
+                    restore_moved_before_head()
+                except Exception:
+                    pass
+            raise CleanroomEntryError(WAL_RETENTION_LIMIT, "WAL compaction deletion failed") from exc
         return receipt
 
     # Short alias retained for callers that expose the explicit operation as

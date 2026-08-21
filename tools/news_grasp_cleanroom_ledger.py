@@ -525,6 +525,95 @@ class ControlLedger:
         connection.execute("UPDATE metadata SET value=? WHERE key='eventChainHead'", (digest,))
         return digest
 
+    def _read_compaction_history(
+        self,
+        connection: sqlite3.Connection,
+    ) -> tuple[list[tuple[Any, ...]], set[tuple[str, str]], str]:
+        """完了済み compaction の receipt/batch を再検証して履歴行を復元する。"""
+        historical_rows: list[tuple[Any, ...]] = []
+        historical_keys: set[tuple[str, str]] = set()
+        previous_receipt = _ZERO_HASH
+        completion_rows = connection.execute(
+            "SELECT sequence,payload_json FROM events WHERE event_type=? ORDER BY sequence",
+            (WAL_COMPACTION_COMPLETED,),
+        ).fetchall()
+        for row in completion_rows:
+            try:
+                payload = json.loads(row[1])
+            except (TypeError, json.JSONDecodeError) as exc:
+                raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL compaction completion payload is invalid") from exc
+            if not isinstance(payload, dict):
+                raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL compaction completion payload is invalid")
+            batch = payload.get("batch")
+            batch_digest = payload.get("batchDigest")
+            receipt_hash = payload.get("receiptSha256")
+            auth_hash = payload.get("ledgerAuthorizationEventSha256")
+            receipt = payload.get("receipt")
+            if (
+                not isinstance(batch, list)
+                or not batch
+                or not isinstance(batch_digest, str)
+                or batch_digest != _entry_canonical_sha256(batch)
+                or not isinstance(receipt_hash, str)
+                or not _HEX64.fullmatch(receipt_hash)
+                or not isinstance(auth_hash, str)
+                or not _HEX64.fullmatch(auth_hash)
+                or not isinstance(receipt, dict)
+            ):
+                raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL compaction completion history is invalid")
+            if (
+                receipt.get("schemaVersion") != "WAL_COMPACTION_HEAD_V1"
+                or receipt.get("selfHash") != receipt_hash
+                or receipt_hash != _entry_canonical_sha256({key: item for key, item in receipt.items() if key != "selfHash"})
+                or receipt.get("previousReceipt") != previous_receipt
+                or receipt.get("batch") != batch
+                or receipt.get("batchDigest") != batch_digest
+                or receipt.get("ledgerEventSha256") != auth_hash
+            ):
+                raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL compaction receipt chain is invalid")
+            auth_row = connection.execute(
+                "SELECT payload_json,event_sha256 FROM events WHERE event_sha256=? AND event_type=?",
+                (auth_hash, WAL_COMPACTION_AUTHORIZED),
+            ).fetchone()
+            if auth_row is None:
+                raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL compaction authorization history is missing")
+            try:
+                auth_payload = json.loads(auth_row[0])
+            except (TypeError, json.JSONDecodeError) as exc:
+                raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL compaction authorization payload is invalid") from exc
+            if (
+                not isinstance(auth_payload, dict)
+                or auth_payload.get("authorizationId") != receipt.get("compactionId")
+                or auth_payload.get("batch") != batch
+                or auth_payload.get("batchDigest") != batch_digest
+                or auth_payload.get("previousReceipt") != previous_receipt
+            ):
+                raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL compaction authorization history parity is invalid")
+            for item in batch:
+                if not isinstance(item, dict) or set(item) != {"invocationId", "eventSha256"}:
+                    raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL compaction historical batch item is invalid")
+                invocation_id = item.get("invocationId")
+                event_hash = item.get("eventSha256")
+                if (
+                    not isinstance(invocation_id, str)
+                    or not _RECOVERY_ID.fullmatch(invocation_id)
+                    or not isinstance(event_hash, str)
+                    or not _HEX64.fullmatch(event_hash)
+                    or (invocation_id, event_hash) in historical_keys
+                ):
+                    raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL compaction historical batch is duplicated or invalid")
+                invocation_row = connection.execute(
+                    "SELECT invocation_id,received_at,raw_argv_sha256,writer_key,wal_event_sha256,imported_at,status "
+                    "FROM invocations WHERE invocation_id=? AND wal_event_sha256=?",
+                    (invocation_id, event_hash),
+                ).fetchone()
+                if invocation_row is None:
+                    raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL compaction historical invocation is missing")
+                historical_keys.add((invocation_id, event_hash))
+                historical_rows.append(tuple(invocation_row))
+            previous_receipt = receipt_hash
+        return historical_rows, historical_keys, previous_receipt
+
     def authorize_wal_compaction(
         self,
         *,
@@ -567,7 +656,21 @@ class ControlLedger:
                 )
                 for event in records
             )
-            if sorted(ledger_rows) != wal_rows:
+            historical_rows, historical_keys, latest_receipt = self._read_compaction_history(connection)
+            live_keys = {(str(event["invocationId"]), str(event["eventSha256"])) for event in records}
+            if historical_keys & live_keys:
+                raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL compaction live/history duplicate")
+            previous_head = wal_value._read_compaction_head()
+            expected_head = previous_head.get("selfHash", _ZERO_HASH) if previous_head else _ZERO_HASH
+            if latest_receipt != expected_head:
+                raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL compaction head/history parity is invalid")
+            history_rows = [
+                (str(row[0]), str(row[2]), str(row[3]), str(row[4]))
+                for row in historical_rows
+            ]
+            union_rows = wal_rows + history_rows
+            union_keys = {(row[0], row[3]) for row in union_rows}
+            if len(union_keys) != len(union_rows) or sorted(ledger_rows) != sorted(union_rows):
                 raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL and SQLite parity is not exact")
             eligible = records[:-800]
             if wal_event_hashes is None:
@@ -584,11 +687,7 @@ class ControlLedger:
                     raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL compaction hash is not eligible")
             batch = [{"invocationId": event["invocationId"], "eventSha256": event["eventSha256"]} for event in selected]
             batch_digest = _entry_canonical_sha256(batch)
-            try:
-                previous_head = wal_value._read_compaction_head()
-            except AttributeError:
-                previous_head = None
-            previous_receipt = previous_head.get("selfHash", _ZERO_HASH) if previous_head else _ZERO_HASH
+            previous_receipt = expected_head
             authorization_id = uuid.uuid4().hex
             parity_digest = _entry_canonical_sha256(wal_rows)
             payload = {
@@ -661,7 +760,13 @@ class ControlLedger:
             if auth_row is None:
                 raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL compaction authorization is missing")
             auth_payload = json.loads(auth_row["payload_json"])
-            if auth_payload.get("authorizationId") != value.get("compactionId") or auth_payload.get("batch") != batch or auth_payload.get("batchDigest") != batch_digest:
+            if (
+                auth_payload.get("authorizationId") != value.get("compactionId")
+                or auth_payload.get("batch") != batch
+                or auth_payload.get("batchDigest") != batch_digest
+                or auth_payload.get("previousReceipt") != value.get("previousReceipt")
+                or value.get("ledgerEventSha256") != auth_hash
+            ):
                 raise CleanroomEntryError(WAL_COMPACTION_FAILED, "WAL compaction authorization parity is invalid")
             existing = connection.execute(
                 "SELECT event_sha256 FROM events WHERE event_type=? AND payload_json LIKE ?",
@@ -672,8 +777,14 @@ class ControlLedger:
             payload = {
                 "compactionId": value.get("compactionId"),
                 "receiptSha256": receipt_hash,
+                # Completion event is the durable historical index used by
+                # the next authorization.  Keep the verified batch and the
+                # complete receipt so a later generation can reconstruct the
+                # compacted invocations without trusting a missing WAL file.
+                "batch": batch,
                 "batchDigest": batch_digest,
                 "ledgerAuthorizationEventSha256": auth_hash,
+                "receipt": value,
             }
             event_hash = self._append_event(connection, generation, WAL_COMPACTION_COMPLETED, None, payload)
             connection.execute("UPDATE metadata SET value=? WHERE key='lastObservedAt'", (_iso(observed),))
