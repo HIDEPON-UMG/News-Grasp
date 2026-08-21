@@ -1,0 +1,137 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S5B-INSTALL-CUTOVER-GREEN-V2",
+  "status": "active",
+  "executionAllowed": true,
+  "role": "implementation_luna",
+  "canonicalContext": "/root/implementation_luna_canary",
+  "todoId": "No.09/A-09",
+  "baselineCommit": "f8910296a25ce93849064e42260212ea835b500e",
+  "dependencies": [
+    "NG-CLEANROOM-S4-ACCEPTED-V1",
+    "NG-CLEANROOM-PARALLEL-HOTFIX-RED-SEALED-V1",
+    "NG-CLEANROOM-S5A-ACCEPTED-V1"
+  ],
+  "designBase": {
+    "path": "config/news_grasp_cleanroom_s5_impl_packet_v1.json",
+    "sha256": "cfc21da692113128c926de699e2a2c294a50bb21d884760ce0c07fc8365c0a31",
+    "use": "reuse its public API, journal, crash hooks, security, task invariants and human-impact contract except where this V2 packet explicitly amends them",
+    "statusNote": "the V1 execution authorization remains superseded; only its immutable detailed design clauses are incorporated by this active V2 packet"
+  },
+  "s5aAcceptance": {
+    "path": "config/news_grasp_cleanroom_s5a_acceptance_v1.json",
+    "sha256": "5f4bcd3af4be05179602b286c7847fd282bb7af6b639ba27342ec4d9e52afedb",
+    "s5aPassed": 9,
+    "s5bExpectedRed": 3
+  },
+  "redSeal": {
+    "testPath": "tests/test_news_grasp_cleanroom_s5_install.py",
+    "testSha256": "4c3b6cbf03dcc120935a90237b8d0792421e5fbdaefdcec074ef8fd066d25e8d",
+    "testBytes": 32904,
+    "baseFixturePath": "tests/fixtures/news_grasp_cleanroom_s5_cases.json",
+    "baseFixtureSha256": "aa9136e45e6fd18352925547db6750a60d52db7cbbe4f560cb5030f8d793dba5",
+    "hotfixFixturePath": "tests/fixtures/news_grasp_cleanroom_parallel_hotfix_cases.json",
+    "hotfixFixtureSha256": "1c11994437585089f9962ee655f2f224aa5da6ee8108a25ac2fca7880e19bbb8",
+    "collected": 9,
+    "failed": 9,
+    "cause": "ModuleNotFoundError: tools.news_grasp_cleanroom_install"
+  },
+  "writeLease": {
+    "leaseId": "IMPL-LEASE-S5B-INSTALL-CUTOVER-V2",
+    "leaseSha256": "dc184aada7807bbcb8811d7438a4da6bc2dd166369ca2fade8b90b7f147c4bb1",
+    "canonicalPayload": {
+      "leaseId": "IMPL-LEASE-S5B-INSTALL-CUTOVER-V2",
+      "role": "implementation_luna",
+      "canonicalContext": "/root/implementation_luna_canary",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-hotfix-s5a",
+      "writes": ["tools/news_grasp_cleanroom_install.py"],
+      "baselineCommit": "f8910296a25ce93849064e42260212ea835b500e"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tools/news_grasp_cleanroom_install.py"],
+  "forbiddenWrites": [
+    "tests",
+    "tests/fixtures",
+    "config",
+    "docs",
+    "scripts/ops/install-news-grasp-ops.ps1",
+    "scripts/ops/install-news-grasp-ops-guard.ps1",
+    "scripts/ops/news-grasp-task-launcher.pyw",
+    "all other production files",
+    "ProjectFolders workspace-global harness",
+    "original user worktree",
+    "live runtime, bin or Scheduled Tasks"
+  ],
+  "publicContract": {
+    "exports": ["InstallCutoverController", "InstallControlError", "PrivilegeDenied"],
+    "constructor": "InstallCutoverController(runtime_root, task_adapter, pythonw_path, process_adapter=None, security_adapter=None, owner_adapter=None, boundary_hook=None)",
+    "stage": "stage(manifest, source_root, installed_root, authority, observed_at) -> INSTALL_STAGE_RESULT_V1",
+    "cutover": "cutover(authority, observed_at) -> CUTOVER_RESULT_V1",
+    "rollback": "rollback(authority, observed_at) -> ROLLBACK_RESULT_V1",
+    "inspect": "read-only INSTALL_INSPECTION_V1",
+    "errors": "PrivilegeDenied remains typed; all other contract failures raise InstallControlError with stable reason and no secret echo"
+  },
+  "authorityAmendment": {
+    "schema": "INSTALL_AUTHORITY_V1 exact keys schemaVersion,authorityId,issueDate,generation,sourceRoot,sourceSha256,ownerReceipts,authoritySha256",
+    "owners": {
+      "runtime_generation_owner": ["PRODUCTION_GENERATION_MANIFEST_V2", "NEWS_GRASP_ACTIVE_GENERATION_V2"],
+      "ops_install_owner": ["NEWS_GRASP_OPS_INSTALL_JOURNAL_V1", "NEWS_GRASP_PHYSICAL_DELIVERY_STATE_V1"]
+    },
+    "receiptExactKeys": ["ownerId", "receiptSchemas", "sourceSha256", "installedSha256", "taskActionSha256", "preimageSha256", "receiptSha256"],
+    "validation": "both owners exact, exact ordered schemas, canonical inner hashes and outer authority hash, sourceSha256=current launcher bytes, installedSha256=planned launcher bytes and taskActionSha256=canonical manifest action hash; validate before filesystem, pointer or Task mutation",
+    "installedPreflight": "an empty installed root is stageable; an existing launcher is accepted only if its hash equals owner installedSha256, otherwise fail before any mutation",
+    "ownerGapDecision": "existing runtime lifecycle and ops installer already produce the four required receipts; do not edit either owner script in S5B"
+  },
+  "ownerRecoveryAmendment": {
+    "journal": "seal both owner receipt hashes and both exact preimageSha256 values into INSTALL_CUTOVER_JOURNAL_V1 before candidate registration",
+    "adapterRule": "if owner_adapter is provided, rollback disables the new Task first, then calls restore('install_news_grasp_ops', ops preimage), then restore('launcher_runtime_lifecycle', runtime preimage); durable phase advancement makes a denial/crash retry idempotent",
+    "noAdapterRule": "when owner_adapter is absent, retain sealed owner preimages but perform the original Task/filesystem rollback contract without inventing an external owner call",
+    "mapping": {
+      "ops_install_owner": "install_news_grasp_ops",
+      "runtime_generation_owner": "launcher_runtime_lifecycle"
+    },
+    "forbidden": "self-reseal caller receipt, reconstruct a machine receipt, restore any owner while the new Task is enabled, repeat a completed restore"
+  },
+  "durableAndTaskContract": {
+    "root": "runtime_root/control/install-cutover-v1",
+    "write": "canonical UTF-8 JSON, atomic temp write, flush/fsync, os.replace and parent directory flush; exact schema/type/path/hash validation on every resume",
+    "phases": ["PREIMAGE_DURABLE", "STAGED", "INSTALLED", "POINTER_DURABLE", "OLD_DISABLED", "NEW_ENABLED", "COMMITTED", "ROLLBACK_NEW_DISABLED", "ROLLBACK_OPS_RESTORED", "ROLLBACK_RUNTIME_RESTORED", "ROLLBACK_OLD_RESTORED", "ROLLED_BACK"],
+    "stage": "copy only source_root/launcher.pyw to installed_root/launcher.pyw, exact bytes/hash, optional hidden canary, register canonical candidate disabled exactly once, converge old-only and never cut over",
+    "cutover": "disable old before enable new; dual-enabled count stays zero at every mutation; Pull/Inventory remain disabled and are never deleted",
+    "rollback": "disable new before owner restores, restore exact old Task definition and enable old; crash/retry converges old-only",
+    "hooks": ["stage", "install", "pointer", "old_disable", "new_enable", "commit", "rollback_before_new_disable", "rollback_after_new_disable", "rollback_before_restore", "rollback_commit"]
+  },
+  "securityAndHumanImpact": {
+    "security": "reject traversal, absolute escape, reparse, source identity swap, source/install/hash/action drift, insecure ACL, untrusted signer, unknown/missing nested key, secret-looking content/control bytes/shell metacharacters before mutation; never echo secret text",
+    "process": "only injected process_adapter may launch the installed canary, one ordered argv call, shell=false, CREATE_NO_WINDOW, UTF-8, includeChildTree=true, noFocusTheft/noAutoOpen/noUserMonitoring=true; never shared-process kill",
+    "outside": "do not resolve or mutate outside authorized runtime/source/installed roots",
+    "external": "no network, external model, UAC, Task Scheduler or installed-machine mutation in unit implementation"
+  },
+  "inspection": {
+    "required": ["schemaVersion", "phase", "dualEnabledCount", "autoDeletedPullTaskCount", "focusTheftCount", "sharedProcessKillCount"],
+    "readOnly": true,
+    "secretFree": true
+  },
+  "verification": {
+    "s5": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s5_install.py; expect 9 passed",
+    "s5a": "rerun the sealed corrected nine S5A nodes with the existing valid binding; expect 9 passed",
+    "priorStages": [
+      "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s4_recovery.py; expect 3 passed",
+      "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s3_public.py; expect 9 passed",
+      "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s2_execution.py; expect 10 passed",
+      "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s1_entry.py; expect 32 passed",
+      "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s0_contract.py; expect 3 passed"
+    ],
+    "static": ["py -3.12 -m py_compile tools/news_grasp_cleanroom_install.py", "py -3.12 -m ruff check tools/news_grasp_cleanroom_install.py", "git diff --check", "owned-path-only status", "security scan exact new file"]
+  },
+  "commitPolicy": {
+    "allowedOnlyAfterAllGreen": true,
+    "paths": ["tools/news_grasp_cleanroom_install.py"],
+    "message": "feat: implement S5 install cutover plane"
+  },
+  "causalRetry": "one implementation attempt and one causal retry only; return immediately on an unresolved failure without editing tests or owner scripts",
+  "delivery": "one production file hash/bytes, commit, exact verification exits, clean status and contrary evidence",
+  "stopPolicy": "return to Sol after S5B; do not start S6 or mutate live installation",
+  "unresolvedDecisionIds": []
+}
