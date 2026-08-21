@@ -4606,6 +4606,53 @@ def test_sec_scheduled_admission_validator_is_closed_schema_and_receipt_sealed()
     assert "HIGH_COST_SCHEDULED_ADMISSION_INVALID" in invalid_source
 
 
+def test_sec_continuation_requires_composite_authority_and_stage_witness_before_broker_return() -> None:
+    """continuationはself-hash単独でreturnせず、fresh admissionとstage witnessを通る。"""
+
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    admission_block = runner.split(
+        "    $script:UsesHighCostContinuationAdmission = $false", 1
+    )[1].split("# ===== 外部制御面pure readiness", 1)[0]
+    resume_block = admission_block.split("if ($ResumeFromStage) {", 1)[1]
+    continuation_branch = resume_block.split(
+        "if ($RunIntent -ne 'ScheduledRecoveryFull'", 1
+    )[0]
+    code_only = "\n".join(line.split("#", 1)[0] for line in continuation_branch.splitlines())
+    assert not re.search(r"\breturn\b", code_only)
+    for marker in (
+        "RecoveryDecisionPath",
+        "validate-decision",
+        "$HighCostAdmissionPath = ''",
+        "$ScheduledAuthorityEvidencePath",
+    ):
+        assert marker in continuation_branch
+    assert continuation_branch.index("RecoveryDecisionPath") < continuation_branch.index("validate-decision")
+    assert continuation_branch.index("validate-decision") < continuation_branch.index("$HighCostAdmissionPath = ''")
+
+    broker_index = admission_block.index("$modelSpawnBroker 'admit'")
+    clear_index = admission_block.index("$HighCostAdmissionPath = ''")
+    assert clear_index < broker_index
+    broker_call = admission_block[broker_index : broker_index + 900]
+    for marker in ("$ScheduledAuthorityEvidencePath", "$taskActionSha256", "$runnerSha256"):
+        assert marker in broker_call
+
+    stage_block = runner.split("scheduled recovery stage start boundary", 1)[1].split(
+        "if ($ResumeGenerationQualityRepair)", 1
+    )[0]
+    for marker in (
+        "start-news-grasp-recovery-stage",
+        "$stageWitnessJson",
+        "SCHEDULED_RECOVERY_STAGE_STARTED_V1",
+        "decisionReceiptSha256",
+    ):
+        assert marker in stage_block
+    continuation_flag_index = stage_block.find("if ($script:UsesHighCostContinuationAdmission)")
+    witness_index = stage_block.index("start-news-grasp-recovery-stage")
+    if continuation_flag_index >= 0:
+        between = stage_block[continuation_flag_index:witness_index]
+        assert "} else {" not in between
+
+
 def test_sec_continuation_revalidates_product_local_authority_before_return() -> None:
     """ResumeFromStage はcanonical authorityを再検証してからだけ継続する。"""
 

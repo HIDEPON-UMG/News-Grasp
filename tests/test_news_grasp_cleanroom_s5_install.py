@@ -1206,7 +1206,14 @@ def test_sec_s5_canary_receipt_replay_and_legacy_cutover_are_fail_closed(tmp_pat
     legacy["phase"] = "COMMITTED"
     _reseal_journal(legacy)
     legacy_journal_path.write_text(json.dumps(legacy, ensure_ascii=False, sort_keys=True, separators=(",", ":")), encoding="utf-8")
-    with pytest.raises(module.InstallControlError):
+    history_before_legacy_stage = legacy_task.history_rows()
+    with pytest.raises(module.InstallControlError) as stage_error:
+        _stage(legacy_controller, legacy_manifest, legacy_source, legacy_installed, legacy_authority)
+    assert stage_error.value.reason == "canary_receipt_invalid"
+    assert legacy_task.history_rows() == history_before_legacy_stage
+    with pytest.raises(module.InstallControlError) as cutover_error:
         _cutover(legacy_controller, legacy_authority)
+    assert cutover_error.value.reason == "canary_receipt_invalid"
+    assert legacy_task.history_rows() == history_before_legacy_stage
     rollback = _rollback(legacy_controller, legacy_authority, minute=3)
     assert rollback["schemaVersion"] == "ROLLBACK_RESULT_V1"
