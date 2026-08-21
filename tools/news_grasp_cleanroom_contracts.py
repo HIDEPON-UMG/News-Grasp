@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import re
+import stat
 from collections.abc import Mapping
 from typing import Any, Iterable
 from zoneinfo import ZoneInfo
@@ -573,13 +574,16 @@ def _managed_runtime_path(runtime_root: Path, candidate: Path) -> Path:
             components.append(current)
         for component in components:
             try:
-                if component.is_symlink():
+                info = os.lstat(component)
+                if stat.S_ISLNK(info.st_mode):
                     raise ValueError("managed path contains a symlink")
-                attributes = getattr(os.lstat(component), "st_file_attributes", 0)
+                attributes = getattr(info, "st_file_attributes", 0)
                 if attributes & 0x400:
                     raise ValueError("managed path contains a reparse point")
             except FileNotFoundError:
                 continue
+            except OSError as exc:
+                raise ValueError("managed path component cannot be inspected") from exc
         resolved_root = root.resolve(strict=False)
         resolved_path = path.resolve(strict=False)
         resolved_path.relative_to(resolved_root)

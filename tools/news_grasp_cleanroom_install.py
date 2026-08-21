@@ -14,6 +14,7 @@ import json
 import os
 from pathlib import Path
 import re
+import stat
 import tempfile
 from typing import Any, Mapping
 
@@ -144,6 +145,20 @@ def _safe_path(value: Path | str, label: str) -> Path:
         path = Path(value)
         if not path.is_absolute():
             raise InstallControlError(f"{label}_not_absolute")
+        # Resolve is deliberately last.  Every lexical component that already
+        # exists is inspected with lstat first, so a link/reparse point cannot
+        # redirect the later containment check or any write operation.
+        current = Path(path.anchor)
+        for part in path.parts[1:]:
+            current = current / part
+            try:
+                info = os.lstat(current)
+            except FileNotFoundError:
+                continue
+            except OSError as exc:
+                raise InstallControlError(f"{label}_invalid") from exc
+            if stat.S_ISLNK(info.st_mode) or getattr(info, "st_file_attributes", 0) & 0x400:
+                raise InstallControlError("symlink_reparse_rejected")
         return path.resolve(strict=False)
     except InstallControlError:
         raise
@@ -173,7 +188,7 @@ def _at_string(value: datetime | str) -> str:
 
 
 class _DefaultSecurity:
-    """Unit-safe default security adapter; production may inject stronger checks."""
+    """互換用の名前だけを残し、実運用のsecurity fallbackには使わない。"""
 
     @staticmethod
     def capture_identity(path: Path) -> dict[str, Any]:
@@ -193,7 +208,7 @@ class _DefaultSecurity:
 
     @staticmethod
     def signer_is_trusted(executable: Path) -> bool:
-        return executable.is_file()
+        raise InstallControlError("security_adapter_required")
 
 
 class InstallCutoverController:
@@ -213,7 +228,7 @@ class InstallCutoverController:
         self.task_adapter = task_adapter
         self.pythonw_path = _safe_path(pythonw_path, "pythonw_path")
         self.process_adapter = process_adapter
-        self.security = security_adapter or _DefaultSecurity()
+        self.security = security_adapter
         self.owner_adapter = owner_adapter
         self.boundary_hook = boundary_hook
         self._journal_path = self.runtime_root / _ROOT_DIR / "journal.json"
@@ -326,6 +341,42 @@ class InstallCutoverController:
         if self.boundary_hook is not None:
             self.boundary_hook(name)
 
+    @staticmethod
+    def _require_adapter(adapter: Any, reason: str, methods: tuple[str, ...]) -> None:
+        if adapter is None or any(not callable(getattr(adapter, method, None)) for method in methods):
+            raise InstallControlError(reason)
+
+    def _require_security_adapter(self) -> None:
+        self._require_adapter(
+            self.security,
+            "security_adapter_required",
+            ("capture_identity", "verify_identity", "is_reparse", "acl_is_secure", "signer_is_trusted"),
+        )
+
+    def _require_stage_adapters(self) -> None:
+        self._require_adapter(
+            self.task_adapter,
+            "task_adapter_required",
+            ("snapshot", "disable", "enable", "register_disabled"),
+        )
+        self._require_adapter(self.process_adapter, "process_adapter_required", ("launch",))
+
+    def _require_owner_adapter(self) -> None:
+        self._require_adapter(self.owner_adapter, "owner_adapter_required", ("restore",))
+
+    def _lexical_reparse_preflight(self, value: Path | str, label: str) -> None:
+        """Injected reparse seam must run before _safe_path resolves anything."""
+        try:
+            path = Path(value)
+            if not path.is_absolute():
+                raise InstallControlError(f"{label}_not_absolute")
+            if self.security.is_reparse(path):
+                raise InstallControlError("symlink_reparse_rejected")
+        except InstallControlError:
+            raise
+        except Exception as exc:
+            raise InstallControlError("security_preflight_failed") from exc
+
     # ---- validation ----------------------------------------------------
     @staticmethod
     def _validate_manifest(manifest: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -427,8 +478,7 @@ class InstallCutoverController:
         installed_root: Path | None = None,
         expected_identity: Mapping[str, Any] | None = None,
     ) -> dict[str, Any]:
-        if not launcher.is_file():
-            raise InstallControlError("launcher_missing")
+        self._require_security_adapter()
         try:
             if self.security.is_reparse(source_root) or self.security.is_reparse(launcher):
                 raise InstallControlError("symlink_reparse_rejected")
@@ -436,13 +486,11 @@ class InstallCutoverController:
                 if self.security.is_reparse(installed_root):
                     raise InstallControlError("symlink_reparse_rejected")
                 installed_launcher = installed_root / "launcher.pyw"
-                if installed_launcher.exists() and self.security.is_reparse(installed_launcher):
+                if os.path.lexists(installed_launcher) and self.security.is_reparse(installed_launcher):
                     raise InstallControlError("symlink_reparse_rejected")
-            token = (
-                dict(expected_identity)
-                if expected_identity is not None
-                else self.security.capture_identity(launcher)
-            )
+            if not launcher.is_file():
+                raise InstallControlError("launcher_missing")
+            token = dict(expected_identity) if expected_identity is not None else self.security.capture_identity(launcher)
             if not self.security.verify_identity(launcher, token):
                 raise InstallControlError("source_identity_swap")
             if not self.security.acl_is_secure(source_root) or not self.security.acl_is_secure(launcher):
@@ -464,14 +512,10 @@ class InstallCutoverController:
     def _task_snapshot(self) -> Mapping[str, Any]:
         try:
             snapshot = self.task_adapter.snapshot()
-        except PrivilegeDenied:
-            raise
-        except InstallControlError:
-            raise
         except Exception as exc:
             raise InstallControlError("task_snapshot_failed") from exc
         if not isinstance(snapshot, Mapping) or not isinstance(snapshot.get("tasks"), Mapping):
-            raise InstallControlError("task_snapshot_invalid")
+            raise InstallControlError("task_snapshot_failed")
         return snapshot
 
     @staticmethod
@@ -529,6 +573,43 @@ class InstallCutoverController:
             "journalSha256": "",
         }
 
+    @staticmethod
+    def _read_source_once(path: Path) -> tuple[bytes, str, dict[str, Any]]:
+        """同一file handleでidentity確認とbytes/hashを束ねて読む。"""
+        try:
+            before = os.lstat(path)
+            if stat.S_ISLNK(before.st_mode) or getattr(before, "st_file_attributes", 0) & 0x400:
+                raise InstallControlError("source_identity_swap")
+            fd = os.open(path, os.O_RDONLY)
+            try:
+                opened = os.fstat(fd)
+                identity_before = (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns)
+                identity_opened = (opened.st_dev, opened.st_ino, opened.st_size, opened.st_mtime_ns)
+                if identity_before != identity_opened:
+                    raise InstallControlError("source_identity_swap")
+                digest = hashlib.sha256()
+                chunks: list[bytes] = []
+                while True:
+                    chunk = os.read(fd, 1024 * 1024)
+                    if not chunk:
+                        break
+                    chunks.append(chunk)
+                    digest.update(chunk)
+                after = os.fstat(fd)
+                if (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns) != identity_opened:
+                    raise InstallControlError("source_identity_swap")
+                data = b"".join(chunks)
+                if len(data) != after.st_size:
+                    raise InstallControlError("source_identity_swap")
+                source_hash = digest.hexdigest()
+                return data, source_hash, {"path": str(path), "sha256": source_hash}
+            finally:
+                os.close(fd)
+        except InstallControlError:
+            raise
+        except (OSError, ValueError) as exc:
+            raise InstallControlError("file_read_failed") from exc
+
     # ---- public operations --------------------------------------------
     def stage(
         self,
@@ -539,6 +620,10 @@ class InstallCutoverController:
         observed_at: datetime | str,
     ) -> dict[str, Any]:
         manifest = self._validate_manifest(manifest)
+        self._require_security_adapter()
+        self._lexical_reparse_preflight(source_root, "source_root")
+        self._lexical_reparse_preflight(installed_root, "installed_root")
+        self._require_stage_adapters()
         source = _safe_path(source_root, "source_root")
         installed = _safe_path(installed_root, "installed_root")
         _within(source, self.runtime_root, "source_root")
@@ -546,7 +631,7 @@ class InstallCutoverController:
         if not source.is_dir() or not installed.exists() or not installed.is_dir():
             raise InstallControlError("install_root_invalid")
         launcher = source / "launcher.pyw"
-        source_hash_actual = _file_sha(launcher) if launcher.is_file() else None
+        source_data, source_hash_actual, source_identity = self._read_source_once(launcher)
         source_hash, preimages = self._validate_authority(authority, manifest, source, source_hash_actual)
         if source_hash_actual != source_hash:
             raise InstallControlError("source_hash_mismatch")
@@ -558,7 +643,7 @@ class InstallCutoverController:
         journal = self._load_journal()
         candidate = self._candidate_definition(manifest)
         if journal is None:
-            source_identity = self._security_preflight(source, launcher, installed)
+            self._security_preflight(source, launcher, installed, source_identity)
             snapshot = self._task_snapshot()
             old_task = snapshot.get("tasks", {}).get(_OLD_TASK, {})
             old_preimage = old_task.get("definition") if isinstance(old_task, Mapping) else None
@@ -602,7 +687,7 @@ class InstallCutoverController:
         if not self._task_state(snapshot, _OLD_TASK):
             self.task_adapter.enable(_OLD_TASK)
         if journal["phase"] == "PREIMAGE_DURABLE":
-            self._copy_launcher(source, installed)
+            self._copy_launcher(source, installed, source_hash, source_identity)
             journal["phase"] = "STAGED"
             self._write_journal(journal)
             self._hook("install")
@@ -611,19 +696,26 @@ class InstallCutoverController:
             journal["candidateRegistered"] = True
             journal["phase"] = "INSTALLED"
             self._write_journal(journal)
-        if self.process_adapter is not None and not journal.get("canaryLaunched"):
-            self.process_adapter.launch(
-                [str(self.pythonw_path), str(installed / "launcher.pyw")],
-                installed,
-                shell=False,
-                creationflags=CREATE_NO_WINDOW,
-                encoding="utf-8",
-                includeChildTree=True,
-                noFocusTheft=True,
-                noAutoOpen=True,
-                noUserMonitoring=True,
-            )
+        if not journal.get("canaryLaunched"):
+            try:
+                receipt = self.process_adapter.launch(
+                    [str(self.pythonw_path), str(installed / "launcher.pyw")],
+                    installed,
+                    shell=False,
+                    creationflags=CREATE_NO_WINDOW,
+                    encoding="utf-8",
+                    includeChildTree=True,
+                    noFocusTheft=True,
+                    noAutoOpen=True,
+                    noUserMonitoring=True,
+                )
+            except Exception as exc:
+                raise InstallControlError("canary_failed") from exc
+            if not isinstance(receipt, Mapping) or receipt.get("status") != "succeeded" or receipt.get("exitCode") != 0:
+                raise InstallControlError("canary_failed")
             journal["canaryLaunched"] = True
+            # Canary success itself is durable before pointer/cutover progress.
+            self._write_journal(journal)
         if journal["phase"] in {"STAGED", "INSTALLED"}:
             self._hook("pointer")
             journal["phase"] = "POINTER_DURABLE"
@@ -666,6 +758,7 @@ class InstallCutoverController:
         if journal is None:
             raise InstallControlError("stage_required")
         self._validate_resume(journal, authority, Path(journal["sourceRoot"]), Path(journal["installedRoot"]), journal["sourceSha256"], journal["candidateDefinition"])
+        self._require_owner_adapter()
         if journal["phase"] == "ROLLED_BACK":
             return self._result("ROLLBACK_RESULT_V1", journal)
         if journal["phase"] not in {"ROLLBACK_NEW_DISABLED", "ROLLBACK_OPS_RESTORED", "ROLLBACK_RUNTIME_RESTORED", "ROLLBACK_OLD_RESTORED"}:
@@ -715,12 +808,8 @@ class InstallCutoverController:
     def inspect(self) -> dict[str, Any]:
         journal = self._load_journal()
         phase = journal["phase"] if journal else "ABSENT"
-        dual = 0
-        try:
-            snapshot = self.task_adapter.snapshot()
-            dual = int(self._task_state(snapshot, _OLD_TASK) and self._task_state(snapshot, _NEW_TASK))
-        except Exception:
-            dual = 0
+        snapshot = self._task_snapshot()
+        dual = int(self._task_state(snapshot, _OLD_TASK) and self._task_state(snapshot, _NEW_TASK))
         return {
             "schemaVersion": "INSTALL_INSPECTION_V1",
             "phase": phase,
@@ -764,7 +853,7 @@ class InstallCutoverController:
         launcher = source / "launcher.pyw"
         if not source.is_dir() or not installed.is_dir():
             raise InstallControlError("resume_root_invalid")
-        current_source_hash = _file_sha(launcher)
+        _source_data, current_source_hash, _current_identity = self._read_source_once(launcher)
         self._validate_manifest(resume_manifest)
         self._validate_authority(authority, resume_manifest, source, current_source_hash)
         if journal.get("authoritySha256") != authority.get("authoritySha256"):
@@ -801,24 +890,75 @@ class InstallCutoverController:
             raise InstallControlError("installed_hash_mismatch")
         self._security_preflight(source, launcher, installed, source_identity)
 
-    @staticmethod
-    def _copy_launcher(source: Path, installed: Path) -> None:
+    def _copy_launcher(
+        self,
+        source: Path,
+        installed: Path,
+        expected_hash: str,
+        expected_identity: Mapping[str, Any],
+    ) -> None:
         launcher = source / "launcher.pyw"
         target = installed / "launcher.pyw"
         installed.mkdir(parents=True, exist_ok=True)
-        data = launcher.read_bytes()
-        temporary = target.with_name(f".{target.name}.tmp")
-        with temporary.open("wb") as stream:
-            stream.write(data)
-            stream.flush()
-            os.fsync(stream.fileno())
-        os.replace(temporary, target)
-        if _file_sha(target) != hashlib.sha256(data).hexdigest():
-            raise InstallControlError("installed_hash_mismatch")
+        try:
+            predictable = target.with_name(f".{target.name}.tmp")
+            if os.path.lexists(predictable):
+                info = os.lstat(predictable)
+                if (
+                    stat.S_ISLNK(info.st_mode)
+                    or getattr(info, "st_file_attributes", 0) & 0x400
+                    or info.st_nlink != 1
+                ):
+                    raise InstallControlError("install_temp_link_rejected")
+            if os.path.lexists(target):
+                target_info = os.lstat(target)
+                if stat.S_ISLNK(target_info.st_mode) or getattr(target_info, "st_file_attributes", 0) & 0x400:
+                    raise InstallControlError("install_temp_link_rejected")
+            data, source_hash, _current_identity = self._read_source_once(launcher)
+            if source_hash != expected_hash or not self.security.verify_identity(launcher, expected_identity):
+                raise InstallControlError("source_identity_swap")
+            fd, temporary_name = tempfile.mkstemp(prefix=f".{target.name}.", suffix=".tmp", dir=str(installed))
+            temporary = Path(temporary_name)
+            try:
+                temp_info = os.lstat(temporary)
+                if (
+                    stat.S_ISLNK(temp_info.st_mode)
+                    or getattr(temp_info, "st_file_attributes", 0) & 0x400
+                    or temp_info.st_nlink != 1
+                ):
+                    raise InstallControlError("install_temp_link_rejected")
+                with os.fdopen(fd, "wb") as stream:
+                    fd = -1
+                    stream.write(data)
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                os.replace(temporary, target)
+                try:
+                    directory_fd = os.open(installed, os.O_RDONLY)
+                    try:
+                        os.fsync(directory_fd)
+                    finally:
+                        os.close(directory_fd)
+                except OSError:
+                    pass
+            finally:
+                if fd >= 0:
+                    os.close(fd)
+                try:
+                    temporary.unlink()
+                except FileNotFoundError:
+                    pass
+            if _file_sha(target) != expected_hash:
+                raise InstallControlError("installed_hash_mismatch")
+        except InstallControlError:
+            raise
+        except (OSError, ValueError) as exc:
+            raise InstallControlError("install_temp_failed") from exc
 
-    @staticmethod
-    def _stage_result(authority: Mapping[str, Any], journal: Mapping[str, Any]) -> dict[str, Any]:
+    def _stage_result(self, authority: Mapping[str, Any], journal: Mapping[str, Any]) -> dict[str, Any]:
         """検証済みauthorityとdurable journalからsealed stage evidenceを構成する。"""
+        snapshot = self._task_snapshot()
+        dual_enabled_count = int(self._task_state(snapshot, _OLD_TASK) and self._task_state(snapshot, _NEW_TASK))
         installed_receipt = {
             "schemaVersion": "INSTALL_STAGED_RECEIPT_V1",
             "authorityId": authority["authorityId"],
@@ -838,17 +978,18 @@ class InstallCutoverController:
             "journalSha256": journal["journalSha256"],
             "journal": deepcopy(dict(journal)),
             "installedReceipt": installed_receipt,
-            "dualEnabledCount": 0,
+            "dualEnabledCount": dual_enabled_count,
         }
 
-    @staticmethod
-    def _result(schema: str, journal: Mapping[str, Any]) -> dict[str, Any]:
+    def _result(self, schema: str, journal: Mapping[str, Any]) -> dict[str, Any]:
+        snapshot = self._task_snapshot()
+        dual_enabled_count = int(self._task_state(snapshot, _OLD_TASK) and self._task_state(snapshot, _NEW_TASK))
         return {
             "schemaVersion": schema,
             "phase": journal["phase"],
             "authorityId": journal["authorityId"],
             "journalSha256": journal["journalSha256"],
-            "dualEnabledCount": 0,
+            "dualEnabledCount": dual_enabled_count,
         }
 
 
