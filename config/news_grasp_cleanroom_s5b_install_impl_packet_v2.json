@@ -4,9 +4,9 @@
   "status": "active",
   "executionAllowed": true,
   "role": "implementation_luna",
-  "canonicalContext": "/root/implementation_luna_canary",
+  "canonicalContext": "/root/s5b_impl_replacement",
   "todoId": "No.09/A-09",
-  "baselineCommit": "f8910296a25ce93849064e42260212ea835b500e",
+  "baselineCommit": "94e186d68fa7e489dd136c03bb56e88d142a23d8",
   "dependencies": [
     "NG-CLEANROOM-S4-ACCEPTED-V1",
     "NG-CLEANROOM-PARALLEL-HOTFIX-RED-SEALED-V1",
@@ -36,16 +36,25 @@
     "failed": 9,
     "cause": "ModuleNotFoundError: tools.news_grasp_cleanroom_install"
   },
-  "writeLease": {
-    "leaseId": "IMPL-LEASE-S5B-INSTALL-CUTOVER-V2",
-    "leaseSha256": "dc184aada7807bbcb8811d7438a4da6bc2dd166369ca2fade8b90b7f147c4bb1",
-    "canonicalPayload": {
-      "leaseId": "IMPL-LEASE-S5B-INSTALL-CUTOVER-V2",
-      "role": "implementation_luna",
+  "abortedExecutions": [
+    {
       "canonicalContext": "/root/implementation_luna_canary",
+      "leaseId": "IMPL-LEASE-S5B-INSTALL-CUTOVER-V2",
+      "reason": "10:42 JST hard boundary reached after packet validation with zero file mutation",
+      "mutationCount": 0,
+      "successorLeaseId": "IMPL-LEASE-S5B-INSTALL-CUTOVER-V2-R1"
+    }
+  ],
+  "writeLease": {
+    "leaseId": "IMPL-LEASE-S5B-INSTALL-CUTOVER-V2-R1",
+    "leaseSha256": "2bb3cefd3a61f5e3b13e138358c32a1a2f8e4f5503831ce395627f0962d61c3f",
+    "canonicalPayload": {
+      "leaseId": "IMPL-LEASE-S5B-INSTALL-CUTOVER-V2-R1",
+      "role": "implementation_luna",
+      "canonicalContext": "/root/s5b_impl_replacement",
       "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-hotfix-s5a",
       "writes": ["tools/news_grasp_cleanroom_install.py"],
-      "baselineCommit": "f8910296a25ce93849064e42260212ea835b500e"
+      "baselineCommit": "94e186d68fa7e489dd136c03bb56e88d142a23d8"
     },
     "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
   },
