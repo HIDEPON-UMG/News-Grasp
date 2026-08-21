@@ -88,7 +88,7 @@
     "scheduledCorpusCount": 63,
     "auditCorpusCount": 8,
     "legacyWriterCount": 0,
-    "requiredLineages": ["Scheduled", "Recovery", "Public", "Readiness"],
+    "requiredLineages": ["Scheduled", "Audit", "Public", "Readiness"],
     "ledgerProvenanceSchema": "LEDGER_PROVENANCE_V1",
     "corpusEntryKeys": ["caseId", "domain", "issueDate", "receiptSha256", "ledgerProvenanceSha256"],
     "dailyEvidenceEntryKeys": ["issueDate", "timezone", "introductionDate", "missing", "lineages", "ledgerProvenanceSha256"],

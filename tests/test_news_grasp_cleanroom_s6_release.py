@@ -245,8 +245,14 @@ def _observations_from_dispatch(
     sqlite_observation = _sqlite_control_observation(root)
     slots = sqlite_observation["slots"]
     by_kind = {row["slotKind"]: row for row in inspection["slots"]}
-    assert by_kind["Scheduled"]["slotKey"] == scheduled["slotKey"]
-    assert by_kind["Audit"]["slotKey"] == audit["slotKey"]
+    assert (
+        f"{by_kind['Scheduled']['scheduleId']}/{by_kind['Scheduled']['issueDate']}/{by_kind['Scheduled']['slotKind']}"
+        == scheduled["slotKey"]
+    )
+    assert (
+        f"{by_kind['Audit']['scheduleId']}/{by_kind['Audit']['issueDate']}/{by_kind['Audit']['slotKind']}"
+        == audit["slotKey"]
+    )
     assert by_kind["Scheduled"]["fenceToken"] == scheduled["fenceToken"]
     assert by_kind["Audit"]["fenceToken"] == audit["fenceToken"]
     release_symbols = sorted(
@@ -504,7 +510,7 @@ def _history_coverage(cases: dict[str, Any], receipts: dict[str, dict[str, Any]]
             "issueDate": date,
             "timezone": cases["timezone"],
             "introductionDate": history["introductionDate"],
-            "missing": {"Scheduled": [], "Recovery": [], "Public": [], "Readiness": []},
+            "missing": {"Scheduled": [], "Audit": [], "Public": [], "Readiness": []},
             "lineages": lineages,
         }
         row["ledgerProvenanceSha256"] = _sha({key: value for key, value in row.items() if key != "ledgerProvenanceSha256"})
@@ -788,7 +794,13 @@ def _mutate_admission(value: dict[str, Any], case: str) -> dict[str, Any]:
         mutated["unexpected"] = "drift"
     else:
         raise AssertionError(f"unknown L8 case: {case}")
-    return _reseal_admission(mutated)
+    resealed = _reseal_admission(mutated)
+    if case == "missing_layer_hash":
+        resealed.pop("layerEvidenceSha256", None)
+        resealed["admissionSha256"] = _sha(
+            {key: item for key, item in resealed.items() if key != "admissionSha256"}
+        )
+    return resealed
 
 
 def _mutate_natural(value: dict[str, Any], case: str) -> dict[str, Any]:
@@ -898,7 +910,7 @@ class _Stage:
 
     def __call__(self, stage_id: str, payload: dict[str, Any]) -> dict[str, Any]:
         self.calls.append(stage_id)
-        return {"stageId": stage_id, "outputHash": _sha({"stage": stage_id, "payload": payload})}
+        return {"stageId": stage_id, "outputHash": _sha({"stage": stage_id, "input": payload})}
 
 
 class _Publisher:
@@ -1334,7 +1346,7 @@ def _real_l7_boundary(tmp_path: Path, index: int) -> tuple[Path, dict[str, Any],
         task_adapter=task,
         pythonw_path=root / "pythonw.exe",
     )
-    staged = controller.stage(manifest, source, installed, authority, _at())
+    staged = controller.stage(manifest, source, installed, authority, _at(6, 0))
     assert isinstance(staged, dict)
     assert staged["schemaVersion"] == "INSTALL_STAGE_RESULT_V1"
     assert isinstance(staged["generation"], int)
@@ -1465,6 +1477,7 @@ def test_s6_l3_l7_real_boundary_manifest(tmp_path: Path) -> None:
 def test_s6_installed_bytes_args_workdir(tmp_path: Path) -> None:
     module = importlib.import_module("tools.news_grasp_cleanroom_release")
     cases = _cases()
+    _l4_root, _l4_values, l4_observed = _real_l4_l5_boundary(tmp_path, 1)
     l6_root, l6_result, l6_observed = _real_l6_boundary(tmp_path, 2)
     l7_root, l7_values, l7_observed = _real_l7_boundary(tmp_path, 3)
     assert l6_result["schemaVersion"] == "RECONCILE_RESULT_V1"
@@ -1496,6 +1509,7 @@ def test_s6_installed_bytes_args_workdir(tmp_path: Path) -> None:
         audit,
         inspection,
         release_module=module,
+        l4_l5=l4_observed,
         l6=l6_observed,
         l7=l7_observed,
     )
@@ -1695,6 +1709,7 @@ def test_s6_natural_states_non_substitutable(tmp_path: Path) -> None:
     installed_authority = _installed_authority(root, source, installed, launcher)
     public_not_required = deepcopy(natural)
     public_not_required["receipts"]["Public"]["state"] = "NOT_REQUIRED"
+    public_not_required["historyCoverage"] = _history_coverage(cases, public_not_required["receipts"])
     _reseal_natural(public_not_required)
     accepted = module.validate_natural_evidence(public_not_required, trusted, context, installed_authority)
     assert accepted["receipts"]["Public"]["state"] == "NOT_REQUIRED"
