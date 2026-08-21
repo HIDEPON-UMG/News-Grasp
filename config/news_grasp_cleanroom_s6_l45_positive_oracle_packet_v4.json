@@ -1,0 +1,56 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S6-L45-POSITIVE-ORACLE-V4",
+  "status": "active",
+  "executionAllowed": true,
+  "amends": "NG-CLEANROOM-S6-SLOTKEY-ORACLE-V3",
+  "role": "test_luna",
+  "canonicalContext": "/root/s1_edge_driver_red",
+  "todoId": "No.10/A-10 through No.14/A-14",
+  "baselineCommit": "f2e68826fbf298d47a8ccb03845bed49391201cd",
+  "writeLease": {
+    "leaseId": "TEST-LEASE-S6-L45-POSITIVE-V4",
+    "leaseSha256": "2dacaaaabdecc51d65be96444ad406261a2f832a331194ba31f1cd43363ff4b3",
+    "canonicalPayload": {
+      "leaseId": "TEST-LEASE-S6-L45-POSITIVE-V4",
+      "role": "test_luna",
+      "canonicalContext": "/root/s1_edge_driver_red",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-s6-hotfix",
+      "writes": ["tests/test_news_grasp_cleanroom_s6_release.py", "tests/fixtures/news_grasp_cleanroom_s6_cases.json"],
+      "baselineCommit": "f2e68826fbf298d47a8ccb03845bed49391201cd"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": ["tests/test_news_grasp_cleanroom_s6_release.py", "tests/fixtures/news_grasp_cleanroom_s6_cases.json"],
+  "forbiddenWrites": ["tools/**", "config/**", "docs/**", "scripts/**", "ProjectFolders workspace-global harness", "live runtime, Task Scheduler, network, external model or public state"],
+  "ownedDirtyBaseline": {
+    "testSha256": "d148470539dede79de6ed9af74ab455fab713cc0fe10af9bec62a94504a21db0",
+    "testBytes": 74577,
+    "fixtureSha256": "b56d28d578a4d8acd93f6bf03e4b68ae3a17fa7b965116ed9c7de820c762eebb",
+    "fixtureBytes": 4430
+  },
+  "contradiction": {
+    "node": "test_s6_installed_bytes_args_workdir",
+    "cause": "the full L0-L7 validator call supplies real L6/L7 but omits the existing real L4/L5 boundary, so a two-observation fallback contradicts the five sealed L5 requirements",
+    "productionDecision": "retain len(realObserved) >= len(realRequired) fail-closed validation"
+  },
+  "correction": {
+    "required": "inside that node, call _real_l4_l5_boundary(tmp_path, 1) once before L6, retain its l4_observed, and pass l4_l5=l4_observed to _observations_from_dispatch",
+    "preserve": "all existing assertions, L6/L7 calls, indexes 2/3/4, six prior oracle corrections and negative corpus",
+    "prohibited": "no fallback padding, fabricated observation, validator change, assertion weakening or additional production call outside pytest temp roots"
+  },
+  "acceptance": {
+    "pytest": "$env:NEWS_GRASP_HIGH_COST_BINDING_PATH=[Environment]::ExpandEnvironmentVariables('%USERPROFILE%\\bin\\news-grasp-high-cost-binding-v1.json'); py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s6_release.py",
+    "passedExact": 6,
+    "skipXfailExact": 0,
+    "supporting": ["compile", "collect exact6", "fixture lineages exact", "Ruff", "diff-check", "exact two owned paths"]
+  },
+  "commitPolicy": {
+    "allowedOnlyAfterAllGreen": true,
+    "paths": ["tests/test_news_grasp_cleanroom_s6_release.py", "tests/fixtures/news_grasp_cleanroom_s6_cases.json"],
+    "message": "test: correct S6 cross-layer oracles"
+  },
+  "causalRetry": "one correction and one run; unexpected failure returns exact evidence to Sol",
+  "stopPolicy": "no production/live/global mutation",
+  "unresolvedDecisionIds": []
+}
