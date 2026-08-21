@@ -267,9 +267,60 @@ class InstallCutoverController:
         body = {key: item for key, item in value.items() if key != "journalSha256"}
         if not isinstance(expected, str) or expected != _sha(body):
             raise InstallControlError("journal_hash_mismatch")
-        if value.get("schemaVersion") != _SCHEMA or value.get("phase") not in _PHASES:
+        if value.get("schemaVersion") != _SCHEMA or not isinstance(value.get("phase"), str) or value.get("phase") not in _PHASES:
             raise InstallControlError("journal_semantics_invalid")
+        self._validate_journal_structure(value)
         return value
+
+    def _validate_journal_structure(self, journal: Mapping[str, Any]) -> None:
+        """journalのcritical fieldをmutation前に型・path・hash検証する。"""
+        if not isinstance(journal.get("authorityId"), str) or not journal["authorityId"]:
+            raise InstallControlError("journal_authority_id_invalid")
+        for key in ("authoritySha256", "sourceSha256", "installedSha256", "oldPreimageSha256", "journalSha256"):
+            _validate_hex(journal.get(key), f"journal_{key}_invalid")
+        for key in ("sourceRoot", "installedRoot"):
+            path = _safe_path(journal.get(key), f"journal_{key}")
+            _within(path, self.runtime_root, f"journal_{key}")
+        for key in ("sourceIdentity",):
+            identity = journal.get(key)
+            if not isinstance(identity, Mapping) or set(identity) != {"path", "sha256"}:
+                raise InstallControlError("journal_source_identity_invalid")
+            _safe_path(identity.get("path"), "journal_source_identity_path")
+            _validate_hex(identity.get("sha256"), "journal_source_identity_hash_invalid")
+        installed_identity = journal.get("installedIdentity")
+        if installed_identity is not None:
+            if not isinstance(installed_identity, Mapping) or set(installed_identity) != {"path", "sha256"}:
+                raise InstallControlError("journal_installed_identity_invalid")
+            _safe_path(installed_identity.get("path"), "journal_installed_identity_path")
+            _validate_hex(installed_identity.get("sha256"), "journal_installed_identity_hash_invalid")
+        if journal.get("oldPreimageSha256") != _sha(journal.get("oldPreimage")):
+            raise InstallControlError("journal_old_preimage_hash_mismatch")
+        candidate = journal.get("candidateDefinition")
+        if not isinstance(candidate, Mapping) or set(candidate) != {
+            "taskPath",
+            "taskName",
+            "enabled",
+            "executable",
+            "arguments",
+            "workingDirectory",
+            "triggers",
+            "multipleInstancesPolicy",
+        }:
+            raise InstallControlError("journal_candidate_invalid")
+        if candidate.get("enabled") is not False or not isinstance(candidate.get("arguments"), list):
+            raise InstallControlError("journal_candidate_invalid")
+        _safe_path(candidate.get("executable"), "journal_candidate_executable")
+        _safe_path(candidate.get("workingDirectory"), "journal_candidate_working_directory")
+        for key in ("ownerPreimages", "ownerReceiptHashes"):
+            values = journal.get(key)
+            if not isinstance(values, Mapping) or set(values) != set(_OWNER_SPECS):
+                raise InstallControlError(f"journal_{key}_invalid")
+            for owner_id in _OWNER_SPECS:
+                _validate_hex(values.get(owner_id), f"journal_{key}_{owner_id}_invalid")
+        if not isinstance(journal.get("candidateRegistered"), bool) or not isinstance(journal.get("canaryLaunched"), bool):
+            raise InstallControlError("journal_flags_invalid")
+        if not isinstance(journal.get("observedAt"), str) or not journal["observedAt"]:
+            raise InstallControlError("journal_observed_at_invalid")
 
     def _hook(self, name: str) -> None:
         if self.boundary_hook is not None:
@@ -369,16 +420,36 @@ class InstallCutoverController:
             preimages[owner_id] = preimage
         return source_hash, preimages
 
-    def _security_preflight(self, source_root: Path, launcher: Path) -> dict[str, Any]:
+    def _security_preflight(
+        self,
+        source_root: Path,
+        launcher: Path,
+        installed_root: Path | None = None,
+        expected_identity: Mapping[str, Any] | None = None,
+    ) -> dict[str, Any]:
         if not launcher.is_file():
             raise InstallControlError("launcher_missing")
         try:
             if self.security.is_reparse(source_root) or self.security.is_reparse(launcher):
                 raise InstallControlError("symlink_reparse_rejected")
-            token = self.security.capture_identity(launcher)
+            if installed_root is not None:
+                if self.security.is_reparse(installed_root):
+                    raise InstallControlError("symlink_reparse_rejected")
+                installed_launcher = installed_root / "launcher.pyw"
+                if installed_launcher.exists() and self.security.is_reparse(installed_launcher):
+                    raise InstallControlError("symlink_reparse_rejected")
+            token = (
+                dict(expected_identity)
+                if expected_identity is not None
+                else self.security.capture_identity(launcher)
+            )
             if not self.security.verify_identity(launcher, token):
                 raise InstallControlError("source_identity_swap")
             if not self.security.acl_is_secure(source_root) or not self.security.acl_is_secure(launcher):
+                raise InstallControlError("insecure_acl")
+            if installed_root is not None and not self.security.acl_is_secure(installed_root):
+                raise InstallControlError("insecure_acl")
+            if installed_root is not None and (installed_root / "launcher.pyw").exists() and not self.security.acl_is_secure(installed_root / "launcher.pyw"):
                 raise InstallControlError("insecure_acl")
             if not self.security.signer_is_trusted(self.pythonw_path):
                 raise InstallControlError("untrusted_signer")
@@ -483,11 +554,11 @@ class InstallCutoverController:
         if installed_launcher.exists():
             if not installed_launcher.is_file() or _file_sha(installed_launcher) != source_hash:
                 raise InstallControlError("installed_hash_mismatch")
-        source_identity = self._security_preflight(source, launcher)
         observed = _at_string(observed_at)
         journal = self._load_journal()
         candidate = self._candidate_definition(manifest)
         if journal is None:
+            source_identity = self._security_preflight(source, launcher, installed)
             snapshot = self._task_snapshot()
             old_task = snapshot.get("tasks", {}).get(_OLD_TASK, {})
             old_preimage = old_task.get("definition") if isinstance(old_task, Mapping) else None
@@ -516,6 +587,10 @@ class InstallCutoverController:
             self._hook("stage")
         else:
             self._validate_resume(journal, authority, source, installed, source_hash, candidate)
+            if journal["phase"] == "COMMITTED":
+                return self._result("INSTALL_STAGE_RESULT_V1", journal)
+            if journal["phase"] == "ROLLED_BACK":
+                raise InstallControlError("stage_after_rollback")
 
         snapshot = self._task_snapshot()
         new_enabled = self._task_state(snapshot, _NEW_TASK)
@@ -622,8 +697,15 @@ class InstallCutoverController:
             self.task_adapter.restore(_OLD_TASK, journal["oldPreimage"])
             journal["phase"] = "ROLLBACK_OLD_RESTORED"
             self._write_journal(journal)
-            self.task_adapter.enable(_OLD_TASK)
         if journal["phase"] == "ROLLBACK_OLD_RESTORED":
+            snapshot = self._task_snapshot()
+            if self._task_state(snapshot, _NEW_TASK):
+                raise InstallControlError("rollback_new_not_disabled")
+            if not self._task_state(snapshot, _OLD_TASK):
+                self.task_adapter.enable(_OLD_TASK)
+            snapshot = self._task_snapshot()
+            if not self._task_state(snapshot, _OLD_TASK) or self._task_state(snapshot, _NEW_TASK):
+                raise InstallControlError("rollback_old_only_not_confirmed")
             self._hook("rollback_commit")
             journal["phase"] = "ROLLED_BACK"
             journal["observedAt"] = _at_string(observed_at)
@@ -660,6 +742,7 @@ class InstallCutoverController:
         source_hash: str,
         candidate: Mapping[str, Any],
     ) -> None:
+        self._validate_journal_structure(journal)
         action = {
             "entryModule": "tools.news_grasp_cleanroom_dispatch",
             "argv": list(candidate.get("arguments", [])),
@@ -678,7 +761,10 @@ class InstallCutoverController:
                 }
             ],
         }
-        current_source_hash = _file_sha(source / "launcher.pyw")
+        launcher = source / "launcher.pyw"
+        if not source.is_dir() or not installed.is_dir():
+            raise InstallControlError("resume_root_invalid")
+        current_source_hash = _file_sha(launcher)
         self._validate_manifest(resume_manifest)
         self._validate_authority(authority, resume_manifest, source, current_source_hash)
         if journal.get("authoritySha256") != authority.get("authoritySha256"):
@@ -689,6 +775,18 @@ class InstallCutoverController:
             raise InstallControlError("journal_binding_mismatch")
         if journal.get("candidateDefinition") != dict(candidate):
             raise InstallControlError("journal_candidate_mismatch")
+        source_identity = journal["sourceIdentity"]
+        if _safe_path(source_identity["path"], "journal_source_identity_path") != launcher:
+            raise InstallControlError("journal_source_identity_path_mismatch")
+        if source_identity["sha256"] != current_source_hash:
+            raise InstallControlError("journal_source_identity_hash_mismatch")
+        installed_identity = journal.get("installedIdentity")
+        installed_launcher = installed / "launcher.pyw"
+        if installed_identity is not None:
+            if _safe_path(installed_identity["path"], "journal_installed_identity_path") != installed_launcher:
+                raise InstallControlError("journal_installed_identity_path_mismatch")
+            if not installed_launcher.is_file() or installed_identity["sha256"] != _file_sha(installed_launcher):
+                raise InstallControlError("journal_installed_identity_hash_mismatch")
         expected_preimages = {
             owner_id: authority["ownerReceipts"][owner_id]["preimageSha256"]
             for owner_id in _OWNER_SPECS
@@ -699,9 +797,9 @@ class InstallCutoverController:
         }
         if journal.get("ownerPreimages") != expected_preimages or journal.get("ownerReceiptHashes") != expected_receipts:
             raise InstallControlError("journal_owner_binding_mismatch")
-        installed_launcher = installed / "launcher.pyw"
         if installed_launcher.is_file() and _file_sha(installed_launcher) != source_hash:
             raise InstallControlError("installed_hash_mismatch")
+        self._security_preflight(source, launcher, installed, source_identity)
 
     @staticmethod
     def _copy_launcher(source: Path, installed: Path) -> None:
