@@ -7,6 +7,7 @@ fail-closed な preflight を提供する。production adapter は上位の運�
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from copy import deepcopy
 from datetime import datetime
 import hashlib
@@ -83,9 +84,28 @@ _JOURNAL_KEYS = {
     "phase",
     "candidateRegistered",
     "canaryLaunched",
+    "canaryReceipt",
+    "canaryReceiptSha256",
     "observedAt",
     "journalSha256",
 }
+_LEGACY_JOURNAL_KEYS = _JOURNAL_KEYS - {"canaryReceipt", "canaryReceiptSha256"}
+_CANARY_RECEIPT_KEYS = {
+    "schemaVersion",
+    "status",
+    "exitCode",
+    "processId",
+    "installedSha256",
+    "argvSha256",
+    "receiptSha256",
+}
+FILE_READ_ATTRIBUTES = 0x00000080
+FILE_SHARE_READ = 0x00000001
+FILE_SHARE_WRITE = 0x00000002
+OPEN_EXISTING = 3
+FILE_FLAG_BACKUP_SEMANTICS = 0x02000000
+FILE_FLAG_OPEN_REPARSE_POINT = 0x00200000
+FILE_ATTRIBUTE_REPARSE_POINT = 0x00000400
 _PHASES = {
     "PREIMAGE_DURABLE",
     "STAGED",
@@ -119,6 +139,205 @@ class PrivilegeDenied(InstallControlError):
 
     def __init__(self, message: str = "privilege_denied") -> None:
         super().__init__("privilege_denied", message)
+
+
+def _pin_path_key(value: Path | str) -> str:
+    """Handle の最終pathと要求pathを比較するための安定表現。"""
+    text = os.path.normpath(os.path.abspath(os.fspath(value))).replace("/", "\\")
+    if text.startswith("\\\\?\\UNC\\"):
+        text = "\\\\" + text[8:]
+    elif text.startswith("\\\\?\\"):
+        text = text[4:]
+    return os.path.normcase(text).rstrip("\\") or text
+
+
+class _DirectoryPin:
+    """path based write を同一 directory object へ束縛する OS pin。"""
+
+    def __init__(self, path: Path, label: str) -> None:
+        self.path = Path(path)
+        self.label = str(label)
+        self._handle: Any = None
+        self._kernel32: Any = None
+        self._fd: int | None = None
+        self._identity: tuple[int, int] | None = None
+        self._final_path: str | None = None
+
+    def __enter__(self) -> "_DirectoryPin":
+        try:
+            if os.name == "nt":
+                self._open_windows()
+            else:
+                self._open_posix()
+            self.verify()
+            return self
+        except InstallControlError:
+            self.close()
+            raise
+        except (OSError, ValueError, TypeError) as exc:
+            self.close()
+            raise InstallControlError(f"{self.label}_pin_failed") from exc
+
+    def __exit__(self, exc_type: Any, exc: Any, traceback: Any) -> None:
+        self.close()
+
+    def _open_posix(self) -> None:
+        flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+        self._fd = os.open(self.path, flags)
+        opened = os.fstat(self._fd)
+        current = os.lstat(self.path)
+        if stat.S_ISLNK(current.st_mode) or not stat.S_ISDIR(current.st_mode):
+            raise InstallControlError("symlink_reparse_rejected")
+        opened_key = (int(opened.st_dev), int(opened.st_ino))
+        current_key = (int(current.st_dev), int(current.st_ino))
+        if opened_key != current_key:
+            raise InstallControlError(f"{self.label}_identity_swap")
+        self._identity = opened_key
+        self._final_path = _pin_path_key(self.path)
+
+    def _open_windows(self) -> None:
+        import ctypes
+        from ctypes import wintypes
+
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        create_file = kernel32.CreateFileW
+        create_file.argtypes = [
+            wintypes.LPCWSTR,
+            wintypes.DWORD,
+            wintypes.DWORD,
+            wintypes.LPVOID,
+            wintypes.DWORD,
+            wintypes.DWORD,
+            wintypes.HANDLE,
+        ]
+        create_file.restype = wintypes.HANDLE
+        handle = create_file(
+            str(self.path),
+            FILE_READ_ATTRIBUTES,
+            FILE_SHARE_READ | FILE_SHARE_WRITE,
+            None,
+            OPEN_EXISTING,
+            FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
+            None,
+        )
+        invalid = ctypes.c_void_p(-1).value
+        if handle in (None, invalid):
+            raise OSError(ctypes.get_last_error(), "CreateFileW directory pin failed")
+        self._kernel32 = kernel32
+        self._handle = handle
+        try:
+            self._final_path = self._get_final_path()
+            volume, file_index = self._get_file_identity()
+            info = os.lstat(self.path)
+            if info.st_file_attributes & FILE_ATTRIBUTE_REPARSE_POINT:
+                raise InstallControlError("symlink_reparse_rejected")
+            if not stat.S_ISDIR(info.st_mode):
+                raise InstallControlError(f"{self.label}_not_directory")
+            # Windows の Python は st_dev 下位32bitへvolume serialを返し、
+            # GetFileInformationByHandleW は同値をDWORDで返す。
+            current_key = (int(getattr(info, "st_dev", 0)) & 0xFFFFFFFF, int(getattr(info, "st_ino", 0)))
+            handle_key = (volume, file_index)
+            if current_key != handle_key:
+                raise InstallControlError(f"{self.label}_identity_swap")
+            if _pin_path_key(self._final_path) != _pin_path_key(self.path):
+                raise InstallControlError(f"{self.label}_path_swap")
+            self._identity = handle_key
+        except Exception:
+            self.close()
+            raise
+
+    def _get_final_path(self) -> str:
+        import ctypes
+        from ctypes import wintypes
+
+        get_final = self._kernel32.GetFinalPathNameByHandleW
+        get_final.argtypes = [wintypes.HANDLE, wintypes.LPWSTR, wintypes.DWORD, wintypes.DWORD]
+        get_final.restype = wintypes.DWORD
+        size = 32768
+        buffer = ctypes.create_unicode_buffer(size)
+        length = int(get_final(self._handle, buffer, size, 0))
+        if length <= 0 or length >= size:
+            raise OSError(ctypes.get_last_error(), "GetFinalPathNameByHandleW failed")
+        return buffer.value[:length]
+
+    def _get_file_identity(self) -> tuple[int, int]:
+        import ctypes
+        from ctypes import wintypes
+
+        class _ByHandleFileInformation(ctypes.Structure):
+            _fields_ = [
+                ("dwFileAttributes", wintypes.DWORD),
+                ("ftCreationTime", wintypes.FILETIME),
+                ("ftLastAccessTime", wintypes.FILETIME),
+                ("ftLastWriteTime", wintypes.FILETIME),
+                ("dwVolumeSerialNumber", wintypes.DWORD),
+                ("nFileSizeHigh", wintypes.DWORD),
+                ("nFileSizeLow", wintypes.DWORD),
+                ("nNumberOfLinks", wintypes.DWORD),
+                ("nFileIndexHigh", wintypes.DWORD),
+                ("nFileIndexLow", wintypes.DWORD),
+            ]
+
+        get_info = self._kernel32.GetFileInformationByHandle
+        get_info.argtypes = [wintypes.HANDLE, ctypes.POINTER(_ByHandleFileInformation)]
+        get_info.restype = wintypes.BOOL
+        info = _ByHandleFileInformation()
+        if not get_info(self._handle, ctypes.byref(info)):
+            raise OSError(ctypes.get_last_error(), "GetFileInformationByHandle failed")
+        if info.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT:
+            raise InstallControlError("symlink_reparse_rejected")
+        file_index = (int(info.nFileIndexHigh) << 32) | int(info.nFileIndexLow)
+        return int(info.dwVolumeSerialNumber), file_index
+
+    def verify(self) -> None:
+        if self._identity is None:
+            raise InstallControlError(f"{self.label}_pin_invalid")
+        try:
+            if os.name == "nt":
+                if self._handle is None:
+                    raise InstallControlError(f"{self.label}_pin_invalid")
+                final_path = self._get_final_path()
+                if _pin_path_key(final_path) != _pin_path_key(self.path):
+                    raise InstallControlError(f"{self.label}_path_swap")
+                if self._get_file_identity() != self._identity:
+                    raise InstallControlError(f"{self.label}_identity_swap")
+                current = os.lstat(self.path)
+                if current.st_file_attributes & FILE_ATTRIBUTE_REPARSE_POINT:
+                    raise InstallControlError("symlink_reparse_rejected")
+                current_key = (int(getattr(current, "st_dev", 0)) & 0xFFFFFFFF, int(getattr(current, "st_ino", 0)))
+                if current_key != self._identity:
+                    raise InstallControlError(f"{self.label}_identity_swap")
+            else:
+                if self._fd is None:
+                    raise InstallControlError(f"{self.label}_pin_invalid")
+                opened = os.fstat(self._fd)
+                current = os.lstat(self.path)
+                if stat.S_ISLNK(current.st_mode) or not stat.S_ISDIR(current.st_mode):
+                    raise InstallControlError("symlink_reparse_rejected")
+                if (int(opened.st_dev), int(opened.st_ino)) != self._identity or (int(current.st_dev), int(current.st_ino)) != self._identity:
+                    raise InstallControlError(f"{self.label}_identity_swap")
+        except InstallControlError:
+            raise
+        except (OSError, ValueError, TypeError) as exc:
+            raise InstallControlError(f"{self.label}_identity_check_failed") from exc
+
+    def close(self) -> None:
+        if self._handle is not None and self._kernel32 is not None:
+            try:
+                self._kernel32.CloseHandle(self._handle)
+            finally:
+                self._handle = None
+        if self._fd is not None:
+            try:
+                os.close(self._fd)
+            finally:
+                self._fd = None
+
+
+@contextmanager
+def _directory_pin(path: Path, label: str) -> Any:
+    with _DirectoryPin(path, label) as pin:
+        yield pin
 
 
 def _canonical(value: Any) -> bytes:
@@ -240,6 +459,14 @@ class InstallCutoverController:
     def _write_journal(self, journal: Mapping[str, Any]) -> None:
         body = dict(journal)
         body.pop("journalSha256", None)
+        # 未完了のlegacy V1 journalにはcanary receiptが無い場合があるため、
+        # 次回の耐久書込みでsealed shapeへ昇格する。
+        if set(body) == _LEGACY_JOURNAL_KEYS - {"journalSha256"}:
+            body["canaryReceipt"] = None
+            body["canaryReceiptSha256"] = None
+            if isinstance(journal, dict):
+                journal["canaryReceipt"] = None
+                journal["canaryReceiptSha256"] = None
         if set(body) != _JOURNAL_KEYS - {"journalSha256"}:
             raise InstallControlError("journal_keys_invalid")
         body["journalSha256"] = _sha(body)
@@ -248,26 +475,37 @@ class InstallCutoverController:
         directory = self._journal_path.parent
         directory.mkdir(parents=True, exist_ok=True)
         payload = _canonical(body)
-        fd, temporary = tempfile.mkstemp(prefix=".journal-", suffix=".tmp", dir=str(directory))
-        try:
-            with os.fdopen(fd, "wb") as stream:
-                stream.write(payload)
-                stream.flush()
-                os.fsync(stream.fileno())
-            os.replace(temporary, self._journal_path)
+        with _directory_pin(directory, "journal_parent") as pin:
+            pin.verify()
+            self._hook("before_journal_parent_swap")
+            pin.verify()
+            fd, temporary = tempfile.mkstemp(prefix=".journal-", suffix=".tmp", dir=str(directory))
             try:
-                directory_fd = os.open(directory, os.O_RDONLY)
+                pin.verify()
+                with os.fdopen(fd, "wb") as stream:
+                    fd = -1
+                    stream.write(payload)
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                pin.verify()
+                os.replace(temporary, self._journal_path)
+                pin.verify()
                 try:
-                    os.fsync(directory_fd)
-                finally:
-                    os.close(directory_fd)
-            except OSError:
-                pass
-        finally:
-            try:
-                os.unlink(temporary)
-            except FileNotFoundError:
-                pass
+                    directory_fd = os.open(directory, os.O_RDONLY)
+                    try:
+                        os.fsync(directory_fd)
+                    finally:
+                        os.close(directory_fd)
+                except OSError:
+                    pass
+                pin.verify()
+            finally:
+                if fd >= 0:
+                    os.close(fd)
+                try:
+                    os.unlink(temporary)
+                except FileNotFoundError:
+                    pass
 
     def _load_journal(self) -> dict[str, Any] | None:
         if not self._journal_path.is_file():
@@ -276,12 +514,17 @@ class InstallCutoverController:
             value = json.loads(self._journal_path.read_text(encoding="utf-8"))
         except (OSError, UnicodeError, json.JSONDecodeError) as exc:
             raise InstallControlError("journal_corrupt") from exc
-        if not isinstance(value, dict) or set(value) != _JOURNAL_KEYS:
+        if not isinstance(value, dict) or (set(value) != _JOURNAL_KEYS and set(value) != _LEGACY_JOURNAL_KEYS):
             raise InstallControlError("journal_keys_invalid")
         expected = value.get("journalSha256")
         body = {key: item for key, item in value.items() if key != "journalSha256"}
         if not isinstance(expected, str) or expected != _sha(body):
             raise InstallControlError("journal_hash_mismatch")
+        if set(value) == _LEGACY_JOURNAL_KEYS:
+            # 元のV1 sealを検証したまま、欠落canaryを呼び出し側へ明示する。
+            # 次回の耐久書込みで新shapeへ昇格する。
+            value["canaryReceipt"] = None
+            value["canaryReceiptSha256"] = None
         if value.get("schemaVersion") != _SCHEMA or not isinstance(value.get("phase"), str) or value.get("phase") not in _PHASES:
             raise InstallControlError("journal_semantics_invalid")
         self._validate_journal_structure(value)
@@ -334,6 +577,15 @@ class InstallCutoverController:
                 _validate_hex(values.get(owner_id), f"journal_{key}_{owner_id}_invalid")
         if not isinstance(journal.get("candidateRegistered"), bool) or not isinstance(journal.get("canaryLaunched"), bool):
             raise InstallControlError("journal_flags_invalid")
+        canary = journal.get("canaryReceipt")
+        canary_hash = journal.get("canaryReceiptSha256")
+        if canary is not None and not isinstance(canary, Mapping):
+            raise InstallControlError("canary_receipt_invalid")
+        if canary is None:
+            if canary_hash is not None:
+                raise InstallControlError("canary_receipt_invalid")
+        else:
+            _validate_hex(canary_hash, "canary_receipt_hash_invalid")
         if not isinstance(journal.get("observedAt"), str) or not journal["observedAt"]:
             raise InstallControlError("journal_observed_at_invalid")
 
@@ -569,6 +821,8 @@ class InstallCutoverController:
             "phase": "PREIMAGE_DURABLE",
             "candidateRegistered": False,
             "canaryLaunched": False,
+            "canaryReceipt": None,
+            "canaryReceiptSha256": None,
             "observedAt": observed_at,
             "journalSha256": "",
         }
@@ -696,10 +950,11 @@ class InstallCutoverController:
             journal["candidateRegistered"] = True
             journal["phase"] = "INSTALLED"
             self._write_journal(journal)
-        if not journal.get("canaryLaunched"):
+        canary_valid = self._validate_canary_receipt(journal, installed, required=False)
+        if not canary_valid:
             try:
                 receipt = self.process_adapter.launch(
-                    [str(self.pythonw_path), str(installed / "launcher.pyw")],
+                    self._canary_argv(installed),
                     installed,
                     shell=False,
                     creationflags=CREATE_NO_WINDOW,
@@ -713,6 +968,12 @@ class InstallCutoverController:
                 raise InstallControlError("canary_failed") from exc
             if not isinstance(receipt, Mapping) or receipt.get("status") != "succeeded" or receipt.get("exitCode") != 0:
                 raise InstallControlError("canary_failed")
+            sealed = dict(journal)
+            sealed["canaryReceipt"] = dict(receipt)
+            sealed["canaryReceiptSha256"] = _sha(dict(receipt))
+            self._validate_canary_receipt(sealed, installed, required=True)
+            journal["canaryReceipt"] = dict(receipt)
+            journal["canaryReceiptSha256"] = sealed["canaryReceiptSha256"]
             journal["canaryLaunched"] = True
             # Canary success itself is durable before pointer/cutover progress.
             self._write_journal(journal)
@@ -726,7 +987,15 @@ class InstallCutoverController:
         journal = self._load_journal()
         if journal is None:
             raise InstallControlError("stage_required")
-        self._validate_resume(journal, authority, Path(journal["sourceRoot"]), Path(journal["installedRoot"]), journal["sourceSha256"], journal["candidateDefinition"])
+        self._validate_resume(
+            journal,
+            authority,
+            Path(journal["sourceRoot"]),
+            Path(journal["installedRoot"]),
+            journal["sourceSha256"],
+            journal["candidateDefinition"],
+            require_canary=True,
+        )
         if journal["phase"] in {"COMMITTED", "ROLLED_BACK"}:
             return self._result("CUTOVER_RESULT_V1", journal)
         if journal["phase"] == "POINTER_DURABLE":
@@ -822,6 +1091,45 @@ class InstallCutoverController:
         }
 
     # ---- internal operations -----------------------------------------
+    def _canary_argv(self, installed: Path) -> list[str]:
+        return [str(self.pythonw_path), str(installed / "launcher.pyw")]
+
+    def _validate_canary_receipt(self, journal: Mapping[str, Any], installed: Path, *, required: bool) -> bool:
+        """現在の installed bytes/argv に対する sealed canary evidence を検証する。"""
+        canary = journal.get("canaryReceipt")
+        if canary is None:
+            if required:
+                raise InstallControlError("canary_receipt_invalid")
+            return False
+        if not isinstance(canary, Mapping) or set(canary) != _CANARY_RECEIPT_KEYS:
+            raise InstallControlError("canary_receipt_invalid")
+        if canary.get("schemaVersion") != "NEWS_GRASP_INSTALL_CANARY_RECEIPT_V1" or canary.get("status") != "succeeded":
+            raise InstallControlError("canary_receipt_invalid")
+        exit_code = canary.get("exitCode")
+        process_id = canary.get("processId")
+        if isinstance(exit_code, bool) or exit_code != 0 or isinstance(process_id, bool) or not isinstance(process_id, int) or process_id <= 0:
+            raise InstallControlError("canary_receipt_invalid")
+        installed_hash = _validate_hex(canary.get("installedSha256"), "canary_receipt_invalid")
+        argv_hash = _validate_hex(canary.get("argvSha256"), "canary_receipt_invalid")
+        receipt_hash = _validate_hex(canary.get("receiptSha256"), "canary_receipt_invalid")
+        if receipt_hash != _sha({key: value for key, value in canary.items() if key != "receiptSha256"}):
+            raise InstallControlError("canary_receipt_invalid")
+        journal_hash = journal.get("canaryReceiptSha256")
+        if not isinstance(journal_hash, str) or journal_hash != _sha(dict(canary)):
+            raise InstallControlError("canary_receipt_invalid")
+        launcher = installed / "launcher.pyw"
+        if not launcher.is_file():
+            raise InstallControlError("canary_receipt_invalid")
+        try:
+            current_hash = _file_sha(launcher)
+        except InstallControlError as exc:
+            raise InstallControlError("canary_receipt_invalid") from exc
+        if current_hash != journal.get("installedSha256") or installed_hash != current_hash:
+            raise InstallControlError("canary_receipt_invalid")
+        if argv_hash != _sha(self._canary_argv(installed)):
+            raise InstallControlError("canary_receipt_invalid")
+        return True
+
     def _validate_resume(
         self,
         journal: Mapping[str, Any],
@@ -830,6 +1138,8 @@ class InstallCutoverController:
         installed: Path,
         source_hash: str,
         candidate: Mapping[str, Any],
+        *,
+        require_canary: bool = False,
     ) -> None:
         self._validate_journal_structure(journal)
         action = {
@@ -889,6 +1199,7 @@ class InstallCutoverController:
         if installed_launcher.is_file() and _file_sha(installed_launcher) != source_hash:
             raise InstallControlError("installed_hash_mismatch")
         self._security_preflight(source, launcher, installed, source_identity)
+        self._validate_canary_receipt(journal, installed, required=require_canary)
 
     def _copy_launcher(
         self,
@@ -901,55 +1212,67 @@ class InstallCutoverController:
         target = installed / "launcher.pyw"
         installed.mkdir(parents=True, exist_ok=True)
         try:
-            predictable = target.with_name(f".{target.name}.tmp")
-            if os.path.lexists(predictable):
-                info = os.lstat(predictable)
-                if (
-                    stat.S_ISLNK(info.st_mode)
-                    or getattr(info, "st_file_attributes", 0) & 0x400
-                    or info.st_nlink != 1
-                ):
-                    raise InstallControlError("install_temp_link_rejected")
-            if os.path.lexists(target):
-                target_info = os.lstat(target)
-                if stat.S_ISLNK(target_info.st_mode) or getattr(target_info, "st_file_attributes", 0) & 0x400:
-                    raise InstallControlError("install_temp_link_rejected")
-            data, source_hash, _current_identity = self._read_source_once(launcher)
-            if source_hash != expected_hash or not self.security.verify_identity(launcher, expected_identity):
-                raise InstallControlError("source_identity_swap")
-            fd, temporary_name = tempfile.mkstemp(prefix=f".{target.name}.", suffix=".tmp", dir=str(installed))
-            temporary = Path(temporary_name)
-            try:
-                temp_info = os.lstat(temporary)
-                if (
-                    stat.S_ISLNK(temp_info.st_mode)
-                    or getattr(temp_info, "st_file_attributes", 0) & 0x400
-                    or temp_info.st_nlink != 1
-                ):
-                    raise InstallControlError("install_temp_link_rejected")
-                with os.fdopen(fd, "wb") as stream:
-                    fd = -1
-                    stream.write(data)
-                    stream.flush()
-                    os.fsync(stream.fileno())
-                os.replace(temporary, target)
+            with _directory_pin(installed, "install_parent") as pin:
+                pin.verify()
+                self._hook("before_install_parent_swap")
+                pin.verify()
+                predictable = target.with_name(f".{target.name}.tmp")
+                if os.path.lexists(predictable):
+                    info = os.lstat(predictable)
+                    if (
+                        stat.S_ISLNK(info.st_mode)
+                        or getattr(info, "st_file_attributes", 0) & 0x400
+                        or info.st_nlink != 1
+                    ):
+                        raise InstallControlError("install_temp_link_rejected")
+                if os.path.lexists(target):
+                    target_info = os.lstat(target)
+                    if stat.S_ISLNK(target_info.st_mode) or getattr(target_info, "st_file_attributes", 0) & 0x400:
+                        raise InstallControlError("install_temp_link_rejected")
+                pin.verify()
+                data, source_hash, _current_identity = self._read_source_once(launcher)
+                if source_hash != expected_hash or not self.security.verify_identity(launcher, expected_identity):
+                    raise InstallControlError("source_identity_swap")
+                pin.verify()
+                fd, temporary_name = tempfile.mkstemp(prefix=f".{target.name}.", suffix=".tmp", dir=str(installed))
+                temporary = Path(temporary_name)
                 try:
-                    directory_fd = os.open(installed, os.O_RDONLY)
+                    pin.verify()
+                    temp_info = os.lstat(temporary)
+                    if (
+                        stat.S_ISLNK(temp_info.st_mode)
+                        or getattr(temp_info, "st_file_attributes", 0) & 0x400
+                        or temp_info.st_nlink != 1
+                    ):
+                        raise InstallControlError("install_temp_link_rejected")
+                    with os.fdopen(fd, "wb") as stream:
+                        fd = -1
+                        stream.write(data)
+                        stream.flush()
+                        os.fsync(stream.fileno())
+                    pin.verify()
+                    os.replace(temporary, target)
+                    pin.verify()
                     try:
-                        os.fsync(directory_fd)
-                    finally:
-                        os.close(directory_fd)
-                except OSError:
-                    pass
-            finally:
-                if fd >= 0:
-                    os.close(fd)
-                try:
-                    temporary.unlink()
-                except FileNotFoundError:
-                    pass
-            if _file_sha(target) != expected_hash:
-                raise InstallControlError("installed_hash_mismatch")
+                        directory_fd = os.open(installed, os.O_RDONLY)
+                        try:
+                            os.fsync(directory_fd)
+                        finally:
+                            os.close(directory_fd)
+                    except OSError:
+                        pass
+                    pin.verify()
+                finally:
+                    if fd >= 0:
+                        os.close(fd)
+                    try:
+                        temporary.unlink()
+                    except FileNotFoundError:
+                        pass
+                pin.verify()
+                if _file_sha(target) != expected_hash:
+                    raise InstallControlError("installed_hash_mismatch")
+                pin.verify()
         except InstallControlError:
             raise
         except (OSError, ValueError) as exc:

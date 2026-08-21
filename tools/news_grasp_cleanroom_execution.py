@@ -11,15 +11,19 @@ import re
 import sqlite3
 import uuid
 from typing import Any, Callable, Mapping
+from zoneinfo import ZoneInfo
 
 from .news_grasp_cleanroom_contracts import (
     CleanroomEntryError,
     _entry_canonical_sha256,
     _managed_runtime_path,
     _validate_entry_time,
+    _validate_entry_writer,
+    _writer_owner_key,
 )
 from .news_grasp_cleanroom_ledger import ControlLedger
 from .news_grasp_cleanroom_wal import DurabilityOps, _fsync_real
+from .news_grasp_entry_identity import EntryWriterAttestor, SystemEntryWriterAttestor
 
 
 AUTHORITY_INVALID = "NEWS_GRASP_EXECUTION_AUTHORITY_INVALID"
@@ -125,6 +129,8 @@ class ExecutionController:
         stage_runner: Callable[[str, dict[str, Any]], Mapping[str, Any]],
         durability_ops: DurabilityOps | None = None,
         boundary_hook: Callable[[str], None] | None = None,
+        writer_attestor: EntryWriterAttestor | None = None,
+        clock: Callable[[], datetime] | Any | None = None,
     ) -> None:
         self.runtime_root = Path(runtime_root)
         self.control_root = _managed_runtime_path(self.runtime_root, self.runtime_root / "control")
@@ -135,6 +141,8 @@ class ExecutionController:
         self.stage_runner = stage_runner
         self.operations = durability_ops or DurabilityOps()
         self.boundary_hook = boundary_hook
+        self.writer_attestor = writer_attestor or SystemEntryWriterAttestor()
+        self.clock = clock if clock is not None else (lambda: datetime.now(ZoneInfo("Asia/Tokyo")))
         self.busy_timeout_ms = 1000
 
     def _hook(self, name: str) -> None:
@@ -171,14 +179,63 @@ class ExecutionController:
             raise ExecutionError(AUTHORITY_INVALID, "authority invocation binding is invalid")
         return value
 
-    def _validate_s1_authority(self, authority: Mapping[str, Any], slot_key: str, issue_date: str, observed: datetime) -> None:
+    def _clock_now(self) -> datetime:
+        try:
+            value = self.clock() if callable(self.clock) else self.clock.now()
+            return _validate_entry_time(value)
+        except (CleanroomEntryError, TypeError, ValueError, OSError) as exc:
+            raise ExecutionError(STALE_FENCE, "current clock is unavailable") from exc
+        except Exception as exc:
+            raise ExecutionError(STALE_FENCE, "current clock is unavailable") from exc
+
+    def _resolve_writer(self, writer: Mapping[str, Any] | None) -> dict[str, Any]:
+        """writer envelopeをcanonical shapeとOS attestorへ束縛する。"""
+        candidate: Mapping[str, Any] | None = writer
+        if candidate is None:
+            bind = getattr(self.writer_attestor, "bind", None) or getattr(self.writer_attestor, "current_writer", None)
+            if callable(bind):
+                try:
+                    bound = bind()
+                except Exception as exc:
+                    raise ExecutionError(STALE_FENCE, "current writer cannot be bound") from exc
+                candidate = bound if isinstance(bound, Mapping) else None
+        try:
+            value, _owner_key = _validate_entry_writer(candidate)  # type: ignore[arg-type]
+        except (CleanroomEntryError, TypeError, ValueError) as exc:
+            raise ExecutionError(STALE_FENCE, "writer envelope is invalid") from exc
+        try:
+            valid = bool(self.writer_attestor.validate(value))
+        except Exception:
+            valid = False
+        if not valid:
+            raise ExecutionError(STALE_FENCE, "writer identity is not current")
+        return value
+
+    def _validate_s1_authority(
+        self,
+        authority: Mapping[str, Any],
+        slot_key: str,
+        issue_date: str,
+        writer: Mapping[str, Any],
+    ) -> None:
+        """S1 row/fence/leaseを独立のBEGIN IMMEDIATE transactionで再証明する。"""
+        writer_value = self._resolve_writer(writer)
+        try:
+            # _writer_owner_keyはS1 ownerKeyとは独立に評価する。実行writerと
+            # slot ownerは別actorだが、双方のenvelopeはcanonicalでなければならない。
+            _writer_owner_key(writer_value)
+        except (CleanroomEntryError, TypeError, ValueError) as exc:
+            raise ExecutionError(STALE_FENCE, "writer owner key is invalid") from exc
+        current = self._clock_now()
         ledger = ControlLedger(self.runtime_root, busy_timeout_ms=self.busy_timeout_ms)
         connection: sqlite3.Connection | None = None
+        committed = False
         try:
             if not ledger.ledger_path.exists() or not ledger.generation_path.exists():
                 raise ExecutionError(STALE_FENCE, "S1 ledger is absent")
             generation = int(ledger._read_generation_seal()["generation"])
             connection = ledger._connect()
+            connection.execute("BEGIN IMMEDIATE")
             ledger._verify_connection(connection, generation)
             row = connection.execute(
                 "SELECT schedule_id,issue_date,slot_kind,generation,state,owner_key,fence_token,lease_expires_at FROM slots WHERE schedule_id=? AND issue_date=? AND slot_kind=?",
@@ -202,11 +259,17 @@ class ExecutionController:
                 expiry = datetime.fromisoformat(expiry_text)
             except ValueError as exc:
                 raise ExecutionError(STALE_FENCE, "S1 lease is invalid") from exc
-            if expiry.tzinfo is None or observed >= expiry:
+            if expiry.tzinfo is None or current >= expiry:
                 raise ExecutionError(STALE_FENCE, "S1 lease is expired")
+            connection.commit()
+            committed = True
         except ExecutionError:
+            if connection is not None and not committed:
+                connection.rollback()
             raise
         except (CleanroomEntryError, OSError, sqlite3.Error, TypeError, ValueError) as exc:
+            if connection is not None and not committed:
+                connection.rollback()
             raise ExecutionError(STALE_FENCE, "S1 authority cannot be verified") from exc
         finally:
             if connection is not None:
@@ -639,7 +702,15 @@ class ExecutionController:
             raise ExecutionError(RESULT_UNKNOWN, "external effect hash is invalid")
         return receipt
 
-    def _dispatch_or_query(self, connection: sqlite3.Connection, row: sqlite3.Row, observed: datetime, authority: Mapping[str, Any], payload: Mapping[str, Any]) -> sqlite3.Row:
+    def _dispatch_or_query(
+        self,
+        connection: sqlite3.Connection,
+        row: sqlite3.Row,
+        observed: datetime,
+        authority: Mapping[str, Any],
+        payload: Mapping[str, Any],
+        writer: Mapping[str, Any],
+    ) -> sqlite3.Row:
         state = self._state(connection, row["execution_id"])
         if state == "INTENT_DURABLE":
             attempts = int(row["dispatch_attempts"]) + 1
@@ -647,15 +718,18 @@ class ExecutionController:
                 raise ExecutionError(RESULT_UNKNOWN, "dispatch attempts exhausted")
             self._transition(connection, row["execution_id"], "DISPATCHED", observed, dispatch_attempts=attempts)
             row = self._row(connection, row["execution_id"])
+            self._validate_s1_authority(authority, authority["slotKey"], authority["issueDate"], writer)
             try:
                 receipt = self.provider.dispatch({"idempotencyKey": row["idempotency_key"], "authority": dict(authority), "payload": dict(payload)})
             except ExternalResultUnknown as exc:
                 raise ExecutionError(RESULT_UNKNOWN, "external dispatch result is unknown") from exc
             except Exception as exc:
                 raise ExecutionError(RESULT_UNKNOWN, "external dispatch result is unknown") from exc
+            self._validate_s1_authority(authority, authority["slotKey"], authority["issueDate"], writer)
             return self._confirm(connection, row, observed, receipt)
         if state != "DISPATCHED":
             return row
+        self._validate_s1_authority(authority, authority["slotKey"], authority["issueDate"], writer)
         try:
             outcome = self.provider.query(row["idempotency_key"])
         except ExternalResultUnknown as exc:
@@ -666,6 +740,7 @@ class ExecutionController:
             raise ExecutionError(RESULT_UNKNOWN, "external query result is invalid")
         status = outcome.get("status")
         if status == "PRESENT":
+            self._validate_s1_authority(authority, authority["slotKey"], authority["issueDate"], writer)
             return self._confirm(connection, row, observed, outcome.get("receipt"))
         if status in {"AMBIGUOUS", "UNAVAILABLE"}:
             raise ExecutionError(RESULT_UNKNOWN, "external query did not resolve the effect")
@@ -677,12 +752,14 @@ class ExecutionController:
         attempts += 1
         self._increment_dispatch_attempts(connection, row["execution_id"], observed, attempts)
         row = self._row(connection, row["execution_id"])
+        self._validate_s1_authority(authority, authority["slotKey"], authority["issueDate"], writer)
         try:
             receipt = self.provider.dispatch({"idempotencyKey": row["idempotency_key"], "authority": dict(authority), "payload": dict(payload)})
         except ExternalResultUnknown as exc:
             raise ExecutionError(RESULT_UNKNOWN, "external dispatch result is unknown") from exc
         except Exception as exc:
             raise ExecutionError(RESULT_UNKNOWN, "external dispatch result is unknown") from exc
+        self._validate_s1_authority(authority, authority["slotKey"], authority["issueDate"], writer)
         return self._confirm(connection, row, observed, receipt)
 
     def _confirm(self, connection: sqlite3.Connection, row: sqlite3.Row, observed: datetime, receipt: Any) -> sqlite3.Row:
@@ -719,6 +796,7 @@ class ExecutionController:
         authority: Mapping[str, Any],
         payload: Mapping[str, Any],
         observed_at: datetime,
+        writer: Mapping[str, Any] | None = None,
     ) -> dict[str, Any]:
         try:
             observed = _validate_entry_time(observed_at)
@@ -728,7 +806,8 @@ class ExecutionController:
             raise ExecutionError(AUTHORITY_INVALID, "slot key is invalid")
         issue_date = _parse_issue_date(issue_date)
         authority_value = self._authority_shape(authority, slot_key, issue_date)
-        self._validate_s1_authority(authority_value, slot_key, issue_date, observed)
+        writer_value = self._resolve_writer(writer)
+        self._validate_s1_authority(authority_value, slot_key, issue_date, writer_value)
         if not isinstance(payload, Mapping):
             raise ExecutionError(AUTHORITY_INVALID, "payload must be an object")
         payload_value = dict(payload)
@@ -779,7 +858,7 @@ class ExecutionController:
             if state == "RESERVED":
                 self._transition(connection, execution_id, "INTENT_DURABLE", observed)
                 row = self._row(connection, execution_id)
-            row = self._dispatch_or_query(connection, row, observed, authority_value, payload_value)
+            row = self._dispatch_or_query(connection, row, observed, authority_value, payload_value, writer_value)
             state = self._state(connection, execution_id)
             if state != "CONFIRMED":
                 raise ExecutionError(DURABILITY_FAILED, "execution did not reach CONFIRMED")
@@ -804,7 +883,7 @@ class ExecutionController:
             if "finalize" not in completed:
                 finalize_input = _checkpoint_input("finalize", payload_value, outputs)
                 row, _ = self._run_stage(connection, row, "finalize", finalize_input, observed, persist_checkpoint=True)
-            self._validate_s1_authority(authority_value, slot_key, issue_date, observed)
+            self._validate_s1_authority(authority_value, slot_key, issue_date, writer_value)
             self._transition(connection, execution_id, "COMMITTED", observed)
             return self._projection(connection, self._row(connection, execution_id))
         finally:
