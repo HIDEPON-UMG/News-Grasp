@@ -1,0 +1,85 @@
+{
+  "schemaVersion": "RED_SUITE_COVERAGE_V2",
+  "receiptId": "NG-CLEANROOM-PARALLEL-HOTFIX-RED-SEALED-V1",
+  "status": "sealed",
+  "observedAt": "2026-08-21T10:10:25+09:00",
+  "baselineCommit": "716379658df969a0cff047a5763f15d89ba32f23",
+  "impactReceipt": {
+    "path": "config/news_grasp_cleanroom_parallel_hotfix_impact_v1.json",
+    "sha256": "84c61f1e7f6a94c2946c849de2f91c0c0bcc14693aa652a27a3aabe86cfe7177"
+  },
+  "parallelPacket": {
+    "path": "config/news_grasp_cleanroom_parallel_hotfix_red_parallel_packet_v1.json",
+    "sha256": "04b3ae1882a553d727194485828d94a60dc23e457cf3510e87f4602c4c8579b5"
+  },
+  "testArtifacts": [
+    {"path": "tests/test_daily_self_heal.py", "sha256": "e8c5eee5d2c4ed12492fb31d7241687cb765646e54c15c5faabaab050adef06d", "bytes": 187790},
+    {"path": "tests/test_news_grasp_completion_guard.py", "sha256": "dcbbf8d77e82d810977bdc3d180d1f60aef05855cf6636ca7b62b53d17e92c3d", "bytes": 14111},
+    {"path": "tests/test_scheduled_high_cost_separation.py", "sha256": "d97708255bbc95c03cf7bb750ccf0d0a074a3a21c190af197f802e393857eeef", "bytes": 112913},
+    {"path": "tests/test_news_grasp_daily_control.py", "sha256": "63ee410738a2a72433554c53f3c554aff65042dc0e79db3ecdd0ea9c4f97e554", "bytes": 42037},
+    {"path": "tests/test_audit_recovery_control.py", "sha256": "47a5974c954f64198ca063c8eb538aff4c54cbdc7f63cca69e509ad31aba6b85", "bytes": 100945},
+    {"path": "tests/test_runner_convergence_contract.py", "sha256": "892c017f2699f6b89155f19cdc49ecdf8b38b0fd5ad01850c7398c36bcefcf39", "bytes": 212363},
+    {"path": "tests/test_runner_wrapper_smoke.py", "sha256": "f79a6264105c828b8b93580aff4bd02dfc2fa968bcf9815bf890eff23123996e", "bytes": 42737},
+    {"path": "tests/test_news_grasp_cleanroom_s5_install.py", "sha256": "4c3b6cbf03dcc120935a90237b8d0792421e5fbdaefdcec074ef8fd066d25e8d", "bytes": 32904},
+    {"path": "tests/fixtures/news_grasp_cleanroom_parallel_hotfix_cases.json", "sha256": "1c11994437585089f9962ee655f2f224aa5da6ee8108a25ac2fca7880e19bbb8", "bytes": 980}
+  ],
+  "collection": {
+    "command": "py -3.12 -m pytest --noconftest -q --collect-only",
+    "exitCode": 0,
+    "fixtureErrors": 0
+  },
+  "focusedResult": {
+    "collected": 12,
+    "passed": 2,
+    "failed": 10,
+    "exitCode": 1,
+    "greenNodes": [
+      "tests/test_news_grasp_daily_control.py::test_failure_classification_is_derived_from_observed_state_only",
+      "tests/test_audit_recovery_control.py::test_startup_terminal_state_without_repo_dir_can_enter_scheduled_recovery"
+    ],
+    "expectedRed": [
+      {"node": "tests/test_daily_self_heal.py::test_parallel_hotfix_future_readiness_permit_date_is_not_future", "signature": "TypeError: _run_live_startup_canary does not accept permit_issue_date"},
+      {"node": "tests/test_news_grasp_completion_guard.py::test_parallel_hotfix_completion_ok_with_slo_debt_exits_zero_and_non_ok_exits_two", "signature": "ok=true plus SLO debt returns 2 instead of 0"},
+      {"node": "tests/test_scheduled_high_cost_separation.py::test_parallel_hotfix_daily_audit_startup_ledger_fallback_uses_canonical_python_and_ops_root", "signature": "prepare_recovery source lacks startup_failure fallback"},
+      {"node": "tests/test_news_grasp_daily_control.py::test_startup_self_repair_failure_keeps_recovery_attempt_available", "signature": "_local_startup_unblocker_rejection returns false"},
+      {"node": "tests/test_news_grasp_daily_control.py::test_audit_uses_broker_failure_when_runner_state_is_stale", "signature": "prepare_recovery raises RUNNER_STATE_EVIDENCE_INVALID"},
+      {"node": "tests/test_runner_convergence_contract.py::test_parallel_hotfix_runner_optional_fields_three_admission_schemas_and_artifact_priority_dedupe", "signature": "Set-TypedRepairTerminalState uses direct optional property access"},
+      {"node": "tests/test_runner_wrapper_smoke.py::test_parallel_hotfix_wrapper_wall_and_idle_timeout_map_exit_124", "signature": "wall timeout returns 0 instead of 124"},
+      {"node": "tests/test_news_grasp_cleanroom_s5_install.py::test_s5_preflight_rejects_source_install_binding_task_action_drift_before_mutation", "signature": "ModuleNotFoundError: tools.news_grasp_cleanroom_install"},
+      {"node": "tests/test_news_grasp_cleanroom_s5_install.py::test_s5_requires_both_owner_receipts_before_candidate_registration", "signature": "ModuleNotFoundError: tools.news_grasp_cleanroom_install"},
+      {"node": "tests/test_news_grasp_cleanroom_s5_install.py::test_s5_two_owner_crash_and_privilege_failure_restore_exact_preimages", "signature": "ModuleNotFoundError: tools.news_grasp_cleanroom_install"}
+    ]
+  },
+  "executionAttemptLedger": [
+    {
+      "attempt": 1,
+      "validEvidence": false,
+      "failureClass": "TEST_ENVIRONMENT_BINDING_OVERRIDE_INVALID",
+      "detail": "Test Luna overrode the existing valid binding with a nonexistent path; no production Red was observed"
+    },
+    {
+      "attempt": 2,
+      "validEvidence": true,
+      "causalDifference": "removed only the erroneous environment override and reused the already successful binding",
+      "sameShapeRetryCount": 0
+    }
+  ],
+  "mutationGate": {
+    "s5aProductionMutationAllowed": true,
+    "s5bProductionMutationAllowed": false,
+    "s5bUnlock": "S5A exact nine behavior nodes Green while all three S5 install nodes remain Red for the missing module",
+    "testWeakeningForbidden": true,
+    "sameFixturesThroughGreen": true
+  },
+  "worktreeEvidence": {
+    "preStatus": [
+      "?? config/news_grasp_cleanroom_control_s0_v1.json",
+      "?? config/news_grasp_cleanroom_s0_impact_review_v1.json"
+    ],
+    "postStatus": [
+      "?? config/news_grasp_cleanroom_control_s0_v1.json",
+      "?? config/news_grasp_cleanroom_s0_impact_review_v1.json"
+    ],
+    "trackedMutationCount": 0
+  }
+}
