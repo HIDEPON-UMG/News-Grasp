@@ -18,6 +18,15 @@
     "verification": "compile, exact-node collect, one focused Red, ruff, diff; commit only owned files after causal Red",
     "stop": "unexpected Green or fixture error returns to Sol without weakening"
   },
+  "abortedLeases": [
+    {
+      "leaseId": "TEST-LEASE-S5-HOTFIX-B-V1",
+      "canonicalContext": "/root/s5_hotfix_red_b",
+      "reason": "timebox expired with a clean worktree and zero test mutation after the decision-complete packet was read",
+      "productionOrTestMutationCount": 0,
+      "successorLeaseId": "TEST-LEASE-S5-HOTFIX-B2-V1"
+    }
+  ],
   "leases": [
     {
       "leaseId": "TEST-LEASE-S5-HOTFIX-A-V1",
@@ -44,12 +53,12 @@
       "commitMessage": "test: bind parallel recovery Python hotfixes"
     },
     {
-      "leaseId": "TEST-LEASE-S5-HOTFIX-B-V1",
-      "leaseSha256": "ca754c5fdcb35622fe94d161b8139187bb32aa68ee1a17a1ee056c737c83856e",
+      "leaseId": "TEST-LEASE-S5-HOTFIX-B2-V1",
+      "leaseSha256": "b5eddeaee5d99d26742c04273957491639ea881f4cfbdf42fe78bdce18df2f8e",
       "canonicalPayload": {
-        "leaseId": "TEST-LEASE-S5-HOTFIX-B-V1",
+        "leaseId": "TEST-LEASE-S5-HOTFIX-B2-V1",
         "role": "test_luna",
-        "canonicalContext": "/root/s5_hotfix_red_b",
+        "canonicalContext": "/root/s1_edge_driver_red",
         "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-hotfix-b",
         "writes": [
           "tests/test_runner_convergence_contract.py",
@@ -70,7 +79,7 @@
     }
   ],
   "writeIntersectionCount": 0,
-  "integrationOrder": ["TEST-LEASE-S5-HOTFIX-A-V1", "TEST-LEASE-S5-HOTFIX-B-V1"],
+  "integrationOrder": ["TEST-LEASE-S5-HOTFIX-A-V1", "TEST-LEASE-S5-HOTFIX-B2-V1"],
   "redAdmission": "all eight exact nodes fail for the impact-bound production cause; both commits are required before any S5A/S5B production packet",
   "unresolvedDecisionIds": []
 }
