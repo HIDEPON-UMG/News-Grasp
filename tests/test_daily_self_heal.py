@@ -4931,6 +4931,14 @@ def test_parallel_hotfix_future_readiness_permit_date_is_not_future(
     monkeypatch, tmp_path: Path
 ) -> None:
     """未来のreadiness rootと当日JSTのpermit/log日付を分離する。"""
+    future_date = "2026-08-25"
+    current_date = "2026-08-21"
+
+    def fake_task_details(**_kwargs):
+        return {"ok": True, "next_run_time": f"{future_date}T06:00:00"}
+
+    monkeypatch.setattr(dsh, "_scheduled_task_details", fake_task_details)
+    assert dsh._next_scheduled_task_issue_date() == future_date
     captured: dict[str, list[str]] = {}
 
     def fake_run(command, **_kwargs):
@@ -4946,8 +4954,6 @@ def test_parallel_hotfix_future_readiness_permit_date_is_not_future(
         return SimpleNamespace(returncode=0, stdout="", stderr="")
 
     monkeypatch.setattr(dsh.subprocess, "run", fake_run)
-    future_date = "2026-08-25"
-    current_date = "2026-08-21"
     result = dsh._run_live_startup_canary(
         repo_root=tmp_path,
         startup_path=tmp_path / "bootstrap.ps1",
