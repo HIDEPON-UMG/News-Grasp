@@ -2602,7 +2602,7 @@ def test_issue_allows_safe_missing_output_ancestors_after_preflight(tmp_path: Pa
 
 def _runtime_binding_fixture(tmp_path: Path) -> tuple[Path, Path, dict[str, object]]:
     live_bin = tmp_path / "live-bin"
-    live_bin.mkdir()
+    live_bin.mkdir(parents=True)
     executable = live_bin / "python.exe"
     executable.write_bytes(b"trusted production python fixture\n")
     binding = {

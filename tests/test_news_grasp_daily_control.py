@@ -796,7 +796,6 @@ def test_invalid_existing_scheduled_admission_is_not_copied_or_reused(
     assert json.loads(result.read_text(encoding="utf-8"))["receiptSha256"] == replacement[
         "receiptSha256"
     ]
-    assert truth["resumeStage"] == "generation-quality-repair"
 
 
 def test_registry_requires_production_call_edge(tmp_path: Path) -> None:

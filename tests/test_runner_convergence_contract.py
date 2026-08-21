@@ -4592,6 +4592,12 @@ def test_sec_scheduled_admission_validator_is_closed_schema_and_receipt_sealed()
     validator = getattr(contracts, "validate_scheduled_admission_receipt", None)
     assert callable(validator)
     source = inspect.getsource(validator)
-    assert "receiptSha256" in source
-    assert "schemaVersion" in source
-    assert "HIGH_COST_SCHEDULED_ADMISSION_INVALID" in source
+    body_validator = getattr(contracts, "_validate_scheduled_admission_body", None)
+    assert callable(body_validator)
+    body_source = inspect.getsource(body_validator)
+    invalid_source = inspect.getsource(contracts._scheduled_admission_invalid)
+    assert "_validate_scheduled_admission_body" in source
+    assert "receiptSha256" in body_source
+    assert "schemaVersion" in body_source
+    assert "_scheduled_admission_invalid" in body_source
+    assert "HIGH_COST_SCHEDULED_ADMISSION_INVALID" in invalid_source
