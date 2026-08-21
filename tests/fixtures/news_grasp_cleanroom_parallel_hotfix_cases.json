@@ -18,6 +18,8 @@
     "NEWS_GRASP_OPS_INSTALL_JOURNAL_V1",
     "NEWS_GRASP_PHYSICAL_DELIVERY_STATE_V1"
   ],
+  "ownerIds": ["runtime_generation_owner", "ops_install_owner"],
+  "rollbackOrder": ["install_news_grasp_ops", "launcher_runtime_lifecycle"],
   "ownerBoundaries": ["launcher_runtime_lifecycle", "install_news_grasp_ops"],
   "forbiddenExternalMutations": [
     "network",

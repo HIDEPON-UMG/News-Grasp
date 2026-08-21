@@ -839,7 +839,12 @@ $fallback = @(Get-RepairDecisionArtifacts -RepairDecision ([pscustomobject]@{}) 
     assert result.returncode == 0, result.stderr
     value = json.loads(result.stdout)
     assert value["selected"] == ["one", "two", "three"]
-    assert value["fallback"] == ["fallback", "one"]
+    assert value["fallback"] == []
+    terminal_body = runner.split("function Set-TypedRepairTerminalState", 1)[1].split(
+        "function Invoke-TargetedRepair", 1
+    )[0]
+    for field in ("external_kind", "external_system", "reason"):
+        assert f"$Decision.PSObject.Properties.Name -contains '{field}'" in terminal_body
 
 
 def test_runner_does_not_report_registry_noop_as_repair_success() -> None:

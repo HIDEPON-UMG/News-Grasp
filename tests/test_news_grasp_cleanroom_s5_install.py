@@ -80,16 +80,47 @@ def _manifest() -> dict[str, Any]:
 
 
 def _authority(source_root: Path, source_bytes: bytes) -> dict[str, Any]:
+    source_sha256 = hashlib.sha256(source_bytes).hexdigest()
+    task_action_sha256 = _sha(_manifest()["tasks"][0]["action"])
+    owner_specs = {
+        "runtime_generation_owner": [
+            "PRODUCTION_GENERATION_MANIFEST_V2",
+            "NEWS_GRASP_ACTIVE_GENERATION_V2",
+        ],
+        "ops_install_owner": [
+            "NEWS_GRASP_OPS_INSTALL_JOURNAL_V1",
+            "NEWS_GRASP_PHYSICAL_DELIVERY_STATE_V1",
+        ],
+    }
+    owner_receipts: dict[str, dict[str, Any]] = {}
+    for owner_id, receipt_schemas in owner_specs.items():
+        receipt = {
+            "ownerId": owner_id,
+            "receiptSchemas": receipt_schemas,
+            "sourceSha256": source_sha256,
+            "installedSha256": source_sha256,
+            "taskActionSha256": task_action_sha256,
+            "preimageSha256": _sha({"ownerId": owner_id, "preimage": "test-preimage-v1"}),
+        }
+        receipt["receiptSha256"] = _sha(receipt)
+        owner_receipts[owner_id] = receipt
     value = {
         "schemaVersion": "INSTALL_AUTHORITY_V1",
         "authorityId": "s5-authority-20260821",
         "issueDate": "2026-08-21",
         "generation": 1,
         "sourceRoot": str(source_root),
-        "sourceSha256": hashlib.sha256(source_bytes).hexdigest(),
+        "sourceSha256": source_sha256,
+        "ownerReceipts": owner_receipts,
     }
     value["authoritySha256"] = _sha(value)
     return value
+
+
+def _reseal_authority(authority: dict[str, Any]) -> dict[str, Any]:
+    body = {key: value for key, value in authority.items() if key != "authoritySha256"}
+    authority["authoritySha256"] = _sha(body)
+    return authority
 
 
 def _roots(tmp_path: Path, index: int) -> tuple[Path, Path, bytes, dict[str, Any], dict[str, Any]]:
@@ -234,6 +265,29 @@ class ProcessAdapter:
         return deepcopy(self._kills)
 
 
+class OwnerAdapter:
+    """二つのowner transactionのrestore順とpreimageを記録する。"""
+
+    def __init__(self, module: Any, task: TaskAdapter) -> None:
+        self.module = module
+        self.task = task
+        self.deny_owner: str | None = None
+        self._restores: list[dict[str, str]] = []
+
+    def restore(self, owner_id: str, preimage_sha256: str) -> None:
+        if self.task.task_state()[NEW_TASK]:
+            raise AssertionError("owner restore before new task disable")
+        if owner_id == self.deny_owner:
+            self.deny_owner = None
+            raise self.module.PrivilegeDenied(f"test-owned owner denial: {owner_id}")
+        self._restores.append(
+            {"ownerId": owner_id, "preimageSha256": preimage_sha256}
+        )
+
+    def restores(self) -> list[dict[str, str]]:
+        return deepcopy(self._restores)
+
+
 class SecurityAdapter:
     """公開security protocolの因果注入を記録する。"""
 
@@ -279,6 +333,7 @@ def _controller(
     *,
     process: ProcessAdapter | None = None,
     security: SecurityAdapter | None = None,
+    owner_adapter: OwnerAdapter | None = None,
     boundary_hook: Any = None,
 ) -> Any:
     return module.InstallCutoverController(
@@ -287,6 +342,7 @@ def _controller(
         pythonw_path=root / "pythonw.exe",
         process_adapter=process,
         security_adapter=security,
+        owner_adapter=owner_adapter,
         boundary_hook=boundary_hook,
     )
 
@@ -633,9 +689,15 @@ def test_s5_preflight_rejects_source_install_binding_task_action_drift_before_mu
             installed.mkdir(parents=True, exist_ok=True)
             installed.joinpath("launcher.pyw").write_bytes(b"installed-drift")
         elif drift == "binding_receipt_sha256":
-            authority["authoritySha256"] = "0" * 64
+            authority["ownerReceipts"]["runtime_generation_owner"]["receiptSha256"] = "0" * 64
+            _reseal_authority(authority)
         else:
-            manifest["tasks"][0]["action"]["entryModule"] = "foreign.module"
+            for receipt in authority["ownerReceipts"].values():
+                receipt["taskActionSha256"] = "f" * 64
+                receipt["receiptSha256"] = _sha(
+                    {key: value for key, value in receipt.items() if key != "receiptSha256"}
+                )
+            _reseal_authority(authority)
         task = TaskAdapter(module)
         controller = _controller(module, root, task)
         with pytest.raises(module.InstallControlError):
@@ -647,17 +709,9 @@ def test_s5_preflight_rejects_source_install_binding_task_action_drift_before_mu
 def test_s5_requires_both_owner_receipts_before_candidate_registration(tmp_path: Path) -> None:
     """runtime-generationとops-installの両owner receiptがcandidate登録を先行する。"""
     module = importlib.import_module("tools.news_grasp_cleanroom_install")
-    parallel = json.loads(
-        (Path(__file__).parent / "fixtures" / "news_grasp_cleanroom_parallel_hotfix_cases.json").read_text(
-            encoding="utf-8"
-        )
-    )
     root, source, _content, manifest, authority = _roots(tmp_path, 140)
-    authority["ownerReceipts"] = {
-        parallel["ownerBoundaries"][0]: {
-            "schemaVersion": parallel["ownerReceiptSchemas"][0]
-        }
-    }
+    authority["ownerReceipts"].pop("ops_install_owner")
+    _reseal_authority(authority)
     task = TaskAdapter(module)
     controller = _controller(module, root, task)
     with pytest.raises(module.InstallControlError):
@@ -673,18 +727,25 @@ def test_s5_two_owner_crash_and_privilege_failure_restore_exact_preimages(tmp_pa
             encoding="utf-8"
         )
     )
-    assert parallel["ownerBoundaries"] == ["launcher_runtime_lifecycle", "install_news_grasp_ops"]
+    assert parallel["ownerIds"] == ["runtime_generation_owner", "ops_install_owner"]
+    assert parallel["rollbackOrder"] == ["install_news_grasp_ops", "launcher_runtime_lifecycle"]
     root, source, content, manifest, authority = _roots(tmp_path, 160)
     task = TaskAdapter(module)
-    controller = _controller(module, root, task)
+    owner = OwnerAdapter(module, task)
+    controller = _controller(module, root, task, owner_adapter=owner)
     _stage(controller, manifest, source, root / "installed", authority)
-    old_preimage = task.task_definition(OLD_TASK)
-    task.set_denial("disable")
-    with pytest.raises((module.PrivilegeDenied, module.InstallControlError)):
-        _cutover(controller, authority)
-    task.set_denial(None)
     _cutover(controller, authority)
+    owner.deny_owner = "install_news_grasp_ops"
+    with pytest.raises((module.PrivilegeDenied, module.InstallControlError)):
+        _rollback(controller, authority)
     _rollback(controller, authority)
-    assert task.task_definition(OLD_TASK) == old_preimage
+    restores = owner.restores()
+    assert [row["ownerId"] for row in restores] == [
+        "install_news_grasp_ops", "launcher_runtime_lifecycle"
+    ]
+    assert [row["preimageSha256"] for row in restores] == [
+        authority["ownerReceipts"][owner_id]["preimageSha256"]
+        for owner_id in ["ops_install_owner", "runtime_generation_owner"]
+    ]
     assert (root / "installed" / "launcher.pyw").read_bytes() == content
     assert task.dual_enabled_count == 0
