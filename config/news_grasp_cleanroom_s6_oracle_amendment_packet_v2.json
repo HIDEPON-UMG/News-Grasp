@@ -1,0 +1,80 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S6-ORACLE-AMENDMENT-V2",
+  "status": "active",
+  "executionAllowed": true,
+  "amends": "NG-CLEANROOM-S6-ORACLE-CORRECTION-V1",
+  "role": "test_luna",
+  "canonicalContext": "/root/s1_edge_driver_red",
+  "todoId": "No.09/A-09 through No.14/A-14",
+  "baselineCommit": "cdb4ee72c19a586a559577659dd6f4581f03eccf",
+  "writeLease": {
+    "leaseId": "TEST-LEASE-S6-ORACLE-AMENDMENT-V2",
+    "leaseSha256": "bf1ec04b1cceaf983fd3b38e8961f729e0f84767e70ffe2049320ad4fb4c6726",
+    "canonicalPayload": {
+      "leaseId": "TEST-LEASE-S6-ORACLE-AMENDMENT-V2",
+      "role": "test_luna",
+      "canonicalContext": "/root/s1_edge_driver_red",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-s6-hotfix",
+      "writes": [
+        "tests/test_news_grasp_cleanroom_s6_release.py",
+        "tests/fixtures/news_grasp_cleanroom_s6_cases.json"
+      ],
+      "baselineCommit": "cdb4ee72c19a586a559577659dd6f4581f03eccf"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": [
+    "tests/test_news_grasp_cleanroom_s6_release.py",
+    "tests/fixtures/news_grasp_cleanroom_s6_cases.json"
+  ],
+  "forbiddenWrites": [
+    "tools/**",
+    "config/**",
+    "docs/**",
+    "scripts/**",
+    "ProjectFolders workspace-global harness",
+    "live runtime, Task Scheduler, network, external model or public state"
+  ],
+  "ownedDirtyBaseline": {
+    "testSha256": "3f23f86be8347727b917a38642562f4b4f8feef7d72bdea36b854e3974cd8fa4",
+    "fixtureSha256": "b56d28d578a4d8acd93f6bf03e4b68ae3a17fa7b965116ed9c7de820c762eebb",
+    "gitDiffBlobSha1": "195c61b106f619901e8c482d4a68f1ac3d8fa96e",
+    "meaning": "Test Luna owns the existing four cross-layer oracle corrections; retain every hunk and add only the amendment below"
+  },
+  "observedContradiction": {
+    "id": "S6-ORACLE-05",
+    "cause": "_real_l7_boundary invokes required helper _at(hour, minute) without either argument, so collection reaches a TypeError before the real S5 install boundary",
+    "correction": "change only controller.stage(..., _at()) to controller.stage(..., _at(6, 0)); retain all assertions and real boundary calls"
+  },
+  "productionBaseline": {
+    "releaseDispatchCommit": "cdb4ee72c19a586a559577659dd6f4581f03eccf",
+    "meaning": "the production history and dispatch runtime boundary corrections are already integrated; Test Luna must not edit production"
+  },
+  "acceptance": {
+    "nodeCountExact": 6,
+    "passedExact": 6,
+    "noSkipXfail": true,
+    "requiredBinding": "%USERPROFILE%\\bin\\news-grasp-high-cost-binding-v1.json",
+    "command": "$env:NEWS_GRASP_HIGH_COST_BINDING_PATH=[Environment]::ExpandEnvironmentVariables('%USERPROFILE%\\bin\\news-grasp-high-cost-binding-v1.json'); py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s6_release.py",
+    "supportingChecks": [
+      "py -3.12 -m py_compile tests/test_news_grasp_cleanroom_s6_release.py",
+      "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s6_release.py; exact 6",
+      "fixture JSON parses and requiredLineages is Scheduled,Audit,Public,Readiness",
+      "py -3.12 -m ruff check tests/test_news_grasp_cleanroom_s6_release.py",
+      "git diff --check and exact two owned paths only"
+    ]
+  },
+  "commitPolicy": {
+    "allowedOnlyAfterAllAcceptanceGreen": true,
+    "paths": [
+      "tests/test_news_grasp_cleanroom_s6_release.py",
+      "tests/fixtures/news_grasp_cleanroom_s6_cases.json"
+    ],
+    "message": "test: correct S6 cross-layer oracles"
+  },
+  "causalRetry": "one amendment attempt only; any new failure returns exact evidence to Sol without weakening tests or editing production",
+  "delivery": "new hashes/bytes, exact collection and 6-pass evidence, commit hash and clean status",
+  "stopPolicy": "return to Sol on any unexpected failure; no production, live or global-harness mutation",
+  "unresolvedDecisionIds": []
+}
