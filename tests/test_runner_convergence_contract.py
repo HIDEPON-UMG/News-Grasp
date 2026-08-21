@@ -4961,7 +4961,11 @@ def test_sec_stage_witness_path_gate_is_powershell_51_safe_and_checks_original_a
             gate,
             re.IGNORECASE,
         ) or re.search(
-            rf"String\.Equals\(\s*\${re.escape(local_name)}\s*,\s*\[string\]{original}",
+            rf"(?:String\.Equals|\[string\]::Equals)\(\s*\${re.escape(local_name)}\s*,\s*\[string\]{original}",
+            gate,
+            re.IGNORECASE,
+        ) or re.search(
+            rf"(?:String\.Equals|\[string\]::Equals)\(\s*\[string\]{original}\s*,\s*\${re.escape(local_name)}",
             gate,
             re.IGNORECASE,
         ), f"normalized/original absolute path comparison missing for {original_name}"
