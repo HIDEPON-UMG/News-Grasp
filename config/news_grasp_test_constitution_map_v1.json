@@ -2532,7 +2532,7 @@
     },
     {
       "path": "tests/test_news_grasp_generation_boundary.py",
-      "sha256": "e4dd933764340f9be18d0a24acf27976be990e92617876d130c4a814f421c64f",
+      "sha256": "be85bc9a21e846b32d71c0e9bd950c685b43adfb62f067c10bf2a7e481a0b752",
       "nodeCount": 6,
       "nodeIds": [
         "tests/test_news_grasp_generation_boundary.py::test_generation_manifest_seals_complete_tracked_source_tree",

@@ -652,7 +652,7 @@ $activeGenerationPointerSha256 = ''
 # launcher の generation authority は production-runtime の親（.news-grasp-runtime）に
 # pointer を持つ。installer も同じ root を読むことで、pending-active-generation
 # へのフォールバックと launcher の実世代検証が分岐しないようにする。
-$generationAuthorityRoot = Split-Path -Parent $runtimeEvidenceRepoDir
+$generationAuthorityRoot = Join-Path $env:USERPROFILE '.news-grasp-runtime'
 $activeGenerationPointerPath = Join-Path $generationAuthorityRoot 'active-generation-v2.json'
 if (Test-Path -LiteralPath $activeGenerationPointerPath -PathType Leaf) {
     $activeGenerationPointerSnapshot = Read-NewsGraspVerifiedFile `
