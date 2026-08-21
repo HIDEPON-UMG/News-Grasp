@@ -24,7 +24,7 @@ _HEX40 = re.compile(r"^[0-9a-f]{40}$")
 _LAYER_NAMES = [f"L{i}" for i in range(8)]
 _TRUSTED_KEYS = [f"S{i}" for i in range(6)]
 _NATURAL_LINEAGES = ["Scheduled", "Audit", "Public", "Readiness"]
-_HISTORY_MISSING_LINEAGES = ["Scheduled", "Recovery", "Public", "Readiness"]
+_HISTORY_MISSING_LINEAGES = ["Scheduled", "Audit", "Public", "Readiness"]
 _CLOSURE_PATHS = [
     "scripts/ops/news-grasp-runner.ps1",
     "scripts/ops/news-grasp-task-launcher.pyw",
