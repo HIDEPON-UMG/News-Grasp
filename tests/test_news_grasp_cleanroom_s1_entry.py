@@ -760,6 +760,185 @@ def test_sec_s1_wal_compaction_preserves_zero_and_emits_chained_receipt(tmp_path
     assert completed_row["event_sha256"] == completion["ledgerEventSha256"]
 
 
+def test_sec_s1_record_initial_rejects_oversized_event_before_wal_tree(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """serialized event上限はmkdir/_write_jsonより前に適用する。"""
+
+    data = _load_fixture()
+    production = _production()
+    wal_module = importlib.import_module("tools.news_grasp_cleanroom_wal")
+    monkeypatch.setattr(wal_module, "MAX_WAL_EVENT_BYTES", 1)
+    runtime_root = tmp_path / "runtime"
+    wal = production["DurableWal"](runtime_root)
+    _expect_reason(
+        production["error"],
+        "NEWS_GRASP_ENTRY_WAL_RETENTION_LIMIT",
+        lambda: wal.record_initial(
+            raw_argv=data["normative"]["rawArgv"]["exact"],
+            received_at=_at(6, 1),
+            writer=_writer(7001),
+        ),
+    )
+    wal_root = runtime_root / "control" / "wal"
+    assert not wal_root.exists() or _tree_snapshot(wal_root) == {}
+
+
+def test_sec_s1_compaction_crash_persists_receipt_before_remove_and_resumes(
+    tmp_path: Path,
+) -> None:
+    """quarantine移動後のremove crashでもreceiptを先に永続化し、同じauthorizationを再開できる。"""
+
+    data = _load_fixture()
+    production = _production()
+    wal_module = importlib.import_module("tools.news_grasp_cleanroom_wal")
+    contracts = importlib.import_module("tools.news_grasp_cleanroom_contracts")
+    runtime_root = tmp_path / "runtime"
+    wal, ledger, imported, base = _seed_compaction_runtime(production, data, runtime_root)
+    zero = wal.record_initial(
+        raw_argv=data["normative"]["rawArgv"]["exact"],
+        received_at=base + timedelta(seconds=900),
+        writer=_writer(9001),
+    )
+    zero_path = runtime_root / "control" / "wal" / zero["invocationId"] / "0001-initial.json"
+    zero_bytes = zero_path.read_bytes()
+    requested_hashes = [event["eventSha256"] for event in imported[:32]]
+    crashing_calls: list[Path] = []
+
+    def crash_remove(path: str | os.PathLike[str]) -> None:
+        crashing_calls.append(Path(path))
+        raise OSError("injected compaction remove crash")
+
+    crashing = production["DurableWal"](
+        runtime_root,
+        durability_ops=wal_module.DurabilityOps(remove=crash_remove),
+    )
+    authorization = ledger.authorize_wal_compaction(
+        wal=crashing,
+        wal_event_hashes=requested_hashes,
+        batch_size=32,
+        observed_at=base + timedelta(seconds=901),
+    )
+    wal_root = runtime_root / "control" / "wal"
+    before_live = {
+        key: value
+        for key, value in _tree_snapshot(wal_root).items()
+        if not key.startswith(".compaction-quarantine/")
+    }
+    try:
+        crashing.compact_imported(authorization, observed_at=base + timedelta(seconds=902))
+    except production["error"] as exc:
+        assert exc.reason == "NEWS_GRASP_ENTRY_WAL_RETENTION_LIMIT"
+    assert crashing_calls
+    head_path = wal_root / "compaction-head-v1.json"
+    assert head_path.exists()
+    receipt = json.loads(head_path.read_text(encoding="utf-8"))
+    assert receipt["batch"] == authorization["batch"]
+    assert receipt["previousReceipt"] == authorization["previousReceipt"]
+    assert receipt["ledgerEventSha256"] == authorization["ledgerEventSha256"]
+    assert receipt["selfHash"] == contracts._entry_canonical_sha256(
+        {key: value for key, value in receipt.items() if key != "selfHash"}
+    )
+    assert {
+        key: value
+        for key, value in _tree_snapshot(wal_root).items()
+        if not key.startswith(".compaction-quarantine/")
+    } == before_live
+    quarantine = wal_root / ".compaction-quarantine" / authorization["authorizationId"]
+    assert quarantine.exists()
+    assert zero_path.exists() and zero_path.read_bytes() == zero_bytes
+
+    resumed = production["DurableWal"](runtime_root)
+    resumed_receipt = resumed.compact_imported(
+        authorization,
+        observed_at=base + timedelta(seconds=903),
+    )
+    assert resumed_receipt == receipt
+    assert not quarantine.exists()
+    assert resumed.retention_counts() == {"zeroEntryCount": 1, "importedEntryCount": 800}
+    completion = ledger.complete_wal_compaction(
+        resumed_receipt,
+        observed_at=base + timedelta(seconds=904),
+    )
+    assert completion["status"] in {"completed", "noop"}
+
+
+def test_sec_s1_compaction_chain_preserves_multi_generation_sqlite_parity(
+    tmp_path: Path,
+) -> None:
+    """832→800→832→800の二世代compactionで履歴batchを含むparityを閉じる。"""
+
+    data = _load_fixture()
+    production = _production()
+    contracts = importlib.import_module("tools.news_grasp_cleanroom_contracts")
+    runtime_root = tmp_path / "runtime"
+    wal, ledger, imported, base = _seed_compaction_runtime(production, data, runtime_root)
+    first_hashes = [event["eventSha256"] for event in imported[:32]]
+    first_authorization = ledger.authorize_wal_compaction(
+        wal=wal,
+        wal_event_hashes=first_hashes,
+        batch_size=32,
+        observed_at=base + timedelta(seconds=833),
+    )
+    first_receipt = wal.compact_imported(first_authorization, observed_at=base + timedelta(seconds=834))
+    first_completion = ledger.complete_wal_compaction(first_receipt, observed_at=base + timedelta(seconds=835))
+    assert first_completion["status"] == "completed"
+    assert wal.retention_counts() == {"zeroEntryCount": 0, "importedEntryCount": 800}
+
+    added: list[dict[str, Any]] = []
+    for index in range(32):
+        observed = base + timedelta(seconds=1000 + index)
+        initial = wal.record_initial(
+            raw_argv=data["normative"]["rawArgv"]["exact"],
+            received_at=observed,
+            writer=_writer(10000 + index),
+        )
+        added.append(wal.mark_imported(initial, imported_at=observed))
+    ledger.import_zero_entries(tuple(added), observed_at=base + timedelta(seconds=1032))
+    assert wal.retention_counts() == {"zeroEntryCount": 0, "importedEntryCount": 832}
+
+    second_hashes = [event["eventSha256"] for event in wal.imported_event_records()[:32]]
+    second_authorization = ledger.authorize_wal_compaction(
+        wal=wal,
+        wal_event_hashes=second_hashes,
+        batch_size=32,
+        observed_at=base + timedelta(seconds=1033),
+    )
+    assert second_authorization["previousReceipt"] == first_receipt["selfHash"]
+    second_receipt = wal.compact_imported(second_authorization, observed_at=base + timedelta(seconds=1034))
+    second_completion = ledger.complete_wal_compaction(second_receipt, observed_at=base + timedelta(seconds=1035))
+    assert second_completion["status"] == "completed"
+    assert second_receipt["previousReceipt"] == first_receipt["selfHash"]
+    assert wal.retention_counts() == {"zeroEntryCount": 0, "importedEntryCount": 800}
+    assert second_receipt["selfHash"] == contracts._entry_canonical_sha256(
+        {key: value for key, value in second_receipt.items() if key != "selfHash"}
+    )
+
+    live_hashes = {event["eventSha256"] for event in wal.imported_event_records()}
+    history_batches: list[dict[str, Any]] = []
+    ledger_path = runtime_root / "control" / "control-ledger-v1.sqlite3"
+    with closing(sqlite3.connect(ledger_path)) as connection:
+        rows = connection.execute(
+            "SELECT event_type,payload_json FROM events WHERE event_type=? ORDER BY sequence",
+            ("WAL_COMPACTION_COMPLETED",),
+        ).fetchall()
+        ledger_wal_hashes = {
+            row[0]
+            for row in connection.execute("SELECT wal_event_sha256 FROM invocations").fetchall()
+        }
+    assert len(rows) == 2
+    for _, payload_json in rows:
+        payload = json.loads(payload_json)
+        assert payload["batch"]
+        history_batches.extend(payload["batch"])
+    history_hashes = {item["eventSha256"] for item in history_batches}
+    assert len(history_batches) == len(history_hashes) == 64
+    assert history_hashes == {
+        item["eventSha256"] for item in first_receipt["batch"] + second_receipt["batch"]
+    }
+    assert ledger_wal_hashes == live_hashes | history_hashes
+
+
 def test_s1_ledger_corruption_recovery(tmp_path: Path) -> None:
     data = _load_fixture()
     production = _production()

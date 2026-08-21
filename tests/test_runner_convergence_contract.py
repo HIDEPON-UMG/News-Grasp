@@ -4601,3 +4601,49 @@ def test_sec_scheduled_admission_validator_is_closed_schema_and_receipt_sealed()
     assert "schemaVersion" in body_source
     assert "_scheduled_admission_invalid" in body_source
     assert "HIGH_COST_SCHEDULED_ADMISSION_INVALID" in invalid_source
+
+
+def test_sec_continuation_revalidates_product_local_authority_before_return() -> None:
+    """ResumeFromStage はcanonical authorityを再検証してからだけ継続する。"""
+
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    continuation = runner.split("if ($ResumeFromStage) {", 1)[1].split(
+        "if (-not $ScheduledAuthorityEvidencePath)", 1
+    )[0]
+    for marker in (
+        "$HighCostAdmissionPath",
+        "$ScheduledAuthorityEvidencePath",
+        "sourceAdmissionReceiptSha256",
+        "sourceRunId",
+        "sourceRunnerStateSha256",
+        "sourceTerminalStatus",
+        "resumeStage",
+        "allowedModelRoutes",
+        "validate-scheduled-admission",
+        "HIGH_COST_SCHEDULED_ADMISSION_INVALID",
+    ):
+        assert marker in continuation
+    validator_index = continuation.index("validate-scheduled-admission")
+    return_index = continuation.index("return")
+    assert validator_index < return_index
+    assert "receiptSha256" in continuation
+    assert "operationAuthoritySha256" in continuation
+
+
+def test_sec_runner_binds_trusted_python_before_any_python_invocation_for_both_intents() -> None:
+    """scheduled/recovery共通のtrusted resolver以外からPythonを起動しない。"""
+
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    resolver_index = runner.index("Resolve-NewsGraspTrustedPython")
+    first_python_call = runner.index("& $PyExe")
+    assert resolver_index < first_python_call
+    assert re.search(r"\$PyExe\s*=\s*Resolve-NewsGraspTrustedPython", runner)
+    assert "NEWS_GRASP_RUNTIME_BINDING_V1" in runner[resolver_index:]
+    for marker in (
+        "pythonExeSha256",
+        "Get-AuthenticodeSignature",
+        "pythonTrustAnchor",
+        "ReparsePoint",
+    ):
+        assert marker in runner[resolver_index:]
+    assert "AppData\\Local\\Programs\\Python\\Python312\\python.exe" not in runner
