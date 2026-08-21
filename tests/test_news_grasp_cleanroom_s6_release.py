@@ -30,6 +30,30 @@ SCHEDULE_ID = "news-grasp-daily-v1"
 RAW_ARGV = ["dispatch", "--schedule-id", SCHEDULE_ID, "--intent", "reconcile"]
 CREATE_NO_WINDOW = 0x08000000
 CURRENT_SOURCE_COMMIT = "a" * 40
+INSTALLED_CLOSURE_RELATIVE_PATHS = [
+    "scripts/ops/news-grasp-task-launcher.pyw",
+    "scripts/ops/news-grasp-runner.ps1",
+    "scripts/ops/run_codex_with_timeout.ps1",
+    "tools/daily_self_heal.py",
+    "tools/news_grasp_completion_guard.py",
+    "tools/news_grasp_daily_control.py",
+    "tools/audit_recovery_control.py",
+]
+INSTALLED_BINDING_RELATIVE_PATHS = [
+    "bin/news-grasp-high-cost-binding-v1.json",
+    "bin/news-grasp-recovery-runtime-binding-v1.json",
+]
+TASK_ACTION_NAMES = ["News-Grasp Bootstrap", "News-Grasp Production"]
+OWNER_RECEIPT_SCHEMAS = {
+    "runtime_generation_owner": [
+        "PRODUCTION_GENERATION_MANIFEST_V2",
+        "NEWS_GRASP_ACTIVE_GENERATION_V2",
+    ],
+    "ops_install_owner": [
+        "NEWS_GRASP_OPS_INSTALL_JOURNAL_V1",
+        "NEWS_GRASP_PHYSICAL_DELIVERY_STATE_V1",
+    ],
+}
 
 
 def _sha(value: Any) -> str:
@@ -107,6 +131,31 @@ def _layer_evidence(*, observed: dict[str, list[str]] | None = None) -> list[dic
     return [_layer_row(row, observed=observed.get(row["layer"])) for row in manifest[:8]]
 
 
+def _tracked_closure_bytes() -> dict[str, bytes]:
+    return {
+        relative_path: (ROOT / relative_path).read_bytes()
+        for relative_path in INSTALLED_CLOSURE_RELATIVE_PATHS
+    }
+
+
+def _materialize_installed_closure(installed: Path) -> None:
+    for relative_path, content in _tracked_closure_bytes().items():
+        target = installed / relative_path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(content)
+    for index, relative_path in enumerate(INSTALLED_BINDING_RELATIVE_PATHS):
+        target = installed / relative_path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        body = {
+            "schemaVersion": "NEWS_GRASP_RUNTIME_BINDING_V1",
+            "relativePath": relative_path,
+            "bindingId": f"s6-binding-{index}",
+            "source": "pytest-temp-installed-closure",
+        }
+        body["bindingSha256"] = _sha(body)
+        target.write_text(json.dumps(body, ensure_ascii=False, sort_keys=True, separators=(",", ":")), encoding="utf-8")
+
+
 def _runtime_root(tmp_path: Path, index: int) -> tuple[Path, Path, Path, bytes]:
     root = tmp_path / f"日本語-リリース面-{index}"
     source = root / "source"
@@ -119,6 +168,8 @@ def _runtime_root(tmp_path: Path, index: int) -> tuple[Path, Path, Path, bytes]:
     (source / "launcher.pyw").write_bytes(launcher)
     (source / TRACKED_LAUNCHER_PATH.name).write_bytes(launcher)
     (root / "pythonw.exe").write_bytes(b"test-pythonw-sentinel")
+    _materialize_installed_closure(installed)
+    (installed / "launcher.pyw").write_bytes(launcher)
     return root, source, installed, launcher
 
 
@@ -323,12 +374,80 @@ def _task_definition(root: Path) -> dict[str, Any]:
     }
 
 
+def _task_actions(root: Path, installed: Path) -> list[dict[str, Any]]:
+    production = _task_definition(root)
+    production_action = {
+        "taskName": "News-Grasp Production",
+        "executable": production["executable"],
+        "arguments": list(production["arguments"]),
+        "workingDirectory": production["workingDirectory"],
+    }
+    bootstrap_action = {
+        "taskName": "News-Grasp Bootstrap",
+        "executable": production["executable"],
+        "arguments": [
+            str(installed / "scripts/ops/news-grasp-task-launcher.pyw"),
+            "bootstrap",
+            "--scheduled-task-name",
+            "News-Grasp Bootstrap",
+            "--high-cost-binding-path",
+            str(installed / INSTALLED_BINDING_RELATIVE_PATHS[0]),
+        ],
+        "workingDirectory": production["workingDirectory"],
+    }
+    rows = []
+    for name in TASK_ACTION_NAMES:
+        action = bootstrap_action if name == "News-Grasp Bootstrap" else production_action
+        rows.append({"taskName": name, "action": action, "actionSha256": _sha(action)})
+    return rows
+
+
+def _closure_rows(installed: Path) -> list[dict[str, Any]]:
+    rows = []
+    for relative_path in sorted(INSTALLED_CLOSURE_RELATIVE_PATHS):
+        content = (installed / relative_path).read_bytes()
+        rows.append({"path": relative_path, "sha256": hashlib.sha256(content).hexdigest(), "bytes": len(content)})
+    return rows
+
+
+def _binding_rows(installed: Path) -> list[dict[str, Any]]:
+    rows = []
+    for relative_path in sorted(INSTALLED_BINDING_RELATIVE_PATHS):
+        value = json.loads((installed / relative_path).read_text(encoding="utf-8"))
+        rows.append(
+            {
+                "schemaVersion": value["schemaVersion"],
+                "relativePath": relative_path,
+                "sha256": hashlib.sha256((installed / relative_path).read_bytes()).hexdigest(),
+            }
+        )
+    return rows
+
+
+def _owner_receipts(*, source_sha256: str, installed_sha256: str, task_action_sha256: str) -> dict[str, dict[str, Any]]:
+    rows: dict[str, dict[str, Any]] = {}
+    for owner_id, receipt_schemas in OWNER_RECEIPT_SCHEMAS.items():
+        receipt = {
+            "ownerId": owner_id,
+            "receiptSchemas": list(receipt_schemas),
+            "sourceSha256": source_sha256,
+            "installedSha256": installed_sha256,
+            "taskActionSha256": task_action_sha256,
+            "preimageSha256": _sha({"ownerId": owner_id, "preimage": "s6-test-preimage-v1"}),
+        }
+        receipt["receiptSha256"] = _sha(receipt)
+        rows[owner_id] = receipt
+    return rows
+
+
 def _installed_authority(root: Path, source: Path, installed: Path, launcher: bytes) -> dict[str, Any]:
     source_path = source / "launcher.pyw"
     installed_path = installed / "launcher.pyw"
     source_hash = hashlib.sha256(source_path.read_bytes()).hexdigest()
     installed_hash = hashlib.sha256(installed_path.read_bytes()).hexdigest()
     task_definition = _task_definition(root)
+    task_actions = _task_actions(root, installed)
+    task_action_sha256 = _sha(_manifest()["tasks"][0]["action"])
     task_xml = json.dumps(task_definition, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     value: dict[str, Any] = {
         "schemaVersion": "INSTALLED_AUTHORITY_V1",
@@ -343,12 +462,26 @@ def _installed_authority(root: Path, source: Path, installed: Path, launcher: by
         "taskXml": task_xml,
         "taskXmlSha256": hashlib.sha256(task_xml.encode("utf-8")).hexdigest(),
         "taskAction": task_definition,
-        "taskActionSha256": _sha(task_definition),
+        "taskActionSha256": task_action_sha256,
+        "installedClosure": _closure_rows(installed),
+        "bindings": _binding_rows(installed),
+        "taskActions": task_actions,
+        "ownerReceipts": _owner_receipts(
+            source_sha256=hashlib.sha256(launcher).hexdigest(),
+            installed_sha256=installed_hash,
+            task_action_sha256=task_action_sha256,
+        ),
+        "loadedFreshness": "fresh",
+        "loadedGeneration": 7,
         "executable": str(root / "pythonw.exe"),
         "argv": list(RAW_ARGV),
         "workingDirectory": str(root),
     }
     value["generationReceiptSha256"] = _sha(value["generationReceipt"])
+    value["installedClosureSha256"] = _sha(value["installedClosure"])
+    value["bindingsSha256"] = _sha(value["bindings"])
+    value["taskActionsSha256"] = _sha(value["taskActions"])
+    value["ownerReceiptsSha256"] = _sha(value["ownerReceipts"])
     return value
 
 
@@ -494,6 +627,84 @@ def _reseal_admission(value: dict[str, Any]) -> dict[str, Any]:
         value["layerEvidenceSha256"] = _sha(value["layerEvidence"])
     value["admissionSha256"] = _sha({key: item for key, item in value.items() if key != "admissionSha256"})
     return value
+
+
+def _reseal_installed_authority(value: dict[str, Any], *, preserve: set[str] | None = None) -> dict[str, Any]:
+    preserve = preserve or set()
+    if "generationReceipt" in value and "generationReceiptSha256" not in preserve:
+        value["generationReceiptSha256"] = _sha(value["generationReceipt"])
+    if "taskActions" in value:
+        for row in value["taskActions"]:
+            if "taskActionHash" not in preserve:
+                row["actionSha256"] = _sha(row["action"])
+        if "taskActionsSha256" not in preserve:
+            value["taskActionsSha256"] = _sha(value["taskActions"])
+    if "ownerReceipts" in value:
+        for receipt in value["ownerReceipts"].values():
+            if "ownerReceiptHash" not in preserve:
+                receipt["receiptSha256"] = _sha({key: item for key, item in receipt.items() if key != "receiptSha256"})
+        if "ownerReceiptsSha256" not in preserve:
+            value["ownerReceiptsSha256"] = _sha(value["ownerReceipts"])
+    if "installedClosureSha256" not in preserve:
+        value["installedClosureSha256"] = _sha(value["installedClosure"])
+    if "bindingsSha256" not in preserve:
+        value["bindingsSha256"] = _sha(value["bindings"])
+    if "authoritySha256" not in preserve:
+        value["authoritySha256"] = _sha({key: item for key, item in value.items() if key != "authoritySha256"})
+    return value
+
+
+def _mutate_installed_authority(value: dict[str, Any], case: str) -> dict[str, Any]:
+    mutated = deepcopy(value)
+    preserve: set[str] = set()
+    if case == "missing_closure_row":
+        mutated["installedClosure"].pop()
+    elif case == "unknown_closure_row":
+        mutated["installedClosure"].append({"path": "tools/unknown.py", "sha256": "a" * 64, "bytes": 1})
+    elif case == "duplicate_closure_row":
+        mutated["installedClosure"].append(deepcopy(mutated["installedClosure"][-1]))
+    elif case == "unsorted_closure_rows":
+        mutated["installedClosure"].reverse()
+    elif case == "closure_path_escape":
+        mutated["installedClosure"][0]["path"] = "../escape.py"
+    elif case == "closure_bytes_drift":
+        mutated["installedClosure"][0]["bytes"] += 1
+    elif case == "closure_sha_drift":
+        mutated["installedClosure"][0]["sha256"] = "0" * 64
+        preserve.add("installedClosureSha256")
+    elif case == "binding_schema_drift":
+        mutated["bindings"][0]["schemaVersion"] = "DRIFTED_BINDING_V9"
+    elif case == "binding_hash_drift":
+        mutated["bindings"][0]["sha256"] = "0" * 64
+        preserve.add("bindingsSha256")
+    elif case == "task_action_executable_drift":
+        mutated["taskActions"][0]["action"]["executable"] = str(Path(mutated["executable"]).with_name("evil.exe"))
+    elif case == "task_action_argv_drift":
+        mutated["taskActions"][0]["action"]["arguments"].append("--drift")
+    elif case == "task_action_workdir_drift":
+        mutated["taskActions"][0]["action"]["workingDirectory"] = "../escape"
+    elif case == "task_action_hash_drift":
+        mutated["taskActions"][0]["actionSha256"] = "0" * 64
+        preserve.add("taskActionHash")
+    elif case == "missing_owner_receipt":
+        mutated["ownerReceipts"].pop("ops_install_owner")
+    elif case == "owner_receipt_schema_drift":
+        mutated["ownerReceipts"]["runtime_generation_owner"]["receiptSchemas"].append("DRIFTED_RECEIPT_V9")
+    elif case == "owner_receipt_inner_hash_drift":
+        mutated["ownerReceipts"]["runtime_generation_owner"]["receiptSha256"] = "0" * 64
+        preserve.add("ownerReceiptHash")
+    elif case == "owner_preimage_substitution":
+        mutated["ownerReceipts"]["runtime_generation_owner"]["preimageSha256"] = "f" * 64
+    elif case == "owner_receipts_hash_drift":
+        mutated["ownerReceiptsSha256"] = "0" * 64
+        preserve.add("ownerReceiptsSha256")
+    elif case == "loaded_generation_mismatch":
+        mutated["loadedGeneration"] = mutated["generation"] - 1
+    elif case == "loaded_freshness_stale":
+        mutated["loadedFreshness"] = "stale"
+    else:
+        raise AssertionError(f"unknown installed authority case: {case}")
+    return _reseal_installed_authority(mutated, preserve=preserve)
 
 
 def _reseal_natural(value: dict[str, Any]) -> dict[str, Any]:
@@ -1111,6 +1322,11 @@ def _real_l7_boundary(tmp_path: Path, index: int) -> tuple[Path, dict[str, Any],
         "sourceRoot": str(source),
         "sourceSha256": hashlib.sha256((source / "launcher.pyw").read_bytes()).hexdigest(),
     }
+    authority["ownerReceipts"] = _owner_receipts(
+        source_sha256=authority["sourceSha256"],
+        installed_sha256=authority["sourceSha256"],
+        task_action_sha256=_sha(_manifest()["tasks"][0]["action"]),
+    )
     authority["authoritySha256"] = _sha(authority)
     task = _TaskAdapter(install_module)
     controller = install_module.InstallCutoverController(
@@ -1233,6 +1449,18 @@ def test_s6_l3_l7_real_boundary_manifest(tmp_path: Path) -> None:
             )
         assert _file_inventory(root) == before
 
+    for case in cases["installedClosureCases"]:
+        negative_authority = _mutate_installed_authority(authority, case)
+        with pytest.raises(module.ReleaseEvidenceError):
+            module.validate_layer_evidence(
+                evidence,
+                manifest[:8],
+                _trusted_receipts(),
+                _expected_context(),
+                negative_authority,
+            )
+        assert _file_inventory(root) == before
+
 
 def test_s6_installed_bytes_args_workdir(tmp_path: Path) -> None:
     module = importlib.import_module("tools.news_grasp_cleanroom_release")
@@ -1247,6 +1475,17 @@ def test_s6_installed_bytes_args_workdir(tmp_path: Path) -> None:
     assert l7_values["taskDefinition"]["workingDirectory"] == str(l7_root)
     assert l7_values["installedAuthority"]["sourcePath"] == str(TRACKED_LAUNCHER_PATH)
     assert l7_values["installedAuthority"]["installedSha256"] == l7_values["installedSha256"]
+    installed_authority = l7_values["installedAuthority"]
+    assert [row["path"] for row in installed_authority["installedClosure"]] == sorted(INSTALLED_CLOSURE_RELATIVE_PATHS)
+    assert installed_authority["installedClosureSha256"] == _sha(installed_authority["installedClosure"])
+    assert [row["relativePath"] for row in installed_authority["bindings"]] == sorted(INSTALLED_BINDING_RELATIVE_PATHS)
+    assert installed_authority["bindingsSha256"] == _sha(installed_authority["bindings"])
+    assert [row["taskName"] for row in installed_authority["taskActions"]] == TASK_ACTION_NAMES
+    assert installed_authority["taskActionsSha256"] == _sha(installed_authority["taskActions"])
+    assert set(installed_authority["ownerReceipts"]) == set(OWNER_RECEIPT_SCHEMAS)
+    assert installed_authority["ownerReceiptsSha256"] == _sha(installed_authority["ownerReceipts"])
+    assert installed_authority["loadedFreshness"] == "fresh"
+    assert installed_authority["loadedGeneration"] == installed_authority["generation"]
 
     dispatch_module = importlib.import_module("tools.news_grasp_cleanroom_dispatch")
     evidence_root, _source, _installed, _launcher = _runtime_root(tmp_path, 4)
@@ -1345,6 +1584,12 @@ def test_s6_l8_final_admission(tmp_path: Path) -> None:
             module.admit_final_e2e(negative, negative_trusted, negative_context, negative_authority)
         assert _file_inventory(root) == before
 
+    for case in cases["installedClosureCases"]:
+        negative_authority = _mutate_installed_authority(installed_authority, case)
+        with pytest.raises(module.ReleaseEvidenceError):
+            module.admit_final_e2e(admission, trusted, context, negative_authority)
+        assert _file_inventory(root) == before
+
 
 def test_s6_history_coverage_and_legacy_zero(tmp_path: Path) -> None:
     module = importlib.import_module("tools.news_grasp_cleanroom_release")
@@ -1430,6 +1675,12 @@ def test_s6_natural_receipt_schema(tmp_path: Path) -> None:
         else:
             with pytest.raises(module.ReleaseEvidenceError):
                 module.validate_natural_evidence(negative, trusted, context, installed_authority)
+
+    for case in cases["installedClosureCases"]:
+        negative_authority = _mutate_installed_authority(installed_authority, case)
+        with pytest.raises(module.ReleaseEvidenceError):
+            module.validate_natural_evidence(natural, trusted, context, negative_authority)
+        assert _file_inventory(root)
 
 
 def test_s6_natural_states_non_substitutable(tmp_path: Path) -> None:

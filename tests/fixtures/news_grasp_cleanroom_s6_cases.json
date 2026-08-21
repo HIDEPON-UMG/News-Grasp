@@ -138,5 +138,27 @@
     "freshness": "fresh",
     "publicAllowedStates": ["GREEN", "NOT_REQUIRED"],
     "requiredLineages": ["Scheduled", "Audit", "Public", "Readiness"]
-  }
+  },
+  "installedClosureCases": [
+    "missing_closure_row",
+    "unknown_closure_row",
+    "duplicate_closure_row",
+    "unsorted_closure_rows",
+    "closure_path_escape",
+    "closure_bytes_drift",
+    "closure_sha_drift",
+    "binding_schema_drift",
+    "binding_hash_drift",
+    "task_action_executable_drift",
+    "task_action_argv_drift",
+    "task_action_workdir_drift",
+    "task_action_hash_drift",
+    "missing_owner_receipt",
+    "owner_receipt_schema_drift",
+    "owner_receipt_inner_hash_drift",
+    "owner_preimage_substitution",
+    "owner_receipts_hash_drift",
+    "loaded_generation_mismatch",
+    "loaded_freshness_stale"
+  ]
 }
