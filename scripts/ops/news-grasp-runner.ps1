@@ -4418,13 +4418,37 @@ if ($SmokeTest) {
 # admission gate が検証済みの script-scope path だけを後段へ渡し、ローカル変数の
 # dynamic-scope 依存による broker / decision receipt の取り違えを閉じる。
 if ($ResumeFromStage) {
-    if (
-        (-not [System.IO.Path]::IsPathFullyQualified([string]$script:ScheduledRecoveryStageBrokerPath)) -or
-        (-not [System.IO.Path]::IsPathFullyQualified([string]$script:ScheduledRecoveryStageDecisionReceiptPath)) -or
-        (-not (Test-Path -LiteralPath $script:ScheduledRecoveryStageBrokerPath -PathType Leaf)) -or
-        (-not (Test-Path -LiteralPath $script:ScheduledRecoveryStageDecisionReceiptPath -PathType Leaf))
-    ) {
-        Write-Log 'ERROR: scheduled recovery stage start paths are invalid'
+    try {
+        if (
+            [string]::IsNullOrWhiteSpace([string]$script:ScheduledRecoveryStageBrokerPath) -or
+            [string]::IsNullOrWhiteSpace([string]$script:ScheduledRecoveryStageDecisionReceiptPath)
+        ) {
+            throw 'SCHEDULED_RECOVERY_STAGE_START_PATHS_INVALID'
+        }
+        $normalizedStageBrokerPath = [System.IO.Path]::GetFullPath([string]$script:ScheduledRecoveryStageBrokerPath)
+        if (-not [string]::Equals(
+                [string]$script:ScheduledRecoveryStageBrokerPath,
+                $normalizedStageBrokerPath,
+                [System.StringComparison]::OrdinalIgnoreCase
+            )) {
+            throw 'SCHEDULED_RECOVERY_STAGE_START_PATHS_INVALID'
+        }
+        $normalizedStageDecisionReceiptPath = [System.IO.Path]::GetFullPath([string]$script:ScheduledRecoveryStageDecisionReceiptPath)
+        if (-not [string]::Equals(
+                [string]$script:ScheduledRecoveryStageDecisionReceiptPath,
+                $normalizedStageDecisionReceiptPath,
+                [System.StringComparison]::OrdinalIgnoreCase
+            )) {
+            throw 'SCHEDULED_RECOVERY_STAGE_START_PATHS_INVALID'
+        }
+        if (
+            (-not (Test-Path -LiteralPath $script:ScheduledRecoveryStageBrokerPath -PathType Leaf)) -or
+            (-not (Test-Path -LiteralPath $script:ScheduledRecoveryStageDecisionReceiptPath -PathType Leaf))
+        ) {
+            throw 'SCHEDULED_RECOVERY_STAGE_START_PATHS_INVALID'
+        }
+    } catch {
+        Write-Log "ERROR: scheduled recovery stage start paths are invalid: $($_.Exception.Message)"
         Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'SCHEDULED_RECOVERY_STAGE_START_PATHS_INVALID' -ExitCode 76 -Phase 'resume' -Step 'stage-start-boundary'
         exit 76
     }
