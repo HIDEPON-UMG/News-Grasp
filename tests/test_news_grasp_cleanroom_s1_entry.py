@@ -20,7 +20,7 @@ from pathlib import Path
 import sqlite3
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier, Event, Lock
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -176,6 +176,13 @@ def _at(hour: int, minute: int, second: int = 0, *, day: int = 21) -> datetime:
 
 
 def _controller(production: dict[str, Any], runtime_root: Path, manifest_path: Path, **kwargs: Any) -> Any:
+    # Production default is OS-backed attestation; all existing deterministic
+    # fixture writers must explicitly use the test-owned attestor seam.
+    if (
+        "writer_attestor" in inspect.signature(production["Controller"].__init__).parameters
+        and "writer_attestor" not in kwargs
+    ):
+        kwargs["writer_attestor"] = _FakeWriterAttestor(valid=True)
     return production["Controller"](runtime_root=runtime_root, manifest_path=manifest_path, **kwargs)
 
 
@@ -439,6 +446,119 @@ def test_s1_stale_fence_cannot_commit(tmp_path: Path) -> None:
             result_hash="a" * 64,
             observed_at=_at(6, 1, 3),
         ),
+    )
+
+
+class _FakeWriterAttestor:
+    """OS実測の代わりに、writer attestationの境界だけを注入する。"""
+
+    def __init__(self, valid: bool) -> None:
+        self.valid = valid
+        self.calls: list[dict[str, Any]] = []
+
+    def validate(self, writer: Mapping[str, Any]) -> bool:
+        self.calls.append(dict(writer))
+        return self.valid
+
+
+def test_sec_s1_writer_attestation_rejects_fake_identity_before_wal(tmp_path: Path) -> None:
+    """fake pid/boot/processStartTokenはWAL初期イベントより前に拒否する。"""
+
+    data = _load_fixture()
+    production = _production()
+    manifest_path = _write_manifest(tmp_path, data)
+    runtime_root = tmp_path / "runtime"
+    controller_type = importlib.import_module("tools.news_grasp_cleanroom_controller").Controller
+    if "writer_attestor" not in inspect.signature(controller_type.__init__).parameters:
+        pytest.fail("writer_attestor constructor seam is missing")
+    attestor = _FakeWriterAttestor(valid=False)
+    controller = controller_type(
+        runtime_root=runtime_root,
+        manifest_path=manifest_path,
+        writer_attestor=attestor,
+    )
+    _expect_reason(
+        production["error"],
+        "NEWS_GRASP_ENTRY_WRITER_INVALID",
+        lambda: controller.reconcile(
+            raw_argv=data["normative"]["rawArgv"]["exact"],
+            observed_at=_at(6, 1),
+            writer=_writer(101),
+        ),
+    )
+    assert len(attestor.calls) == 1
+    assert not (runtime_root / "control" / "wal").exists()
+
+
+def test_sec_s1_expired_lease_rejects_terminal_commit_without_takeover(tmp_path: Path) -> None:
+    """takeoverなしでもlease expiry後のterminal commitはSTALE_FENCEになる。"""
+
+    data = _load_fixture()
+    production = _production()
+    manifest_path = _write_manifest(tmp_path, data)
+    runtime_root = tmp_path / "runtime"
+    writer = _writer(102)
+    controller = _controller(production, runtime_root, manifest_path)
+    acquired = controller.reconcile(
+        raw_argv=data["normative"]["rawArgv"]["exact"],
+        observed_at=_at(6, 1),
+        writer=writer,
+        lease_seconds=1,
+    )
+    _expect_reason(
+        production["error"],
+        "NEWS_GRASP_ENTRY_STALE_FENCE",
+        lambda: controller.commit_slot(
+            slot_key=acquired["slotKey"],
+            writer=writer,
+            fence_token=acquired["fenceToken"],
+            terminal_state="SUCCEEDED",
+            result_hash="a" * 64,
+            observed_at=_at(6, 1, 2),
+        ),
+    )
+
+
+def test_sec_s1_wal_event_and_retention_limits_fail_closed(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """WALのevent bytes/zero entry上限を超えた履歴走査はtyped拒否する。"""
+
+    data = _load_fixture()
+    production = _production()
+    wal_module = importlib.import_module("tools.news_grasp_cleanroom_wal")
+    for name in ("MAX_WAL_EVENT_BYTES", "MAX_WAL_ZERO_ENTRIES", "MAX_WAL_IMPORTED_ENTRIES"):
+        if not hasattr(wal_module, name):
+            pytest.fail(f"{name} retention seam is missing")
+
+    event_root = tmp_path / "event"
+    event_wal = production["DurableWal"](event_root)
+    initial = event_wal.record_initial(
+        raw_argv=data["normative"]["rawArgv"]["exact"],
+        received_at=_at(6, 1),
+        writer=_writer(103),
+    )
+    initial_path = event_root / "control" / "wal" / initial["invocationId"] / "0001-initial.json"
+    monkeypatch.setattr(wal_module, "MAX_WAL_EVENT_BYTES", 1)
+    monkeypatch.setattr(wal_module, "MAX_WAL_ZERO_ENTRIES", 32)
+    initial_path.write_bytes(initial_path.read_bytes() + b" " * 128)
+    _expect_reason(
+        production["error"],
+        "NEWS_GRASP_ENTRY_WAL_RETENTION_LIMIT",
+        lambda: event_wal.iter_zero_entries(),
+    )
+
+    count_root = tmp_path / "count"
+    count_wal = production["DurableWal"](count_root)
+    count_wal.record_initial(
+        raw_argv=data["normative"]["rawArgv"]["exact"],
+        received_at=_at(6, 1),
+        writer=_writer(104),
+    )
+    monkeypatch.setattr(wal_module, "MAX_WAL_EVENT_BYTES", 65536)
+    monkeypatch.setattr(wal_module, "MAX_WAL_ZERO_ENTRIES", 0)
+    _expect_reason(
+        production["error"],
+        "NEWS_GRASP_ENTRY_WAL_RETENTION_LIMIT",
+        lambda: count_wal.iter_zero_entries(),
     )
 
 

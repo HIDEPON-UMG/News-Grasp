@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import json
 import hashlib
+import inspect
 import re
 import runpy
 import shutil
@@ -4571,3 +4572,26 @@ def test_rejected_direct_bootstrap_context_does_not_claim_scheduled_failure() ->
     assert '"context_rejected_no_attempt"' in launcher
     assert '"scheduledRecoveryFullAuthorityProvable": (' in launcher
     assert "effective_returncode != 0 and not context_rejected" in launcher
+
+
+def test_sec_runner_validates_scheduled_admission_with_product_local_canonical_validator_before_copy() -> None:
+    """既存admissionの再利用/搬送前にproduct-local canonical validatorを通す。"""
+
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    validator_marker = "validate-scheduled-admission"
+    assert validator_marker in runner
+    validator_index = runner.index(validator_marker)
+    copy_index = runner.index("WriteAllText($admissionReceipt")
+    assert validator_index < copy_index
+
+
+def test_sec_scheduled_admission_validator_is_closed_schema_and_receipt_sealed() -> None:
+    """canonical helperはclosed schemaとreceiptSha256を同時に検証する。"""
+
+    contracts = __import__("tools.news_grasp_operational_contract", fromlist=["*"])
+    validator = getattr(contracts, "validate_scheduled_admission_receipt", None)
+    assert callable(validator)
+    source = inspect.getsource(validator)
+    assert "receiptSha256" in source
+    assert "schemaVersion" in source
+    assert "HIGH_COST_SCHEDULED_ADMISSION_INVALID" in source

@@ -495,3 +495,28 @@ def test_s2_persisted_admission_is_revalidated_before_resume(tmp_path: Path) -> 
         not set(item["states"]) & {"INTENT_DURABLE", "DISPATCHED", "CONFIRMED", "COMMITTED"}
         for item in observations
     )
+
+
+def test_sec_s2_max_dispatch_attempts_above_three_is_authority_invalid(tmp_path: Path) -> None:
+    """authorityのdispatch retry上限は仕様上3を超えてはならない。"""
+
+    execution = importlib.import_module("tools.news_grasp_cleanroom_execution")
+    cases = _cases()
+    runtime_root = _runtime(tmp_path, 1200)
+    authority = _authority(cases, runtime_root)
+    authority["maxDispatchAttempts"] = 4
+    authority["authoritySha256"] = _sha(
+        {key: value for key, value in authority.items() if key != "authoritySha256"}
+    )
+    controller = _controller(
+        execution,
+        runtime_root,
+        Admission("GRANTED"),
+        Provider(),
+        StageRunner(),
+    )
+    _expect_reason(
+        execution,
+        "NEWS_GRASP_EXECUTION_AUTHORITY_INVALID",
+        lambda: _execute(controller, cases, authority),
+    )

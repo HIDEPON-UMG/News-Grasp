@@ -6,7 +6,9 @@ from copy import deepcopy
 from datetime import datetime
 import hashlib
 import importlib
+import inspect
 import json
+import os
 from pathlib import Path
 from typing import Any, Mapping
 from zoneinfo import ZoneInfo
@@ -749,3 +751,202 @@ def test_s5_two_owner_crash_and_privilege_failure_restore_exact_preimages(tmp_pa
     ]
     assert (root / "installed" / "launcher.pyw").read_bytes() == content
     assert task.dual_enabled_count == 0
+
+
+def test_sec_s5_reparse_is_checked_before_path_resolution(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """reparse/junction拒否はresolve(strict=False)より前のlexical boundaryで行う。"""
+
+    module = importlib.import_module("tools.news_grasp_cleanroom_install")
+    root, source, _content, manifest, authority = _roots(tmp_path, 180)
+    installed = root / "installed"
+    task = TaskAdapter(module)
+    security = SecurityAdapter(module)
+    security.inject("symlink_reparse")
+    events: list[tuple[str, str]] = []
+    original_safe_path = module._safe_path
+
+    def tracked_safe_path(value: Any, label: str) -> Path:
+        events.append(("resolve", label))
+        return original_safe_path(value, label)
+
+    original_is_reparse = security.is_reparse
+
+    def tracked_is_reparse(path: Path) -> bool:
+        events.append(("reparse", str(path)))
+        return original_is_reparse(path)
+
+    security.is_reparse = tracked_is_reparse
+    monkeypatch.setattr(module, "_safe_path", tracked_safe_path)
+    controller = _controller(module, root, task, security=security)
+    events.clear()
+    with pytest.raises(module.InstallControlError) as captured:
+        _stage(controller, manifest, source / "." / ".." / source.name, installed, authority)
+    assert captured.value.reason == "symlink_reparse_rejected"
+    assert events and events[0][0] == "reparse"
+    assert task.history_rows() == []
+
+
+def test_sec_s5_default_security_cannot_fail_open_acl_or_signature(tmp_path: Path) -> None:
+    """OS ACL/署名を測れないdefault securityは導入を継続しない。"""
+
+    module = importlib.import_module("tools.news_grasp_cleanroom_install")
+    root, source, _content, manifest, authority = _roots(tmp_path, 181)
+    task = TaskAdapter(module)
+    process = ProcessAdapter()
+    owner = OwnerAdapter(module, task)
+    controller = _controller(module, root, task, process=process, owner_adapter=owner)
+    with pytest.raises(module.InstallControlError) as captured:
+        _stage(controller, manifest, source, root / "installed", authority)
+    assert captured.value.reason == "security_adapter_required"
+    assert task.history_rows() == []
+
+
+def test_sec_s5_source_swap_after_authority_capture_is_refused_before_copy(tmp_path: Path) -> None:
+    """authority capture後copy前のsource差替えはinstalledへ流さない。"""
+
+    module = importlib.import_module("tools.news_grasp_cleanroom_install")
+    root, source, content, manifest, authority = _roots(tmp_path, 182)
+    installed = root / "installed"
+    task = TaskAdapter(module)
+    security = SecurityAdapter(module)
+    process = ProcessAdapter()
+
+    def swap_after_capture(name: str) -> None:
+        if name == "stage":
+            (source / "launcher.pyw").write_bytes(content + b"\n# swapped after capture\n")
+
+    controller = _controller(
+        module,
+        root,
+        task,
+        process=process,
+        security=security,
+        owner_adapter=OwnerAdapter(module, task),
+        boundary_hook=swap_after_capture,
+    )
+    with pytest.raises(module.InstallControlError) as captured:
+        _stage(controller, manifest, source, installed, authority)
+    assert captured.value.reason == "source_identity_swap"
+    assert not (installed / "launcher.pyw").exists()
+
+
+def test_sec_s5_preseeded_temp_hardlink_cannot_mutate_victim(tmp_path: Path) -> None:
+    """copy tempがhardlinkならvictimを変更せずtyped拒否する。"""
+
+    module = importlib.import_module("tools.news_grasp_cleanroom_install")
+    root, source, _content, manifest, authority = _roots(tmp_path, 183)
+    installed = root / "installed"
+    victim = root / "victim.bin"
+    victim.write_bytes(b"victim-before")
+    temporary = installed / ".launcher.pyw.tmp"
+    os.link(victim, temporary)
+    before = victim.read_bytes()
+    task = TaskAdapter(module)
+    controller = _controller(
+        module,
+        root,
+        task,
+        process=ProcessAdapter(),
+        security=SecurityAdapter(module),
+        owner_adapter=OwnerAdapter(module, task),
+    )
+    with pytest.raises(module.InstallControlError) as captured:
+        _stage(controller, manifest, source, installed, authority)
+    assert captured.value.reason == "install_temp_link_rejected"
+    assert victim.read_bytes() == before
+
+
+def test_sec_s5_process_adapter_is_required_for_canary(tmp_path: Path) -> None:
+    """process adapter欠落でcanaryを黙って省略しない。"""
+
+    module = importlib.import_module("tools.news_grasp_cleanroom_install")
+    root, source, _content, manifest, authority = _roots(tmp_path, 184)
+    task = TaskAdapter(module)
+    controller = _controller(
+        module,
+        root,
+        task,
+        process=None,
+        security=SecurityAdapter(module),
+        owner_adapter=OwnerAdapter(module, task),
+    )
+    with pytest.raises(module.InstallControlError) as captured:
+        _stage(controller, manifest, source, root / "installed", authority)
+    assert captured.value.reason == "process_adapter_required"
+    assert task.history_rows() == []
+
+
+class _FailingProcessAdapter(ProcessAdapter):
+    def launch(self, argv: list[str], cwd: Path, **kwargs: Any) -> dict[str, Any]:
+        raise RuntimeError("test-owned canary failure")
+
+
+def test_sec_s5_canary_failure_is_typed_and_durable(tmp_path: Path) -> None:
+    """canary launch failureはraw exceptionを漏らさずcanary_failedへ束ねる。"""
+
+    module = importlib.import_module("tools.news_grasp_cleanroom_install")
+    root, source, _content, manifest, authority = _roots(tmp_path, 185)
+    task = TaskAdapter(module)
+    controller = _controller(
+        module,
+        root,
+        task,
+        process=_FailingProcessAdapter(),
+        security=SecurityAdapter(module),
+        owner_adapter=OwnerAdapter(module, task),
+    )
+    with pytest.raises(module.InstallControlError) as captured:
+        _stage(controller, manifest, source, root / "installed", authority)
+    assert captured.value.reason == "canary_failed"
+
+
+def test_sec_s5_owner_adapter_is_required_for_rollback(tmp_path: Path) -> None:
+    """rollbackはowner adapter欠落時にruntime復元済みと偽装しない。"""
+
+    module = importlib.import_module("tools.news_grasp_cleanroom_install")
+    root, source, _content, manifest, authority = _roots(tmp_path, 186)
+    task = TaskAdapter(module)
+    controller = _controller(
+        module,
+        root,
+        task,
+        process=ProcessAdapter(),
+        security=SecurityAdapter(module),
+        owner_adapter=None,
+    )
+    _stage(controller, manifest, source, root / "installed", authority)
+    _cutover(controller, authority)
+    with pytest.raises(module.InstallControlError) as captured:
+        _rollback(controller, authority)
+    assert captured.value.reason == "owner_adapter_required"
+
+
+def test_sec_s5_snapshot_exception_is_not_reported_as_dual_zero(tmp_path: Path) -> None:
+    """Task snapshot例外はdual=0へ偽装せずtyped失敗として残す。"""
+
+    module = importlib.import_module("tools.news_grasp_cleanroom_install")
+    root, source, _content, manifest, authority = _roots(tmp_path, 187)
+    task = TaskAdapter(module)
+    controller = _controller(
+        module,
+        root,
+        task,
+        process=ProcessAdapter(),
+        security=SecurityAdapter(module),
+        owner_adapter=OwnerAdapter(module, task),
+    )
+    _stage(controller, manifest, source, root / "installed", authority)
+    task.set_denial("snapshot")
+    with pytest.raises(module.InstallControlError) as captured:
+        controller.inspect()
+    assert captured.value.reason == "task_snapshot_failed"
+
+
+def test_sec_s5_stage_cutover_rollback_dual_count_is_measured(monkeypatch: pytest.MonkeyPatch) -> None:
+    """stage/cutover/rollback resultはdualEnabledCountのliteral 0を返さない。"""
+
+    module = importlib.import_module("tools.news_grasp_cleanroom_install")
+    stage_source = inspect.getsource(module.InstallCutoverController._stage_result)
+    result_source = inspect.getsource(module.InstallCutoverController._result)
+    assert '"dualEnabledCount": 0' not in stage_source
+    assert '"dualEnabledCount": 0' not in result_source

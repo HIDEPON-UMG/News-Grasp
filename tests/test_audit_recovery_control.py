@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import importlib
+import inspect
 import json
 import os
 import subprocess
@@ -2594,3 +2595,16 @@ with control._locked_directory(control._validated_terminal_root()):
             process.stdin.flush()
         process.wait(timeout=5)
     assert process.returncode == 0
+
+
+def test_sec_audit_broker_requires_exact_bound_python_and_trust_anchor() -> None:
+    """audit brokerは.venv/PATH fallbackではなくbindingのpython hash/anchorだけを使う。"""
+
+    control = _control("RECOVERY_PYTHON_IDENTITY_INVALID")
+    executable_source = inspect.getsource(control._canonical_python_executable)
+    broker_source = inspect.getsource(control._inspect_attempt_via_broker)
+    assert "pythonExeSha256" in executable_source or "pythonExeSha256" in broker_source
+    assert "pythonTrustAnchor" in executable_source or "pythonTrustAnchor" in broker_source
+    assert "return \"python\"" not in executable_source
+    assert "Path.home() / \"AppData\"" not in executable_source
+    assert "RECOVERY_PYTHON_IDENTITY_INVALID" in executable_source or "RECOVERY_PYTHON_IDENTITY_INVALID" in broker_source
