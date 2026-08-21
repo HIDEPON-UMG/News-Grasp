@@ -1,0 +1,101 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S6-INSTALLED-CLOSURE-RED-V1",
+  "status": "active",
+  "executionAllowed": true,
+  "role": "test_luna",
+  "canonicalContext": "/root/s1_edge_driver_red",
+  "todoId": "No.10/A-10 through No.14/A-14",
+  "baselineCommit": "5f1cb82dcf60a42fc8a8d213c244781b08835c05",
+  "dependencies": [
+    "NG-CLEANROOM-S6-RED-CORRECTION-V1",
+    "ng-cleanroom-parallel-hotfix-impact-v1",
+    "NG-CLEANROOM-S5A-ACCEPTED-V1"
+  ],
+  "writeLease": {
+    "leaseId": "TEST-LEASE-S6-INSTALLED-CLOSURE-V1",
+    "leaseSha256": "a6adac35f93fc234effd85983cd7c839b38d57a54aaaa9bb5280bddcf1d85874",
+    "canonicalPayload": {
+      "leaseId": "TEST-LEASE-S6-INSTALLED-CLOSURE-V1",
+      "role": "test_luna",
+      "canonicalContext": "/root/s1_edge_driver_red",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-test-s6-hotfix",
+      "writes": [
+        "tests/test_news_grasp_cleanroom_s6_release.py",
+        "tests/fixtures/news_grasp_cleanroom_s6_cases.json"
+      ],
+      "baselineCommit": "5f1cb82dcf60a42fc8a8d213c244781b08835c05"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": [
+    "tests/test_news_grasp_cleanroom_s6_release.py",
+    "tests/fixtures/news_grasp_cleanroom_s6_cases.json"
+  ],
+  "forbiddenWrites": [
+    "tools",
+    "config",
+    "docs",
+    "scripts",
+    "all other tests and fixtures",
+    "ProjectFolders workspace-global harness",
+    "live runtime, bin, Task Scheduler or public state"
+  ],
+  "currentSeal": {
+    "testSha256": "76631ee1f417c5dab01f415ad2fadf7e692841a606bcfc9e90686cf72e9ea99c",
+    "testBytes": 62183,
+    "fixtureSha256": "213ecf91a556167127eec958922874e5647c76c37df8c83f08806f68ed0880b2",
+    "fixtureBytes": 3793,
+    "nodeCount": 6,
+    "expectedRed": "six ModuleNotFoundError failures for tools.news_grasp_cleanroom_release"
+  },
+  "requiredAmendment": {
+    "purpose": "L7 must bind the complete post-install runtime closure and both current Scheduled Task actions, not one launcher file",
+    "installedAuthorityRequired": [
+      "existing sourcePath/sourceSha256/sourceCommit/installedRoot/installedPath/installedSha256/generation/generationReceipt",
+      "installedClosure exact sorted rows path,sha256,bytes for launcher, runner, timeout wrapper, daily_self_heal, completion_guard, daily_control and audit_recovery_control",
+      "installedClosureSha256 over the exact sorted closure rows",
+      "bindings exact high-cost and recovery-runtime rows with schemaVersion,relativePath,sha256 and bindingsSha256",
+      "taskActions exact bootstrap and production structured actions plus each actionSha256 and taskActionsSha256",
+      "ownerReceipts exact runtime_generation_owner and ops_install_owner records using the S5 authority schemas/hashes/preimages plus ownerReceiptsSha256",
+      "loadedFreshness=fresh and loadedGeneration equals generation"
+    ],
+    "fixtureMaterialization": "create deterministic files only under each pytest tmp installed root; copy tracked production bytes for the seven closure paths and write sealed synthetic binding JSON there; do not read or mutate machine installed paths",
+    "s5Boundary": "update the real L7 S5 authority fixture to carry both canonically sealed ownerReceipts required by S5B; derive its installedClosure/task action hashes from actual staged bytes and TaskAdapter registered definition, never a self-reported boolean",
+    "validatorContract": "the unchanged release APIs must exact-validate all new installed authority fields for validate_layer_evidence, admit_final_e2e and validate_natural_evidence"
+  },
+  "negativeCoverage": [
+    "closure row missing, unknown, duplicate, unsorted, path escape, byte drift and sha drift with correct outer reseal",
+    "high-cost binding and recovery binding schema/hash drift",
+    "bootstrap action and production action executable/argv/workingDirectory/hash drift",
+    "one owner missing, receipt schema drift, inner receipt hash drift, preimage substitution and owner aggregate hash drift",
+    "loadedGeneration mismatch and loadedFreshness stale",
+    "all semantic negatives recursively reseal containing hashes; hash-drift remains a separate case"
+  ],
+  "testDesignRules": [
+    "retain exactly six existing top-level node names and dynamically import tools.news_grasp_cleanroom_release first so Red cause remains absent module",
+    "amend shared helpers/fixture cases rather than add count-only nodes",
+    "do not encode the production validator implementation or accept source-text-only evidence",
+    "preserve the corrected L3-L9 real boundary, history and non-substitution assertions",
+    "no network, external model, live Task Scheduler, UAC, publication, credentials or non-temp mutation"
+  ],
+  "verification": {
+    "compile": "py -3.12 -m py_compile tests/test_news_grasp_cleanroom_s6_release.py",
+    "collect": "py -3.12 -m pytest --noconftest --collect-only -q tests/test_news_grasp_cleanroom_s6_release.py; expect 6",
+    "red": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s6_release.py; expect exactly six failures caused only by absent tools.news_grasp_cleanroom_release",
+    "ruff": "py -3.12 -m ruff check tests/test_news_grasp_cleanroom_s6_release.py",
+    "diff": "git diff --check plus exact two owned paths only"
+  },
+  "commitPolicy": {
+    "allowedOnlyAfterExpectedRed": true,
+    "paths": [
+      "tests/test_news_grasp_cleanroom_s6_release.py",
+      "tests/fixtures/news_grasp_cleanroom_s6_cases.json"
+    ],
+    "message": "test: bind S6 installed runtime closure"
+  },
+  "causalRetry": "one test-authoring attempt and one causal retry only; stop on collection error, unexpected Green or non-module Red without weakening",
+  "delivery": "two hashes/bytes, exact six Red, coverage map, commit and clean status",
+  "stopPolicy": "return to Sol; no production implementation",
+  "unresolvedDecisionIds": []
+}
