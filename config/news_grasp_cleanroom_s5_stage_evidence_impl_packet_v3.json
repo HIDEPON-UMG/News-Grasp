@@ -1,0 +1,117 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S5-STAGE-EVIDENCE-IMPL-V3",
+  "status": "active",
+  "executionAllowed": true,
+  "role": "implementation_luna",
+  "canonicalContext": "/root/s6_release_impl",
+  "todoId": "No.09/A-09 and No.14/A-14",
+  "baselineCommit": "9e919dafb1c910d11702efa4ab3d6f9aa6f53c58",
+  "writeLease": {
+    "leaseId": "IMPL-LEASE-S5-STAGE-EVIDENCE-V3",
+    "leaseSha256": "87d151332be286acbe0ec7f0d86123fb9f0eb9702b7dc6d06758ab8b0e989dbf",
+    "canonicalPayload": {
+      "leaseId": "IMPL-LEASE-S5-STAGE-EVIDENCE-V3",
+      "role": "implementation_luna",
+      "canonicalContext": "/root/s6_release_impl",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-s5-stage-result",
+      "writes": [
+        "tools/news_grasp_cleanroom_install.py"
+      ],
+      "baselineCommit": "9e919dafb1c910d11702efa4ab3d6f9aa6f53c58"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": [
+    "tools/news_grasp_cleanroom_install.py"
+  ],
+  "forbiddenWrites": [
+    "tests/**",
+    "config/**",
+    "docs/**",
+    "scripts/**",
+    "all other production files",
+    "ProjectFolders workspace-global harness",
+    "original user worktree",
+    "live runtime, Task Scheduler, network, external model or public state"
+  ],
+  "redEvidence": {
+    "testCommand": "$env:NEWS_GRASP_HIGH_COST_BINDING_PATH=[Environment]::ExpandEnvironmentVariables('%USERPROFILE%\\bin\\news-grasp-high-cost-binding-v1.json'); py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s6_release.py",
+    "collected": 6,
+    "passed": 3,
+    "failed": 3,
+    "failure": "KeyError: generation at the real L7 stage result boundary",
+    "affectedNodes": [
+      "test_s6_l3_l7_real_boundary_manifest",
+      "test_s6_installed_bytes_args_workdir",
+      "test_s6_l8_final_admission"
+    ],
+    "productionCause": "InstallCutoverController.stage returns INSTALL_STAGE_RESULT_V1 without the S6-required generation, journal and installedReceipt evidence"
+  },
+  "sourceBaseline": {
+    "path": "tools/news_grasp_cleanroom_install.py",
+    "sha256": "9e08a9cf203f739dbf172bbc4e90ea6f84b61116e792a37e4324220f0975b1d5",
+    "bytes": 38345
+  },
+  "requiredImplementation": {
+    "preserve": [
+      "all stage, cutover, rollback, resume, journal, security and HumanImpact behavior",
+      "existing CUTOVER_RESULT_V1 and ROLLBACK_RESULT_V1 result shapes",
+      "journal on-disk schema and hash so this correction does not invalidate durable preimages"
+    ],
+    "stageResultExactKeys": [
+      "schemaVersion",
+      "phase",
+      "authorityId",
+      "generation",
+      "journalSha256",
+      "journal",
+      "installedReceipt",
+      "dualEnabledCount"
+    ],
+    "stageResultRules": [
+      "generation is the already validated INSTALL_AUTHORITY_V1 integer; bool is impossible because authority validation precedes the result",
+      "journal is a deep copy of the validated current durable journal and journal.journalSha256 equals top-level journalSha256",
+      "stage retry/resume returns the same semantic evidence for the same journal and authority",
+      "do not add generation to the persisted journal schema; authoritySha256 already binds it and resume revalidates the exact authority"
+    ],
+    "installedReceiptExactKeys": [
+      "schemaVersion",
+      "authorityId",
+      "generation",
+      "installedRoot",
+      "sourceSha256",
+      "installedSha256",
+      "ownerReceiptHashes",
+      "journalSha256",
+      "receiptSha256"
+    ],
+    "installedReceiptRules": [
+      "schemaVersion is INSTALL_STAGED_RECEIPT_V1",
+      "all values derive only from the already validated authority and durable journal",
+      "ownerReceiptHashes is a deep copy",
+      "receiptSha256 is canonical SHA-256 of the other exact receipt fields",
+      "no secret, traceback, environment value or unvalidated caller field is added"
+    ],
+    "implementationShape": "introduce one stage-only result helper and call it from both stage return paths; leave generic _result and its cutover/rollback callers unchanged"
+  },
+  "verification": {
+    "compile": "py -3.12 -m py_compile tools/news_grasp_cleanroom_install.py",
+    "ruff": "py -3.12 -m ruff check tools/news_grasp_cleanroom_install.py",
+    "s5": "py -3.12 -m pytest --noconftest -q tests/test_news_grasp_cleanroom_s5_install.py; expect exact 9 passed",
+    "directProbe": "construct the existing S5 test helper boundary under pytest temp ownership and assert the exact eight stage keys, exact nine installed receipt keys, both hashes, generation=authority generation, and semantic equality on retry",
+    "s6AfterIntegration": "Test Luna owns the pending test diff and performs the authoritative exact 6-pass run after this commit is integrated",
+    "diff": "git diff --check and exact one owned production path only"
+  },
+  "commitPolicy": {
+    "allowedOnlyAfterCompileRuffS5AndProbeGreen": true,
+    "paths": [
+      "tools/news_grasp_cleanroom_install.py"
+    ],
+    "message": "fix: expose sealed S5 stage evidence"
+  },
+  "causalRetry": "one implementation attempt and one causally distinct correction only; do not change tests or broaden result contracts",
+  "delivery": "source hash/bytes, exact stage/receipt key and hash probe, S5 9-pass evidence, commit and clean status",
+  "stopPolicy": "return to Sol on unexpected behavior; no tests, live state or global-harness mutation",
+  "unresolvedDecisionIds": []
+}
