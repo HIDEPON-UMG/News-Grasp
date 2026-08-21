@@ -1620,6 +1620,10 @@ def test_recovery_continuation_admission_covers_deepdive_resume_boundary() -> No
         "if (-not $ScheduledAuthorityEvidencePath)",
         1,
     )[0]
+    admission_flow = runner.split("$stageDecisionReceipt = ''", 1)[1].split(
+        "# ===== 外部制御面pure readiness",
+        1,
+    )[0]
     resume_block = runner.split("scheduled recovery stage start boundary", 1)[1].split(
         "if ($ResumeGenerationQualityRepair)",
         1,
@@ -1627,8 +1631,14 @@ def test_recovery_continuation_admission_covers_deepdive_resume_boundary() -> No
 
     assert "if ($HighCostAdmissionPath)" in admission_block
     assert "[string]$continuationAdmission.resumeStage -cne $ResumeFromStage" in admission_block
-    assert "$script:UsesHighCostContinuationAdmission = $true" in admission_block
-    assert "scheduled recovery stage start boundary satisfied by HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1" in resume_block
+    assert "$script:UsesHighCostContinuationAdmission = $true" in admission_flow
+    assert admission_flow.index("$modelSpawnBroker 'admit'") < admission_flow.index(
+        "$script:UsesHighCostContinuationAdmission = $true"
+    )
+    assert (
+        "scheduled recovery stage start boundary satisfied by continuation + recovery decision + fresh broker + stage witness"
+        in resume_block
+    )
     assert "start-news-grasp-recovery-stage" in resume_block
 
 
@@ -4617,6 +4627,9 @@ def test_sec_continuation_requires_composite_authority_and_stage_witness_before_
     continuation_branch = resume_block.split(
         "if ($RunIntent -ne 'ScheduledRecoveryFull'", 1
     )[0]
+    common_resume_block = resume_block.split(
+        "if ($RunIntent -ne 'ScheduledRecoveryFull'", 1
+    )[1]
     code_only = "\n".join(line.split("#", 1)[0] for line in continuation_branch.splitlines())
     assert not re.search(r"\breturn\b", code_only)
     for marker in (
@@ -4625,13 +4638,17 @@ def test_sec_continuation_requires_composite_authority_and_stage_witness_before_
         "$HighCostAdmissionPath = ''",
         "$ScheduledAuthorityEvidencePath",
     ):
-        assert marker in continuation_branch
-    assert continuation_branch.index("RecoveryDecisionPath") < continuation_branch.index("validate-decision")
-    assert continuation_branch.index("validate-decision") < continuation_branch.index("$HighCostAdmissionPath = ''")
+        assert marker in common_resume_block
 
+    # continuation receipt validation is followed by the common recovery
+    # decision validator, then by a cleared caller path and a fresh broker
+    # admission.  The common checks intentionally live outside the
+    # continuation-only branch so every ResumeFromStage path shares them.
+    continuation_validation_index = resume_block.index("validate-scheduled-admission")
+    decision_index = resume_block.index("validate-decision")
+    clear_index = resume_block.index("$HighCostAdmissionPath = ''")
     broker_index = admission_block.index("$modelSpawnBroker 'admit'")
-    clear_index = admission_block.index("$HighCostAdmissionPath = ''")
-    assert clear_index < broker_index
+    assert continuation_validation_index < decision_index < clear_index < broker_index
     broker_call = admission_block[broker_index : broker_index + 900]
     for marker in ("$ScheduledAuthorityEvidencePath", "$taskActionSha256", "$runnerSha256"):
         assert marker in broker_call
@@ -4646,6 +4663,8 @@ def test_sec_continuation_requires_composite_authority_and_stage_witness_before_
         "decisionReceiptSha256",
     ):
         assert marker in stage_block
+    stage_index = len(admission_block) + stage_block.index("start-news-grasp-recovery-stage")
+    assert broker_index < stage_index
     continuation_flag_index = stage_block.find("if ($script:UsesHighCostContinuationAdmission)")
     witness_index = stage_block.index("start-news-grasp-recovery-stage")
     if continuation_flag_index >= 0:
@@ -4676,8 +4695,13 @@ def test_sec_continuation_revalidates_product_local_authority_before_return() ->
     ):
         assert marker in continuation
     validator_index = continuation.index("validate-scheduled-admission")
-    return_index = continuation.rindex("return")
-    assert validator_index < return_index
+    # Only a standalone PowerShell return token is a control-flow return;
+    # prose such as "this gate returns" must not create a false failure.
+    return_tokens = [
+        match.start()
+        for match in re.finditer(r"(?m)^\s*return\s*$", continuation)
+    ]
+    assert not return_tokens or validator_index < min(return_tokens)
     assert "receiptSha256" in continuation
     assert "operationAuthoritySha256" in continuation
 
