@@ -27,6 +27,44 @@
       "successorLeaseId": "TEST-LEASE-S5-HOTFIX-B2-V1"
     }
   ],
+  "sequentialCorrections": [
+    {
+      "leaseId": "TEST-LEASE-S5-HOTFIX-C-V1",
+      "leaseSha256": "7f61aa367f4ace29a1e2e6834a84eb597a5f9307b5be43647f6c3f2d7c716250",
+      "sequentialTo": "TEST-LEASE-S5-HOTFIX-A-V1",
+      "reason": "the first A delivery used a source-string sentinel and did not carry the reported behavioral tests from the time-bound user worktree",
+      "canonicalPayload": {
+        "leaseId": "TEST-LEASE-S5-HOTFIX-C-V1",
+        "role": "test_luna",
+        "canonicalContext": "/root/s1_edge_driver_red",
+        "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-s1-h1",
+        "writes": [
+          "tests/test_news_grasp_daily_control.py",
+          "tests/test_audit_recovery_control.py"
+        ],
+        "baselineCommit": "a2d724ea4efb96374ccd58534f0fdbebc7463684"
+      },
+      "sourceSnapshots": [
+        {
+          "path": "tests/test_news_grasp_daily_control.py",
+          "workingSha256": "63ee410738a2a72433554c53f3c554aff65042dc0e79db3ecdd0ea9c4f97e554",
+          "baseBlob": "a9081538dd8bdb7e31fcebd7fa915c901270041f"
+        },
+        {
+          "path": "tests/test_audit_recovery_control.py",
+          "workingSha256": "47a5974c954f64198ca063c8eb538aff4c54cbdc7f63cca69e509ad31aba6b85",
+          "baseBlob": "29d6da56045840440e9b9570c3bc9b88ef0c32b5"
+        }
+      ],
+      "nodes": [
+        "test_failure_classification_is_derived_from_observed_state_only::blocked_startup_self_repair_failed assertion",
+        "test_startup_self_repair_failure_keeps_recovery_attempt_available",
+        "test_audit_uses_broker_failure_when_runner_state_is_stale",
+        "test_startup_terminal_state_without_repo_dir_can_enter_scheduled_recovery"
+      ],
+      "commitMessage": "test: import parallel recovery behavior oracles"
+    }
+  ],
   "leases": [
     {
       "leaseId": "TEST-LEASE-S5-HOTFIX-A-V1",
@@ -79,7 +117,7 @@
     }
   ],
   "writeIntersectionCount": 0,
-  "integrationOrder": ["TEST-LEASE-S5-HOTFIX-A-V1", "TEST-LEASE-S5-HOTFIX-B2-V1"],
-  "redAdmission": "all eight exact nodes fail for the impact-bound production cause; both commits are required before any S5A/S5B production packet",
+  "integrationOrder": ["TEST-LEASE-S5-HOTFIX-A-V1", "TEST-LEASE-S5-HOTFIX-C-V1", "TEST-LEASE-S5-HOTFIX-B2-V1"],
+  "redAdmission": "all eight impact nodes plus the four exact imported operational assertions fail for the impact-bound production cause; all three completed commits are required before any S5A/S5B production packet",
   "unresolvedDecisionIds": []
 }
