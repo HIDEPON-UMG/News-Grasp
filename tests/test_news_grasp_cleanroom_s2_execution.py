@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 import hashlib
 import importlib
+import inspect
 import json
 from pathlib import Path
 import sqlite3
@@ -17,6 +18,13 @@ import pytest
 FIXTURE_PATH = Path(__file__).parent / "fixtures" / "news_grasp_cleanroom_s2_cases.json"
 TZ = ZoneInfo("Asia/Tokyo")
 STAGES = ("harvest", "model", "finalize")
+
+
+class _FakeWriterAttestor:
+    """S2 deterministic fixture seam for strict writer identity admission."""
+
+    def validate(self, writer: dict[str, Any]) -> bool:
+        return True
 
 
 def _cases() -> dict[str, Any]:
@@ -51,7 +59,11 @@ def _runtime(tmp_path: Path, index: int) -> Path:
     manifest_path = root.parent / f"manifest-{index}.json"
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, sort_keys=True), encoding="utf-8")
     controller_module = importlib.import_module("tools.news_grasp_cleanroom_controller")
-    controller_module.Controller(runtime_root=root, manifest_path=manifest_path).reconcile(
+    controller_type = controller_module.Controller
+    kwargs: dict[str, Any] = {}
+    if "writer_attestor" in inspect.signature(controller_type.__init__).parameters:
+        kwargs["writer_attestor"] = _FakeWriterAttestor()
+    controller_type(runtime_root=root, manifest_path=manifest_path, **kwargs).reconcile(
         raw_argv=s1_cases["normative"]["rawArgv"]["exact"],
         observed_at=_at(6, 1),
         writer={

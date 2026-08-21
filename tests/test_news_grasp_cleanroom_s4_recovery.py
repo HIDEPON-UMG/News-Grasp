@@ -50,6 +50,13 @@ def _at(hour: int, minute: int) -> datetime:
     return datetime(2026, 8, 21, hour, minute, tzinfo=TOKYO)
 
 
+class _FakeWriterAttestor:
+    """S4 deterministic fixture seam for strict writer identity admission."""
+
+    def validate(self, writer: dict[str, Any]) -> bool:
+        return True
+
+
 def _cases() -> dict[str, Any]:
     value = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
     assert value["schemaVersion"] == "NEWS_GRASP_CLEANROOM_S4_CASES_V1"
@@ -72,6 +79,7 @@ def _s1_runtime(tmp_path: Path, index: int) -> Path:
     controller = importlib.import_module("tools.news_grasp_cleanroom_controller").Controller(
         runtime_root=root,
         manifest_path=manifest_path,
+        writer_attestor=_FakeWriterAttestor(),
     )
     writer = {
         "writerId": f"s4-test-{index}",
@@ -83,14 +91,20 @@ def _s1_runtime(tmp_path: Path, index: int) -> Path:
         raw_argv=s1["normative"]["rawArgv"]["exact"],
         observed_at=_at(6, 1),
         writer=writer,
+        lease_seconds=3600,
     )
     audit_writer = {**writer, "writerId": f"s4-audit-{index}", "pid": 8000 + index}
     controller.reconcile(
         raw_argv=s1["normative"]["rawArgv"]["exact"],
         observed_at=_at(6, 41),
         writer=audit_writer,
+        lease_seconds=3600,
     )
-    ledger = importlib.import_module("tools.news_grasp_cleanroom_ledger").ControlLedger(root)
+    ledger = importlib.import_module("tools.news_grasp_cleanroom_ledger").ControlLedger(
+        root,
+        writer_attestor=_FakeWriterAttestor(),
+        clock=lambda: _at(6, 42),
+    )
     ledger.commit_slot(
         slot_key=f'{s1["normative"]["manifest"]["scheduleId"]}/2026-08-21/Scheduled',
         writer=writer,

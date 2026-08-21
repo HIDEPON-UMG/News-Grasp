@@ -182,6 +182,13 @@ def _writer(index: int) -> dict[str, Any]:
     }
 
 
+class _FakeWriterAttestor:
+    """S6 deterministic fixture seam for strict writer identity admission."""
+
+    def validate(self, writer: dict[str, Any]) -> bool:
+        return True
+
+
 def _dispatch_pair(root: Path, manifest_path: Path, dispatch_module: Any, index: int) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     scheduled = dispatch_module.dispatch(
         raw_argv=RAW_ARGV,
@@ -189,6 +196,7 @@ def _dispatch_pair(root: Path, manifest_path: Path, dispatch_module: Any, index:
         manifest_path=manifest_path,
         observed_at=_at(6, 1),
         writer=_writer(index),
+        writer_attestor=_FakeWriterAttestor(),
     )
     audit = dispatch_module.dispatch(
         raw_argv=RAW_ARGV,
@@ -196,6 +204,7 @@ def _dispatch_pair(root: Path, manifest_path: Path, dispatch_module: Any, index:
         manifest_path=manifest_path,
         observed_at=_at(6, 41),
         writer={**_writer(index), "writerId": f"s6-release-audit-{index}", "pid": 13000 + index},
+        writer_attestor=_FakeWriterAttestor(),
     )
     inspection = dispatch_module.inspect_control_state(runtime_root=root, manifest_path=manifest_path)
     return scheduled, audit, inspection
@@ -1121,12 +1130,16 @@ def _public_inventory() -> dict[str, Any]:
 def _real_l4_l5_boundary(tmp_path: Path, index: int) -> tuple[Path, dict[str, Any], list[str]]:
     root, _source, _installed, _launcher = _runtime_root(tmp_path, index)
     dispatch_module = importlib.import_module("tools.news_grasp_cleanroom_dispatch")
+    deterministic_clock = lambda: _at(6, 43)
     scheduled_return = dispatch_module.dispatch(
         raw_argv=RAW_ARGV,
         runtime_root=root,
         manifest_path=root / "manifest.json",
         observed_at=_at(6, 1),
         writer=_writer(index),
+        lease_seconds=3600,
+        writer_attestor=_FakeWriterAttestor(),
+        clock=deterministic_clock,
     )
     audit_return = dispatch_module.dispatch(
         raw_argv=RAW_ARGV,
@@ -1134,6 +1147,9 @@ def _real_l4_l5_boundary(tmp_path: Path, index: int) -> tuple[Path, dict[str, An
         manifest_path=root / "manifest.json",
         observed_at=_at(6, 41),
         writer={**_writer(index), "writerId": f"s6-audit-{index}", "pid": 13000 + index},
+        lease_seconds=3600,
+        writer_attestor=_FakeWriterAttestor(),
+        clock=deterministic_clock,
     )
     audit_slot = _s1_slot(root, "Audit")
     audit_authority = _s2_authority(root, audit_slot)
@@ -1175,6 +1191,8 @@ def _real_l4_l5_boundary(tmp_path: Path, index: int) -> tuple[Path, dict[str, An
         terminal_state="FAILED",
         result_hash=_sha({"lineage": "Scheduled", "terminal": "FAILED", "index": index}),
         observed_at=_at(6, 43),
+        writer_attestor=_FakeWriterAttestor(),
+        clock=deterministic_clock,
     )
     scheduled_slot = _s1_slot(root, "Scheduled")
     parent = _s4_parent(scheduled_slot)

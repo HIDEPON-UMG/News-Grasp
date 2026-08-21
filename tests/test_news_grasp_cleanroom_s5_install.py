@@ -254,7 +254,7 @@ class ProcessAdapter:
 
     def launch(self, argv: list[str], cwd: Path, **kwargs: Any) -> dict[str, Any]:
         self._launches.append({"argv": list(argv), "cwd": str(cwd), **deepcopy(kwargs)})
-        return {"status": "started", "pid": 9001}
+        return {"status": "succeeded", "exitCode": 0, "pid": 9001}
 
     def kill(self, process: Any) -> None:
         self._kills.append(process)
@@ -328,16 +328,24 @@ class SecurityAdapter:
         return deepcopy(self._observations)
 
 
+_DEFAULT_SECURITY = object()
+_DEFAULT_PROCESS = object()
+
+
 def _controller(
     module: Any,
     root: Path,
     task: TaskAdapter,
     *,
-    process: ProcessAdapter | None = None,
-    security: SecurityAdapter | None = None,
+    process: ProcessAdapter | None | object = _DEFAULT_PROCESS,
+    security: SecurityAdapter | None | object = _DEFAULT_SECURITY,
     owner_adapter: OwnerAdapter | None = None,
     boundary_hook: Any = None,
 ) -> Any:
+    if security is _DEFAULT_SECURITY:
+        security = SecurityAdapter(module)
+    if process is _DEFAULT_PROCESS:
+        process = ProcessAdapter()
     return module.InstallCutoverController(
         root,
         task_adapter=task,
@@ -508,7 +516,8 @@ def test_s5_uac_and_rollback_recovery(tmp_path: Path) -> None:
     for index, denied_operation in enumerate(("disable", "enable"), start=40):
         root, source, _content, manifest, authority = _roots(tmp_path, index)
         task = TaskAdapter(module)
-        controller = _controller(module, root, task)
+        owner = OwnerAdapter(module, task)
+        controller = _controller(module, root, task, owner_adapter=owner)
         _stage(controller, manifest, source, root / "installed", authority)
         task.set_denial(denied_operation)
         with pytest.raises((module.PrivilegeDenied, module.InstallControlError)):
@@ -524,7 +533,8 @@ def test_s5_uac_and_rollback_recovery(tmp_path: Path) -> None:
         task = TaskAdapter(module)
         old_preimage = task.task_definition(OLD_TASK)
         old_preimage_hash = hashlib.sha256(_bytes(old_preimage)).hexdigest()
-        controller = _controller(module, root, task)
+        owner = OwnerAdapter(module, task)
+        controller = _controller(module, root, task, owner_adapter=owner)
         _stage(controller, manifest, source, root / "installed", authority)
         _cutover(controller, authority)
         crashed = {"active": True}
@@ -534,7 +544,13 @@ def test_s5_uac_and_rollback_recovery(tmp_path: Path) -> None:
                 crashed["active"] = False
                 raise RuntimeError(f"test-owned rollback crash: {name}")
 
-        rollback_controller = _controller(module, root, task, boundary_hook=hook)
+        rollback_controller = _controller(
+            module,
+            root,
+            task,
+            owner_adapter=owner,
+            boundary_hook=hook,
+        )
         with pytest.raises(RuntimeError, match=f"^test-owned rollback crash: {boundary}$"):
             _rollback(rollback_controller, authority)
         assert crashed["active"] is False
@@ -794,7 +810,14 @@ def test_sec_s5_default_security_cannot_fail_open_acl_or_signature(tmp_path: Pat
     task = TaskAdapter(module)
     process = ProcessAdapter()
     owner = OwnerAdapter(module, task)
-    controller = _controller(module, root, task, process=process, owner_adapter=owner)
+    controller = _controller(
+        module,
+        root,
+        task,
+        process=process,
+        owner_adapter=owner,
+        security=None,
+    )
     with pytest.raises(module.InstallControlError) as captured:
         _stage(controller, manifest, source, root / "installed", authority)
     assert captured.value.reason == "security_adapter_required"

@@ -132,6 +132,11 @@ def _production() -> dict[str, Any]:
     ledger = importlib.import_module("tools.news_grasp_cleanroom_ledger")
     controller = importlib.import_module("tools.news_grasp_cleanroom_controller")
     dispatch_module = importlib.import_module("tools.news_grasp_cleanroom_dispatch")
+
+    def test_dispatch(**kwargs: Any) -> Any:
+        kwargs.setdefault("writer_attestor", _FakeWriterAttestor(valid=True))
+        return dispatch_module.dispatch(**kwargs)
+
     return {
         "error": contracts.CleanroomEntryError,
         "validate_manifest": contracts.validate_manifest,
@@ -140,7 +145,7 @@ def _production() -> dict[str, Any]:
         "DurableWal": wal.DurableWal,
         "ControlLedger": ledger.ControlLedger,
         "Controller": controller.Controller,
-        "dispatch": dispatch_module.dispatch,
+        "dispatch": test_dispatch,
         "commit_slot": dispatch_module.commit_slot,
         "inspect_control_state": dispatch_module.inspect_control_state,
         "recover_ledger": dispatch_module.recover_ledger,
@@ -247,9 +252,9 @@ def _seed_compaction_runtime(
     data: dict[str, Any],
     runtime_root: Path,
     *,
-    imported_count: int = 801,
+    imported_count: int = 832,
 ) -> tuple[Any, Any, tuple[dict[str, Any], ...], datetime]:
-    """801件のimported WALと対応するSQLite invocationを、明示操作用に用意する。"""
+    """832件のimported WALと対応するSQLite invocationを、明示操作用に用意する。"""
 
     wal = production["DurableWal"](runtime_root)
     ledger = production["ControlLedger"](runtime_root)
@@ -610,8 +615,8 @@ def test_sec_s1_wal_compaction_requires_exact_sqlite_parity(tmp_path: Path) -> N
     _require_wal_compaction_api(production)
     runtime_root = tmp_path / "runtime"
     wal, ledger, imported, base = _seed_compaction_runtime(production, data, runtime_root)
-    assert wal.retention_counts() == {"zeroEntryCount": 0, "importedEntryCount": 801}
-    assert len(wal.imported_event_records()) == 801
+    assert wal.retention_counts() == {"zeroEntryCount": 0, "importedEntryCount": 832}
+    assert len(wal.imported_event_records()) == 832
 
     wal_root = runtime_root / "control" / "wal"
     before_authorization = _tree_snapshot(wal_root)
@@ -625,7 +630,7 @@ def test_sec_s1_wal_compaction_requires_exact_sqlite_parity(tmp_path: Path) -> N
             wal=wal,
             wal_event_hashes=tampered_hashes,
             batch_size=32,
-            observed_at=base + timedelta(seconds=802),
+            observed_at=base + timedelta(seconds=833),
         ),
     )
     assert _tree_snapshot(wal_root) == before_authorization
@@ -634,7 +639,7 @@ def test_sec_s1_wal_compaction_requires_exact_sqlite_parity(tmp_path: Path) -> N
         wal=wal,
         wal_event_hashes=requested_hashes,
         batch_size=32,
-        observed_at=base + timedelta(seconds=802),
+        observed_at=base + timedelta(seconds=833),
     )
     before_invalid_receipts = _tree_snapshot(wal_root)
 
@@ -643,7 +648,7 @@ def test_sec_s1_wal_compaction_requires_exact_sqlite_parity(tmp_path: Path) -> N
     _expect_reason(
         production["error"],
         "NEWS_GRASP_ENTRY_WAL_RETENTION_LIMIT",
-        lambda: wal.compact_imported(forged_hash, observed_at=base + timedelta(seconds=803)),
+        lambda: wal.compact_imported(forged_hash, observed_at=base + timedelta(seconds=834)),
     )
     assert _tree_snapshot(wal_root) == before_invalid_receipts
 
@@ -652,10 +657,10 @@ def test_sec_s1_wal_compaction_requires_exact_sqlite_parity(tmp_path: Path) -> N
     _expect_reason(
         production["error"],
         "NEWS_GRASP_ENTRY_WAL_RETENTION_LIMIT",
-        lambda: wal.compact_imported(omitted_hash, observed_at=base + timedelta(seconds=803)),
+        lambda: wal.compact_imported(omitted_hash, observed_at=base + timedelta(seconds=834)),
     )
     assert _tree_snapshot(wal_root) == before_invalid_receipts
-    assert wal.retention_counts() == {"zeroEntryCount": 0, "importedEntryCount": 801}
+    assert wal.retention_counts() == {"zeroEntryCount": 0, "importedEntryCount": 832}
     assert not (wal_root / "compaction-head-v1.json").exists()
 
 
@@ -668,24 +673,24 @@ def test_sec_s1_wal_compaction_preserves_zero_and_emits_chained_receipt(tmp_path
     runtime_root = tmp_path / "runtime"
     wal, ledger, imported, base = _seed_compaction_runtime(production, data, runtime_root)
     wal_root = runtime_root / "control" / "wal"
-    assert wal.retention_counts() == {"zeroEntryCount": 0, "importedEntryCount": 801}
+    assert wal.retention_counts() == {"zeroEntryCount": 0, "importedEntryCount": 832}
     assert not (wal_root / "compaction-head-v1.json").exists()
 
     zero_event = wal.record_initial(
         raw_argv=data["normative"]["rawArgv"]["exact"],
-        received_at=base + timedelta(seconds=801),
+        received_at=base + timedelta(seconds=832),
         writer=_writer(9999),
     )
     zero_path = wal_root / zero_event["invocationId"] / "0001-initial.json"
     zero_bytes = zero_path.read_bytes()
-    assert wal.retention_counts() == {"zeroEntryCount": 1, "importedEntryCount": 801}
+    assert wal.retention_counts() == {"zeroEntryCount": 1, "importedEntryCount": 832}
 
     requested_hashes = [event["eventSha256"] for event in wal.imported_event_records()[:32]]
     authorization = ledger.authorize_wal_compaction(
         wal=wal,
         wal_event_hashes=requested_hashes,
         batch_size=32,
-        observed_at=base + timedelta(seconds=802),
+        observed_at=base + timedelta(seconds=833),
     )
     assert authorization["schemaVersion"] == "WAL_COMPACTION_AUTHORIZATION_V1"
     assert len(authorization["batch"]) <= 32
@@ -693,8 +698,8 @@ def test_sec_s1_wal_compaction_preserves_zero_and_emits_chained_receipt(tmp_path
         "tools.news_grasp_cleanroom_contracts"
     )._entry_canonical_sha256(authorization["batch"])
 
-    receipt = wal.compact_imported(authorization, observed_at=base + timedelta(seconds=803))
-    completion = ledger.complete_wal_compaction(receipt, observed_at=base + timedelta(seconds=804))
+    receipt = wal.compact_imported(authorization, observed_at=base + timedelta(seconds=834))
+    completion = ledger.complete_wal_compaction(receipt, observed_at=base + timedelta(seconds=835))
     assert completion["schemaVersion"] == "WAL_COMPACTION_COMPLETION_V1"
     assert completion["status"] == "completed"
     assert completion["receiptSha256"] == receipt["selfHash"]
@@ -722,7 +727,7 @@ def test_sec_s1_wal_compaction_preserves_zero_and_emits_chained_receipt(tmp_path
     assert not [path for path in wal_root.rglob("*.tmp")]
 
     counts = wal.retention_counts()
-    assert counts == {"zeroEntryCount": 1, "importedEntryCount": 769}
+    assert counts == {"zeroEntryCount": 1, "importedEntryCount": 800}
     assert counts["importedEntryCount"] <= 800
     assert zero_path.exists()
     assert zero_path.read_bytes() == zero_bytes
