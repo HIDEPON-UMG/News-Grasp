@@ -557,7 +557,7 @@ def test_resume_branch_consumes_recovery_authority_not_failed_production_admissi
     assert "ScheduledAuthorityEvidencePath" in resume_block
     assert "start-news-grasp-recovery-stage" in runner
     assert "consume-news-grasp-recovery-stage-decision" not in runner
-    assert runner.index("start-news-grasp-recovery-stage") > runner.index(
+    assert runner.index("start-news-grasp-recovery-stage") < runner.index(
         "} elseif ($ResumeFromPostDailyQuality -or $ResumeAfterDeepDive -or $ResumeGenerationQualityRepair) {"
     )
     assert "sourceAdmissionReceipt" not in resume_block

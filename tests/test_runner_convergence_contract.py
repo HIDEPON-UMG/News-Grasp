@@ -4751,10 +4751,17 @@ def test_sec_validated_admission_paths_survive_function_scope_for_stage_witness(
         )
         leaf_match = re.search(leaf_marker, admission_function, re.IGNORECASE)
         assert leaf_match, f"missing validated regular-file check for ${local_name}"
-        bridge_match = re.search(
-            rf"(?m)^\s*\$script:(?P<bridge>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*\${local_name}\b",
-            admission_function,
-            re.IGNORECASE,
+        bridge_match = next(
+            (
+                match
+                for match in re.finditer(
+                    rf"(?m)^\s*\$script:(?P<bridge>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*(?P<rhs>[^\r\n]+)",
+                    admission_function,
+                    re.IGNORECASE,
+                )
+                if re.search(rf"\${local_name}\b", match.group("rhs"), re.IGNORECASE)
+            ),
+            None,
         )
         assert bridge_match, f"${local_name} is not exported to script scope"
         assert bridge_match.start() > leaf_match.start()
@@ -4791,22 +4798,30 @@ def test_sec_all_resume_stages_share_stage_witness_before_stage_specific_work() 
     assert declared_stages == expected_stages
 
     witness_call = runner.index("start-news-grasp-recovery-stage")
-    guard_candidates = list(
-        re.finditer(
-            r"(?m)^\s*(?:if|elseif)\s*\(",
-            runner[:witness_call],
-            re.IGNORECASE,
-        )
+    direct_gate = re.search(
+        r"(?m)^\s*if\s*\(\s*\$ResumeFromStage\s*\)\s*\{",
+        runner[:witness_call],
+        re.IGNORECASE,
     )
-    assert guard_candidates, "stage witness guard is missing"
-    common_guard = runner[guard_candidates[-1].start() : witness_call]
-    for marker in (
-        "$ResumeAfterReporter",
-        "$ResumeFromPostDailyQuality",
-        "$ResumeAfterDeepDive",
-        "$ResumeGenerationQualityRepair",
-    ):
-        assert marker in common_guard
+    if direct_gate:
+        common_guard = runner[direct_gate.start() : witness_call]
+    else:
+        guard_candidates = list(
+            re.finditer(
+                r"(?m)^\s*(?:if|elseif)\s*\(",
+                runner[:witness_call],
+                re.IGNORECASE,
+            )
+        )
+        assert guard_candidates, "stage witness guard is missing"
+        common_guard = runner[guard_candidates[-1].start() : witness_call]
+        for marker in (
+            "$ResumeAfterReporter",
+            "$ResumeFromPostDailyQuality",
+            "$ResumeAfterDeepDive",
+            "$ResumeGenerationQualityRepair",
+        ):
+            assert marker in common_guard
 
     for marker in (
         "SCHEDULED_RECOVERY_STAGE_STARTED_V1",
@@ -4821,7 +4836,6 @@ def test_sec_all_resume_stages_share_stage_witness_before_stage_specific_work() 
     # stage固有分岐へ入る。この分岐の最初の文は共通
     # start-news-grasp-recovery-stage検証後へ移さなければならない。
     for pattern in (
-        r"(?m)^\s*\}\s*elseif\s*\(\$ResumeAfterReporter\b",
         r"(?m)^\s*if\s*\(\$Stage2EditorSmokeOnly\s+-or\s+\$ResumeAfterReporter\b",
         r"(?m)^\s*if\s*\(\$ResumeAfterReporter\s*\)\s*\{",
     ):
@@ -4916,3 +4930,43 @@ def test_sec_resume_stage_contract_is_exactly_six_across_consumers_and_rejects_u
     )
     with pytest.raises(ValueError):
         daily_control.validate_decision(invalid_path)
+
+
+def test_sec_stage_witness_path_gate_is_powershell_51_safe_and_checks_original_absolute_paths() -> None:
+    """PS5.1非対応APIを使わず、正規化後と元絶対pathを比較してLeaf検証する。"""
+
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    assert "System.IO.Path]::IsPathFullyQualified" not in runner
+    gate = runner.split(
+        "# admission gate が検証済みの script-scope path だけを後段へ渡し",
+        1,
+    )[1].split(
+        "Set-RunnerState -Status 'running' -Message 'scheduled recovery stage start boundary'",
+        1,
+    )[0]
+    for original_name in (
+        "ScheduledRecoveryStageBrokerPath",
+        "ScheduledRecoveryStageDecisionReceiptPath",
+    ):
+        original = rf"\$script:{original_name}"
+        normalized = re.search(
+            rf"(?m)^\s*\$(?P<local>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*\[System\.IO\.Path\]::GetFullPath\(\[string\]{original}\)",
+            gate,
+            re.IGNORECASE,
+        )
+        assert normalized, f"GetFullPath normalization missing for {original_name}"
+        local_name = normalized.group("local")
+        assert re.search(
+            rf"\${re.escape(local_name)}\s+-c?ne\s+\[string\]{original}",
+            gate,
+            re.IGNORECASE,
+        ) or re.search(
+            rf"String\.Equals\(\s*\${re.escape(local_name)}\s*,\s*\[string\]{original}",
+            gate,
+            re.IGNORECASE,
+        ), f"normalized/original absolute path comparison missing for {original_name}"
+        assert re.search(
+            rf"Test-Path\s+-LiteralPath\s+{original}\s+-PathType\s+Leaf",
+            gate,
+            re.IGNORECASE,
+        ), f"Leaf check missing for {original_name}"
