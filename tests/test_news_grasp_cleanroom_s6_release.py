@@ -1359,11 +1359,14 @@ def _real_l7_boundary(tmp_path: Path, index: int) -> tuple[Path, dict[str, Any],
     )
     authority["authoritySha256"] = _sha(authority)
     task = _TaskAdapter(install_module)
-    security = importlib.import_module("tests.test_news_grasp_cleanroom_s5_install").SecurityAdapter(install_module)
+    s5_install = importlib.import_module("tests.test_news_grasp_cleanroom_s5_install")
+    security = s5_install.SecurityAdapter(install_module)
+    process = s5_install.ProcessAdapter()
     controller = install_module.InstallCutoverController(
         root,
         task_adapter=task,
         pythonw_path=root / "pythonw.exe",
+        process_adapter=process,
         security_adapter=security,
     )
     staged = controller.stage(manifest, source, installed, authority, _at(6, 0))
