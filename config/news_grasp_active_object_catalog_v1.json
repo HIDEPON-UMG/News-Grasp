@@ -1,6 +1,6 @@
 {
   "schemaVersion": "NEWS_GRASP_ACTIVE_OBJECT_CATALOG_V1",
-  "sourceCommit": "eeb441b41f2059867225f801db9f1827bc6c4fe7",
+  "sourceCommit": "9571b70b6e6add16f3ab018f83b3ba2bac107010",
   "discoveryMode": "git_index_plus_untracked_wip_plus_route_reference_scan",
   "objects": [
     {
@@ -2595,7 +2595,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "a0e86ed30a2aaf2dbbde8886265a0e7f50b868f8d60c951f8953fee635024ddc",
+      "sha256": "5f42ec1241dea9ff6d011afef4600300223d57aecafb0005fbd68446e8ef1499",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -2613,7 +2613,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "a299cd0b0592516f105ab6cfd8a251d22015dd9e0613f3486ccbbebd8ae97371",
+      "sha256": "d1a474f657885d56daa8e9f4c288a36c9ad89126f550c63f19f7c77cc1e82cf5",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -3259,7 +3259,7 @@
         "NGC-C09",
         "NGC-C13"
       ],
-      "sha256": "a095d2fe05ebf06129fc93095fa57e43239483a6c7caddc310347cecbf5c0aef",
+      "sha256": "9aa9fee17ec16490ee1e20f7c03a729954568c2b9523a9dd781d21b35f4e18dc",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -6067,7 +6067,7 @@
         "NGC-C06",
         "NGC-C14"
       ],
-      "sha256": "e826e325a36f77ef0b56d9ccc57cc38d9a5820cf29fb67cb8aac9b236bca0399",
+      "sha256": "adabda7aa47593d12c434bb1909c395d0980ed71af3deef83e0c1fbbf3096d92",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -7924,5 +7924,5 @@
   "activeObjectCount": 426,
   "unlinkedActiveObjectCount": 0,
   "objectPathSetSha256": "2e380a5db604356b9b505aa1c8fb35441dcc60fca5266581aee984247762372e",
-  "testNodeSetSha256": "a04fd51d886eeda84f48dd0e899d5ab69dcc2ff695fa910a66e26c5d5023104f"
+  "testNodeSetSha256": "83e9fcd3be9e0924161e3c51bfaae99a4857f0f5b4ef3f6d1e78224dd889a8ba"
 }

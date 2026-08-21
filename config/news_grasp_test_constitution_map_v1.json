@@ -1,8 +1,8 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 2803,
-  "collectedNodeSetSha256": "a04fd51d886eeda84f48dd0e899d5ab69dcc2ff695fa910a66e26c5d5023104f",
+  "collectedNodeCount": 2804,
+  "collectedNodeSetSha256": "83e9fcd3be9e0924161e3c51bfaae99a4857f0f5b4ef3f6d1e78224dd889a8ba",
   "files": [
     {
       "path": "tests/test_20260813_control_plane_repair.py",
@@ -4121,8 +4121,8 @@
     },
     {
       "path": "tests/test_scheduled_high_cost_separation.py",
-      "sha256": "e826e325a36f77ef0b56d9ccc57cc38d9a5820cf29fb67cb8aac9b236bca0399",
-      "nodeCount": 84,
+      "sha256": "adabda7aa47593d12c434bb1909c395d0980ed71af3deef83e0c1fbbf3096d92",
+      "nodeCount": 85,
       "nodeIds": [
         "tests/test_scheduled_high_cost_separation.py::test_attempt_status_is_derived_from_canonical_ledger_not_caller_text",
         "tests/test_scheduled_high_cost_separation.py::test_bootstrap_authenticates_task_context_serializes_runtime_and_bounds_fetch",
@@ -4141,6 +4141,7 @@
         "tests/test_scheduled_high_cost_separation.py::test_direct_converge_runtime_is_blocked_while_bootstrap_runtime_lifecycle_mutex_is_held",
         "tests/test_scheduled_high_cost_separation.py::test_direct_converge_runtime_requires_same_runtime_mutex_across_processes",
         "tests/test_scheduled_high_cost_separation.py::test_dirty_production_runtime_is_quarantined_and_replaced_without_data_loss",
+        "tests/test_scheduled_high_cost_separation.py::test_dirty_runtime_dependency_junctions_are_quarantined_with_bindings",
         "tests/test_scheduled_high_cost_separation.py::test_execution_rejects_valid_receipt_substitution_before_reservation[admission0-scheduled_production-2026-08-03]",
         "tests/test_scheduled_high_cost_separation.py::test_execution_rejects_valid_receipt_substitution_before_reservation[admission1-scheduled_production-2026-08-03]",
         "tests/test_scheduled_high_cost_separation.py::test_execution_rejects_valid_receipt_substitution_before_reservation[admission2-scheduled_production-2026-08-03]",

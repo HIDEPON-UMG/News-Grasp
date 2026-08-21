@@ -1309,6 +1309,64 @@ def test_dirty_production_runtime_is_quarantined_and_replaced_without_data_loss(
     assert _git(runtime, "diff", "--name-only") == ""
 
 
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows junction contract")
+def test_dirty_runtime_dependency_junctions_are_quarantined_with_bindings(
+    tmp_path: Path,
+) -> None:
+    """依存junction付きdirty runtimeも隔離後にactive/quarantineの復旧性を保つ。"""
+    launcher, source, runtime_root, origin_sha = _runtime_fixture(tmp_path)
+    runtime = runtime_root / "production-runtime"
+    for name in (".venv", "node_modules"):
+        source_dependency = source / name
+        source_dependency.mkdir()
+        (source_dependency / "marker.txt").write_text(
+            f"{name} source\n", encoding="utf-8"
+        )
+        link = runtime / name
+        completed = subprocess.run(
+            ["cmd.exe", "/d", "/c", "mklink", "/J", str(link), str(source_dependency)],
+            shell=False,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            creationflags=subprocess.CREATE_NO_WINDOW,
+            check=False,
+        )
+        if completed.returncode != 0:
+            pytest.skip(f"junction fixture unavailable: {completed.stderr.strip()}")
+    (runtime / "tracked.txt").write_text("dirty junction runtime\n", encoding="utf-8")
+
+    result = launcher.converge_production_runtime(
+        source_repo=source,
+        runtime_root=runtime_root,
+        origin_sha=origin_sha,
+    )
+
+    quarantine = Path(result["quarantinePath"])
+    assert result["phase"] == "committed"
+    assert (quarantine / "tracked.txt").read_text(encoding="utf-8") == (
+        "dirty junction runtime\n"
+    )
+    assert _git(runtime, "rev-parse", "HEAD") == origin_sha
+    assert _git(runtime, "diff", "--name-only") == ""
+    for name in (".venv", "node_modules"):
+        assert (runtime / name / "marker.txt").read_text(encoding="utf-8") == (
+            f"{name} source\n"
+        )
+        assert (quarantine / name / "marker.txt").read_text(encoding="utf-8") == (
+            f"{name} source\n"
+        )
+        assert (runtime / name).resolve(strict=True) == (source / name).resolve(
+            strict=True
+        )
+        assert (quarantine / name).resolve(strict=True) == (source / name).resolve(
+            strict=True
+        )
+
+
 def test_runtime_recovery_forwards_after_move_before_phase_record(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

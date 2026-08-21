@@ -1964,7 +1964,18 @@ def _runtime_state(runtime: Path, origin_sha: str) -> dict[str, object]:
         raise RuntimeError("PRODUCTION_RUNTIME_UNTRACKED_OVERFLOW")
     unexpected = []
     for item in tracked_entries + untracked_entries:
-        path = item.replace("\\", "/").lstrip("./")
+        path = item.replace("\\", "/")
+        while path.startswith("./"):
+            path = path[2:]
+        if item in untracked_entries and (
+            path in {".venv", "node_modules"}
+            or path.startswith(".venv/")
+            or path.startswith("node_modules/")
+        ):
+            # runtime dependency bindings are managed, reproducible links rather
+            # than generation payload.  Repositories that do not ignore these
+            # names must still remain clean for generation verification.
+            continue
         if not item.startswith("build/"):
             if path.startswith("build/") or path.startswith("data/gate_attempts/") or path.startswith("data/search_audit/"):
                 continue
@@ -2250,45 +2261,73 @@ def _archive_committed_runtime_recovery(
     return archive_path
 
 
+def _create_runtime_dependency_binding(source: Path, target: Path) -> None:
+    if target.exists() or target.is_symlink():
+        try:
+            if target.resolve(strict=True) == source.resolve(strict=True):
+                return
+        except OSError:
+            pass
+        raise RuntimeError("PRODUCTION_RUNTIME_DEPENDENCY_DRIFT")
+    if sys.platform == "win32":
+        escaped_target = str(target).replace("'", "''")
+        escaped_source = str(source).replace("'", "''")
+        command = (
+            f"New-Item -ItemType Junction -Path '{escaped_target}' "
+            f"-Target '{escaped_source}' -ErrorAction Stop | Out-Null"
+        )
+        completed = subprocess.run(
+            [
+                r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe",
+                "-NoProfile",
+                "-NonInteractive",
+                "-Command",
+                command,
+            ],
+            shell=False,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            creationflags=subprocess.CREATE_NO_WINDOW,
+            check=False,
+        )
+        if completed.returncode != 0:
+            raise RuntimeError("PRODUCTION_RUNTIME_DEPENDENCY_BIND_FAILED")
+    else:
+        target.symlink_to(source, target_is_directory=True)
+
+
 def _bind_runtime_dependencies(source_repo: Path, runtime: Path) -> None:
     for name in (".venv", "node_modules"):
         source = source_repo / name
-        target = runtime / name
         if not source.exists():
             continue
-        if target.exists() or target.is_symlink():
-            try:
-                if target.resolve(strict=True) == source.resolve(strict=True):
-                    continue
-            except OSError:
-                pass
-            raise RuntimeError("PRODUCTION_RUNTIME_DEPENDENCY_DRIFT")
-        if sys.platform == "win32":
-            escaped_target = str(target).replace("'", "''")
-            escaped_source = str(source).replace("'", "''")
-            command = (
-                f"New-Item -ItemType Junction -Path '{escaped_target}' "
-                f"-Target '{escaped_source}' -ErrorAction Stop | Out-Null"
-            )
-            completed = subprocess.run(
-                [
-                    r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe",
-                    "-NoProfile",
-                    "-NonInteractive",
-                    "-Command",
-                    command,
-                ],
-                shell=False,
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.PIPE,
-                creationflags=subprocess.CREATE_NO_WINDOW,
-                check=False,
-            )
-            if completed.returncode != 0:
-                raise RuntimeError("PRODUCTION_RUNTIME_DEPENDENCY_BIND_FAILED")
-        else:
-            target.symlink_to(source, target_is_directory=True)
+        _create_runtime_dependency_binding(source, runtime / name)
+
+
+def _detach_runtime_dependency_junctions(source_repo: Path, runtime: Path) -> None:
+    """Windows worktree move前に、管理対象junction自体だけを解除する。"""
+    if sys.platform != "win32":
+        return
+    for name in (".venv", "node_modules"):
+        target = runtime / name
+        if not target.exists() and not target.is_symlink():
+            continue
+        source = source_repo / name
+        try:
+            if (
+                not target.is_junction()
+                or not source.is_dir()
+                or target.resolve(strict=True) != source.resolve(strict=True)
+            ):
+                raise RuntimeError("PRODUCTION_RUNTIME_DEPENDENCY_DRIFT")
+            # Path.rmdir on a Windows junction removes the junction entry only;
+            # it never traverses or deletes the dependency target.
+            target.rmdir()
+        except RuntimeError:
+            raise
+        except OSError as error:
+            raise RuntimeError("PRODUCTION_RUNTIME_DEPENDENCY_UNBIND_FAILED") from error
 
 
 def _assert_runtime_recovery_capacity(runtime_root: Path) -> None:
@@ -2782,10 +2821,16 @@ def _converge_production_runtime_locked(
             )
             if any(quarantine.parent.iterdir()):
                 raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_STATE_DIVERGED")
-            with _managed_directory_handle(
-                runtime_root, runtime_root, "PRODUCTION_RUNTIME_REPARSE_INVALID"
-            ):
-                _run_git(source_repo, "worktree", "move", str(runtime), str(quarantine))
+            _detach_runtime_dependency_junctions(source_repo, runtime)
+            try:
+                with _managed_directory_handle(
+                    runtime_root, runtime_root, "PRODUCTION_RUNTIME_REPARSE_INVALID"
+                ):
+                    _run_git(source_repo, "worktree", "move", str(runtime), str(quarantine))
+            except (OSError, RuntimeError, ValueError):
+                # move失敗時も、実行中runtimeをdependency無しで放置しない。
+                _bind_runtime_dependencies(source_repo, runtime)
+                raise
         elif not runtime_state["exists"]:
             quarantine.parent.mkdir(parents=True, exist_ok=True)
             if quarantine.exists() and (quarantine / ".git").exists():
@@ -2798,6 +2843,10 @@ def _converge_production_runtime_locked(
             raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_STATE_DIVERGED")
         if runtime_state["exists"]:
             _assert_runtime_common_dir(quarantine, source_common)
+        if (quarantine / ".git").exists():
+            # move後もrollback可能な隔離世代としてdependencyを戻す。
+            # prepared相で中断された場合もここで再構成できる。
+            _bind_runtime_dependencies(source_repo, quarantine)
         _run_git(source_repo, "worktree", "repair")
         _append_runtime_recovery_event(
             journal_path,
