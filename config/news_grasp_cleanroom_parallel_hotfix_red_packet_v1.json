@@ -1,0 +1,161 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S5-HOTFIX-RED-V1",
+  "status": "active",
+  "executionAllowed": true,
+  "todoId": "NG-CLEANROOM-S5-HOTFIX-RED",
+  "role": "test_luna",
+  "canonicalContext": "/root/s1_edge_driver_red",
+  "dependencyIds": ["ng-cleanroom-parallel-hotfix-impact-r2"],
+  "baselineCommit": "16d076179b6188e182e7b1dfd48f34c484aae726",
+  "impactBinding": {
+    "path": "config/news_grasp_cleanroom_parallel_hotfix_impact_v1.json",
+    "sha256": "84c61f1e7f6a94c2946c849de2f91c0c0bcc14693aa652a27a3aabe86cfe7177",
+    "reviewPath": "config/news_grasp_cleanroom_parallel_hotfix_impact_review_v1.json",
+    "decision": "accepted",
+    "redNodeCount": 8
+  },
+  "writeLease": {
+    "leaseId": "TEST-LEASE-S5-HOTFIX-V1",
+    "leaseSha256": "af0ab71076043776fdf09b2294c14669f2760777c3c3d9aa527f973a54311d75",
+    "canonicalPayload": {
+      "leaseId": "TEST-LEASE-S5-HOTFIX-V1",
+      "role": "test_luna",
+      "canonicalContext": "/root/s1_edge_driver_red",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-s1-h1",
+      "writes": [
+        "tests/test_daily_self_heal.py",
+        "tests/test_news_grasp_completion_guard.py",
+        "tests/test_runner_convergence_contract.py",
+        "tests/test_runner_wrapper_smoke.py",
+        "tests/test_scheduled_high_cost_separation.py",
+        "tests/test_news_grasp_cleanroom_s5_install.py",
+        "tests/test_news_grasp_daily_control.py",
+        "tests/test_audit_recovery_control.py",
+        "tests/fixtures/news_grasp_cleanroom_parallel_hotfix_cases.json"
+      ],
+      "baselineCommit": "16d076179b6188e182e7b1dfd48f34c484aae726"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": [
+    "tests/test_daily_self_heal.py",
+    "tests/test_news_grasp_completion_guard.py",
+    "tests/test_runner_convergence_contract.py",
+    "tests/test_runner_wrapper_smoke.py",
+    "tests/test_scheduled_high_cost_separation.py",
+    "tests/test_news_grasp_cleanroom_s5_install.py",
+    "tests/test_news_grasp_daily_control.py",
+    "tests/test_audit_recovery_control.py",
+    "tests/fixtures/news_grasp_cleanroom_parallel_hotfix_cases.json"
+  ],
+  "forbiddenWrites": ["tools", "scripts", "config", "docs", "automation", "installed runtime", "user original worktree"],
+  "testOwnership": "tests, fixtures and Red/Green evidence only; do not implement, copy or edit production code",
+  "redNodes": [
+    {
+      "node": "test_parallel_hotfix_future_readiness_permit_date_is_not_future",
+      "path": "tests/test_daily_self_heal.py",
+      "requirementIds": ["NG-A-R16", "NG-A-R18"],
+      "oracle": "a future Scheduled Task next-run date selects the future readiness evidence root while current JST selects bootstrap -DateStamp, log filename and permitIssueDate",
+      "negative": "future date passed to permit issuance, current-only readiness root or installed-only helper substitution",
+      "expectedRed": "missing _next_scheduled_task_issue_date or future DateStamp/log assertion failure"
+    },
+    {
+      "node": "test_parallel_hotfix_completion_ok_with_slo_debt_exits_zero_and_non_ok_exits_two",
+      "path": "tests/test_news_grasp_completion_guard.py",
+      "requirementIds": ["NG-A-R16"],
+      "oracle": "main returns 0 for ok=true plus SLO debt and 2 for ok=false while preserving structured debt/output",
+      "negative": "evaluate-only assertion or removal of SLO debt",
+      "expectedRed": "ok=true plus outcomeEnvelope processExitCode=2 returns 2"
+    },
+    {
+      "node": "test_parallel_hotfix_runner_optional_fields_three_admission_schemas_and_artifact_priority_dedupe",
+      "path": "tests/test_runner_convergence_contract.py",
+      "requirementIds": ["NG-A-R16"],
+      "oracle": "optional decision fields are guarded; exact three admission schemas only; selected_artifacts precedes artifact_paths with stable dedupe; incident route and continuation deadline exception are authority-bound",
+      "negative": "unknown schema/route accepted, direct optional property access, artifact_paths-first or duplicate paths",
+      "expectedRed": "existing source violates all or a subset of exact static/runtime helper predicates"
+    },
+    {
+      "node": "test_parallel_hotfix_wrapper_wall_and_idle_timeout_map_exit_124",
+      "path": "tests/test_runner_wrapper_smoke.py",
+      "requirementIds": ["NG-A-R16"],
+      "oracle": "one wall-time and one idle-time bounded fake child each exit 124, close the owned job only, emit typed timeout evidence and are not retried",
+      "negative": "sleep longer than 5 seconds, visible process, shared-process kill, network or model call",
+      "expectedRed": "wrapper continues beyond limit or returns a non-124 child result"
+    },
+    {
+      "node": "test_parallel_hotfix_daily_audit_startup_ledger_fallback_uses_canonical_python_and_ops_root",
+      "path": "tests/test_scheduled_high_cost_separation.py",
+      "supportPaths": ["tests/test_news_grasp_daily_control.py", "tests/test_audit_recovery_control.py"],
+      "requirementIds": ["NG-A-R16", "NG-A-R18"],
+      "oracle": "missing/stale runner state is reconstructed only from broker ledger plus failure receipt; broker uses canonical Python and recovery receipt uses production-runtime ops root",
+      "negative": "sys.executable/CWD substitution, stale runner state, invented authority or model call",
+      "expectedRed": "RUNNER_STATE_EVIDENCE_INVALID or wrong executable/ops-root assertion"
+    },
+    {
+      "node": "test_s5_preflight_rejects_source_install_binding_task_action_drift_before_mutation",
+      "path": "tests/test_news_grasp_cleanroom_s5_install.py",
+      "requirementIds": ["NG-A-R17", "NG-A-R18"],
+      "oracle": "source, installed, binding and Task action drift each fail before filesystem, pointer, journal-phase or Task mutation",
+      "negative": "one-file launcher parity treated as installed Green",
+      "expectedRed": "news_grasp_cleanroom_install missing or two-owner closure not enforced"
+    },
+    {
+      "node": "test_s5_requires_both_owner_receipts_before_candidate_registration",
+      "path": "tests/test_news_grasp_cleanroom_s5_install.py",
+      "requirementIds": ["NG-A-R17"],
+      "oracle": "exact runtime-generation and ops-install receipt chains are both sealed, cross-bound and journaled before first TaskAdapter mutation",
+      "negative": "one receipt, unsealed caller mapping, unknown key or self-reseal",
+      "expectedRed": "news_grasp_cleanroom_install missing or candidate registration precedes receipt validation"
+    },
+    {
+      "node": "test_s5_two_owner_crash_and_privilege_failure_restore_exact_preimages",
+      "path": "tests/test_news_grasp_cleanroom_s5_install.py",
+      "requirementIds": ["NG-A-R17"],
+      "oracle": "every owner boundary crash/UAC denial preserves both exact preimage hashes; rollback order is new-disable, ops restore, runtime previous-generation restore; retry is idempotent",
+      "negative": "Task-only rollback, receipt reconstruction/self-reseal, duplicate owner mutation or dual-enabled snapshot",
+      "expectedRed": "news_grasp_cleanroom_install missing or two-owner phases/preimages absent"
+    }
+  ],
+  "fixtureContract": {
+    "path": "tests/fixtures/news_grasp_cleanroom_parallel_hotfix_cases.json",
+    "schemaVersion": "NEWS_GRASP_CLEANROOM_PARALLEL_HOTFIX_CASES_V1",
+    "required": ["admissionSchemas", "unknownAdmissionSchemas", "driftCases", "ownerReceiptSchemas", "ownerBoundaries", "forbiddenExternalMutations"],
+    "prohibitions": ["private absolute paths", "secrets", "live machine hashes as timeless expectations", "network", "real Task mutation"]
+  },
+  "authoringRules": [
+    "reuse existing helpers and fixtures where possible; do not duplicate large setup",
+    "the eight exact node names are immutable through Green",
+    "copying the four user-worktree test hunks is optional only when the same behavior is covered by the exact nodes; do not open or edit unrelated dirty paths",
+    "wrapper child must be local, bounded, hidden and killed only through its owned handle",
+    "no full suite and no high-cost E2E"
+  ],
+  "redVerification": {
+    "compile": "py -3.12 -m py_compile <each changed Python test>",
+    "collect": "py -3.12 -m pytest --noconftest --collect-only -q <eight-node paths>",
+    "focused": "py -3.12 -m pytest --noconftest -q tests/test_daily_self_heal.py tests/test_news_grasp_completion_guard.py tests/test_runner_convergence_contract.py tests/test_runner_wrapper_smoke.py tests/test_scheduled_high_cost_separation.py tests/test_news_grasp_cleanroom_s5_install.py -k 'parallel_hotfix or test_s5_preflight_rejects_source_install_binding_task_action_drift_before_mutation or test_s5_requires_both_owner_receipts_before_candidate_registration or test_s5_two_owner_crash_and_privilege_failure_restore_exact_preimages'",
+    "expected": "exact eight selected nodes fail for their stated production cause; unrelated selected helper/baseline nodes remain Green",
+    "ruff": "py -3.12 -m ruff check <changed test paths>",
+    "diff": "only writeSet paths; no production/config mutation; no unrelated test rewrite"
+  },
+  "commitPolicy": {
+    "allowedOnlyAfterExactRed": true,
+    "paths": [
+      "tests/test_daily_self_heal.py",
+      "tests/test_news_grasp_completion_guard.py",
+      "tests/test_runner_convergence_contract.py",
+      "tests/test_runner_wrapper_smoke.py",
+      "tests/test_scheduled_high_cost_separation.py",
+      "tests/test_news_grasp_cleanroom_s5_install.py",
+      "tests/test_news_grasp_daily_control.py",
+      "tests/test_audit_recovery_control.py",
+      "tests/fixtures/news_grasp_cleanroom_parallel_hotfix_cases.json"
+    ],
+    "message": "test: bind parallel recovery hotfixes before S5 cutover"
+  },
+  "causalRetryCondition": "one authoring attempt and one focused Red observation; if a node is unexpectedly Green or fails for fixture/test error, return to Sol with exact evidence and do not weaken it",
+  "delivery": "commit, exact paths/hashes/bytes, collected count, eight-node Red signatures, baseline evidence and status",
+  "stopPolicy": "return_to_sol_after_execution",
+  "unresolvedDecisionIds": []
+}
