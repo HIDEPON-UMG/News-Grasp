@@ -1162,6 +1162,7 @@ def _real_l4_l5_boundary(tmp_path: Path, index: int) -> tuple[Path, dict[str, An
         admission_adapter=admission,
         provider=provider,
         stage_runner=stage,
+        clock=deterministic_clock,
     )
     execution_result = execution_controller.execute(
         slot_key=audit_slot["slotKey"],
