@@ -1,0 +1,138 @@
+{
+  "schemaVersion": "LUNA_EXECUTION_PACKET_V2",
+  "packetId": "NG-CLEANROOM-S5A-PARALLEL-HOTFIX-GREEN-V1",
+  "status": "active",
+  "executionAllowed": true,
+  "issuedAt": "2026-08-21T10:12:14+09:00",
+  "role": "implementation_luna",
+  "canonicalContext": "/root/s5a_hotfix_impl",
+  "todoId": "No.09/A-09",
+  "baselineCommit": "fa017b16a07c72f6c2bd4f73b7da0e8ac1d55cd9",
+  "dependencies": [
+    "NG-CLEANROOM-S4-ACCEPTED-V1",
+    "NG-CLEANROOM-PARALLEL-HOTFIX-RED-SEALED-V1"
+  ],
+  "redSeal": {
+    "path": "config/news_grasp_cleanroom_parallel_hotfix_red_receipt_v1.json",
+    "sha256": "e1295ff5cf7354722915d415d5711b2affc50319031ddb32baacf9a9c5f7b3e4",
+    "exactNodeCount": 12,
+    "failed": 10,
+    "passed": 2,
+    "s5aExpectedGreenCount": 9,
+    "s5bExpectedRedCount": 3
+  },
+  "writeLease": {
+    "leaseId": "IMPL-LEASE-S5A-PARALLEL-HOTFIX-V1",
+    "leaseSha256": "9597a89482ae99acef1ff31f7b917085539c193ff998abc3138f1fd09f814846",
+    "canonicalPayload": {
+      "leaseId": "IMPL-LEASE-S5A-PARALLEL-HOTFIX-V1",
+      "role": "implementation_luna",
+      "canonicalContext": "/root/s5a_hotfix_impl",
+      "worktree": "<PROJECT_FOLDERS>/_worktrees/News-Grasp-cleanroom-impl-hotfix-s5a",
+      "writes": [
+        "tools/daily_self_heal.py",
+        "tools/news_grasp_completion_guard.py",
+        "scripts/ops/news-grasp-runner.ps1",
+        "scripts/ops/run_codex_with_timeout.ps1",
+        "tools/news_grasp_daily_control.py",
+        "tools/audit_recovery_control.py"
+      ],
+      "baselineCommit": "fa017b16a07c72f6c2bd4f73b7da0e8ac1d55cd9"
+    },
+    "canonicalization": "UTF-8 JSON; ensure_ascii=false; sort_keys=true; separators=(',',':'); SHA-256"
+  },
+  "writeSet": [
+    "tools/daily_self_heal.py",
+    "tools/news_grasp_completion_guard.py",
+    "scripts/ops/news-grasp-runner.ps1",
+    "scripts/ops/run_codex_with_timeout.ps1",
+    "tools/news_grasp_daily_control.py",
+    "tools/audit_recovery_control.py"
+  ],
+  "forbiddenWrites": [
+    "tests",
+    "tests/fixtures",
+    "config",
+    "docs",
+    "tools/news_grasp_cleanroom_install.py",
+    "ProjectFolders workspace-global harness",
+    "original user worktree",
+    "installed runtime",
+    "live bin",
+    "Scheduled Tasks"
+  ],
+  "sourceSnapshot": {
+    "observedAt": "2026-08-21T10:13:30+09:00",
+    "readOnlyRoot": "<PROJECT_FOLDERS>/News-Grasp",
+    "rule": "read only these exact bytes as the reported operational-fix reference; apply semantic hunks to the newer candidate and never replace a whole candidate file",
+    "paths": [
+      {"path": "tools/daily_self_heal.py", "referenceSha256": "0c3532ec5177092342ae7c891dcead4708d599bfa9404cceb0941b7ff5d12b6a", "candidateSha256": "ad83d22f136b2402f17165f29aa0f0c8eec3d2dafc221ddbda53fe3e706fc6df"},
+      {"path": "tools/news_grasp_completion_guard.py", "referenceSha256": "2265ba74625318c29bd3c8ef26744656444f29262a5cb7976ddf3a0d19efde97", "candidateSha256": "276ef1e1c3da37b4040a5992df706834caeb9d80a41760c5652c62d60038bba1"},
+      {"path": "scripts/ops/news-grasp-runner.ps1", "referenceSha256": "d4c01f0085839b18e5556ea271dd6c5c97d604904150f50296b256071cab033f", "candidateSha256": "ee3dbbfa92e117605e85e19e37ecd541402b2d727fe2ef9451e9b74b827962ca"},
+      {"path": "scripts/ops/run_codex_with_timeout.ps1", "referenceSha256": "652f6cc8db67f746870505a3f90a515885749ca5d9af88cf7ea6e89ef751b1ff", "candidateSha256": "688f6f8f7b306f28953c2f785c93a484e9ede8990cadb7af2fc09ab3a790c40b"},
+      {"path": "tools/news_grasp_daily_control.py", "referenceSha256": "b3d99ed0049d0990f65cfc5d13ec3a34804bdfe5c78e8ad5912dbd695b909f5c", "candidateSha256": "878e5743577c7d81a27b538c528b504539edbd0d698af5ded57395a69918251d"},
+      {"path": "tools/audit_recovery_control.py", "referenceSha256": "d945bf4590f6d99633c499a91bb3f9e2f6dbc092bfc8df8ca9ecfaa7a579eb58", "candidateSha256": "a780f58867c849ab06afe7bae33b0d88f1d1ad3e7b784d1ee9630f67dfc82ee8"}
+    ]
+  },
+  "implementationDecisions": [
+    {
+      "path": "tools/daily_self_heal.py",
+      "decision": "preserve the candidate's existing _next_scheduled_task_issue_date helper and verify_publish_complete consumer; add optional permit_issue_date to _run_live_startup_canary, cap the effective permit/log date at current JST, retain the future date only for canary_root/state evidence, use the effective date for -DateStamp/log_file and return it as permit_issue_date"
+    },
+    {
+      "path": "tools/news_grasp_completion_guard.py",
+      "decision": "main returns 0 exactly when result['ok'] is true and 2 otherwise; still write and preserve the structured completion outcome/SLO debt"
+    },
+    {
+      "path": "scripts/ops/news-grasp-runner.ps1",
+      "decision": "change only Set-TypedRepairTerminalState optional external_kind/external_system/reason reads to PSObject property guards; preserve the candidate's already-correct three-schema admission, incident route and selected-first stable dedupe implementation"
+    },
+    {
+      "path": "scripts/ops/run_codex_with_timeout.ps1",
+      "decision": "inside the polling loop enforce wall and idle limits, log the exact timeout kind, close only ownedJobHandle, zero that handle, wait boundedly and exit 124; do not kill by PID/name or touch a shared process"
+    },
+    {
+      "path": "tools/news_grasp_daily_control.py",
+      "decision": "apply the exact reported startup-self-repair classification, canonical Python broker, matching evidence-root admission reuse, ledger/failure-receipt fallback, observed exit code and canonical Python execution-receipt hunks; preserve scheduled failure lineage and do not invent authority/model calls"
+    },
+    {
+      "path": "tools/audit_recovery_control.py",
+      "decision": "add canonical Python selection and use it at broker boundaries; ignore stale-date or foreign-repo runner state; bind recovery execution receipt ops_root to production_runtime_root at all three call sites"
+    }
+  ],
+  "forbiddenImplementation": [
+    "whole-file copy from the user worktree",
+    "remove the candidate-only next-task helper",
+    "import any unrelated dirty hunk",
+    "edit or weaken a test",
+    "add a fourth high-cost admission schema",
+    "change selected-artifact fallback semantics",
+    "network, external model, Task Scheduler, UAC, publication or installed-runtime mutation",
+    "shell=true, visible child window or shared-process kill"
+  ],
+  "verification": {
+    "compile": "py -3.12 -m py_compile tools/daily_self_heal.py tools/news_grasp_completion_guard.py tools/news_grasp_daily_control.py tools/audit_recovery_control.py",
+    "powershellParse": "parse both owned ps1 files with System.Management.Automation.Language.Parser and require zero errors",
+    "s5aFocused": "run the nine non-S5-install nodes from the sealed 12-node set with --noconftest; expect 9 passed",
+    "s5bSentinel": "run the three S5 install nodes with --noconftest; expect 3 failed only with ModuleNotFoundError tools.news_grasp_cleanroom_install",
+    "regression": "run existing directly adjacent focused tests only when they do not start external models or mutate live state",
+    "ruff": "run ruff on the four Python production files; no new diagnostic beyond the sealed pre-existing F821/F401 observations",
+    "diff": "git diff --check plus owned-path-only status and diff"
+  },
+  "commitPolicy": {
+    "allowedOnlyAfterGreen": true,
+    "paths": [
+      "tools/daily_self_heal.py",
+      "tools/news_grasp_completion_guard.py",
+      "scripts/ops/news-grasp-runner.ps1",
+      "scripts/ops/run_codex_with_timeout.ps1",
+      "tools/news_grasp_daily_control.py",
+      "tools/audit_recovery_control.py"
+    ],
+    "message": "fix: canonicalize parallel recovery hotfixes"
+  },
+  "causalRetry": "one implementation attempt; one retry only after an exact implementation-caused failure and a causal delta, never after a test/environment mistake",
+  "delivery": "six production hashes/bytes, exact verification exits, commit, clean status and contrary evidence",
+  "stopPolicy": "return to Sol after S5A verification; do not start S5B",
+  "unresolvedDecisionIds": []
+}
