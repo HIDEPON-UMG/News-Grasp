@@ -19,7 +19,43 @@ if os.environ.get("NEWS_GRASP_HIGH_COST_BINDING_PATH") and os.environ.get(
 ):
     _candidate_roots: tuple[Path, ...] = ()
 else:
-    _candidate_roots = tuple(_REPO_ROOT.parents)
+    _descriptor_override = os.environ.get(
+        "NEWS_GRASP_TEST_HIGH_COST_DESCRIPTOR_PATH", ""
+    ).strip()
+    _descriptor_candidate = (
+        Path(_descriptor_override)
+        if _descriptor_override
+        else (
+            Path.home()
+            / ".codex"
+            / "state"
+            / "high-cost-operation"
+            / "capability-v1.json"
+        )
+    )
+    _descriptor_workspace_root: Path | None = None
+    try:
+        _descriptor_payload = json.loads(
+            _descriptor_candidate.read_text(encoding="utf-8-sig")
+        )
+        if isinstance(_descriptor_payload, dict):
+            _workspace_root = Path(str(_descriptor_payload.get("workspaceRoot") or ""))
+            if _workspace_root.is_dir():
+                _descriptor_workspace_root = _workspace_root
+    except (OSError, ValueError, TypeError):
+        _descriptor_workspace_root = None
+    _candidate_roots = tuple(
+        dict.fromkeys(
+            [
+                *(
+                    [_descriptor_workspace_root]
+                    if _descriptor_workspace_root is not None
+                    else []
+                ),
+                *_REPO_ROOT.parents,
+            ]
+        )
+    )
 for _candidate in _candidate_roots:
     _adapter = _candidate / "tools" / "harness" / "high_cost_capability_adapter.py"
     _descriptor_override = os.environ.get(
