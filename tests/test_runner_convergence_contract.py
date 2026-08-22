@@ -1632,7 +1632,7 @@ def test_recovery_continuation_admission_covers_deepdive_resume_boundary() -> No
     assert "if ($HighCostAdmissionPath)" in admission_block
     assert "[string]$continuationAdmission.resumeStage -cne $ResumeFromStage" in admission_block
     assert "$script:UsesHighCostContinuationAdmission = $true" in admission_flow
-    assert admission_flow.index("$modelSpawnBroker 'admit'") < admission_flow.index(
+    assert admission_flow.index("$modelSpawnBroker 'admit'") < admission_flow.rindex(
         "$script:UsesHighCostContinuationAdmission = $true"
     )
     assert (

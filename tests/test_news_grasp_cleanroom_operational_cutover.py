@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import sys
 from types import SimpleNamespace
 from typing import Any, Mapping
 
@@ -258,23 +259,107 @@ def test_task_origin_witness_accepts_protected_direct_schedule_service_parent() 
     assert module._cleanroom_validate_process_witness(payload) is False
 
 
-def test_entry_canary_child_is_an_isolated_local_probe_not_a_high_cost_bootstrap() -> None:
+def test_entry_canary_child_is_an_isolated_local_probe_not_a_high_cost_bootstrap(
+    tmp_path: Path,
+) -> None:
     """entry-canaryは外部model authorityに依存せず、隔離child起動だけを実証する。"""
     module = _load_launcher()
-    canary_root = EXPECTED_RUNTIME_ROOT / "production-runtime" / "entry-canary" / "generation" / "nonce"
-    probe_path = canary_root / "child-probe.txt"
+    generation = "a" * 64
+    nonce = "b" * 32
+    expected_probe_path = tmp_path / "entry-canary" / generation / nonce / "child-probe.txt"
     command, safety = module._cleanroom_child_command(
-        route="bootstrap-smoke",
-        bin_dir=Path.home() / "bin",
+        route="task-origin-child-probe",
+        bin_dir=tmp_path / "bin",
         authority={"action": [r"C:\Python312\pythonw.exe"]},
-        probe_path=probe_path,
+        runtime_root=tmp_path,
+        canary_generation=generation,
+        canary_nonce=nonce,
     )
     assert command[1].endswith("news-grasp-task-launcher.pyw")
-    assert command[2:] == ["bootstrap", "--probe", str(probe_path)]
+    assert command[2:] == [
+        "task-origin-child-probe",
+        "--canary-generation",
+        generation,
+        "--canary-nonce",
+        nonce,
+    ]
+    assert str(expected_probe_path) not in command
     assert "--high-cost-binding-path" not in command
     assert "--high-cost-binding-sha256" not in command
     assert safety["externalEffectCount"] == 0
-    assert safety["probePath"] == str(probe_path)
+    assert safety["probePath"] == str(expected_probe_path)
+
+
+def test_cleanroom_child_probe_is_exact_exclusive_and_rejects_invalid_names(
+    tmp_path: Path,
+) -> None:
+    """child probeはruntime root内の固定名をexclusive-createし、path escapeを拒否する。"""
+    module = _load_launcher()
+    writer = getattr(module, "_write_cleanroom_child_probe", None)
+    assert callable(writer), "launcher must expose _write_cleanroom_child_probe"
+    generation = "a" * 64
+    nonce = "b" * 32
+    expected = tmp_path / "entry-canary" / generation / nonce / "child-probe.txt"
+    expected.parent.mkdir(parents=True)
+    written = writer(generation=generation, nonce=nonce, runtime_root=tmp_path)
+    assert Path(written).resolve() == expected.resolve()
+    assert expected.read_text(encoding="utf-8") == "probe_ok"
+    with pytest.raises((FileExistsError, OSError, RuntimeError)):
+        writer(generation=generation, nonce=nonce, runtime_root=tmp_path)
+    assert expected.read_text(encoding="utf-8") == "probe_ok"
+
+    invalid_cases = (
+        ("../" + "a" * 61, nonce),
+        ("A" * 64, nonce),
+        (generation, "../" + "b" * 29),
+        (generation, "B" * 32),
+    )
+    for invalid_generation, invalid_nonce in invalid_cases:
+        with pytest.raises((OSError, RuntimeError, ValueError)):
+            writer(
+                generation=invalid_generation,
+                nonce=invalid_nonce,
+                runtime_root=tmp_path,
+            )
+    assert not (tmp_path.parent / "escape").exists()
+
+
+def test_cleanroom_child_probe_propagates_managed_directory_reparse_rejection(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """managed-directory/reparse guardの拒否理由をchild probeで握り潰さない。"""
+    module = _load_launcher()
+    writer = getattr(module, "_write_cleanroom_child_probe", None)
+    assert callable(writer), "launcher must expose _write_cleanroom_child_probe"
+    rejection = "NEWS_GRASP_CLEANROOM_CHILD_PROBE_MANAGED_PATH_INVALID"
+
+    def reject(*_args: Any, **_kwargs: Any) -> Path:
+        raise RuntimeError(rejection)
+
+    monkeypatch.setattr(module, "_assert_managed_path", reject)
+    with pytest.raises(RuntimeError, match=re.escape(rejection)):
+        writer(generation="a" * 64, nonce="b" * 32, runtime_root=tmp_path)
+
+
+def test_legacy_probe_cli_rejects_caller_supplied_outside_path(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """legacy --probe は任意caller pathへ書き込まず、専用modeへ閉じる。"""
+    module = _load_launcher()
+    outside = tmp_path / "outside" / "legacy-child-probe.txt"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["news-grasp-task-launcher.pyw", "bootstrap", "--probe", str(outside)],
+    )
+    try:
+        result = module.main()
+    except SystemExit as error:
+        result = error.code
+    assert result not in (0, None)
+    assert not outside.exists()
 
 
 def _run_dispatch(

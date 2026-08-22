@@ -2846,12 +2846,14 @@ def verify_live_runner_readiness(
             reason = "bootstrap_task_next_run_missing"
         elif runner_targets_runner and not bootstrap_missed_runs_ok:
             reason = "bootstrap_task_missed_runs"
-        elif not bootstrap_observation_ok:
-            reason = bootstrap_observation_reason
         elif runner_targets_runner and not bootstrap_before_runner:
             reason = "bootstrap_task_not_before_runner"
+        elif bootstrap_details.get("last_task_result") != 0:
+            reason = "bootstrap_task_last_result_not_ok"
         elif not runner_targets_task_launcher:
             reason = "scheduled_task_launcher_required"
+        elif not bootstrap_observation_ok:
+            reason = bootstrap_observation_reason
         elif not binding_authority.get("ok"):
             reason = str(binding_authority.get("reason") or "high_cost_binding_action_invalid")
         else:

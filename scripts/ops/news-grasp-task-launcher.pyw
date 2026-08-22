@@ -1750,14 +1750,16 @@ def _run_cleanroom_entry_canary_pipeline(
     if not child_probe_path.is_relative_to(canary_root):
         raise RuntimeError("NEWS_GRASP_CANARY_CHILD_PROBE_PATH_INVALID")
     command, safety = _cleanroom_child_command(
-        route="bootstrap-smoke",
+        route="task-origin-child-probe",
         bin_dir=bin_dir,
         authority=authority,
-        probe_path=child_probe_path,
+        runtime_root=base_runtime,
+        canary_generation=generation,
+        canary_nonce=nonce,
     )
     if child_runner is None:
         child_exit = _run_cleanroom_child(
-            "bootstrap-smoke",
+            "task-origin-child-probe",
             command,
             bin_dir=bin_dir,
             safety=safety,
@@ -1776,7 +1778,7 @@ def _run_cleanroom_entry_canary_pipeline(
     else:
         child_exit = int(
             child_runner(
-                "bootstrap-smoke",
+                "task-origin-child-probe",
                 command,
                 **{
                     key: value
@@ -1792,7 +1794,7 @@ def _run_cleanroom_entry_canary_pipeline(
         "generation": generation,
         "slotKey": decision.get("slotKey"),
         "fenceToken": decision.get("fenceToken"),
-        "childRoute": "bootstrap-smoke",
+        "childRoute": "task-origin-child-probe",
         "childExitCode": int(child_exit),
         "terminalState": terminal_state,
     }
@@ -1865,7 +1867,9 @@ def _cleanroom_child_command(
     route: str,
     bin_dir: Path,
     authority: Mapping[str, object] | None,
-    probe_path: Path | None = None,
+    runtime_root: Path | None = None,
+    canary_generation: str | None = None,
+    canary_nonce: str | None = None,
 ) -> tuple[list[str], dict[str, object]]:
     """installed childのargvと観測可能な安全境界を作る。"""
     launcher = (Path(bin_dir) / "news-grasp-task-launcher.pyw").resolve()
@@ -1935,21 +1939,27 @@ def _cleanroom_child_command(
             "close_fds": True,
             "timeout": _CLEANROOM_CHILD_TIMEOUT_SECONDS,
         }
-    if route == "bootstrap-smoke":
+    if route == "task-origin-child-probe":
         executable = Path(sys.executable)
         if isinstance(authority, Mapping):
             action = authority.get("action")
             if isinstance(action, list) and action and isinstance(action[0], str) and action[0]:
                 executable = Path(action[0])
-        if probe_path is None:
-            raise ValueError("NEWS_GRASP_CANARY_CHILD_PROBE_PATH_MISSING")
-        isolated_probe = Path(probe_path).resolve()
+        if runtime_root is None or canary_generation is None or canary_nonce is None:
+            raise ValueError("NEWS_GRASP_CANARY_CHILD_PROBE_IDENTITY_MISSING")
+        isolated_probe = _cleanroom_child_probe_path(
+            generation=canary_generation,
+            nonce=canary_nonce,
+            runtime_root=runtime_root,
+        )
         command = [
             str(executable),
             str(launcher),
-            "bootstrap",
-            "--probe",
-            str(isolated_probe),
+            "task-origin-child-probe",
+            "--canary-generation",
+            canary_generation,
+            "--canary-nonce",
+            canary_nonce,
         ]
         return command, {
             "route": route,
@@ -1964,6 +1974,73 @@ def _cleanroom_child_command(
             "probePath": str(isolated_probe),
         }
     raise ValueError("NEWS_GRASP_CLEANROOM_CHILD_ROUTE_INVALID")
+
+
+def _cleanroom_child_probe_path(
+    *,
+    generation: str,
+    nonce: str,
+    runtime_root: Path,
+) -> Path:
+    """caller pathを受け取らず、canary identityから唯一のprobe pathを導出する。"""
+    if re.fullmatch(r"[0-9a-f]{64}", generation) is None:
+        raise RuntimeError("NEWS_GRASP_CLEANROOM_CHILD_PROBE_GENERATION_INVALID")
+    if re.fullmatch(r"[0-9a-f]{32}", nonce) is None:
+        raise RuntimeError("NEWS_GRASP_CLEANROOM_CHILD_PROBE_NONCE_INVALID")
+    boundary = Path(os.path.abspath(os.fspath(runtime_root)))
+    return boundary / "entry-canary" / generation / nonce / "child-probe.txt"
+
+
+def _write_cleanroom_child_probe(
+    *,
+    generation: str,
+    nonce: str,
+    runtime_root: Path | None = None,
+) -> Path:
+    """既存のcanonical canary directoryにprobeをexclusive/no-reparseで一度だけ書く。"""
+    boundary = Path(
+        os.path.abspath(
+            os.fspath(
+                runtime_root
+                or (Path.home() / ".news-grasp-runtime" / "production-runtime")
+            )
+        )
+    )
+    probe_path = _cleanroom_child_probe_path(
+        generation=generation,
+        nonce=nonce,
+        runtime_root=boundary,
+    )
+    code = "NEWS_GRASP_CLEANROOM_CHILD_PROBE_MANAGED_PATH_INVALID"
+    _assert_managed_path(probe_path, boundary, code)
+    probe_parent = probe_path.parent
+    if not probe_parent.is_dir() or probe_parent.is_symlink():
+        raise RuntimeError(code)
+    payload = b"probe_ok"
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    flags |= int(getattr(os, "O_BINARY", 0))
+    flags |= int(getattr(os, "O_NOFOLLOW", 0))
+    with _managed_directory_handle(probe_parent, boundary, code):
+        _assert_managed_path(probe_path, boundary, code)
+        if probe_path.exists() or probe_path.is_symlink():
+            raise RuntimeError("NEWS_GRASP_CLEANROOM_CHILD_PROBE_EXISTS")
+        descriptor = os.open(os.fspath(probe_path), flags, 0o600)
+        try:
+            information = os.fstat(descriptor)
+            if not stat.S_ISREG(information.st_mode) or information.st_size != 0:
+                raise RuntimeError(code)
+            offset = 0
+            while offset < len(payload):
+                written = os.write(descriptor, payload[offset:])
+                if written <= 0:
+                    raise RuntimeError("NEWS_GRASP_CLEANROOM_CHILD_PROBE_WRITE_FAILED")
+                offset += written
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+    if probe_path.stat().st_size != len(payload):
+        raise RuntimeError("NEWS_GRASP_CLEANROOM_CHILD_PROBE_WRITE_FAILED")
+    return probe_path
 
 
 def _run_cleanroom_child(
@@ -5027,9 +5104,9 @@ def main() -> int:
             "scheduled-equivalent-nopublish",
             "dispatch",
             "task-origin-canary",
+            "task-origin-child-probe",
         ),
     )
-    parser.add_argument("--probe", type=Path)
     parser.add_argument("--repo-dir", type=Path)
     parser.add_argument("--python-exe", type=Path)
     parser.add_argument("--evidence-repo-dir", type=Path)
@@ -5055,13 +5132,59 @@ def main() -> int:
     )
     args = parser.parse_args()
     bin_dir = Path.home() / "bin"
+    if args.mode == "task-origin-child-probe":
+        if (
+            not args.canary_nonce
+            or not args.canary_generation
+            or args.repo_dir is not None
+            or args.python_exe is not None
+            or args.evidence_repo_dir is not None
+            or args.source_repo is not None
+            or args.origin_sha is not None
+            or args.bootstrap_owner_pid is not None
+            or args.bootstrap_owner_receipt is not None
+            or args.bootstrap_owner_nonce is not None
+            or args.runtime_root is not None
+            or args.scheduled_task_name is not None
+            or args.launch_authority is not None
+            or args.high_cost_binding_path is not None
+            or args.high_cost_binding_sha256
+            or args.schedule_id is not None
+            or args.intent is not None
+            or args.canary_receipt_path is not None
+        ):
+            parser.error(
+                "task-origin-child-probe requires only --canary-generation and --canary-nonce"
+            )
+        try:
+            probe_path = _write_cleanroom_child_probe(
+                generation=str(args.canary_generation),
+                nonce=str(args.canary_nonce),
+            )
+        except (OSError, RuntimeError, ValueError, TypeError) as error:
+            print(
+                json.dumps(
+                    {"status": "failed", "reasonCode": str(error)},
+                    ensure_ascii=False,
+                    sort_keys=True,
+                ),
+                file=sys.stderr,
+            )
+            return 66
+        print(
+            json.dumps(
+                {"status": "probe_ok", "probePath": str(probe_path)},
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+        )
+        return 0
     if args.mode == "task-origin-canary":
         if (
             not args.canary_nonce
             or not args.canary_generation
             or args.schedule_id is not None
             or args.intent is not None
-            or args.probe is not None
             or args.repo_dir is not None
             or args.python_exe is not None
             or args.evidence_repo_dir is not None
@@ -5119,7 +5242,6 @@ def main() -> int:
             or args.intent is None
             or args.high_cost_binding_path is not None
             or args.high_cost_binding_sha256
-            or args.probe is not None
             or args.repo_dir is not None
             or args.python_exe is not None
             or args.evidence_repo_dir is not None
@@ -5200,10 +5322,6 @@ def main() -> int:
             )
             return 72
         print(json.dumps(result, ensure_ascii=False, sort_keys=True))
-        return 0
-    if args.probe:
-        args.probe.parent.mkdir(parents=True, exist_ok=True)
-        args.probe.write_text("probe_ok", encoding="utf-8")
         return 0
     try:
         launcher_identity = _load_stable_launcher_identity(bin_dir=bin_dir)

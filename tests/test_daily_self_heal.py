@@ -3599,7 +3599,8 @@ def test_verify_live_runner_readiness_rejects_bootstrap_before_direct_runner(mon
     assert result["scheduled_task"]["targets_live_runner"] is True
     assert result["scheduled_task"]["direct_runner_pre_run_interlock"] is True
     assert result["scheduled_task"]["direct_runner_pre_run_reexec"] is True
-    assert result["scheduled_task"]["bootstrap_repairs_before_run"] is True
+    # LastTaskResult=0だけでは新しいexecution receipt契約を満たさない。
+    assert result["scheduled_task"]["bootstrap_repairs_before_run"] is False
     assert result["last_scheduled_attempt"]["status"] == "failed"
     assert result["last_scheduled_attempt"]["last_task_result"] == 72
 
