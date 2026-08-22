@@ -2,13 +2,13 @@
   "articlePath": "digest/DeepDive/2026-08-23-DeepDive.md",
   "articleSha256": "0dc6852b0670a00b31617b629c6edb5c79fd3f30371d948e09b71eafad91146e",
   "issueDate": "2026-08-23",
-  "manifestSha256": "6d2a67fc8d01c4b08864729df66f20ad97c16e7572694632c1ac19961441ead2",
+  "manifestSha256": "e97b791ebc8415b9d946719d9b8aca24a6ec432d5a7bc25f82421763c21c3d63",
   "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
-  "sourceSetSha256": "9a9cb524c427b9cf82ca5a8868a31e6b98f381a94d9161aec1cf5e2cf5eeaeb3",
+  "sourceSetSha256": "36a42e089fd00d49f71f553acddbd20485f4f32b891489869dc0baeeaee27975",
   "sources": [
     {
-      "contentSha256": "108ee34343402518416ecece9dc7b09e5763a32c6c2e627474c0bfa540620b27",
-      "fetchedAt": "2026-08-22T23:07:50.982075+00:00",
+      "contentSha256": "de1c8235b9b5ae4f4beeb3ea703b7192b384053049fa1bf3866a55e23eda7335",
+      "fetchedAt": "2026-08-22T23:14:43.067330+00:00",
       "finalUrl": "https://waymo.com/blog/2025/02/la-public-transit-credit-program/",
       "httpStatus": 200,
       "locations": [
@@ -20,8 +20,8 @@
       "url": "https://waymo.com/blog/2025/02/la-public-transit-credit-program/"
     },
     {
-      "contentSha256": "3e97d855044bda69ec3f2928735f4d44beb6c6518fdb2d1bb0a712e4f0915185",
-      "fetchedAt": "2026-08-22T23:07:51.422376+00:00",
+      "contentSha256": "1913aefd5206570a27a87d2eeb28ace270d88b03c6574b8fc89d3f02a6131aaf",
+      "fetchedAt": "2026-08-22T23:14:43.539869+00:00",
       "finalUrl": "https://waymo.com/blog/2025/05/scaling-our-fleet-through-us-manufacturing/",
       "httpStatus": 200,
       "locations": [
@@ -35,8 +35,8 @@
       "url": "https://waymo.com/blog/2025/05/scaling-our-fleet-through-us-manufacturing/"
     },
     {
-      "contentSha256": "ae0746503a703b020c81232c7e160efa201d62b4c4489345ddfca06b30ddb9f8",
-      "fetchedAt": "2026-08-22T23:07:51.899376+00:00",
+      "contentSha256": "4b9a1ca4043562dae332cea1a07eb453e907377e694bd1cc849433712bbb332f",
+      "fetchedAt": "2026-08-22T23:14:44.873785+00:00",
       "finalUrl": "https://waymo.com/blog/2026/02/waymo-raises-usd16-billion-investment-round/",
       "httpStatus": 200,
       "locations": [
@@ -50,8 +50,8 @@
       "url": "https://waymo.com/blog/2026/02/waymo-raises-usd16-billion-investment-round/"
     },
     {
-      "contentSha256": "ea6afda53259e52b84ad7d0816cc1a71638e1f16375ddded52908195dd8c2f29",
-      "fetchedAt": "2026-08-22T23:07:52.438390+00:00",
+      "contentSha256": "9b3249c528dd0857814c79406f3107d17ff3e933eab9320d8bbf8308ee0a9332",
+      "fetchedAt": "2026-08-22T23:14:45.669827+00:00",
       "finalUrl": "https://waymo.com/blog/2026/08/look-under-our-trunk/",
       "httpStatus": 200,
       "locations": [
@@ -64,8 +64,8 @@
       "url": "https://waymo.com/blog/2026/08/look-under-our-trunk/"
     },
     {
-      "contentSha256": "b1a3a9701933ca26d2fa617c26d58d858efe166a8375b3744b3deb66fc23a2d6",
-      "fetchedAt": "2026-08-22T23:07:53.975189+00:00",
+      "contentSha256": "b35977f8b7583b57bd2e902dc98dff6d40e4440e53f8db9b8595470e34ee35cb",
+      "fetchedAt": "2026-08-22T23:14:46.563304+00:00",
       "finalUrl": "https://waymo.com/blog/shorts/safetydata-june26/",
       "httpStatus": 200,
       "locations": [
@@ -78,8 +78,8 @@
       "url": "https://waymo.com/blog/shorts/safetydata-june26/"
     },
     {
-      "contentSha256": "be5b4b5a767af90caeaf20b581b226025a81fbf84f5955b855604df8d58d4d88",
-      "fetchedAt": "2026-08-22T23:07:54.499754+00:00",
+      "contentSha256": "b4742707d1b36f9abb85350720ca54ac7e6ee92ba26325a5715a07f461388ca8",
+      "fetchedAt": "2026-08-22T23:14:47.055226+00:00",
       "finalUrl": "https://waymo.com/intl/zh-cn/blog/2026/02/ro-on-6th-gen-waymo-driver/",
       "httpStatus": 200,
       "locations": [
