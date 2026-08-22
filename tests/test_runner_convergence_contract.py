@@ -2078,7 +2078,11 @@ def test_ops_installer_task_rollback_fails_closed_before_rolled_back_receipt() -
             "Disable-ScheduledTask",
             "Unregister-ScheduledTask",
         ):
-            matching = [line for line in block.splitlines() if command in line]
+            matching = [
+                line
+                for line in block.splitlines()
+                if command in line and not line.lstrip().startswith("#")
+            ]
             assert matching
             assert all("-ErrorAction Stop" in line for line in matching), matching
     assert "$Journal | Add-Member -NotePropertyName 'rolled_back_at'" in text
@@ -2215,6 +2219,305 @@ def test_interrupted_install_rejects_forged_journal_paths_and_task_names_before_
     assert completed.returncode != 0
     assert "NEWS_GRASP_INSTALL_JOURNAL_" in completed.stderr
     assert outside.read_text(encoding="utf-8") == "unchanged"
+
+
+def test_install_journal_writer_shape_with_delivery_state_is_accepted_by_recovery_guard(
+    tmp_path: Path,
+) -> None:
+    """writer/復旧validator/guardの同一journal schemaをprepared fixtureで束縛する。"""
+    installer = (OPS_DIR / "install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
+    guard = (OPS_DIR / "install-news-grasp-ops-guard.ps1").read_text(encoding="utf-8-sig")
+    transaction_id = "20260822-120000"
+    backup_root = tmp_path / "backups"
+    transaction_dir = backup_root / transaction_id
+    transaction_dir.mkdir(parents=True)
+    repo = tmp_path / "repo"
+    ops = repo / "scripts" / "ops"
+    ops.mkdir(parents=True)
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    (bin_dir / "news-grasp-authority").mkdir()
+
+    def row(
+        file_name: str,
+        source: str,
+        destination: Path,
+        *,
+        backup: Path | None = None,
+        before_sha256: str = "",
+        source_sha256: str = "",
+    ) -> dict[str, str]:
+        return {
+            "file": file_name,
+            "source": source,
+            "destination": str(destination),
+            "backup": str(backup) if backup else "",
+            "before_sha256": before_sha256,
+            "source_sha256": source_sha256,
+            "after_sha256": "",
+        }
+
+    def snapshot(destination: Path, backup: Path, content: bytes) -> str:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        backup.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(content)
+        backup.write_bytes(content)
+        return hashlib.sha256(content).hexdigest()
+
+    rows: list[dict[str, str]] = []
+    high_cost_tool = repo / "tools" / "news_grasp_high_cost_binding.py"
+    high_cost_tool.parent.mkdir(parents=True)
+    high_cost_tool.write_bytes(b"high-cost-resolver\n")
+    high_cost_tool_before = snapshot(
+        bin_dir / "news_grasp_high_cost_binding.py",
+        transaction_dir / "news_grasp_high_cost_binding.py.before",
+        b"old-high-cost-resolver\n",
+    )
+    rows.append(
+        row(
+            "news_grasp_high_cost_binding.py",
+            str(high_cost_tool),
+            bin_dir / "news_grasp_high_cost_binding.py",
+            backup=transaction_dir / "news_grasp_high_cost_binding.py.before",
+            before_sha256=high_cost_tool_before,
+            source_sha256=hashlib.sha256(high_cost_tool.read_bytes()).hexdigest(),
+        )
+    )
+    high_cost_candidate = transaction_dir / "news-grasp-high-cost-binding-v1.candidate.json"
+    high_cost_candidate.write_text('{"schemaVersion":"NEWS_GRASP_HIGH_COST_BINDING_V1"}\n', encoding="utf-8")
+    high_cost_binding_before = snapshot(
+        bin_dir / "news-grasp-high-cost-binding-v1.json",
+        transaction_dir / "news-grasp-high-cost-binding-v1.before.json",
+        b"old-high-cost-binding\n",
+    )
+    rows.append(
+        row(
+            "news-grasp-high-cost-binding-v1.json",
+            str(high_cost_candidate),
+            bin_dir / "news-grasp-high-cost-binding-v1.json",
+            backup=transaction_dir / "news-grasp-high-cost-binding-v1.before.json",
+            before_sha256=high_cost_binding_before,
+            source_sha256=hashlib.sha256(high_cost_candidate.read_bytes()).hexdigest(),
+        )
+    )
+
+    managed_files = [
+        "run_codex_with_timeout.ps1",
+        "news-grasp-bootstrap.ps1",
+        "news-grasp-runner.ps1",
+        "news-grasp-lineage.ps1",
+        "watch-news-grasp-runner.ps1",
+        "news-grasp-deadman.ps1",
+        "news-grasp-deadman-launcher.pyw",
+        "news-grasp-task-launcher.pyw",
+    ]
+    for name in managed_files:
+        source = ops / name
+        source.write_bytes(f"canonical:{name}".encode("utf-8"))
+        destination = bin_dir / name
+        backup = transaction_dir / name
+        if name == "news-grasp-runner.ps1":
+            before_sha256 = snapshot(destination, backup, b"old-runner\n")
+        else:
+            before_sha256 = ""
+        rows.append(
+            row(
+                name,
+                str(source),
+                destination,
+                backup=backup if before_sha256 else None,
+                before_sha256=before_sha256,
+                source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
+            )
+        )
+
+    automation_manifest_path = ROOT / "config" / "news_grasp_automation_assets_v2.json"
+    automation_manifest = json.loads(automation_manifest_path.read_text(encoding="utf-8"))
+    # 実writerはcanonical manifestをRepoDir配下のtrusted sourceとして解決する。
+    # fixture側にも同じbytesを置き、asset source/manifest境界を省略しない。
+    repo_manifest = repo / "config" / "news_grasp_automation_assets_v2.json"
+    repo_manifest.parent.mkdir(parents=True, exist_ok=True)
+    repo_manifest.write_bytes(automation_manifest_path.read_bytes())
+    for index, asset in enumerate(automation_manifest["assets"]):
+        source = repo / Path(asset["sourcePath"])
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_bytes(f"asset:{asset['assetId']}\n".encode("utf-8"))
+        destination = bin_dir / "news-grasp-assets" / Path(asset["installPath"])
+        backup = transaction_dir / "news-grasp-assets" / Path(asset["installPath"])
+        if index == 0:
+            before_sha256 = snapshot(destination, backup, b"old-asset\n")
+        else:
+            before_sha256 = ""
+        rows.append(
+            row(
+                "asset:" + asset["assetId"],
+                str(source),
+                destination,
+                backup=backup if before_sha256 else None,
+                before_sha256=before_sha256,
+                source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
+            )
+        )
+
+    rows.append(
+        row(
+            "audit-mission-authority-v1.json",
+            "broker:issue-news-grasp-audit-mission",
+            bin_dir / "news-grasp-authority" / "audit-mission-authority-v1.json",
+        )
+    )
+    for name, source_name in (
+        ("news-grasp-runtime-root-v1.json", "generated:runtime-root"),
+        ("news-grasp-recovery-runtime-binding-v1.json", "generated:recovery-runtime-binding"),
+        ("news-grasp-stable-task-authority-v1.json", "generated:StableTaskAuthorityV1"),
+    ):
+        rows.append(row(name, source_name, bin_dir / name))
+    assert len(automation_manifest["assets"]) == 14
+    assert len(rows) == 2 + 8 + len(automation_manifest["assets"]) + 4 == 28
+    journal = {
+        "schemaVersion": "NEWS_GRASP_OPS_INSTALL_JOURNAL_V1",
+        "transaction_id": transaction_id,
+        "phase": "prepared",
+        "updated_at": "2026-08-22T12:00:00+09:00",
+        "repo_dir": str(repo),
+        "bin_dir": str(bin_dir),
+        "task_pythonw_path": str(tmp_path / "pythonw.exe"),
+        "bin_dir_existed_before": True,
+        "backup_dir": str(transaction_dir),
+        "files": rows,
+        "rollback_commands": ["Invoke-NewsGraspInstallRollback"],
+        "mission_authority": {
+            "path": str(bin_dir / "news-grasp-authority" / "audit-mission-authority-v1.json"),
+            "sha256": "",
+            "schema": "AUDIT_MISSION_AUTHORITY_V1",
+        },
+        "scheduled_tasks": [],
+        "task_snapshots": [],
+        # prepared journalでは実writerのDeliveryReceiptSummaryはまだnull。
+        # top-level key自体は常に存在するため、exact-key oracleも維持する。
+        "delivery_state": None,
+    }
+    journal_path = transaction_dir / "install-manifest.json"
+    journal_path.write_text(json.dumps(journal), encoding="utf-8")
+    command = (
+        f"$journal=Get-Content -LiteralPath '{journal_path}' -Raw -Encoding UTF8 | ConvertFrom-Json; "
+        "Assert-NewsGraspRecoveryJournal "
+        f"-JournalPath '{journal_path}' -Journal $journal "
+        f"-ExpectedBackupRoot '{backup_root}' -ExpectedRepoDir '{repo}' "
+        f"-ExpectedBinDir '{bin_dir}' "
+        "-ExpectedTaskNames @('News-Grasp Production','News-Grasp Bootstrap')"
+    )
+    prepared_completed = _run_install_guard(command)
+
+    # verified journalでは実writerがphysical-delivery receiptの4-key summaryを束縛する。
+    # receipt bytes/hashも同じtransaction boundaryで自己生成する。
+    delivery_receipt_path = transaction_dir / "physical-delivery-state-v1.json"
+    delivery_receipt_body = {
+        "schemaVersion": "NEWS_GRASP_PHYSICAL_DELIVERY_STATE_V1",
+        "generationId": "fixture-generation-20260822",
+        "fields": {},
+        "operationalStatus": "incomplete",
+    }
+    delivery_receipt_path.write_text(
+        json.dumps(delivery_receipt_body, separators=(",", ":")) + "\n",
+        encoding="utf-8",
+    )
+    journal["phase"] = "verified"
+    journal["delivery_state"] = {
+        "path": str(delivery_receipt_path),
+        "sha256": hashlib.sha256(delivery_receipt_path.read_bytes()).hexdigest(),
+        "schemaVersion": "NEWS_GRASP_PHYSICAL_DELIVERY_STATE_V1",
+        "operationalStatus": "incomplete",
+    }
+    journal_path.write_text(json.dumps(journal), encoding="utf-8")
+    verified_completed = _run_install_guard(command)
+
+    writer_phases = set(
+        re.findall(r"Write-NewsGraspInstallJournal\s+-Phase\s+'([^']+)'", installer)
+    )
+    expected_writer_phases = {
+        "prepared",
+        "files_installed",
+        "authority_issued",
+        "tasks_converged",
+        "verified",
+        "committed",
+        "rolled_back",
+    }
+    recovery = installer.split("function Recover-NewsGraspInterruptedInstall", 1)[1].split(
+        "function Invoke-NewsGraspInstallRollback", 1
+    )[0]
+    recovery_phase_match = re.search(
+        r"\$journal\.phase\s+-notin\s+@\((.*?)\)",
+        recovery,
+        flags=re.DOTALL,
+    )
+    recovery_phases = set(re.findall(r"'([^']+)'", recovery_phase_match.group(1))) if recovery_phase_match else set()
+    guard_recovery = guard.split("function Assert-NewsGraspRecoveryJournal", 1)[1].split(
+        "function ", 1
+    )[0]
+    guard_phase_match = re.search(
+        r"\$Journal\.phase\s+-notin\s+@\((.*?)\)",
+        guard_recovery,
+        flags=re.DOTALL,
+    )
+    guard_phases = set(re.findall(r"'([^']+)'", guard_phase_match.group(1))) if guard_phase_match else set()
+    expected_nonterminal = expected_writer_phases - {"committed", "rolled_back"}
+    failures: list[str] = []
+    writer_files = {str(item["file"]) for item in rows}
+    if writer_phases != expected_writer_phases:
+        failures.append(f"writer phases drift: {sorted(writer_phases)}")
+    if recovery_phases != expected_writer_phases:
+        failures.append(f"recovery phases drift: {sorted(recovery_phases)}")
+    if guard_phases != expected_nonterminal or "tasks_registered" in guard_phases:
+        failures.append(
+            f"guard phases drift: expected={sorted(expected_nonterminal)} actual={sorted(guard_phases)}"
+        )
+    has_extended_rows = any(
+        name.startswith("asset:")
+        or name in {
+            "news_grasp_high_cost_binding.py",
+            "news-grasp-high-cost-binding-v1.json",
+        }
+        for name in writer_files
+    )
+    if has_extended_rows and re.search(
+        r"\$expectedSource\s*=\s*Join-Path\s+\(Join-Path\s+\$ExpectedRepoDir\s+'scripts\\ops'\)\s+\$fileName",
+        guard,
+    ):
+        failures.append("guard source mapping drift: extended writer rows still use generic scripts\\ops mapping")
+    if has_extended_rows and re.search(
+        r"\$expectedBackup\s*=\s*Join-Path\s+\$journalDir\s+\$fileName",
+        guard,
+    ):
+        failures.append("guard backup mapping drift: extended writer rows still use generic journal-dir mapping")
+    for phase, result in (("prepared", prepared_completed), ("verified", verified_completed)):
+        if result.returncode != 0:
+            failures.append(
+                f"writer-shaped {phase} journal rejected: "
+                + (result.stderr or result.stdout).strip()
+            )
+    # 正のruntime検証後、trusted root内でもasset sourceを別pathへ差し替えれば拒否する。
+    asset_row = next(item for item in journal["files"] if str(item["file"]).startswith("asset:"))
+    original_asset_source = str(asset_row["source"])
+    tampered_asset_source = repo / "tampered" / "asset-source.txt"
+    tampered_asset_source.parent.mkdir(parents=True, exist_ok=True)
+    tampered_asset_source.write_bytes(b"tampered-asset-source\n")
+    asset_row["source"] = str(tampered_asset_source)
+    journal_path.write_text(json.dumps(journal), encoding="utf-8")
+    tampered_completed = _run_install_guard(command)
+    asset_row["source"] = original_asset_source
+    journal_path.write_text(json.dumps(journal), encoding="utf-8")
+    tampered_output = tampered_completed.stderr or tampered_completed.stdout
+    if (
+        tampered_completed.returncode == 0
+        or not re.search(r"NEWS_GRASP_INSTALL_JOURNAL_(?:SOURCE|DESTINATION)_INVALID", tampered_output)
+    ):
+        failures.append(
+            "tampered asset source was not rejected: "
+            f"exit={tampered_completed.returncode} output={tampered_output.strip()}"
+        )
+    assert not failures, "install journal schema contract drift:\n" + "\n".join(failures)
 
 
 def test_install_guard_limits_reparse_walk_to_each_trusted_root() -> None:
@@ -4514,7 +4817,8 @@ def test_recovery_journal_ingestion_is_handle_bound_and_complete_set_required() 
     assert "-RequireSingleLink" in recovery
     assert "Get-Content -LiteralPath $journal" not in recovery
     assert "NEWS_GRASP_INSTALL_JOURNAL_FILE_SET_INVALID" in guard
-    assert "$seenFiles.Count -ne $allowedFiles.Count" in guard
+    assert "$seenFiles.Count -ne $expectedRows.Count" in guard
+    assert "@($expectedRows.Keys | Where-Object { -not $seenFiles.ContainsKey($_) }).Count -ne 0" in guard
     assert "NEWS_GRASP_INSTALL_JOURNAL_LIVE_STATE_DRIFT" in guard
 
 
@@ -4522,16 +4826,111 @@ def test_recovery_journal_missing_managed_rows_cannot_delete_live_file(tmp_path:
     repo = tmp_path / "repo"
     ops = repo / "scripts" / "ops"
     ops.mkdir(parents=True)
-    source = ops / "news-grasp-runner.ps1"
-    source.write_bytes(b"canonical")
-    source_hash = hashlib.sha256(source.read_bytes()).hexdigest()
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
-    destination = bin_dir / "news-grasp-runner.ps1"
-    destination.write_bytes(b"canonical")
+    (bin_dir / "news-grasp-authority").mkdir()
     backup_root = tmp_path / "backups"
     transaction_dir = backup_root / "20260809-130000"
     transaction_dir.mkdir(parents=True)
+
+    def row(file_name: str, source: str, destination: Path, *, source_sha256: str = "") -> dict[str, str]:
+        return {
+            "file": file_name,
+            "source": source,
+            "destination": str(destination),
+            "backup": "",
+            "before_sha256": "",
+            "source_sha256": source_sha256,
+            "after_sha256": "",
+        }
+
+    rows: list[dict[str, str]] = []
+    high_cost_tool = repo / "tools" / "news_grasp_high_cost_binding.py"
+    high_cost_tool.parent.mkdir(parents=True)
+    high_cost_tool.write_bytes(b"high-cost-resolver\n")
+    rows.append(
+        row(
+            "news_grasp_high_cost_binding.py",
+            str(high_cost_tool),
+            bin_dir / "news_grasp_high_cost_binding.py",
+            source_sha256=hashlib.sha256(high_cost_tool.read_bytes()).hexdigest(),
+        )
+    )
+    high_cost_candidate = transaction_dir / "news-grasp-high-cost-binding-v1.candidate.json"
+    high_cost_candidate.write_text(
+        '{"schemaVersion":"NEWS_GRASP_HIGH_COST_BINDING_V1"}\n', encoding="utf-8"
+    )
+    rows.append(
+        row(
+            "news-grasp-high-cost-binding-v1.json",
+            str(high_cost_candidate),
+            bin_dir / "news-grasp-high-cost-binding-v1.json",
+            source_sha256=hashlib.sha256(high_cost_candidate.read_bytes()).hexdigest(),
+        )
+    )
+
+    missing_file = "news-grasp-runner.ps1"
+    managed_files = [
+        "run_codex_with_timeout.ps1",
+        "news-grasp-bootstrap.ps1",
+        "news-grasp-runner.ps1",
+        "news-grasp-lineage.ps1",
+        "watch-news-grasp-runner.ps1",
+        "news-grasp-deadman.ps1",
+        "news-grasp-deadman-launcher.pyw",
+        "news-grasp-task-launcher.pyw",
+    ]
+    for name in managed_files:
+        source = ops / name
+        source.write_bytes(f"canonical:{name}".encode("utf-8"))
+        destination = bin_dir / name
+        if name == missing_file:
+            # The omitted row's live file is the deletion sentinel.
+            destination.write_bytes(source.read_bytes())
+            continue
+        rows.append(
+            row(
+                name,
+                str(source),
+                destination,
+                source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
+            )
+        )
+
+    automation_manifest_path = ROOT / "config" / "news_grasp_automation_assets_v2.json"
+    automation_manifest = json.loads(automation_manifest_path.read_text(encoding="utf-8"))
+    repo_manifest = repo / "config" / "news_grasp_automation_assets_v2.json"
+    repo_manifest.parent.mkdir(parents=True, exist_ok=True)
+    repo_manifest.write_bytes(automation_manifest_path.read_bytes())
+    for asset in automation_manifest["assets"]:
+        source = repo / Path(asset["sourcePath"])
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_bytes(f"asset:{asset['assetId']}\n".encode("utf-8"))
+        rows.append(
+            row(
+                "asset:" + asset["assetId"],
+                str(source),
+                bin_dir / "news-grasp-assets" / Path(asset["installPath"]),
+                source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
+            )
+        )
+
+    rows.append(
+        row(
+            "audit-mission-authority-v1.json",
+            "broker:issue-news-grasp-audit-mission",
+            bin_dir / "news-grasp-authority" / "audit-mission-authority-v1.json",
+        )
+    )
+    for name, source_name in (
+        ("news-grasp-runtime-root-v1.json", "generated:runtime-root"),
+        ("news-grasp-recovery-runtime-binding-v1.json", "generated:recovery-runtime-binding"),
+        ("news-grasp-stable-task-authority-v1.json", "generated:StableTaskAuthorityV1"),
+    ):
+        rows.append(row(name, source_name, bin_dir / name))
+    assert len(automation_manifest["assets"]) == 14
+    assert len(rows) == 27
+
     journal_path = transaction_dir / "install-manifest.json"
     journal = {
         "schemaVersion": "NEWS_GRASP_OPS_INSTALL_JOURNAL_V1",
@@ -4543,17 +4942,8 @@ def test_recovery_journal_missing_managed_rows_cannot_delete_live_file(tmp_path:
         "task_pythonw_path": str(tmp_path / "pythonw.exe"),
         "bin_dir_existed_before": True,
         "backup_dir": str(transaction_dir),
-        "files": [
-            {
-                "file": "news-grasp-runner.ps1",
-                "source": str(source),
-                "destination": str(destination),
-                "backup": "",
-                "before_sha256": "",
-                "source_sha256": source_hash,
-                "after_sha256": source_hash,
-            }
-        ],
+        # 現行writerの28-row schemaからrunner rowだけを欠落させる。
+        "files": rows,
         "rollback_commands": ["Invoke-NewsGraspInstallRollback"],
         "mission_authority": {
             "path": "",
@@ -4562,6 +4952,7 @@ def test_recovery_journal_missing_managed_rows_cannot_delete_live_file(tmp_path:
         },
         "scheduled_tasks": [],
         "task_snapshots": [],
+        "delivery_state": None,
     }
     journal_path.write_text(json.dumps(journal), encoding="utf-8")
     command = (
@@ -4576,7 +4967,7 @@ def test_recovery_journal_missing_managed_rows_cannot_delete_live_file(tmp_path:
 
     assert completed.returncode != 0
     assert "NEWS_GRASP_INSTALL_JOURNAL_FILE_SET_INVALID" in completed.stderr
-    assert destination.read_bytes() == b"canonical"
+    assert (bin_dir / missing_file).read_bytes() == b"canonical:news-grasp-runner.ps1"
 
 
 def test_task_xml_backup_hash_is_checked_again_immediately_before_privileged_restore(

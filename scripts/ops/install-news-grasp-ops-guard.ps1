@@ -653,12 +653,15 @@ function Assert-NewsGraspRecoveryJournal {
         'schemaVersion', 'transaction_id', 'phase', 'updated_at', 'repo_dir',
         'bin_dir', 'task_pythonw_path', 'bin_dir_existed_before', 'backup_dir',
         'files', 'rollback_commands', 'mission_authority', 'scheduled_tasks',
-        'task_snapshots'
+        'task_snapshots', 'delivery_state'
     ) -Code 'NEWS_GRASP_INSTALL_JOURNAL_SCHEMA_INVALID'
     if (
         [string]$Journal.schemaVersion -ne 'NEWS_GRASP_OPS_INSTALL_JOURNAL_V1' -or
         [string]$Journal.transaction_id -notmatch '^\d{8}-\d{6}$' -or
-        [string]$Journal.phase -notin @('prepared', 'files_installed', 'authority_issued', 'tasks_registered')
+        [string]$Journal.phase -notin @(
+            'prepared', 'files_installed', 'authority_issued',
+            'tasks_converged', 'verified'
+        )
     ) {
         throw 'NEWS_GRASP_INSTALL_JOURNAL_SCHEMA_INVALID'
     }
@@ -676,7 +679,8 @@ function Assert-NewsGraspRecoveryJournal {
         throw 'NEWS_GRASP_INSTALL_JOURNAL_PATH_INVALID'
     }
 
-    $allowedFiles = @(
+    $expectedRows = @{}
+    $managedFiles = @(
         'run_codex_with_timeout.ps1',
         'news-grasp-bootstrap.ps1',
         'news-grasp-runner.ps1',
@@ -684,12 +688,135 @@ function Assert-NewsGraspRecoveryJournal {
         'watch-news-grasp-runner.ps1',
         'news-grasp-deadman.ps1',
         'news-grasp-deadman-launcher.pyw',
-        'news-grasp-task-launcher.pyw',
-        'news-grasp-runtime-root-v1.json',
-        'news-grasp-recovery-runtime-binding-v1.json',
-        'news-grasp-stable-task-authority-v1.json',
-        'audit-mission-authority-v1.json'
+        'news-grasp-task-launcher.pyw'
     )
+    foreach ($managedFile in $managedFiles) {
+        $expectedRows[$managedFile] = [ordered]@{
+            source = Join-Path (Join-Path $ExpectedRepoDir 'scripts\ops') $managedFile
+            destination = Join-Path $ExpectedBinDir $managedFile
+            backup = Join-Path $journalDir $managedFile
+            source_kind = 'verified_file'
+            source_boundary = $ExpectedRepoDir
+        }
+    }
+    $expectedRows['news_grasp_high_cost_binding.py'] = [ordered]@{
+        source = Join-Path $ExpectedRepoDir 'tools\news_grasp_high_cost_binding.py'
+        destination = Join-Path $ExpectedBinDir 'news_grasp_high_cost_binding.py'
+        backup = Join-Path $journalDir 'news_grasp_high_cost_binding.py.before'
+        source_kind = 'verified_file'
+        source_boundary = $ExpectedRepoDir
+    }
+    $expectedRows['news-grasp-high-cost-binding-v1.json'] = [ordered]@{
+        source = Join-Path $journalDir 'news-grasp-high-cost-binding-v1.candidate.json'
+        destination = Join-Path $ExpectedBinDir 'news-grasp-high-cost-binding-v1.json'
+        backup = Join-Path $journalDir 'news-grasp-high-cost-binding-v1.before.json'
+        source_kind = 'verified_file'
+        source_boundary = $journalDir
+    }
+
+    $assetManifestPath = Join-Path $ExpectedRepoDir 'config\news_grasp_automation_assets_v2.json'
+    try {
+        $assetManifestFile = Read-NewsGraspVerifiedFile `
+            -Path $assetManifestPath `
+            -TrustedBoundary $ExpectedRepoDir `
+            -MaxBytes 1048576 `
+            -RequireSingleLink
+        $assetManifest = [Text.Encoding]::UTF8.GetString($assetManifestFile.Bytes) | ConvertFrom-Json
+    } catch {
+        if ($_.Exception.Message -like 'NEWS_GRASP_*') { throw }
+        throw 'NEWS_GRASP_INSTALL_JOURNAL_ASSET_MANIFEST_INVALID'
+    }
+    Assert-NewsGraspExactKeys -Value $assetManifest -Expected @(
+        'schemaVersion', 'productId', 'assetVersion', 'installRoot', 'assets'
+    ) -Code 'NEWS_GRASP_INSTALL_JOURNAL_ASSET_MANIFEST_INVALID'
+    if (
+        [string]$assetManifest.schemaVersion -ne 'NEWS_GRASP_AUTOMATION_ASSET_MANIFEST_V2' -or
+        [string]$assetManifest.productId -ne 'News-Grasp' -or
+        [string]$assetManifest.installRoot -ne 'news-grasp-assets'
+    ) {
+        throw 'NEWS_GRASP_INSTALL_JOURNAL_ASSET_MANIFEST_INVALID'
+    }
+    $assetRows = @($assetManifest.assets)
+    if ($assetRows.Count -lt 1 -or $assetRows.Count -gt 100) {
+        throw 'NEWS_GRASP_INSTALL_JOURNAL_ASSET_MANIFEST_INVALID'
+    }
+    $assetIds = @{}
+    $assetSources = @{}
+    $assetDestinations = @{}
+    foreach ($asset in $assetRows) {
+        Assert-NewsGraspExactKeys -Value $asset -Expected @(
+            'assetId', 'kind', 'sourcePath', 'installPath'
+        ) -Code 'NEWS_GRASP_INSTALL_JOURNAL_ASSET_MANIFEST_INVALID'
+        $assetId = [string]$asset.assetId
+        if (
+            [string]::IsNullOrWhiteSpace($assetId) -or
+            $assetId -notmatch '^[A-Za-z0-9._-]+$' -or
+            $assetIds.ContainsKey($assetId) -or
+            [string]$asset.kind -notin @('skill', 'guard', 'automation')
+        ) {
+            throw 'NEWS_GRASP_INSTALL_JOURNAL_ASSET_MANIFEST_INVALID'
+        }
+        $assetIds[$assetId] = $true
+        $relativePaths = @{}
+        foreach ($pathField in @('sourcePath', 'installPath')) {
+            $relativePath = ([string]$asset.$pathField).Replace('/', '\')
+            if (
+                [string]::IsNullOrWhiteSpace($relativePath) -or
+                [IO.Path]::IsPathRooted($relativePath) -or
+                $relativePath.StartsWith('\')
+            ) {
+                throw 'NEWS_GRASP_INSTALL_JOURNAL_ASSET_MANIFEST_INVALID'
+            }
+            foreach ($pathPart in $relativePath.Split('\')) {
+                if (
+                    [string]::IsNullOrWhiteSpace($pathPart) -or
+                    $pathPart -in @('.', '..') -or
+                    $pathPart.Contains(':')
+                ) {
+                    throw 'NEWS_GRASP_INSTALL_JOURNAL_ASSET_MANIFEST_INVALID'
+                }
+            }
+            $relativePaths[$pathField] = $relativePath
+        }
+        if (
+            $assetSources.ContainsKey($relativePaths['sourcePath']) -or
+            $assetDestinations.ContainsKey($relativePaths['installPath'])
+        ) {
+            throw 'NEWS_GRASP_INSTALL_JOURNAL_ASSET_MANIFEST_INVALID'
+        }
+        $assetSources[$relativePaths['sourcePath']] = $true
+        $assetDestinations[$relativePaths['installPath']] = $true
+        $rowName = 'asset:' + $assetId
+        $expectedRows[$rowName] = [ordered]@{
+            source = Join-Path $ExpectedRepoDir $relativePaths['sourcePath']
+            destination = Join-Path (Join-Path $ExpectedBinDir 'news-grasp-assets') $relativePaths['installPath']
+            backup = Join-Path (Join-Path $journalDir 'news-grasp-assets') $relativePaths['installPath']
+            source_kind = 'verified_file'
+            source_boundary = $ExpectedRepoDir
+        }
+    }
+
+    foreach ($generatedRow in @(
+        @('news-grasp-runtime-root-v1.json', 'generated:runtime-root'),
+        @('news-grasp-recovery-runtime-binding-v1.json', 'generated:recovery-runtime-binding'),
+        @('news-grasp-stable-task-authority-v1.json', 'generated:StableTaskAuthorityV1')
+    )) {
+        $expectedRows[$generatedRow[0]] = [ordered]@{
+            source = $generatedRow[1]
+            destination = Join-Path $ExpectedBinDir $generatedRow[0]
+            backup = Join-Path $journalDir $generatedRow[0]
+            source_kind = 'generated'
+            source_boundary = ''
+        }
+    }
+    $expectedRows['audit-mission-authority-v1.json'] = [ordered]@{
+        source = ''
+        destination = Join-Path (Join-Path $ExpectedBinDir 'news-grasp-authority') 'audit-mission-authority-v1.json'
+        backup = Join-Path $journalDir 'audit-mission-authority-v1.json'
+        source_kind = 'mission_authority'
+        source_boundary = ''
+    }
+
     $seenFiles = @{}
     foreach ($row in @($Journal.files)) {
         Assert-NewsGraspExactKeys -Value $row -Expected @(
@@ -697,16 +824,12 @@ function Assert-NewsGraspRecoveryJournal {
             'source_sha256', 'after_sha256'
         ) -Code 'NEWS_GRASP_INSTALL_JOURNAL_FILE_SCHEMA_INVALID'
         $fileName = [string]$row.file
-        if ($fileName -notin $allowedFiles -or $seenFiles.ContainsKey($fileName)) {
+        if (-not $expectedRows.ContainsKey($fileName) -or $seenFiles.ContainsKey($fileName)) {
             throw 'NEWS_GRASP_INSTALL_JOURNAL_FILE_NOT_ALLOWED'
         }
         $seenFiles[$fileName] = $true
-        if ($fileName -eq 'audit-mission-authority-v1.json') {
-            $expectedDestination = Join-Path (Join-Path $ExpectedBinDir 'news-grasp-authority') $fileName
-        } else {
-            $expectedDestination = Join-Path $ExpectedBinDir $fileName
-        }
-        if (-not (Test-NewsGraspSamePath -Left ([string]$row.destination) -Right $expectedDestination)) {
+        $expectedRow = $expectedRows[$fileName]
+        if (-not (Test-NewsGraspSamePath -Left ([string]$row.destination) -Right ([string]$expectedRow.destination))) {
             throw 'NEWS_GRASP_INSTALL_JOURNAL_DESTINATION_INVALID'
         }
         Assert-NewsGraspNoReparsePath -Path ([string]$row.destination) -Boundary $ExpectedBinDir
@@ -718,7 +841,7 @@ function Assert-NewsGraspRecoveryJournal {
                 throw 'NEWS_GRASP_INSTALL_JOURNAL_HASH_INVALID'
             }
         }
-        if ($fileName -eq 'audit-mission-authority-v1.json') {
+        if ([string]$expectedRow.source_kind -eq 'mission_authority') {
             $missionSource = [string]$row.source
             if (
                 $missionSource -notin @('broker:issue-news-grasp-audit-mission', 'existing:validated-audit-mission') -or
@@ -729,19 +852,12 @@ function Assert-NewsGraspRecoveryJournal {
             ) {
                 throw 'NEWS_GRASP_INSTALL_JOURNAL_SOURCE_INVALID'
             }
-        } elseif ($fileName -in @('news-grasp-runtime-root-v1.json', 'news-grasp-recovery-runtime-binding-v1.json', 'news-grasp-stable-task-authority-v1.json')) {
-            $expectedGeneratedSource = if ($fileName -eq 'news-grasp-runtime-root-v1.json') {
-                'generated:runtime-root'
-            } elseif ($fileName -eq 'news-grasp-stable-task-authority-v1.json') {
-                'generated:StableTaskAuthorityV1'
-            } else {
-                'generated:recovery-runtime-binding'
-            }
-            if ([string]$row.source -ne $expectedGeneratedSource -or $sourceSha256) {
+        } elseif ([string]$expectedRow.source_kind -eq 'generated') {
+            if ([string]$row.source -ne [string]$expectedRow.source -or $sourceSha256) {
                 throw 'NEWS_GRASP_INSTALL_JOURNAL_SOURCE_INVALID'
             }
         } else {
-            $expectedSource = Join-Path (Join-Path $ExpectedRepoDir 'scripts\ops') $fileName
+            $expectedSource = [string]$expectedRow.source
             if (
                 -not (Test-NewsGraspSamePath -Left ([string]$row.source) -Right $expectedSource) -or
                 -not $sourceSha256 -or
@@ -751,14 +867,14 @@ function Assert-NewsGraspRecoveryJournal {
             }
             $sourceFile = Read-NewsGraspVerifiedFile `
                 -Path $expectedSource `
-                -TrustedBoundary $ExpectedRepoDir `
+                -TrustedBoundary ([string]$expectedRow.source_boundary) `
                 -RequireSingleLink
             if ([string]$sourceFile.Sha256 -ne $sourceSha256) {
                 throw 'NEWS_GRASP_INSTALL_JOURNAL_SOURCE_DRIFT'
             }
         }
         if ([string]$row.backup) {
-            $expectedBackup = Join-Path $journalDir $fileName
+            $expectedBackup = [string]$expectedRow.backup
             if (-not (Test-NewsGraspSamePath -Left ([string]$row.backup) -Right $expectedBackup)) {
                 throw 'NEWS_GRASP_INSTALL_JOURNAL_BACKUP_INVALID'
             }
@@ -795,10 +911,34 @@ function Assert-NewsGraspRecoveryJournal {
     }
 
     if (
-        $seenFiles.Count -ne $allowedFiles.Count -or
-        @($allowedFiles | Where-Object { -not $seenFiles.ContainsKey($_) }).Count -ne 0
+        $seenFiles.Count -ne $expectedRows.Count -or
+        @($expectedRows.Keys | Where-Object { -not $seenFiles.ContainsKey($_) }).Count -ne 0
     ) {
         throw 'NEWS_GRASP_INSTALL_JOURNAL_FILE_SET_INVALID'
+    }
+
+    if ($null -ne $Journal.delivery_state) {
+        Assert-NewsGraspExactKeys -Value $Journal.delivery_state -Expected @(
+            'path', 'sha256', 'schemaVersion', 'operationalStatus'
+        ) -Code 'NEWS_GRASP_INSTALL_JOURNAL_DELIVERY_STATE_INVALID'
+        $deliveryPath = Join-Path $journalDir 'physical-delivery-state-v1.json'
+        if (
+            -not (Test-NewsGraspSamePath -Left ([string]$Journal.delivery_state.path) -Right $deliveryPath) -or
+            [string]$Journal.delivery_state.sha256 -notmatch '^[A-Fa-f0-9]{64}$' -or
+            [string]$Journal.delivery_state.schemaVersion -ne 'NEWS_GRASP_PHYSICAL_DELIVERY_STATE_V1' -or
+            [string]$Journal.delivery_state.operationalStatus -ne 'incomplete'
+        ) {
+            throw 'NEWS_GRASP_INSTALL_JOURNAL_DELIVERY_STATE_INVALID'
+        }
+        $deliveryFile = Read-NewsGraspVerifiedFile `
+            -Path $deliveryPath `
+            -TrustedBoundary $journalDir `
+            -RequireSingleLink
+        if ([string]$deliveryFile.Sha256 -ne [string]$Journal.delivery_state.sha256) {
+            throw 'NEWS_GRASP_INSTALL_JOURNAL_DELIVERY_STATE_INVALID'
+        }
+    } elseif ([string]$Journal.phase -eq 'verified') {
+        throw 'NEWS_GRASP_INSTALL_JOURNAL_DELIVERY_STATE_INVALID'
     }
 
     $rollbackCommands = @($Journal.rollback_commands)
