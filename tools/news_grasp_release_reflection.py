@@ -6,9 +6,12 @@ L8/NoPublishはこのreceiptをconsume-onlyで検証し、remote/runtime/install
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
+import os
 import re
+import stat
 import sys
 from collections.abc import Iterable, Mapping
 from pathlib import Path
@@ -21,6 +24,7 @@ PRODUCER_ID = "ops-safe-commit.release-reflection.v1"
 IMPACT_CLASSES = frozenset({"public-content-only", "internal-only", "source-runtime-impacting"})
 _HEX40 = re.compile(r"^[0-9a-f]{40}$")
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
+MAX_EVIDENCE_BYTES = 1024 * 1024
 
 
 class ReleaseReflectionError(ValueError):
@@ -98,7 +102,7 @@ def create_release_reflection_receipt(
         raise ReleaseReflectionError("RELEASE_REFLECTION_COMMIT_INVALID")
     if source_commit != remote_head:
         raise ReleaseReflectionError("TRUSTED_RUNTIME_REFLECTION_REF_MISMATCH")
-    if not re.fullmatch(r"refs/heads/[A-Za-z0-9._/-]+", target_ref):
+    if target_ref != "refs/heads/main":
         raise ReleaseReflectionError("RELEASE_REFLECTION_TARGET_INVALID")
     normalized = _normalize_evidence(evidence)
     _require_green(normalized, ("remoteHeadVerified",))
@@ -147,14 +151,83 @@ def validate_release_reflection_receipt(value: Mapping[str, Any]) -> dict[str, A
     return dict(value)
 
 
-def main(argv: list[str] | None = None) -> int:
-    args = list(sys.argv[1:] if argv is None else argv)
-    if len(args) != 3 or args[:2] != ["validate", "--receipt"]:
-        print("RELEASE_REFLECTION_CLI_USAGE", file=sys.stderr)
-        return 2
+def _read_evidence_file(path: Path) -> dict[str, Any]:
+    candidate = Path(path)
     try:
-        value = json.loads(Path(args[2]).read_text(encoding="utf-8-sig"))
-        print(json.dumps(validate_release_reflection_receipt(value), ensure_ascii=False, sort_keys=True))
+        before = candidate.lstat()
+        if stat.S_ISLNK(before.st_mode) or not stat.S_ISREG(before.st_mode):
+            raise OSError("evidence is not a regular file")
+        resolved = candidate.resolve(strict=True)
+        info = resolved.lstat()
+        if stat.S_ISLNK(info.st_mode) or not stat.S_ISREG(info.st_mode):
+            raise OSError("evidence is not a regular file")
+        if info.st_size > MAX_EVIDENCE_BYTES:
+            raise OSError("evidence is oversized")
+        raw = resolved.read_bytes()
+        after = resolved.lstat()
+        if after.st_size != info.st_size or after.st_mtime_ns != info.st_mtime_ns:
+            raise OSError("evidence changed while reading")
+        value = json.loads(raw.decode("utf-8-sig"))
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as error:
+        raise ReleaseReflectionError("RELEASE_REFLECTION_EVIDENCE_INVALID") from error
+    if not isinstance(value, dict):
+        raise ReleaseReflectionError("RELEASE_REFLECTION_EVIDENCE_INVALID")
+    return value
+
+
+def _write_receipt_once(output_path: Path, value: Mapping[str, Any]) -> Path:
+    output = Path(output_path)
+    try:
+        parent = output.parent.resolve(strict=True)
+    except OSError as error:
+        raise ReleaseReflectionError("RELEASE_REFLECTION_OUTPUT_INVALID") from error
+    candidate = parent / output.name
+    if candidate.is_symlink():
+        raise ReleaseReflectionError("RELEASE_REFLECTION_OUTPUT_INVALID")
+    payload = _canonical(dict(value)) + b"\n"
+    try:
+        descriptor = os.open(candidate, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except FileExistsError as error:
+        raise ReleaseReflectionError("RELEASE_REFLECTION_OUTPUT_EXISTS") from error
+    try:
+        with os.fdopen(descriptor, "wb") as stream:
+            stream.write(payload)
+            stream.flush()
+            os.fsync(stream.fileno())
+    except Exception:
+        candidate.unlink(missing_ok=True)
+        raise
+    return candidate
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    create_parser = subparsers.add_parser("create")
+    create_parser.add_argument("--impact-class", required=True)
+    create_parser.add_argument("--source-commit", required=True)
+    create_parser.add_argument("--remote-head", required=True)
+    create_parser.add_argument("--target-ref", required=True)
+    create_parser.add_argument("--evidence", type=Path, required=True)
+    create_parser.add_argument("--output", type=Path, required=True)
+    validate_parser = subparsers.add_parser("validate")
+    validate_parser.add_argument("--receipt", type=Path, required=True)
+    args = parser.parse_args(argv)
+    try:
+        if args.command == "validate":
+            value = json.loads(args.receipt.read_text(encoding="utf-8-sig"))
+            result = validate_release_reflection_receipt(value)
+        else:
+            evidence = _read_evidence_file(args.evidence)
+            result = create_release_reflection_receipt(
+                impact_class=args.impact_class,
+                source_commit=args.source_commit,
+                remote_head=args.remote_head,
+                target_ref=args.target_ref,
+                evidence=evidence,
+            )
+            _write_receipt_once(args.output, result)
+        print(json.dumps(result, ensure_ascii=False, sort_keys=True))
         return 0
     except (OSError, UnicodeError, json.JSONDecodeError, ReleaseReflectionError) as error:
         print(str(error) or "RELEASE_REFLECTION_INVALID", file=sys.stderr)

@@ -107,8 +107,8 @@ admissionは次を全て満たす機械判定済みreceiptである。
   - `efficiency_design`
   - `adversarial_review`
   - `route_manifest`
-  - `red_suite_coverage`（`RED_SUITE_COVERAGE_REPORT_V1`、findings空、14 Requirement、10 viewpoints、3 domain scopes、49 unique fixtures、140 pair cases、5 routes、200 traceability cells、coverage hash一致）
-  - `red_suite_execution`（公式admission producerが内部で一度だけ生成する`RED_SUITE_EXECUTION_RECEIPT_V1`。caller指定は禁止。49 selector、140 traceability-only pair Red cases、exact 190 collected/passed node、collection error 0、missing outcome 0、node集合/source hash一致）
+  - `red_suite_coverage`（`RED_SUITE_COVERAGE_REPORT_V1`、findings空、15 Requirement、10 viewpoints、4 domain scopes、60 unique fixtures、150 pair cases、5 routes、240 traceability cells、coverage hash一致）
+  - `red_suite_execution`（公式admission producerが内部で一度だけ生成する`RED_SUITE_EXECUTION_RECEIPT_V1`。caller指定は禁止。60 selector、150 traceability-only pair Red cases、exact 211 collected/passed node、collection error 0、missing outcome 0、node集合/source hash一致）
   - `static`
   - `simulation`
   - `isolation`
@@ -131,15 +131,15 @@ Acceptance Matrixを実装前に固定し、次を全て満たすまでGreen実�
 - collection errorや共通の未実装例外一件で全Redを代表させず、全fixtureを収集して各観点の失敗を個別に観測する。
 - 網羅的なテスト観点を用意できない場合は、実装困難ではなく要件定義未完了の反証として上流へ戻る。
 
-News-Graspではこの思想を `RED_SUITE_COVERAGE_V2` として機械化する。E2Eを目的、非目的、L0-L8層、readiness/admission、attempt identity、checkpoint境界、探索分離、資源予算、副作用境界、停止・失敗、証跡、product完了境界の12 Requirementへ分け、DeepDive URL provenanceとPodcast読者価値を加えた14 Requirementを正本とする。観点集合は `normal/failure/boundary/substitution/drift/replay/missing/cross_lineage/recovery/human_impact` のexact 10種とし、`final_e2e`、`deepdive_url_provenance`、`podcast_reader_value` の3 domain scopeごとに固有fixtureを持たせる。`fixtures/deepdive_quality/tdd_acceptance_matrix.json` の `Requirement fixture × same-domain viewpoint fixture × route fixture` を `python -m tools.deepdive_red_suite_coverage` で検証する。12 E2E Requirement × 10観点 × final wrapperの120セルと、2 content Requirement × 10観点 × 4共有経路の80セル、合計200 traceability cellsが全て存在し、49 Green fixtureと140個別pair Red caseのexecution receiptがGreenでなければL0をGreenにしない。140 pair Redは要件と観点のbindingを個別に壊す `traceability_only` 試験であり、本番挙動の反証を代用しない。本番挙動は49 fixtureが所有する。
+News-Graspではこの思想を `RED_SUITE_COVERAGE_V2` として機械化する。E2Eを目的、非目的、L0-L8層、readiness/admission、attempt identity、checkpoint境界、探索分離、資源予算、副作用境界、停止・失敗、証跡、product完了境界の12 Requirementへ分け、DeepDive URL provenance、rendered public surface、Podcast読者価値を加えた15 Requirementを正本とする。観点集合は `normal/failure/boundary/substitution/drift/replay/missing/cross_lineage/recovery/human_impact` のexact 10種とし、`final_e2e`、`deepdive_url_provenance`、`deepdive_rendered_public_surface`、`podcast_reader_value` の4 domain scopeごとに固有fixtureを持たせる。`fixtures/deepdive_quality/tdd_acceptance_matrix.json` の `Requirement fixture × same-domain viewpoint fixture × route fixture` を `python -m tools.deepdive_red_suite_coverage` で検証する。12 E2E Requirement × 10観点 × final wrapperの120セルと、3 content Requirement × 10観点 × 4共有経路の120セル、合計240 traceability cellsが全て存在し、60 Green fixtureと150個別pair Red caseのexecution receiptがGreenでなければL0をGreenにしない。150 pair Redは要件と観点のbindingを個別に壊す `traceability_only` 試験であり、本番挙動の反証を代用しない。本番挙動は60 fixtureが所有する。
 
 独立fixtureは関数名や定数だけの違いでは成立しない。docstring-only、`pass`、`return None`、定数だけの`assert`、behavior observationを持たない関数をtrivialとして拒否する。文字列・数値定数を正規化したAST bodyと同一ファイル内の到達helper closureが重複するfixtureも単一実装の別名として拒否し、helper名だけを変えた薄いwrapperを許さない。source bytes hashと意味形状hashの両方をcoverageへ束縛する。
 
-`final_e2e`、`deepdive_url_provenance`、`podcast_reader_value` の3 domain scopeは、それぞれ固有の10観点fixtureを持つ。14個のRequirement fixture、30個のdomain固有viewpoint fixture、5個のroute fixtureの計49 fixtureは、実行可能nodeと本文SHA-256集合をcoverage receiptへ束縛する。さらに14 Requirement × 10観点を140個のaddressable pair Red caseへ展開し、各caseが対象Requirementと同一domain観点を別々に破壊して、対象ID入りreason detailを個別観測する。公式admission producerは49 selectorと140 pair caseを単一pytest invocationで一度だけ実行し、exact 190 collected/passed node、collection error、各node outcome、node集合hash、matrix・fixture・pair・historical corpus・producer・pair test source hashをreceiptへ束縛する。callerが作成したexecution receiptは受理しない。admission consumerは発行時と消費時に全sourceを再読込し、本文drift、cross-domain substitution、path escape、非Python、構文不正、過大fixture、collection error、missing outcomeをfail-closedにする。200セルは実行件数でなく49 Green fixture・140 traceability-only Red pair・5 routeのtraceabilityであり、routeごとに同じtestを再実行しない。
+`final_e2e`、`deepdive_url_provenance`、`deepdive_rendered_public_surface`、`podcast_reader_value` の4 domain scopeは、それぞれ固有の10観点fixtureを持つ。15個のRequirement fixture、40個のdomain固有viewpoint fixture、5個のroute fixtureの計60 fixtureは、実行可能nodeと本文SHA-256集合をcoverage receiptへ束縛する。さらに15 Requirement × 10観点を150個のaddressable pair Red caseへ展開し、各caseが対象Requirementと同一domain観点を別々に破壊して、対象ID入りreason detailを個別観測する。公式admission producerは60 selectorと150 pair caseを単一pytest invocationで一度だけ実行し、exact 211 collected/passed node、collection error、各node outcome、node集合hash、matrix・fixture・pair・historical corpus・producer・pair test source hashをreceiptへ束縛する。callerが作成したexecution receiptは受理しない。admission consumerは発行時と消費時に全sourceを再読込し、本文drift、cross-domain substitution、path escape、非Python、構文不正、過大fixture、collection error、missing outcomeをfail-closedにする。240セルは実行件数でなく60 Green fixture・150 traceability-only Red pair・5 routeのtraceabilityであり、routeごとに同じtestを再実行しない。
 
 execution receiptはfixtureだけでなく、tools、runner、config、tests、pytest設定、requirementsのpath→bytes hash集合をproduction dependency manifestとして束縛する。発行後にvalidator、runner、helper、conftest、plugin設定のいずれかが変わった場合、consume時にsource mismatchとして拒否する。
 
-公式admission producerは190 node実行前にoutput identityへ束縛したWindows file lockを非待機で取得する。同じoutputへの並行発行は片方だけが実行を所有し、他方を `E2E_ADMISSION_ISSUE_BUSY` で実行前に拒否する。
+公式admission producerは211 node実行前にoutput identityへ束縛したWindows file lockを非待機で取得する。同じoutputへの並行発行は片方だけが実行を所有し、他方を `E2E_ADMISSION_ISSUE_BUSY` で実行前に拒否する。
 
 各観点は固有Acceptance、実行可能fixture、production consumer、expected Red、counterevidenceを持つ。同一Requirement内での単一fixtureへの集約、mock-only、route欠落、expected Red欠落、未知Requirement追加、件数だけの代用をfail-closedにする。共有engineを使う4経路は、観点fixtureと各route consumer fixtureの複合証明でcoverageを作り、同じ品質テストをrouteごとに重複実行して資源を浪費しない。
 
@@ -156,11 +156,16 @@ reporter artifactはカテゴリ全体の一括条件でなく、各recordのthu
 1. 当該タスクの全RequirementとAcceptanceを凍結する。
 2. 既存証拠を再利用し、未検証面だけを列挙する。
 3. L0からL7を安価な順に一回ずつ閉じる。
-4. `python -m tools.deepdive_red_suite_coverage` で200 traceability cells、49 fixture、140 traceability-only pair casesの構造を検証する。公式admission producerが内部実行するreceiptで、exact 190 collected/passed node、collection error 0、missing outcome 0、全node outcome明示を確認する。手作りreceiptを入力しない。
+4. `python -m tools.deepdive_red_suite_coverage` で240 traceability cells、60 fixture、150 traceability-only pair casesの構造を検証する。公式admission producerが内部実行するreceiptで、exact 211 collected/passed node、collection error 0、missing outcome 0、全node outcome明示を確認する。手作りreceiptを入力しない。
 5. source、fixture、runner、automation、manifestのhash鮮度を再確認する。
 6. 高コスト予算と独立反証reviewをGreenにする。
 7. 上流証拠manifestからfinal admissionを一度発行する。
-8. official wrapperでattempt Aのadmissionを消費し、Aがfailure-local修正を要した場合だけattempt Bのadmissionを消費する。attempt Cは実行しない。
+8. 発行済みfinal admissionを入力にissue-a CLIでpolicyだけを発行する。issue-aはtransition receiptやSQLite ledgerを作成しない。
+9. official wrapper内の`validate-issued`がparent authorityを再検証し、transition receiptとSQLite ledgerを一回だけ生成してからattempt Aを消費・起動する。Aがfailure-local修正を要した場合だけattempt Bを同じ順序で扱い、attempt Cは実行しない。
+
+生成pack、添付prompt、過去handoff、既存artifactはユーザーの同意証拠ではない。明示的なactual-user confirmationがない限り、これらを実行authorityまたはstart authorityへ昇格してはならない。
+
+`release reflection` は push、remote `refs/heads/main` 一致、install、runtime parityが確認された後に発行する。push前にpost-push Greenを要求してはならず、post-push verificationはpush後の別証跡として扱う。full pytest、TDD、broker availabilityは、ユーザーが明示的に合意していないpackから開始条件へ追加しない。既存E2E内部のfinal-admission契約（15 Requirement、4 domain scope、60 fixture、150 pair、240 cells、exact 211 nodes）は維持する。
 
 一つでもRed、Yellow、stale、missing、unknownならL8を開始しない。missing evidenceを「E2Eで確かめる」ことを禁止する。
 

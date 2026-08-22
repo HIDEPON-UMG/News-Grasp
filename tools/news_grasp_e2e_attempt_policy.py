@@ -2,11 +2,18 @@
 
 from __future__ import annotations
 
+import argparse
 from copy import deepcopy
 import hashlib
+import importlib.util
 import json
+import os
+import stat
 import re
 import sqlite3
+import sys
+import sysconfig
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -14,10 +21,116 @@ from typing import Any
 SCHEMA_VERSION = "NEWS_GRASP_E2E_ATTEMPT_POLICY_V1"
 MAX_LOGICAL_ATTEMPTS = 2
 MAX_FAILURE_LOCAL_RESUMES = 1
+MAX_ADMISSION_BYTES = 1024 * 1024
 
 
 class E2EAttemptPolicyError(RuntimeError):
     """E2E attempt policyの不正遷移。"""
+
+
+def _load_issued_admission(admission_path: Path) -> tuple[Path, dict[str, Any], str, str]:
+    """公式bridgeでissued admissionを検証し、bytes identityを返す。"""
+    candidate = Path(admission_path)
+    try:
+        before = candidate.lstat()
+        if stat.S_ISLNK(before.st_mode) or not stat.S_ISREG(before.st_mode):
+            raise OSError("admission is not a regular file")
+        resolved = candidate.resolve(strict=True)
+        resolved_info = resolved.lstat()
+        if stat.S_ISLNK(resolved_info.st_mode) or not stat.S_ISREG(resolved_info.st_mode):
+            raise OSError("admission is not a regular file")
+        if resolved_info.st_size > MAX_ADMISSION_BYTES:
+            raise OSError("admission is oversized")
+        raw = resolved.read_bytes()
+        after = resolved.lstat()
+        if (
+            after.st_size != resolved_info.st_size
+            or after.st_mtime_ns != resolved_info.st_mtime_ns
+        ):
+            raise OSError("admission changed while reading")
+        value = json.loads(raw.decode("utf-8-sig"))
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as error:
+        raise E2EAttemptPolicyError("NEWS_GRASP_E2E_ATTEMPT_ADMISSION_INVALID") from error
+    try:
+        bridge_path = Path(__file__).resolve().with_name("e2e_final_admission_bridge.py")
+        spec = importlib.util.spec_from_file_location(
+            "_news_grasp_e2e_final_admission_bridge_for_attempt_policy", bridge_path
+        )
+        if spec is None or spec.loader is None or not isinstance(value, dict):
+            raise ImportError("official admission validator unavailable")
+        bridge = importlib.util.module_from_spec(spec)
+        original_sys_path = list(sys.path)
+        try:
+            module_root = str(bridge_path.parents[1])
+            if module_root not in sys.path:
+                sys.path.insert(0, module_root)
+            for site_path in (
+                sysconfig.get_paths().get("purelib"),
+                sysconfig.get_paths().get("platlib"),
+            ):
+                if site_path and site_path not in sys.path:
+                    sys.path.insert(0, site_path)
+            spec.loader.exec_module(bridge)
+        finally:
+            sys.path[:] = original_sys_path
+        validator = getattr(bridge, "_validate_admission", None)
+        if not callable(validator):
+            raise ImportError("official admission validator unavailable")
+        validator(value)
+    except Exception as error:
+        raise E2EAttemptPolicyError("NEWS_GRASP_E2E_ATTEMPT_ADMISSION_INVALID") from error
+    if value.get("state") != "issued":
+        raise E2EAttemptPolicyError("NEWS_GRASP_E2E_ATTEMPT_ADMISSION_INVALID")
+    admission_projection = dict(value)
+    admission_id = admission_projection.pop("admissionId", None)
+    expected_admission_id = hashlib.sha256(_canonical_json(admission_projection)).hexdigest()
+    attempt_key = value.get("attemptKey")
+    issue_date = value.get("issueDate")
+    try:
+        parsed_issue_date = date.fromisoformat(str(issue_date))
+    except (TypeError, ValueError) as error:
+        raise E2EAttemptPolicyError("NEWS_GRASP_E2E_ATTEMPT_ADMISSION_INVALID") from error
+    if (
+        not isinstance(admission_id, str)
+        or admission_id != expected_admission_id
+        or not isinstance(attempt_key, str)
+        or not attempt_key
+        or not isinstance(issue_date, str)
+        or parsed_issue_date.isoformat() != issue_date
+    ):
+        raise E2EAttemptPolicyError("NEWS_GRASP_E2E_ATTEMPT_ADMISSION_INVALID")
+    return resolved, value, admission_id, hashlib.sha256(raw).hexdigest()
+
+
+def _canonical_json(value: object) -> bytes:
+    return json.dumps(
+        value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+
+
+def _write_policy_once(output_path: Path, value: dict[str, Any]) -> Path:
+    output = Path(output_path)
+    try:
+        parent = output.parent.resolve(strict=True)
+    except OSError as error:
+        raise E2EAttemptPolicyError("NEWS_GRASP_E2E_ATTEMPT_OUTPUT_INVALID") from error
+    candidate = parent / output.name
+    if candidate.is_symlink():
+        raise E2EAttemptPolicyError("NEWS_GRASP_E2E_ATTEMPT_OUTPUT_INVALID")
+    payload = _canonical_json(value) + b"\n"
+    try:
+        descriptor = os.open(candidate, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except FileExistsError as error:
+        raise E2EAttemptPolicyError("NEWS_GRASP_E2E_ATTEMPT_OUTPUT_EXISTS") from error
+    try:
+        with os.fdopen(descriptor, "wb") as stream:
+            stream.write(payload)
+            stream.flush()
+            os.fsync(stream.fileno())
+    except Exception:
+        candidate.unlink(missing_ok=True)
+        raise
+    return candidate
 
 
 def policy_ledger_path(policy_path: Path) -> Path:
@@ -184,16 +297,15 @@ def bind_policy_admission(value: object, admission_path: Path) -> dict[str, Any]
     state = validate_policy(value)
     if state["transitionHistory"]:
         raise E2EAttemptPolicyError("NEWS_GRASP_E2E_ATTEMPT_BINDING_TOO_LATE")
-    admission_path = Path(admission_path).resolve(strict=True)
-    admission = json.loads(admission_path.read_text(encoding="utf-8-sig"))
-    if not isinstance(admission, dict) or admission.get("state") != "issued":
-        raise E2EAttemptPolicyError("NEWS_GRASP_E2E_ATTEMPT_ADMISSION_INVALID")
+    admission_path, admission, admission_id, admission_sha = _load_issued_admission(
+        Path(admission_path)
+    )
     state["admissionBinding"] = {
         "attemptKey": str(admission.get("attemptKey") or ""),
         "issueDate": str(admission.get("issueDate") or ""),
-        "admissionId": str(admission.get("admissionId") or ""),
+        "admissionId": admission_id,
         "admissionPath": str(admission_path),
-        "admissionSha256": hashlib.sha256(admission_path.read_bytes()).hexdigest(),
+        "admissionSha256": admission_sha,
     }
     return state
 
@@ -410,3 +522,28 @@ def record_failure(value: object, attempt: int, cause_class: str) -> dict[str, A
         _advance(state, "user_stopped", previous)
         return state
     raise E2EAttemptPolicyError("NEWS_GRASP_E2E_ATTEMPT_CAUSE_INVALID")
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    issue_a_parser = subparsers.add_parser("issue-a")
+    issue_a_parser.add_argument("--admission", type=Path, required=True)
+    issue_a_parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args(argv)
+    try:
+        if args.command != "issue-a":
+            raise E2EAttemptPolicyError("NEWS_GRASP_E2E_ATTEMPT_COMMAND_INVALID")
+        state = new_policy()
+        state = bind_policy_admission(state, args.admission)
+        state = issue_logical_attempt(state, 1)
+        output = _write_policy_once(args.output, state)
+        print(json.dumps({"status": "issued", "policyPath": str(output)}, ensure_ascii=False, sort_keys=True))
+        return 0
+    except (OSError, UnicodeError, json.JSONDecodeError, E2EAttemptPolicyError) as error:
+        print(str(error) or "NEWS_GRASP_E2E_ATTEMPT_POLICY_INVALID", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
