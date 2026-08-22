@@ -5423,3 +5423,17 @@ def test_sec_stage_witness_path_gate_is_powershell_51_safe_and_checks_original_a
             gate,
             re.IGNORECASE,
         ), f"Leaf check missing for {original_name}"
+
+
+def test_bootstrap_smoke_does_not_require_high_cost_mission_or_launch_permit() -> None:
+    """no-cost readiness canaryはglobal high-cost broker障害から分離する。"""
+    source = (OPS_DIR / "news-grasp-bootstrap.ps1").read_text(encoding="utf-8-sig")
+    authority_section = source.split(
+        "$broker = if ($highCostBinding)", 1
+    )[1].split("$watcherPath =", 1)[0]
+    smoke_gate = authority_section.index("if (-not $SmokeTest) {")
+    mission = authority_section.index("issue-news-grasp-audit-mission")
+    permit = authority_section.index("issue-news-grasp-launch-permit")
+    assert smoke_gate < mission < permit
+    assert "$missionJson = ''" in authority_section[:smoke_gate]
+    assert "$permitJson = ''" in authority_section[:smoke_gate]

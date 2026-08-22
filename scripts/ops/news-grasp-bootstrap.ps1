@@ -896,15 +896,19 @@ if ((-not (Test-Path -LiteralPath $broker -PathType Leaf)) -or (-not (Test-Path 
     throw 'News-Grasp authority broker or Python runtime is missing.'
 }
 New-Item -ItemType Directory -Force -Path $authorityDir | Out-Null
-$missionJson = (& $python $broker 'issue-news-grasp-audit-mission' 2>&1 | Out-String).Trim()
-if ($LASTEXITCODE -ne 0) { throw "audit mission authority issuance failed exit=$LASTEXITCODE" }
-Write-AtomicUtf8Text -Path $missionPath -Text ($missionJson + [Environment]::NewLine)
-$taskActionSha256 = Get-ScheduledTaskActionSha256 -TaskName $ProductionTaskName
-$runnerSha256 = Get-FileSha256Hex -Path $liveRunner
-$launchNonce = "bootstrap-$DateStamp-$([Guid]::NewGuid().ToString('N'))"
-$permitJson = (& $python $broker 'issue-news-grasp-launch-permit' '--issue-date' $DateStamp '--task-action-sha256' $taskActionSha256 '--runner-sha256' $runnerSha256 '--launch-nonce' $launchNonce '--mission-authority' $missionPath 2>&1 | Out-String).Trim()
-if ($LASTEXITCODE -ne 0) { throw "scheduled launch permit issuance failed exit=$LASTEXITCODE" }
-Write-AtomicUtf8Text -Path $launchPermitPath -Text ($permitJson + [Environment]::NewLine)
+$missionJson = ''
+$permitJson = ''
+if (-not $SmokeTest) {
+    $missionJson = (& $python $broker 'issue-news-grasp-audit-mission' 2>&1 | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) { throw "audit mission authority issuance failed exit=$LASTEXITCODE" }
+    Write-AtomicUtf8Text -Path $missionPath -Text ($missionJson + [Environment]::NewLine)
+    $taskActionSha256 = Get-ScheduledTaskActionSha256 -TaskName $ProductionTaskName
+    $runnerSha256 = Get-FileSha256Hex -Path $liveRunner
+    $launchNonce = "bootstrap-$DateStamp-$([Guid]::NewGuid().ToString('N'))"
+    $permitJson = (& $python $broker 'issue-news-grasp-launch-permit' '--issue-date' $DateStamp '--task-action-sha256' $taskActionSha256 '--runner-sha256' $runnerSha256 '--launch-nonce' $launchNonce '--mission-authority' $missionPath 2>&1 | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) { throw "scheduled launch permit issuance failed exit=$LASTEXITCODE" }
+    Write-AtomicUtf8Text -Path $launchPermitPath -Text ($permitJson + [Environment]::NewLine)
+}
 
 $watcherPath = Join-Path $BinDir 'watch-news-grasp-runner.ps1'
 $args = @('-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass', '-File', $watcherPath)
