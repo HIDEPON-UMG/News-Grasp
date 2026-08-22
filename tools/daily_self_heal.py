@@ -4781,11 +4781,13 @@ def verify_publish_complete(
             },
         }
 
+    readiness_observation_date = date
     live_readiness = verify_live_runner_readiness(
         repo_root=repo_root,
         ops_repo_root=ops_repo_root,
-        date=readiness_date,
+        date=readiness_observation_date,
     )
+    manifest["readiness_observation_date"] = readiness_observation_date
     manifest["live_runner_readiness"] = live_readiness
     if not live_readiness.get("ok"):
         return {**manifest, "reason": str(live_readiness.get("reason") or "live_runner_readiness_failed")}

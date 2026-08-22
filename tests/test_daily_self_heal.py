@@ -4508,8 +4508,8 @@ def test_verify_publish_complete_requires_live_runner_readiness(monkeypatch, tmp
     assert result["live_runner_readiness"]["ok"] is False
 
 
-def test_verify_publish_complete_uses_next_scheduled_date_for_next_run_canary(monkeypatch, tmp_path: Path) -> None:
-    """過去号の公開再検証でも、次回runner canaryは次回Scheduled Task日付のauthorityを使う。"""
+def test_verify_publish_complete_records_next_date_but_observes_recovery_date(monkeypatch, tmp_path: Path) -> None:
+    """当日recovery後の公開完了は、次回日付を記録しつつ当日bootstrap receiptでreadinessを評価する。"""
     _write_publish_complete_inventory(tmp_path)
     monkeypatch.setattr(dsh, "_next_scheduled_task_issue_date", lambda: "2026-08-05", raising=False)
     monkeypatch.setattr(
@@ -4553,7 +4553,9 @@ def test_verify_publish_complete_uses_next_scheduled_date_for_next_run_canary(mo
     )
 
     assert result["ok"] is True
-    assert captured["date"] == "2026-08-05"
+    assert result["readiness_date"] == "2026-08-05"
+    assert result["readiness_observation_date"] == "2026-06-20"
+    assert captured["date"] == "2026-06-20"
 
 
 def test_verify_publish_complete_rejects_invalid_distribution_manifest(monkeypatch, tmp_path: Path) -> None:
