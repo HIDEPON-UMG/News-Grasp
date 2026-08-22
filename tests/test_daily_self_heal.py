@@ -364,6 +364,13 @@ def _canonical_live_runner_readiness_manifest() -> dict:
             "authority": deepcopy(authority),
         },
         "stable_authority": deepcopy(authority),
+        "external_control": {
+            "schemaVersion": "EXTERNAL_CONTROL_PLANE_READINESS_V1",
+            "status": "ready",
+            "reasonCode": "",
+            "modelLaunchCount": 0,
+            "receiptSha256": "c" * 64,
+        },
         "next_run_readiness": {"ok": True, "status": "ready"},
         "last_scheduled_attempt": {
             "status": "failed",
@@ -414,6 +421,15 @@ def test_live_runner_readiness_manifest_ok_accepts_canonical_dispatch_and_reject
     legacy_task["authority"] = deepcopy(legacy_authority)
     legacy["stable_authority"] = deepcopy(legacy_authority)
     assert consumer(legacy) is False
+
+    control_drift = deepcopy(canonical)
+    control_drift["external_control"] = {
+        "schemaVersion": "EXTERNAL_CONTROL_PLANE_READINESS_V1",
+        "status": "unavailable",
+        "reasonCode": "installed_source_drift",
+        "modelLaunchCount": 0,
+    }
+    assert consumer(control_drift) is False
 
 
 def test_phase0_prioritizes_bin_drift_before_content_repair() -> None:
@@ -3031,6 +3047,17 @@ creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
         )
 
     monkeypatch.setattr(dsh, "_scheduled_task_details", fake_task_details)
+    monkeypatch.setattr(
+        dsh,
+        "_probe_external_control_plane_readiness",
+        lambda: {
+            "schemaVersion": "EXTERNAL_CONTROL_PLANE_READINESS_V1",
+            "status": "ready",
+            "reasonCode": "",
+            "modelLaunchCount": 0,
+            "receiptSha256": "c" * 64,
+        },
+    )
     captured_canary: dict[str, object] = {}
 
     def fake_canary(**kwargs):
@@ -3057,6 +3084,7 @@ creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
     assert result["scheduled_task"]["task_launcher_mode_ok"] is True
     assert result["scheduled_task"]["bootstrap_definition_ok"] is True
     assert result["scheduled_task"]["high_cost_binding_action_ok"] is True
+    assert result["external_control"]["status"] == "ready"
     assert captured_canary == {}
     if expected_ok:
         assert result["canary"]["ok"] is True

@@ -1320,6 +1320,33 @@ def _cleanroom_live_task_definition(
     }
 
 
+def _probe_external_control_plane_readiness() -> dict:
+    """News-Graspから見たglobal high-cost control-plane readinessをpure probeする。"""
+
+    try:
+        from tools import news_grasp_external_control
+
+        result = news_grasp_external_control.probe_external_readiness()
+    except Exception as error:
+        return {
+            "schemaVersion": "EXTERNAL_CONTROL_PLANE_READINESS_V1",
+            "status": "unavailable",
+            "reasonCode": "external_control_probe_failed",
+            "errorType": type(error).__name__,
+            "modelLaunchCount": 0,
+            "receiptSha256": "",
+        }
+    if not isinstance(result, dict):
+        return {
+            "schemaVersion": "EXTERNAL_CONTROL_PLANE_READINESS_V1",
+            "status": "unavailable",
+            "reasonCode": "external_control_probe_invalid",
+            "modelLaunchCount": 0,
+            "receiptSha256": "",
+        }
+    return result
+
+
 def _safe_int(value: object) -> int | None:
     try:
         return int(value)  # type: ignore[arg-type]
@@ -1839,7 +1866,16 @@ def live_runner_readiness_manifest_ok(readiness: dict) -> bool:
         readiness.get("live_task_launcher") if isinstance(readiness.get("live_task_launcher"), dict) else {}
     )
     scheduled_task = readiness.get("scheduled_task") if isinstance(readiness.get("scheduled_task"), dict) else {}
+    external_control = (
+        readiness.get("external_control")
+        if isinstance(readiness.get("external_control"), dict)
+        else {}
+    )
     canary = readiness.get("canary") if isinstance(readiness.get("canary"), dict) else {}
+    external_control_ok = bool(
+        external_control.get("status") == "ready"
+        and _safe_int(external_control.get("modelLaunchCount")) == 0
+    )
     if _cleanroom_readiness_shape_ok(readiness):
         cleanroom_digest_pairs = (
             (repo_runner, live_runner),
@@ -1854,6 +1890,7 @@ def live_runner_readiness_manifest_ok(readiness: dict) -> bool:
                 and left.get("sha256") == right.get("sha256")
                 for left, right in cleanroom_digest_pairs
             )
+            and external_control_ok
             and canary.get("ok") is True
             and str(canary.get("status") or "") == "smoke_ok"
         )
@@ -1917,6 +1954,7 @@ def live_runner_readiness_manifest_ok(readiness: dict) -> bool:
         and repo_task_launcher_sha == live_task_launcher_sha
         and runner_schedule_ok
         and runner_target_ok
+        and external_control_ok
         and canary.get("ok") is True
         and str(canary.get("status") or "") == "smoke_ok"
     )
@@ -2327,6 +2365,7 @@ def verify_live_runner_readiness(
             "contract": task_launcher_contract,
         },
         "scheduled_task": {},
+        "external_control": {},
         "next_run_readiness": {"ok": False, "status": "not_ready"},
         "last_scheduled_attempt": {"status": "unknown", "last_task_result": None, "last_run_time": ""},
         "canary": {},
@@ -2427,6 +2466,12 @@ def verify_live_runner_readiness(
     )
     bootstrap_details = _scheduled_task_details(task_name=bootstrap_task_name, powershell_exe=powershell_exe)
     bootstrap_summary = str(bootstrap_details.get("action_summary") or "")
+    external_control = _probe_external_control_plane_readiness()
+    result["external_control"] = external_control
+    external_control_ok = bool(
+        external_control.get("status") == "ready"
+        and _safe_int(external_control.get("modelLaunchCount")) == 0
+    )
     bootstrap_execution_receipt = _load_bootstrap_execution_receipt(
         path=(live_task_launcher_path.resolve().parent / _BOOTSTRAP_EXECUTION_RECEIPT_FILENAME)
     )
@@ -2486,6 +2531,7 @@ def verify_live_runner_readiness(
             and str(task_details.get("state") or "") in {"Ready", "Running"}
             and task_launcher_checksum["synced"]
             and task_launcher_contract.get("ok") is True
+            and external_control_ok
         )
         cleanroom_task_ok = bool(cleanroom_definition_ok and bootstrap_last_observation_ok)
         result["scheduled_task"] = {
@@ -2532,6 +2578,11 @@ def verify_live_runner_readiness(
                 reason = str(
                     cleanroom_definition.get("bootstrapObservationReason")
                     or "bootstrap_task_last_result_not_ok"
+                )
+            elif not external_control_ok:
+                reason = str(
+                    external_control.get("reasonCode")
+                    or "external_control_plane_unavailable"
                 )
             else:
                 reason = str(
@@ -2724,6 +2775,7 @@ def verify_live_runner_readiness(
         and runner_action_contract["is_production_start"]
         and bootstrap_definition_ok
         and binding_authority.get("ok") is True
+        and external_control_ok
         and (launcher_runner_ready or legacy_direct_runner_ready)
     )
     task_ok = bool(
@@ -2854,6 +2906,11 @@ def verify_live_runner_readiness(
             reason = bootstrap_observation_reason
         elif not binding_authority.get("ok"):
             reason = str(binding_authority.get("reason") or "high_cost_binding_action_invalid")
+        elif not external_control_ok:
+            reason = str(
+                external_control.get("reasonCode")
+                or "external_control_plane_unavailable"
+            )
         else:
             reason = "scheduled_task_target_mismatch"
         result["next_run_readiness"] = {

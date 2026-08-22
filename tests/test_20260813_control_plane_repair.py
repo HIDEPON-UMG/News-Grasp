@@ -554,6 +554,13 @@ def _control_readiness(*, ok: bool = True, reason: str = "") -> dict:
             "action_summary": "pythonw.exe news-grasp-task-launcher.pyw runner --start",
         },
         "last_scheduled_attempt": {"status": "failed", "last_task_result": 1},
+        "external_control": {
+            "schemaVersion": "EXTERNAL_CONTROL_PLANE_READINESS_V1",
+            "status": "ready",
+            "reasonCode": "",
+            "modelLaunchCount": 0,
+            "receiptSha256": "c" * 64,
+        },
         "next_run_readiness": {"ok": ok, "status": "ready" if ok else "not_ready"},
     }
 
