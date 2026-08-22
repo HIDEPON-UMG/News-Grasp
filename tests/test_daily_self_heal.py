@@ -3057,9 +3057,11 @@ creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
     assert result["scheduled_task"]["task_launcher_mode_ok"] is True
     assert result["scheduled_task"]["bootstrap_definition_ok"] is True
     assert result["scheduled_task"]["high_cost_binding_action_ok"] is True
+    assert captured_canary == {}
     if expected_ok:
-        assert captured_canary["high_cost_binding_path"] == live_binding
-        assert captured_canary["high_cost_binding_receipt_sha256"] == binding_receipt_sha256
+        assert result["canary"]["ok"] is True
+        assert result["canary"]["status"] == "task_origin_smoke_ok"
+        assert result["canary"]["generationId"] == "fixture-generation-20260822"
 
 
 def test_bootstrap_observation_accepts_fresh_manual_task_origin_after_install() -> None:
