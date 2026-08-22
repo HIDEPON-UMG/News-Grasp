@@ -3087,7 +3087,7 @@ def test_bootstrap_observation_accepts_fresh_manual_task_origin_after_install() 
             "childExitCode": 0,
         },
         issue_date="2026-08-22",
-        installed_generation_timestamp="2026-08-22T21:54:00+09:00",
+        installed_generation_timestamp="2026-08-22T21:55:40+09:00",
     )
     assert ok is True
     assert reason == ""

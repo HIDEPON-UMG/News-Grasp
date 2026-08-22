@@ -1114,7 +1114,7 @@ def _bootstrap_observation_gate(
         installed = _parse_dt(installed_timestamp)
         if installed is None:
             return False, "bootstrap_generation_timestamp_invalid"
-        if task_observed < installed or observed < installed:
+        if observed < installed or task_observed < installed - timedelta(minutes=5):
             return False, "bootstrap_generation_timestamp_stale"
     return True, ""
 
