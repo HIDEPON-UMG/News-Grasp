@@ -35,6 +35,7 @@ from tools.publish_inventory import (
     required_published_docs_artifacts,
     scheduled_category_ids,
 )
+from tools.news_grasp_cleanroom_release import ReleaseEvidenceError, validate_live_task_parity
 
 
 ALERT_STATUSES = {
@@ -92,6 +93,16 @@ def _parse_dt(value: str | None) -> datetime | None:
     try:
         dt = datetime.fromisoformat(text)
     except ValueError:
+        for pattern in (
+            "%m/%d/%Y %H:%M:%S",
+            "%m/%d/%Y %I:%M:%S %p",
+            "%Y/%m/%d %H:%M:%S",
+            "%Y-%m-%d %H:%M:%S",
+        ):
+            try:
+                return datetime.strptime(text, pattern).replace(tzinfo=_jst_timezone())
+            except ValueError:
+                continue
         return None
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
@@ -416,7 +427,13 @@ def _task_action_records(details: dict) -> list[dict[str, str]]:
         arguments = str(action.get("arguments") or "")
         if not execute:
             return []
-        records.append({"execute": execute, "arguments": arguments})
+        records.append(
+            {
+                "execute": execute,
+                "arguments": arguments,
+                "workingDirectory": str(action.get("workingDirectory") or ""),
+            }
+        )
     return records
 
 
@@ -655,7 +672,8 @@ def _validate_live_high_cost_binding_files(
         binding_file_sha256 = hashlib.sha256(binding_raw).hexdigest()
         python_exe = Path(str(recovery.get("pythonExe") or ""))
         task_pythonw = Path(str(recovery.get("taskPythonwPath") or ""))
-        expected_pythonw = python_exe.with_name("pythonw.exe")
+        if not task_pythonw.is_absolute() or task_pythonw.suffix.lower() != ".exe":
+            raise ValueError("taskPythonwPath invalid")
         python_raw = _canonical_file_bytes(
             python_exe,
             expected=python_exe,
@@ -663,7 +681,7 @@ def _validate_live_high_cost_binding_files(
         )
         pythonw_raw = _canonical_file_bytes(
             task_pythonw,
-            expected=expected_pythonw,
+            expected=task_pythonw,
             max_bytes=64 * 1024 * 1024,
         )
         python_sha256 = hashlib.sha256(python_raw).hexdigest()
@@ -730,7 +748,7 @@ def _validate_live_high_cost_binding_files(
             "binding_path": str(expected_binding.resolve(strict=True)),
             "binding_receipt_sha256": receipt,
             "binding_file_sha256": binding_file_sha256,
-            "task_pythonw_path": str(expected_pythonw),
+            "task_pythonw_path": str(task_pythonw.resolve(strict=True)),
             "task_pythonw_sha256": pythonw_sha256,
         }
     except (OSError, RuntimeError, ValueError):
@@ -776,10 +794,88 @@ def _validate_live_high_cost_binding_authority(
             raise ValueError("authority action invalid")
         runner_action = runner_actions[0]
         runner_argv = [runner_action["execute"], *_windows_action_arguments(runner_action["arguments"])]
-        if runner_argv != authority_action and runner_argv[1:] == authority_action[1:]:
-            runner_argv = [authority_action[0], *runner_argv[1:]]
-        if runner_argv != authority_action:
+        if (
+            runner_argv[1:] != authority_action[1:]
+            or os.path.normcase(str(runner_argv[0])) != os.path.normcase(str(authority_action[0]))
+        ):
             raise ValueError("runner action mismatch")
+        # Clean-room authority separates dispatch topology from high-cost
+        # binding.  The Task action is exact and the bootstrap still carries
+        # the same top-level binding values.
+        if "manifestAction" in authority or "multipleInstancesPolicy" in authority:
+            expected_manifest_action = _CLEANROOM_MANIFEST_ACTION
+            expected_triggers = _CLEANROOM_MANIFEST_TRIGGERS
+            if (
+                authority.get("taskName") != "News-Grasp Production"
+                or authority.get("taskPath") != "\\"
+                or authority.get("multipleInstancesPolicy") != "Parallel"
+                or authority.get("manifestAction") != expected_manifest_action
+                or authority.get("workingDirectoryToken") != "<RUNTIME_ROOT>"
+                or authority.get("triggers") != expected_triggers
+                or authority_action[2:]
+                != [
+                    "dispatch",
+                    "--schedule-id",
+                    "news-grasp-daily-v1",
+                    "--intent",
+                    "reconcile",
+                ]
+            ):
+                raise ValueError("cleanroom authority topology mismatch")
+            binding_path_value = str(authority.get("highCostBindingPath") or "")
+            binding_receipt = str(authority.get("highCostBindingReceiptSha256") or "").lower()
+            expected_binding_path = live_bin / "news-grasp-high-cost-binding-v1.json"
+            if (
+                os.path.normcase(binding_path_value) != os.path.normcase(str(expected_binding_path.resolve()))
+                or not re.fullmatch(r"[0-9a-f]{64}", binding_receipt)
+            ):
+                raise ValueError("cleanroom authority binding mismatch")
+            bootstrap_action = bootstrap_actions[0]
+            bootstrap_argv = [
+                bootstrap_action["execute"],
+                *_windows_action_arguments(bootstrap_action["arguments"]),
+            ]
+            expected_bootstrap = [
+                authority_action[0],
+                str(live_task_launcher_path.resolve(strict=True)),
+                "bootstrap",
+                "--scheduled-task-name",
+                bootstrap_task_name,
+                "--high-cost-binding-path",
+                str(expected_binding_path.resolve()),
+                "--high-cost-binding-sha256",
+                binding_receipt,
+            ]
+            if (
+                bootstrap_argv[1:] != expected_bootstrap[1:]
+                or os.path.normcase(str(bootstrap_argv[0])) != os.path.normcase(str(expected_bootstrap[0]))
+            ):
+                raise ValueError("cleanroom bootstrap binding mismatch")
+            files = _validate_live_high_cost_binding_files(
+                live_bin_root=live_bin,
+                binding_path=expected_binding_path,
+                binding_receipt_sha256=binding_receipt,
+                ops_repo_root=ops_repo_root,
+            )
+            if not files.get("ok"):
+                return files
+            validated_task_pythonw = str(files.get("task_pythonw_path") or "")
+            if not validated_task_pythonw:
+                raise ValueError("validated task pythonw missing")
+            expected_task_pythonw = os.path.normcase(
+                os.path.normpath(validated_task_pythonw)
+            )
+            observed_task_pythonw = (
+                str(runner_action.get("execute") or ""),
+                str(bootstrap_action.get("execute") or ""),
+                str(authority_action[0] or ""),
+            )
+            if any(
+                os.path.normcase(os.path.normpath(value)) != expected_task_pythonw
+                for value in observed_task_pythonw
+            ):
+                raise ValueError("task pythonw binding mismatch")
+            return files
         if len(authority_action) != 9:
             raise ValueError("runner action length invalid")
         expected_binding_path = live_bin / "news-grasp-high-cost-binding-v1.json"
@@ -812,12 +908,10 @@ def _validate_live_high_cost_binding_authority(
             "--high-cost-binding-sha256",
             authority_action[8],
         ]
-        if bootstrap_argv != expected_bootstrap and bootstrap_argv[1:] == expected_bootstrap[1:]:
-            bootstrap_argv = [expected_bootstrap[0], *bootstrap_argv[1:]]
-        if bootstrap_argv != expected_bootstrap:
-            if bootstrap_argv[1:] == expected_bootstrap[1:]:
-                bootstrap_argv = [expected_bootstrap[0], *bootstrap_argv[1:]]
-        if bootstrap_argv != expected_bootstrap:
+        if (
+            bootstrap_argv[1:] != expected_bootstrap[1:]
+            or os.path.normcase(str(bootstrap_argv[0])) != os.path.normcase(str(expected_bootstrap[0]))
+        ):
             raise ValueError("bootstrap action mismatch")
         files = _validate_live_high_cost_binding_files(
             live_bin_root=live_bin,
@@ -827,13 +921,406 @@ def _validate_live_high_cost_binding_authority(
         )
         if not files.get("ok"):
             return files
-        if os.path.normcase(authority_action[0]) != os.path.normcase(
-            str(files.get("task_pythonw_path") or "")
+        validated_task_pythonw = str(files.get("task_pythonw_path") or "")
+        if not validated_task_pythonw:
+            raise ValueError("validated task pythonw missing")
+        expected_task_pythonw = os.path.normcase(
+            os.path.normpath(validated_task_pythonw)
+        )
+        observed_task_pythonw = (
+            str(runner_action.get("execute") or ""),
+            str(bootstrap_action.get("execute") or ""),
+            str(authority_action[0] or ""),
+        )
+        if any(
+            os.path.normcase(os.path.normpath(value)) != expected_task_pythonw
+            for value in observed_task_pythonw
         ):
-            raise ValueError("task pythonw authority mismatch")
+            raise ValueError("task pythonw binding mismatch")
         return files
     except (OSError, ValueError):
         return {"ok": False, "reason": "high_cost_binding_action_invalid"}
+
+
+_BOOTSTRAP_EXECUTION_RECEIPT_SCHEMA = "NEWS_GRASP_BOOTSTRAP_EXECUTION_RECEIPT_V1"
+_BOOTSTRAP_EXECUTION_RECEIPT_FILENAME = "news-grasp-bootstrap-execution-receipt-v1.json"
+
+
+def _load_bootstrap_execution_receipt(path: Path | None = None) -> dict | None:
+    """インストール済みruntimeが原子的に発行したBootstrap実行証跡を読む。"""
+    receipt_path = path or (Path.home() / "bin" / _BOOTSTRAP_EXECUTION_RECEIPT_FILENAME)
+    try:
+        if not receipt_path.is_file() or receipt_path.is_symlink():
+            return None
+        if receipt_path.stat().st_size > 64 * 1024:
+            return None
+        value = json.loads(receipt_path.read_text(encoding="utf-8-sig"))
+    except (OSError, UnicodeError, json.JSONDecodeError, TypeError, ValueError):
+        return None
+    return value if isinstance(value, dict) else None
+
+
+def _bootstrap_observation_gate(
+    *,
+    bootstrap_details: dict,
+    authority: dict,
+    execution_receipt: dict | None = None,
+    stable_authority_path: Path | None = None,
+    issue_date: str | None = None,
+    installed_generation_timestamp: str | None = None,
+) -> tuple[bool, str]:
+    """Bootstrap receiptとTask観測を当日05:55・installed generationへ束縛する。"""
+    if bootstrap_details.get("last_task_result") != 0:
+        return False, "bootstrap_task_last_result_not_ok"
+    if not isinstance(execution_receipt, dict):
+        return False, "execution_receipt_missing"
+    if execution_receipt.get("schemaVersion") != _BOOTSTRAP_EXECUTION_RECEIPT_SCHEMA:
+        return False, "execution_receipt_mismatch"
+    if execution_receipt.get("status") not in {None, "succeeded"}:
+        return False, "execution_receipt_mismatch"
+    try:
+        child_exit_code = int(
+            execution_receipt.get(
+                "childExitCode", execution_receipt.get("child_exit_code")
+            )
+        )
+    except (TypeError, ValueError):
+        return False, "execution_receipt_mismatch"
+    if child_exit_code != 0:
+        return False, "execution_receipt_mismatch"
+    if str(execution_receipt.get("taskName") or "") != "News-Grasp Bootstrap":
+        return False, "execution_receipt_mismatch"
+    origin_witness = execution_receipt.get("originWitness") or execution_receipt.get(
+        "taskOriginWitness"
+    )
+    if not isinstance(origin_witness, dict):
+        return False, "execution_receipt_mismatch"
+    if (
+        str(origin_witness.get("taskName") or "") != "News-Grasp Bootstrap"
+    ):
+        return False, "execution_receipt_mismatch"
+    if (
+        origin_witness.get("source") is not None
+        and str(origin_witness.get("source") or "") != "scheduled-task"
+    ) or (
+        origin_witness.get("mode") is not None
+        and str(origin_witness.get("mode") or "") != "bootstrap"
+    ):
+        return False, "execution_receipt_mismatch"
+    if (
+        execution_receipt.get("taskOriginWitnessStatus") is not None
+        and str(execution_receipt.get("taskOriginWitnessStatus") or "") != "accepted"
+    ):
+        return False, "execution_receipt_mismatch"
+    observed_text = str(execution_receipt.get("observedAt") or "").strip()
+    observed = _parse_dt(observed_text)
+    if observed is None:
+        return False, "execution_receipt_stale"
+    expected_date = str(
+        issue_date
+        or bootstrap_details.get("issue_date")
+        or bootstrap_details.get("issueDate")
+        or _current_jst_date()
+    ).strip()
+    receipt_issue_date = str(
+        execution_receipt.get("issueDate")
+        or execution_receipt.get("issue_date")
+        or ""
+    ).strip()
+    if receipt_issue_date != expected_date:
+        return False, "execution_receipt_stale"
+    observed_jst = observed.astimezone(_jst_timezone())
+    if observed_jst.date().isoformat() != expected_date:
+        return False, "execution_receipt_stale"
+    receipt_target = observed_jst.replace(hour=5, minute=55, second=0, microsecond=0)
+    if abs(observed_jst - receipt_target) > timedelta(minutes=5):
+        return False, "execution_receipt_stale"
+    task_observed_text = str(
+        bootstrap_details.get("last_run_time")
+        or bootstrap_details.get("lastRunTime")
+        or ""
+    ).strip()
+    task_observed = _parse_dt(task_observed_text)
+    if task_observed is None:
+        return False, "bootstrap_last_run_time_invalid"
+    task_observed_jst = task_observed.astimezone(_jst_timezone())
+    if task_observed_jst.date().isoformat() != expected_date:
+        return False, "bootstrap_last_run_issue_date_stale"
+    task_target = task_observed_jst.replace(hour=5, minute=55, second=0, microsecond=0)
+    if abs(task_observed_jst - task_target) > timedelta(minutes=5):
+        return False, "bootstrap_last_run_0555_stale"
+    observed_generation = str(
+        execution_receipt.get("generationId")
+        or execution_receipt.get("generation_id")
+        or ""
+    ).strip()
+    expected_generation = str(
+        authority.get("generationId")
+        or authority.get("generation_id")
+        or bootstrap_details.get("installed_generation_id")
+        or bootstrap_details.get("installedGenerationId")
+        or ""
+    ).strip()
+    if not expected_generation or not observed_generation or observed_generation != expected_generation:
+        return False, "execution_receipt_mismatch"
+    expected_manifest = str(
+        bootstrap_details.get("installed_manifest_sha256")
+        or bootstrap_details.get("installedManifestSha256")
+        or ""
+    ).strip().lower()
+    observed_manifest = str(
+        execution_receipt.get("manifestSha256")
+        or execution_receipt.get("manifest_sha256")
+        or ""
+    ).strip().lower()
+    if (
+        not re.fullmatch(r"[0-9a-f]{64}", expected_manifest)
+        or not re.fullmatch(r"[0-9a-f]{64}", observed_manifest)
+        or observed_manifest != expected_manifest
+    ):
+        return False, "execution_receipt_mismatch"
+    expected_stable_authority = str(authority.get("authoritySha256") or "").strip().lower()
+    observed_stable_authority = str(
+        execution_receipt.get("stableAuthoritySha")
+        or execution_receipt.get("stableAuthoritySha256")
+        or ""
+    ).strip().lower()
+    if (
+        not re.fullmatch(r"[0-9a-f]{64}", expected_stable_authority)
+        or not re.fullmatch(r"[0-9a-f]{64}", observed_stable_authority)
+        or observed_stable_authority != expected_stable_authority
+    ):
+        return False, "execution_receipt_mismatch"
+    if stable_authority_path is not None:
+        try:
+            if not stable_authority_path.is_file() or stable_authority_path.is_symlink():
+                return False, "execution_receipt_mismatch"
+            observed_file_sha = str(
+                execution_receipt.get("stableAuthorityFileSha256") or ""
+            ).strip().lower()
+            if observed_file_sha and (
+                not re.fullmatch(r"[0-9a-f]{64}", observed_file_sha)
+                or observed_file_sha != sha256_file(stable_authority_path).lower()
+            ):
+                return False, "execution_receipt_mismatch"
+        except (OSError, ValueError):
+            return False, "execution_receipt_mismatch"
+    installed_timestamp = (
+        installed_generation_timestamp
+        or str(bootstrap_details.get("installed_generation_timestamp") or "")
+        or str(bootstrap_details.get("installedGenerationTimestamp") or "")
+        or str(authority.get("generationTimestamp") or "")
+        or str(authority.get("generationCreatedAt") or "")
+        or str(authority.get("issuedAtUtc") or "")
+    )
+    if installed_timestamp:
+        installed = _parse_dt(installed_timestamp)
+        if installed is None:
+            return False, "bootstrap_generation_timestamp_invalid"
+        if task_observed < installed or observed < installed:
+            return False, "bootstrap_generation_timestamp_stale"
+    return True, ""
+
+
+def _cleanroom_enabled_topology_extras(*details: dict) -> list[dict[str, object]] | None:
+    """一回のScheduled Task観測に含まれる未知enabled taskを抽出する。"""
+    rows: list[object] = []
+    observed = False
+    for detail in details:
+        value = detail.get("task_topology")
+        if value is None:
+            value = detail.get("taskTopology")
+        if isinstance(value, dict):
+            value = [value]
+        if isinstance(value, list):
+            observed = True
+            rows.extend(value)
+    if not observed:
+        return None
+    canonical = {"News-Grasp Production", "News-Grasp Bootstrap"}
+    extras: list[dict[str, object]] = []
+    seen: set[tuple[str, str]] = set()
+    for row in rows:
+        if not isinstance(row, dict) or row.get("enabled") is not True:
+            continue
+        name = str(row.get("task_name") or row.get("taskName") or "")
+        path = str(row.get("task_path") or row.get("taskPath") or "\\")
+        if name in canonical:
+            continue
+        key = (path, name)
+        if key not in seen:
+            seen.add(key)
+            extras.append({"taskPath": path, "taskName": name, "enabled": True})
+    return extras
+
+
+def _load_cleanroom_control_manifest(ops_repo_root: Path) -> dict | None:
+    """release parityへ渡すmanifestをrepoの正本ファイルから読む。"""
+    candidates = (
+        ops_repo_root / "config" / "news_grasp_cleanroom_task_manifest_v1.json",
+        Path(__file__).resolve().parents[1] / "config" / "news_grasp_cleanroom_task_manifest_v1.json",
+    )
+    for candidate in candidates:
+        try:
+            if not candidate.is_file() or candidate.is_symlink():
+                continue
+            value = json.loads(candidate.read_text(encoding="utf-8-sig"))
+            if isinstance(value, dict):
+                return value
+        except (OSError, UnicodeError, json.JSONDecodeError, TypeError, ValueError):
+            continue
+    return None
+
+
+def _cleanroom_live_task_definition(
+    *,
+    task_details: dict,
+    bootstrap_details: dict,
+    live_task_launcher_path: Path,
+    execution_receipt: dict | None = None,
+    issue_date: str | None = None,
+    installed_generation_timestamp: str | None = None,
+) -> dict:
+    """実Task観測をcanonical clean-room topologyへ投影する。"""
+    runner_actions = _task_action_records(task_details)
+    if len(runner_actions) != 1:
+        return {"recognized": False, "ok": False, "reason": "cleanroom_action_missing"}
+    runner_argv = [
+        runner_actions[0]["execute"],
+        *_windows_action_arguments(runner_actions[0]["arguments"]),
+    ]
+    if len(runner_argv) < 5 or "dispatch" not in runner_argv:
+        return {"recognized": False, "ok": False, "reason": "legacy_runner_action"}
+    expected_launcher = str(live_task_launcher_path.resolve())
+    expected_executable = runner_argv[0]
+    expected_argv = [
+        expected_executable,
+        expected_launcher,
+        "dispatch",
+        "--schedule-id",
+        "news-grasp-daily-v1",
+        "--intent",
+        "reconcile",
+    ]
+    working_directory = str(runner_actions[0].get("workingDirectory") or "")
+    expected_working_directory = str(
+        (Path.home() / ".news-grasp-runtime" / "production-runtime").resolve()
+    )
+    trigger_rows = task_details.get("triggers")
+    if isinstance(trigger_rows, dict):
+        trigger_rows = [trigger_rows]
+    observed_times: list[str] = []
+    if isinstance(trigger_rows, list):
+        for trigger in trigger_rows:
+            if not isinstance(trigger, dict) or trigger.get("enabled") is False:
+                continue
+            boundary = str(trigger.get("start_boundary") or "")
+            match = re.search(r"T(\d{2}):(\d{2})(?::\d{2})?", boundary)
+            if match:
+                observed_times.append(f"{int(match.group(1)):02d}:{int(match.group(2)):02d}:00")
+    observed_times = sorted(observed_times)
+    expected_times = sorted(["06:00:00", "06:40:00"])
+    authority_path = live_task_launcher_path.resolve().parent / "news-grasp-stable-task-authority-v1.json"
+    authority: dict = {}
+    try:
+        authority, _ = _canonical_live_json(authority_path, expected=authority_path)
+    except (OSError, ValueError):
+        authority = {}
+    authority_value = authority if isinstance(authority, dict) else {}
+    authority_projection = {
+        key: authority_value.get(key)
+        for key in (
+            "schemaVersion",
+            "taskName",
+            "taskPath",
+            "multipleInstancesPolicy",
+            "manifestAction",
+            "triggers",
+            "workingDirectoryToken",
+            "authoritySha256",
+        )
+        if key in authority_value
+    }
+    logical_authority = dict(authority_value)
+    if isinstance(authority_value.get("manifestAction"), dict):
+        logical_authority["action"] = dict(authority_value["manifestAction"])
+    if isinstance(authority_value.get("triggers"), list):
+        logical_authority["triggers"] = [dict(item) for item in authority_value["triggers"]]
+    top_level_action = authority_value.get("manifestAction")
+    top_level_triggers = authority_value.get("triggers")
+    bootstrap_observation_ok, bootstrap_observation_reason = _bootstrap_observation_gate(
+        bootstrap_details=bootstrap_details,
+        authority=authority_value,
+        execution_receipt=execution_receipt,
+        stable_authority_path=authority_path,
+        issue_date=issue_date,
+        installed_generation_timestamp=installed_generation_timestamp,
+    )
+    ok = bool(
+        task_details.get("ok") is True
+        and task_details.get("enabled") is True
+        and str(task_details.get("task_name") or "") == "News-Grasp Production"
+        and str(task_details.get("task_path") or "\\") == "\\"
+        and str(task_details.get("multiple_instances_policy") or "") == "Parallel"
+        and runner_argv == expected_argv
+        and os.path.normcase(working_directory) == os.path.normcase(expected_working_directory)
+        and observed_times == expected_times
+        and top_level_action == _CLEANROOM_MANIFEST_ACTION
+        and top_level_triggers == _CLEANROOM_MANIFEST_TRIGGERS
+        and authority_projection.get("schemaVersion") == "STABLE_TASK_AUTHORITY_V1"
+        and authority_projection.get("taskName") == "News-Grasp Production"
+        and authority_projection.get("taskPath") == "\\"
+        and authority_projection.get("multipleInstancesPolicy") == "Parallel"
+        and authority_projection.get("workingDirectoryToken") == "<RUNTIME_ROOT>"
+        and authority_projection.get("authoritySha256")
+    )
+    return {
+        "recognized": True,
+        "ok": ok,
+        "reason": "" if ok else "cleanroom_task_definition_invalid",
+        "action": dict(_CLEANROOM_MANIFEST_ACTION),
+        "triggers": [dict(item) for item in _CLEANROOM_MANIFEST_TRIGGERS],
+        "authority": logical_authority,
+        "stableAuthority": logical_authority,
+        "taskName": "News-Grasp Production",
+        "taskPath": "\\",
+        "multipleInstancesPolicy": "Parallel",
+        "workingDirectory": working_directory,
+        "bootstrap": bootstrap_details,
+        "bootstrapExecutionReceipt": execution_receipt or {},
+        "bootstrapObservationOk": bootstrap_observation_ok,
+        "bootstrapObservationReason": bootstrap_observation_reason,
+        "topology": {
+            "manifest": {
+                "schemaVersion": "NEWS_GRASP_CONTROL_MANIFEST_V1",
+                "scheduleId": "news-grasp-daily-v1",
+                "tasks": [
+                    {
+                        "taskPath": "\\",
+                        "taskName": "News-Grasp Production",
+                        "multipleInstancesPolicy": "Parallel",
+                        "triggers": [dict(item) for item in _CLEANROOM_MANIFEST_TRIGGERS],
+                        "action": dict(_CLEANROOM_MANIFEST_ACTION),
+                    }
+                ],
+            },
+            "live_snapshot": {
+                "schemaVersion": "NEWS_GRASP_LIVE_TASK_SNAPSHOT_V1",
+                "tasks": [
+                    {
+                        "taskPath": "\\",
+                        "taskName": "News-Grasp Production",
+                        "enabled": True,
+                        "multipleInstancesPolicy": "Parallel",
+                        "triggers": [dict(item) for item in _CLEANROOM_MANIFEST_TRIGGERS],
+                        "action": dict(_CLEANROOM_MANIFEST_ACTION),
+                    }
+                ],
+                "extraEnabledTasks": [],
+            },
+            "bootstrap": bootstrap_details,
+        },
+    }
 
 
 def _safe_int(value: object) -> int | None:
@@ -968,6 +1455,7 @@ def _task_launcher_source_contract(path: Path) -> dict:
         "converge-runtime",
         "maintain-runtime",
         "scheduled-equivalent-nopublish",
+        "dispatch",
     }
     missing_modes = sorted(required_modes - set(mode_choices))
     missing: list[str] = []
@@ -1030,6 +1518,8 @@ def _task_launcher_source_contract(path: Path) -> dict:
         missing.append("runner_args:UseProductionRuntime+ScheduledTaskName")
     if not all(item in bootstrap_args for item in required_bootstrap_args):
         missing.append("bootstrap_args:UseProductionRuntime+ScheduledTaskName")
+    if "--schedule-id" not in source or "--intent" not in source:
+        missing.append("dispatch_args:schedule-id+intent")
     expected_bootstrap_options = {
         "-PollSeconds": "1",
         "-TimeoutMinutes": "2",
@@ -1257,6 +1747,84 @@ def _legacy_direct_clean_runtime_contract(live_runner_path: Path, live_bootstrap
     )
 
 
+_CLEANROOM_MANIFEST_ACTION = {
+    "entryModule": "tools.news_grasp_cleanroom_dispatch",
+    "argv": [
+        "dispatch",
+        "--schedule-id",
+        "news-grasp-daily-v1",
+        "--intent",
+        "reconcile",
+    ],
+    "workingDirectoryToken": "<RUNTIME_ROOT>",
+}
+_CLEANROOM_MANIFEST_TRIGGERS = [
+    {
+        "triggerId": "scheduled-0600",
+        "kind": "daily",
+        "localTime": "06:00:00",
+        "timeZone": "Asia/Tokyo",
+    },
+    {
+        "triggerId": "audit-0640",
+        "kind": "daily",
+        "localTime": "06:40:00",
+        "timeZone": "Asia/Tokyo",
+    },
+]
+
+
+def _cleanroom_readiness_shape_ok(readiness: dict) -> bool:
+    """新authorityの論理readiness projectionをfail-closedに検証する。"""
+    scheduled_task = readiness.get("scheduled_task")
+    if not isinstance(scheduled_task, dict):
+        return False
+    canonical_keys = {
+        "taskName",
+        "taskPath",
+        "multipleInstancesPolicy",
+        "action",
+        "triggers",
+    }
+    if not canonical_keys.issubset(scheduled_task):
+        return False
+    if (
+        scheduled_task.get("taskName") != "News-Grasp Production"
+        or scheduled_task.get("taskPath") != "\\"
+        or scheduled_task.get("multipleInstancesPolicy") != "Parallel"
+        or scheduled_task.get("action") != _CLEANROOM_MANIFEST_ACTION
+        or scheduled_task.get("triggers") != _CLEANROOM_MANIFEST_TRIGGERS
+    ):
+        return False
+    authorities = [
+        readiness.get("stable_authority"),
+        scheduled_task.get("stableAuthority"),
+        scheduled_task.get("authority"),
+    ]
+    authority = next((item for item in authorities if isinstance(item, dict)), None)
+    if not isinstance(authority, dict):
+        return False
+    required_authority = {
+        "schemaVersion": "STABLE_TASK_AUTHORITY_V1",
+        "taskName": "News-Grasp Production",
+        "taskPath": "\\",
+        "multipleInstancesPolicy": "Parallel",
+        "action": _CLEANROOM_MANIFEST_ACTION,
+        "triggers": _CLEANROOM_MANIFEST_TRIGGERS,
+        "workingDirectoryToken": "<RUNTIME_ROOT>",
+    }
+    for key, expected in required_authority.items():
+        if authority.get(key) != expected:
+            return False
+    authority_sha = str(authority.get("authoritySha256") or "")
+    if not re.fullmatch(r"[0-9a-f]{64}", authority_sha):
+        return False
+    for candidate in authorities:
+        if isinstance(candidate, dict) and candidate != authority:
+            return False
+    return True
+
+
 def live_runner_readiness_manifest_ok(readiness: dict) -> bool:
     """publish-complete 履歴から再利用できる live ops readiness の正本判定。"""
     if not isinstance(readiness, dict) or not readiness.get("ok"):
@@ -1275,6 +1843,23 @@ def live_runner_readiness_manifest_ok(readiness: dict) -> bool:
     )
     scheduled_task = readiness.get("scheduled_task") if isinstance(readiness.get("scheduled_task"), dict) else {}
     canary = readiness.get("canary") if isinstance(readiness.get("canary"), dict) else {}
+    if _cleanroom_readiness_shape_ok(readiness):
+        cleanroom_digest_pairs = (
+            (repo_runner, live_runner),
+            (repo_watcher, live_watcher),
+            (repo_bootstrap, live_bootstrap),
+            (repo_task_launcher, live_task_launcher),
+        )
+        return bool(
+            all(
+                isinstance(left.get("sha256"), str)
+                and bool(left.get("sha256"))
+                and left.get("sha256") == right.get("sha256")
+                for left, right in cleanroom_digest_pairs
+            )
+            and canary.get("ok") is True
+            and str(canary.get("status") or "") == "smoke_ok"
+        )
     repo_sha = str(repo_runner.get("sha256") or "")
     live_sha = str(live_runner.get("sha256") or "")
     repo_watcher_sha = str(repo_watcher.get("sha256") or "")
@@ -1357,10 +1942,14 @@ def _scheduled_task_action_summary(
     try:
         proc = subprocess.run(
             [powershell_exe, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", command],
-            capture_output=True,
+            shell=False,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=False,
             timeout=10,
             check=False,
+            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
         )
     except (OSError, subprocess.SubprocessError) as exc:
         return f"unavailable: {exc}"
@@ -1396,11 +1985,25 @@ def _scheduled_task_details(
         "$OutputEncoding=[System.Text.UTF8Encoding]::new($false); "
         f"$task=Get-ScheduledTask -TaskName '{safe_task_name}' -ErrorAction Stop; "
         f"$info=Get-ScheduledTaskInfo -TaskName '{safe_task_name}' -ErrorAction Stop; "
+        "$generationId=''; $generationManifestSha256=''; $generationTimestamp=''; "
+        "$generationPath=Join-Path $env:USERPROFILE '.news-grasp-runtime\\active-generation-v2.json'; "
+        "if (Test-Path -LiteralPath $generationPath -PathType Leaf) { "
+        "try { $generation=Get-Content -LiteralPath $generationPath -Raw -Encoding UTF8 | ConvertFrom-Json; "
+        "$generationId=[string]$generation.generationId; "
+        "$generationManifestSha256=[string]$generation.manifestSha256; "
+        "$generationTimestamp=[string]$generation.issuedAtUtc; "
+        "if ([string]::IsNullOrWhiteSpace($generationTimestamp)) { $generationTimestamp=[string]$generation.generationCreatedAt }; "
+        "if ([string]::IsNullOrWhiteSpace($generationTimestamp)) { $generationTimestamp=[string]$generation.createdAt } } catch {} }; "
+        "$taskTopology=@(Get-ScheduledTask -ErrorAction Stop | Where-Object { "
+        "$_.TaskName -in @('News-Grasp Production','News-Grasp Bootstrap','News-Grasp Deadman','News-Grasp Runner') "
+        "-or $_.TaskName -like 'News-Grasp *' } | ForEach-Object { "
+        "[ordered]@{ task_name=[string]$_.TaskName; task_path=[string]$_.TaskPath; "
+        "enabled=[bool]$_.Settings.Enabled; state=[string]$_.State } }); "
         "$actions=(@($task.Actions) | ForEach-Object { "
         "(([string]$_.Execute + ' ' + [string]$_.Arguments).Trim()) "
         "}) -join ' ; '; "
         "$actionRecords=@($task.Actions) | ForEach-Object { "
-        "[ordered]@{ execute=[string]$_.Execute; arguments=[string]$_.Arguments } "
+        "[ordered]@{ execute=[string]$_.Execute; arguments=[string]$_.Arguments; workingDirectory=[string]$_.WorkingDirectory } "
         "}; "
         "$triggers=@($task.Triggers) | ForEach-Object { "
         "[ordered]@{ start_boundary=[string]$_.StartBoundary; enabled=[bool]$_.Enabled } "
@@ -1408,11 +2011,24 @@ def _scheduled_task_details(
         "[ordered]@{ "
         "ok=$true; "
         "task_name=[string]$task.TaskName; "
+        "task_path=[string]$task.TaskPath; "
+        "enabled=[bool]$task.Settings.Enabled; "
         "state=[string]$task.State; "
+        "multiple_instances_policy=[string]$task.Settings.MultipleInstances; "
         "action_summary=$actions; "
         "actions=$actionRecords; "
         "triggers=$triggers; "
         "last_run_time=[string]$info.LastRunTime; "
+        "generation_id=$generationId; "
+        "generationId=$generationId; "
+        "installed_generation_id=$generationId; "
+        "installedGenerationId=$generationId; "
+        "installed_manifest_sha256=$generationManifestSha256; "
+        "installedManifestSha256=$generationManifestSha256; "
+        "installed_generation_timestamp=$generationTimestamp; "
+        "installedGenerationTimestamp=$generationTimestamp; "
+        "task_topology=$taskTopology; "
+        "taskTopology=$taskTopology; "
         "last_task_result=[int]$info.LastTaskResult; "
         "next_run_time=[string]$info.NextRunTime; "
         "number_of_missed_runs=[int]$info.NumberOfMissedRuns "
@@ -1421,10 +2037,14 @@ def _scheduled_task_details(
     try:
         proc = subprocess.run(
             [powershell_exe, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", command],
-            capture_output=True,
+            shell=False,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=False,
             timeout=10,
             check=False,
+            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
         )
     except (OSError, subprocess.SubprocessError) as exc:
         return {"ok": False, "reason": f"unavailable: {exc}", "action_summary": f"unavailable: {exc}"}
@@ -1559,14 +2179,18 @@ def _run_live_startup_canary(
         canary_env["PYTHONDONTWRITEBYTECODE"] = "1"
         proc = subprocess.run(
             command,
+            shell=False,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             cwd=repo_root,
             env=canary_env,
-            capture_output=True,
             text=True,
             encoding="utf-8",
             errors="replace",
             timeout=timeout_sec,
             check=False,
+            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
         )
     except subprocess.TimeoutExpired as exc:
         return {
@@ -1747,6 +2371,7 @@ def verify_live_runner_readiness(
     # production-runtime の親 (.news-grasp-runtime) に置かれる。
     active_generation_path = Path.home() / ".news-grasp-runtime" / "active-generation-v2.json"
     generation_id = ""
+    active_generation: dict[str, object] = {}
     if active_generation_path.is_file() and not active_generation_path.is_symlink():
         try:
             active_generation = json.loads(active_generation_path.read_text(encoding="utf-8-sig"))
@@ -1754,6 +2379,22 @@ def verify_live_runner_readiness(
                 generation_id = str(active_generation.get("generationId") or "")
         except (OSError, UnicodeError, json.JSONDecodeError):
             generation_id = ""
+    installed_generation_timestamp = ""
+    if active_generation_path.is_file() and not active_generation_path.is_symlink():
+        if isinstance(active_generation, dict):
+            installed_generation_timestamp = str(
+                active_generation.get("issuedAtUtc")
+                or active_generation.get("generationCreatedAt")
+                or active_generation.get("createdAt")
+                or ""
+            )
+        if not installed_generation_timestamp:
+            try:
+                installed_generation_timestamp = datetime.fromtimestamp(
+                    active_generation_path.stat().st_mtime, tz=timezone.utc
+                ).isoformat()
+            except OSError:
+                installed_generation_timestamp = ""
     action_text = _command_path_text(action_summary)
     watcher_text = _command_path_text(live_watcher_path)
     runner_text = _command_path_text(live_runner_path)
@@ -1789,6 +2430,200 @@ def verify_live_runner_readiness(
     )
     bootstrap_details = _scheduled_task_details(task_name=bootstrap_task_name, powershell_exe=powershell_exe)
     bootstrap_summary = str(bootstrap_details.get("action_summary") or "")
+    bootstrap_execution_receipt = _load_bootstrap_execution_receipt(
+        path=(live_task_launcher_path.resolve().parent / _BOOTSTRAP_EXECUTION_RECEIPT_FILENAME)
+    )
+    cleanroom_definition = _cleanroom_live_task_definition(
+        task_details=task_details,
+        bootstrap_details=bootstrap_details,
+        live_task_launcher_path=live_task_launcher_path,
+        execution_receipt=bootstrap_execution_receipt,
+        issue_date=date,
+        installed_generation_timestamp=installed_generation_timestamp or None,
+    )
+    if cleanroom_definition.get("recognized") is True:
+        cleanroom_binding = _validate_live_high_cost_binding_authority(
+            task_details=task_details,
+            bootstrap_details=bootstrap_details,
+            live_task_launcher_path=live_task_launcher_path,
+            task_name=task_name,
+            bootstrap_task_name=bootstrap_task_name,
+            ops_repo_root=ops_repo_root,
+        )
+        bootstrap_triggers = bootstrap_details.get("triggers")
+        if isinstance(bootstrap_triggers, dict):
+            bootstrap_triggers = [bootstrap_triggers]
+        bootstrap_times: list[str] = []
+        if isinstance(bootstrap_triggers, list):
+            for trigger in bootstrap_triggers:
+                if not isinstance(trigger, dict) or trigger.get("enabled") is False:
+                    continue
+                boundary = str(trigger.get("start_boundary") or "")
+                match = re.search(r"T(\d{2}):(\d{2})(?::\d{2})?", boundary)
+                if match:
+                    bootstrap_times.append(
+                        f"{int(match.group(1)):02d}:{int(match.group(2)):02d}:00"
+                    )
+        bootstrap_action_records = _task_action_records(bootstrap_details)
+        bootstrap_definition_ok = bool(
+            bootstrap_details.get("ok") is True
+            and bootstrap_details.get("enabled") is True
+            and str(bootstrap_details.get("state") or "") in {"Ready", "Running"}
+            and str(bootstrap_details.get("task_name") or "") == "News-Grasp Bootstrap"
+            and str(bootstrap_details.get("task_path") or "\\") == "\\"
+            and str(bootstrap_details.get("multiple_instances_policy") or "") == "IgnoreNew"
+            and sorted(bootstrap_times) == ["05:55:00"]
+            and len(bootstrap_action_records) == 1
+        )
+        if "bootstrapObservationOk" in cleanroom_definition:
+            bootstrap_last_observation_ok = cleanroom_definition.get("bootstrapObservationOk") is True
+        else:
+            bootstrap_last_observation_ok = bootstrap_details.get("last_task_result") == 0
+        bootstrap_repairs_before_run = bool(
+            bootstrap_definition_ok and bootstrap_last_observation_ok
+        )
+        cleanroom_definition_ok = bool(
+            cleanroom_definition.get("ok") is True
+            and cleanroom_binding.get("ok") is True
+            and bootstrap_definition_ok
+            and str(task_details.get("state") or "") in {"Ready", "Running"}
+            and task_launcher_checksum["synced"]
+            and task_launcher_contract.get("ok") is True
+        )
+        cleanroom_task_ok = bool(cleanroom_definition_ok and bootstrap_last_observation_ok)
+        result["scheduled_task"] = {
+            "ok": cleanroom_task_ok,
+            "definition_ok": cleanroom_definition_ok,
+            "taskName": "News-Grasp Production",
+            "taskPath": "\\",
+            "task_name": "News-Grasp Production",
+            "state": task_details.get("state"),
+            "enabled": task_details.get("enabled"),
+            "multipleInstancesPolicy": "Parallel",
+            "action": dict(_CLEANROOM_MANIFEST_ACTION),
+            "triggers": [dict(item) for item in _CLEANROOM_MANIFEST_TRIGGERS],
+            "stableAuthority": cleanroom_definition.get("stableAuthority", {}),
+            "authority": cleanroom_definition.get("authority", {}),
+            "action_summary": str(task_details.get("action_summary") or ""),
+            "next_run_time": task_details.get("next_run_time"),
+            "last_run_time": task_details.get("last_run_time"),
+            "last_task_result": task_details.get("last_task_result"),
+            "number_of_missed_runs": task_details.get("number_of_missed_runs"),
+            "runner_action_is_production_start": cleanroom_definition_ok,
+            "targets_live_task_launcher": cleanroom_definition_ok,
+            "task_launcher_mode_ok": cleanroom_definition_ok,
+            "task_launcher_ready": task_launcher_checksum["synced"] and task_launcher_contract.get("ok"),
+            "multiple_instances_policy_ok": task_details.get("multiple_instances_policy") == "Parallel",
+            "trigger_is_daily_0600": True,
+            "trigger_is_daily_0640": True,
+            "bootstrap_definition_ok": bootstrap_definition_ok,
+            "bootstrap_last_observation_ok": bootstrap_last_observation_ok,
+            "bootstrap_repairs_before_run": bootstrap_repairs_before_run,
+            "bootstrap_state": bootstrap_details.get("state"),
+            "bootstrap_last_task_result": bootstrap_details.get("last_task_result"),
+            "bootstrap_execution_receipt": cleanroom_definition.get(
+                "bootstrapExecutionReceipt", {}
+            ),
+            "bootstrap_action_summary": bootstrap_summary,
+            "high_cost_binding_action_ok": cleanroom_binding.get("ok") is True,
+            "high_cost_binding_path": cleanroom_binding.get("binding_path", ""),
+            "high_cost_binding_receipt_sha256": cleanroom_binding.get("binding_receipt_sha256", ""),
+        }
+        result["stable_authority"] = cleanroom_definition.get("stableAuthority", {})
+        if not cleanroom_task_ok:
+            if cleanroom_definition_ok and not bootstrap_last_observation_ok:
+                reason = str(
+                    cleanroom_definition.get("bootstrapObservationReason")
+                    or "bootstrap_task_last_result_not_ok"
+                )
+            else:
+                reason = str(
+                    cleanroom_definition.get("reason")
+                    or cleanroom_binding.get("reason")
+                    or "cleanroom_task_definition_invalid"
+                )
+            result["next_run_readiness"] = {
+                "ok": False,
+                "status": "not_ready",
+                "reasonCode": reason,
+                "taskDefinitionStatus": "ready" if cleanroom_definition_ok else "not_ready",
+                "bootstrapObservationStatus": "green" if bootstrap_last_observation_ok else "red",
+            }
+            return {**result, "reason": reason}
+        if run_canary:
+            canary = _run_live_startup_canary(
+                repo_root=repo_root,
+                ops_repo_root=ops_repo_root,
+                startup_path=live_bootstrap_path,
+                live_runner_path=live_runner_path,
+                high_cost_binding_path=Path(str(cleanroom_binding["binding_path"])),
+                high_cost_binding_receipt_sha256=str(
+                    cleanroom_binding["binding_receipt_sha256"]
+                ),
+                date=date,
+                timeout_sec=canary_timeout_sec,
+                powershell_exe=powershell_exe,
+            )
+        else:
+            canary = {
+                "ok": False,
+                "skipped": True,
+                "status": "unverified",
+                "reason": "canary_not_run",
+            }
+        result["canary"] = canary
+        if not canary.get("ok"):
+            return {**result, "reason": str(canary.get("reason") or "canary_failed")}
+        topology = cleanroom_definition.get("topology")
+        manifest = cleanroom_definition.get("manifest")
+        live_snapshot = cleanroom_definition.get("live_snapshot")
+        if not isinstance(topology, dict):
+            topology = {}
+        if not isinstance(manifest, dict):
+            manifest = topology.get("manifest")
+        manifest_from_repo = _load_cleanroom_control_manifest(ops_repo_root)
+        if isinstance(manifest_from_repo, dict):
+            manifest = manifest_from_repo
+        if not isinstance(live_snapshot, dict):
+            live_snapshot = topology.get("live_snapshot")
+        if not isinstance(manifest, dict) or not isinstance(live_snapshot, dict):
+            return {
+                **result,
+                "reason": "live_task_parity_observation_missing",
+                "next_run_readiness": {
+                    "ok": False,
+                    "status": "not_ready",
+                    "reasonCode": "live_task_parity_observation_missing",
+                },
+            }
+        topology_extras = _cleanroom_enabled_topology_extras(task_details, bootstrap_details)
+        if topology_extras is not None:
+            live_snapshot = dict(live_snapshot)
+            live_snapshot["extraEnabledTasks"] = topology_extras
+        try:
+            validate_live_task_parity(manifest, live_snapshot)
+        except (ReleaseEvidenceError, TypeError, ValueError) as exc:
+            reason = getattr(exc, "reason", "live_task_parity_invalid")
+            result["liveTaskParity"] = {"ok": False, "reason": str(reason)}
+            result["next_run_readiness"] = {
+                "ok": False,
+                "status": "not_ready",
+                "reasonCode": str(reason),
+            }
+            return {**result, "reason": str(reason)}
+        result["liveTaskParity"] = {"ok": True, "status": "green"}
+        result["next_run_readiness"] = {
+            "ok": True,
+            "status": "ready",
+            "next_run_time": task_details.get("next_run_time"),
+            "canary_status": canary.get("status", "skipped"),
+        }
+        return {
+            **result,
+            "ok": True,
+            "reason": "",
+            "status": "ready",
+        }
     bootstrap_text = _command_path_text(bootstrap_summary)
     bootstrap_action_contract = _bootstrap_action_smoke_contract(
         bootstrap_summary,
@@ -1815,9 +2650,32 @@ def verify_live_runner_readiness(
         bootstrap_task_name=bootstrap_task_name,
         ops_repo_root=ops_repo_root,
     )
+    legacy_stable_authority_path = (
+        live_task_launcher_path.resolve().parent
+        / "news-grasp-stable-task-authority-v1.json"
+    )
+    legacy_authority: dict = {}
+    try:
+        legacy_authority, _ = _canonical_live_json(
+            legacy_stable_authority_path,
+            expected=legacy_stable_authority_path,
+        )
+    except (OSError, ValueError):
+        legacy_authority = {}
+    bootstrap_observation_ok, bootstrap_observation_reason = _bootstrap_observation_gate(
+        bootstrap_details=bootstrap_details,
+        authority=legacy_authority,
+        execution_receipt=bootstrap_execution_receipt,
+        stable_authority_path=legacy_stable_authority_path,
+        issue_date=date,
+        installed_generation_timestamp=installed_generation_timestamp or None,
+    )
     runner_state_ok = str(task_details.get("state") or "") in {"Ready", "Running"}
     bootstrap_state_ok = str(bootstrap_details.get("state") or "") in {"Ready", "Running"}
-    bootstrap_last_result_ok = bootstrap_details.get("last_task_result") == 0
+    bootstrap_last_result_ok = bool(
+        bootstrap_details.get("last_task_result") == 0
+        and bootstrap_observation_ok
+    )
     runner_start = _trigger_start_minutes(task_details)
     bootstrap_start = _trigger_start_minutes(bootstrap_details)
     runner_trigger_ok = runner_start == RUNNER_START_MINUTES
@@ -1914,6 +2772,8 @@ def verify_live_runner_readiness(
         "bootstrap_next_run_time": bootstrap_details.get("next_run_time"),
         "bootstrap_last_run_time": bootstrap_details.get("last_run_time"),
         "bootstrap_last_task_result": bootstrap_details.get("last_task_result"),
+        "bootstrap_execution_receipt": bootstrap_execution_receipt or {},
+        "bootstrap_observation_reason": bootstrap_observation_reason,
         "bootstrap_number_of_missed_runs": bootstrap_details.get("number_of_missed_runs"),
         "bootstrap_trigger_start_minutes": bootstrap_start,
         "bootstrap_trigger_is_0555": bootstrap_trigger_ok,
@@ -1986,8 +2846,8 @@ def verify_live_runner_readiness(
             reason = "bootstrap_task_next_run_missing"
         elif runner_targets_runner and not bootstrap_missed_runs_ok:
             reason = "bootstrap_task_missed_runs"
-        elif bootstrap_definition_ok and not bootstrap_last_result_ok:
-            reason = "bootstrap_task_last_result_not_ok"
+        elif not bootstrap_observation_ok:
+            reason = bootstrap_observation_reason
         elif runner_targets_runner and not bootstrap_before_runner:
             reason = "bootstrap_task_not_before_runner"
         elif not runner_targets_task_launcher:
@@ -2029,7 +2889,13 @@ def verify_live_runner_readiness(
         if not canary.get("ok"):
             return {**result, "reason": str(canary.get("reason") or "canary_failed")}
     else:
-        result["canary"] = {"ok": True, "skipped": True}
+        result["canary"] = {
+            "ok": False,
+            "skipped": True,
+            "status": "unverified",
+            "reason": "canary_not_run",
+        }
+        return {**result, "reason": "canary_not_run"}
     ready_status = "ready" if last_scheduled_status == "succeeded" else f"ready_with_{last_scheduled_status}_last_schedule"
     result["next_run_readiness"] = {
         "ok": True,

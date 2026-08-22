@@ -1746,7 +1746,9 @@ def test_deadman_task_launcher_uses_pythonw_and_create_no_window() -> None:
     assert "news-grasp-deadman-launcher.pyw" in installer_text
     assert 'parser.add_argument("--repo-dir", type=Path)' in launcher_text
     assert '["-RepoDir", str(repo_dir)]' in launcher_text
-    assert '$deadmanArgs = "`"$deadmanLauncherPath`""' in installer_text
+    assert '$deadmanArgs = "`"$deadmanLauncherPath`""' not in installer_text
+    assert "Register-ScheduledTask -TaskName $DeadmanTaskName" not in installer_text
+    assert "Disable-ScheduledTask -TaskName $DeadmanTaskName -ErrorAction Stop" in installer_text
     assert 'news-grasp-runtime-root-v1.json' in launcher_text
     assert '{"schemaVersion", "repoDir", "pythonExe", "evidenceRepoDir"}' in launcher_text
     assert '["-PythonExe", str(python_exe)]' in launcher_text
@@ -1768,7 +1770,13 @@ def test_runner_and_bootstrap_tasks_use_pythonw_no_console_launcher() -> None:
     assert "news-grasp-task-launcher.pyw" in installer_text
     assert 'parser.add_argument("--repo-dir", type=Path)' in launcher_text
     assert 'extra.extend(["-RepoDir", str(repo_dir)])' in launcher_text
-    assert '$runnerArgs = "`"$taskLauncherPath`" runner --scheduled-task-name `"$RunnerTaskName`" --high-cost-binding-path' in installer_text
+    runner_args = re.search(
+        r'\$runnerArgs\s*=.*?dispatch.*?--schedule-id.*?news-grasp-daily-v1.*?--intent.*?reconcile',
+        installer_text,
+        re.IGNORECASE | re.DOTALL,
+    )
+    assert runner_args is not None
+    assert " runner " not in runner_args.group(0)
     assert '$bootstrapArgs = "`"$taskLauncherPath`" bootstrap --scheduled-task-name `"$BootstrapTaskName`" --high-cost-binding-path' in installer_text
     assert '--repo-dir `"$RepoDir`"' not in installer_text
     assert 'news-grasp-runtime-root-v1.json' in launcher_text
@@ -1783,8 +1791,11 @@ def test_runner_and_bootstrap_tasks_use_pythonw_no_console_launcher() -> None:
     assert "Register-ScheduledTask -TaskName $taskName -Xml $xml -Force" in installer_text
     assert "execute = $pythonw" in installer_text
     assert "[Console]::OutputEncoding" in installer_text
-    assert "Register-ScheduledTask -TaskName $RunnerTaskName -Action $runnerAction -Trigger $runnerTrigger -Settings $runnerSettings" in installer_text
+    assert "Register-ScheduledTask -TaskName $RunnerTaskName -Action $runnerAction -Trigger @($runnerTrigger, $auditTrigger) -Settings $runnerSettings" in installer_text
     assert "Enable-ScheduledTask -TaskName $RunnerTaskName" in installer_text
+    assert "$auditTrigger = New-ScheduledTaskTrigger -Daily -At 6:40am" in installer_text
+    assert "New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances Parallel" in installer_text
+    assert "Disable-ScheduledTask -TaskName $DeadmanTaskName -ErrorAction Stop" in installer_text
     assert "if (-not $runnerRegistered) {" in installer_text
     assert 'throw "failed to converge $RunnerTaskName action:' in installer_text
 
@@ -2033,15 +2044,19 @@ def test_ops_installer_initializes_journal_authority_before_mutation_and_trap() 
 
 
 def test_ops_installer_task_specs_are_shape_complete_under_strict_mode() -> None:
-    """全task specはrepetition有無にかかわらず同一property shapeを持つ。"""
+    """canonical 2 task specは複数triggerを含む同一property shapeを持つ。"""
     text = (OPS_DIR / "install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
     expected_block = text.split("$expected = @(", 1)[1].split("    )", 1)[0]
     task_specs = [line for line in expected_block.splitlines() if "[ordered]@{" in line]
 
-    assert len(task_specs) == 3
+    assert len(task_specs) == 2
     for spec in task_specs:
-        assert "interval =" in spec, spec
-        assert "duration =" in spec, spec
+        assert "starts =" in spec, spec
+        assert "policy =" in spec, spec
+    assert "$canonicalProductionTriggers = @('T06:00', 'T06:40')" in text
+    assert "Parallel" in task_specs[0]
+    assert "T05:55" in task_specs[1]
+    assert "IgnoreNew" in task_specs[1]
 
 
 def test_ops_installer_task_rollback_fails_closed_before_rolled_back_receipt() -> None:
@@ -2104,22 +2119,27 @@ def test_install_guard_limits_reparse_check_to_the_trusted_managed_root() -> Non
     assert completed.returncode == 0, completed.stderr
 
 
-def test_ops_installer_disables_legacy_task_after_canonical_convergence() -> None:
-    """旧taskはrollback可能なsnapshotを保持し、正規3taskの収束後に無効化する。"""
+def test_ops_installer_disables_legacy_tasks_after_canonical_convergence() -> None:
+    """旧 Deadman/Runner はsnapshotを保持したまま、2件のcanonical task収束後に無効化する。"""
     text = (OPS_DIR / "install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
 
     assert "[string] $LegacyRunnerTaskName = 'News-Grasp Runner'" in text
     assert "@($RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName, $LegacyRunnerTaskName)" in text
+    assert "Disable-ScheduledTask -TaskName $DeadmanTaskName -ErrorAction Stop" in text
     assert "Disable-ScheduledTask -TaskName $LegacyRunnerTaskName -ErrorAction Stop" in text
     assert "legacy task remains enabled" in text
-    deadman_registration = text.index(
-        "Register-ScheduledTask -TaskName $DeadmanTaskName"
-    )
+    assert "Register-ScheduledTask -TaskName $DeadmanTaskName" not in text
+    assert "Enable-ScheduledTask -TaskName $DeadmanTaskName" not in text
+    assert "Register-ScheduledTask -TaskName $LegacyRunnerTaskName" not in text
+    assert "Enable-ScheduledTask -TaskName $LegacyRunnerTaskName" not in text
     legacy_disable = text.index(
         "Disable-ScheduledTask -TaskName $LegacyRunnerTaskName -ErrorAction Stop"
     )
+    deadman_disable = text.index(
+        "Disable-ScheduledTask -TaskName $DeadmanTaskName -ErrorAction Stop"
+    )
     tasks_converged = text.index("Write-NewsGraspInstallJournal -Phase 'tasks_converged'")
-    assert deadman_registration < legacy_disable < tasks_converged
+    assert deadman_disable < legacy_disable < tasks_converged
 
 
 def test_interrupted_install_rejects_forged_journal_paths_and_task_names_before_mutation(
@@ -2180,7 +2200,7 @@ def test_interrupted_install_rejects_forged_journal_paths_and_task_names_before_
         f"-JournalPath '{journal_path}' -Journal $journal "
         f"-ExpectedBackupRoot '{backup_root}' -ExpectedRepoDir '{tmp_path / 'repo'}' "
         f"-ExpectedBinDir '{bin_dir}' "
-        "-ExpectedTaskNames @('News-Grasp Production','News-Grasp Bootstrap','News-Grasp Deadman')"
+        "-ExpectedTaskNames @('News-Grasp Production','News-Grasp Bootstrap')"
     )
 
     completed = subprocess.run(
@@ -2381,6 +2401,44 @@ def test_legacy_direct_scheduled_action_is_a_tombstone_not_a_second_production_r
     assert "news-grasp-runner\\.ps1" in scheduled_context
     assert "$AllowLegacyDirectEntrypoint" in scheduled_context
     assert "-AllowLegacyDirectEntrypoint ([bool]$LegacyDirectEntrypoint)" in bootstrap
+
+
+def test_bootstrap_accepts_only_canonical_dispatch_context_for_production_task() -> None:
+    """Production Taskはcanonical dispatchだけを自己観測し、旧Runner/手動actionを受け入れない。"""
+    bootstrap = (OPS_DIR / "news-grasp-bootstrap.ps1").read_text(encoding="utf-8-sig")
+    scheduled_context = bootstrap.split("function Assert-ScheduledTaskLaunchContext", 1)[1].split(
+        "function Invoke-BoundedGitFetch", 1
+    )[0]
+
+    assert re.search(
+        r"\$expectedMode\s*=\s*if\s*\(\$IsSmokeTest\)\s*\{\s*'bootstrap'\s*\}\s*else\s*\{\s*'dispatch'\s*\}",
+        scheduled_context,
+        re.IGNORECASE | re.DOTALL,
+    )
+    known_task_block = scheduled_context.split("$knownTaskNames =", 1)[1].split(
+        "if ($TaskName -notin", 1
+    )[0]
+    assert "$ProductionTaskName" in known_task_block
+    assert "'News-Grasp Runner'" not in known_task_block
+    assert re.search(
+        r"\[string\]\s+\$ProductionTaskName\s*=\s*'News-Grasp Production'",
+        bootstrap,
+        re.IGNORECASE,
+    )
+
+    for token in (
+        "news-grasp-task-launcher\\.pyw",
+        "dispatch",
+        "--schedule-id",
+        "news-grasp-daily-v1",
+        "--intent",
+        "reconcile",
+    ):
+        assert token.casefold() in scheduled_context.casefold(), (
+            "scheduled context must require exact canonical dispatch action token: " + token
+        )
+    assert "$AllowLegacyDirectEntrypoint" in scheduled_context
+    assert "news-grasp-runner\\.ps1" in scheduled_context
 
 
 def test_runner_smoke_test_writes_terminal_smoke_ok_state() -> None:
@@ -4511,7 +4569,7 @@ def test_recovery_journal_missing_managed_rows_cannot_delete_live_file(tmp_path:
         "Assert-NewsGraspRecoveryJournal "
         f"-JournalPath '{journal_path}' -Journal $journal "
         f"-ExpectedBackupRoot '{backup_root}' -ExpectedRepoDir '{repo}' "
-        f"-ExpectedBinDir '{bin_dir}' -ExpectedTaskNames @('News-Grasp Production')"
+        f"-ExpectedBinDir '{bin_dir}' -ExpectedTaskNames @('News-Grasp Production','News-Grasp Bootstrap')"
     )
 
     completed = _run_install_guard(command)

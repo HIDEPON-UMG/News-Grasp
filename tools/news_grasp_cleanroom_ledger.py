@@ -19,6 +19,7 @@ from .news_grasp_cleanroom_contracts import (
     _entry_canonical_sha256,
     _ENTRY_SCHEDULE_ID,
     ENTRY_CLOCK_ROLLBACK,
+    ENTRY_LEASE_INVALID,
     _managed_runtime_path,
     _validate_busy_timeout,
     _validate_entry_time,
@@ -1105,6 +1106,107 @@ class ControlLedger:
             committed = True
             self._hook("after_terminal_commit")
             return {"schemaVersion": "SLOT_COMMIT_RESULT_V1", "status": "committed", "slotKey": slot_key, "generation": generation, "fenceToken": fence_token, "terminalState": terminal_state, "resultHash": result_hash, "externalEffectCount": 0}
+        except CleanroomEntryError:
+            if not committed:
+                connection.rollback()
+            raise
+        except sqlite3.OperationalError as exc:
+            if not committed:
+                connection.rollback()
+            raise CleanroomEntryError(LEDGER_BUSY, "SQLite ledger operation is busy") from exc
+        finally:
+            connection.close()
+
+    def renew_slot(
+        self,
+        *,
+        slot_key: str,
+        writer: Mapping[str, Any],
+        fence_token: int,
+        lease_seconds: int,
+        observed_at: datetime,
+    ) -> dict[str, Any]:
+        """ACTIVE slotのowner/fenceを再検証してleaseだけを延長する。"""
+        observed = _validate_entry_time(observed_at)
+        if isinstance(lease_seconds, bool) or not isinstance(lease_seconds, int) or not 1 <= lease_seconds <= 3600:
+            raise CleanroomEntryError(ENTRY_LEASE_INVALID, "lease_seconds must be an integer from 1 through 3600")
+        if (
+            not isinstance(slot_key, str)
+            or _SLOT_KEY.fullmatch(slot_key) is None
+            or isinstance(fence_token, bool)
+            or not isinstance(fence_token, int)
+            or fence_token < 1
+        ):
+            raise CleanroomEntryError(STALE_FENCE, "renewal payload is invalid")
+        try:
+            _writer_value, owner_key = _validate_entry_writer(writer)
+        except CleanroomEntryError:
+            raise CleanroomEntryError(STALE_FENCE, "writer is invalid for renewal")
+        generation = self._ensure_initialized(observed)
+        connection = self._connect()
+        committed = False
+        try:
+            try:
+                connection.execute("BEGIN IMMEDIATE")
+            except sqlite3.OperationalError as exc:
+                raise CleanroomEntryError(LEDGER_BUSY, "SQLite ledger is busy") from exc
+            self._verify_connection(connection, generation)
+            self._attest_writer(writer)
+            current = self._clock_now(observed)
+            row = self._slot_row(connection, slot_key)
+            if row is None or row["state"] != "ACTIVE":
+                raise CleanroomEntryError(STALE_FENCE, "slot is not active")
+            if row["owner_key"] != owner_key or row["fence_token"] != fence_token:
+                raise CleanroomEntryError(STALE_FENCE, "writer or fence is stale")
+            expiry_text = row["lease_expires_at"]
+            if not isinstance(expiry_text, str):
+                raise CleanroomEntryError(STALE_FENCE, "lease is absent")
+            try:
+                expiry = datetime.fromisoformat(expiry_text)
+            except (TypeError, ValueError) as exc:
+                raise CleanroomEntryError(STALE_FENCE, "lease is invalid") from exc
+            if expiry.tzinfo is None or current >= expiry:
+                raise CleanroomEntryError(STALE_FENCE, "lease is expired")
+            new_expiry = current + timedelta(seconds=lease_seconds)
+            updated = connection.execute(
+                "UPDATE slots SET lease_expires_at=?,updated_at=? "
+                "WHERE schedule_id=? AND issue_date=? AND slot_kind=? "
+                "AND state='ACTIVE' AND owner_key=? AND fence_token=?",
+                (
+                    new_expiry.isoformat(),
+                    _iso(current),
+                    _ENTRY_SCHEDULE_ID,
+                    slot_key.split("/")[1],
+                    slot_key.split("/")[2],
+                    owner_key,
+                    fence_token,
+                ),
+            )
+            if updated.rowcount != 1:
+                raise CleanroomEntryError(STALE_FENCE, "slot renewal fence changed")
+            self._append_event(
+                connection,
+                generation,
+                "SLOT_RENEWED",
+                slot_key,
+                {
+                    "ownerKey": owner_key,
+                    "fenceToken": fence_token,
+                    "leaseExpiresAt": new_expiry.isoformat(),
+                },
+            )
+            self._update_materialized_state(connection)
+            connection.commit()
+            committed = True
+            return {
+                "schemaVersion": "SLOT_RENEW_RESULT_V1",
+                "status": "renewed",
+                "slotKey": slot_key,
+                "generation": generation,
+                "fenceToken": fence_token,
+                "leaseExpiresAt": new_expiry.isoformat(),
+                "externalEffectCount": 0,
+            }
         except CleanroomEntryError:
             if not committed:
                 connection.rollback()

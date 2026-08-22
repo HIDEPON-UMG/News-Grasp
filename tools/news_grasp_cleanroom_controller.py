@@ -185,6 +185,25 @@ class Controller:
             observed_at=observed_at,
         )
 
+    def renew_slot(
+        self,
+        *,
+        slot_key: str,
+        writer: Mapping[str, Any],
+        fence_token: int,
+        lease_seconds: int = 120,
+        observed_at: datetime,
+    ) -> dict[str, Any]:
+        """同一owner/fenceのACTIVE slotだけをboundedに延長する。"""
+        lease = _validate_lease(lease_seconds)
+        return self._ledger().renew_slot(
+            slot_key=slot_key,
+            writer=writer,
+            fence_token=fence_token,
+            lease_seconds=lease,
+            observed_at=observed_at,
+        )
+
     def inspect_control_state(self) -> dict[str, Any]:
         DurableWal(self.runtime_root, durability_ops=self.durability_ops).verify()
         return self._ledger().inspect()

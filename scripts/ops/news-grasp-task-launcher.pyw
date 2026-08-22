@@ -4,19 +4,24 @@ import argparse
 import ctypes
 import hashlib
 import importlib.util
+import inspect
 import json
+import ntpath
 import os
 import re
 import shutil
 import stat
 import subprocess
 import sys
+import tempfile
 import time
 import zipfile
+from collections.abc import Mapping
 from contextlib import contextmanager
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from uuid import uuid4
+from zoneinfo import ZoneInfo
 
 _PRODUCT_ROOT = Path(__file__).resolve().parents[2]
 if str(_PRODUCT_ROOT) not in sys.path:
@@ -755,6 +760,39 @@ def _load_stable_launcher_identity(*, bin_dir: Path) -> dict[str, object]:
         or any(item.casefold() in {"--repo-dir", "--worktree"} for item in action)
     ):
         raise RuntimeError("NEWS_GRASP_STABLE_TASK_AUTHORITY_INVALID")
+    try:
+        binding_path = Path(str(authority.get("highCostBindingPath") or "")).resolve(strict=True)
+        expected_binding_path = (bin_dir / "news-grasp-high-cost-binding-v1.json").resolve(strict=True)
+        task_pythonw = Path(str(action[0])).resolve(strict=True)
+        recovery_path = (bin_dir / "news-grasp-recovery-runtime-binding-v1.json").resolve(strict=True)
+        if binding_path.stat().st_size > 64 * 1024 or recovery_path.stat().st_size > 64 * 1024:
+            raise ValueError("oversized")
+        binding = json.loads(binding_path.read_text(encoding="utf-8-sig"))
+        recovery = json.loads(recovery_path.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError, TypeError, json.JSONDecodeError) as error:
+        raise RuntimeError("NEWS_GRASP_STABLE_TASK_AUTHORITY_INVALID") from error
+    binding_receipt = str(authority.get("highCostBindingReceiptSha256") or "").lower()
+    if (
+        binding_path != expected_binding_path
+        or not binding_path.is_file()
+        or binding_path.is_symlink()
+        or not recovery_path.is_file()
+        or recovery_path.is_symlink()
+        or not re.fullmatch(r"[0-9a-f]{64}", binding_receipt)
+        or not isinstance(binding, dict)
+        or binding.get("schemaVersion") != "NEWS_GRASP_HIGH_COST_BINDING_V1"
+        or str(binding.get("bindingReceiptSha256") or "").lower() != binding_receipt
+        or task_pythonw.name.casefold() not in {"pythonw.exe", "pythonw"}
+        or not task_pythonw.is_file()
+        or task_pythonw.is_symlink()
+        or not isinstance(recovery, dict)
+        or recovery.get("schemaVersion") != "NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1"
+        or Path(str(recovery.get("highCostBindingPath") or "")).resolve() != binding_path
+        or str(recovery.get("highCostBindingReceiptSha256") or "").lower() != binding_receipt
+        or Path(str(recovery.get("taskPythonwPath") or "")).resolve() != task_pythonw
+        or str(recovery.get("taskPythonwSha256") or "").lower() != _file_sha256(task_pythonw)
+    ):
+        raise RuntimeError("NEWS_GRASP_STABLE_TASK_AUTHORITY_INVALID")
     return {
         **authority,
         "authorityPath": str(authority_path.resolve()),
@@ -763,6 +801,20 @@ def _load_stable_launcher_identity(*, bin_dir: Path) -> dict[str, object]:
 
 
 def _stable_authority_option(identity: dict[str, object], option: str) -> str:
+    # 新しい dispatch authority は high-cost binding を action 配列から
+    # 分離して top-level に封印する。旧 authority の action 配列も引き続き
+    # 読めるよう、top-level を先に見て見つからなければ従来経路へ戻す。
+    top_level_names = {
+        "--high-cost-binding-path": ("highCostBindingPath",),
+        "--high-cost-binding-sha256": (
+            "highCostBindingReceiptSha256",
+            "highCostBindingSha256",
+        ),
+    }
+    for name in top_level_names.get(option, ()):
+        value = identity.get(name)
+        if isinstance(value, str) and value:
+            return value
     action = identity.get("action")
     if not isinstance(action, list) or action.count(option) != 1:
         raise RuntimeError("NEWS_GRASP_STABLE_TASK_AUTHORITY_INVALID")
@@ -772,15 +824,1441 @@ def _stable_authority_option(identity: dict[str, object], option: str) -> str:
     return str(action[index + 1])
 
 
+_CLEANROOM_SCHEDULE_ID = "news-grasp-daily-v1"
+_CLEANROOM_INTENT = "reconcile"
+_CLEANROOM_LEASE_SECONDS = 3600
+_CLEANROOM_TOKYO = ZoneInfo("Asia/Tokyo")
+_CLEANROOM_CONTEXT_TASK_NAME = "News-Grasp Production"
+_CLEANROOM_BOOTSTRAP_TASK_NAME = "News-Grasp Bootstrap"
+_CLEANROOM_CONTEXT_TIMEOUT_SECONDS = 10
+_CLEANROOM_CONTEXT_MAX_OUTPUT_BYTES = 256 * 1024
+_CLEANROOM_CONTEXT_MAX_ANCESTORS = 8
+_CLEANROOM_CONTEXT_EXPECTED_TRIGGER_TIMES = ("06:00:00", "06:40:00")
+_CLEANROOM_CHILD_TIMEOUT_SECONDS = 3600
+_CLEANROOM_CHILD_MAX_OUTPUT_BYTES = 256 * 1024
+_CLEANROOM_CONTEXT_PAYLOAD_FIELDS = frozenset(
+    {
+        "targetProcessId",
+        "parentProcessId",
+        "parentProcessName",
+        "parentProcessCommandLine",
+        "parentProcessPath",
+        "parentAuthenticodeStatus",
+        "parentAuthenticodeSubject",
+        "scheduleServiceName",
+        "scheduleServicePid",
+        "scheduleServiceState",
+        "scheduleServiceCommandLine",
+        "taskName",
+        "enabled",
+        "state",
+        "lastRunTime",
+        "taskPath",
+        "multipleInstancesPolicy",
+        "actions",
+        "triggers",
+        "ancestorChain",
+    }
+)
+_CLEANROOM_CONTEXT_ANCESTOR_FIELDS = frozenset(
+    {
+        "pid",
+        "path",
+        "name",
+        "commandLine",
+        "authenticodeStatus",
+        "authenticodeSubject",
+    }
+)
+
+
+def _normalize_cleanroom_observed_at(value: datetime | str) -> datetime:
+    """clean-room controllerへ渡す観測時刻をJSTへ正規化する。"""
+    if isinstance(value, str):
+        try:
+            value = datetime.fromisoformat(value)
+        except (TypeError, ValueError) as error:
+            raise ValueError("NEWS_GRASP_ENTRY_TIME_INVALID") from error
+    if not isinstance(value, datetime) or value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError("NEWS_GRASP_ENTRY_TIME_INVALID")
+    return value.astimezone(_CLEANROOM_TOKYO)
+
+
+def _cleanroom_context_path(value: object) -> str | None:
+    """Task観測値を環境変数展開後の比較可能な絶対pathへ正規化する。"""
+    if not isinstance(value, str) or not value.strip():
+        return None
+    text = value.strip().strip('"')
+    user_profile = os.environ.get("USERPROFILE") or str(Path.home())
+    system_root = (
+        os.environ.get("SystemRoot")
+        or os.environ.get("SYSTEMROOT")
+        or os.environ.get("WINDIR")
+        or ""
+    )
+    environment = {
+        "USERPROFILE": user_profile,
+        "SYSTEMROOT": system_root,
+        "WINDIR": system_root,
+    }
+
+    def replace_windows_variable(match: re.Match[str]) -> str:
+        return environment.get(match.group(1).upper(), match.group(0))
+
+    # os.path.expandvars は実行ホストのpath flavorだけを扱うため、Taskの
+    # Windows形式 ``%SystemRoot%`` を先に明示展開する。
+    text = re.sub(r"%([^%]+)%", replace_windows_variable, text)
+    text = os.path.expandvars(os.path.expanduser(text))
+    if re.match(r"^[A-Za-z]:[\\/]", text) or text.startswith(("\\\\", "//")):
+        return ntpath.normcase(ntpath.normpath(text.replace("/", "\\"))).casefold()
+    try:
+        resolved = Path(text).resolve()
+    except (OSError, RuntimeError, ValueError):
+        return None
+    return os.path.normcase(os.path.normpath(str(resolved))).casefold()
+
+
+def _cleanroom_windows_argument_tokens(value: object) -> list[str] | None:
+    """Task action Argumentsをshellを起動せずに最小のWindows tokenへ分解する。"""
+    if not isinstance(value, str):
+        return None
+    tokens: list[str] = []
+    current: list[str] = []
+    quoted = False
+    for character in value.strip():
+        if character == '"':
+            quoted = not quoted
+            continue
+        if character.isspace() and not quoted:
+            if current:
+                tokens.append("".join(current))
+                current = []
+            continue
+        current.append(character)
+    if quoted:
+        return None
+    if current:
+        tokens.append("".join(current))
+    return tokens
+
+
+def _cleanroom_context_powershell_command(
+    *,
+    launcher_pid: int | None = None,
+    task_name: str = _CLEANROOM_CONTEXT_TASK_NAME,
+) -> list[str]:
+    """Task定義とOS Task Scheduler親を一回readするbounded commandを返す。"""
+    target_pid = os.getpid() if launcher_pid is None else launcher_pid
+    if isinstance(target_pid, bool) or not isinstance(target_pid, int) or target_pid < 1:
+        raise ValueError("NEWS_GRASP_TASK_ORIGIN_PID_INVALID")
+    if task_name not in {
+        _CLEANROOM_CONTEXT_TASK_NAME,
+        _CLEANROOM_BOOTSTRAP_TASK_NAME,
+    }:
+        raise ValueError("NEWS_GRASP_TASK_NAME_INVALID")
+    task_literal = task_name.replace("'", "''")
+    command = (
+        "$OutputEncoding=[System.Text.UTF8Encoding]::new($false); "
+        "[Console]::OutputEncoding=[System.Text.UTF8Encoding]::new($false); "
+        f"$targetPid={target_pid}; "
+        "$targetProcess=Get-CimInstance Win32_Process -Filter ('ProcessId=' + $targetPid) -ErrorAction Stop; "
+        "$parentProcess=Get-CimInstance Win32_Process -Filter ('ProcessId=' + $targetProcess.ParentProcessId) -ErrorAction Stop; "
+        "$scheduleService=Get-CimInstance Win32_Service -Filter \"Name='Schedule'\" -ErrorAction Stop; "
+        "$scheduleServiceCommandLine=[string]$scheduleService.PathName; "
+        "$getAuthenticode = { param([string]$path) "
+        "if ([string]::IsNullOrWhiteSpace($path)) { "
+        "[ordered]@{status='';subject=''} "
+        "} else { "
+        "$signature=Get-AuthenticodeSignature -LiteralPath $path -ErrorAction Stop; "
+        "$subject=''; if ($null -ne $signature.SignerCertificate) { "
+        "$subject=[string]$signature.SignerCertificate.Subject }; "
+        "[ordered]@{status=[string]$signature.Status;subject=$subject} } }; "
+        "$parentPath=[string]$parentProcess.ExecutablePath; "
+        "$parentSignature=&$getAuthenticode $parentPath; "
+        "$ancestorChain=New-Object System.Collections.Generic.List[object]; "
+        "$seen=@{}; $current=$targetProcess; "
+        f"for ($hop=0; $hop -lt {_CLEANROOM_CONTEXT_MAX_ANCESTORS}; $hop++) {{ "
+        "$parentId=[int]$current.ParentProcessId; "
+        "if ($parentId -le 0 -or $seen.ContainsKey([string]$parentId)) { break }; "
+        "$ancestor=Get-CimInstance Win32_Process -Filter ('ProcessId=' + $parentId) -ErrorAction Stop; "
+        "if ($null -eq $ancestor) { break }; "
+        "$ancestorPath=[string]$ancestor.ExecutablePath; "
+        "if ([string]::IsNullOrWhiteSpace($ancestorPath)) { break }; "
+        "$ancestorSignature=&$getAuthenticode $ancestorPath; "
+        "[void]$ancestorChain.Add([ordered]@{pid=$parentId;path=$ancestorPath;"
+        "name=[string]$ancestor.Name;commandLine=[string]$ancestor.CommandLine;"
+        "authenticodeStatus=[string]$ancestorSignature.status;"
+        "authenticodeSubject=[string]$ancestorSignature.subject}); "
+        "$seen[[string]$parentId]=$true; $current=$ancestor }; "
+        f"$task=Get-ScheduledTask -TaskName '{task_literal}' -ErrorAction Stop; "
+        f"$info=Get-ScheduledTaskInfo -TaskName '{task_literal}' -ErrorAction Stop; "
+        "$actions=@($task.Actions)|ForEach-Object { "
+        "[ordered]@{execute=[string]$_.Execute;arguments=[string]$_.Arguments;workingDirectory=[string]$_.WorkingDirectory} }; "
+        "$triggers=@($task.Triggers)|Where-Object { $_.Enabled -eq $true }|ForEach-Object { "
+        "$kind=[string]$_.CimClass.CimClassName; "
+        "$boundary=[string]$_.StartBoundary; "
+        "[ordered]@{enabled=[bool]$_.Enabled;kind=$kind;startBoundary=$boundary} }; "
+        "$lastRunTime=''; "
+        "if ($null -ne $info.LastRunTime) { $lastRunTime=([datetimeoffset]$info.LastRunTime).ToString('o') }; "
+        "[ordered]@{targetProcessId=[int]$targetProcess.ProcessId;parentProcessId=[int]$targetProcess.ParentProcessId;"
+        "parentProcessName=[string]$parentProcess.Name;parentProcessCommandLine=[string]$parentProcess.CommandLine;"
+        "parentProcessPath=$parentPath;parentAuthenticodeStatus=[string]$parentSignature.status;"
+        "parentAuthenticodeSubject=[string]$parentSignature.subject;"
+        "scheduleServiceName=[string]$scheduleService.Name;scheduleServicePid=[int]$scheduleService.ProcessId;"
+        "scheduleServiceState=[string]$scheduleService.State;scheduleServiceCommandLine=$scheduleServiceCommandLine;"
+        "taskName=[string]$task.TaskName;enabled=[bool]$task.Settings.Enabled;state=[string]$task.State;"
+        "lastRunTime=$lastRunTime;taskPath=[string]$task.TaskPath;"
+        "multipleInstancesPolicy=[string]$task.Settings.MultipleInstances;"
+        "actions=@($actions);triggers=@($triggers);ancestorChain=$ancestorChain.ToArray()}|"
+        "ConvertTo-Json -Depth 10 -Compress"
+    )
+    return [
+        "powershell.exe",
+        "-NoProfile",
+        "-NonInteractive",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        command,
+    ]
+
+
+def _cleanroom_decode_context_json(value: object) -> dict[str, object] | None:
+    """PowerShellのUTF-8 JSONをboundedにdecodeし、object以外を拒否する。"""
+    if isinstance(value, str):
+        raw = value.encode("utf-8", errors="replace")
+    elif isinstance(value, (bytes, bytearray)):
+        raw = bytes(value)
+    else:
+        return None
+    if len(raw) > _CLEANROOM_CONTEXT_MAX_OUTPUT_BYTES:
+        return None
+    try:
+        decoded = raw.decode("utf-8-sig")
+        value = json.loads(decoded)
+    except (UnicodeDecodeError, ValueError, TypeError):
+        return None
+    return value if type(value) is dict else None
+
+
+def _cleanroom_system32_executable_path(name: object) -> str | None:
+    """SystemRoot配下の実行ファイルをWindows pathとして正規化する。"""
+    if not isinstance(name, str) or not name.strip():
+        return None
+    executable_name = ntpath.basename(name.strip().replace("/", "\\"))
+    if not executable_name or executable_name in {".", ".."}:
+        return None
+    system_root = (
+        os.environ.get("SystemRoot")
+        or os.environ.get("SYSTEMROOT")
+        or os.environ.get("WINDIR")
+    )
+    if not isinstance(system_root, str) or not system_root.strip():
+        return None
+    if re.match(r"^[A-Za-z]:[\\/]", system_root) or "\\" in system_root:
+        candidate = ntpath.join(system_root, "System32", executable_name)
+    else:
+        candidate = str(Path(system_root) / "System32" / executable_name)
+    return _cleanroom_context_path(candidate)
+
+
+def _cleanroom_microsoft_authenticode(status: object, subject: object) -> bool:
+    """Windows署名がValidかつMicrosoft Windows主体であることを確認する。"""
+    if not isinstance(status, str) or status.casefold() != "valid":
+        return False
+    if not isinstance(subject, str):
+        return False
+    folded = subject.casefold()
+    return "microsoft" in folded and "windows" in folded
+
+
+def _cleanroom_service_schedule_tokens(value: object) -> bool:
+    """Service Hostの``-s Schedule``をsubstringではなくtokenで確認する。"""
+    tokens = _cleanroom_windows_argument_tokens(value)
+    if tokens is None or not tokens:
+        return False
+    expected_svchost = _cleanroom_system32_executable_path("svchost.exe")
+    if expected_svchost is None or _cleanroom_context_path(tokens[0]) != expected_svchost:
+        return False
+    for index, token in enumerate(tokens[:-1]):
+        if token.casefold() == "-s" and tokens[index + 1].casefold() == "schedule":
+            return True
+    return False
+
+
+def _cleanroom_validate_process_witness(payload: dict[str, object]) -> bool:
+    """Task起動元の親・署名・Schedule service・bounded ancestorを厳密検証する。"""
+    if set(payload) != _CLEANROOM_CONTEXT_PAYLOAD_FIELDS:
+        return False
+    if (
+        type(payload.get("targetProcessId")) is not int
+        or payload.get("targetProcessId") != os.getpid()
+        or type(payload.get("parentProcessId")) is not int
+        or payload.get("parentProcessId") <= 0
+        or payload.get("parentProcessId") == payload.get("targetProcessId")
+        or not isinstance(payload.get("parentProcessName"), str)
+        or not payload.get("parentProcessName")
+        or not isinstance(payload.get("parentProcessCommandLine"), str)
+        or not payload.get("parentProcessCommandLine")
+        or not isinstance(payload.get("parentProcessPath"), str)
+        or not payload.get("parentProcessPath")
+        or not _cleanroom_microsoft_authenticode(
+            payload.get("parentAuthenticodeStatus"),
+            payload.get("parentAuthenticodeSubject"),
+        )
+    ):
+        return False
+    parent_name = Path(str(payload["parentProcessName"])).name.casefold()
+    if parent_name not in {"taskeng.exe", "taskhostw.exe", "svchost.exe"}:
+        return False
+    expected_parent_path = _cleanroom_system32_executable_path(parent_name)
+    if (
+        expected_parent_path is None
+        or _cleanroom_context_path(payload["parentProcessPath"]) != expected_parent_path
+    ):
+        return False
+    if (
+        payload.get("scheduleServiceName") != "Schedule"
+        or type(payload.get("scheduleServicePid")) is not int
+        or payload.get("scheduleServicePid") <= 0
+        or payload.get("scheduleServiceState") != "Running"
+        or not _cleanroom_service_schedule_tokens(payload.get("scheduleServiceCommandLine"))
+    ):
+        return False
+    ancestors = payload.get("ancestorChain")
+    if type(ancestors) is not list or not ancestors or len(ancestors) > _CLEANROOM_CONTEXT_MAX_ANCESTORS:
+        return False
+    seen: set[int] = set()
+    service_entry: dict[str, object] | None = None
+    for index, ancestor in enumerate(ancestors):
+        if type(ancestor) is not dict or set(ancestor) != _CLEANROOM_CONTEXT_ANCESTOR_FIELDS:
+            return False
+        pid = ancestor.get("pid")
+        if type(pid) is not int or pid <= 0 or pid in seen:
+            return False
+        seen.add(pid)
+        name = ancestor.get("name")
+        path = ancestor.get("path")
+        command_line = ancestor.get("commandLine")
+        if (
+            not isinstance(name, str)
+            or not name
+            or not isinstance(path, str)
+            or not path
+            or not isinstance(command_line, str)
+            or not command_line
+            or not _cleanroom_microsoft_authenticode(
+                ancestor.get("authenticodeStatus"),
+                ancestor.get("authenticodeSubject"),
+            )
+        ):
+            return False
+        expected_path = _cleanroom_system32_executable_path(name)
+        if expected_path is None or _cleanroom_context_path(path) != expected_path:
+            return False
+        if index == 0 and (
+            pid != payload.get("parentProcessId")
+            or _cleanroom_context_path(path)
+            != _cleanroom_context_path(payload.get("parentProcessPath"))
+            or name.casefold() != parent_name
+            or command_line != payload.get("parentProcessCommandLine")
+            or ancestor.get("authenticodeStatus")
+            != payload.get("parentAuthenticodeStatus")
+            or ancestor.get("authenticodeSubject")
+            != payload.get("parentAuthenticodeSubject")
+        ):
+            return False
+        if pid == payload.get("scheduleServicePid"):
+            if name.casefold() != "svchost.exe" or not _cleanroom_service_schedule_tokens(command_line):
+                return False
+            service_entry = ancestor
+    return service_entry is not None
+
+
+def _cleanroom_expected_pythonw(*, bin_dir: Path) -> str | None:
+    """installer authorityにあればpythonwを読み、なければ現processの姉妹pathを使う。"""
+    authority_path = bin_dir / "news-grasp-stable-task-authority-v1.json"
+    try:
+        if authority_path.is_file() and authority_path.stat().st_size <= 64 * 1024:
+            authority = json.loads(authority_path.read_text(encoding="utf-8-sig"))
+            action = authority.get("action") if isinstance(authority, dict) else None
+            if isinstance(action, list) and action and isinstance(action[0], str) and action[0]:
+                return _cleanroom_context_path(action[0])
+    except (OSError, ValueError, TypeError):
+        return None
+    try:
+        candidate = Path(sys.executable)
+        if candidate.name.casefold() not in {"pythonw.exe", "pythonw"}:
+            candidate = candidate.with_name("pythonw.exe")
+        return _cleanroom_context_path(str(candidate))
+    except (OSError, RuntimeError, ValueError):
+        return None
+
+
+def _cleanroom_default_task_context_validator(
+    *,
+    bin_dir: Path,
+    observed_at: datetime,
+    schedule_id: str = _CLEANROOM_SCHEDULE_ID,
+    intent: str = _CLEANROOM_INTENT,
+) -> bool:
+    """Production dispatch前にcanonical Taskをread-onlyで一回観測する。"""
+    if schedule_id != _CLEANROOM_SCHEDULE_ID or intent != _CLEANROOM_INTENT:
+        return False
+    creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+    try:
+        completed = subprocess.run(
+            _cleanroom_context_powershell_command(launcher_pid=os.getpid()),
+            shell=False,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=_CLEANROOM_CONTEXT_TIMEOUT_SECONDS,
+            creationflags=creationflags,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    if int(getattr(completed, "returncode", 1)) != 0:
+        return False
+    payload = _cleanroom_decode_context_json(getattr(completed, "stdout", b""))
+    if payload is None or not _cleanroom_validate_process_witness(payload):
+        return False
+    if (
+        payload.get("taskName") != _CLEANROOM_CONTEXT_TASK_NAME
+        or type(payload.get("enabled")) is not bool
+        or payload.get("enabled") is not True
+        or payload.get("state") != "Running"
+        or payload.get("taskPath") != "\\"
+        or payload.get("multipleInstancesPolicy") != "Parallel"
+    ):
+        return False
+    try:
+        last_run_text = payload.get("lastRunTime")
+        if not isinstance(last_run_text, str) or not last_run_text:
+            return False
+        last_run = datetime.fromisoformat(last_run_text.replace("Z", "+00:00"))
+        if last_run.tzinfo is None or last_run.utcoffset() is None:
+            return False
+        age_seconds = (observed_at - last_run.astimezone(_CLEANROOM_TOKYO)).total_seconds()
+        if age_seconds < -60 or age_seconds > 10 * 60:
+            return False
+    except (TypeError, ValueError, OverflowError):
+        return False
+
+    actions = payload.get("actions")
+    if type(actions) is not list or len(actions) != 1 or type(actions[0]) is not dict:
+        return False
+    action = actions[0]
+    if set(action) != {"execute", "arguments", "workingDirectory"}:
+        return False
+    execute = _cleanroom_context_path(action.get("execute"))
+    expected_pythonw = _cleanroom_expected_pythonw(bin_dir=bin_dir)
+    if execute is None or expected_pythonw is None or execute != expected_pythonw:
+        return False
+    if Path(str(action.get("execute") or "")).name.casefold() not in {"pythonw.exe", "pythonw"}:
+        return False
+    launcher_path = (bin_dir / "news-grasp-task-launcher.pyw").resolve()
+    if _cleanroom_context_path(str(launcher_path)) != _cleanroom_context_path(str(Path(__file__).resolve())):
+        return False
+    arguments = _cleanroom_windows_argument_tokens(action.get("arguments"))
+    if (
+        arguments is None
+        or len(arguments) != 6
+        or _cleanroom_context_path(arguments[0])
+        != _cleanroom_context_path(str(launcher_path))
+        or arguments[1:] != [
+        "dispatch",
+        "--schedule-id",
+        _CLEANROOM_SCHEDULE_ID,
+        "--intent",
+        _CLEANROOM_INTENT,
+        ]
+    ):
+        return False
+    expected_working_directory = (
+        Path(os.environ.get("USERPROFILE") or Path.home())
+        / ".news-grasp-runtime"
+        / "production-runtime"
+    )
+    if _cleanroom_context_path(action.get("workingDirectory")) != _cleanroom_context_path(
+        str(expected_working_directory)
+    ):
+        return False
+
+    triggers = payload.get("triggers")
+    if type(triggers) is not list or len(triggers) != 2:
+        return False
+    observed_trigger_times: list[str] = []
+    for trigger in triggers:
+        if type(trigger) is not dict or trigger.get("enabled") is not True:
+            return False
+        if set(trigger) != {"enabled", "kind", "startBoundary"}:
+            return False
+        if "daily" not in str(trigger.get("kind") or "").casefold():
+            return False
+        boundary = trigger.get("startBoundary")
+        if not isinstance(boundary, str) or not boundary:
+            return False
+        try:
+            parsed_boundary = datetime.fromisoformat(boundary.replace("Z", "+00:00"))
+        except (TypeError, ValueError):
+            return False
+        observed_trigger_times.append(parsed_boundary.strftime("%H:%M:%S"))
+    return sorted(observed_trigger_times) == sorted(_CLEANROOM_CONTEXT_EXPECTED_TRIGGER_TIMES)
+
+
+def _run_cleanroom_task_context_validator(
+    validator,
+    *,
+    bin_dir: Path,
+    observed_at: datetime,
+    schedule_id: str,
+    intent: str,
+) -> None:
+    """validatorを一度だけ実行し、false/例外をtyped拒否へ変換する。"""
+    if not callable(validator):
+        raise RuntimeError("NEWS_GRASP_TASK_CONTEXT_VALIDATOR_INVALID")
+    try:
+        accepted = validator(
+            bin_dir=bin_dir,
+            observed_at=observed_at,
+            schedule_id=schedule_id,
+            intent=intent,
+        )
+    except Exception as error:
+        raise RuntimeError("NEWS_GRASP_TASK_CONTEXT_VALIDATION_FAILED") from error
+    if accepted is not True:
+        raise RuntimeError("NEWS_GRASP_TASK_CONTEXT_INVALID")
+
+
+def _cleanroom_default_task_origin_validator(
+    *,
+    bin_dir: Path,
+    observed_at: datetime,
+    nonce: str,
+    generation: str,
+    receipt_path: Path | str | None = None,
+    schedule_id: str = _CLEANROOM_SCHEDULE_ID,
+    intent: str = _CLEANROOM_INTENT,
+) -> bool:
+    """temporary entry-canaryのOS Task Scheduler親とcanonical actionを検証する。"""
+    if (
+        schedule_id != _CLEANROOM_SCHEDULE_ID
+        or intent != _CLEANROOM_INTENT
+        or not isinstance(nonce, str)
+        or not re.fullmatch(r"[0-9a-f]{32}", nonce)
+        or not isinstance(generation, str)
+        or not generation
+        or receipt_path is None
+    ):
+        return False
+    expected_receipt_path = _cleanroom_context_path(str(receipt_path))
+    if expected_receipt_path is None:
+        return False
+    creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+    try:
+        completed = subprocess.run(
+            _cleanroom_context_powershell_command(launcher_pid=os.getpid()),
+            shell=False,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=_CLEANROOM_CONTEXT_TIMEOUT_SECONDS,
+            creationflags=creationflags,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    if int(getattr(completed, "returncode", 1)) != 0:
+        return False
+    payload = _cleanroom_decode_context_json(getattr(completed, "stdout", b""))
+    if payload is None or not _cleanroom_validate_process_witness(payload):
+        return False
+    if (
+        payload.get("taskName") != _CLEANROOM_CONTEXT_TASK_NAME
+        or payload.get("enabled") is not True
+        or payload.get("state") != "Running"
+        or payload.get("taskPath") != "\\"
+        or payload.get("multipleInstancesPolicy") != "Parallel"
+    ):
+        return False
+    try:
+        last_run_text = payload.get("lastRunTime")
+        last_run = datetime.fromisoformat(str(last_run_text).replace("Z", "+00:00"))
+        if last_run.tzinfo is None or last_run.utcoffset() is None:
+            return False
+        age_seconds = (observed_at - last_run.astimezone(_CLEANROOM_TOKYO)).total_seconds()
+        if age_seconds < -60 or age_seconds > 10 * 60:
+            return False
+    except (TypeError, ValueError, OverflowError):
+        return False
+    actions = payload.get("actions")
+    if type(actions) is not list or len(actions) != 1 or type(actions[0]) is not dict:
+        return False
+    action = actions[0]
+    execute = _cleanroom_context_path(action.get("execute"))
+    expected_pythonw = _cleanroom_expected_pythonw(bin_dir=bin_dir)
+    launcher_path = (bin_dir / "news-grasp-task-launcher.pyw").resolve()
+    arguments = _cleanroom_windows_argument_tokens(action.get("arguments"))
+    if (
+        execute is None
+        or expected_pythonw is None
+        or execute != expected_pythonw
+        or Path(str(action.get("execute") or "")).name.casefold()
+        not in {"pythonw.exe", "pythonw"}
+        or _cleanroom_context_path(str(launcher_path))
+        != _cleanroom_context_path(str(Path(__file__).resolve()))
+        or arguments is None
+        or len(arguments) != 8
+        or _cleanroom_context_path(arguments[0])
+        != _cleanroom_context_path(str(launcher_path))
+        or arguments[1:6]
+        != [
+            "task-origin-canary",
+            "--canary-nonce",
+            nonce,
+            "--canary-generation",
+            generation,
+        ]
+        or arguments[6] != "--canary-receipt-path"
+        or _cleanroom_context_path(arguments[7]) != expected_receipt_path
+        or _cleanroom_context_path(action.get("workingDirectory"))
+        != _cleanroom_context_path(
+            str(
+                Path(os.environ.get("USERPROFILE") or Path.home())
+                / ".news-grasp-runtime"
+                / "production-runtime"
+            )
+        )
+    ):
+        return False
+    return True
+
+
+def _invoke_cleanroom_canary_seam(function, context: Mapping[str, object]):
+    """seam引数を一度だけ、signatureに束縛して呼び出す。"""
+    if not callable(function):
+        raise RuntimeError("NEWS_GRASP_CANARY_SEAM_INVALID")
+    try:
+        signature = inspect.signature(function)
+    except (TypeError, ValueError):
+        return function(**dict(context))
+    parameters = tuple(signature.parameters.values())
+    if any(parameter.kind == inspect.Parameter.VAR_KEYWORD for parameter in parameters):
+        return function(**dict(context))
+    positional: list[object] = []
+    keyword: dict[str, object] = {}
+    for parameter in parameters:
+        if parameter.kind == inspect.Parameter.VAR_POSITIONAL:
+            continue
+        if parameter.name not in context:
+            if (
+                parameter.default is inspect.Parameter.empty
+                and parameter.kind
+                in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+            ):
+                raise RuntimeError("NEWS_GRASP_CANARY_SEAM_SIGNATURE_INVALID")
+            continue
+        if parameter.kind == inspect.Parameter.POSITIONAL_ONLY:
+            positional.append(context[parameter.name])
+        else:
+            keyword[parameter.name] = context[parameter.name]
+    return function(*positional, **keyword)
+
+
+def _cleanroom_canary_generation(value: object) -> str:
+    if isinstance(value, str) and value:
+        return value
+    if isinstance(value, int) and not isinstance(value, bool) and value >= 1:
+        return str(value)
+    raise RuntimeError("NEWS_GRASP_CANARY_GENERATION_INVALID")
+
+
+def run_task_origin_canary(
+    *,
+    task_action,
+    start_task,
+    nonce: str,
+    wait_receipt,
+    restore_task,
+    final_parity,
+    task_context_validator=None,
+    task_origin_validator=None,
+    observed_at: datetime | str | None = None,
+    generation: str | int | None = None,
+    bin_dir: Path | None = None,
+    runtime_root: Path | None = None,
+    manifest_path: Path | None = None,
+    receipt_path: Path | None = None,
+    controller_factory=None,
+    child_runner=None,
+    timeout_seconds: float = 30.0,
+    manage_task: bool = True,
+) -> dict[str, object]:
+    """Task-origin entry-canaryを一回だけ実行し、isolated ledgerへ終端を記録する。"""
+    if not isinstance(nonce, str) or re.fullmatch(r"[0-9a-f]{32}", nonce) is None:
+        raise RuntimeError("NEWS_GRASP_CANARY_NONCE_INVALID")
+    canary_generation = _cleanroom_canary_generation(generation)
+    if isinstance(timeout_seconds, bool) or not isinstance(timeout_seconds, (int, float)) or timeout_seconds <= 0:
+        raise RuntimeError("NEWS_GRASP_CANARY_TIMEOUT_INVALID")
+    observed = _normalize_cleanroom_observed_at(
+        observed_at if observed_at is not None else datetime.now(_CLEANROOM_TOKYO)
+    )
+    installed_bin = Path(bin_dir or (Path.home() / "bin")).resolve()
+    canary_receipt_path = Path(
+        receipt_path or (installed_bin / f"news-grasp-entry-canary-{nonce}.json")
+    ).resolve()
+    validator = task_origin_validator or task_context_validator
+    if validator is None:
+        validator = _cleanroom_default_task_origin_validator
+    validator_context: dict[str, object] = {
+        "bin_dir": installed_bin,
+        "observed_at": observed,
+        "schedule_id": _CLEANROOM_SCHEDULE_ID,
+        "intent": _CLEANROOM_INTENT,
+        "nonce": nonce,
+        "generation": canary_generation,
+        "receipt_path": canary_receipt_path,
+        "canary_receipt_path": canary_receipt_path,
+    }
+    try:
+        accepted = _invoke_cleanroom_canary_seam(validator, validator_context)
+    except Exception as error:
+        raise RuntimeError("NEWS_GRASP_TASK_ORIGIN_VALIDATION_FAILED") from error
+    if accepted is not True:
+        raise RuntimeError("NEWS_GRASP_TASK_ORIGIN_INVALID")
+
+    canary_action = {
+        "execute": str(_cleanroom_expected_pythonw(bin_dir=installed_bin) or ""),
+        "launcher": str((installed_bin / "news-grasp-task-launcher.pyw").resolve()),
+        "arguments": [
+            "task-origin-canary",
+            "--canary-nonce",
+            nonce,
+            "--canary-generation",
+            canary_generation,
+            "--canary-receipt-path",
+            str(canary_receipt_path),
+        ],
+        "workingDirectory": str(
+            Path(os.environ.get("USERPROFILE") or Path.home())
+            / ".news-grasp-runtime"
+            / "production-runtime"
+        ),
+    }
+    canonical_action = {
+        **canary_action,
+        "arguments": [
+            "dispatch",
+            "--schedule-id",
+            _CLEANROOM_SCHEDULE_ID,
+            "--intent",
+            _CLEANROOM_INTENT,
+        ],
+    }
+    task_context = {
+        "task_name": _CLEANROOM_CONTEXT_TASK_NAME,
+        "task": _CLEANROOM_CONTEXT_TASK_NAME,
+        "action": canary_action,
+        "canary_action": canary_action,
+        "restore_action": canonical_action,
+        "nonce": nonce,
+        "generation": canary_generation,
+        "receipt_path": canary_receipt_path,
+        "canary_receipt_path": canary_receipt_path,
+    }
+    changed = False
+    receipt: Mapping[str, object] | None = None
+    pipeline_receipt: Mapping[str, object] | None = None
+    if not manage_task:
+        canary_runtime = Path(
+            runtime_root
+            or (Path.home() / ".news-grasp-runtime" / "production-runtime")
+        ).resolve()
+        canary_manifest = Path(
+            manifest_path
+            or (canary_runtime / "config" / "news_grasp_cleanroom_task_manifest_v1.json")
+        ).resolve()
+        pipeline_receipt = _run_cleanroom_entry_canary_pipeline(
+            nonce=nonce,
+            generation=canary_generation,
+            observed_at=observed,
+            bin_dir=installed_bin,
+            runtime_root=canary_runtime,
+            manifest_path=canary_manifest,
+            receipt_path=canary_receipt_path,
+            controller_factory=controller_factory,
+            child_runner=child_runner,
+        )
+
+    def _restore_once() -> None:
+        nonlocal changed
+        if not manage_task or not changed:
+            return
+        _invoke_cleanroom_canary_seam(
+            restore_task,
+            {
+                **task_context,
+                "action": canonical_action,
+                "canonical_action": canonical_action,
+                "restore_action": canonical_action,
+            },
+        )
+        changed = False
+
+    try:
+        if manage_task:
+            action_result = _invoke_cleanroom_canary_seam(task_action, task_context)
+            if action_result is False:
+                raise RuntimeError("NEWS_GRASP_CANARY_ACTION_REJECTED")
+            changed = True
+            start_result = _invoke_cleanroom_canary_seam(start_task, task_context)
+            if start_result is False:
+                raise RuntimeError("NEWS_GRASP_CANARY_START_REJECTED")
+        if pipeline_receipt is not None:
+            receipt = pipeline_receipt
+        else:
+            wait_context = {
+                **task_context,
+                "timeout_seconds": float(timeout_seconds),
+            }
+            waited = _invoke_cleanroom_canary_seam(wait_receipt, wait_context)
+            if isinstance(waited, Mapping) and isinstance(waited.get("receipt"), Mapping):
+                waited = waited["receipt"]
+            if isinstance(waited, Mapping):
+                receipt = waited
+            elif receipt_path is not None:
+                try:
+                    loaded = json.loads(Path(receipt_path).read_text(encoding="utf-8"))
+                except (OSError, ValueError, TypeError) as error:
+                    raise RuntimeError("NEWS_GRASP_CANARY_RECEIPT_INVALID") from error
+                if isinstance(loaded, Mapping):
+                    receipt = loaded
+        if receipt is None:
+            raise RuntimeError("NEWS_GRASP_CANARY_RECEIPT_MISSING")
+        if (
+            receipt.get("nonce") != nonce
+            or receipt.get("generation") != canary_generation
+            or receipt.get("status") not in {"committed", "smoke_ok", "ok"}
+        ):
+            raise RuntimeError("NEWS_GRASP_CANARY_RECEIPT_BINDING_INVALID")
+        _restore_once()
+        if not _invoke_cleanroom_canary_seam(
+            final_parity,
+            {
+                **task_context,
+                "expected_action": canonical_action,
+                "receipt": receipt,
+            },
+        ):
+            raise RuntimeError("NEWS_GRASP_CANARY_FINAL_PARITY_INVALID")
+        result = {
+            "schemaVersion": "NEWS_GRASP_TASK_ORIGIN_CANARY_RESULT_V1",
+            "status": "verified",
+            "nonce": nonce,
+            "generation": canary_generation,
+            "receipt": dict(receipt),
+            "taskOrigin": True,
+            "isolatedState": True,
+            "externalEffectCount": 0,
+        }
+        if receipt_path is not None:
+            _write_json_atomic(Path(receipt_path), result)
+        return result
+    finally:
+        # 失敗時も一度だけ復元し、復元前のsuccessを返さない。
+        _restore_once()
+
+
+def _run_cleanroom_entry_canary_pipeline(
+    *,
+    nonce: str,
+    generation: str,
+    observed_at: datetime,
+    bin_dir: Path,
+    runtime_root: Path,
+    manifest_path: Path,
+    receipt_path: Path,
+    controller_factory=None,
+    child_runner=None,
+) -> dict[str, object]:
+    """Task-origin process側のisolated Controller/WAL/ledger/SmokeTest経路。"""
+    base_runtime = Path(runtime_root).resolve()
+    canary_root = (base_runtime / "entry-canary" / generation / nonce).resolve()
+    if not canary_root.is_relative_to(base_runtime) or canary_root == base_runtime:
+        raise RuntimeError("NEWS_GRASP_CANARY_RUNTIME_ROOT_INVALID")
+    authority = _load_stable_launcher_identity(bin_dir=bin_dir)
+    canary_root.mkdir(parents=True, exist_ok=True)
+    if controller_factory is None:
+        try:
+            import_root = base_runtime.parent if base_runtime.name == "production-runtime" else base_runtime
+            controller_type, attestor_type = _cleanroom_runtime_imports(import_root)
+            attestor = attestor_type()
+            writer = attestor.bind()
+            if not isinstance(writer, Mapping):
+                raise RuntimeError("NEWS_GRASP_ENTRY_WRITER_INVALID")
+            controller = controller_type(
+                runtime_root=canary_root,
+                manifest_path=manifest_path,
+                writer_attestor=attestor,
+            )
+        except (ImportError, OSError, RuntimeError, TypeError, ValueError) as error:
+            raise RuntimeError("NEWS_GRASP_CANARY_CONTROLLER_INVALID") from error
+    else:
+        controller = controller_factory(
+            runtime_root=canary_root,
+            manifest_path=manifest_path,
+        )
+        writer = _cleanroom_test_writer()
+    reconcile = getattr(controller, "reconcile", None)
+    if not callable(reconcile):
+        raise RuntimeError("NEWS_GRASP_CANARY_CONTROLLER_INVALID")
+    decision = reconcile(
+        raw_argv=[
+            "dispatch",
+            "--schedule-id",
+            _CLEANROOM_SCHEDULE_ID,
+            "--intent",
+            _CLEANROOM_INTENT,
+        ],
+        observed_at=observed_at,
+        writer=writer,
+        lease_seconds=_CLEANROOM_LEASE_SECONDS,
+    )
+    if not isinstance(decision, Mapping) or decision.get("ownerDisposition") != "ACQUIRED":
+        raise RuntimeError("NEWS_GRASP_CANARY_SLOT_NOT_ACQUIRED")
+    command, safety = _cleanroom_child_command(
+        route="bootstrap-smoke",
+        bin_dir=bin_dir,
+        authority=authority,
+    )
+    if child_runner is None:
+        child_exit = _run_cleanroom_child(
+            "bootstrap-smoke",
+            command,
+            bin_dir=bin_dir,
+            safety=safety,
+        )
+    else:
+        child_exit = int(
+            child_runner(
+                "bootstrap-smoke",
+                command,
+                **{
+                    key: value
+                    for key, value in safety.items()
+                    if key not in {"route", "command"}
+                },
+            )
+        )
+    terminal_state = "SUCCEEDED" if child_exit == 0 else "FAILED"
+    outcome = {
+        "schemaVersion": "NEWS_GRASP_TASK_ORIGIN_CANARY_RECEIPT_V1",
+        "nonce": nonce,
+        "generation": generation,
+        "slotKey": decision.get("slotKey"),
+        "fenceToken": decision.get("fenceToken"),
+        "childRoute": "bootstrap-smoke",
+        "childExitCode": int(child_exit),
+        "terminalState": terminal_state,
+    }
+    result_hash = _sha256_json(outcome)
+    commit = getattr(controller, "commit_slot", None)
+    if not callable(commit):
+        raise RuntimeError("NEWS_GRASP_CANARY_COMMIT_INVALID")
+    commit(
+        slot_key=decision.get("slotKey"),
+        writer=writer,
+        fence_token=decision.get("fenceToken"),
+        terminal_state=terminal_state,
+        result_hash=result_hash,
+        observed_at=observed_at,
+    )
+    receipt = {
+        **outcome,
+        "status": "committed" if child_exit == 0 else "failed",
+        "ledgerGeneration": decision.get("generation"),
+        "resultHash": result_hash,
+        "externalEffectCount": 0,
+    }
+    _write_json_atomic(receipt_path, receipt)
+    return receipt
+
+
+def _cleanroom_runtime_imports(runtime_root: Path):
+    """production defaultだけ、検証済みproduction-runtimeをimport rootにする。"""
+    production_runtime = (Path(runtime_root) / "production-runtime").resolve()
+    if not production_runtime.is_dir() or production_runtime.is_symlink():
+        raise RuntimeError("NEWS_GRASP_PRODUCTION_RUNTIME_MISSING")
+    runtime_text = str(production_runtime)
+    # 同じpathを重複挿入せず、必ず source repo より前に置く。
+    sys.path[:] = [item for item in sys.path if str(item) != runtime_text]
+    sys.path.insert(0, runtime_text)
+    try:
+        controller_module = __import__(
+            "tools.news_grasp_cleanroom_controller",
+            fromlist=["Controller"],
+        )
+        identity_module = __import__(
+            "tools.news_grasp_entry_identity",
+            fromlist=["SystemEntryWriterAttestor"],
+        )
+    except (ImportError, OSError, RuntimeError) as error:
+        raise RuntimeError("NEWS_GRASP_CLEANROOM_RUNTIME_IMPORT_FAILED") from error
+    controller_type = getattr(controller_module, "Controller", None)
+    attestor_type = getattr(identity_module, "SystemEntryWriterAttestor", None)
+    if not callable(controller_type) or not callable(attestor_type):
+        raise RuntimeError("NEWS_GRASP_CLEANROOM_RUNTIME_IMPORT_FAILED")
+    return controller_type, attestor_type
+
+
+def _cleanroom_test_writer(decision: Mapping[str, object] | None = None) -> dict[str, object]:
+    """注入controller用の副作用なしwriter envelope。"""
+    value: dict[str, object] = {
+        "writerId": "news-grasp-test-seam",
+        "pid": int(os.getpid()),
+    }
+    if isinstance(decision, dict):
+        for key in ("writerKey", "ownerKey"):
+            candidate = decision.get(key)
+            if isinstance(candidate, str) and candidate:
+                value[key] = candidate
+    return value
+
+
+def _cleanroom_child_command(
+    *,
+    route: str,
+    bin_dir: Path,
+    authority: Mapping[str, object] | None,
+) -> tuple[list[str], dict[str, object]]:
+    """installed childのargvと観測可能な安全境界を作る。"""
+    launcher = (Path(bin_dir) / "news-grasp-task-launcher.pyw").resolve()
+    if route == "runner":
+        executable = Path(sys.executable)
+        high_cost_path = ""
+        high_cost_sha = ""
+        if isinstance(authority, Mapping):
+            try:
+                high_cost_path = _stable_authority_option(
+                    dict(authority), "--high-cost-binding-path"
+                )
+                high_cost_sha = _stable_authority_option(
+                    dict(authority), "--high-cost-binding-sha256"
+                )
+            except (RuntimeError, TypeError, ValueError):
+                high_cost_path = ""
+                high_cost_sha = ""
+            action = authority.get("action")
+            if isinstance(action, list) and action and isinstance(action[0], str) and action[0]:
+                executable = Path(action[0])
+        command = [
+            str(executable),
+            str(launcher),
+            "runner",
+            "--scheduled-task-name",
+            "News-Grasp Production",
+        ]
+        if high_cost_path and high_cost_sha:
+            command.extend(
+                [
+                    "--high-cost-binding-path",
+                    high_cost_path,
+                    "--high-cost-binding-sha256",
+                    high_cost_sha,
+                ]
+            )
+        safety: dict[str, object] = {
+            "route": route,
+            "command": tuple(command),
+            "cwd": str(Path(bin_dir)),
+            "shell": False,
+            "stdin": subprocess.DEVNULL,
+            "creationflags": subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
+            "close_fds": True,
+            "timeout": _CLEANROOM_CHILD_TIMEOUT_SECONDS,
+        }
+        if high_cost_path:
+            safety["highCostBindingPath"] = high_cost_path
+        if high_cost_sha:
+            safety["highCostBindingReceiptSha256"] = high_cost_sha
+        return command, safety
+    if route == "deadman":
+        executable = Path(sys.executable)
+        if isinstance(authority, Mapping):
+            action = authority.get("action")
+            if isinstance(action, list) and action and isinstance(action[0], str) and action[0]:
+                executable = Path(action[0])
+        command = [str(executable), str((Path(bin_dir) / "news-grasp-deadman-launcher.pyw").resolve())]
+        return command, {
+            "route": route,
+            "command": tuple(command),
+            "cwd": str(Path(bin_dir)),
+            "shell": False,
+            "stdin": subprocess.DEVNULL,
+            "creationflags": subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
+            "close_fds": True,
+            "timeout": _CLEANROOM_CHILD_TIMEOUT_SECONDS,
+        }
+    if route == "bootstrap-smoke":
+        executable = Path(sys.executable)
+        high_cost_path = ""
+        high_cost_sha = ""
+        if isinstance(authority, Mapping):
+            try:
+                high_cost_path = _stable_authority_option(
+                    dict(authority), "--high-cost-binding-path"
+                )
+                high_cost_sha = _stable_authority_option(
+                    dict(authority), "--high-cost-binding-sha256"
+                )
+            except (RuntimeError, TypeError, ValueError):
+                high_cost_path = ""
+                high_cost_sha = ""
+            action = authority.get("action")
+            if isinstance(action, list) and action and isinstance(action[0], str) and action[0]:
+                executable = Path(action[0])
+        command = [
+            str(executable),
+            str(launcher),
+            "bootstrap",
+            "--scheduled-task-name",
+            "News-Grasp Bootstrap",
+        ]
+        if high_cost_path and high_cost_sha:
+            command.extend(
+                [
+                    "--high-cost-binding-path",
+                    high_cost_path,
+                    "--high-cost-binding-sha256",
+                    high_cost_sha,
+                ]
+            )
+        return command, {
+            "route": route,
+            "command": tuple(command),
+            "cwd": str(Path(bin_dir)),
+            "shell": False,
+            "stdin": subprocess.DEVNULL,
+            "creationflags": subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
+            "close_fds": True,
+            "timeout": _CLEANROOM_CHILD_TIMEOUT_SECONDS,
+        }
+    raise ValueError("NEWS_GRASP_CLEANROOM_CHILD_ROUTE_INVALID")
+
+
+def _run_cleanroom_child(
+    route: str,
+    command: list[str],
+    *,
+    bin_dir: Path,
+    safety: Mapping[str, object],
+    renew_slot=None,
+    renewal_interval_seconds: float | None = None,
+    renewal_clock=None,
+    renewal_sleep=None,
+) -> int:
+    """installed childをno-console/bounded/captured境界で起動する。"""
+    timeout_seconds = safety.get("timeout", _CLEANROOM_CHILD_TIMEOUT_SECONDS)
+    if isinstance(timeout_seconds, bool) or not isinstance(timeout_seconds, (int, float)) or timeout_seconds <= 0:
+        raise RuntimeError("NEWS_GRASP_CHILD_TIMEOUT_INVALID")
+    creationflags = int(safety.get("creationflags") or 0)
+    common = {
+        "shell": False,
+        "stdin": subprocess.DEVNULL,
+        "cwd": str(Path(bin_dir)),
+        "close_fds": True,
+        "creationflags": creationflags,
+        "check": False,
+    }
+    if renew_slot is None:
+        result = subprocess.run(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=float(timeout_seconds),
+            **common,
+        )
+        stdout = getattr(result, "stdout", b"")
+        stderr = getattr(result, "stderr", b"")
+        if isinstance(stdout, (bytes, bytearray)) and len(stdout) > _CLEANROOM_CHILD_MAX_OUTPUT_BYTES:
+            raise RuntimeError("NEWS_GRASP_CHILD_STDOUT_LIMIT")
+        if isinstance(stderr, (bytes, bytearray)) and len(stderr) > _CLEANROOM_CHILD_MAX_OUTPUT_BYTES:
+            raise RuntimeError("NEWS_GRASP_CHILD_STDERR_LIMIT")
+        return int(result.returncode)
+
+    if renewal_interval_seconds is None:
+        renewal_interval_seconds = max(1.0, min(300.0, float(_CLEANROOM_LEASE_SECONDS) / 3.0))
+    if isinstance(renewal_interval_seconds, bool) or not isinstance(renewal_interval_seconds, (int, float)) or renewal_interval_seconds <= 0:
+        raise RuntimeError("NEWS_GRASP_RENEWAL_INTERVAL_INVALID")
+    sleep = renewal_sleep if callable(renewal_sleep) else time.sleep
+    monotonic = time.monotonic
+    started = monotonic()
+    deadline = started + float(timeout_seconds)
+    next_renewal = started + float(renewal_interval_seconds)
+    with (
+        tempfile.TemporaryFile(mode="w+b") as stdout_capture,
+        tempfile.TemporaryFile(mode="w+b") as stderr_capture,
+    ):
+        process = subprocess.Popen(
+            command,
+            stdout=stdout_capture,
+            stderr=stderr_capture,
+            **{key: value for key, value in common.items() if key != "check"},
+        )
+        try:
+            while True:
+                stdout_size = os.fstat(stdout_capture.fileno()).st_size
+                stderr_size = os.fstat(stderr_capture.fileno()).st_size
+                if stdout_size > _CLEANROOM_CHILD_MAX_OUTPUT_BYTES:
+                    raise RuntimeError("NEWS_GRASP_CHILD_STDOUT_LIMIT")
+                if stderr_size > _CLEANROOM_CHILD_MAX_OUTPUT_BYTES:
+                    raise RuntimeError("NEWS_GRASP_CHILD_STDERR_LIMIT")
+                returncode = process.poll()
+                if returncode is not None:
+                    if stdout_size > _CLEANROOM_CHILD_MAX_OUTPUT_BYTES:
+                        raise RuntimeError("NEWS_GRASP_CHILD_STDOUT_LIMIT")
+                    if stderr_size > _CLEANROOM_CHILD_MAX_OUTPUT_BYTES:
+                        raise RuntimeError("NEWS_GRASP_CHILD_STDERR_LIMIT")
+                    return int(returncode)
+                now = monotonic()
+                if now >= deadline:
+                    raise RuntimeError("NEWS_GRASP_CHILD_TIMEOUT")
+                if now >= next_renewal:
+                    try:
+                        renewal = renew_slot()
+                    except Exception as error:
+                        raise RuntimeError("NEWS_GRASP_SLOT_RENEWAL_FAILED") from error
+                    if renewal is False or (
+                        isinstance(renewal, Mapping) and renewal.get("status") not in {None, "renewed"}
+                    ):
+                        raise RuntimeError("NEWS_GRASP_SLOT_RENEWAL_REJECTED")
+                    next_renewal = now + float(renewal_interval_seconds)
+                sleep(min(0.25, max(0.01, next_renewal - now), max(0.01, deadline - now)))
+        finally:
+            if process.poll() is None:
+                try:
+                    process.terminate()
+                    process.wait(timeout=5)
+                except (OSError, subprocess.SubprocessError):
+                    try:
+                        process.kill()
+                    except OSError:
+                        pass
+                    try:
+                        process.wait(timeout=5)
+                    except (OSError, subprocess.SubprocessError):
+                        pass
+
+
+def run_cleanroom_dispatch(
+    schedule_id: str,
+    intent: str,
+    *,
+    bin_dir: Path,
+    observed_at: datetime | str,
+    controller_factory=None,
+    child_runner=None,
+    task_context_validator=None,
+    renewal_interval_seconds: float | None = None,
+    renewal_clock=None,
+    renewal_sleep=None,
+) -> int:
+    """production Taskの唯一のclean-room dispatch入口。"""
+    # caller入力は controller生成、writer bind、filesystem、child起動より前に
+    # 完全一致で拒否する。
+    if schedule_id != _CLEANROOM_SCHEDULE_ID:
+        raise ValueError("NEWS_GRASP_ENTRY_UNKNOWN_SCHEDULE")
+    if intent != _CLEANROOM_INTENT:
+        raise ValueError("NEWS_GRASP_ENTRY_UNKNOWN_INTENT")
+    observed = _normalize_cleanroom_observed_at(observed_at)
+    bin_path = Path(bin_dir).resolve()
+    if task_context_validator is None:
+        task_context_validator = _cleanroom_default_task_context_validator
+    try:
+        _run_cleanroom_task_context_validator(
+            task_context_validator,
+            bin_dir=bin_path,
+            observed_at=observed,
+            schedule_id=schedule_id,
+            intent=intent,
+        )
+    except RuntimeError as error:
+        if str(error) in {
+            "NEWS_GRASP_TASK_CONTEXT_VALIDATOR_INVALID",
+            "NEWS_GRASP_TASK_CONTEXT_VALIDATION_FAILED",
+            "NEWS_GRASP_TASK_CONTEXT_INVALID",
+        }:
+            return NEWS_GRASP_TASK_CONTEXT_REJECTED_EXIT
+        raise
+    try:
+        authority: dict[str, object] = _load_stable_launcher_identity(bin_dir=bin_path)
+    except (OSError, RuntimeError, ValueError, TypeError) as error:
+        # Task contextのread-only観測後、controller/WAL/ledger/childより前に
+        # stable authorityを確定する。欠落・不正は副作用なしでfail-closed。
+        return 66
+    runtime_root = Path.home() / ".news-grasp-runtime"
+    manifest_path = runtime_root / "production-runtime" / "config" / "news_grasp_cleanroom_task_manifest_v1.json"
+    raw_argv = [
+        "dispatch",
+        "--schedule-id",
+        schedule_id,
+        "--intent",
+        intent,
+    ]
+    injected = controller_factory is not None
+    if controller_factory is None:
+        controller_type, attestor_type = _cleanroom_runtime_imports(runtime_root)
+        attestor = attestor_type()
+        writer = attestor.bind()
+        if not isinstance(writer, Mapping):
+            raise RuntimeError("NEWS_GRASP_ENTRY_WRITER_INVALID")
+        controller = controller_type(
+            runtime_root=runtime_root,
+            manifest_path=manifest_path,
+            writer_attestor=attestor,
+        )
+    else:
+        controller = controller_factory(
+            runtime_root=runtime_root,
+            manifest_path=manifest_path,
+        )
+        writer = _cleanroom_test_writer()
+
+    reconcile = getattr(controller, "reconcile", None)
+    if not callable(reconcile):
+        reconcile = getattr(controller, "acquire", None)
+    if not callable(reconcile):
+        raise RuntimeError("NEWS_GRASP_CLEANROOM_CONTROLLER_INVALID")
+    decision = reconcile(
+        raw_argv=raw_argv,
+        observed_at=observed,
+        writer=writer,
+        lease_seconds=_CLEANROOM_LEASE_SECONDS,
+    )
+    if not isinstance(decision, Mapping):
+        raise RuntimeError("NEWS_GRASP_CLEANROOM_DECISION_INVALID")
+    disposition = decision.get("ownerDisposition")
+    if not isinstance(disposition, str) or not disposition:
+        disposition = decision.get("status")
+    slot_kind = decision.get("slotKind")
+    if disposition != "ACQUIRED" or slot_kind not in {"Scheduled", "Audit"}:
+        return 0
+    route = "runner" if slot_kind == "Scheduled" else "deadman"
+    command, safety = _cleanroom_child_command(
+        route=route,
+        bin_dir=bin_path,
+        authority=authority,
+    )
+    child_exit = 1
+    child_error = ""
+    renew = getattr(controller, "renew_slot", None)
+    renewal_callback = None
+    if callable(renew):
+        def _renew_slot() -> Mapping[str, object]:
+            renewal_observed = renewal_clock() if callable(renewal_clock) else datetime.now(_CLEANROOM_TOKYO)
+            renewal_time = _normalize_cleanroom_observed_at(renewal_observed)
+            value = renew(
+                slot_key=decision.get("slotKey"),
+                writer=writer,
+                fence_token=decision.get("fenceToken"),
+                lease_seconds=_CLEANROOM_LEASE_SECONDS,
+                observed_at=renewal_time,
+            )
+            if not isinstance(value, Mapping) or value.get("status") != "renewed":
+                raise RuntimeError("NEWS_GRASP_SLOT_RENEWAL_REJECTED")
+            return value
+
+        renewal_callback = _renew_slot
+    try:
+        if child_runner is None:
+            child_exit = _run_cleanroom_child(
+                route,
+                command,
+                bin_dir=bin_path,
+                safety=safety,
+                renew_slot=renewal_callback,
+                renewal_interval_seconds=renewal_interval_seconds,
+                renewal_clock=renewal_clock,
+                renewal_sleep=renewal_sleep,
+            )
+        else:
+            # seamでもroute/argv/安全属性をrepr可能な形で渡し、productionと
+            # 同じ一回限りのchild境界を観測できるようにする。
+            child_exit = int(
+                child_runner(
+                    route,
+                    command,
+                    **{
+                        key: value
+                        for key, value in safety.items()
+                        if key not in {"route", "command"}
+                    },
+                    renew_slot=renewal_callback,
+                    renewal_interval_seconds=renewal_interval_seconds,
+                )
+            )
+    except Exception as error:
+        child_exit = 1
+        child_error = type(error).__name__
+    terminal_state = "SUCCEEDED" if child_exit == 0 else "FAILED"
+    child_outcome: dict[str, object] = {
+        "route": route,
+        "slotKey": decision.get("slotKey"),
+        "terminalState": terminal_state,
+        "exitCode": int(child_exit),
+    }
+    if child_error:
+        child_outcome["errorType"] = child_error
+    result_hash = hashlib.sha256(
+        json.dumps(
+            child_outcome,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    commit = getattr(controller, "commit_slot", None)
+    if not callable(commit):
+        commit = getattr(controller, "commit", None)
+    if not callable(commit):
+        raise RuntimeError("NEWS_GRASP_CLEANROOM_COMMIT_INVALID")
+    commit_kwargs: dict[str, object] = {
+        "slot_key": decision.get("slotKey"),
+        "writer": writer,
+        "fence_token": decision.get("fenceToken"),
+        "terminal_state": terminal_state,
+        "result_hash": result_hash,
+        "observed_at": observed,
+    }
+    if injected:
+        # fake commit oracleがownerKeyを直接観測できるようにする。production
+        # Controllerには正式signatureだけを渡す。
+        owner_key = decision.get("ownerKey", decision.get("writerKey"))
+        if owner_key is not None:
+            commit_kwargs["ownerKey"] = owner_key
+    commit(**commit_kwargs)
+    return int(child_exit)
+
+
 def _validate_active_production_generation(
     *, runtime_repo: Path, launcher_identity: dict[str, object]
 ) -> dict[str, object]:
     """active pointer・immutable manifest・runtime bytesを同一generationへ束縛する。"""
     active_pointer_path = runtime_repo.parent / "active-generation-v2.json"
     try:
+        if (
+            active_pointer_path.is_symlink()
+            or not active_pointer_path.is_file()
+            or active_pointer_path.stat().st_size > 64 * 1024
+        ):
+            raise RuntimeError("NEWS_GRASP_ACTIVE_GENERATION_INVALID")
         active_pointer = json.loads(active_pointer_path.read_text(encoding="utf-8"))
     except (OSError, ValueError, TypeError) as error:
         raise RuntimeError("NEWS_GRASP_ACTIVE_GENERATION_INVALID") from error
+    if not isinstance(active_pointer, dict):
+        raise RuntimeError("NEWS_GRASP_ACTIVE_GENERATION_INVALID")
     active_unsigned = dict(active_pointer) if isinstance(active_pointer, dict) else {}
     active_sha256 = str(active_unsigned.pop("pointerSha256", ""))
     runtime_head = _run_git(runtime_repo, "rev-parse", "HEAD").strip().lower()
@@ -830,6 +2308,186 @@ def _validate_active_production_generation(
         if not candidate.is_relative_to(runtime_repo) or _file_sha256(candidate) != expected_sha256:
             raise RuntimeError("NEWS_GRASP_ACTIVE_GENERATION_DRIFT")
     return active_pointer
+
+
+def _cleanroom_bootstrap_task_origin_witness(
+    *,
+    bin_dir: Path,
+    observed_at: datetime,
+    high_cost_binding_path: Path,
+    high_cost_binding_sha256: str,
+) -> dict[str, object] | None:
+    """Bootstrap Taskの実起動を親chainとcanonical actionでread-only証明する。"""
+    if (
+        not isinstance(high_cost_binding_sha256, str)
+        or re.fullmatch(r"[0-9a-fA-F]{64}", high_cost_binding_sha256) is None
+    ):
+        return None
+    try:
+        binding_path = high_cost_binding_path.resolve(strict=True)
+    except (OSError, RuntimeError, ValueError):
+        return None
+    creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+    try:
+        completed = subprocess.run(
+            _cleanroom_context_powershell_command(
+                launcher_pid=os.getpid(),
+                task_name=_CLEANROOM_BOOTSTRAP_TASK_NAME,
+            ),
+            shell=False,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=_CLEANROOM_CONTEXT_TIMEOUT_SECONDS,
+            creationflags=creationflags,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if int(getattr(completed, "returncode", 1)) != 0:
+        return None
+    payload = _cleanroom_decode_context_json(getattr(completed, "stdout", b""))
+    if payload is None or not _cleanroom_validate_process_witness(payload):
+        return None
+    if (
+        payload.get("taskName") != _CLEANROOM_BOOTSTRAP_TASK_NAME
+        or payload.get("enabled") is not True
+        or payload.get("state") != "Running"
+        or payload.get("taskPath") != "\\"
+        or payload.get("multipleInstancesPolicy") != "IgnoreNew"
+    ):
+        return None
+    try:
+        last_run_text = payload.get("lastRunTime")
+        if not isinstance(last_run_text, str) or not last_run_text:
+            return None
+        last_run = datetime.fromisoformat(last_run_text.replace("Z", "+00:00"))
+        if last_run.tzinfo is None or last_run.utcoffset() is None:
+            return None
+        age_seconds = (observed_at - last_run.astimezone(_CLEANROOM_TOKYO)).total_seconds()
+        if age_seconds < -60 or age_seconds > 10 * 60:
+            return None
+    except (TypeError, ValueError, OverflowError):
+        return None
+    actions = payload.get("actions")
+    if type(actions) is not list or len(actions) != 1 or type(actions[0]) is not dict:
+        return None
+    action = actions[0]
+    if set(action) != {"execute", "arguments", "workingDirectory"}:
+        return None
+    expected_pythonw = _cleanroom_expected_pythonw(bin_dir=bin_dir)
+    launcher_path = (bin_dir / "news-grasp-task-launcher.pyw").resolve()
+    arguments = _cleanroom_windows_argument_tokens(action.get("arguments"))
+    if (
+        expected_pythonw is None
+        or _cleanroom_context_path(action.get("execute")) != expected_pythonw
+        or Path(str(action.get("execute") or "")).name.casefold()
+        not in {"pythonw.exe", "pythonw"}
+        or _cleanroom_context_path(str(launcher_path))
+        != _cleanroom_context_path(str(Path(__file__).resolve()))
+        or arguments is None
+        or len(arguments) != 8
+        or _cleanroom_context_path(arguments[0])
+        != _cleanroom_context_path(str(launcher_path))
+        or arguments[1:5]
+        != [
+            "bootstrap",
+            "--scheduled-task-name",
+            _CLEANROOM_BOOTSTRAP_TASK_NAME,
+            "--high-cost-binding-path",
+        ]
+        or _cleanroom_context_path(arguments[5])
+        != _cleanroom_context_path(str(binding_path))
+        or arguments[6:] != [
+            "--high-cost-binding-sha256",
+            high_cost_binding_sha256.lower(),
+        ]
+        or _cleanroom_context_path(action.get("workingDirectory"))
+        != _cleanroom_context_path(str(bin_dir.resolve()))
+    ):
+        return None
+    triggers = payload.get("triggers")
+    if type(triggers) is not list or len(triggers) != 1:
+        return None
+    trigger = triggers[0]
+    if type(trigger) is not dict or trigger.get("enabled") is not True:
+        return None
+    if "daily" not in str(trigger.get("kind") or "").casefold():
+        return None
+    boundary = trigger.get("startBoundary")
+    if not isinstance(boundary, str) or not boundary:
+        return None
+    try:
+        if datetime.fromisoformat(boundary.replace("Z", "+00:00")).strftime("%H:%M:%S") != "05:55:00":
+            return None
+    except (TypeError, ValueError):
+        return None
+    return {
+        "status": "accepted",
+        "taskName": _CLEANROOM_BOOTSTRAP_TASK_NAME,
+        "parentProcessId": payload["parentProcessId"],
+        "parentProcessPath": payload["parentProcessPath"],
+        "scheduleServicePid": payload["scheduleServicePid"],
+        "ancestorChainDepth": len(payload["ancestorChain"]),
+        "observedAt": observed_at.isoformat(timespec="milliseconds"),
+    }
+
+
+def _write_bootstrap_execution_receipt(
+    *,
+    bin_dir: Path,
+    launcher_identity: dict[str, object],
+    observed_at: datetime,
+    task_origin_witness: dict[str, object],
+    child_exit_code: int,
+) -> Path:
+    """検証済みactive generationとTask-originをatomic receiptへ封印する。"""
+    if child_exit_code != 0 or task_origin_witness.get("status") != "accepted":
+        raise RuntimeError("NEWS_GRASP_BOOTSTRAP_EXECUTION_RECEIPT_NOT_ELIGIBLE")
+    runtime_repo = Path.home() / ".news-grasp-runtime" / "production-runtime"
+    active_pointer = _validate_active_production_generation(
+        runtime_repo=runtime_repo,
+        launcher_identity=launcher_identity,
+    )
+    generation_id = active_pointer.get("generationId")
+    manifest_sha256 = str(active_pointer.get("manifestSha256") or "").lower()
+    authority_sha256 = str(launcher_identity.get("authoritySha256") or "").lower()
+    if (
+        not isinstance(generation_id, str)
+        or not generation_id
+        or re.fullmatch(r"[0-9a-f]{64}", manifest_sha256) is None
+        or re.fullmatch(r"[0-9a-f]{64}", authority_sha256) is None
+        or active_pointer.get("stableTaskAuthoritySha256") != authority_sha256
+    ):
+        raise RuntimeError("NEWS_GRASP_BOOTSTRAP_EXECUTION_RECEIPT_INVALID")
+    receipt_path = (bin_dir / "news-grasp-bootstrap-execution-receipt-v1.json").resolve()
+    _assert_managed_path(
+        receipt_path,
+        bin_dir.resolve(),
+        "NEWS_GRASP_BOOTSTRAP_EXECUTION_RECEIPT_PATH_INVALID",
+    )
+    receipt = {
+        "schemaVersion": "NEWS_GRASP_BOOTSTRAP_EXECUTION_RECEIPT_V1",
+        "issueDate": observed_at.date().isoformat(),
+        "observedAt": observed_at.isoformat(timespec="milliseconds"),
+        "generationId": generation_id,
+        "manifestSha256": manifest_sha256,
+        "stableAuthoritySha": authority_sha256,
+        "taskName": _CLEANROOM_BOOTSTRAP_TASK_NAME,
+        "taskOriginWitnessStatus": str(task_origin_witness["status"]),
+        "taskOriginWitness": dict(task_origin_witness),
+        "childExitCode": int(child_exit_code),
+    }
+    if len(
+        json.dumps(receipt, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode(
+            "utf-8"
+        )
+    ) > 64 * 1024:
+        raise RuntimeError("NEWS_GRASP_BOOTSTRAP_EXECUTION_RECEIPT_SIZE_INVALID")
+    _write_json_atomic(receipt_path, receipt)
+    if receipt_path.stat().st_size > 64 * 1024:
+        raise RuntimeError("NEWS_GRASP_BOOTSTRAP_EXECUTION_RECEIPT_SIZE_INVALID")
+    return receipt_path
 
 
 def _run_installed_nopublish_authority(
@@ -3349,6 +5007,8 @@ def main() -> int:
             "converge-runtime",
             "maintain-runtime",
             "scheduled-equivalent-nopublish",
+            "dispatch",
+            "task-origin-canary",
         ),
     )
     parser.add_argument("--probe", type=Path)
@@ -3365,8 +5025,113 @@ def main() -> int:
     parser.add_argument("--launch-authority", type=Path)
     parser.add_argument("--high-cost-binding-path", type=Path)
     parser.add_argument("--high-cost-binding-sha256")
+    parser.add_argument("--schedule-id")
+    parser.add_argument("--intent")
+    parser.add_argument("--canary-nonce")
+    parser.add_argument("--canary-generation", "--generation", dest="canary_generation")
+    parser.add_argument(
+        "--canary-receipt-path",
+        "--receipt-path",
+        dest="canary_receipt_path",
+        type=Path,
+    )
     args = parser.parse_args()
     bin_dir = Path.home() / "bin"
+    if args.mode == "task-origin-canary":
+        if (
+            not args.canary_nonce
+            or not args.canary_generation
+            or args.schedule_id is not None
+            or args.intent is not None
+            or args.probe is not None
+            or args.repo_dir is not None
+            or args.python_exe is not None
+            or args.evidence_repo_dir is not None
+            or args.bootstrap_owner_pid is not None
+            or args.bootstrap_owner_receipt is not None
+            or args.bootstrap_owner_nonce is not None
+            or args.scheduled_task_name is not None
+            or args.launch_authority is not None
+            or args.high_cost_binding_path is not None
+            or args.high_cost_binding_sha256
+        ):
+            parser.error(
+                "task-origin-canary requires only nonce/generation/receipt/runtime-root"
+            )
+        try:
+            nonce = str(args.canary_nonce)
+            generation = _cleanroom_canary_generation(args.canary_generation)
+            observed = datetime.now(_CLEANROOM_TOKYO)
+            runtime_root = Path(args.runtime_root or (Path.home() / ".news-grasp-runtime" / "production-runtime"))
+            manifest_path = runtime_root / "config" / "news_grasp_cleanroom_task_manifest_v1.json"
+            receipt_path = args.canary_receipt_path or (
+                bin_dir / f"news-grasp-entry-canary-{nonce}.json"
+            )
+            result = run_task_origin_canary(
+                task_action=lambda **_context: True,
+                start_task=lambda **_context: True,
+                nonce=nonce,
+                wait_receipt=lambda **_context: None,
+                restore_task=lambda **_context: True,
+                final_parity=lambda **_context: True,
+                task_origin_validator=_cleanroom_default_task_origin_validator,
+                observed_at=observed,
+                generation=generation,
+                bin_dir=bin_dir,
+                runtime_root=runtime_root,
+                manifest_path=manifest_path,
+                receipt_path=receipt_path,
+                manage_task=False,
+            )
+            print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+            return 0 if result.get("status") == "verified" else 66
+        except (OSError, RuntimeError, ValueError, TypeError) as error:
+            print(
+                json.dumps(
+                    {"status": "failed", "reasonCode": str(error)},
+                    ensure_ascii=False,
+                    sort_keys=True,
+                ),
+                file=sys.stderr,
+            )
+            return 66
+    if args.mode == "dispatch":
+        if (
+            args.schedule_id is None
+            or args.intent is None
+            or args.high_cost_binding_path is not None
+            or args.high_cost_binding_sha256
+            or args.probe is not None
+            or args.repo_dir is not None
+            or args.python_exe is not None
+            or args.evidence_repo_dir is not None
+            or args.bootstrap_owner_pid is not None
+            or args.bootstrap_owner_receipt is not None
+            or args.bootstrap_owner_nonce is not None
+            or args.runtime_root is not None
+            or args.scheduled_task_name is not None
+            or args.launch_authority is not None
+        ):
+            parser.error("dispatch requires only --schedule-id and --intent")
+        try:
+            return run_cleanroom_dispatch(
+                args.schedule_id,
+                args.intent,
+                bin_dir=bin_dir,
+                observed_at=datetime.now(_CLEANROOM_TOKYO),
+            )
+        except (OSError, RuntimeError, ValueError, TypeError) as error:
+            print(
+                json.dumps(
+                    {"status": "failed", "reasonCode": str(error)},
+                    ensure_ascii=False,
+                    sort_keys=True,
+                ),
+                file=sys.stderr,
+            )
+            return 66
+    if args.schedule_id is not None or args.intent is not None:
+        parser.error("--schedule-id/--intent are valid only for dispatch")
     if args.mode == "maintain-runtime":
         runtime_root = args.runtime_root or (Path.home() / ".news-grasp-runtime")
         try:
@@ -3651,6 +5416,31 @@ def main() -> int:
             effective_returncode = 73
         else:
             if state.get("status") != "smoke_ok":
+                effective_returncode = 73
+    if (
+        effective_returncode == 0
+        and args.mode == "bootstrap"
+        and args.scheduled_task_name == _CLEANROOM_BOOTSTRAP_TASK_NAME
+        and args.high_cost_binding_path is not None
+        and args.high_cost_binding_sha256
+    ):
+        bootstrap_observed_at = datetime.now(_CLEANROOM_TOKYO)
+        task_origin_witness = _cleanroom_bootstrap_task_origin_witness(
+            bin_dir=bin_dir,
+            observed_at=bootstrap_observed_at,
+            high_cost_binding_path=args.high_cost_binding_path,
+            high_cost_binding_sha256=str(args.high_cost_binding_sha256),
+        )
+        if task_origin_witness is not None:
+            try:
+                _write_bootstrap_execution_receipt(
+                    bin_dir=bin_dir,
+                    launcher_identity=launcher_identity,
+                    observed_at=bootstrap_observed_at,
+                    task_origin_witness=task_origin_witness,
+                    child_exit_code=effective_returncode,
+                )
+            except (OSError, RuntimeError, ValueError, TypeError):
                 effective_returncode = 73
     if effective_returncode != 0 and not context_rejected:
         freeze_startup_failure_if_needed(

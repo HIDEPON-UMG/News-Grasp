@@ -77,6 +77,19 @@ _TRUSTED_RECEIPT_KEYS = {
     "receiptSha256",
 }
 
+_LIVE_TASK_SNAPSHOT_SCHEMA = "NEWS_GRASP_LIVE_TASK_SNAPSHOT_V1"
+_CONTROL_MANIFEST_SCHEMA = "NEWS_GRASP_CONTROL_MANIFEST_V1"
+_CLEANROOM_TASK_KEYS = {
+    "taskPath",
+    "taskName",
+    "multipleInstancesPolicy",
+    "triggers",
+    "action",
+}
+_CLEANROOM_LIVE_TASK_KEYS = _CLEANROOM_TASK_KEYS | {"enabled"}
+_CLEANROOM_ACTION_KEYS = {"entryModule", "argv", "workingDirectoryToken"}
+_CLEANROOM_TRIGGER_KEYS = {"triggerId", "kind", "localTime", "timeZone"}
+
 
 def _sha(value: Any) -> str:
     return hashlib.sha256(
@@ -149,6 +162,63 @@ def _hash_field(value: Mapping[str, Any], field: str, label: str) -> None:
     expected = _sha({key: item for key, item in value.items() if key != field})
     if digest != expected:
         _error("HASH_MISMATCH", f"{label}.{field}")
+
+
+def validate_live_task_parity(manifest: Any, live_snapshot: Any) -> bool:
+    """canonical clean-room Task定義とlive観測を厳密比較する。"""
+    # boolや self-report は mapping として扱わず、必ず実観測形状へ戻す。
+    manifest_value = _mapping(manifest, "manifest")
+    snapshot_value = _mapping(live_snapshot, "live_snapshot")
+    _exact_keys(manifest_value, {"schemaVersion", "scheduleId", "tasks"}, "manifest")
+    if manifest_value.get("schemaVersion") != _CONTROL_MANIFEST_SCHEMA:
+        _error("SCHEMA", "manifest.schemaVersion")
+    if manifest_value.get("scheduleId") != "news-grasp-daily-v1":
+        _error("IDENTITY", "manifest.scheduleId")
+    manifest_tasks = _list(manifest_value.get("tasks"), "manifest.tasks")
+    if len(manifest_tasks) != 1:
+        _error("CARDINALITY", "manifest.tasks")
+    manifest_task = _mapping(manifest_tasks[0], "manifest.tasks[0]")
+    _exact_keys(manifest_task, _CLEANROOM_TASK_KEYS, "manifest.tasks[0]")
+    if manifest_task.get("taskPath") != "\\" or manifest_task.get("taskName") != "News-Grasp Production":
+        _error("IDENTITY", "manifest task")
+    if manifest_task.get("multipleInstancesPolicy") != "Parallel":
+        _error("POLICY", "manifest multipleInstancesPolicy")
+    action = _mapping(manifest_task.get("action"), "manifest.tasks[0].action")
+    _exact_keys(action, _CLEANROOM_ACTION_KEYS, "manifest action")
+    if action != _EXPECTED_MANIFEST_ACTION:
+        _error("ACTION", "manifest action")
+    triggers = _list(manifest_task.get("triggers"), "manifest task triggers")
+    expected_triggers = [
+        {"triggerId": "scheduled-0600", "kind": "daily", "localTime": "06:00:00", "timeZone": "Asia/Tokyo"},
+        {"triggerId": "audit-0640", "kind": "daily", "localTime": "06:40:00", "timeZone": "Asia/Tokyo"},
+    ]
+    if triggers != expected_triggers:
+        _error("TRIGGERS", "manifest task triggers")
+    for index, trigger in enumerate(triggers):
+        item = _mapping(trigger, f"manifest task triggers[{index}]")
+        _exact_keys(item, _CLEANROOM_TRIGGER_KEYS, f"manifest task triggers[{index}]")
+
+    _exact_keys(
+        snapshot_value,
+        {"schemaVersion", "tasks", "extraEnabledTasks"},
+        "live_snapshot",
+    )
+    if snapshot_value.get("schemaVersion") != _LIVE_TASK_SNAPSHOT_SCHEMA:
+        _error("SCHEMA", "live_snapshot.schemaVersion")
+    live_tasks = _list(snapshot_value.get("tasks"), "live_snapshot.tasks")
+    if len(live_tasks) != 1:
+        _error("CARDINALITY", "live_snapshot.tasks")
+    extras = _list(snapshot_value.get("extraEnabledTasks"), "live_snapshot.extraEnabledTasks")
+    if extras:
+        _error("EXTRA_ENABLED_TASK", "live_snapshot.extraEnabledTasks")
+    live_task = _mapping(live_tasks[0], "live_snapshot.tasks[0]")
+    _exact_keys(live_task, _CLEANROOM_LIVE_TASK_KEYS, "live_snapshot.tasks[0]")
+    if type(live_task.get("enabled")) is not bool or live_task.get("enabled") is not True:
+        _error("STATE", "live task enabled")
+    for key in _CLEANROOM_TASK_KEYS:
+        if live_task.get(key) != manifest_task.get(key):
+            _error("PARITY", f"live task {key}")
+    return True
 
 
 def _within(root: Path, relative: str, label: str) -> Path:

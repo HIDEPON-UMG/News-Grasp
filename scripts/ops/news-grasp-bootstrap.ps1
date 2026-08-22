@@ -352,6 +352,69 @@ function Get-StringSha256Hex {
     }
 }
 
+function Write-NewsGraspBootstrapExecutionReceipt {
+    param(
+        [Parameter(Mandatory = $true)][int] $ChildExitCode,
+        [Parameter(Mandatory = $true)][DateTimeOffset] $ObservedAt
+    )
+    if ($ChildExitCode -ne 0) { throw 'NEWS_GRASP_BOOTSTRAP_EXECUTION_NOT_SUCCESSFUL' }
+    if ($SmokeTest) { throw 'NEWS_GRASP_BOOTSTRAP_EXECUTION_SMOKETEST_FORBIDDEN' }
+    if ([string]$ScheduledTaskName -cne 'News-Grasp Bootstrap') {
+        throw 'NEWS_GRASP_BOOTSTRAP_EXECUTION_TASK_NAME_INVALID'
+    }
+    $runtimeAuthorityRoot = Join-Path $env:USERPROFILE '.news-grasp-runtime'
+    $activeGenerationPath = Join-Path $runtimeAuthorityRoot 'active-generation-v2.json'
+    $stableAuthorityPath = Join-Path $BinDir 'news-grasp-stable-task-authority-v1.json'
+    if (-not (Test-Path -LiteralPath $activeGenerationPath -PathType Leaf)) {
+        throw 'NEWS_GRASP_BOOTSTRAP_EXECUTION_GENERATION_MISSING'
+    }
+    if (-not (Test-Path -LiteralPath $stableAuthorityPath -PathType Leaf)) {
+        throw 'NEWS_GRASP_BOOTSTRAP_EXECUTION_AUTHORITY_MISSING'
+    }
+    try {
+        $activeGeneration = Get-Content -LiteralPath $activeGenerationPath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+        $stableAuthority = Get-Content -LiteralPath $stableAuthorityPath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+    } catch {
+        throw 'NEWS_GRASP_BOOTSTRAP_EXECUTION_BINDING_INVALID'
+    }
+    $generationId = [string]$activeGeneration.generationId
+    $manifestSha256 = ([string]$activeGeneration.manifestSha256).ToLowerInvariant()
+    $stableAuthoritySha = ([string]$stableAuthority.authoritySha256).ToLowerInvariant()
+    $generationPointerSha256 = Get-FileSha256Hex -Path $activeGenerationPath
+    $stableAuthorityFileSha256 = Get-FileSha256Hex -Path $stableAuthorityPath
+    if (
+        [string]::IsNullOrWhiteSpace($generationId) -or
+        $manifestSha256 -notmatch '^[0-9a-f]{64}$' -or
+        $stableAuthoritySha -notmatch '^[0-9a-f]{64}$' -or
+        $generationPointerSha256 -notmatch '^[0-9a-f]{64}$' -or
+        $stableAuthorityFileSha256 -notmatch '^[0-9a-f]{64}$'
+    ) { throw 'NEWS_GRASP_BOOTSTRAP_EXECUTION_BINDING_INVALID' }
+    $receiptPath = Join-Path $BinDir 'news-grasp-bootstrap-execution-receipt-v1.json'
+    $receipt = [ordered]@{
+        schemaVersion = 'NEWS_GRASP_BOOTSTRAP_EXECUTION_RECEIPT_V1'
+        status = 'succeeded'
+        issueDate = $DateStamp
+        observedAt = $ObservedAt.ToString('o')
+        generationId = $generationId
+        manifestSha256 = $manifestSha256
+        stableAuthoritySha = $stableAuthoritySha
+        stableAuthoritySha256 = $stableAuthoritySha
+        stableAuthorityFileSha256 = $stableAuthorityFileSha256
+        generationPointerSha256 = $generationPointerSha256
+        taskName = 'News-Grasp Bootstrap'
+        taskPath = '\'
+        childExitCode = $ChildExitCode
+        originWitness = [ordered]@{
+            source = 'scheduled-task'
+            mode = 'bootstrap'
+            taskName = 'News-Grasp Bootstrap'
+            taskPath = '\'
+            launcherPath = (Join-Path $BinDir 'news-grasp-task-launcher.pyw')
+        }
+    }
+    Write-AtomicUtf8Text -Path $receiptPath -Text (($receipt | ConvertTo-Json -Depth 8) + [Environment]::NewLine)
+}
+
 function Get-ScheduledTaskActionSha256 {
     param([string] $TaskName = $ProductionTaskName)
     $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
@@ -367,7 +430,7 @@ function Assert-ScheduledTaskLaunchContext {
         [bool] $IsSmokeTest,
         [bool] $AllowLegacyDirectEntrypoint
     )
-    $expectedMode = if ($IsSmokeTest) { 'bootstrap' } else { 'runner' }
+    $expectedMode = if ($IsSmokeTest) { 'bootstrap' } else { 'dispatch' }
     if ($IsSmokeTest -and (-not $TaskName)) {
         return
     }
@@ -377,7 +440,7 @@ function Assert-ScheduledTaskLaunchContext {
     $knownTaskNames = if ($IsSmokeTest) {
         @('News-Grasp Bootstrap')
     } else {
-        @($ProductionTaskName, 'News-Grasp Runner')
+        @($ProductionTaskName)
     }
     if ($TaskName -notin $knownTaskNames) {
         throw 'SCHEDULED_TASK_CONTEXT_INVALID'
@@ -389,13 +452,34 @@ function Assert-ScheduledTaskLaunchContext {
     }) -join ' ; '
     $ageMinutes = [math]::Abs(((Get-Date) - $info.LastRunTime).TotalMinutes)
     $modePattern = "(?i)(?:^|\s)$([regex]::Escape($expectedMode))(?:\s|$)"
-    $launcherEntrypoint = (
-        $actionSummary -match '(?i)news-grasp-task-launcher\.pyw' -and
-        $actionSummary -match $modePattern -and
-        $actionSummary -match '(?i)--scheduled-task-name' -and
-        $actionSummary -match [regex]::Escape($TaskName)
-    )
+    $launcherEntrypoint = $false
+    if ($IsSmokeTest) {
+        $launcherEntrypoint = (
+            $actionSummary -match '(?i)news-grasp-task-launcher\.pyw' -and
+            $actionSummary -match $modePattern -and
+            $actionSummary -match '(?i)--scheduled-task-name' -and
+            $actionSummary -match [regex]::Escape($TaskName)
+        )
+    } else {
+        # Production Taskはdispatchの固定argvだけを許可する。Task actionを
+        # runner/manual/schedule任意値へ読み替えるfallbackは持たない。
+        $canonicalLauncherPath = [IO.Path]::GetFullPath((Join-Path $BinDir 'news-grasp-task-launcher.pyw'))
+        $canonicalArgumentPattern = '^(?:"' + [regex]::Escape($canonicalLauncherPath) + '"|' + [regex]::Escape($canonicalLauncherPath) + ')\s+dispatch\s+--schedule-id\s+news-grasp-daily-v1\s+--intent\s+reconcile$'
+        $actions = @($task.Actions)
+        $canonicalDispatchAction = $false
+        if ($TaskName -eq $ProductionTaskName -and $actions.Count -eq 1) {
+            $action = $actions[0]
+            $executeName = [IO.Path]::GetFileNameWithoutExtension([string]$action.Execute)
+            $canonicalDispatchAction = (
+                $executeName -match '(?i)^pythonw$' -and
+                ([string]$action.Arguments).Trim() -match $canonicalArgumentPattern
+            )
+        }
+        $launcherEntrypoint = $canonicalDispatchAction
+    }
     $legacyDirectEntrypoint = (
+        # retired News-Grasp Runner is a legacy tombstone only; it is not a
+        # canonical task name and never enters the dispatch branch above.
         $AllowLegacyDirectEntrypoint -and
         (-not $IsSmokeTest) -and
         $actionSummary -match '(?i)powershell(?:\.exe)?' -and
@@ -540,6 +624,7 @@ $OpsRepoRoot = if ($EvidenceRepoDir) {
 }
 if ($EvidenceRepoDir) { $env:NEWS_GRASP_EVIDENCE_REPO_DIR = $OpsRepoRoot }
 if (-not $DateStamp) { $DateStamp = Get-Date -Format 'yyyy-MM-dd' }
+$bootstrapObservedAt = [DateTimeOffset]::Now
 New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
 $highCostBinding = $null
 if ($HighCostBindingPath -or $HighCostBindingReceiptSha256) {
@@ -848,6 +933,11 @@ if ($highCostBinding) {
 
 & powershell.exe @args
 $watcherExit = $LASTEXITCODE
+if (($watcherExit -eq 0) -and (-not $SmokeTest) -and (-not $ControlPlaneRepairOnly)) {
+    Write-NewsGraspBootstrapExecutionReceipt `
+        -ChildExitCode ([int]$watcherExit) `
+        -ObservedAt $bootstrapObservedAt
+}
 } finally {
     if ($runtimeMutex) {
         if ($runtimeMutexOwned) {

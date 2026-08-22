@@ -903,19 +903,29 @@ def test_installer_rollback_restores_absent_files_and_task_definitions() -> None
     assert "Enable-ScheduledTask -TaskName $BootstrapTaskName" in source
     assert "if (-not $runnerWasEnabled)" not in source
     assert "if (-not $bootstrapWasEnabled)" not in source
-    assert "Register-ScheduledTask -TaskName $DeadmanTaskName" in source
+    assert "Register-ScheduledTask -TaskName $DeadmanTaskName" not in source
+    assert "Enable-ScheduledTask -TaskName $DeadmanTaskName" not in source
+    assert "Register-ScheduledTask -TaskName $LegacyRunnerTaskName" not in source
+    assert "Enable-ScheduledTask -TaskName $LegacyRunnerTaskName" not in source
     assert "schtasks.exe /Query /TN $DeadmanTaskName" not in source
-    assert "if ($actions.Count -ne 1 -or $triggers.Count -ne 1)" in source
+    assert "if ($actions.Count -ne 1 -or $triggers.Count -ne @($spec.starts).Count)" in source
     assert "[string]$action.WorkingDirectory" in source
     assert "[bool]$task.Settings.StartWhenAvailable" in source
-    assert "[string]$task.Settings.MultipleInstances -ne 'IgnoreNew'" in source
-    assert "[string]$trigger.Repetition.Duration" in source
-    assert "[bool]$trigger.Repetition.StopAtDurationEnd" in source
-    assert "$deadmanRepetition = New-CimInstance" in source
-    assert "-ClassName 'MSFT_TaskRepetitionPattern'" in source
-    assert "$deadmanTrigger.Repetition = $deadmanRepetition" in source
-    assert "$deadmanTrigger.Repetition.Interval =" not in source
-    assert "$deadmanTrigger.Repetition.Duration =" not in source
+    assert "[string]$task.Settings.MultipleInstances -ne [string]$spec.policy" in source
+    assert "$canonicalProductionTriggers = @('T06:00', 'T06:40')" in source
+    assert "policy = 'Parallel'" in source
+    assert "policy = 'IgnoreNew'" in source
+    assert "news-grasp-daily-v1" in source
+    assert "tools.news_grasp_cleanroom_dispatch" in source
+    assert "--schedule-id" in source
+    assert "--intent" in source
+    assert "reconcile" in source
+    assert "06:00" in source
+    assert "06:40" in source
+    assert "05:55" in source
+    assert "$deadmanRepetition = New-CimInstance" not in source
+    assert "-ClassName 'MSFT_TaskRepetitionPattern'" not in source
+    assert "$deadmanTrigger.Repetition = $deadmanRepetition" not in source
     assert "trap {" in source
     assert "Invoke-NewsGraspInstallRollback" in source
 

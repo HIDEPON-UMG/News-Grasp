@@ -238,9 +238,43 @@ function Resolve-NewsGraspTaskPythonw {
     throw 'News-Grasp Scheduled Task用の安定したpythonw.exeが見つかりません。-TaskPythonwPathを指定してください。'
 }
 
+function Stop-NewsGraspTaskAndWait {
+    param(
+        [Parameter(Mandatory = $true)][string] $TaskName,
+        [int] $TimeoutSeconds = 15
+    )
+    if ([string]::IsNullOrWhiteSpace($TaskName)) {
+        throw 'NEWS_GRASP_TASK_QUIESCE_NAME_MISSING'
+    }
+    if ($TimeoutSeconds -lt 1 -or $TimeoutSeconds -gt 120) {
+        throw 'NEWS_GRASP_TASK_QUIESCE_TIMEOUT_INVALID'
+    }
+    $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+    if (-not $task) { return }
+    Disable-ScheduledTask -TaskName $TaskName -ErrorAction Stop | Out-Null
+    if ([string]$task.State -eq 'Running') {
+        Stop-ScheduledTask -TaskName $TaskName -ErrorAction Stop | Out-Null
+    }
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ($true) {
+        $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+        if ([string]$task.State -ne 'Running') { return }
+        if ((Get-Date) -ge $deadline) {
+            throw "NEWS_GRASP_TASK_QUIESCE_TIMEOUT:$TaskName"
+        }
+        Start-Sleep -Milliseconds 200
+    }
+}
+
 function Invoke-NewsGraspRollbackJournal {
     param([string] $JournalPath, [object] $Journal)
     $journalDirectory = Split-Path -Parent $JournalPath
+    foreach ($snapshot in @($Journal.task_snapshots)) {
+        $taskName = [string]$snapshot.task_name
+        # Stop-ScheduledTask/Disable-ScheduledTask then Get-ScheduledTask polling
+        # confirms Running is gone within the bounded timeout before file restore.
+        Stop-NewsGraspTaskAndWait -TaskName $taskName -TimeoutSeconds 15
+    }
     foreach ($row in @($Journal.files) | Select-Object -Last 100) {
         if ([string]$row.backup -and (Test-Path -LiteralPath ([string]$row.backup) -PathType Leaf)) {
             Restore-NewsGraspVerifiedFile `
@@ -346,6 +380,12 @@ function Recover-NewsGraspInterruptedInstall {
 }
 
 function Invoke-NewsGraspInstallRollback {
+    foreach ($snapshot in $taskSnapshots) {
+        $taskName = [string]$snapshot.task_name
+        # Stop-ScheduledTask/Disable-ScheduledTask then Get-ScheduledTask polling
+        # confirms Running is gone within the bounded timeout before file restore.
+        Stop-NewsGraspTaskAndWait -TaskName $taskName -TimeoutSeconds 15
+    }
     foreach ($row in @($manifestFiles) | Select-Object -Last 100) {
         if ([string]$row.backup -and (Test-Path -LiteralPath ([string]$row.backup) -PathType Leaf)) {
             Restore-NewsGraspVerifiedFile `
@@ -511,18 +551,18 @@ function Assert-NewsGraspInstalledState {
         if ($bindingHash -notmatch '^[0-9a-f]{64}$') { throw 'recovery runtime binding hash invalid' }
     }
     if ($SkipTaskRegistration) { return }
+    $canonicalProductionArgs = "`"$taskLauncherPath`" dispatch --schedule-id news-grasp-daily-v1 --intent reconcile"
+    $canonicalProductionTriggers = @('T06:00', 'T06:40')
     $expected = @(
-        [ordered]@{ name = $RunnerTaskName; execute = $pythonw; arguments = $runnerArgs; working = $BinDir; start = 'T06:00'; interval = ''; duration = '' },
-        [ordered]@{ name = $BootstrapTaskName; execute = $pythonw; arguments = $bootstrapArgs; working = $BinDir; start = 'T05:55'; interval = ''; duration = '' },
-        [ordered]@{ name = $DeadmanTaskName; execute = $pythonw; arguments = $deadmanArgs; working = $BinDir; start = 'T06:40'; interval = 'PT1H'; duration = 'P1D' }
+        [ordered]@{ name = $RunnerTaskName; execute = $pythonw; arguments = $canonicalProductionArgs; working = $productionRuntimePath; starts = $canonicalProductionTriggers; policy = 'Parallel' },
+        [ordered]@{ name = $BootstrapTaskName; execute = $pythonw; arguments = $bootstrapArgs; working = $BinDir; starts = @('T05:55'); policy = 'IgnoreNew' }
     )
     foreach ($spec in $expected) {
         $task = Get-ScheduledTask -TaskName ([string]$spec.name) -ErrorAction Stop
         $actions = @($task.Actions)
         $triggers = @($task.Triggers)
-        if ($actions.Count -ne 1 -or $triggers.Count -ne 1) { throw "scheduled task cardinality mismatch: $($spec.name)" }
+        if ($actions.Count -ne 1 -or $triggers.Count -ne @($spec.starts).Count) { throw "scheduled task cardinality mismatch: $($spec.name)" }
         $action = $actions[0]
-        $trigger = $triggers[0]
         if (-not $task.Settings.Enabled) { throw "scheduled task disabled: $($spec.name)" }
         if (
             [string]$action.Execute -ne [string]$spec.execute -or
@@ -532,22 +572,135 @@ function Assert-NewsGraspInstalledState {
             throw "scheduled task action mismatch: $($spec.name)"
         }
         if (-not [bool]$task.Settings.StartWhenAvailable) { throw "scheduled task start-when-available mismatch: $($spec.name)" }
-        if ([string]$task.Settings.MultipleInstances -ne 'IgnoreNew') { throw "scheduled task instance policy mismatch: $($spec.name)" }
-        if ([string]$trigger.StartBoundary -notlike "*$($spec.start)*") { throw "scheduled task trigger mismatch: $($spec.name)" }
-        if ([int]$trigger.DaysInterval -ne 1) { throw "scheduled task daily interval mismatch: $($spec.name)" }
-        if ($spec.interval -and [string]$trigger.Repetition.Interval -ne [string]$spec.interval) {
-            throw "scheduled task repetition mismatch: $($spec.name)"
-        }
-        if ($spec.interval) {
-            if ([string]$trigger.Repetition.Duration -ne [string]$spec.duration) { throw "scheduled task repetition duration mismatch: $($spec.name)" }
-            if ([bool]$trigger.Repetition.StopAtDurationEnd) { throw "scheduled task repetition stop policy mismatch: $($spec.name)" }
-        } elseif ([string]$trigger.Repetition.Interval -or [string]$trigger.Repetition.Duration) {
-            throw "scheduled task unexpected repetition: $($spec.name)"
+        if ([string]$task.Settings.MultipleInstances -ne [string]$spec.policy) { throw "scheduled task instance policy mismatch: $($spec.name)" }
+        for ($index = 0; $index -lt $triggers.Count; $index += 1) {
+            $trigger = $triggers[$index]
+            if (-not [bool]$trigger.Enabled) { throw "scheduled task trigger disabled: $($spec.name)" }
+            if ([string]$trigger.StartBoundary -notlike "*$($spec.starts[$index])*" -or [int]$trigger.DaysInterval -ne 1) {
+                throw "scheduled task trigger mismatch: $($spec.name)"
+            }
+            if ([string]$trigger.Repetition.Interval -or [string]$trigger.Repetition.Duration) {
+                throw "scheduled task unexpected repetition: $($spec.name)"
+            }
         }
     }
+    $productionTask = Get-ScheduledTask -TaskName $RunnerTaskName -ErrorAction Stop
+    if ([string]$productionTask.TaskPath -ne '\') { throw 'production task path mismatch' }
     $legacyTask = Get-ScheduledTask -TaskName $LegacyRunnerTaskName -ErrorAction SilentlyContinue
     if ($legacyTask -and $legacyTask.Settings.Enabled) {
         throw "legacy task remains enabled: $LegacyRunnerTaskName"
+    }
+    $deadmanTask = Get-ScheduledTask -TaskName $DeadmanTaskName -ErrorAction SilentlyContinue
+    if ($deadmanTask -and $deadmanTask.Settings.Enabled) {
+        throw "deadman task remains enabled: $DeadmanTaskName"
+    }
+}
+
+function Invoke-NewsGraspProductionEntryCanary {
+    <#
+    Lane A launcherが提供するentry-canary actionを一時的にProductionへ結び、
+    Task実起動のnonce/generation receiptをboundedに確認してからcanonical dispatchへ戻す。
+    receipt不一致・timeout・復元失敗はtransaction failureとして呼び出し元のrollbackへ渡す。
+    #>
+    param(
+        [Parameter(Mandatory = $true)][string] $TaskName,
+        [Parameter(Mandatory = $true)][string] $TaskLauncherPath,
+        [Parameter(Mandatory = $true)][string] $PythonwPath,
+        [Parameter(Mandatory = $true)][string] $WorkingDirectory,
+        [Parameter(Mandatory = $true)][string] $GenerationId,
+        [Parameter(Mandatory = $true)][string] $CanonicalArguments,
+        [int] $TimeoutSeconds = 45
+    )
+    if ([string]::IsNullOrWhiteSpace($GenerationId) -or $GenerationId -ceq 'pending-active-generation') { throw 'NEWS_GRASP_ENTRY_CANARY_GENERATION_MISSING' }
+    if (-not (Test-Path -LiteralPath $TaskLauncherPath -PathType Leaf)) { throw 'NEWS_GRASP_ENTRY_CANARY_LAUNCHER_MISSING' }
+    if ($TimeoutSeconds -lt 5 -or $TimeoutSeconds -gt 180) { throw 'NEWS_GRASP_ENTRY_CANARY_TIMEOUT_INVALID' }
+    $nonce = [Guid]::NewGuid().ToString('N')
+    $receiptPath = Join-Path $BackupDir ("entry-canary-{0}.json" -f $nonce)
+    $entryCanaryArguments = "`"$TaskLauncherPath`" task-origin-canary --canary-nonce $nonce --canary-generation `"$GenerationId`" --canary-receipt-path `"$receiptPath`""
+    $canonicalAction = New-ScheduledTaskAction `
+        -Execute $PythonwPath `
+        -Argument $CanonicalArguments `
+        -WorkingDirectory $WorkingDirectory
+    $entryCanaryAction = New-ScheduledTaskAction `
+        -Execute $PythonwPath `
+        -Argument $entryCanaryArguments `
+        -WorkingDirectory $WorkingDirectory
+    $canaryTrigger = New-ScheduledTaskTrigger -Once -At ((Get-Date).AddYears(10))
+    $receipt = $null
+    $productionTaskSnapshotXml = ''
+    $productionTaskSnapshot = $null
+    $productionTaskWasEnabled = $false
+    $instanceClosed = $false
+    try {
+        # Full XML is the transaction snapshot.  Trigger quiescence precedes the
+        # temporary action so the 06:00/06:40 Production triggers cannot fire.
+        $productionTaskSnapshot = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+        $productionTaskSnapshotXml = Export-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+        if ([string]::IsNullOrWhiteSpace($productionTaskSnapshotXml)) {
+            throw 'NEWS_GRASP_ENTRY_CANARY_TASK_SNAPSHOT_MISSING'
+        }
+        $productionTaskWasEnabled = [bool]$productionTaskSnapshot.Settings.Enabled
+        Disable-ScheduledTask -TaskName $TaskName -ErrorAction Stop | Out-Null
+        # Keep a valid far-future one-shot trigger while disabled; the full
+        # snapshot restores the canonical 06:00/06:40 triggers.
+        Set-ScheduledTask -TaskName $TaskName -Trigger $canaryTrigger -Action $entryCanaryAction -ErrorAction Stop | Out-Null
+        Enable-ScheduledTask -TaskName $TaskName -ErrorAction Stop | Out-Null
+        Start-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+        $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+        do {
+            if (Test-Path -LiteralPath $receiptPath -PathType Leaf) {
+                try {
+                    $receiptItem = Get-Item -LiteralPath $receiptPath -ErrorAction Stop
+                    if ($receiptItem.Length -le 65536) {
+                        $receipt = Get-Content -LiteralPath $receiptPath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+                    }
+                } catch { $receipt = $null }
+            }
+            $currentTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+            $currentTaskInfo = Get-ScheduledTaskInfo -TaskName $TaskName -ErrorAction Stop
+            $instanceClosed = [string]$currentTask.State -ne 'Running'
+            if (
+                $receipt -and
+                [string]$receipt.schemaVersion -in @('NEWS_GRASP_TASK_ORIGIN_CANARY_RECEIPT_V1', 'NEWS_GRASP_TASK_ORIGIN_CANARY_RESULT_V1') -and
+                [string]$receipt.nonce -ceq $nonce -and
+                [string]$receipt.generation -ceq $GenerationId -and
+                [string]$receipt.status -in @('committed', 'smoke_ok', 'ok', 'verified') -and
+                $instanceClosed -and
+                $currentTaskInfo.LastRunTime
+            ) { break }
+            Start-Sleep -Milliseconds 250
+        } while ((Get-Date) -lt $deadline)
+        if (-not $receipt -or [string]$receipt.nonce -cne $nonce -or [string]$receipt.generation -cne $GenerationId) {
+            throw 'NEWS_GRASP_ENTRY_CANARY_RECEIPT_TIMEOUT_OR_MISMATCH'
+        }
+        if ([string]$receipt.status -notin @('committed', 'smoke_ok', 'ok', 'verified')) {
+            throw 'NEWS_GRASP_ENTRY_CANARY_RECEIPT_NOT_GREEN'
+        }
+        if (-not $instanceClosed) {
+            throw 'NEWS_GRASP_ENTRY_CANARY_TASK_INSTANCE_STILL_RUNNING'
+        }
+        return [ordered]@{
+            status = 'green'
+            nonce = $nonce
+            generationId = $GenerationId
+            receiptPath = $receiptPath
+        }
+    } finally {
+        # Full task restoration is mandatory even when receipt validation fails.
+        # Stop-ScheduledTask and bounded Get-ScheduledTask Running polling must
+        # finish before Register-ScheduledTask restores the full XML snapshot.
+        Stop-NewsGraspTaskAndWait -TaskName $TaskName -TimeoutSeconds 15
+        if ($productionTaskSnapshotXml) {
+            Register-ScheduledTask -TaskName $TaskName -Xml $productionTaskSnapshotXml -Force -ErrorAction Stop | Out-Null
+            if ($productionTaskWasEnabled) {
+                Enable-ScheduledTask -TaskName $TaskName -ErrorAction Stop | Out-Null
+            } else {
+                Disable-ScheduledTask -TaskName $TaskName -ErrorAction Stop | Out-Null
+            }
+        } else {
+            Set-ScheduledTask -TaskName $TaskName -Action $canonicalAction -ErrorAction Stop | Out-Null
+        }
+        Assert-NewsGraspInstalledState
     }
 }
 
@@ -1200,8 +1353,24 @@ $stableTaskAuthority = [ordered]@{
     stableLauncherSha256 = [string]$sourceSnapshots['news-grasp-task-launcher.pyw'].Sha256
     bootstrapPath = (Join-Path $BinDir 'news-grasp-bootstrap.ps1')
     bootstrapSha256 = [string]$sourceSnapshots['news-grasp-bootstrap.ps1'].Sha256
-    action = @($TaskPythonwPath, (Join-Path $BinDir 'news-grasp-task-launcher.pyw'), 'runner', '--scheduled-task-name', $RunnerTaskName, '--high-cost-binding-path', $highCostBindingPath, '--high-cost-binding-sha256', $highCostBindingReceiptSha256)
+    # 旧consumerが読むaction listを維持しつつ、production Taskの実引数を
+    # clean-room dispatchへ固定する。
+    action = @($TaskPythonwPath, (Join-Path $BinDir 'news-grasp-task-launcher.pyw'), 'dispatch', '--schedule-id', 'news-grasp-daily-v1', '--intent', 'reconcile')
     trigger = @{ daily = '06:00' }
+    manifestAction = [ordered]@{
+        entryModule = 'tools.news_grasp_cleanroom_dispatch'
+        argv = @('dispatch', '--schedule-id', 'news-grasp-daily-v1', '--intent', 'reconcile')
+        workingDirectoryToken = '<RUNTIME_ROOT>'
+    }
+    triggers = @(
+        [ordered]@{ triggerId = 'scheduled-0600'; kind = 'daily'; localTime = '06:00:00'; timeZone = 'Asia/Tokyo' },
+        [ordered]@{ triggerId = 'audit-0640'; kind = 'daily'; localTime = '06:40:00'; timeZone = 'Asia/Tokyo' }
+    )
+    taskPath = '\'
+    multipleInstancesPolicy = 'Parallel'
+    workingDirectoryToken = '<RUNTIME_ROOT>'
+    highCostBindingPath = $highCostBindingPath
+    highCostBindingReceiptSha256 = $highCostBindingReceiptSha256
     repoArgumentCount = 0
 }
 $stableAuthorityBody = $stableTaskAuthority | ConvertTo-Json -Depth 6 -Compress
@@ -1272,22 +1441,34 @@ if (-not $SkipTaskRegistration) {
     $pythonw = $TaskPythonwPath
     if (-not (Test-Path -LiteralPath $pythonw)) { throw 'News-Grasp system Python312 pythonw.exe が見つかりません。' }
     # Scheduled Taskはstable installed launcherだけを指す。source worktreeのpathをtask定義へ封印しない。
-    $runnerArgs = "`"$taskLauncherPath`" runner --scheduled-task-name `"$RunnerTaskName`" --high-cost-binding-path `"$highCostBindingPath`" --high-cost-binding-sha256 $highCostBindingReceiptSha256"
-    $runnerAction = New-ScheduledTaskAction -Execute $pythonw -Argument $runnerArgs -WorkingDirectory $BinDir
+    $runnerArgs = "`"$taskLauncherPath`" dispatch --schedule-id news-grasp-daily-v1 --intent reconcile"
+    $runnerAction = New-ScheduledTaskAction -Execute $pythonw -Argument $runnerArgs -WorkingDirectory $productionRuntimePath
     $runnerTrigger = New-ScheduledTaskTrigger -Daily -At 6:00am
-    $runnerSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew
+    $auditTrigger = New-ScheduledTaskTrigger -Daily -At 6:40am
+    $runnerSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances Parallel
     $runnerRegistered = $false
     $runnerRegisterError = ''
     try {
-        Register-ScheduledTask -TaskName $RunnerTaskName -Action $runnerAction -Trigger $runnerTrigger -Settings $runnerSettings -Description 'News-Grasp daily runner bootstrap. Repairs live ops from repo before starting runner.' -Force -ErrorAction Stop | Out-Null
+        Register-ScheduledTask -TaskName $RunnerTaskName -Action $runnerAction -Trigger @($runnerTrigger, $auditTrigger) -Settings $runnerSettings -Description 'News-Grasp canonical clean-room dispatch.' -Force -ErrorAction Stop | Out-Null
         Enable-ScheduledTask -TaskName $RunnerTaskName -ErrorAction Stop | Out-Null
         $runnerRegistered = $true
         $scheduledTasks += [ordered]@{
             task_name = $RunnerTaskName
             execute = $pythonw
             arguments = $runnerArgs
-            trigger = 'daily 06:00'
-            status = 'registered_watcher_entrypoint'
+            workingDirectory = $productionRuntimePath
+            taskPath = '\'
+            multipleInstancesPolicy = 'Parallel'
+            triggers = @(
+                [ordered]@{ triggerId = 'scheduled-0600'; kind = 'daily'; localTime = '06:00:00'; timeZone = 'Asia/Tokyo' },
+                [ordered]@{ triggerId = 'audit-0640'; kind = 'daily'; localTime = '06:40:00'; timeZone = 'Asia/Tokyo' }
+            )
+            action = [ordered]@{
+                entryModule = 'tools.news_grasp_cleanroom_dispatch'
+                argv = @('dispatch', '--schedule-id', 'news-grasp-daily-v1', '--intent', 'reconcile')
+                workingDirectoryToken = '<RUNTIME_ROOT>'
+            }
+            status = 'registered_cleanroom_dispatch'
         }
     } catch {
         $runnerRegisterError = $_.Exception.Message
@@ -1295,7 +1476,13 @@ if (-not $SkipTaskRegistration) {
             task_name = $RunnerTaskName
             execute = $pythonw
             arguments = $runnerArgs
-            trigger = 'daily 06:00'
+            workingDirectory = $productionRuntimePath
+            taskPath = '\'
+            multipleInstancesPolicy = 'Parallel'
+            triggers = @(
+                [ordered]@{ triggerId = 'scheduled-0600'; kind = 'daily'; localTime = '06:00:00'; timeZone = 'Asia/Tokyo' },
+                [ordered]@{ triggerId = 'audit-0640'; kind = 'daily'; localTime = '06:40:00'; timeZone = 'Asia/Tokyo' }
+            )
             status = 'register_failed_bootstrap_required'
             error = $runnerRegisterError
         }
@@ -1312,7 +1499,12 @@ if (-not $SkipTaskRegistration) {
             task_name = $BootstrapTaskName
             execute = $pythonw
             arguments = $bootstrapArgs
-            trigger = 'daily 05:55'
+            workingDirectory = $BinDir
+            taskPath = '\'
+            multipleInstancesPolicy = 'IgnoreNew'
+            triggers = @(
+                [ordered]@{ triggerId = 'bootstrap-0555'; kind = 'daily'; localTime = '05:55:00'; timeZone = 'Asia/Tokyo' }
+            )
             status = 'registered_pre_run_self_repair'
         }
     } catch {
@@ -1323,39 +1515,58 @@ if (-not $SkipTaskRegistration) {
             task_name = $BootstrapTaskName
             execute = $pythonw
             arguments = $bootstrapArgs
-            trigger = 'daily 05:55'
+            workingDirectory = $BinDir
+            taskPath = '\'
+            multipleInstancesPolicy = 'IgnoreNew'
+            triggers = @(
+                [ordered]@{ triggerId = 'bootstrap-0555'; kind = 'daily'; localTime = '05:55:00'; timeZone = 'Asia/Tokyo' }
+            )
             status = 'create_failed'
             error = $_.Exception.Message
         }
     }
 
-    $deadmanArgs = "`"$deadmanLauncherPath`""
-    $deadmanAction = New-ScheduledTaskAction -Execute $pythonw -Argument $deadmanArgs -WorkingDirectory $BinDir
-    $deadmanTrigger = New-ScheduledTaskTrigger -Daily -At 6:40am
-    $deadmanRepetition = New-CimInstance -Namespace 'Root/Microsoft/Windows/TaskScheduler' -ClassName 'MSFT_TaskRepetitionPattern' -ClientOnly -Property @{
-        Interval = 'PT1H'
-        Duration = 'P1D'
-        StopAtDurationEnd = $false
+    # Production登録成功後だけ、分離Deadmanと旧Runnerを無効化する。
+    $deadmanTask = Get-ScheduledTask -TaskName $DeadmanTaskName -ErrorAction SilentlyContinue
+    if ($deadmanTask -and $deadmanTask.Settings.Enabled) {
+        Disable-ScheduledTask -TaskName $DeadmanTaskName -ErrorAction Stop | Out-Null
     }
-    $deadmanTrigger.Repetition = $deadmanRepetition
-    $deadmanSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew
-    Register-ScheduledTask -TaskName $DeadmanTaskName -Action $deadmanAction -Trigger $deadmanTrigger -Settings $deadmanSettings -Description 'News-Grasp hourly audit and bounded recovery control.' -Force -ErrorAction Stop | Out-Null
-    Enable-ScheduledTask -TaskName $DeadmanTaskName -ErrorAction Stop | Out-Null
+    $deadmanEnabledAfter = $false
+    if ($deadmanTask) {
+        $deadmanEnabledAfter = [bool](Get-ScheduledTask -TaskName $DeadmanTaskName -ErrorAction Stop).Settings.Enabled
+    }
     $scheduledTasks += [ordered]@{
         task_name = $DeadmanTaskName
-        execute = $pythonw
-        arguments = $deadmanArgs
-        trigger = 'daily 06:40 with hourly repetition'
-        status = 'registered_deadman_control'
+        status = if ($deadmanTask) { 'deadman_task_disabled' } else { 'deadman_task_absent' }
+        enabled = $deadmanEnabledAfter
     }
     $legacyTask = Get-ScheduledTask -TaskName $LegacyRunnerTaskName -ErrorAction SilentlyContinue
     if ($legacyTask -and $legacyTask.Settings.Enabled) {
         Disable-ScheduledTask -TaskName $LegacyRunnerTaskName -ErrorAction Stop | Out-Null
     }
+    $legacyEnabledAfter = $false
+    if ($legacyTask) {
+        $legacyEnabledAfter = [bool](Get-ScheduledTask -TaskName $LegacyRunnerTaskName -ErrorAction Stop).Settings.Enabled
+    }
     $scheduledTasks += [ordered]@{
         task_name = $LegacyRunnerTaskName
-        trigger = 'legacy daily 06:00'
         status = if ($legacyTask) { 'legacy_task_disabled' } else { 'legacy_task_absent' }
+        enabled = $legacyEnabledAfter
+    }
+    $entryCanary = Invoke-NewsGraspProductionEntryCanary `
+        -TaskName $RunnerTaskName `
+        -TaskLauncherPath $taskLauncherPath `
+        -PythonwPath $pythonw `
+        -WorkingDirectory $productionRuntimePath `
+        -GenerationId $activeGenerationId `
+        -CanonicalArguments $runnerArgs `
+        -TimeoutSeconds 45
+    $scheduledTasks += [ordered]@{
+        task_name = $RunnerTaskName
+        status = 'entry_canary_green'
+        nonce = [string]$entryCanary.nonce
+        generationId = [string]$entryCanary.generationId
+        receiptPath = [string]$entryCanary.receiptPath
     }
     Write-NewsGraspInstallJournal -Phase 'tasks_converged'
 }

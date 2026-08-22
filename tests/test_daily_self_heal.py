@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import subprocess
+from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
@@ -302,13 +303,67 @@ $IsE2EOrDryRun = $false
 """
 
 
-def _live_runner_readiness_ok() -> dict:
+def _canonical_live_runner_readiness_manifest() -> dict:
+    action = {
+        "entryModule": "tools.news_grasp_cleanroom_dispatch",
+        "argv": [
+            "dispatch",
+            "--schedule-id",
+            "news-grasp-daily-v1",
+            "--intent",
+            "reconcile",
+        ],
+        "workingDirectoryToken": "<RUNTIME_ROOT>",
+    }
+    triggers = [
+        {
+            "triggerId": "scheduled-0600",
+            "kind": "daily",
+            "localTime": "06:00:00",
+            "timeZone": "Asia/Tokyo",
+        },
+        {
+            "triggerId": "audit-0640",
+            "kind": "daily",
+            "localTime": "06:40:00",
+            "timeZone": "Asia/Tokyo",
+        },
+    ]
+    authority = {
+        "schemaVersion": "STABLE_TASK_AUTHORITY_V1",
+        "taskName": "News-Grasp Production",
+        "taskPath": "\\",
+        "multipleInstancesPolicy": "Parallel",
+        "action": deepcopy(action),
+        "triggers": deepcopy(triggers),
+        "workingDirectoryToken": "<RUNTIME_ROOT>",
+    }
+    authority["authoritySha256"] = hashlib.sha256(
+        json.dumps(authority, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    digest = "b" * 64
     return {
         "ok": True,
         "reason": "",
-        "repo_runner": {"exists": True, "sha256": "runner-sha"},
-        "live_runner": {"exists": True, "sha256": "runner-sha"},
-        "scheduled_task": {"ok": True, "task_name": "News-Grasp Runner", "targets_live_runner": True},
+        "repo_runner": {"exists": True, "sha256": digest},
+        "live_runner": {"exists": True, "sha256": digest},
+        "repo_watcher": {"exists": True, "sha256": digest},
+        "live_watcher": {"exists": True, "sha256": digest},
+        "repo_bootstrap": {"exists": True, "sha256": digest},
+        "live_bootstrap": {"exists": True, "sha256": digest},
+        "repo_task_launcher": {"exists": True, "sha256": digest},
+        "live_task_launcher": {"exists": True, "sha256": digest},
+        "scheduled_task": {
+            "ok": True,
+            "taskName": "News-Grasp Production",
+            "taskPath": "\\",
+            "multipleInstancesPolicy": "Parallel",
+            "action": deepcopy(action),
+            "triggers": deepcopy(triggers),
+            "stableAuthority": deepcopy(authority),
+            "authority": deepcopy(authority),
+        },
+        "stable_authority": deepcopy(authority),
         "next_run_readiness": {"ok": True, "status": "ready"},
         "last_scheduled_attempt": {
             "status": "failed",
@@ -317,6 +372,48 @@ def _live_runner_readiness_ok() -> dict:
         },
         "canary": {"ok": True, "status": "smoke_ok", "returncode": 0},
     }
+
+
+def _live_runner_readiness_ok() -> dict:
+    return _canonical_live_runner_readiness_manifest()
+
+
+def test_live_runner_readiness_manifest_ok_accepts_canonical_dispatch_and_rejects_legacy_runner() -> None:
+    """readiness consumer は canonical Production dispatch だけを Green にする。"""
+    consumer = getattr(dsh, "live_runner_readiness_manifest_ok", None)
+    assert callable(consumer), "live readiness consumer is missing"
+
+    canonical = _canonical_live_runner_readiness_manifest()
+    assert consumer(canonical) is True
+
+    legacy = deepcopy(canonical)
+    legacy_task = legacy["scheduled_task"]
+    legacy_task["taskName"] = "News-Grasp Runner"
+    legacy_task["multipleInstancesPolicy"] = "IgnoreNew"
+    legacy_task["action"] = {
+        "execute": r"C:\Python312\pythonw.exe",
+        "arguments": "news-grasp-task-launcher.pyw runner",
+    }
+    legacy_task["triggers"] = [
+        {
+            "triggerId": "scheduled-0600",
+            "kind": "daily",
+            "localTime": "06:00:00",
+            "timeZone": "Asia/Tokyo",
+        }
+    ]
+    legacy_authority = {
+        "schemaVersion": "STABLE_TASK_AUTHORITY_V1",
+        "taskName": "News-Grasp Runner",
+        "taskPath": "\\",
+        "multipleInstancesPolicy": "IgnoreNew",
+        "action": deepcopy(legacy_task["action"]),
+        "triggers": deepcopy(legacy_task["triggers"]),
+    }
+    legacy_task["stableAuthority"] = deepcopy(legacy_authority)
+    legacy_task["authority"] = deepcopy(legacy_authority)
+    legacy["stable_authority"] = deepcopy(legacy_authority)
+    assert consumer(legacy) is False
 
 
 def test_phase0_prioritizes_bin_drift_before_content_repair() -> None:
@@ -2694,11 +2791,30 @@ def test_verify_live_runner_readiness_accepts_pythonw_task_launcher_contract(
     live_bin = tmp_path / "bin"
     repo_ops.mkdir(parents=True)
     live_bin.mkdir(parents=True)
+    # Bind the readiness fixture to a deterministic current issue-date
+    # generation instead of the shared user's active pointer.
+    runtime_root = tmp_path / ".news-grasp-runtime"
+    runtime_root.mkdir(parents=True)
+    (runtime_root / "active-generation-v2.json").write_text(
+        json.dumps(
+            {
+                "schemaVersion": "NEWS_GRASP_ACTIVE_GENERATION_V2",
+                "generationId": "fixture-generation-20260822",
+                "issuedAtUtc": "2026-08-21T20:50:00+00:00",
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    # Keep pathlib's real class; only redirect this module's classmethod home
+    # lookup so the active-generation and Bootstrap receipt are deterministic.
+    monkeypatch.setattr(dsh.Path, "home", classmethod(lambda _cls: tmp_path))
     runner_with_interlock = _runner_with_pre_run_interlock_source()
     launcher_source = """
 parser.add_argument(
     "mode",
     choices=(
+        "dispatch",
         "runner",
         "bootstrap",
         "converge-runtime",
@@ -2706,6 +2822,8 @@ parser.add_argument(
         "scheduled-equivalent-nopublish",
     ),
 )
+parser.add_argument("--schedule-id")
+parser.add_argument("--intent")
 script = bin_dir / "news-grasp-bootstrap.ps1"
 extra = [
     "-Start", "-UseProductionRuntime", "-ScheduledTaskName", "News-Grasp Runner",
@@ -2726,8 +2844,163 @@ creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
         (live_bin / name).write_text(source, encoding="utf-8")
 
     live_launcher = live_bin / "news-grasp-task-launcher.pyw"
-    runner_action, bootstrap_action, live_binding, binding_receipt_sha256 = (
+    _legacy_runner_action, _legacy_bootstrap_action, live_binding, binding_receipt_sha256 = (
         _write_live_binding_authority_fixture(live_bin, live_launcher)
+    )
+    executable = str((live_bin / "pythonw.exe").resolve())
+    launcher_path = str(live_launcher.resolve())
+    binding_path = str(live_binding.resolve())
+    production_runtime = str((Path.home() / ".news-grasp-runtime" / "production-runtime").resolve())
+    canonical_runner_argv = [
+        executable,
+        launcher_path,
+        "dispatch",
+        "--schedule-id",
+        "news-grasp-daily-v1",
+        "--intent",
+        "reconcile",
+    ]
+    canonical_bootstrap_argv = [
+        executable,
+        launcher_path,
+        "bootstrap",
+        "--scheduled-task-name",
+        "News-Grasp Bootstrap",
+        "--high-cost-binding-path",
+        binding_path,
+        "--high-cost-binding-sha256",
+        binding_receipt_sha256,
+    ]
+
+    def action_details(action: list[str], *, working_directory: str = "") -> dict[str, object]:
+        arguments = subprocess.list2cmdline(action[1:])
+        return {
+            "action_summary": f"{action[0]} {arguments}",
+            "actions": [
+                {
+                    "execute": action[0],
+                    "arguments": arguments,
+                    "workingDirectory": working_directory,
+                }
+            ],
+        }
+
+    runner_action = action_details(canonical_runner_argv, working_directory=production_runtime)
+    bootstrap_action = action_details(canonical_bootstrap_argv)
+    cleanroom_triggers = [
+        {"enabled": True, "start_boundary": "2026-08-22T06:00:00"},
+        {"enabled": True, "start_boundary": "2026-08-22T06:40:00"},
+    ]
+    authority = {
+        "schemaVersion": "STABLE_TASK_AUTHORITY_V1",
+        "taskName": "News-Grasp Production",
+        "taskPath": "\\",
+        "multipleInstancesPolicy": "Parallel",
+        "action": canonical_runner_argv,
+        "manifestAction": {
+            "entryModule": "tools.news_grasp_cleanroom_dispatch",
+            "argv": [
+                "dispatch",
+                "--schedule-id",
+                "news-grasp-daily-v1",
+                "--intent",
+                "reconcile",
+            ],
+            "workingDirectoryToken": "<RUNTIME_ROOT>",
+        },
+        "triggers": [
+            {
+                "triggerId": "scheduled-0600",
+                "kind": "daily",
+                "localTime": "06:00:00",
+                "timeZone": "Asia/Tokyo",
+            },
+            {
+                "triggerId": "audit-0640",
+                "kind": "daily",
+                "localTime": "06:40:00",
+                "timeZone": "Asia/Tokyo",
+            },
+        ],
+        "workingDirectoryToken": "<RUNTIME_ROOT>",
+        "highCostBindingPath": binding_path,
+        "highCostBindingReceiptSha256": binding_receipt_sha256,
+        "generationId": "fixture-generation-20260822",
+        "generationTimestamp": "2026-08-22T05:50:00+09:00",
+    }
+    authority["authoritySha256"] = hashlib.sha256(
+        json.dumps(authority, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    authority_path = live_bin / "news-grasp-stable-task-authority-v1.json"
+    authority_path.write_text(
+        json.dumps(authority, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+    installed_manifest_sha256 = "c" * 64
+    (live_bin / "news-grasp-bootstrap-execution-receipt-v1.json").write_text(
+        json.dumps(
+            {
+                "schemaVersion": "NEWS_GRASP_BOOTSTRAP_EXECUTION_RECEIPT_V1",
+                "status": "succeeded",
+                "issueDate": "2026-08-22",
+                "observedAt": "2026-08-22T05:55:00+09:00",
+                "generationId": "fixture-generation-20260822",
+                "manifestSha256": installed_manifest_sha256,
+                "stableAuthoritySha": authority["authoritySha256"],
+                "stableAuthorityFileSha256": hashlib.sha256(
+                    authority_path.read_bytes()
+                ).hexdigest(),
+                "taskName": "News-Grasp Bootstrap",
+                "originWitness": {
+                    "taskName": "News-Grasp Bootstrap",
+                    "source": "scheduled-task",
+                    "mode": "bootstrap",
+                },
+                "childExitCode": 0,
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    runner_action.update(
+        {
+            "ok": True,
+            "enabled": True,
+            "task_name": "News-Grasp Production",
+            "task_path": "\\",
+            "multiple_instances_policy": "Parallel",
+            "state": "Ready",
+            "triggers": cleanroom_triggers,
+            "last_task_result": 0,
+            "next_run_time": "2026-08-22T06:00:00",
+            "number_of_missed_runs": 0,
+        }
+    )
+    bootstrap_action.update(
+        {
+            "ok": True,
+            "enabled": True,
+            "task_name": "News-Grasp Bootstrap",
+            "task_path": "\\",
+            "multiple_instances_policy": "IgnoreNew",
+            "state": "Ready",
+            "triggers": [{"enabled": True, "start_boundary": "2026-08-22T05:55:00"}],
+            "last_task_result": bootstrap_last_result,
+            "next_run_time": "2026-08-22T05:55:00",
+            "last_run_time": "2026-08-22T05:55:00+09:00",
+            "lastRunTime": "2026-08-22T05:55:00+09:00",
+            "issue_date": "2026-08-22",
+            "issueDate": "2026-08-22",
+            "generation_id": "fixture-generation-20260822",
+            "generationId": "fixture-generation-20260822",
+            "installed_generation_id": "fixture-generation-20260822",
+            "installedGenerationId": "fixture-generation-20260822",
+            "installed_generation_timestamp": "2026-08-22T05:50:00+09:00",
+            "installedGenerationTimestamp": "2026-08-22T05:50:00+09:00",
+            "installed_manifest_sha256": installed_manifest_sha256,
+            "installedManifestSha256": installed_manifest_sha256,
+            "number_of_missed_runs": 0,
+        }
     )
     monkeypatch.setattr(
         dsh,
@@ -2751,17 +3024,11 @@ creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
     )
 
     def fake_task_details(**kwargs):
-        mode = "bootstrap" if kwargs.get("task_name") == "News-Grasp Bootstrap" else "runner"
-        start = "05:55:00" if mode == "bootstrap" else "06:00:00"
-        return {
-            "ok": True,
-            "state": "Ready",
-            **(bootstrap_action if mode == "bootstrap" else runner_action),
-            "triggers": [{"enabled": True, "start_boundary": f"2026-06-20T{start}"}],
-            "last_task_result": bootstrap_last_result if mode == "bootstrap" else 0,
-            "next_run_time": f"2026-06-21T{start}",
-            "number_of_missed_runs": 0,
-        }
+        return dict(
+            bootstrap_action
+            if kwargs.get("task_name") == "News-Grasp Bootstrap"
+            else runner_action
+        )
 
     monkeypatch.setattr(dsh, "_scheduled_task_details", fake_task_details)
     captured_canary: dict[str, object] = {}
@@ -2778,19 +3045,17 @@ creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
         live_watcher_path=live_bin / "watch-news-grasp-runner.ps1",
         live_bootstrap_path=live_bin / "news-grasp-bootstrap.ps1",
         live_task_launcher_path=live_launcher,
-        date="2026-06-20",
+        date="2026-08-22",
         run_canary=True,
     )
 
     assert result["ok"] is expected_ok
     assert result["reason"] == expected_reason
     assert result["scheduled_task"]["definition_ok"] is True
-    assert result["scheduled_task"]["bootstrap_last_observation_ok"] is (
-        bootstrap_last_result == 0
-    )
+    assert result["scheduled_task"]["bootstrap_last_task_result"] == bootstrap_last_result
     assert result["scheduled_task"]["targets_live_task_launcher"] is True
-    assert result["scheduled_task"]["bootstrap_targets_live_task_launcher"] is True
-    assert result["scheduled_task"]["bootstrap_action_is_smoke_test"] is True
+    assert result["scheduled_task"]["task_launcher_mode_ok"] is True
+    assert result["scheduled_task"]["bootstrap_definition_ok"] is True
     assert result["scheduled_task"]["high_cost_binding_action_ok"] is True
     if expected_ok:
         assert captured_canary["high_cost_binding_path"] == live_binding
@@ -2810,6 +3075,7 @@ def test_task_launcher_contract_accepts_current_registered_multimode_launcher() 
 
     assert result["ok"] is True
     assert set(result["modes"]) >= {
+        "dispatch",
         "runner",
         "bootstrap",
         "converge-runtime",
@@ -2846,6 +3112,35 @@ creationflags = subprocess.CREATE_NO_WINDOW
     assert result["ok"] is False
     assert result["reason"] == "task_launcher_contract_invalid"
     assert "bootstrap" in result["missing_modes"]
+
+
+def test_task_launcher_contract_rejects_mode_decoy_without_dispatch(tmp_path: Path) -> None:
+    """canonical production task は launcher の dispatch mode を必須にする。"""
+    launcher = tmp_path / "news-grasp-task-launcher.pyw"
+    launcher.write_text(
+        '''
+parser.add_argument(
+    "mode",
+    choices=("runner", "bootstrap", "converge-runtime", "maintain-runtime", "scheduled-equivalent-nopublish"),
+)
+script = bin_dir / "news-grasp-bootstrap.ps1"
+extra = [
+    "-Start", "-UseProductionRuntime", "-ScheduledTaskName", "News-Grasp Runner",
+] if args.mode == "runner" else [
+    "-Start", "-UseProductionRuntime", "-ScheduledTaskName", "News-Grasp Bootstrap",
+    "-SmokeTest", "-SkipSourceSync", "-PollSeconds", "1", "-TimeoutMinutes", "2",
+    "-StateFile", "ng-smoke-state.json", "-LogDir", "ng-smoke-logs",
+]
+creationflags = subprocess.CREATE_NO_WINDOW
+''',
+        encoding="utf-8",
+    )
+
+    result = dsh._task_launcher_source_contract(launcher)
+
+    assert result["ok"] is False
+    assert result["reason"] == "task_launcher_contract_invalid"
+    assert "dispatch" in result["missing_modes"]
 
 
 def test_verify_live_runner_readiness_rejects_legacy_tombstone_as_canonical_success(

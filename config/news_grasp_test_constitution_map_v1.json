@@ -1,8 +1,8 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 2805,
-  "collectedNodeSetSha256": "d83999462dc07a1995d50ef338c1c1d7bc147c447bf8a8c525976cf5f9aa0520",
+  "collectedNodeCount": 2843,
+  "collectedNodeSetSha256": "0a302ce39d55444ae75b000b4b1f634f7dbe5ad8807c07da4c5bcb814a09ff9f",
   "files": [
     {
       "path": "tests/test_20260813_control_plane_repair.py",
@@ -506,6 +506,25 @@
       ]
     },
     {
+      "path": "tests/test_cleanroom_scope_amendment_contract.py",
+      "sha256": "e0c42e398a913f8a914ff33529bffa1b96908c658083321494b756b44cacded7",
+      "nodeCount": 8,
+      "nodeIds": [
+        "tests/test_cleanroom_scope_amendment_contract.py::test_scope_amendment_catalog_hash_matches_config_bytes",
+        "tests/test_cleanroom_scope_amendment_contract.py::test_scope_amendment_completion_denominator_preserves_original_todo_count",
+        "tests/test_cleanroom_scope_amendment_contract.py::test_scope_amendment_does_not_put_any_no20_todo_in_out_of_scope",
+        "tests/test_cleanroom_scope_amendment_contract.py::test_scope_amendment_out_of_scope_requirement_ids_are_exact_and_ordered",
+        "tests/test_cleanroom_scope_amendment_contract.py::test_scope_amendment_out_of_scope_todo_ids_are_exact_and_ordered",
+        "tests/test_cleanroom_scope_amendment_contract.py::test_scope_amendment_preserves_existing_write_policy",
+        "tests/test_cleanroom_scope_amendment_contract.py::test_scope_amendment_retains_b_tasks_without_completed_contribution",
+        "tests/test_cleanroom_scope_amendment_contract.py::test_scope_amendment_separates_natural_l9_and_completed_count"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
       "path": "tests/test_codex_append_session_urls_hook.py",
       "sha256": "f01958e1e46d20d427c256a292c4668a460ce7837eea022b4fd0408747976b04",
       "nodeCount": 4,
@@ -714,8 +733,8 @@
     },
     {
       "path": "tests/test_daily_self_heal.py",
-      "sha256": "e8c5eee5d2c4ed12492fb31d7241687cb765646e54c15c5faabaab050adef06d",
-      "nodeCount": 111,
+      "sha256": "47fe128a0f765f05bf5cb97e83b5f7a66b924bad664bf2ff39416c11138a8c79",
+      "nodeCount": 113,
       "nodeIds": [
         "tests/test_daily_self_heal.py::test_authenticode_identity_uses_tracked_powershell_helper",
         "tests/test_daily_self_heal.py::test_authenticode_timeout_is_typed_failure",
@@ -738,6 +757,7 @@
         "tests/test_daily_self_heal.py::test_live_high_cost_binding_authority_fails_closed[recovery_mismatch-high_cost_binding_authority_invalid]",
         "tests/test_daily_self_heal.py::test_live_high_cost_binding_authority_rejects_coordinated_recovery_rewrite",
         "tests/test_daily_self_heal.py::test_live_runner_canary_rejects_command_not_found_stderr",
+        "tests/test_daily_self_heal.py::test_live_runner_readiness_manifest_ok_accepts_canonical_dispatch_and_rejects_legacy_runner",
         "tests/test_daily_self_heal.py::test_live_startup_canary_propagates_explicit_high_cost_binding",
         "tests/test_daily_self_heal.py::test_live_startup_canary_rejects_ops_provenance_drift_before_launch",
         "tests/test_daily_self_heal.py::test_live_startup_canary_rejects_partial_high_cost_binding_before_launch",
@@ -761,6 +781,7 @@
         "tests/test_daily_self_heal.py::test_sec_red_full_forged_previous_authority_cannot_bypass_canonical_chain",
         "tests/test_daily_self_heal.py::test_task_launcher_contract_accepts_current_registered_multimode_launcher",
         "tests/test_daily_self_heal.py::test_task_launcher_contract_rejects_mode_decoy_without_bootstrap",
+        "tests/test_daily_self_heal.py::test_task_launcher_contract_rejects_mode_decoy_without_dispatch",
         "tests/test_daily_self_heal.py::test_task_launcher_contract_requires_clean_runtime_on_both_scheduled_modes",
         "tests/test_daily_self_heal.py::test_trusted_ops_generation_allows_ignored_runtime_artifacts",
         "tests/test_daily_self_heal.py::test_trusted_ops_generation_rejects_tracked_dirty_with_runtime_artifacts",
@@ -2094,6 +2115,27 @@
       ]
     },
     {
+      "path": "tests/test_news_grasp_cleanroom_operational_cutover.py",
+      "sha256": "f93a8e900f6414bc1a807f8ac6787a4409bd88b1ac2d1739facb64b61efc582b",
+      "nodeCount": 10,
+      "nodeIds": [
+        "tests/test_news_grasp_cleanroom_operational_cutover.py::test_dispatch_commits_child_outcome_once_with_slot_writer_fence_and_no_window_seam",
+        "tests/test_news_grasp_cleanroom_operational_cutover.py::test_dispatch_keeps_attached_not_due_and_terminal_noop_childless",
+        "tests/test_news_grasp_cleanroom_operational_cutover.py::test_dispatch_rejects_unknown_schedule_or_intent_and_binds_runtime_manifest",
+        "tests/test_news_grasp_cleanroom_operational_cutover.py::test_dispatch_routes_acquired_scheduled_and_audit_exactly_once",
+        "tests/test_news_grasp_cleanroom_operational_cutover.py::test_dispatch_task_context_validator_rejects_before_side_effects_and_default_guard_is_read_only",
+        "tests/test_news_grasp_cleanroom_operational_cutover.py::test_installer_uses_single_canonical_dispatch_task_and_disables_legacy_controls",
+        "tests/test_news_grasp_cleanroom_operational_cutover.py::test_launcher_exposes_dispatch_api_and_cli_surface",
+        "tests/test_news_grasp_cleanroom_operational_cutover.py::test_live_readiness_accepts_cleanroom_dispatch_and_rejects_legacy_runner_only",
+        "tests/test_news_grasp_cleanroom_operational_cutover.py::test_release_live_task_parity_accepts_canonical_and_rejects_all_drift_classes",
+        "tests/test_news_grasp_cleanroom_operational_cutover.py::test_release_live_task_parity_rejects_caller_self_report_boolean"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
       "path": "tests/test_news_grasp_cleanroom_s0_contract.py",
       "sha256": "36b7be69a45dea4e7e6a0583d0c24fc67c95d7ee0bc890fbfb1cbf36ec0acb83",
       "nodeCount": 3,
@@ -2266,6 +2308,56 @@
       ]
     },
     {
+      "path": "tests/test_news_grasp_cleanroom_value_review.py",
+      "sha256": "970779a419767fc6ea24fbb130cf048023eb9d28e997813c493e6b631ea0b4f2",
+      "nodeCount": 5,
+      "nodeIds": [
+        "tests/test_news_grasp_cleanroom_value_review.py::test_r1_task_origin_witness_rejects_before_controller_wal_ledger_child",
+        "tests/test_news_grasp_cleanroom_value_review.py::test_r3_task_origin_canary_is_real_task_start_and_fail_closed_unverified",
+        "tests/test_news_grasp_cleanroom_value_review.py::test_r4_missing_or_invalid_stable_authority_has_zero_runtime_effects",
+        "tests/test_news_grasp_cleanroom_value_review.py::test_r5_task_pythonw_path_is_exact_binding_value_without_normalization",
+        "tests/test_news_grasp_cleanroom_value_review.py::test_r8_startup_canary_is_bounded_and_run_canary_false_is_not_green"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
+      "path": "tests/test_news_grasp_cleanroom_value_review_followup.py",
+      "sha256": "24c3bfe03d0015c4ae403c654774eb26f70f10ef9d9c2d12b5598b309093a578",
+      "nodeCount": 4,
+      "nodeIds": [
+        "tests/test_news_grasp_cleanroom_value_review_followup.py::test_r10_cleanroom_binding_requires_production_bootstrap_authority_execute_match",
+        "tests/test_news_grasp_cleanroom_value_review_followup.py::test_r11_bootstrap_execution_receipt_is_atomic_authoritative_and_not_pointer_only",
+        "tests/test_news_grasp_cleanroom_value_review_followup.py::test_r12_temporary_installer_canary_quiesces_triggers_waits_closed_and_asserts_rollback",
+        "tests/test_news_grasp_cleanroom_value_review_followup.py::test_r9_task_origin_payload_binds_full_system32_signature_and_schedule_ancestry"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
+      "path": "tests/test_news_grasp_cleanroom_value_review_lane_b.py",
+      "sha256": "efbb33c8ae69ed445dfa63fddaf745ada4e569ec237b12fa465bed375c6b27c9",
+      "nodeCount": 8,
+      "nodeIds": [
+        "tests/test_news_grasp_cleanroom_value_review_lane_b.py::test_cleanroom_child_drains_bounded_pipes_and_renews_during_large_output",
+        "tests/test_news_grasp_cleanroom_value_review_lane_b.py::test_installer_entry_canary_never_uses_empty_trigger_and_quiesces_before_start",
+        "tests/test_news_grasp_cleanroom_value_review_lane_b.py::test_installer_entry_canary_stops_running_instance_before_snapshot_restore",
+        "tests/test_news_grasp_cleanroom_value_review_lane_b.py::test_installer_rollbacks_quiesce_tasks_before_files_then_restore_xml",
+        "tests/test_news_grasp_cleanroom_value_review_lane_b.py::test_r2_readiness_completion_calls_release_parity_on_exact_live_topology",
+        "tests/test_news_grasp_cleanroom_value_review_lane_b.py::test_r6_bootstrap_last_run_is_issue_date_0555_fresh_and_generation_bound[bootstrap-generation-is-bound]",
+        "tests/test_news_grasp_cleanroom_value_review_lane_b.py::test_r6_bootstrap_last_run_is_issue_date_0555_fresh_and_generation_bound[bootstrap-last-run-time-is-current-issue-date-0555]",
+        "tests/test_news_grasp_cleanroom_value_review_lane_b.py::test_r7_ledger_renew_slot_is_fenced_and_launcher_renews_periodically"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
       "path": "tests/test_news_grasp_completion_guard.py",
       "sha256": "dcbbf8d77e82d810977bdc3d180d1f60aef05855cf6636ca7b62b53d17e92c3d",
       "nodeCount": 12,
@@ -2411,7 +2503,7 @@
     },
     {
       "path": "tests/test_news_grasp_daily_control.py",
-      "sha256": "9da824fe0142fff04310352963067812780dff119f33d411c05c3a4564441c7e",
+      "sha256": "9b07eeec4d77850e91fa63b4c3f4e32f0077385df571935b231c08e8eb1698f1",
       "nodeCount": 37,
       "nodeIds": [
         "tests/test_news_grasp_daily_control.py::test_audit_controller_failure_writes_owned_major_incident",
@@ -3801,8 +3893,8 @@
     },
     {
       "path": "tests/test_runner_convergence_contract.py",
-      "sha256": "d6108bf4a0673bb21f37f774b110ec947b9969a9fbadd07bb931fd39f377c705",
-      "nodeCount": 206,
+      "sha256": "26cf61ff212accdd5c52df06f74902315816cbd20e27d8e921825b76e8e1cea6",
+      "nodeCount": 207,
       "nodeIds": [
         "tests/test_runner_convergence_contract.py::test_atomic_install_failure_preserves_old_destination",
         "tests/test_runner_convergence_contract.py::test_atomic_install_replaces_hardlink_entry_without_mutating_sibling",
@@ -3811,6 +3903,7 @@
         "tests/test_runner_convergence_contract.py::test_autonomous_completion_policy_call_sites_are_covered_by_no_publish_contract",
         "tests/test_runner_convergence_contract.py::test_autonomous_gate_classifies_actual_gate_capture",
         "tests/test_runner_convergence_contract.py::test_blocked_external_readiness_uses_boundary_only",
+        "tests/test_runner_convergence_contract.py::test_bootstrap_accepts_only_canonical_dispatch_context_for_production_task",
         "tests/test_runner_convergence_contract.py::test_bootstrap_archives_stale_same_day_startup_canary_before_preflight",
         "tests/test_runner_convergence_contract.py::test_bootstrap_runtime_convergence_failure_is_preserved_as_typed_evidence",
         "tests/test_runner_convergence_contract.py::test_bootstrap_smoke_uses_isolated_state_and_backed_up_self_repair",
@@ -3884,7 +3977,7 @@
         "tests/test_runner_convergence_contract.py::test_nopublish_parent_authority_input_survives_script_scope_projection_reset",
         "tests/test_runner_convergence_contract.py::test_ops_installer_allows_clean_evidence_generation_transition",
         "tests/test_runner_convergence_contract.py::test_ops_installer_creates_backup_manifest_and_rollback_hint_before_live_overwrite",
-        "tests/test_runner_convergence_contract.py::test_ops_installer_disables_legacy_task_after_canonical_convergence",
+        "tests/test_runner_convergence_contract.py::test_ops_installer_disables_legacy_tasks_after_canonical_convergence",
         "tests/test_runner_convergence_contract.py::test_ops_installer_initializes_journal_authority_before_mutation_and_trap",
         "tests/test_runner_convergence_contract.py::test_ops_installer_preflights_shared_broker_generation_before_mutation",
         "tests/test_runner_convergence_contract.py::test_ops_installer_preserves_pre_mutation_error_without_rollback_masking",
