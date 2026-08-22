@@ -32,6 +32,14 @@ ALLOWED_RUN_INTENTS = {
     "StartupCanary",
 }
 ISOLATED_RUNNER_STATE_INTENTS = {"StartupCanary"}
+BOOTSTRAP_REFRESHABLE_OBSERVATION_REASONS = {
+    "execution_receipt_missing",
+    "execution_receipt_mismatch",
+    "execution_receipt_stale",
+    "bootstrap_last_run_issue_date_stale",
+    "bootstrap_generation_timestamp_stale",
+    "bootstrap_task_last_result_not_ok",
+}
 MANAGED_OPS_FILES = (
     "news-grasp-task-launcher.pyw",
     "news-grasp-bootstrap.ps1",
@@ -301,15 +309,32 @@ def verify_control_plane(
         readiness_reason = str(runner_readiness.get("reason") or "")
         task_definition_ok = result["scheduledTask"].get("definition_ok") is True
         historical_observation_only = bool(
-            task_definition_ok
+            run_intent == "ScheduledRecoveryFull"
+            and task_definition_ok
             and readiness_reason == "bootstrap_task_last_result_not_ok"
+        )
+        bootstrap_refresh_observation = bool(
+            run_intent == "StartupCanary"
+            and task_definition_ok
+            and readiness_reason in BOOTSTRAP_REFRESHABLE_OBSERVATION_REASONS
         )
         recovery_missed_run = bool(
             run_intent == "ScheduledRecoveryFull"
             and task_definition_ok
             and readiness_reason == "scheduled_task_missed_runs"
         )
-        if recovery_missed_run:
+        if bootstrap_refresh_observation:
+            result["bootstrapRefreshObservation"] = {
+                "reason": readiness_reason,
+                "preserved": True,
+            }
+            result["nextRunReadiness"] = {
+                **result["nextRunReadiness"],
+                "ok": True,
+                "status": "ready_for_current_bootstrap_canary",
+                "historicalObservationPreserved": True,
+            }
+        elif recovery_missed_run:
             result["recoveryAdmissionObservation"] = {
                 "reason": readiness_reason,
                 "preserved": True,

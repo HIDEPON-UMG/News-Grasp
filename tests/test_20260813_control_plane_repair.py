@@ -56,10 +56,10 @@ def _ready_task_details(*, task_name: str, live_launcher: Path) -> dict:
     }
 
 
-def test_ng813_canary_uses_artifact_root_when_ops_root_is_different(
+def test_ng813_retired_runner_launcher_does_not_invoke_canary(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """primary: startup canary は成果物 root を検証し、ops 正本を成果物扱いしない。"""
+    """adversarial: 廃止済みrunner launcherはcanaryで正当化しない。"""
     artifact_root = tmp_path / "artifact"
     ops_root = tmp_path / "ops"
     live_bin = tmp_path / "live"
@@ -112,9 +112,9 @@ def test_ng813_canary_uses_artifact_root_when_ops_root_is_different(
         live_task_launcher_path=live_launcher,
     )
 
-    assert result["ok"] is True
-    assert observed["repo_root"] == artifact_root.resolve()
-    assert observed["ops_repo_root"] == ops_root.resolve()
+    assert result["ok"] is False
+    assert result["reason"] == "scheduled_task_action_not_production_start"
+    assert observed == {}
 
 
 def test_ng813_canary_keeps_artifacts_in_artifact_root_and_sources_runtime_from_ops_root(
@@ -786,6 +786,76 @@ def test_ng813_four_root_preflight_honors_explicit_isolated_runner_state(
 
     assert result["ok"] is True
     assert result["runnerState"]["path"] == str(isolated_state)
+
+
+@pytest.mark.parametrize(
+    ("run_intent", "expected_ok"),
+    [
+        ("StartupCanary", True),
+        ("ScheduledProduction", False),
+        ("ScheduledEquivalentNoPublish", False),
+    ],
+)
+@pytest.mark.parametrize(
+    "observation_reason",
+    [
+        "execution_receipt_missing",
+        "execution_receipt_mismatch",
+        "execution_receipt_stale",
+        "bootstrap_last_run_issue_date_stale",
+        "bootstrap_generation_timestamp_stale",
+        "bootstrap_task_last_result_not_ok",
+    ],
+)
+def test_ng813_only_startup_canary_refreshes_stale_bootstrap_observation(
+    tmp_path: Path,
+    run_intent: str,
+    expected_ok: bool,
+    observation_reason: str,
+) -> None:
+    """recovery: 新generationのreceipt再生成は隔離canaryだけに許可する。"""
+    control_plane = _load_control_plane_module()
+    artifact = tmp_path / "artifact"
+    ops = tmp_path / "ops"
+    runtime = tmp_path / "runtime"
+    live = tmp_path / "live"
+    artifact.mkdir()
+    _write_managed_surface(ops)
+    _write_managed_surface(runtime)
+    _copy_to_live(ops, live)
+    isolated_state = live / "ng-smoke-state.json"
+    isolated_state.write_text(
+        json.dumps({"date": "2026-08-13", "status": "smoke_ok"}),
+        encoding="utf-8",
+    )
+    readiness = _control_readiness(ok=False, reason=observation_reason)
+    readiness["scheduled_task"]["definition_ok"] = True
+
+    result = control_plane.verify_control_plane(
+        artifact_root=artifact,
+        ops_root=ops,
+        production_runtime_root=runtime,
+        live_bin_root=live,
+        issue_date="2026-08-13",
+        run_intent=run_intent,
+        runner_readiness=readiness,
+        runner_state_path=isolated_state if run_intent == "StartupCanary" else None,
+        allow_isolated_high_cost_fixture=True,
+    )
+
+    assert result["ok"] is expected_ok
+    if expected_ok:
+        assert result["bootstrapRefreshObservation"]["reason"] == observation_reason
+        assert result["nextRunReadiness"]["status"] == (
+            "ready_for_current_bootstrap_canary"
+        )
+    else:
+        expected_reason = (
+            "SCHEDULED_TASK_ACTION_DRIFT"
+            if observation_reason.startswith("bootstrap_task_")
+            else "NEXT_RUN_READINESS_DRIFT"
+        )
+        assert result["reasonCode"] == expected_reason
 
 
 def test_ng813_bootstrap_preflight_uses_the_selected_isolated_state_path() -> None:
