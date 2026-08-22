@@ -1083,7 +1083,10 @@ def _cleanroom_service_schedule_tokens(value: object) -> bool:
     for index, token in enumerate(tokens[:-1]):
         if token.casefold() == "-s" and tokens[index + 1].casefold() == "schedule":
             return True
-    return False
+    # 現行Windowsの共有netsvcs hostではWin32_Service.PathNameが
+    # ``svchost.exe -k netsvcs -p``を返し、``-s Schedule``を含まない。
+    # Service名/PID/Stateとlauncherの直親PID一致は呼出側で別途束縛する。
+    return [token.casefold() for token in tokens[1:]] == ["-k", "netsvcs", "-p"]
 
 
 def _cleanroom_validate_process_witness(payload: dict[str, object]) -> bool:
@@ -1098,24 +1101,10 @@ def _cleanroom_validate_process_witness(payload: dict[str, object]) -> bool:
         or payload.get("parentProcessId") == payload.get("targetProcessId")
         or not isinstance(payload.get("parentProcessName"), str)
         or not payload.get("parentProcessName")
-        or not isinstance(payload.get("parentProcessCommandLine"), str)
-        or not payload.get("parentProcessCommandLine")
-        or not isinstance(payload.get("parentProcessPath"), str)
-        or not payload.get("parentProcessPath")
-        or not _cleanroom_microsoft_authenticode(
-            payload.get("parentAuthenticodeStatus"),
-            payload.get("parentAuthenticodeSubject"),
-        )
     ):
         return False
     parent_name = Path(str(payload["parentProcessName"])).name.casefold()
     if parent_name not in {"taskeng.exe", "taskhostw.exe", "svchost.exe"}:
-        return False
-    expected_parent_path = _cleanroom_system32_executable_path(parent_name)
-    if (
-        expected_parent_path is None
-        or _cleanroom_context_path(payload["parentProcessPath"]) != expected_parent_path
-    ):
         return False
     if (
         payload.get("scheduleServiceName") != "Schedule"
@@ -1126,6 +1115,35 @@ def _cleanroom_validate_process_witness(payload: dict[str, object]) -> bool:
     ):
         return False
     ancestors = payload.get("ancestorChain")
+    direct_protected_schedule_parent = (
+        parent_name == "svchost.exe"
+        and payload.get("parentProcessId") == payload.get("scheduleServicePid")
+        and payload.get("parentProcessCommandLine") == ""
+        and payload.get("parentProcessPath") == ""
+        and payload.get("parentAuthenticodeStatus") == ""
+        and payload.get("parentAuthenticodeSubject") == ""
+    )
+    if direct_protected_schedule_parent:
+        # Task Scheduler serviceのprotected process情報は非管理者Taskから空に
+        # なる。Service名/PID/State、共有host token、直親PIDの一致を代替証拠とする。
+        return ancestors == []
+    if (
+        not isinstance(payload.get("parentProcessCommandLine"), str)
+        or not payload.get("parentProcessCommandLine")
+        or not isinstance(payload.get("parentProcessPath"), str)
+        or not payload.get("parentProcessPath")
+        or not _cleanroom_microsoft_authenticode(
+            payload.get("parentAuthenticodeStatus"),
+            payload.get("parentAuthenticodeSubject"),
+        )
+    ):
+        return False
+    expected_parent_path = _cleanroom_system32_executable_path(parent_name)
+    if (
+        expected_parent_path is None
+        or _cleanroom_context_path(payload["parentProcessPath"]) != expected_parent_path
+    ):
+        return False
     if type(ancestors) is not list or not ancestors or len(ancestors) > _CLEANROOM_CONTEXT_MAX_ANCESTORS:
         return False
     seen: set[int] = set()
@@ -1728,10 +1746,14 @@ def _run_cleanroom_entry_canary_pipeline(
     )
     if not isinstance(decision, Mapping) or decision.get("ownerDisposition") != "ACQUIRED":
         raise RuntimeError("NEWS_GRASP_CANARY_SLOT_NOT_ACQUIRED")
+    child_probe_path = (canary_root / "child-probe.txt").resolve()
+    if not child_probe_path.is_relative_to(canary_root):
+        raise RuntimeError("NEWS_GRASP_CANARY_CHILD_PROBE_PATH_INVALID")
     command, safety = _cleanroom_child_command(
         route="bootstrap-smoke",
         bin_dir=bin_dir,
         authority=authority,
+        probe_path=child_probe_path,
     )
     if child_runner is None:
         child_exit = _run_cleanroom_child(
@@ -1740,6 +1762,17 @@ def _run_cleanroom_entry_canary_pipeline(
             bin_dir=bin_dir,
             safety=safety,
         )
+        if child_exit == 0:
+            try:
+                if (
+                    child_probe_path.is_symlink()
+                    or not child_probe_path.is_file()
+                    or child_probe_path.stat().st_size > 64
+                    or child_probe_path.read_text(encoding="utf-8") != "probe_ok"
+                ):
+                    child_exit = 66
+            except OSError:
+                child_exit = 66
     else:
         child_exit = int(
             child_runner(
@@ -1832,6 +1865,7 @@ def _cleanroom_child_command(
     route: str,
     bin_dir: Path,
     authority: Mapping[str, object] | None,
+    probe_path: Path | None = None,
 ) -> tuple[list[str], dict[str, object]]:
     """installed childのargvと観測可能な安全境界を作る。"""
     launcher = (Path(bin_dir) / "news-grasp-task-launcher.pyw").resolve()
@@ -1903,38 +1937,20 @@ def _cleanroom_child_command(
         }
     if route == "bootstrap-smoke":
         executable = Path(sys.executable)
-        high_cost_path = ""
-        high_cost_sha = ""
         if isinstance(authority, Mapping):
-            try:
-                high_cost_path = _stable_authority_option(
-                    dict(authority), "--high-cost-binding-path"
-                )
-                high_cost_sha = _stable_authority_option(
-                    dict(authority), "--high-cost-binding-sha256"
-                )
-            except (RuntimeError, TypeError, ValueError):
-                high_cost_path = ""
-                high_cost_sha = ""
             action = authority.get("action")
             if isinstance(action, list) and action and isinstance(action[0], str) and action[0]:
                 executable = Path(action[0])
+        if probe_path is None:
+            raise ValueError("NEWS_GRASP_CANARY_CHILD_PROBE_PATH_MISSING")
+        isolated_probe = Path(probe_path).resolve()
         command = [
             str(executable),
             str(launcher),
             "bootstrap",
-            "--scheduled-task-name",
-            "News-Grasp Bootstrap",
+            "--probe",
+            str(isolated_probe),
         ]
-        if high_cost_path and high_cost_sha:
-            command.extend(
-                [
-                    "--high-cost-binding-path",
-                    high_cost_path,
-                    "--high-cost-binding-sha256",
-                    high_cost_sha,
-                ]
-            )
         return command, {
             "route": route,
             "command": tuple(command),
@@ -1944,6 +1960,8 @@ def _cleanroom_child_command(
             "creationflags": subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
             "close_fds": True,
             "timeout": _CLEANROOM_CHILD_TIMEOUT_SECONDS,
+            "externalEffectCount": 0,
+            "probePath": str(isolated_probe),
         }
     raise ValueError("NEWS_GRASP_CLEANROOM_CHILD_ROUTE_INVALID")
 

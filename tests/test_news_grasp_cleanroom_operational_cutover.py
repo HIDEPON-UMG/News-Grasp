@@ -233,6 +233,50 @@ def _dispatch_task_origin_witness_payload(module: Any, *, task_pythonw: str) -> 
     }
 
 
+def test_task_origin_witness_accepts_protected_direct_schedule_service_parent() -> None:
+    """実Windowsでprotected svchostのpath/commandが空でもSchedule PID直親を受理する。"""
+    module = _load_launcher()
+    payload = _dispatch_task_origin_witness_payload(
+        module,
+        task_pythonw=r"C:\Python312\pythonw.exe",
+    )
+    schedule_pid = payload["scheduleServicePid"]
+    payload.update(
+        {
+            "parentProcessId": schedule_pid,
+            "parentProcessName": "svchost.exe",
+            "parentProcessCommandLine": "",
+            "parentProcessPath": "",
+            "parentAuthenticodeStatus": "",
+            "parentAuthenticodeSubject": "",
+            "scheduleServiceCommandLine": r"C:\Windows\System32\svchost.exe -k netsvcs -p",
+            "ancestorChain": [],
+        }
+    )
+    assert module._cleanroom_validate_process_witness(payload) is True
+    payload["parentProcessId"] = int(schedule_pid) + 1
+    assert module._cleanroom_validate_process_witness(payload) is False
+
+
+def test_entry_canary_child_is_an_isolated_local_probe_not_a_high_cost_bootstrap() -> None:
+    """entry-canaryは外部model authorityに依存せず、隔離child起動だけを実証する。"""
+    module = _load_launcher()
+    canary_root = EXPECTED_RUNTIME_ROOT / "production-runtime" / "entry-canary" / "generation" / "nonce"
+    probe_path = canary_root / "child-probe.txt"
+    command, safety = module._cleanroom_child_command(
+        route="bootstrap-smoke",
+        bin_dir=Path.home() / "bin",
+        authority={"action": [r"C:\Python312\pythonw.exe"]},
+        probe_path=probe_path,
+    )
+    assert command[1].endswith("news-grasp-task-launcher.pyw")
+    assert command[2:] == ["bootstrap", "--probe", str(probe_path)]
+    assert "--high-cost-binding-path" not in command
+    assert "--high-cost-binding-sha256" not in command
+    assert safety["externalEffectCount"] == 0
+    assert safety["probePath"] == str(probe_path)
+
+
 def _run_dispatch(
     helper: Any,
     tmp_path: Path,
