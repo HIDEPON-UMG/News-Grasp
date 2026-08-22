@@ -1817,6 +1817,13 @@ def _run_cleanroom_entry_canary_pipeline(
         "resultHash": result_hash,
         "externalEffectCount": 0,
     }
+    if child_exit == 0 and terminal_state == "SUCCEEDED":
+        _cleanup_cleanroom_entry_canary(
+            canary_root=canary_root,
+            runtime_root=base_runtime,
+            generation=generation,
+            nonce=nonce,
+        )
     _write_json_atomic(receipt_path, receipt)
     return receipt
 
@@ -2041,6 +2048,43 @@ def _write_cleanroom_child_probe(
     if probe_path.stat().st_size != len(payload):
         raise RuntimeError("NEWS_GRASP_CLEANROOM_CHILD_PROBE_WRITE_FAILED")
     return probe_path
+
+
+def _cleanup_cleanroom_entry_canary(
+    *,
+    canary_root: Path,
+    runtime_root: Path,
+    generation: str,
+    nonce: str,
+) -> None:
+    """Green receipt確定前にexact nonce subtreeだけをatomic隔離して回収する。"""
+    boundary = Path(os.path.abspath(os.fspath(runtime_root)))
+    expected = _cleanroom_child_probe_path(
+        generation=generation,
+        nonce=nonce,
+        runtime_root=boundary,
+    ).parent
+    candidate = Path(os.path.abspath(os.fspath(canary_root)))
+    code = "NEWS_GRASP_CLEANROOM_CANARY_CLEANUP_PATH_INVALID"
+    if candidate != expected or candidate.parent.parent != boundary / "entry-canary":
+        raise RuntimeError(code)
+    _assert_managed_path(candidate, boundary, code)
+    if not candidate.is_dir() or candidate.is_symlink():
+        raise RuntimeError(code)
+    quarantine = candidate.with_name(f".cleanup-{nonce}-{uuid4().hex}")
+    with _managed_directory_handle(candidate.parent, boundary, code):
+        _assert_managed_path(candidate, boundary, code)
+        if quarantine.exists() or quarantine.is_symlink():
+            raise RuntimeError(code)
+        os.replace(candidate, quarantine)
+        _assert_managed_path(quarantine, boundary, code)
+        _remove_runtime_path(quarantine)
+    for empty_parent in (candidate.parent, candidate.parent.parent):
+        try:
+            _assert_managed_path(empty_parent, boundary, code)
+            empty_parent.rmdir()
+        except OSError:
+            break
 
 
 def _run_cleanroom_child(

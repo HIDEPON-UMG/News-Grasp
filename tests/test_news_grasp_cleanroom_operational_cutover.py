@@ -342,6 +342,45 @@ def test_cleanroom_child_probe_propagates_managed_directory_reparse_rejection(
         writer(generation="a" * 64, nonce="b" * 32, runtime_root=tmp_path)
 
 
+def test_successful_entry_canary_cleanup_removes_only_exact_nonce_subtree(
+    tmp_path: Path,
+) -> None:
+    """Green canaryはruntimeをdirtyにせず、別nonceの診断状態を消さない。"""
+    module = _load_launcher()
+    generation = "a" * 64
+    nonce = "b" * 32
+    sibling_nonce = "c" * 32
+    canary_root = tmp_path / "entry-canary" / generation / nonce
+    sibling_root = tmp_path / "entry-canary" / generation / sibling_nonce
+    canary_root.mkdir(parents=True)
+    sibling_root.mkdir(parents=True)
+    (canary_root / "child-probe.txt").write_text("probe_ok", encoding="utf-8")
+    (canary_root / "ledger-v1.sqlite3").write_bytes(b"ledger")
+    (sibling_root / "failure.json").write_text("{}", encoding="utf-8")
+
+    cleanup = getattr(module, "_cleanup_cleanroom_entry_canary", None)
+    assert callable(cleanup), "launcher must expose _cleanup_cleanroom_entry_canary"
+    cleanup(
+        canary_root=canary_root,
+        runtime_root=tmp_path,
+        generation=generation,
+        nonce=nonce,
+    )
+
+    assert not canary_root.exists()
+    assert sibling_root.is_dir()
+    assert (sibling_root / "failure.json").read_text(encoding="utf-8") == "{}"
+
+    source = LAUNCHER_PATH.read_text(encoding="utf-8")
+    pipeline = source.split("def _run_cleanroom_entry_canary_pipeline", 1)[1].split(
+        "def _cleanroom_runtime_imports", 1
+    )[0]
+    success_guard = 'if child_exit == 0 and terminal_state == "SUCCEEDED":'
+    assert pipeline.index(success_guard) < pipeline.index(
+        "_cleanup_cleanroom_entry_canary("
+    ) < pipeline.index("_write_json_atomic(receipt_path, receipt)")
+
+
 def test_legacy_probe_cli_rejects_caller_supplied_outside_path(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
