@@ -3062,6 +3062,37 @@ creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
         assert captured_canary["high_cost_binding_receipt_sha256"] == binding_receipt_sha256
 
 
+def test_bootstrap_observation_accepts_fresh_manual_task_origin_after_install() -> None:
+    """05:55以外の手動Task起動も、同一世代かつ実LastRunTime一致ならfreshとする。"""
+    manifest_sha256 = "b" * 64
+    authority_sha256 = "c" * 64
+    ok, reason = dsh._bootstrap_observation_gate(
+        bootstrap_details={
+            "last_task_result": 0,
+            "last_run_time": "2026-08-22T21:55:37+09:00",
+            "installed_generation_id": "generation-live",
+            "installed_manifest_sha256": manifest_sha256,
+        },
+        authority={"authoritySha256": authority_sha256},
+        execution_receipt={
+            "schemaVersion": "NEWS_GRASP_BOOTSTRAP_EXECUTION_RECEIPT_V1",
+            "issueDate": "2026-08-22",
+            "observedAt": "2026-08-22T21:55:50+09:00",
+            "generationId": "generation-live",
+            "manifestSha256": manifest_sha256,
+            "stableAuthoritySha": authority_sha256,
+            "taskName": "News-Grasp Bootstrap",
+            "taskOriginWitnessStatus": "accepted",
+            "taskOriginWitness": {"taskName": "News-Grasp Bootstrap"},
+            "childExitCode": 0,
+        },
+        issue_date="2026-08-22",
+        installed_generation_timestamp="2026-08-22T21:54:00+09:00",
+    )
+    assert ok is True
+    assert reason == ""
+
+
 def test_task_launcher_contract_accepts_current_registered_multimode_launcher() -> None:
     """現在のstable launcherを、整形済みsource文字列ではなくAST mode契約で受理する。"""
     launcher = (

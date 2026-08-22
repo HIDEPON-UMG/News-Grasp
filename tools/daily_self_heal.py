@@ -1032,9 +1032,6 @@ def _bootstrap_observation_gate(
     observed_jst = observed.astimezone(_jst_timezone())
     if observed_jst.date().isoformat() != expected_date:
         return False, "execution_receipt_stale"
-    receipt_target = observed_jst.replace(hour=5, minute=55, second=0, microsecond=0)
-    if abs(observed_jst - receipt_target) > timedelta(minutes=5):
-        return False, "execution_receipt_stale"
     task_observed_text = str(
         bootstrap_details.get("last_run_time")
         or bootstrap_details.get("lastRunTime")
@@ -1046,9 +1043,9 @@ def _bootstrap_observation_gate(
     task_observed_jst = task_observed.astimezone(_jst_timezone())
     if task_observed_jst.date().isoformat() != expected_date:
         return False, "bootstrap_last_run_issue_date_stale"
-    task_target = task_observed_jst.replace(hour=5, minute=55, second=0, microsecond=0)
-    if abs(task_observed_jst - task_target) > timedelta(minutes=5):
-        return False, "bootstrap_last_run_0555_stale"
+    observation_lag = observed - task_observed
+    if observation_lag < timedelta(minutes=-1) or observation_lag > timedelta(minutes=5):
+        return False, "execution_receipt_stale"
     observed_generation = str(
         execution_receipt.get("generationId")
         or execution_receipt.get("generation_id")
