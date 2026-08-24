@@ -1,0 +1,66 @@
+{
+  "articlePath": "digest/DeepDive/2026-08-24-DeepDive.md",
+  "articleSha256": "2c61baf2a1fafe6ede6a7ed4342d49dc60b4d9af43bca4510d91fc897b98bc31",
+  "issueDate": "2026-08-24",
+  "manifestSha256": "8076dd512f81b69b7ab1c90eed4d0db5a7a68cc21fba6db24b1ffd050e6f9498",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "329d6e9e58455d8fd4fd13188b659a93900adb16949181c87ac2b0b2f845c5d9",
+  "sources": [
+    {
+      "contentSha256": "f92c9eae6608c4b96dafbb9f1a5af424f7ff430f3171884c7c50849948736fa9",
+      "fetchedAt": "2026-08-24T03:13:55.693588+00:00",
+      "finalUrl": "https://investor.uber.com/news-events/news/press-release-details/2026/Pony-ai-and-Uber-Expand-Partnership-to-Deploy-Over-2000-Robotaxis-in-Europe/default.aspx",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://investor.uber.com/news-events/news/press-release-details/2026/Pony-ai-and-Uber-Expand-Partnership-to-Deploy-Over-2000-Robotaxis-in-Europe/default.aspx",
+      "url": "https://investor.uber.com/news-events/news/press-release-details/2026/Pony-ai-and-Uber-Expand-Partnership-to-Deploy-Over-2000-Robotaxis-in-Europe/default.aspx"
+    },
+    {
+      "contentSha256": "184d0cc31a1e231ab6850d2d852604f172b7cdff01fa138946f6492853384d6b",
+      "fetchedAt": "2026-08-24T03:13:56.629068+00:00",
+      "finalUrl": "https://investor.uber.com/news-events/news/press-release-details/2026/Uber-Launches-Autonomous-Rides-in-Europe/default.aspx",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://investor.uber.com/news-events/news/press-release-details/2026/Uber-Launches-Autonomous-Rides-in-Europe/default.aspx",
+      "url": "https://investor.uber.com/news-events/news/press-release-details/2026/Uber-Launches-Autonomous-Rides-in-Europe/default.aspx"
+    },
+    {
+      "contentSha256": "a8774d24e226ca58625236d4a83709ce005f7c387a983967ac9b28a1db11e7ab",
+      "fetchedAt": "2026-08-24T03:13:56.994245+00:00",
+      "finalUrl": "https://valueaddvc.com/pulse/pony-ai-robotaxi-revenue-691-percent-q2-2026",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://valueaddvc.com/pulse/pony-ai-robotaxi-revenue-691-percent-q2-2026",
+      "url": "https://valueaddvc.com/pulse/pony-ai-robotaxi-revenue-691-percent-q2-2026"
+    },
+    {
+      "contentSha256": "76fb3a7e6db2b5233cf86a2aed1650ed0c2408a0778caa3c696de73633f095a5",
+      "fetchedAt": "2026-08-24T03:13:57.945750+00:00",
+      "finalUrl": "https://waymo.com/safety/impact/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://waymo.com/safety/impact/",
+      "url": "https://waymo.com/safety/impact/"
+    }
+  ],
+  "status": "Green"
+}
