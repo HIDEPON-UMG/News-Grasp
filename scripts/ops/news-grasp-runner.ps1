@@ -5053,8 +5053,14 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
 
     function Resolve-EditorArtifactPath {
         param([Parameter(Mandatory=$true)][string] $RelativePath)
+        $repoFull = [System.IO.Path]::GetFullPath($RepoDir).TrimEnd('\', '/')
+        $repoPrefix = $repoFull + [System.IO.Path]::DirectorySeparatorChar
         if ([System.IO.Path]::IsPathRooted($RelativePath)) {
-            throw "EDITOR_SNAPSHOT_PATH_INVALID: rooted path"
+            $rootedCandidate = [System.IO.Path]::GetFullPath($RelativePath)
+            if (-not $rootedCandidate.StartsWith($repoPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+                throw "EDITOR_SNAPSHOT_PATH_INVALID: rooted path outside repo: $RelativePath"
+            }
+            $RelativePath = [System.IO.Path]::GetRelativePath($repoFull, $rootedCandidate)
         }
         $normalized = $RelativePath.Replace('\', '/').TrimStart('/')
         $escapedDate = [regex]::Escape($DateStamp)
@@ -5066,11 +5072,9 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
             "^data/search_audit/$escapedDate/[A-Za-z0-9_-]+\.json$"
         )
         if (-not @($allowedPatterns | Where-Object { $normalized -match $_ })) {
-            throw "EDITOR_SNAPSHOT_PATH_INVALID: path is outside the artifact allowlist"
+            throw "EDITOR_SNAPSHOT_PATH_INVALID: path is outside the artifact allowlist: $normalized"
         }
-        $repoFull = [System.IO.Path]::GetFullPath($RepoDir).TrimEnd('\', '/')
         $candidate = [System.IO.Path]::GetFullPath((Join-Path $repoFull $normalized))
-        $repoPrefix = $repoFull + [System.IO.Path]::DirectorySeparatorChar
         if (-not $candidate.StartsWith($repoPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
             throw "EDITOR_SNAPSHOT_PATH_INVALID: path escaped repo root"
         }
