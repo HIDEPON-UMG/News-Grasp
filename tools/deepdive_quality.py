@@ -33,7 +33,7 @@ MAX_OBSERVED_BYTES = 4 * 1024 * 1024
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
     "AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/138.0.0.0 Safari/537.36"
+    "Chrome/124.0 Safari/537.36"
 )
 SOFT_404_PATTERNS = (
     re.compile(rb"<title[^>]*>[^<]*(?:404|not[ -]?found|page not found)[^<]*</title>", re.I),
