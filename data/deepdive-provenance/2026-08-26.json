@@ -1,0 +1,92 @@
+{
+  "articlePath": "digest/DeepDive/2026-08-26-DeepDive.md",
+  "articleSha256": "356b83f385c788d51b9409de0a38a156f6280c4fd6d4d24827f89ac3cedcac54",
+  "issueDate": "2026-08-26",
+  "manifestSha256": "3c3b958580fbf15fa2564b0faeab2ffd5f1771e168664147d317abfb73e7fe60",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "e2a6be0314dfbdc9aaf4ac2a275185f244f1a0e8cc02e5ba9a9299dce3b592fd",
+  "sources": [
+    {
+      "contentSha256": "78f8e3b9cd5306278c7210572151ce2f4bf08f462dbbbaacecd1d93f44a56361",
+      "fetchedAt": "2026-08-25T23:33:10.923549+00:00",
+      "finalUrl": "https://investor.nvidia.com/news/press-release-details/2024/NVIDIA-Announces-Financial-Results-for-Fourth-Quarter-and-Fiscal-2024/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://investor.nvidia.com/news/press-release-details/2024/NVIDIA-Announces-Financial-Results-for-Fourth-Quarter-and-Fiscal-2024/",
+      "url": "https://investor.nvidia.com/news/press-release-details/2024/NVIDIA-Announces-Financial-Results-for-Fourth-Quarter-and-Fiscal-2024/"
+    },
+    {
+      "contentSha256": "ab7a804abb8ea0d737081ef5e19522289eab19bf864cdc113e2cb8d06e4aaa54",
+      "fetchedAt": "2026-08-25T23:33:11.606307+00:00",
+      "finalUrl": "https://investor.nvidia.com/news/press-release-details/2025/NVIDIA-Announces-Financial-Results-for-Fourth-Quarter-and-Fiscal-2025/default.aspx",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://investor.nvidia.com/news/press-release-details/2025/NVIDIA-Announces-Financial-Results-for-Fourth-Quarter-and-Fiscal-2025/default.aspx",
+      "url": "https://investor.nvidia.com/news/press-release-details/2025/NVIDIA-Announces-Financial-Results-for-Fourth-Quarter-and-Fiscal-2025/default.aspx"
+    },
+    {
+      "contentSha256": "3a67f9cbc2f5f61a1e91414fc5e760d96c66f6cb70f4a5251574e221873e9bf6",
+      "fetchedAt": "2026-08-25T23:33:12.274617+00:00",
+      "finalUrl": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Fourth-Quarter-and-Fiscal-2026/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source"
+      ],
+      "publicHref": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Fourth-Quarter-and-Fiscal-2026/",
+      "url": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Fourth-Quarter-and-Fiscal-2026/"
+    },
+    {
+      "contentSha256": "f90ee19f3f03a9acbfc7ce454ef3145d4286b24fbe31a89c941af9e012cd7406",
+      "fetchedAt": "2026-08-25T23:33:12.955759+00:00",
+      "finalUrl": "https://investors.broadcom.com/node/64506/pdf",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source"
+      ],
+      "publicHref": "https://investors.broadcom.com/node/64506/pdf",
+      "url": "https://investors.broadcom.com/node/64506/pdf"
+    },
+    {
+      "contentSha256": "d2904291a6013f9f6e1e82f48dba821c13f3162123974bbd6891f735c43069a1",
+      "fetchedAt": "2026-08-25T23:33:13.756273+00:00",
+      "finalUrl": "https://openai.com/index/jalapeno-first-results/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://openai.com/index/jalapeno-first-results/",
+      "url": "https://openai.com/index/jalapeno-first-results/"
+    },
+    {
+      "contentSha256": "f4d30c4da204a949f0e0cfece1f6f8b906732ab692c1ed6b359f0a6c4fc1af92",
+      "fetchedAt": "2026-08-25T23:33:14.921280+00:00",
+      "finalUrl": "https://openai.com/index/openai-broadcom-jalapeno-inference-chip/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://openai.com/index/openai-broadcom-jalapeno-inference-chip/",
+      "url": "https://openai.com/index/openai-broadcom-jalapeno-inference-chip/"
+    }
+  ],
+  "status": "Green"
+}
