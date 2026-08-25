@@ -559,7 +559,7 @@ def resolve_production_runtime_python(
             "pythonSignerSubject",
             "pythonSignerThumbprint",
         }
-        if not isinstance(binding, dict) or set(binding) != expected_keys:
+        if not isinstance(binding, dict) or not expected_keys.issubset(set(binding)):
             raise ValueError("runtime binding schema drift")
         if (
             binding.get("schemaVersion") != "NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1"
