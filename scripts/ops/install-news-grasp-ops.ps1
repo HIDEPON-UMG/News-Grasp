@@ -1553,17 +1553,7 @@ try {
 } finally { $stableAuthorityHasher.Dispose() }
 $stableTaskAuthority | Add-Member -NotePropertyName authoritySha256 -NotePropertyValue $stableAuthoritySha256
 Write-AtomicUtf8Text -Path $stableTaskAuthorityPath -Text (($stableTaskAuthority | ConvertTo-Json -Depth 6) + [Environment]::NewLine)
-$stableAuthorityValidationScript = @'
-import json
-import pathlib
-import sys
-
-sys.path.insert(0, sys.argv[2])
-from tools.news_grasp_generation import validate_stable_task_authority
-
-authority = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8-sig"))
-print(validate_stable_task_authority(authority)["authoritySha256"])
-'@
+$stableAuthorityValidationScript = 'import json,pathlib,sys;sys.path.insert(0,sys.argv[2]);from tools.news_grasp_generation import validate_stable_task_authority;authority=json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8-sig"));print(validate_stable_task_authority(authority)["authoritySha256"])'
 $stableAuthorityValidationOutput = @(
     & $runtimePythonPath -I -c $stableAuthorityValidationScript $stableTaskAuthorityPath $runtimeEvidenceRepoDir 2>&1
 )
