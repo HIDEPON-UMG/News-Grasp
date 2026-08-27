@@ -15,8 +15,8 @@ def test_trace_compiler_primary_binds_user_outcome_requirement_acceptance() -> N
 
     assert "compiledTraceGraph" in compiled, "NGC_RED_COMPILED_TRACE_GRAPH_MISSING"
     graph = compiled["compiledTraceGraph"]
-    assert graph["requirementIds"] == [f"R{number:02d}" for number in range(1, 18)]
-    assert graph["acceptanceIds"] == [f"A{number:02d}" for number in range(1, 18)]
+    assert graph["requirementIds"] == [f"R{number:02d}" for number in range(1, 24)]
+    assert graph["acceptanceIds"] == [f"A{number:02d}" for number in range(1, 24)]
     assert graph["orphanNodeIds"] == []
     assert graph["duplicateEdgeIds"] == []
     assert graph["physicalDeliveryNodeId"] == "physical-delivery"

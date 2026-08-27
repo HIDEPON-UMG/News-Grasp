@@ -57,6 +57,7 @@ def test_historical_failure_matrix_covers_lifecycle_incident_corpus() -> None:
         "2026-07-23",
         "2026-07-24",
         "2026-08-13",
+        "2026-08-27",
     }
     incident_files = {
         f"docs/incidents/{path.name}"
@@ -94,6 +95,7 @@ def test_historical_failure_matrix_covers_lifecycle_incident_corpus() -> None:
         "category hero title split contract gap",
         "repair routing, structured digest mutation, and thumbnail parser boundary",
         "digest record sync and fallback thumbnail boundary",
+        "public recovery product/runtime composition and bounded closeout boundary",
     }
 
     for scenario in scenarios:

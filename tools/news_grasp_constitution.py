@@ -8,6 +8,7 @@ import io
 import json
 import os
 import re
+import shutil
 import subprocess
 from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import dataclass, field
@@ -49,6 +50,9 @@ SKILL_CROSS_LAYER_GRAPH_RELATIVE_PATH = Path(
 PRODUCT_WRITE_ALLOWLIST_RELATIVE_PATH = Path("config/news_grasp_product_write_allowlist_v1.json")
 OPERATIONAL_BINDINGS_RELATIVE_PATH = Path("config/news_grasp_operational_bindings_v1.json")
 PROJECTION_RELATIVE_PATH = Path("config/news_grasp_constitution_projection_v1.json")
+PUBLIC_RECOVERY_OPERATIONAL_DESIGN_RELATIVE_PATH = Path(
+    "plans/2026-08-27-news-grasp-public-recovery-closeout/operational-design.md"
+)
 OPERATION_INTEGRITY_MATRIX_RELATIVE_PATH = Path(
     "tests/fixtures/constitutional-operations/operation-integrity-matrix-v1.json"
 )
@@ -748,24 +752,103 @@ class _CollectionRecorder:
 
 def collect_test_nodes(repo_root: Path | str = ROOT) -> list[str]:
     import pytest
+    from tools.news_grasp_high_cost_binding import create_binding
 
     root = _root(repo_root)
     recorder = _CollectionRecorder()
     previous = Path.cwd()
     output = io.StringIO()
-    try:
-        os.chdir(root)
-        with redirect_stdout(output), redirect_stderr(output):
-            exit_code = int(
-                pytest.main(
-                    ["--collect-only", "-q", "-p", "no:cacheprovider"],
-                    plugins=[recorder],
-                )
+    previous_binding_path = os.environ.get("NEWS_GRASP_HIGH_COST_BINDING_PATH")
+    previous_binding_receipt = os.environ.get(
+        "NEWS_GRASP_HIGH_COST_BINDING_RECEIPT_SHA256"
+    )
+    with TemporaryDirectory(prefix="news-grasp-constitution-collection-") as temporary:
+        temporary_root = Path(temporary).resolve()
+        fixture_workspace = temporary_root / "workspace"
+        fixture_harness = fixture_workspace / "tools" / "harness"
+        workspace_harness = root.parent.parent / "tools" / "harness"
+        if not workspace_harness.is_dir():
+            raise ValueError("CONSTITUTION_COLLECTION_HARNESS_UNAVAILABLE")
+        shutil.copytree(workspace_harness, fixture_harness)
+        workspace_harness_docs = root.parent.parent / "docs" / "harness"
+        if workspace_harness_docs.is_dir():
+            shutil.copytree(
+                workspace_harness_docs,
+                fixture_workspace / "docs" / "harness",
             )
-    finally:
-        os.chdir(previous)
+        fixture_adapter = fixture_harness / "high_cost_capability_adapter.py"
+        fixture_adapter_real = (
+            fixture_harness / "high_cost_capability_adapter_collection_real.py"
+        )
+        fixture_adapter_real.write_bytes(fixture_adapter.read_bytes())
+        fixture_descriptor = temporary_root / "capability-v1.json"
+        fixture_broker = root / "tools" / "news_grasp_high_cost_binding.py"
+        fixture_descriptor.write_text(
+            json.dumps(
+                {
+                    "schemaVersion": "HIGH_COST_CAPABILITY_DESCRIPTOR_V1",
+                    "reasonSchemaVersion": "HIGH_COST_TYPED_REASON_V1",
+                    "generation": 1,
+                    "workspaceRoot": str(fixture_workspace),
+                    "brokerSourcePath": str(fixture_broker),
+                    "brokerSourceSha256": _sha256(fixture_broker),
+                    "brokerInstalledPath": str(fixture_broker),
+                    "brokerInstalledSha256": _sha256(fixture_broker),
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        fixture_adapter.write_text(
+            "from __future__ import annotations\n"
+            "if __name__ != '__main__':\n"
+            "    from tools.harness.high_cost_capability_adapter_collection_real import *\n"
+            "else:\n"
+            "    import argparse, json\n"
+            "    from pathlib import Path\n"
+            "    p=argparse.ArgumentParser(); p.add_argument('command'); "
+            "p.add_argument('--descriptor', type=Path, required=True)\n"
+            "    a=p.parse_args(); v=json.loads(a.descriptor.read_text(encoding='utf-8')); "
+            "v.update({'descriptorPath': str(a.descriptor.resolve()), "
+            "'status': 'available'}); print(json.dumps(v, sort_keys=True))\n",
+            encoding="utf-8",
+        )
+        fixture_binding_path = temporary_root / "binding.json"
+        fixture_binding = create_binding(
+            adapter_path=fixture_adapter,
+            descriptor_path=fixture_descriptor,
+            output_path=fixture_binding_path,
+        )
+        os.environ["NEWS_GRASP_HIGH_COST_BINDING_PATH"] = str(fixture_binding_path)
+        os.environ["NEWS_GRASP_HIGH_COST_BINDING_RECEIPT_SHA256"] = str(
+            fixture_binding["bindingReceiptSha256"]
+        )
+        try:
+            os.chdir(root)
+            with redirect_stdout(output), redirect_stderr(output):
+                exit_code = int(
+                    pytest.main(
+                        ["--collect-only", "-q", "-p", "no:cacheprovider"],
+                        plugins=[recorder],
+                    )
+                )
+        finally:
+            os.chdir(previous)
+            if previous_binding_path is None:
+                os.environ.pop("NEWS_GRASP_HIGH_COST_BINDING_PATH", None)
+            else:
+                os.environ["NEWS_GRASP_HIGH_COST_BINDING_PATH"] = previous_binding_path
+            if previous_binding_receipt is None:
+                os.environ.pop("NEWS_GRASP_HIGH_COST_BINDING_RECEIPT_SHA256", None)
+            else:
+                os.environ["NEWS_GRASP_HIGH_COST_BINDING_RECEIPT_SHA256"] = (
+                    previous_binding_receipt
+                )
     if exit_code != 0 or recorder.collection_errors:
-        raise ValueError("CONSTITUTION_TEST_COLLECTION_FAILED")
+        detail = " | ".join(recorder.collection_errors[:2]) or output.getvalue()[-5000:]
+        raise ValueError(f"CONSTITUTION_TEST_COLLECTION_FAILED:{detail}")
     if not recorder.node_ids or len(recorder.node_ids) != len(set(recorder.node_ids)):
         raise ValueError("CONSTITUTION_TEST_NODE_SET_INVALID")
     return recorder.node_ids
@@ -1092,8 +1175,8 @@ def _compile_trace_graph(
     constitution: dict[str, Any],
     acceptance_bindings: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    expected_requirement_ids = [f"R{number:02d}" for number in range(1, 18)]
-    expected_acceptance_ids = [f"A{number:02d}" for number in range(1, 18)]
+    expected_requirement_ids = [f"R{number:02d}" for number in range(1, 24)]
+    expected_acceptance_ids = [f"A{number:02d}" for number in range(1, 24)]
     requirement_ids = sorted(str(row["requirementId"]) for row in acceptance_bindings)
     acceptance_ids = sorted(str(row["acceptanceId"]) for row in acceptance_bindings)
     if (
@@ -1378,6 +1461,264 @@ def _mermaid_sources(compiled: dict[str, Any]) -> list[dict[str, str]]:
             "sourceSha256": _text_sha256(skill_source),
         },
     ]
+
+
+def _public_recovery_mermaid(
+    diagram: dict[str, Any],
+) -> tuple[str, list[Any], list[Any]]:
+    """trace上のsemantic node/edgeからSI向けMermaid sourceを生成する。"""
+
+    kind = str(diagram.get("kind") or "")
+    if kind == "flowchart":
+        nodes = list(diagram.get("nodes") or [])
+        edges = list(diagram.get("edges") or [])
+        aliases = {str(row[0]): f"n{index:02d}" for index, row in enumerate(nodes, 1)}
+        lines = [f"flowchart {diagram.get('direction') or 'LR'}"]
+        for node_id, label in nodes:
+            safe_label = (
+                str(label).replace('"', "'").replace("[", "(").replace("]", ")")
+            )
+            lines.append(f'    {aliases[str(node_id)]}["{safe_label}"]')
+        for source, target, label in edges:
+            if str(source) not in aliases or str(target) not in aliases:
+                raise ValueError("PUBLIC_RECOVERY_DIAGRAM_EDGE_NODE_UNKNOWN")
+            edge_label = str(label).replace("|", "/")
+            connector = f" -->|{edge_label}| " if edge_label else " --> "
+            lines.append(f"    {aliases[str(source)]}{connector}{aliases[str(target)]}")
+        return "\n".join(lines), nodes, edges
+    if kind == "sequence":
+        participants = list(diagram.get("participants") or [])
+        messages = list(diagram.get("messages") or [])
+        participant_ids = {str(row[0]) for row in participants}
+        lines = ["sequenceDiagram"]
+        for participant_id, label in participants:
+            lines.append(f"    participant {participant_id} as {label}")
+        for source, target, label in messages:
+            if str(source) not in participant_ids or str(target) not in participant_ids:
+                raise ValueError("PUBLIC_RECOVERY_DIAGRAM_EDGE_NODE_UNKNOWN")
+            lines.append(f"    {source}->>{target}: {label}")
+        return "\n".join(lines), participants, messages
+    if kind == "state":
+        states = list(diagram.get("states") or [])
+        transitions = list(diagram.get("transitions") or [])
+        state_ids = {str(value) for value in states} | {"[*]"}
+        lines = ["stateDiagram-v2"]
+        for source, target, label in transitions:
+            if str(source) not in state_ids or str(target) not in state_ids:
+                raise ValueError("PUBLIC_RECOVERY_DIAGRAM_EDGE_NODE_UNKNOWN")
+            suffix = f": {label}" if label else ""
+            lines.append(f"    {source} --> {target}{suffix}")
+        return "\n".join(lines), states, transitions
+    raise ValueError("PUBLIC_RECOVERY_DIAGRAM_KIND_INVALID")
+
+
+def _markdown_table(headers: list[str], rows: list[list[str]]) -> list[str]:
+    def cell(value: Any) -> str:
+        return str(value).replace("|", "\\|").replace("\n", "<br>")
+
+    return [
+        "| " + " | ".join(map(cell, headers)) + " |",
+        "|" + "|".join("---" for _ in headers) + "|",
+        *("| " + " | ".join(cell(value) for value in row) + " |" for row in rows),
+    ]
+
+
+def _render_public_recovery_operational_design(
+    compiled: dict[str, Any],
+) -> tuple[str, dict[str, Any]]:
+    """News-Grasp public recoveryの非公開SI成果物をtraceから投影する。"""
+
+    model = compiled["trace"].get("publicRecoveryCloseout")
+    if not isinstance(model, dict) or model.get("schemaVersion") != (
+        "NEWS_GRASP_PUBLIC_RECOVERY_OPERATIONAL_DESIGN_V1"
+    ):
+        raise ValueError("PUBLIC_RECOVERY_OPERATIONAL_DESIGN_TRACE_INVALID")
+    requirements = list(model.get("requirements") or [])
+    diagrams = list(model.get("diagrams") or [])
+    if [row.get("id") for row in requirements] != [
+        f"NG-RC-{number:02d}" for number in range(1, 7)
+    ]:
+        raise ValueError("PUBLIC_RECOVERY_REQUIREMENT_SET_INVALID")
+    expected_allowed = [
+        "finalizer_exact_args_replay",
+        "receipt_reseal",
+        "completion_guard",
+        "verify_public_surface",
+        "final_report",
+    ]
+    if model.get("allowedAfterPublicGreen") != expected_allowed:
+        raise ValueError("PUBLIC_RECOVERY_CLOSEOUT_ALLOWLIST_INVALID")
+    input_model_sha256 = _canonical_sha256(model)
+    rendered_diagrams: list[dict[str, Any]] = []
+    for diagram in diagrams:
+        source, nodes, edges = _public_recovery_mermaid(diagram)
+        rendered_diagrams.append(
+            {
+                "id": str(diagram["id"]),
+                "title": str(diagram["title"]),
+                "source": source,
+                "sourceSha256": _text_sha256(source),
+                "nodeSetSha256": _canonical_sha256(nodes),
+                "edgeSetSha256": _canonical_sha256(edges),
+            }
+        )
+    required_diagram_ids = {
+        "as-is-context",
+        "to-be-context",
+        "operational-use-case",
+        "public-recovery-sequence",
+        "post-public-state",
+        "deployment-freshness",
+        "receipt-data-model",
+    }
+    if {row["id"] for row in rendered_diagrams} != required_diagram_ids:
+        raise ValueError("PUBLIC_RECOVERY_DIAGRAM_SET_INVALID")
+
+    lines = [
+        "# News-Grasp public recovery 運用設計・結合試験仕様",
+        "",
+        "> この文書は `NEWS_GRASP_CONSTITUTION_TRACE_V1.publicRecoveryCloseout` から生成する非公開projectionである。手編集しない。",
+        "",
+        "## Projection receipt",
+        "",
+        f"- schema: `{model['schemaVersion']}`",
+        f"- issue date: `{model['issueDate']}`",
+        f"- run intent: `{model['runIntent']}`",
+        f"- scope owner: `{model['scopeOwner']}`",
+        f"- input model SHA256: `{input_model_sha256}`",
+        f"- input trace SHA256: `{compiled['traceSha256']}`",
+        "",
+        "## 目的と境界",
+        "",
+        str(model["humanCommitment"]),
+        "",
+        "禁止経路: " + ", ".join(f"`{value}`" for value in model["forbidden"]),
+        "",
+        "public Green後の許可操作: "
+        + " → ".join(f"`{value}`" for value in model["allowedAfterPublicGreen"]),
+        "",
+        "## SI Mermaid projections",
+        "",
+    ]
+    for row in rendered_diagrams:
+        lines.extend(
+            [
+                f"### {row['title']}",
+                "",
+                f"- node set SHA256: `{row['nodeSetSha256']}`",
+                f"- edge set SHA256: `{row['edgeSetSha256']}`",
+                f"- Mermaid source SHA256: `{row['sourceSha256']}`",
+                "",
+                "```mermaid",
+                row["source"],
+                "```",
+                "",
+            ]
+        )
+
+    lines.extend(["## Operational Design Inventory", ""])
+    lines.extend(
+        _markdown_table(
+            [
+                "Req",
+                "owner / trigger",
+                "entryGate / executionPath",
+                "state / evidence",
+                "recovery / cost",
+            ],
+            [
+                [
+                    row["id"],
+                    f"{row['owner']}<br>{row['trigger']}",
+                    f"{row['entryGate']}<br>{row['executionPath']}",
+                    f"{row['stateOutcome']}<br>{row['evidence']}",
+                    f"{row['recovery']}<br>{row['maintenanceCost']}",
+                ]
+                for row in requirements
+            ],
+        )
+    )
+    lines.extend(["", "## FitGap", ""])
+    lines.extend(
+        _markdown_table(
+            ["Req", "As-Is gap", "To-Be consumer", "Acceptance"],
+            [
+                [row["id"], row["fitGap"], row["consumer"], row["acceptanceId"]]
+                for row in requirements
+            ],
+        )
+    )
+    lines.extend(["", "## Responsibility Matrix", ""])
+    lines.extend(
+        _markdown_table(
+            ["Req", "Accountable owner", "Responsible boundary", "Consulted", "Informed"],
+            [
+                [
+                    row["id"],
+                    row["owner"],
+                    row["responsibility"],
+                    "News-Grasp operator",
+                    "final report",
+                ]
+                for row in requirements
+            ],
+        )
+    )
+    lines.extend(["", "## Requirement–Consumer–Fixture–Evidence Traceability", ""])
+    lines.extend(
+        _markdown_table(
+            ["Req", "Consumer", "Primary", "Adversarial", "Recovery", "Evidence"],
+            [
+                [
+                    row["id"],
+                    row["consumer"],
+                    row["primaryFixture"],
+                    row["adversarialFixture"],
+                    row["recoveryFixture"],
+                    row["evidence"],
+                ]
+                for row in requirements
+            ],
+        )
+    )
+    lines.extend(["", "## Red / Green Matrix", ""])
+    lines.extend(
+        _markdown_table(
+            ["Req", "Red fixture", "Green oracle"],
+            [
+                [
+                    row["id"],
+                    f"{row['adversarialFixture']} / {row['recoveryFixture']}",
+                    f"{row['primaryFixture']}; {row['stateOutcome']}",
+                ]
+                for row in requirements
+            ],
+        )
+    )
+    lines.extend(
+        [
+            "",
+            "## State separation and L5 admission",
+            "",
+            "`scheduledAttemptStatus`、`recoveryAttemptStatus`、`publicCompletionStatus`、`runnerStatus`、`nextRunReadinessStatus` は交換不能な別fieldで保持する。public Greenはcloseout/readiness Redで後退させない。",
+            "",
+            "L5は同一日付・同一run intentで actual Windows system transport、shared materializer、rendered-public audit、typed publish manifest、one-shot reseal、receipt-derived exact argv、actual finalizer-only PowerShell branch、completion guard、public surface verifierを直列に通す。外部network/model/publish/upload/notificationはlocal fake境界外へ出さない。",
+            "",
+        ]
+    )
+    document = "\n".join(lines)
+    receipt = {
+        "schemaVersion": model["schemaVersion"],
+        "inputModelSha256": input_model_sha256,
+        "inputTraceSha256": compiled["traceSha256"],
+        "requirementIds": [row["id"] for row in requirements],
+        "diagramCount": len(rendered_diagrams),
+        "diagramSourceSetSha256": _canonical_sha256(
+            [row["sourceSha256"] for row in rendered_diagrams]
+        ),
+        "documentSha256": _text_sha256(document),
+    }
+    return document, receipt
 
 
 def _asset_projection(root: Path) -> dict[str, Any]:
@@ -1677,6 +2018,9 @@ def build_constitution_projection(repo_root: Path | str = ROOT) -> dict[str, Any
         asset_projection=assets,
         mermaid=mermaid,
     )
+    operational_design, operational_design_receipt = (
+        _render_public_recovery_operational_design(compiled)
+    )
     value = {
         "schemaVersion": PROJECTION_SCHEMA_VERSION,
         "constitutionVersion": compiled["constitution"]["constitutionVersion"],
@@ -1687,6 +2031,7 @@ def build_constitution_projection(repo_root: Path | str = ROOT) -> dict[str, Any
         "mermaidDiagramCount": len(mermaid),
         "mermaid": mermaid,
         "assetProjection": assets,
+        "publicRecoveryOperationalDesign": operational_design_receipt,
         "outputs": [
             {
                 "path": path.as_posix(),
@@ -1699,10 +2044,20 @@ def build_constitution_projection(repo_root: Path | str = ROOT) -> dict[str, Any
                 "path": HTML_SPEC_RELATIVE_PATH.as_posix(),
                 "sha256": _text_sha256(html),
                 "lineCount": len(html.splitlines()),
+            },
+            {
+                "path": PUBLIC_RECOVERY_OPERATIONAL_DESIGN_RELATIVE_PATH.as_posix(),
+                "sha256": _text_sha256(operational_design),
+                "lineCount": len(operational_design.splitlines()),
             }
         ],
     }
-    return {"projection": value, "agentBlock": agent_block, "html": html}
+    return {
+        "projection": value,
+        "agentBlock": agent_block,
+        "html": html,
+        "operationalDesign": operational_design,
+    }
 
 
 def generate_constitution_projections(repo_root: Path | str = ROOT) -> dict[str, Any]:
@@ -1713,6 +2068,10 @@ def generate_constitution_projections(repo_root: Path | str = ROOT) -> dict[str,
         document = path.read_text(encoding="utf-8-sig")
         _atomic_text(path, _replace_agent_projection(document, built["agentBlock"]))
     _atomic_text(root / HTML_SPEC_RELATIVE_PATH, built["html"])
+    _atomic_text(
+        root / PUBLIC_RECOVERY_OPERATIONAL_DESIGN_RELATIVE_PATH,
+        built["operationalDesign"],
+    )
     _atomic_json(root / PROJECTION_RELATIVE_PATH, built["projection"])
     return validate_constitution_projections(root)
 
@@ -1740,6 +2099,13 @@ def validate_constitution_projections(repo_root: Path | str = ROOT) -> dict[str,
         raise ValueError("CONSTITUTION_HTML_PROJECTION_DRIFT")
     if len(built["html"].splitlines()) < 100:
         raise ValueError("CONSTITUTION_HTML_TOO_SHORT")
+    operational_design_path = root / PUBLIC_RECOVERY_OPERATIONAL_DESIGN_RELATIVE_PATH
+    if operational_design_path.read_text(encoding="utf-8-sig") != built[
+        "operationalDesign"
+    ]:
+        raise ValueError("PUBLIC_RECOVERY_OPERATIONAL_DESIGN_DRIFT")
+    if built["operationalDesign"].count("```mermaid") != 7:
+        raise ValueError("PUBLIC_RECOVERY_OPERATIONAL_DESIGN_DIAGRAM_COUNT_INVALID")
     return {
         "status": "Green",
         "schemaVersion": PROJECTION_SCHEMA_VERSION,
@@ -1751,6 +2117,11 @@ def validate_constitution_projections(repo_root: Path | str = ROOT) -> dict[str,
         "manualProjectionDrift": False,
         "projectionFileSha256": _sha256(projection_path),
         "htmlSha256": _sha256(html_path),
+        "operationalDesignPath": (
+            PUBLIC_RECOVERY_OPERATIONAL_DESIGN_RELATIVE_PATH.as_posix()
+        ),
+        "operationalDesignSha256": _sha256(operational_design_path),
+        "operationalDesignDiagramCount": 7,
     }
 
 

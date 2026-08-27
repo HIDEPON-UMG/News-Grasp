@@ -402,6 +402,13 @@ def evaluate_finalization_receipt(
         runner_script_path=runner_script_path,
     )
     issue_date = str(receipt["issueDate"])
+    from tools import news_grasp_recovery_closeout
+
+    news_grasp_recovery_closeout.record_closeout_operation(
+        artifact_root=trusted_artifact_root,
+        issue_date=issue_date,
+        operation="completion_guard",
+    )
     manifest, manifest_file_sha = news_grasp_recovery_receipts._read_json_with_sha(
         Path(str(receipt["manifestPath"])),
         root=trusted_artifact_root / "build",

@@ -192,6 +192,17 @@ def _patch_readiness_seams(
         "_run_live_startup_canary",
         lambda **_kwargs: {"ok": True, "status": "smoke_ok"},
     )
+    monkeypatch.setattr(
+        daily_self_heal,
+        "_probe_external_control_plane_readiness",
+        lambda: {
+            "schemaVersion": "EXTERNAL_CONTROL_PLANE_READINESS_V1",
+            "status": "ready",
+            "reasonCode": "fixture_ready",
+            "modelLaunchCount": 0,
+            "receiptSha256": "c" * 64,
+        },
+    )
     return authority, bootstrap_details
 
 

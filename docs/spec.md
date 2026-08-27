@@ -1,7 +1,7 @@
 # Product Spec: News-Grasp
 
 > **Status**: Constitution
-> **Last Updated**: 2026-08-02
+> **Last Updated**: 2026-08-27
 > **Owner**: News-Grasp Operator
 
 ## Product Constitution
@@ -102,6 +102,23 @@ flowchart TB
 Product completionは、生成、checkpoint、登録済み復旧、必須bundle公開、public verification、次回readiness、audit、external status、rollback、証拠、物理提出を別stateで取得した場合だけ成立する。自然scheduled run、待機、ユーザー目視はAcceptanceでも完了証拠でもない。
 
 <!-- NEWS_GRASP_CONSTITUTION_V1_END -->
+
+## 2026-08-27 Public Recovery Closeout Commitment
+
+本節は2026-08-27のNews-Grasp復旧で43分の遅延を生んだproduct/runtime境界を、通常daily runner、`ScheduledRecoveryFull`、`ResumeFromStage`、post-public finalizerの実運用経路で恒久的に閉じるUser Answer Provenanceである。ProjectFolders共通のestimate、reflection、EvidenceHold、06:40 scheduler制御は参照のみとし、News-Grasp側へ同等gateを複製しない。
+
+| Requirement | 不変条件 | Green authority |
+|---|---|---|
+| `NG-RC-01` | eligibleなprimary transport failureだけに、同一URLのWindows system transport fallbackを一回だけ許可する | final URL、status、本文SHA256、transport、attempt countを持つV2 provenance |
+| `NG-RC-02` | claim-source、V2 provenance、dialogue、rendered publicを全runner route共通のissue materializerで確定する | `DEEPDIVE_ISSUE_BUNDLE_V1` と `audit-issue --require-rendered-public` |
+| `NG-RC-03` | recovery worktree、active generation、production runtimeのcritical-file SHAが一致するまでchild processを起動しない | per-file SHA、set hash、HEAD、spawn count 0/1を持つfreshness receipt |
+| `NG-RC-04` | public Green後のfinalizer argvはexecution receiptのbranch、resume stage、全root、Python、runner stateからだけ導出する | receipt hashとexact argv hash、runner `publish_complete` |
+| `NG-RC-05` | known receipt driftはpublic artifactを変えず一回で一括検出・再封印・execution/finalization再検証する | pre/post receipt hash、ledger遷移、public tree hash不変 |
+| `NG-RC-06` | public Green後はexact-args replay、receipt reseal、completion guard、public surface verify、final reportだけを許可する | exact operation ledger、未知operationの`post_public_closeout_blocker` |
+
+`scheduledAttemptStatus`、`recoveryAttemptStatus`、`publicCompletionStatus`、`runnerStatus`、`nextRunReadinessStatus`は交換不能な別fieldである。scheduled failureは復旧成功で上書きせず、`publicCompletionStatus=Green`はcloseoutまたはreadiness Redで後退させない。
+
+同一日付・同一run intentの結合試験はactual Windows system transportとactual typed finalizer-only PowerShell branchを通す。ただしfull E2E、external model fan-out、fallback publish、NoPublish completion、public regeneration、URL 200単独Greenは禁止する。public Green後の再生成、広域探索、原因調査、report polishもcloseout operationではない。
 
 ## 2026-08-11 運用再設計コミットメント
 

@@ -64,6 +64,24 @@ EXPECTED_OPERATION_TERMINALS = frozenset(
         "no_progress",
     }
 )
+POST_PUBLIC_GREEN_ALLOWED_OPERATIONS = (
+    "finalizer_exact_args_replay",
+    "receipt_reseal",
+    "completion_guard",
+    "verify_public_surface",
+    "final_report",
+)
+POST_PUBLIC_CLOSEOUT_BLOCKER = "post_public_closeout_blocker"
+NG_RC_06_POST_PUBLIC_GREEN_CLOSEOUT = "NG_RC_06_POST_PUBLIC_GREEN_CLOSEOUT"
+
+
+def require_post_public_green_operation(operation: str) -> str:
+    """Public Green後の未知・再生成operationをsingle ownerでfail-closeする。"""
+
+    normalized = str(operation or "").strip()
+    if normalized not in POST_PUBLIC_GREEN_ALLOWED_OPERATIONS:
+        raise ValueError(f"{POST_PUBLIC_CLOSEOUT_BLOCKER}:{normalized or 'missing'}")
+    return normalized
 
 
 def _canonical(value: object) -> bytes:

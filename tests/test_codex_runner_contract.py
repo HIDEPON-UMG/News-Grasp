@@ -86,7 +86,8 @@ def test_runner_youtube_podcast_is_required_distribution_gate() -> None:
     assert push_start < publish_verify < youtube_finalize < deepdive_youtube_finalize < podcast_verify < deepdive_podcast_verify < send_push < ok_marker
     assert "tools.youtube_podcast.build_video" in runner
     assert "tools.youtube_podcast.upload_episode" in runner
-    assert "tools.tts.build_deepdive_dialogue_script" in runner
+    assert "tools.deepdive_quality" in runner
+    assert "'materialize-issue'" in runner
     assert "tools.tts.deepdive_dialogue" in runner
     assert "tools.tts.deepdive_audio" in runner
     assert "'--kind', 'deepdive'" in runner

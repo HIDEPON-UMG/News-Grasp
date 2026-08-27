@@ -273,6 +273,54 @@
         "test_a17_boundary",
         "test_a17_recovery"
       ]
+    },
+    {
+      "acceptanceId": "A18",
+      "requirementId": "R18",
+      "productionRoute": "tools/deepdive_quality.py",
+      "consumerMarker": "NG_RC_01_DEEPDIVE_SYSTEM_TRANSPORT_FALLBACK",
+      "perspectives": ["primary_behavior", "adversarial_boundary", "operational_recovery"],
+      "redNodeIds": ["test_a18_primary", "test_a18_boundary", "test_a18_recovery"]
+    },
+    {
+      "acceptanceId": "A19",
+      "requirementId": "R19",
+      "productionRoute": "tools/deepdive_quality.py",
+      "consumerMarker": "NG_RC_02_DEEPDIVE_ISSUE_BUNDLE",
+      "perspectives": ["primary_behavior", "adversarial_boundary", "operational_recovery"],
+      "redNodeIds": ["test_a19_primary", "test_a19_boundary", "test_a19_recovery"]
+    },
+    {
+      "acceptanceId": "A20",
+      "requirementId": "R20",
+      "productionRoute": "tools/news_grasp_recovery_freshness.py",
+      "consumerMarker": "NG_RC_03_RECOVERY_DEEPDIVE_RUNTIME_FRESHNESS",
+      "perspectives": ["primary_behavior", "adversarial_boundary", "operational_recovery"],
+      "redNodeIds": ["test_a20_primary", "test_a20_boundary", "test_a20_recovery"]
+    },
+    {
+      "acceptanceId": "A21",
+      "requirementId": "R21",
+      "productionRoute": "tools/news_grasp_recovery_closeout.py",
+      "consumerMarker": "NG_RC_04_FINALIZER_EXACT_ARGS_REPLAY",
+      "perspectives": ["primary_behavior", "adversarial_boundary", "operational_recovery"],
+      "redNodeIds": ["test_a21_primary", "test_a21_boundary", "test_a21_recovery"]
+    },
+    {
+      "acceptanceId": "A22",
+      "requirementId": "R22",
+      "productionRoute": "tools/news_grasp_recovery_closeout.py",
+      "consumerMarker": "NG_RC_05_ONE_SHOT_RECEIPT_DRIFT_RESEAL",
+      "perspectives": ["primary_behavior", "adversarial_boundary", "operational_recovery"],
+      "redNodeIds": ["test_a22_primary", "test_a22_boundary", "test_a22_recovery"]
+    },
+    {
+      "acceptanceId": "A23",
+      "requirementId": "R23",
+      "productionRoute": "tools/news_grasp_operational_contract.py",
+      "consumerMarker": "NG_RC_06_POST_PUBLIC_GREEN_CLOSEOUT",
+      "perspectives": ["primary_behavior", "adversarial_boundary", "operational_recovery"],
+      "redNodeIds": ["test_a23_primary", "test_a23_boundary", "test_a23_recovery"]
     }
   ]
 }

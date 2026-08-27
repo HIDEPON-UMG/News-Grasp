@@ -1,18 +1,17 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 2843,
-  "collectedNodeSetSha256": "0a302ce39d55444ae75b000b4b1f634f7dbe5ad8807c07da4c5bcb814a09ff9f",
+  "collectedNodeCount": 2955,
+  "collectedNodeSetSha256": "e4ad4a2702fa8609d8c58fc63182ab32b86eb734a4b82a6717bd4e2141a37269",
   "files": [
     {
       "path": "tests/test_20260813_control_plane_repair.py",
-      "sha256": "68891828b7a407258fbefa65a44c1b10bb8c2a891087d3eedad2737db6f73391",
-      "nodeCount": 38,
+      "sha256": "5c5e4c560aa3fe3b7df7fcc72c7a7620fc1c731a94b37f69803c8bbffb1271f4",
+      "nodeCount": 57,
       "nodeIds": [
         "tests/test_20260813_control_plane_repair.py::test_ng813_bootstrap_and_watcher_propagate_explicit_ops_root_before_runner",
         "tests/test_20260813_control_plane_repair.py::test_ng813_bootstrap_preflight_uses_the_selected_isolated_state_path",
         "tests/test_20260813_control_plane_repair.py::test_ng813_canary_keeps_artifacts_in_artifact_root_and_sources_runtime_from_ops_root",
-        "tests/test_20260813_control_plane_repair.py::test_ng813_canary_uses_artifact_root_when_ops_root_is_different",
         "tests/test_20260813_control_plane_repair.py::test_ng813_control_plane_repair_only_exits_before_broker_and_watcher",
         "tests/test_20260813_control_plane_repair.py::test_ng813_control_plane_repair_requires_one_shot_sealed_authority",
         "tests/test_20260813_control_plane_repair.py::test_ng813_empty_broker_path_is_typed_without_literal_path_secondary_failure",
@@ -27,6 +26,24 @@
         "tests/test_20260813_control_plane_repair.py::test_ng813_isolated_recovery_entrypoints_ignore_ambient_sitecustomize[tools/daily_self_heal.py]",
         "tests/test_20260813_control_plane_repair.py::test_ng813_isolated_recovery_entrypoints_ignore_ambient_sitecustomize[tools/news_grasp_completion_guard.py]",
         "tests/test_20260813_control_plane_repair.py::test_ng813_isolated_recovery_entrypoints_ignore_ambient_sitecustomize[tools/news_grasp_recovery_receipts.py]",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_only_startup_canary_refreshes_stale_bootstrap_observation[bootstrap_generation_timestamp_stale-ScheduledEquivalentNoPublish-False]",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_only_startup_canary_refreshes_stale_bootstrap_observation[bootstrap_generation_timestamp_stale-ScheduledProduction-False]",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_only_startup_canary_refreshes_stale_bootstrap_observation[bootstrap_generation_timestamp_stale-StartupCanary-True]",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_only_startup_canary_refreshes_stale_bootstrap_observation[bootstrap_last_run_issue_date_stale-ScheduledEquivalentNoPublish-False]",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_only_startup_canary_refreshes_stale_bootstrap_observation[bootstrap_last_run_issue_date_stale-ScheduledProduction-False]",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_only_startup_canary_refreshes_stale_bootstrap_observation[bootstrap_last_run_issue_date_stale-StartupCanary-True]",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_only_startup_canary_refreshes_stale_bootstrap_observation[bootstrap_task_last_result_not_ok-ScheduledEquivalentNoPublish-False]",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_only_startup_canary_refreshes_stale_bootstrap_observation[bootstrap_task_last_result_not_ok-ScheduledProduction-False]",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_only_startup_canary_refreshes_stale_bootstrap_observation[bootstrap_task_last_result_not_ok-StartupCanary-True]",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_only_startup_canary_refreshes_stale_bootstrap_observation[execution_receipt_mismatch-ScheduledEquivalentNoPublish-False]",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_only_startup_canary_refreshes_stale_bootstrap_observation[execution_receipt_mismatch-ScheduledProduction-False]",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_only_startup_canary_refreshes_stale_bootstrap_observation[execution_receipt_mismatch-StartupCanary-True]",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_only_startup_canary_refreshes_stale_bootstrap_observation[execution_receipt_missing-ScheduledEquivalentNoPublish-False]",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_only_startup_canary_refreshes_stale_bootstrap_observation[execution_receipt_missing-ScheduledProduction-False]",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_only_startup_canary_refreshes_stale_bootstrap_observation[execution_receipt_missing-StartupCanary-True]",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_only_startup_canary_refreshes_stale_bootstrap_observation[execution_receipt_stale-ScheduledEquivalentNoPublish-False]",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_only_startup_canary_refreshes_stale_bootstrap_observation[execution_receipt_stale-ScheduledProduction-False]",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_only_startup_canary_refreshes_stale_bootstrap_observation[execution_receipt_stale-StartupCanary-True]",
         "tests/test_20260813_control_plane_repair.py::test_ng813_preflight_preserves_failed_bootstrap_history_without_permanent_block",
         "tests/test_20260813_control_plane_repair.py::test_ng813_producer_lineage_uses_explicit_ops_root_not_state_parent",
         "tests/test_20260813_control_plane_repair.py::test_ng813_production_intents_reject_noncanonical_runner_state_path[arbitrary-ScheduledProduction]",
@@ -41,9 +58,11 @@
         "tests/test_20260813_control_plane_repair.py::test_ng813_recovery_admits_missed_production_run_without_rewriting_it",
         "tests/test_20260813_control_plane_repair.py::test_ng813_recovery_preflight_runs_before_runner_spawn",
         "tests/test_20260813_control_plane_repair.py::test_ng813_recovery_python_entrypoints_are_isolated_direct_scripts",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_retired_runner_launcher_does_not_invoke_canary",
         "tests/test_20260813_control_plane_repair.py::test_ng813_runner_finalizer_consumes_only_typed_top_level_publish_commit",
         "tests/test_20260813_control_plane_repair.py::test_ng813_runner_passes_real_state_file_and_ops_root",
         "tests/test_20260813_control_plane_repair.py::test_ng813_smoke_inventory_probe_cannot_write_ops_bytecode",
+        "tests/test_20260813_control_plane_repair.py::test_ng813_typed_finalizer_does_not_require_high_cost_broker_availability",
         "tests/test_20260813_control_plane_repair.py::test_ng813_typed_finalizer_preserves_scheduled_failure_provenance",
         "tests/test_20260813_control_plane_repair.py::test_ng813_typed_finalizer_requires_sealed_receipt_before_state_mutation",
         "tests/test_20260813_control_plane_repair.py::test_ng813_typed_finalizer_skips_global_high_cost_reentry_and_runs_guard"
@@ -216,8 +235,8 @@
     },
     {
       "path": "tests/test_audit_recovery_control.py",
-      "sha256": "c05eeb0635e4ed484c72d7f82c16cda0e1d54d42b7ef5674f809fc618fa75f85",
-      "nodeCount": 74,
+      "sha256": "1366cb11534a4e3e83cad8c9c3650ce170243640764ae37a90a2ec5a92b28bd3",
+      "nodeCount": 80,
       "nodeIds": [
         "tests/test_audit_recovery_control.py::test_actual_completion_verifier_owns_all_required_gates",
         "tests/test_audit_recovery_control.py::test_artifact_executable_tree_accepts_windows_crlf_but_rejects_content_drift",
@@ -236,6 +255,8 @@
         "tests/test_audit_recovery_control.py::test_bounded_subprocess_uses_creation_time_owned_job",
         "tests/test_audit_recovery_control.py::test_caller_boolean_or_url_200_cannot_produce_green",
         "tests/test_audit_recovery_control.py::test_canonical_python_executable_delegates_to_live_runtime_resolver",
+        "tests/test_audit_recovery_control.py::test_direct_cli_execute_remains_canonical_ensure_only",
+        "tests/test_audit_recovery_control.py::test_ensure_audit_0640_default_owner_delegates_public_green_closeout_once",
         "tests/test_audit_recovery_control.py::test_execute_rejects_caller_override_of_production_identity[auditAcceptedAt]",
         "tests/test_audit_recovery_control.py::test_execute_rejects_caller_override_of_production_identity[liveBinRoot]",
         "tests/test_audit_recovery_control.py::test_execute_rejects_caller_override_of_production_identity[productionRuntimeRoot]",
@@ -260,9 +281,12 @@
         "tests/test_audit_recovery_control.py::test_ng_red_17_authority_is_immutable_and_history_rejects_49th_event",
         "tests/test_audit_recovery_control.py::test_ng_red_18_unverified_sentinel_allows_first_verified_lineage_only",
         "tests/test_audit_recovery_control.py::test_output_overflow_terminates_owned_grandchild",
+        "tests/test_audit_recovery_control.py::test_owned_public_green_freshness_red_never_spawns_finalizer",
         "tests/test_audit_recovery_control.py::test_p03_invalid_execution_receipt_is_fail_closed_before_child_start",
         "tests/test_audit_recovery_control.py::test_post_green_runtime_drift_never_reenters_broad_repair",
         "tests/test_audit_recovery_control.py::test_product_constitution_makes_same_day_public_recovery_preemptive",
+        "tests/test_audit_recovery_control.py::test_public_green_closeout_reseals_known_drift_then_replays_exact_args_once",
+        "tests/test_audit_recovery_control.py::test_public_green_closeout_unknown_drift_is_typed_blocker_without_runner_child",
         "tests/test_audit_recovery_control.py::test_public_surface_proof_enforces_complete_bundle_before_post_green",
         "tests/test_audit_recovery_control.py::test_recover_only_is_not_the_all_artifacts_missing_recovery_path",
         "tests/test_audit_recovery_control.py::test_recoverable_failure_uses_ledger_backed_authority_not_deferred",
@@ -290,6 +314,7 @@
         "tests/test_audit_recovery_control.py::test_sec_red_windows_directory_pin_blocks_ancestor_swap",
         "tests/test_audit_recovery_control.py::test_sec_red_windows_directory_pin_blocks_root_swap",
         "tests/test_audit_recovery_control.py::test_startup_terminal_state_without_repo_dir_can_enter_scheduled_recovery",
+        "tests/test_audit_recovery_control.py::test_terminal_projection_replay_does_not_reexecute_public_green_closeout",
         "tests/test_audit_recovery_control.py::test_terminal_writer_has_internal_root_and_only_three_terminals",
         "tests/test_audit_recovery_control.py::test_unknown_repair_class_is_major_incident_not_silent_deferred",
         "tests/test_audit_recovery_control.py::test_windows_owned_job_boundary_rejects_missing_executable"
@@ -326,7 +351,7 @@
     },
     {
       "path": "tests/test_batch_completion_history.py",
-      "sha256": "4b4ebb20f2f60768c8a96f93f30bff7c41fae8d0db5b2e2b3f74b4bfcd7da0cf",
+      "sha256": "9237cee1e171421a628073e973936cfb2a49b31afd7ed081615b4eb81071d214",
       "nodeCount": 13,
       "nodeIds": [
         "tests/test_batch_completion_history.py::test_batch_completion_history_classifies_complete_day",
@@ -591,7 +616,7 @@
     },
     {
       "path": "tests/test_codex_runner_contract.py",
-      "sha256": "69337fb7635d63c66fd1812040a09e8cd1144cb44b9aad2fd9c608aacc37c5d2",
+      "sha256": "eaf58cbc4931111e801232093cb2064daf50ac0e9c53715018a29353873a7a79",
       "nodeCount": 10,
       "nodeIds": [
         "tests/test_codex_runner_contract.py::test_codex_mode_routes_repair_and_deepdive_to_codex_wrapper",
@@ -733,11 +758,12 @@
     },
     {
       "path": "tests/test_daily_self_heal.py",
-      "sha256": "47fe128a0f765f05bf5cb97e83b5f7a66b924bad664bf2ff39416c11138a8c79",
-      "nodeCount": 113,
+      "sha256": "83f26855f3484be897c8dc61e853f2985dc4b75913dd3d2a32fccc358898ba3b",
+      "nodeCount": 114,
       "nodeIds": [
         "tests/test_daily_self_heal.py::test_authenticode_identity_uses_tracked_powershell_helper",
         "tests/test_daily_self_heal.py::test_authenticode_timeout_is_typed_failure",
+        "tests/test_daily_self_heal.py::test_bootstrap_observation_accepts_fresh_manual_task_origin_after_install",
         "tests/test_daily_self_heal.py::test_canonical_live_json_rejects_hardlink_alias",
         "tests/test_daily_self_heal.py::test_compare_files_detects_drift",
         "tests/test_daily_self_heal.py::test_deadman_accepts_fresh_today_ok",
@@ -817,6 +843,7 @@
         "tests/test_daily_self_heal.py::test_verify_publish_can_require_podcast",
         "tests/test_daily_self_heal.py::test_verify_publish_checks_public_audio_when_latest_audio_exists",
         "tests/test_daily_self_heal.py::test_verify_publish_complete_cli_outputs_manifest",
+        "tests/test_daily_self_heal.py::test_verify_publish_complete_records_next_date_but_observes_recovery_date",
         "tests/test_daily_self_heal.py::test_verify_publish_complete_records_notification_state",
         "tests/test_daily_self_heal.py::test_verify_publish_complete_rejects_distribution_commit_mismatch",
         "tests/test_daily_self_heal.py::test_verify_publish_complete_rejects_distribution_date_mismatch",
@@ -832,7 +859,6 @@
         "tests/test_daily_self_heal.py::test_verify_publish_complete_requires_distribution_inventory",
         "tests/test_daily_self_heal.py::test_verify_publish_complete_requires_live_runner_readiness",
         "tests/test_daily_self_heal.py::test_verify_publish_complete_requires_notification_state_when_requested",
-        "tests/test_daily_self_heal.py::test_verify_publish_complete_uses_next_scheduled_date_for_next_run_canary",
         "tests/test_daily_self_heal.py::test_verify_publish_does_not_require_podcast_by_default",
         "tests/test_daily_self_heal.py::test_verify_publish_does_not_wait_on_deploy_commit_mismatch",
         "tests/test_daily_self_heal.py::test_verify_publish_prefers_successful_push_head_over_deploy_ancestor",
@@ -1003,9 +1029,11 @@
     },
     {
       "path": "tests/test_deepdive_quality_engine.py",
-      "sha256": "a59b147c8d36b562d457d5c6d07fbfb7da6af2d0d0a21644ca87b1d165db40ee",
-      "nodeCount": 34,
+      "sha256": "841007273f3e37827f13cb7e0e2abae45571331d57251678bc28acd2539d70dc",
+      "nodeCount": 51,
       "nodeIds": [
+        "tests/test_deepdive_quality_engine.py::test_bls_profile_403_uses_actual_windows_system_transport_once",
+        "tests/test_deepdive_quality_engine.py::test_fallback_transport_evidence_is_bound_into_v2_provenance",
         "tests/test_deepdive_quality_engine.py::test_fetch_never_falls_back_after_404_or_410[404]",
         "tests/test_deepdive_quality_engine.py::test_fetch_never_falls_back_after_404_or_410[410]",
         "tests/test_deepdive_quality_engine.py::test_fetch_record_requires_success_and_content_hash",
@@ -1020,6 +1048,20 @@
         "tests/test_deepdive_quality_engine.py::test_issue_audit_uses_typed_shared_issue_codes",
         "tests/test_deepdive_quality_engine.py::test_issue_audit_validates_date_before_any_path_read",
         "tests/test_deepdive_quality_engine.py::test_live_but_unobserved_url_cannot_become_provenance",
+        "tests/test_deepdive_quality_engine.py::test_materialize_issue_crash_never_creates_partial_green_bundle",
+        "tests/test_deepdive_quality_engine.py::test_materialize_issue_generates_missing_claim_source_from_observed_body",
+        "tests/test_deepdive_quality_engine.py::test_materialize_issue_missing_claim_fails_closed_without_observed_evidence",
+        "tests/test_deepdive_quality_engine.py::test_materialize_issue_rejects_tampered_claim_transport_sidecar[article_content_hash]",
+        "tests/test_deepdive_quality_engine.py::test_materialize_issue_rejects_tampered_claim_transport_sidecar[evidence]",
+        "tests/test_deepdive_quality_engine.py::test_materialize_issue_rejects_tampered_claim_transport_sidecar[transport_hash]",
+        "tests/test_deepdive_quality_engine.py::test_materialize_issue_rejects_unrelated_long_body_as_claim_evidence",
+        "tests/test_deepdive_quality_engine.py::test_materialize_issue_restores_bilingual_claim_transport_after_bundle_loss",
+        "tests/test_deepdive_quality_engine.py::test_materialize_issue_seals_bilingual_claim_transport_sidecar",
+        "tests/test_deepdive_quality_engine.py::test_materialize_issue_without_claim_transport_rejects_unrelated_url_200",
+        "tests/test_deepdive_quality_engine.py::test_materialize_issue_writes_v2_provenance_dialogue_and_bundle_once",
+        "tests/test_deepdive_quality_engine.py::test_materializer_rejects_reparse_stage_leaf",
+        "tests/test_deepdive_quality_engine.py::test_materializer_rejects_untracked_reparse_output_scope",
+        "tests/test_deepdive_quality_engine.py::test_materializer_stage_names_are_exclusive_and_not_pid_predictable",
         "tests/test_deepdive_quality_engine.py::test_period_audit_exposes_green_corpus_evidence",
         "tests/test_deepdive_quality_engine.py::test_period_audit_forwards_rendered_public_requirement",
         "tests/test_deepdive_quality_engine.py::test_period_audit_rejects_cross_day_dialogue_loop",
@@ -1039,7 +1081,8 @@
         "tests/test_deepdive_quality_engine.py::test_rendered_public_surface_rejects_url_text_substitution",
         "tests/test_deepdive_quality_engine.py::test_rendered_public_surface_validation_does_not_mutate_files",
         "tests/test_deepdive_quality_engine.py::test_system_transport_failure_remains_typed_red",
-        "tests/test_deepdive_quality_engine.py::test_system_transport_fallback_cannot_bypass_soft_404"
+        "tests/test_deepdive_quality_engine.py::test_system_transport_fallback_cannot_bypass_soft_404",
+        "tests/test_deepdive_quality_engine.py::test_windows_system_transport_stops_stream_before_body_limit"
       ],
       "clauseIds": [
         "NGC-C06",
@@ -1048,10 +1091,11 @@
     },
     {
       "path": "tests/test_deepdive_quality_route_contract.py",
-      "sha256": "52f76d96fde929600d9a6923633898b9e4cf640ce7bae8357b8cf19b0b753802",
-      "nodeCount": 8,
+      "sha256": "5756df685c6452305a6e146dd822563bdb1bba9cfde4d8f896694c16f463d38f",
+      "nodeCount": 9,
       "nodeIds": [
         "tests/test_deepdive_quality_route_contract.py::test_codex_daily_audit_uses_same_shared_quality_cli",
+        "tests/test_deepdive_quality_route_contract.py::test_daily_full_recovery_and_resume_share_one_issue_materializer",
         "tests/test_deepdive_quality_route_contract.py::test_daily_quality_uses_shared_quality_engine",
         "tests/test_deepdive_quality_route_contract.py::test_declared_consumer_and_fixture_routes_match_exactly",
         "tests/test_deepdive_quality_route_contract.py::test_post_generation_consumers_require_rendered_public_surface",
@@ -1789,7 +1833,7 @@
     },
     {
       "path": "tests/test_historical_failure_scenarios.py",
-      "sha256": "f9ff09b39c5c63eb7359b32160b3acc766abd7f6cc04849d9e9e83b883ac7bab",
+      "sha256": "9ea632ba7b3b9e3ef38398c2f84ecdce9d39fb8de75d13601b8c95837323cd04",
       "nodeCount": 37,
       "nodeIds": [
         "tests/test_historical_failure_scenarios.py::test_20260813_control_plane_incident_is_registered_without_publishing_report",
@@ -1837,7 +1881,7 @@
     },
     {
       "path": "tests/test_home_landing_redesign.py",
-      "sha256": "8e0f7ee7271ace9dbab6bfdecbb4e16acedab605ad3986fc0065262864516862",
+      "sha256": "c26d7d2f6acb266b74d54628592107ff30fc675433dd5630aebbf3c0a38c347c",
       "nodeCount": 8,
       "nodeIds": [
         "tests/test_home_landing_redesign.py::test_home_categories_render_all_cards_with_thumbnail_and_layout",
@@ -2116,19 +2160,25 @@
     },
     {
       "path": "tests/test_news_grasp_cleanroom_operational_cutover.py",
-      "sha256": "f93a8e900f6414bc1a807f8ac6787a4409bd88b1ac2d1739facb64b61efc582b",
-      "nodeCount": 10,
+      "sha256": "0b67a8b67e863f6a0dccac22da035bbbd798f964b9f01ff29d546b6e82936463",
+      "nodeCount": 16,
       "nodeIds": [
+        "tests/test_news_grasp_cleanroom_operational_cutover.py::test_cleanroom_child_probe_is_exact_exclusive_and_rejects_invalid_names",
+        "tests/test_news_grasp_cleanroom_operational_cutover.py::test_cleanroom_child_probe_propagates_managed_directory_reparse_rejection",
         "tests/test_news_grasp_cleanroom_operational_cutover.py::test_dispatch_commits_child_outcome_once_with_slot_writer_fence_and_no_window_seam",
         "tests/test_news_grasp_cleanroom_operational_cutover.py::test_dispatch_keeps_attached_not_due_and_terminal_noop_childless",
         "tests/test_news_grasp_cleanroom_operational_cutover.py::test_dispatch_rejects_unknown_schedule_or_intent_and_binds_runtime_manifest",
         "tests/test_news_grasp_cleanroom_operational_cutover.py::test_dispatch_routes_acquired_scheduled_and_audit_exactly_once",
         "tests/test_news_grasp_cleanroom_operational_cutover.py::test_dispatch_task_context_validator_rejects_before_side_effects_and_default_guard_is_read_only",
+        "tests/test_news_grasp_cleanroom_operational_cutover.py::test_entry_canary_child_is_an_isolated_local_probe_not_a_high_cost_bootstrap",
         "tests/test_news_grasp_cleanroom_operational_cutover.py::test_installer_uses_single_canonical_dispatch_task_and_disables_legacy_controls",
         "tests/test_news_grasp_cleanroom_operational_cutover.py::test_launcher_exposes_dispatch_api_and_cli_surface",
+        "tests/test_news_grasp_cleanroom_operational_cutover.py::test_legacy_probe_cli_rejects_caller_supplied_outside_path",
         "tests/test_news_grasp_cleanroom_operational_cutover.py::test_live_readiness_accepts_cleanroom_dispatch_and_rejects_legacy_runner_only",
         "tests/test_news_grasp_cleanroom_operational_cutover.py::test_release_live_task_parity_accepts_canonical_and_rejects_all_drift_classes",
-        "tests/test_news_grasp_cleanroom_operational_cutover.py::test_release_live_task_parity_rejects_caller_self_report_boolean"
+        "tests/test_news_grasp_cleanroom_operational_cutover.py::test_release_live_task_parity_rejects_caller_self_report_boolean",
+        "tests/test_news_grasp_cleanroom_operational_cutover.py::test_successful_entry_canary_cleanup_removes_only_exact_nonce_subtree",
+        "tests/test_news_grasp_cleanroom_operational_cutover.py::test_task_origin_witness_accepts_protected_direct_schedule_service_parent"
       ],
       "clauseIds": [
         "NGC-C06",
@@ -2340,7 +2390,7 @@
     },
     {
       "path": "tests/test_news_grasp_cleanroom_value_review_lane_b.py",
-      "sha256": "efbb33c8ae69ed445dfa63fddaf745ada4e569ec237b12fa465bed375c6b27c9",
+      "sha256": "01b9a3b004d5437e1dad5b4bb34fc17e9ab3302da8b6e1d1d7a29ceeb14aefe4",
       "nodeCount": 8,
       "nodeIds": [
         "tests/test_news_grasp_cleanroom_value_review_lane_b.py::test_cleanroom_child_drains_bounded_pipes_and_renews_during_large_output",
@@ -2359,7 +2409,7 @@
     },
     {
       "path": "tests/test_news_grasp_completion_guard.py",
-      "sha256": "dcbbf8d77e82d810977bdc3d180d1f60aef05855cf6636ca7b62b53d17e92c3d",
+      "sha256": "d3ad25cdaf1012adb6701795014bdc8db57c4f6c98c5a919f9d1eba71a6f64cd",
       "nodeCount": 12,
       "nodeIds": [
         "tests/test_news_grasp_completion_guard.py::test_20260813_historical_four_hour_shape_fails_and_repaired_replay_passes",
@@ -2398,8 +2448,8 @@
     },
     {
       "path": "tests/test_news_grasp_constitution_acceptance.py",
-      "sha256": "19853f4b7dbe54dcd44895f2066772626e5ad79e4c1bfa3034ae12df082b5ab9",
-      "nodeCount": 51,
+      "sha256": "a101571d3a18bdb81e015dab41607919af6ce7bc3a28cbaff7341bee2fdc2786",
+      "nodeCount": 69,
       "nodeIds": [
         "tests/test_news_grasp_constitution_acceptance.py::test_a01_boundary",
         "tests/test_news_grasp_constitution_acceptance.py::test_a01_primary",
@@ -2451,7 +2501,25 @@
         "tests/test_news_grasp_constitution_acceptance.py::test_a16_recovery",
         "tests/test_news_grasp_constitution_acceptance.py::test_a17_boundary",
         "tests/test_news_grasp_constitution_acceptance.py::test_a17_primary",
-        "tests/test_news_grasp_constitution_acceptance.py::test_a17_recovery"
+        "tests/test_news_grasp_constitution_acceptance.py::test_a17_recovery",
+        "tests/test_news_grasp_constitution_acceptance.py::test_a18_boundary",
+        "tests/test_news_grasp_constitution_acceptance.py::test_a18_primary",
+        "tests/test_news_grasp_constitution_acceptance.py::test_a18_recovery",
+        "tests/test_news_grasp_constitution_acceptance.py::test_a19_boundary",
+        "tests/test_news_grasp_constitution_acceptance.py::test_a19_primary",
+        "tests/test_news_grasp_constitution_acceptance.py::test_a19_recovery",
+        "tests/test_news_grasp_constitution_acceptance.py::test_a20_boundary",
+        "tests/test_news_grasp_constitution_acceptance.py::test_a20_primary",
+        "tests/test_news_grasp_constitution_acceptance.py::test_a20_recovery",
+        "tests/test_news_grasp_constitution_acceptance.py::test_a21_boundary",
+        "tests/test_news_grasp_constitution_acceptance.py::test_a21_primary",
+        "tests/test_news_grasp_constitution_acceptance.py::test_a21_recovery",
+        "tests/test_news_grasp_constitution_acceptance.py::test_a22_boundary",
+        "tests/test_news_grasp_constitution_acceptance.py::test_a22_primary",
+        "tests/test_news_grasp_constitution_acceptance.py::test_a22_recovery",
+        "tests/test_news_grasp_constitution_acceptance.py::test_a23_boundary",
+        "tests/test_news_grasp_constitution_acceptance.py::test_a23_primary",
+        "tests/test_news_grasp_constitution_acceptance.py::test_a23_recovery"
       ],
       "clauseIds": [
         "NGC-C06",
@@ -2460,13 +2528,15 @@
     },
     {
       "path": "tests/test_news_grasp_constitution_projection.py",
-      "sha256": "a4de5ec02851b5664800b802cd1463088c986de93c267c3698162178178c5823",
-      "nodeCount": 4,
+      "sha256": "11f0ab18dea58bfaec87c99ac70f2a0ba27f2bc360e700c15f44055949179cf6",
+      "nodeCount": 6,
       "nodeIds": [
         "tests/test_news_grasp_constitution_projection.py::test_constitution_asset_projection_hashes_every_versioned_asset",
         "tests/test_news_grasp_constitution_projection.py::test_constitution_html_projection_has_accessible_offline_contract",
         "tests/test_news_grasp_constitution_projection.py::test_constitution_projection_is_exact_mirrored_and_generated",
-        "tests/test_news_grasp_constitution_projection.py::test_constitution_projection_rejects_unpaired_or_duplicate_markers"
+        "tests/test_news_grasp_constitution_projection.py::test_constitution_projection_rejects_unpaired_or_duplicate_markers",
+        "tests/test_news_grasp_constitution_projection.py::test_public_recovery_operational_design_is_trace_generated_and_hash_bound",
+        "tests/test_news_grasp_constitution_projection.py::test_public_recovery_operational_design_rejects_unknown_edge_node"
       ],
       "clauseIds": [
         "NGC-C06",
@@ -2475,7 +2545,7 @@
     },
     {
       "path": "tests/test_news_grasp_constitution_trace_compiler.py",
-      "sha256": "52f7db0b2f5bd08cd3e9c2bd5b76c8f23f7fe85bff686f6eb1c3c2bb9fc48641",
+      "sha256": "d676a575e731d94e477bc15716cd2b168ab93528e23be8e894df12951f75900b",
       "nodeCount": 3,
       "nodeIds": [
         "tests/test_news_grasp_constitution_trace_compiler.py::test_trace_compiler_boundary_rejects_missing_user_outcome",
@@ -2503,8 +2573,8 @@
     },
     {
       "path": "tests/test_news_grasp_daily_control.py",
-      "sha256": "9b07eeec4d77850e91fa63b4c3f4e32f0077385df571935b231c08e8eb1698f1",
-      "nodeCount": 37,
+      "sha256": "1f2acb91a8d643a1f220ba7b8b5f7bfe852dbf97314dd50b36bc5dd6077eb088",
+      "nodeCount": 38,
       "nodeIds": [
         "tests/test_news_grasp_daily_control.py::test_audit_controller_failure_writes_owned_major_incident",
         "tests/test_news_grasp_daily_control.py::test_audit_decision_does_not_accept_caller_repair_classification",
@@ -2531,6 +2601,7 @@
         "tests/test_news_grasp_daily_control.py::test_operational_truth_separates_admission_file_hash_from_ledger_receipt",
         "tests/test_news_grasp_daily_control.py::test_production_backend_resolves_legacy_failure_receipt_by_ledger_hash",
         "tests/test_news_grasp_daily_control.py::test_production_registry_excludes_root_fix_promotion_routes",
+        "tests/test_news_grasp_daily_control.py::test_public_green_closeout_blocker_is_typed_terminal_and_preserves_attempt_lineage",
         "tests/test_news_grasp_daily_control.py::test_recovery_plan_is_bounded_and_preserves_scheduled_failure",
         "tests/test_news_grasp_daily_control.py::test_registry_requires_production_call_edge",
         "tests/test_news_grasp_daily_control.py::test_resume_branch_consumes_recovery_authority_not_failed_production_admission",
@@ -2624,7 +2695,7 @@
     },
     {
       "path": "tests/test_news_grasp_generation_boundary.py",
-      "sha256": "be85bc9a21e846b32d71c0e9bd950c685b43adfb62f067c10bf2a7e481a0b752",
+      "sha256": "37864393af3123c290509b8ad327c97514fb8bda201f2c21f66629ffa77a0667",
       "nodeCount": 6,
       "nodeIds": [
         "tests/test_news_grasp_generation_boundary.py::test_generation_manifest_seals_complete_tracked_source_tree",
@@ -2847,6 +2918,77 @@
       ]
     },
     {
+      "path": "tests/test_news_grasp_public_recovery_l5.py",
+      "sha256": "4869dd70191ed20f732afef0ba8c756cfc49222813cadf0aff086cccb8ef4585",
+      "nodeCount": 1,
+      "nodeIds": [
+        "tests/test_news_grasp_public_recovery_l5.py::test_20260827_public_recovery_production_composition_l5"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
+      "path": "tests/test_news_grasp_recovery_closeout.py",
+      "sha256": "cbc9cf1480d788b3b737f688f53e2df88114a24f141b75a03da6751aa71ba556",
+      "nodeCount": 25,
+      "nodeIds": [
+        "tests/test_news_grasp_recovery_closeout.py::test_actual_runner_blocks_non_finalizer_reentry_after_public_green",
+        "tests/test_news_grasp_recovery_closeout.py::test_applied_receipt_ledger_blocks_reseal",
+        "tests/test_news_grasp_recovery_closeout.py::test_closeout_ledger_rejects_issue_date_path_escape[../outside]",
+        "tests/test_news_grasp_recovery_closeout.py::test_closeout_ledger_rejects_issue_date_path_escape[2026-02-30]",
+        "tests/test_news_grasp_recovery_closeout.py::test_closeout_ledger_rejects_issue_date_path_escape[2026-08-27/../../outside]",
+        "tests/test_news_grasp_recovery_closeout.py::test_exact_finalizer_crash_reuses_same_receipt",
+        "tests/test_news_grasp_recovery_closeout.py::test_exact_finalizer_rejects_tampered_receipt",
+        "tests/test_news_grasp_recovery_closeout.py::test_exact_finalizer_rejects_valid_but_mixed_execution_chain",
+        "tests/test_news_grasp_recovery_closeout.py::test_one_shot_reseal_fixes_known_drift_and_preserves_public_tree",
+        "tests/test_news_grasp_recovery_closeout.py::test_one_shot_reseal_rejects_sequential_second_attempt",
+        "tests/test_news_grasp_recovery_closeout.py::test_post_public_green_allows_exact_five_operations",
+        "tests/test_news_grasp_recovery_closeout.py::test_post_public_green_consumers_delegate_to_single_admission_owner",
+        "tests/test_news_grasp_recovery_closeout.py::test_post_public_green_forbidden_operation_is_blocked[broad_search]",
+        "tests/test_news_grasp_recovery_closeout.py::test_post_public_green_forbidden_operation_is_blocked[deepdive_regeneration]",
+        "tests/test_news_grasp_recovery_closeout.py::test_post_public_green_forbidden_operation_is_blocked[report_polish]",
+        "tests/test_news_grasp_recovery_closeout.py::test_post_public_green_forbidden_operation_is_blocked[runner_regeneration]",
+        "tests/test_news_grasp_recovery_closeout.py::test_post_public_green_unknown_drift_is_evidenced",
+        "tests/test_news_grasp_recovery_closeout.py::test_reseal_lock_rejects_parallel_one_shot",
+        "tests/test_news_grasp_recovery_closeout.py::test_reseal_transaction_recovers_uncaught_crash_on_next_one_shot",
+        "tests/test_news_grasp_recovery_closeout.py::test_reseal_transaction_rolls_back_near_limit_receipt",
+        "tests/test_news_grasp_recovery_closeout.py::test_reseal_transaction_rolls_back_receipts_and_ledger_on_post_write_failure[finalization_write]",
+        "tests/test_news_grasp_recovery_closeout.py::test_reseal_transaction_rolls_back_receipts_and_ledger_on_post_write_failure[post_ledger_validation]",
+        "tests/test_news_grasp_recovery_closeout.py::test_resume_bound_receipt_builds_exact_finalizer_args",
+        "tests/test_news_grasp_recovery_closeout.py::test_runner_public_green_predicate_rejects_partial_manifest",
+        "tests/test_news_grasp_recovery_closeout.py::test_unknown_receipt_drift_becomes_typed_closeout_blocker"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
+      "path": "tests/test_news_grasp_recovery_freshness.py",
+      "sha256": "ee7a32aa9b8cfe2009cf1dea1a50b10dbb61476f219bc573ac4bfba729f41dca",
+      "nodeCount": 12,
+      "nodeIds": [
+        "tests/test_news_grasp_recovery_freshness.py::test_audit_and_runner_consume_freshness_before_recovery_child_admission",
+        "tests/test_news_grasp_recovery_freshness.py::test_cli_green_and_cli_stale_red_use_same_freshness_predicate",
+        "tests/test_news_grasp_recovery_freshness.py::test_current_exact_commit_is_checked",
+        "tests/test_news_grasp_recovery_freshness.py::test_exact_sha_parity_is_green_with_per_file_and_set_evidence",
+        "tests/test_news_grasp_recovery_freshness.py::test_git_timeout_is_typed_red_before_spawn",
+        "tests/test_news_grasp_recovery_freshness.py::test_manifest_rejects_path_escape_before_child_spawn",
+        "tests/test_news_grasp_recovery_freshness.py::test_missing_and_tampered_generation_inputs_fail_closed",
+        "tests/test_news_grasp_recovery_freshness.py::test_self_consistent_stale_runtime_manifest_cannot_bypass_source_cross_sha",
+        "tests/test_news_grasp_recovery_freshness.py::test_stale_worktree_file_is_rejected_before_spawn_callback",
+        "tests/test_news_grasp_recovery_freshness.py::test_symlinked_critical_file_is_rejected_when_platform_allows_symlink",
+        "tests/test_news_grasp_recovery_freshness.py::test_trusted_manifest_critical_set_mismatch_is_typed_red",
+        "tests/test_news_grasp_recovery_freshness.py::test_untracked_sitecustomize_is_rejected_before_spawn_callback"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
       "path": "tests/test_news_grasp_recovery_receipts.py",
       "sha256": "d1d3cc03f8893ddb0b59beb4f6ed547db74889d6209e8b186daef579a1f693ef",
       "nodeCount": 10,
@@ -3039,7 +3181,7 @@
     },
     {
       "path": "tests/test_operational_redesign_contract.py",
-      "sha256": "06c975cf35e46c2f27a2d75ddd9c7886480be8f7597f0549cab2024b84fbe20f",
+      "sha256": "3013951321ad8f058a0fa635bda39c1c0dfb57470854441c1c8902b25dcada12",
       "nodeCount": 53,
       "nodeIds": [
         "tests/test_operational_redesign_contract.py::test_ng2_a01_adversarial_scope_escape",
@@ -3103,7 +3245,7 @@
     },
     {
       "path": "tests/test_operational_redesign_matrix.py",
-      "sha256": "bd1722f19a1a14973b171ed24fef7769b5b3def2ba268ff1db80799d0a05e522",
+      "sha256": "a98504640f80b096fcce4daa5c4dd599c1fc5da6d2772037941b1b5c6b6e1467",
       "nodeCount": 43,
       "nodeIds": [
         "tests/test_operational_redesign_matrix.py::test_ng2_wp02_matrix_matches_declared_nodes",
@@ -3413,12 +3555,13 @@
     },
     {
       "path": "tests/test_recovery_state_gate.py",
-      "sha256": "1ce81a486eb08f0b51ef77e9ef5a3d594f66eb09164e58d471ae1f706a6bf9e7",
-      "nodeCount": 7,
+      "sha256": "3a79970f124d1eaf4a53ec0d5d46c70fa00c76d20bedbad52dc53a28ef5a5d11",
+      "nodeCount": 8,
       "nodeIds": [
         "tests/test_recovery_state_gate.py::test_recovery_proof_green_requires_no_external_block",
         "tests/test_recovery_state_gate.py::test_recovery_proof_rejects_stale_wrong_repo_wrong_head_and_legacy",
         "tests/test_recovery_state_gate.py::test_recovery_proof_yellow_allows_single_known_external_block",
+        "tests/test_recovery_state_gate.py::test_verify_public_surface_git_timeout_is_typed_closeout_blocker",
         "tests/test_recovery_state_gate.py::test_verify_public_surface_keeps_public_and_scheduled_attempt_status_separate",
         "tests/test_recovery_state_gate.py::test_verify_public_surface_passes_canonical_ops_root_to_completion_verifier",
         "tests/test_recovery_state_gate.py::test_verify_public_surface_returns_to_full_publish_complete_for_google_api",
@@ -3893,8 +4036,8 @@
     },
     {
       "path": "tests/test_runner_convergence_contract.py",
-      "sha256": "26cf61ff212accdd5c52df06f74902315816cbd20e27d8e921825b76e8e1cea6",
-      "nodeCount": 207,
+      "sha256": "c1c1352088644020b437b85a10ae6266e5caa9a4577c400e48d1bd61d968f5b5",
+      "nodeCount": 209,
       "nodeIds": [
         "tests/test_runner_convergence_contract.py::test_atomic_install_failure_preserves_old_destination",
         "tests/test_runner_convergence_contract.py::test_atomic_install_replaces_hardlink_entry_without_mutating_sibling",
@@ -3906,6 +4049,7 @@
         "tests/test_runner_convergence_contract.py::test_bootstrap_accepts_only_canonical_dispatch_context_for_production_task",
         "tests/test_runner_convergence_contract.py::test_bootstrap_archives_stale_same_day_startup_canary_before_preflight",
         "tests/test_runner_convergence_contract.py::test_bootstrap_runtime_convergence_failure_is_preserved_as_typed_evidence",
+        "tests/test_runner_convergence_contract.py::test_bootstrap_smoke_does_not_require_high_cost_mission_or_launch_permit",
         "tests/test_runner_convergence_contract.py::test_bootstrap_smoke_uses_isolated_state_and_backed_up_self_repair",
         "tests/test_runner_convergence_contract.py::test_claude_prompt_does_not_delegate_commit_to_claude",
         "tests/test_runner_convergence_contract.py::test_codex_auth_preflight_runs_before_llm_repair",
@@ -3957,6 +4101,7 @@
         "tests/test_runner_convergence_contract.py::test_install_guard_rejects_unrelated_repo_recreated_at_canonical_runtime_path",
         "tests/test_runner_convergence_contract.py::test_install_guard_rejects_working_payload_hidden_by_inherited_global_clean_filter",
         "tests/test_runner_convergence_contract.py::test_install_guard_revalidates_generation_after_runtime_root_path_migration",
+        "tests/test_runner_convergence_contract.py::test_install_journal_writer_shape_with_delivery_state_is_accepted_by_recovery_guard",
         "tests/test_runner_convergence_contract.py::test_installed_launcher_resolves_policy_consumer_from_execution_repo",
         "tests/test_runner_convergence_contract.py::test_installed_nopublish_launcher_accepts_only_same_generation_isolation",
         "tests/test_runner_convergence_contract.py::test_installed_nopublish_launcher_rejects_cross_generation_isolation",

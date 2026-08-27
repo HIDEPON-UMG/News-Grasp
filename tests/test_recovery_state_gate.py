@@ -3,6 +3,9 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
+import subprocess
+
+import pytest
 
 from tools import verify_public_surface
 from tools.recovery_state import (
@@ -15,6 +18,22 @@ from tools.recovery_state import (
 
 NOW = datetime(2026, 6, 26, 12, 0, tzinfo=timezone.utc)
 HEAD = "a" * 40
+
+
+def test_verify_public_surface_git_timeout_is_typed_closeout_blocker(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """post-public Git observationは30秒timeoutをtyped blockerにする。"""
+
+    def timeout(*_args: object, **_kwargs: object) -> object:
+        raise subprocess.TimeoutExpired(cmd="git", timeout=30)
+
+    monkeypatch.setattr(verify_public_surface.subprocess, "run", timeout)
+    with pytest.raises(
+        verify_public_surface.PublicSurfaceCloseoutError,
+        match="post_public_closeout_blocker:git_timeout",
+    ):
+        verify_public_surface._run_git(tmp_path, ["rev-parse", "HEAD"])
 
 
 def _proof(tmp_path: Path, **overrides: object) -> dict:

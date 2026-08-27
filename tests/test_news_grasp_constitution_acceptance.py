@@ -108,7 +108,7 @@ def _make_test(
 
 _VALUE = _matrix()
 assert _VALUE["schemaVersion"] == "NEWS_GRASP_CONSTITUTION_ACCEPTANCE_MATRIX_V1"
-assert len(_VALUE["rows"]) == 17
+assert len(_VALUE["rows"]) == 23
 for _ROW in _VALUE["rows"]:
     assert len(_ROW["perspectives"]) == 3
     assert len(_ROW["redNodeIds"]) == 3

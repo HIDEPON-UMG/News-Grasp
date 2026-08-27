@@ -74,6 +74,95 @@ def _admit_test_execution_receipt(monkeypatch, control) -> None:
         "consume_or_resume",
         lambda **_kwargs: {"status": "consumed_pending_operation"},
     )
+    monkeypatch.setattr(
+        control.news_grasp_recovery_freshness,
+        "verify_recovery_freshness",
+        lambda **_kwargs: {
+            "schemaVersion": "NEWS_GRASP_RECOVERY_FRESHNESS_V1",
+            "ok": True,
+            "status": "fresh",
+            "reasonCode": "RECOVERY_DEEPDIVE_RUNTIME_FRESHNESS_GREEN",
+        },
+    )
+    monkeypatch.setattr(
+        control.news_grasp_recovery_closeout,
+        "record_closeout_operation",
+        lambda **_kwargs: {"status": "allowed"},
+    )
+    monkeypatch.setattr(
+        control,
+        "_run_post_public_automation_completion_guard",
+        lambda **_kwargs: {
+            "schemaVersion": "NEWS_GRASP_640_COMPLETION_GUARD_V1",
+            "ok": True,
+            "issueDate": "2026-08-13",
+            "scheduled_attempt_status": "failed_then_recovered",
+            "recovery_attempt_status": "succeeded",
+            "public_status": "green",
+            "runner_status": "publish_complete",
+            "run_intent": "ScheduledRecoveryFull",
+        },
+    )
+    monkeypatch.setattr(
+        control.news_grasp_recovery_closeout,
+        "build_exact_finalizer_command",
+        lambda **kwargs: {
+            "argv": [
+                "powershell.exe",
+                "-NoProfile",
+                "-NonInteractive",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                str(control.CANONICAL_LIVE_BIN_ROOT / "news-grasp-runner.ps1"),
+                "-FinalizeVerifiedPublishManifest",
+                str(kwargs["publish_manifest_path"]),
+                "-RecoveryFinalizationReceiptPath",
+                str(kwargs["finalization_receipt_path"]),
+            ]
+        },
+    )
+
+    def completion_from_closeout(**kwargs):
+        """post-Green completion seamへ、同日・同rootのsealed evidenceを返す。"""
+
+        issue_date = str(kwargs["issue_date"])
+        artifact_root = Path(str(kwargs["artifact_repo_root"])).resolve()
+        ops_root = Path(control.CANONICAL_RUNNER_STATE_PATH).parent.resolve()
+        lineage = control._completion_lineage(
+            issue_date=issue_date,
+            run_intent="ScheduledRecoveryFull",
+            run_id="test-closeout-run",
+            artifact_root=artifact_root,
+            ops_root=ops_root,
+        )
+        completion = _seal(
+            {
+                "schemaVersion": "SAME_DATE_COMPLETION_EVIDENCE_V1",
+                "issuer": control.VERIFIED_COMPLETION_ISSUER,
+                "issueDate": issue_date,
+                "publishStatusIssueDate": issue_date,
+                "runIntent": "ScheduledRecoveryFull",
+                "runId": "test-closeout-run",
+                **lineage,
+                "checks": {field: True for field in control.COMPLETION_FIELDS},
+                "evidenceSha256": {
+                    field: "9" * 64 for field in control.COMPLETION_FIELDS
+                },
+                "verificationStatus": "verified_green",
+                "publicCompletionStatus": "green",
+                "nextRunReadinessStatus": "green",
+                "phase": "post_public_closeout",
+                "reasonCode": "VERIFIED_GREEN",
+                "failedGateIds": [],
+            }
+        )
+        assert control.same_date_completion_green(issue_date, completion)
+        return completion
+
+    monkeypatch.setattr(
+        control, "_completion_evidence_from_closeout", completion_from_closeout
+    )
 
 
 def _green_completion(control, run_intent: str) -> dict[str, object]:
@@ -475,9 +564,11 @@ def test_green_public_surface_releases_only_runner_finalization_after_recovery(
     assert decision["publicStatus"] == "green"
     assert decision["workPriority"] == "runner_finalization_only"
     assert decision["allowedAfterPublicGreen"] == (
-        "manifest_reverification",
-        "typed_runner_finalizer",
+        "finalizer_exact_args_replay",
+        "receipt_reseal",
         "completion_guard",
+        "verify_public_surface",
+        "final_report",
     )
 
 
@@ -1397,15 +1488,10 @@ def test_execute_uses_typed_finalizer_when_public_manifest_is_already_green(
                 "recoveryAttemptStatus": "not_started",
                 "recoveryAuthorityReceiptSha256": "a" * 64,
             },
-            {
-                "action": "none",
-                "terminal": "audit_recovered_green",
-                "scheduledAttemptStatus": "failed",
-                "recoveryAttemptStatus": "succeeded",
-            },
         ]
     )
     commands: list[list[str]] = []
+    surface_calls: list[str] = []
     monkeypatch.setattr(control, "CANONICAL_REPO_ROOT", canonical)
     monkeypatch.setattr(control, "CANONICAL_LIVE_BIN_ROOT", runner.parent)
     monkeypatch.setattr(control, "decide_audit_recovery", lambda _payload: next(decisions))
@@ -1429,6 +1515,14 @@ def test_execute_uses_typed_finalizer_when_public_manifest_is_already_green(
         control,
         "_run_bounded",
         lambda command, **kwargs: (commands.append(command) or 0, b""),
+    )
+    monkeypatch.setattr(
+        control,
+        "_verify_post_public_closeout_surface",
+        lambda **kwargs: (
+            surface_calls.append(str(kwargs["issue_date"]))
+            or {"ok": True, "overall_status": "green"}
+        ),
     )
     finalization_receipt = manifest.with_name("2026-08-13.finalization-receipt.json")
     finalization_receipt.write_text("{}", encoding="utf-8")
@@ -1462,6 +1556,272 @@ def test_execute_uses_typed_finalizer_when_public_manifest_is_already_green(
     assert commands[0][commands[0].index("-RecoveryFinalizationReceiptPath") + 1] == str(
         finalization_receipt
     )
+    assert surface_calls == ["2026-08-13"]
+
+
+def _public_green_exact_args_fixture(monkeypatch, tmp_path: Path):
+    """公開Green後のcloseoutだけを通すための実行境界fixture。"""
+
+    control = _control("POST_PUBLIC_GREEN_EXACT_ARGS_REPLAY")
+    issue_date = "2026-08-27"
+    artifact = tmp_path / "artifact"
+    (artifact / "docs").mkdir(parents=True)
+    (artifact / "docs" / "index.html").write_text(
+        "<!doctype html><title>stable public artifact</title>", encoding="utf-8"
+    )
+    manifest = artifact / "build" / "publish-complete" / f"{issue_date}.json"
+    manifest.parent.mkdir(parents=True)
+    manifest.write_text(
+        json.dumps(
+            {
+                "schemaVersion": "NEWS_GRASP_PUBLISH_COMPLETE_V2",
+                "date": issue_date,
+                "ok": True,
+                "public_status": "green",
+                "scheduled_attempt_status": "failed_then_recovered",
+                "recovery_attempt_status": "succeeded",
+                "source_commit": "a" * 40,
+                "artifact_commit": "b" * 40,
+                "publish_commit": "c" * 40,
+                "publish": {"ok": True, "deploy_head": "c" * 40},
+                "distribution_artifacts": {"missing": []},
+                "notification": {"ok": True},
+                "podcasts": {
+                    "primary": {"ok": True},
+                    "deepdive": {"ok": True},
+                },
+                "live_runner_readiness": {
+                    "ok": True,
+                    "next_run_readiness": {"ok": True},
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    recovery_authority_dir = artifact / "build" / "recovery-authority"
+    recovery_authority_dir.mkdir(parents=True)
+    execution_receipt = recovery_authority_dir / f"{issue_date}-execution-receipt.json"
+    execution_receipt.write_text("{}\n", encoding="utf-8")
+    finalization_receipt = manifest.with_name(f"{issue_date}.finalization-receipt.json")
+    finalization_receipt.write_text("{}\n", encoding="utf-8")
+
+    canonical = tmp_path / "canonical"
+    runner = canonical / "scripts" / "ops" / "news-grasp-runner.ps1"
+    runner.parent.mkdir(parents=True)
+    runner.write_text("# finalizer fixture\n", encoding="utf-8")
+    python = canonical / ".venv" / "Scripts" / "python.exe"
+    python.parent.mkdir(parents=True)
+    python.write_bytes(b"bound-python")
+    authority = artifact / "build" / "authority.json"
+    authority.write_text("{}\n", encoding="utf-8")
+
+    expected_argv = [
+        "powershell.exe",
+        "-NoProfile",
+        "-NonInteractive",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        str(runner),
+        "-RunIntent",
+        "ScheduledRecoveryFull",
+        "-DateStampOverride",
+        issue_date,
+        "-RepoDirOverride",
+        str(artifact),
+        "-OpsRepoRootOverride",
+        str(canonical),
+        "-PyExeOverride",
+        str(python),
+        "-StateFileOverride",
+        str(canonical / "runner-state.json"),
+        "-LogDirOverride",
+        str(canonical / "news-grasp-logs"),
+        "-ResumeFromStage",
+        "generation-quality-repair",
+        "-FinalizeVerifiedPublishManifest",
+        str(manifest),
+        "-RecoveryFinalizationReceiptPath",
+        str(finalization_receipt),
+    ]
+    decisions = iter(
+        [
+            {
+                "action": "scheduled_recovery",
+                "terminal": None,
+                "scheduledAttemptStatus": "failed",
+                "recoveryAttemptStatus": "succeeded",
+                "recoveryBranch": "ResumeFromStage",
+                "resumeStage": "generation-quality-repair",
+                "recoveryAuthorityReceiptSha256": "a" * 64,
+            },
+        ]
+    )
+    calls: dict[str, list[object]] = {
+        "build": [],
+        "reseal": [],
+        "run": [],
+        "operations": [],
+        "terminals": [],
+    }
+
+    monkeypatch.setattr(control, "CANONICAL_REPO_ROOT", canonical)
+    monkeypatch.setattr(control, "CANONICAL_LIVE_BIN_ROOT", runner.parent)
+    monkeypatch.setattr(control, "decide_audit_recovery", lambda _payload: next(decisions))
+    monkeypatch.setattr(control, "_resolve_artifact_repo_root", lambda _payload: artifact)
+    monkeypatch.setattr(control, "_validate_artifact_executable_tree", lambda _root: "b" * 40)
+    monkeypatch.setattr(control, "_contained_file", lambda *args, **kwargs: authority)
+    monkeypatch.setattr(control, "_file_sha256", lambda _path: "c" * 64)
+    monkeypatch.setattr(control, "write_audit_terminal", lambda value: calls["terminals"].append(value))
+    monkeypatch.setattr(
+        control.news_grasp_recovery_closeout,
+        "record_closeout_operation",
+        lambda **kwargs: calls["operations"].append(kwargs) or {"status": "allowed"},
+    )
+    monkeypatch.setattr(
+        control,
+        "_run_bounded",
+        lambda command, **kwargs: (calls["run"].append(command) or 0, b""),
+    )
+    monkeypatch.setattr(
+        control,
+        "_verify_post_public_closeout_surface",
+        lambda **kwargs: {"ok": True, "overall_status": "green"},
+    )
+    _admit_test_execution_receipt(monkeypatch, control)
+
+    def unexpected_control_plane(**_kwargs):
+        pytest.fail("public Green closeout must not rediscover control-plane state")
+
+    def admitted_freshness(**_kwargs):
+        return {
+            "ok": True,
+            "status": "green",
+            "reasonCode": "RECOVERY_DEEPDIVE_RUNTIME_FRESHNESS_GREEN",
+        }
+
+    def unexpected_receipt(**_kwargs):
+        pytest.fail("public Green closeout must not issue a new execution receipt")
+
+    def unexpected_binding(*_args, **_kwargs):
+        pytest.fail("public Green closeout must not resolve high-cost binding")
+
+    monkeypatch.setattr(
+        control.news_grasp_control_plane, "verify_control_plane", unexpected_control_plane
+    )
+    monkeypatch.setattr(
+        control.news_grasp_recovery_freshness,
+        "verify_recovery_freshness",
+        admitted_freshness,
+    )
+    monkeypatch.setattr(control, "_issue_recovery_execution_receipt", unexpected_receipt)
+    monkeypatch.setattr(control, "resolve_live_high_cost_binding", unexpected_binding)
+    monkeypatch.setattr(control, "_fresh_reverify_and_issue_finalization", unexpected_receipt)
+
+    payload = {
+        "issueDate": issue_date,
+        "recoveryAuthorityPath": str(authority),
+        "recoveryExecution": {},
+    }
+    return {
+        "control": control,
+        "payload": payload,
+        "issue_date": issue_date,
+        "artifact": artifact,
+        "canonical": canonical,
+        "runner": runner,
+        "manifest": manifest,
+        "execution_receipt": execution_receipt,
+        "finalization_receipt": finalization_receipt,
+        "expected_argv": expected_argv,
+        "calls": calls,
+    }
+
+
+def test_public_green_closeout_reseals_known_drift_then_replays_exact_args_once(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """known driftは一括再封印後にreceipt由来argvを一度だけ実行する。"""
+
+    fixture = _public_green_exact_args_fixture(monkeypatch, tmp_path)
+    control = fixture["control"]
+    closeout = control.news_grasp_recovery_closeout
+    calls = fixture["calls"]
+
+    def build(**kwargs):
+        calls["build"].append(kwargs)
+        if len(calls["build"]) == 1:
+            raise closeout.PostPublicCloseoutError(
+                "post_public_closeout_blocker:known_receipt_drift"
+            )
+        return {
+            "status": "Green",
+            "argv": fixture["expected_argv"],
+            "argvSha256": "d" * 64,
+        }
+
+    def reseal(**kwargs):
+        calls["reseal"].append(kwargs)
+        return {"status": "Green", "receiptResealed": True}
+
+    monkeypatch.setattr(closeout, "build_exact_finalizer_command", build)
+    monkeypatch.setattr(closeout, "reseal_known_receipt_drift", reseal)
+
+    result = control.execute_audit_recovery(fixture["payload"])
+
+    assert result["terminal"] == "audit_recovered_green"
+    assert result["scheduledAttemptStatus"] == "failed"
+    assert result["recoveryAttemptStatus"] == "succeeded"
+    assert result["postPublicCloseout"]["receiptResealAttempts"] == 1
+    assert result["postPublicCloseout"]["publicArtifactUnchanged"] is True
+    assert control.same_date_completion_green(
+        fixture["issue_date"], result["completionEvidence"]
+    )
+    assert len(result["completionEvidence"]["receiptSha256"]) == 64
+    assert len(calls["build"]) == 2
+    assert len(calls["reseal"]) == 1
+    assert calls["run"] == [fixture["expected_argv"]]
+    assert calls["build"][0]["execution_receipt_path"] == fixture["execution_receipt"]
+    assert calls["build"][1]["finalization_receipt_path"] == fixture["finalization_receipt"]
+    assert calls["reseal"][0]["execution_receipt_path"] == fixture["execution_receipt"]
+
+
+def test_public_green_closeout_unknown_drift_is_typed_blocker_without_runner_child(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """unknown driftは一回のresealでpost_public_closeout_blockerに固定する。"""
+
+    fixture = _public_green_exact_args_fixture(monkeypatch, tmp_path)
+    control = fixture["control"]
+    closeout = control.news_grasp_recovery_closeout
+    calls = fixture["calls"]
+
+    def build(**kwargs):
+        calls["build"].append(kwargs)
+        raise closeout.PostPublicCloseoutError(
+            "post_public_closeout_blocker:unknown_receipt_drift"
+        )
+
+    def reseal(**kwargs):
+        calls["reseal"].append(kwargs)
+        raise closeout.PostPublicCloseoutError(
+            "post_public_closeout_blocker:unknown_receipt_drift"
+        )
+
+    monkeypatch.setattr(closeout, "build_exact_finalizer_command", build)
+    monkeypatch.setattr(closeout, "reseal_known_receipt_drift", reseal)
+
+    result = control.execute_audit_recovery(fixture["payload"])
+
+    assert result["terminal"] == "audit_major_incident_open"
+    assert result["reasonCode"] == "post_public_closeout_blocker"
+    assert result["scheduledAttemptStatus"] == "failed"
+    assert result["recoveryAttemptStatus"] == "succeeded"
+    assert result["receiptResealAttempts"] == 1
+    assert len(calls["build"]) == 1
+    assert len(calls["reseal"]) == 1
+    assert calls["run"] == []
+    assert calls["terminals"] == [result]
 
 
 def test_execute_repairs_control_plane_once_then_reverifies_before_runner(
@@ -1588,6 +1948,11 @@ def test_execute_stops_after_one_control_plane_repair_if_drift_remains(
         control, "validate_recovery_execution_manifest", lambda *args, **kwargs: None
     )
     monkeypatch.setattr(
+        control.news_grasp_recovery_freshness,
+        "verify_recovery_freshness",
+        lambda **_kwargs: {"ok": True, "status": "green"},
+    )
+    monkeypatch.setattr(
         control.news_grasp_control_plane,
         "verify_control_plane",
         lambda **_kwargs: {"ok": False, "reasonCode": "LIVE_BIN_DRIFT"},
@@ -1657,6 +2022,7 @@ def test_post_green_runtime_drift_never_reenters_broad_repair(
     python.parent.mkdir(parents=True)
     python.write_bytes(b"python")
     commands: list[list[str]] = []
+    surface_calls: list[str] = []
     decisions = iter(
         [
             {
@@ -1665,12 +2031,6 @@ def test_post_green_runtime_drift_never_reenters_broad_repair(
                 "scheduledAttemptStatus": "failed",
                 "recoveryAttemptStatus": "not_started",
                 "recoveryAuthorityReceiptSha256": "a" * 64,
-            },
-            {
-                "action": "none",
-                "terminal": "audit_recovered_green",
-                "scheduledAttemptStatus": "failed",
-                "recoveryAttemptStatus": "succeeded",
             },
         ]
     )
@@ -1689,6 +2049,14 @@ def test_post_green_runtime_drift_never_reenters_broad_repair(
     )
     monkeypatch.setattr(
         control, "_run_bounded", lambda command, **_k: (commands.append(command) or 0, b"")
+    )
+    monkeypatch.setattr(
+        control,
+        "_verify_post_public_closeout_surface",
+        lambda **kwargs: (
+            surface_calls.append(str(kwargs["issue_date"]))
+            or {"ok": True, "overall_status": "green"}
+        ),
     )
     finalization_receipt = manifest.with_name("2026-08-13.finalization-receipt.json")
     finalization_receipt.write_text("{}", encoding="utf-8")
@@ -1717,6 +2085,59 @@ def test_post_green_runtime_drift_never_reenters_broad_repair(
     assert len(commands) == 1
     assert "-ControlPlaneRepairOnly" not in commands[0]
     assert "-FinalizeVerifiedPublishManifest" in commands[0]
+    assert surface_calls == ["2026-08-13"]
+
+
+def test_owned_public_green_freshness_red_never_spawns_finalizer(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """RC-03: public Green closeoutもfreshness Redならchildを0回で止める。"""
+
+    control = _control("POST_GREEN_FRESHNESS_PRESPAWN")
+    artifact = tmp_path / "artifact"
+    artifact.mkdir()
+    commands: list[list[str]] = []
+    terminals: list[dict] = []
+    monkeypatch.setattr(control, "_resolve_artifact_repo_root", lambda _p: artifact)
+    monkeypatch.setattr(
+        control, "_validate_artifact_executable_tree", lambda _r: "a" * 40
+    )
+    monkeypatch.setattr(
+        control.news_grasp_recovery_freshness,
+        "verify_recovery_freshness",
+        lambda **_kwargs: {
+            "ok": False,
+            "status": "red",
+            "detailCode": "SOURCE_RUNTIME_CRITICAL_SHA_MISMATCH",
+        },
+    )
+    monkeypatch.setattr(
+        control,
+        "_run_bounded",
+        lambda command, **_kwargs: (commands.append(command) or 0, b""),
+    )
+    monkeypatch.setattr(
+        control, "write_audit_terminal", lambda value: terminals.append(value)
+    )
+
+    result = control.execute_public_green_closeout_owned(
+        "2026-08-13",
+        {
+            "action": "launch_recovery",
+            "artifactRepoRoot": str(artifact),
+            "recoveryAttemptStatus": "succeeded",
+            "humanImpact": {
+                "noFocusTheft": True,
+                "noUserMonitoring": True,
+                "noAutoOpen": True,
+            },
+        },
+    )
+
+    assert result["reasonCode"] == control.POST_PUBLIC_CLOSEOUT_BLOCKER
+    assert "RECOVERY_DEEPDIVE_RUNTIME_FRESHNESS_MISMATCH" in result["closeoutError"]
+    assert commands == []
+    assert terminals == [result]
 
 
 def test_public_surface_proof_enforces_complete_bundle_before_post_green(
@@ -2050,11 +2471,7 @@ def _ng_red_green(control, reason: str, authority_id: str = "authority-1") -> di
             "publicStatus": "green",
             "operationState": "normal_green",
             "workPriority": "runner_finalization_only",
-            "allowedAfterPublicGreen": (
-                "manifest_reverification",
-                "typed_runner_finalizer",
-                "completion_guard",
-            ),
+            "allowedAfterPublicGreen": control.PUBLIC_GREEN_ALLOWED_OPERATIONS,
             "owner": "News-Grasp Operations",
             "completionAuthorityId": authority_id,
             "completionEvidenceSha256": completion["receiptSha256"],
@@ -2632,3 +3049,184 @@ def test_canonical_python_executable_delegates_to_live_runtime_resolver(
 
     assert Path(resolved).resolve() == bound_python.resolve()
     assert calls
+
+
+def _public_green_closeout_decision(issue_date: str) -> dict[str, object]:
+    """public Green済み・closeout未完了のcanonical decision fixture。"""
+
+    return {
+        "schemaVersion": "AUDIT_RECOVERY_DECISION_V2",
+        "issueDate": issue_date,
+        "action": "launch_recovery",
+        "publicStatus": "green",
+        "publicCompletionStatus": "green",
+        "closeoutStatus": "incomplete",
+        "closeoutComplete": False,
+        "scheduledAttemptStatus": "failed",
+        "recoveryAttemptStatus": "succeeded",
+        "recoveryBranch": "ResumeFromStage",
+        "resumeStage": "generation-quality-repair",
+        "receiptSha256": "a" * 64,
+    }
+
+
+def _public_green_terminal(issue_date: str) -> dict[str, object]:
+    return {
+        "schemaVersion": "AUDIT_RECOVERY_DECISION_V2",
+        "issueDate": issue_date,
+        "action": "none",
+        "terminal": "audit_recovered_green",
+        "reasonCode": "POST_PUBLIC_GREEN_CLOSEOUT_COMPLETE",
+        "scheduledAttemptStatus": "failed",
+        "recoveryAttemptStatus": "succeeded",
+        "publicStatus": "green",
+        "exitCode": 0,
+    }
+
+
+def _install_default_public_green_owner_seams(
+    monkeypatch, control, decision: dict[str, object], calls: list[tuple[str, dict[str, object]]]
+) -> None:
+    """default ensure ownerが実daily ownerのcloseout境界へ入るfixture。"""
+
+    from tools import news_grasp_daily_control
+
+    monkeypatch.setattr(
+        news_grasp_daily_control,
+        "prepare_recovery",
+        lambda **_: dict(decision),
+    )
+    monkeypatch.setattr(
+        news_grasp_daily_control,
+        "_has_verified_public_green_for_closeout",
+        lambda **_: True,
+    )
+
+    def fake_closeout(issue_date: str, value: dict[str, object]) -> dict[str, object]:
+        calls.append((issue_date, dict(value)))
+        return _public_green_terminal(issue_date)
+
+    monkeypatch.setattr(control, "execute_public_green_closeout_owned", fake_closeout)
+
+
+def test_ensure_audit_0640_default_owner_delegates_public_green_closeout_once(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """canonical ensureのdefault ownerはpublic Green closeoutを一度だけ委譲する。"""
+
+    control = _control("PUBLIC_GREEN_CLOSEOUT_DEFAULT_OWNER_MISSING")
+    issue_date = "2026-08-27"
+    decision = _public_green_closeout_decision(issue_date)
+    calls: list[tuple[str, dict[str, object]]] = []
+    _install_default_public_green_owner_seams(monkeypatch, control, decision, calls)
+
+    result = control.ensure_audit_0640(
+        issue_date=issue_date,
+        trigger="automation_0640",
+        transaction_root=tmp_path,
+    )
+
+    from tools import news_grasp_daily_control
+
+    expected_artifact_root = news_grasp_daily_control._resolve_public_green_artifact_root(
+        issue_date=issue_date,
+        backend=news_grasp_daily_control.ProductionBackend(),
+    )
+    assert len(calls) == 1
+    assert calls[0][0] == issue_date
+    assert decision.get("artifactRepoRoot") is None
+    assert calls[0][1] == {
+        **decision,
+        "artifactRepoRoot": str(expected_artifact_root),
+    }
+    assert result["transactionStatus"] == "terminal"
+    assert result["terminal"] == "audit_recovered_green"
+    assert result["scheduledAttemptStatus"] == "failed"
+    assert result["recoveryAttemptStatus"] == "succeeded"
+
+
+def test_direct_cli_execute_remains_canonical_ensure_only(
+    monkeypatch, tmp_path: Path, capsys
+) -> None:
+    """direct CLI executeはowner/closeoutを起動せずcanonical ensureへの遷移だけを返す。"""
+
+    control = _control("AUDIT_RECOVERY_DIRECT_EXECUTE_REQUIRES_CANONICAL_ENSURE")
+    input_path = tmp_path / "direct-execute.json"
+    input_path.write_text(
+        json.dumps({"issueDate": "2026-08-27", "trigger": "direct_cli"}),
+        encoding="utf-8",
+    )
+    terminals: list[dict[str, object]] = []
+    calls: list[str] = []
+    monkeypatch.setattr(
+        control,
+        "write_audit_terminal",
+        lambda value: terminals.append(dict(value)) or value,
+    )
+    monkeypatch.setattr(
+        control,
+        "ensure_audit_0640",
+        lambda **_: calls.append("ensure") or pytest.fail("direct CLI invoked owner"),
+    )
+    monkeypatch.setattr(
+        control,
+        "execute_public_green_closeout_owned",
+        lambda *_args, **_kwargs: pytest.fail("direct CLI invoked closeout"),
+    )
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["audit_recovery_control.py", "execute", "--input", str(input_path)],
+    )
+    process_exit_code = control.main()
+
+    assert process_exit_code == 2
+    assert calls == []
+    assert terminals == []
+    output = json.loads(capsys.readouterr().out)
+    assert output["reasonCode"] == (
+        "AUDIT_RECOVERY_DIRECT_EXECUTE_REQUIRES_CANONICAL_ENSURE"
+    )
+    assert output["nextAction"] == "invoke_ensure_0640"
+
+
+def test_terminal_projection_replay_does_not_reexecute_public_green_closeout(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """同一transactionのterminal projection/replayではcloseout consumerを再実行しない。"""
+
+    control = _control("PUBLIC_GREEN_CLOSEOUT_TERMINAL_REPLAY")
+    issue_date = "2026-08-27"
+    decision = _public_green_closeout_decision(issue_date)
+    calls: list[tuple[str, dict[str, object]]] = []
+    _install_default_public_green_owner_seams(monkeypatch, control, decision, calls)
+
+    first = control.ensure_audit_0640(
+        issue_date=issue_date,
+        trigger="automation_0640",
+        transaction_root=tmp_path,
+    )
+    second = control.ensure_audit_0640(
+        issue_date=issue_date,
+        trigger="automation_0640",
+        transaction_root=tmp_path,
+    )
+
+    assert first["transactionStatus"] == "terminal"
+    assert second["transactionStatus"] == "terminal_projection"
+    assert second["terminal"] == "audit_recovered_green"
+    assert second["reasonCode"] == "POST_PUBLIC_GREEN_CLOSEOUT_COMPLETE"
+    from tools import news_grasp_daily_control
+
+    expected_artifact_root = news_grasp_daily_control._resolve_public_green_artifact_root(
+        issue_date=issue_date,
+        backend=news_grasp_daily_control.ProductionBackend(),
+    )
+    assert len(calls) == 1
+    assert calls[0][0] == issue_date
+    assert decision.get("artifactRepoRoot") is None
+    assert calls[0][1] == {
+        **decision,
+        "artifactRepoRoot": str(expected_artifact_root),
+    }

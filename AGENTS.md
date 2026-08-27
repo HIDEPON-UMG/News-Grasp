@@ -35,8 +35,8 @@ This is the root routing contract for Claude Code and Codex.
 
 - `NEWS_GRASP_CONSTITUTION_V1` in `docs/spec.md` is the product-local constitutional authority.
 - All News-Grasp active objects bind to 6 pillars and 14 clauses through `NEWS_GRASP_CONSTITUTION_TRACE_V1`.
-- The closed-world proof contains 17 Acceptance items, 51 core nodes, 32 daily replays, and 5 compound replays; natural scheduled execution is not completion evidence.
+- The closed-world proof contains 23 Acceptance items, 69 core nodes, 32 daily replays, and 5 compound replays; natural scheduled execution is not completion evidence.
 - Shared/global harness, broker, routing, hooks, and other product repositories are read-only boundaries for this product-local contract.
 - Completion keeps implementation, test, commit, push, install, runtime freshness, task parity, rollback, public authority, readiness, and one isolated NoPublish E2E as separate fields.
-- Projection SHA-256: `691cc6ae3de9fa93e550490aa9f9c4ee07824eb2a8caa296163798a2b5f32418`; product asset set SHA-256: `078c7ffea642ce77aa6479d5ab72a94fd0bf59d6f11a24bca82d50443ec6abc2`.
+- Projection SHA-256: `691cc6ae3de9fa93e550490aa9f9c4ee07824eb2a8caa296163798a2b5f32418`; product asset set SHA-256: `50a7dc04d64afe34a22b38b23587e883c56ed34ba2ff981cac7de994921ba7bb`.
 <!-- NEWS_GRASP_CONSTITUTION_PROJECTION_V1_END -->

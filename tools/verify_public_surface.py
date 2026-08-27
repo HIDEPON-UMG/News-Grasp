@@ -24,18 +24,30 @@ YELLOW_REASONS = {
     "github_pages_deploy_workflow_not_success",
     "deploy_workflow_not_success",
 }
+POST_PUBLIC_CLOSEOUT_BLOCKER = "post_public_closeout_blocker"
+GIT_TIMEOUT_SECONDS = 30
+
+
+class PublicSurfaceCloseoutError(RuntimeError):
+    """bounded closeoutのGit observationを確定できない。"""
 
 
 def _run_git(repo_root: Path, args: list[str]) -> str:
-    cp = subprocess.run(
-        ["git", *args],
-        cwd=repo_root,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        check=False,
-    )
+    try:
+        cp = subprocess.run(
+            ["git", *args],
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+            timeout=GIT_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as error:
+        raise PublicSurfaceCloseoutError(
+            f"{POST_PUBLIC_CLOSEOUT_BLOCKER}:git_timeout"
+        ) from error
     return cp.stdout.strip() if cp.returncode == 0 else ""
 
 
@@ -92,6 +104,17 @@ def verify_public_surface(
         notification_state_path=notification_state_path,
         producer_state_path=producer_state_path,
     )
+    if (
+        manifest.get("ok") is True
+        and str(manifest.get("public_status") or "").lower() == "green"
+    ):
+        from tools import news_grasp_recovery_closeout
+
+        news_grasp_recovery_closeout.record_closeout_operation(
+            artifact_root=repo_root,
+            issue_date=date,
+            operation="verify_public_surface",
+        )
 
     checked_at = datetime.now(timezone.utc)
     reason = str(manifest.get("reason") or "")
@@ -166,19 +189,30 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
 
-    result = verify_public_surface(
-        date=args.date,
-        repo_root=args.repo_root,
-        ops_repo_root=args.ops_repo_root,
-        notification_state_path=args.notification_state,
-        producer_state_path=args.producer_state,
-        remote=args.remote,
-        branch=args.branch,
-        public_base_url=args.public_base_url,
-        wait_sec=args.wait_sec,
-        poll_sec=args.poll_sec,
-        write_proof=args.write_proof,
-    )
+    try:
+        result = verify_public_surface(
+            date=args.date,
+            repo_root=args.repo_root,
+            ops_repo_root=args.ops_repo_root,
+            notification_state_path=args.notification_state,
+            producer_state_path=args.producer_state,
+            remote=args.remote,
+            branch=args.branch,
+            public_base_url=args.public_base_url,
+            wait_sec=args.wait_sec,
+            poll_sec=args.poll_sec,
+            write_proof=args.write_proof,
+        )
+    except PublicSurfaceCloseoutError as error:
+        result = {
+            "ok": False,
+            "overall_status": "red",
+            "public_status": "unverified",
+            "scheduled_attempt_status": "unverified",
+            "recovery_attempt_status": "unverified",
+            "exit_code": 78,
+            "reason": str(error),
+        }
     text = json.dumps(result, ensure_ascii=False, indent=2)
     print(text if args.json else text)
     return int(result["exit_code"])

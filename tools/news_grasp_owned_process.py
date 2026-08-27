@@ -6,11 +6,12 @@ import ctypes
 import os
 import shutil
 import subprocess
+import sys
 import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import BinaryIO, Mapping, Sequence
+from typing import BinaryIO, Callable, Mapping, Sequence
 
 
 class OwnedProcessError(RuntimeError):
@@ -254,12 +255,28 @@ class OwnedProcess:
 def _resolve_executable(value: str | os.PathLike[str]) -> str:
     raw = os.fspath(value)
     candidate = Path(raw)
-    if candidate.is_file():
-        return str(candidate.resolve(strict=True))
+    try:
+        if candidate.is_file():
+            return str(candidate.resolve(strict=True))
+    except OSError:
+        # Microsoft Store Python の App Execution Alias は実行可能でも
+        # Path.resolve(strict=True) が WinError 1920を返す。現在processと
+        # byte-for-byte同じargv[0]に限り、任意aliasへ広げず許可する。
+        if os.path.normcase(os.path.abspath(raw)) == os.path.normcase(
+            os.path.abspath(sys.executable)
+        ):
+            return raw
     found = shutil.which(raw)
     if not found:
         raise OwnedProcessError("OWNED_PROCESS_EXECUTABLE_INVALID")
-    return str(Path(found).resolve(strict=True))
+    try:
+        return str(Path(found).resolve(strict=True))
+    except OSError:
+        if os.path.normcase(os.path.abspath(found)) == os.path.normcase(
+            os.path.abspath(sys.executable)
+        ):
+            return found
+        raise OwnedProcessError("OWNED_PROCESS_EXECUTABLE_INVALID")
 
 
 def _create_pipe() -> tuple[int, int]:
@@ -458,8 +475,25 @@ def run_owned_bounded(
     timeout: int | float,
     max_output_bytes: int,
     env: Mapping[str, str] | None = None,
+    heartbeat: Callable[[], object] | None = None,
+    heartbeat_interval_seconds: int | float | None = None,
 ) -> OwnedRunResult:
-    """所有Job内でbounded commandを実行し、超過時はJob closeだけで回収する。"""
+    """所有Job内でbounded commandを実行し、超過時はJob closeだけで回収する。
+
+    heartbeatはchildの生存中だけ一定間隔で呼び出す。例外は隠蔽せず、
+    finallyのJob closeで所有process treeを回収した後にcallerへ返す。
+    """
+
+    if heartbeat is None:
+        heartbeat_interval = None
+    else:
+        if (
+            isinstance(heartbeat_interval_seconds, bool)
+            or not isinstance(heartbeat_interval_seconds, (int, float))
+            or heartbeat_interval_seconds <= 0
+        ):
+            raise OwnedProcessError("OWNED_PROCESS_HEARTBEAT_INTERVAL_INVALID")
+        heartbeat_interval = float(heartbeat_interval_seconds)
 
     process = spawn_owned(command, cwd=cwd, env=env, capture_output=True)
     stdout = bytearray()
@@ -487,19 +521,34 @@ def run_owned_bounded(
     for thread in threads:
         thread.start()
     timed_out = False
-    deadline = time.monotonic() + timeout
+    started = time.monotonic()
+    deadline = started + timeout
+    next_heartbeat = (
+        started + heartbeat_interval if heartbeat_interval is not None else None
+    )
     try:
         while process.poll() is None:
             if exceeded.is_set():
                 process.close_job()
                 break
-            remaining = deadline - time.monotonic()
+            now = time.monotonic()
+            remaining = deadline - now
             if remaining <= 0:
                 timed_out = True
                 process.close_job()
                 break
+            if (
+                heartbeat is not None
+                and next_heartbeat is not None
+                and now >= next_heartbeat
+            ):
+                heartbeat()
+                next_heartbeat = now + float(heartbeat_interval or 0)
+            wait_seconds = min(0.05, remaining)
+            if next_heartbeat is not None:
+                wait_seconds = min(wait_seconds, max(0.001, next_heartbeat - now))
             try:
-                process.wait(timeout=min(0.05, remaining))
+                process.wait(timeout=wait_seconds)
             except subprocess.TimeoutExpired:
                 continue
         for thread in threads:

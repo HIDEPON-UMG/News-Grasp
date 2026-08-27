@@ -1174,3 +1174,77 @@ def test_sec_red_actual_completion_producer_feeds_causal_retry_gate(
 
     assert result["allowed"] is True
     assert result["reasonCode"] == "CAUSE_INPUT_CHANGED"
+
+
+def test_public_green_closeout_blocker_is_typed_terminal_and_preserves_attempt_lineage(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """launch_recoveryのpublic Green境界はblockerをtyped terminalとして保持する。"""
+
+    control = _control()
+    issue_date = "2026-08-27"
+    decision = _audit_plan(action="launch_recovery", branch="ResumeFromStage")
+    decision.update(
+        {
+            "issueDate": issue_date,
+            "publicStatus": "green",
+            "publicCompletionStatus": "green",
+            "closeoutStatus": "incomplete",
+            "closeoutComplete": False,
+            "recoveryAttemptStatus": "started",
+            "resumeStage": "generation-quality-repair",
+        }
+    )
+    calls: list[tuple[str, dict[str, object]]] = []
+    blocker = {
+        "schemaVersion": "AUDIT_RECOVERY_DECISION_V2",
+        "issueDate": issue_date,
+        "action": "escalate_major_incident",
+        "terminal": "audit_major_incident_open",
+        "reasonCode": "post_public_closeout_blocker",
+        "scheduledAttemptStatus": "failed",
+        "recoveryAttemptStatus": "started",
+        "publicStatus": "green",
+        "operationState": "closeout_blocked",
+        "exitCode": 2,
+    }
+
+    monkeypatch.setattr(control, "prepare_recovery", lambda **_: dict(decision))
+    monkeypatch.setattr(
+        control,
+        "_has_verified_public_green_for_closeout",
+        lambda **_: True,
+    )
+
+    def fake_closeout(issue_date_value: str, value: dict[str, object]) -> dict[str, object]:
+        calls.append((issue_date_value, dict(value)))
+        return dict(blocker)
+
+    monkeypatch.setattr(
+        control.audit_recovery_control,
+        "execute_public_green_closeout_owned",
+        fake_closeout,
+    )
+
+    def forbidden_runner(*_args, **_kwargs):
+        pytest.fail("public Green closeout must not launch the normal recovery runner")
+
+    result = control.execute_audit_0640(
+        issue_date=issue_date,
+        backend=SimpleNamespace(repo_root=tmp_path),
+        command_runner=forbidden_runner,
+        terminal_writer=lambda value: value,
+    )
+
+    assert decision.get("artifactRepoRoot") is None
+    assert calls == [
+        (
+            issue_date,
+            {**decision, "artifactRepoRoot": str(tmp_path.resolve())},
+        )
+    ]
+    assert result == blocker
+    assert result["terminal"] == "audit_major_incident_open"
+    assert result["reasonCode"] == "post_public_closeout_blocker"
+    assert result["scheduledAttemptStatus"] == "failed"
+    assert result["recoveryAttemptStatus"] == decision["recoveryAttemptStatus"]

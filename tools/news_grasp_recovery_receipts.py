@@ -552,6 +552,212 @@ def consume_or_resume(
     }
 
 
+def migrate_pending_execution_receipt(
+    *,
+    previous: dict[str, Any],
+    resealed: dict[str, Any],
+    live_bin_root: Path,
+) -> dict[str, Any]:
+    """known driftの再封印時にpending ledger identityを一回だけ移管する。"""
+
+    previous_sha, previous_nonce, issue_date = _receipt_identity(
+        previous, kind="execution"
+    )
+    resealed_sha, resealed_nonce, resealed_date = _receipt_identity(
+        resealed, kind="execution"
+    )
+    if issue_date != resealed_date:
+        raise ValueError("RECOVERY_RECEIPT_RESEAL_BLOCKED")
+    previous_semantic = _semantic_consumption_key(previous, kind="execution")
+    resealed_semantic = _semantic_consumption_key(resealed, kind="execution")
+    ledger = _consumption_ledger(live_bin_root)
+    connection = sqlite3.connect(str(ledger), timeout=30, isolation_level=None)
+    try:
+        connection.execute("PRAGMA journal_mode=WAL")
+        connection.execute("PRAGMA synchronous=FULL")
+        _ensure_consumption_table(connection)
+        connection.execute("BEGIN IMMEDIATE")
+        row = connection.execute(
+            f"SELECT nonce, kind, issue_date, semantic_key, status FROM {CONSUMPTION_TABLE} "
+            "WHERE receipt_sha256 = ?",
+            (previous_sha,),
+        ).fetchone()
+        pending_finalization = connection.execute(
+            f"SELECT receipt_sha256 FROM {CONSUMPTION_TABLE} "
+            "WHERE parent_execution_sha256 = ? AND kind = 'finalization'",
+            (previous_sha,),
+        ).fetchone()
+        if (
+            row != (
+                previous_nonce,
+                "execution",
+                issue_date,
+                previous_semantic,
+                "consumed_pending_operation",
+            )
+            or pending_finalization is not None
+        ):
+            raise ValueError("RECOVERY_RECEIPT_RESEAL_BLOCKED")
+        duplicate = connection.execute(
+            f"SELECT receipt_sha256 FROM {CONSUMPTION_TABLE} "
+            "WHERE (receipt_sha256 = ? OR nonce = ? OR semantic_key = ?) "
+            "AND receipt_sha256 <> ?",
+            (resealed_sha, resealed_nonce, resealed_semantic, previous_sha),
+        ).fetchone()
+        if duplicate is not None:
+            raise ValueError("RECOVERY_RECEIPT_RESEAL_BLOCKED")
+        connection.execute(
+            f"UPDATE {CONSUMPTION_TABLE} SET receipt_sha256 = ?, nonce = ?, "
+            "semantic_key = ?, consumed_at = ? WHERE receipt_sha256 = ?",
+            (
+                resealed_sha,
+                resealed_nonce,
+                resealed_semantic,
+                datetime.now(timezone.utc).isoformat(),
+                previous_sha,
+            ),
+        )
+        connection.execute("COMMIT")
+    except (sqlite3.Error, ValueError) as error:
+        try:
+            connection.execute("ROLLBACK")
+        except sqlite3.Error:
+            pass
+        raise ValueError("RECOVERY_RECEIPT_RESEAL_BLOCKED") from error
+    finally:
+        connection.close()
+    return {
+        "schemaVersion": "NEWS_GRASP_RECOVERY_RECEIPT_RESEAL_LEDGER_V1",
+        "issueDate": issue_date,
+        "previousReceiptSha256": previous_sha,
+        "receiptSha256": resealed_sha,
+        "status": "consumed_pending_operation",
+        "ledgerPath": str(ledger),
+    }
+
+
+def rollback_pending_execution_reseal(
+    *,
+    previous: dict[str, Any],
+    resealed: dict[str, Any],
+    previous_status: str | None,
+    live_bin_root: Path,
+) -> dict[str, Any]:
+    """reseal transactionの失敗時にexecution ledger identityだけを補償する。
+
+    journal recoveryから繰り返し呼べるよう、旧identityへ既に戻っている状態と、
+    未登録状態へ既に戻っている状態はいずれもGreenとする。state appliedや
+    finalization childが存在する場合は推測rollbackせずfail-closedにする。
+    """
+
+    if previous_status not in {None, "consumed_pending_operation"}:
+        raise ValueError("RECOVERY_RECEIPT_RESEAL_ROLLBACK_BLOCKED")
+    previous_sha, previous_nonce, issue_date = _receipt_identity(
+        previous, kind="execution"
+    )
+    resealed_sha, resealed_nonce, resealed_date = _receipt_identity(
+        resealed, kind="execution"
+    )
+    if issue_date != resealed_date:
+        raise ValueError("RECOVERY_RECEIPT_RESEAL_ROLLBACK_BLOCKED")
+    previous_semantic = _semantic_consumption_key(previous, kind="execution")
+    resealed_semantic = _semantic_consumption_key(resealed, kind="execution")
+    ledger = _consumption_ledger(live_bin_root)
+    if not ledger.exists():
+        if previous_status is None:
+            return {
+                "schemaVersion": "NEWS_GRASP_RECOVERY_RECEIPT_RESEAL_ROLLBACK_V1",
+                "status": "already_rolled_back",
+                "receiptSha256": previous_sha,
+                "ledgerPath": str(ledger),
+            }
+        raise ValueError("RECOVERY_RECEIPT_RESEAL_ROLLBACK_BLOCKED")
+    connection = sqlite3.connect(str(ledger), timeout=30, isolation_level=None)
+    try:
+        connection.execute("PRAGMA journal_mode=WAL")
+        connection.execute("PRAGMA synchronous=FULL")
+        _ensure_consumption_table(connection)
+        connection.execute("BEGIN IMMEDIATE")
+        old_row = connection.execute(
+            f"SELECT receipt_sha256, nonce, semantic_key, status, state_applied_at "
+            f"FROM {CONSUMPTION_TABLE} WHERE receipt_sha256 = ?",
+            (previous_sha,),
+        ).fetchone()
+        new_row = connection.execute(
+            f"SELECT receipt_sha256, nonce, semantic_key, status, state_applied_at "
+            f"FROM {CONSUMPTION_TABLE} WHERE receipt_sha256 = ?",
+            (resealed_sha,),
+        ).fetchone()
+        child = connection.execute(
+            f"SELECT receipt_sha256 FROM {CONSUMPTION_TABLE} "
+            "WHERE parent_execution_sha256 IN (?, ?) AND kind = 'finalization'",
+            (previous_sha, resealed_sha),
+        ).fetchone()
+        if child is not None:
+            raise ValueError("RECOVERY_RECEIPT_RESEAL_ROLLBACK_BLOCKED")
+        if previous_status is None:
+            if old_row is not None:
+                raise ValueError("RECOVERY_RECEIPT_RESEAL_ROLLBACK_BLOCKED")
+            if new_row is not None:
+                if new_row != (
+                    resealed_sha,
+                    resealed_nonce,
+                    resealed_semantic,
+                    "consumed_pending_operation",
+                    None,
+                ):
+                    raise ValueError("RECOVERY_RECEIPT_RESEAL_ROLLBACK_BLOCKED")
+                connection.execute(
+                    f"DELETE FROM {CONSUMPTION_TABLE} WHERE receipt_sha256 = ?",
+                    (resealed_sha,),
+                )
+        else:
+            expected_old = (
+                previous_sha,
+                previous_nonce,
+                previous_semantic,
+                "consumed_pending_operation",
+                None,
+            )
+            if old_row is None:
+                if new_row != (
+                    resealed_sha,
+                    resealed_nonce,
+                    resealed_semantic,
+                    "consumed_pending_operation",
+                    None,
+                ):
+                    raise ValueError("RECOVERY_RECEIPT_RESEAL_ROLLBACK_BLOCKED")
+                connection.execute(
+                    f"UPDATE {CONSUMPTION_TABLE} SET receipt_sha256 = ?, nonce = ?, "
+                    "semantic_key = ?, consumed_at = ? WHERE receipt_sha256 = ?",
+                    (
+                        previous_sha,
+                        previous_nonce,
+                        previous_semantic,
+                        datetime.now(timezone.utc).isoformat(),
+                        resealed_sha,
+                    ),
+                )
+            elif old_row != expected_old or new_row is not None:
+                raise ValueError("RECOVERY_RECEIPT_RESEAL_ROLLBACK_BLOCKED")
+        connection.execute("COMMIT")
+    except (sqlite3.Error, ValueError) as error:
+        try:
+            connection.execute("ROLLBACK")
+        except sqlite3.Error:
+            pass
+        raise ValueError("RECOVERY_RECEIPT_RESEAL_ROLLBACK_BLOCKED") from error
+    finally:
+        connection.close()
+    return {
+        "schemaVersion": "NEWS_GRASP_RECOVERY_RECEIPT_RESEAL_ROLLBACK_V1",
+        "status": "rolled_back",
+        "receiptSha256": previous_sha,
+        "ledgerPath": str(ledger),
+    }
+
+
 def consume_finalization_chain(
     *, finalization: dict[str, Any], execution: dict[str, Any], live_bin_root: Path
 ) -> dict[str, Any]:
@@ -884,6 +1090,14 @@ def _assert_safe_output_path(path: Path, *, root: Path, code: str) -> tuple[Path
 def write_atomic_json(
     path: Path, value: dict[str, Any], *, root: Path | None = None
 ) -> None:
+    write_atomic_bytes(path, json_document_bytes(value), root=root)
+
+
+def write_atomic_bytes(
+    path: Path, payload: bytes, *, root: Path | None = None
+) -> None:
+    """contained regular fileへexact bytesをatomic replaceする。"""
+
     boundary = root if root is not None else path.parent
     path, _ = _assert_safe_output_path(
         path, root=boundary, code="RECOVERY_RECEIPT_OUTPUT_INVALID"
@@ -896,14 +1110,21 @@ def write_atomic_json(
     )
     temporary = Path(temporary_name)
     try:
-        with os.fdopen(handle, "w", encoding="utf-8", newline="\n") as stream:
-            json.dump(value, stream, ensure_ascii=False, indent=2)
-            stream.write("\n")
+        with os.fdopen(handle, "wb") as stream:
+            stream.write(payload)
             stream.flush()
             os.fsync(stream.fileno())
         os.replace(temporary, path)
     finally:
         temporary.unlink(missing_ok=True)
+
+
+def json_document_bytes(value: dict[str, Any]) -> bytes:
+    """atomic receipt writerと事前file-hash bindingが共有する唯一の表現。"""
+
+    return (
+        json.dumps(value, ensure_ascii=False, indent=2) + "\n"
+    ).encode("utf-8")
 
 
 def validate_producer_lineage(
@@ -1097,6 +1318,7 @@ def create_recovery_execution_receipt(
     capability_reservation_path: Path,
     capability_reservation_receipt_sha256: str,
     reserved_max_external_model_calls: int,
+    receipt_reseal_count: int = 0,
 ) -> dict[str, Any]:
     artifact = _resolved(artifact_root)
     ops = _resolved(ops_root)
@@ -1162,6 +1384,8 @@ def create_recovery_execution_receipt(
         0 <= reserved_max_external_model_calls <= 64
     ):
         raise ValueError("RECOVERY_EXECUTION_CAPABILITY_RESERVATION_INVALID")
+    if receipt_reseal_count not in {0, 1}:
+        raise ValueError("RECOVERY_EXECUTION_RESEAL_COUNT_INVALID")
     expected_state = live / "news-grasp-runner-state.json"
     if not _same_lexical_path(runner_state_path, expected_state):
         raise ValueError("RECOVERY_EXECUTION_STATE_INVALID")
@@ -1193,6 +1417,7 @@ def create_recovery_execution_receipt(
             "capabilityReservationFileSha256": file_sha256(capability_file),
             "capabilityReservationReceiptSha256": capability_reservation_receipt_sha256,
             "reservedMaxExternalModelCalls": reserved_max_external_model_calls,
+            "receiptResealCount": receipt_reseal_count,
             "recoveryAuthorityPath": str(authority_file),
             "recoveryAuthorityFileSha256": file_sha256(authority_file),
             "recoveryAuthorityReceiptSha256": recovery_authority["receiptSha256"],
@@ -1285,6 +1510,8 @@ def validate_recovery_execution_receipt(
             or not 0 <= int(value["reservedMaxExternalModelCalls"]) <= 64
         ):
             raise ValueError("RECOVERY_EXECUTION_CAPABILITY_RESERVATION_DRIFT")
+        if value.get("receiptResealCount", 0) not in {0, 1}:
+            raise ValueError("RECOVERY_EXECUTION_RESEAL_COUNT_INVALID")
         from tools.news_grasp_recovery_transaction import audit_deadlines
 
         if any(value.get(field) != expected for field, expected in audit_deadlines(issue_date).items()):
@@ -1354,6 +1581,7 @@ def create_finalization_receipt(
     authority_ledger_witness: dict[str, Any],
     execution_receipt_path: Path,
     execution_receipt: dict[str, Any],
+    execution_receipt_file_sha256: str | None = None,
     producer_state_path: Path,
     producer_state_sha256: str,
     audit_accepted_at: str,
@@ -1447,6 +1675,13 @@ def create_finalization_receipt(
         )
     ):
         raise ValueError("FINALIZATION_EXECUTION_RECEIPT_INVALID")
+    execution_file_sha = (
+        execution_receipt_file_sha256
+        if execution_receipt_file_sha256 is not None
+        else file_sha256(execution_file)
+    )
+    if not SHA256_RE.fullmatch(str(execution_file_sha or "")):
+        raise ValueError("FINALIZATION_EXECUTION_RECEIPT_INVALID")
     producer_file = Path(producer_state_path)
     producer_state, producer_file_sha = _read_json_with_sha(
         producer_file,
@@ -1490,7 +1725,7 @@ def create_finalization_receipt(
             "scheduledFailureReceiptSha256": scheduled_failure_receipt["receiptSha256"],
             **_broker_binding(authority_ledger_witness),
             "executionReceiptPath": str(execution_file),
-            "executionReceiptFileSha256": file_sha256(execution_file),
+            "executionReceiptFileSha256": execution_file_sha,
             "executionReceiptSha256": execution["receiptSha256"],
             "executionReceiptNonce": execution["nonce"],
             "producerStatePath": str(producer_file),
@@ -1688,6 +1923,41 @@ def validate_finalization_receipt(
     return value
 
 
+def validate_execution_finalization_chain(
+    *,
+    execution_receipt_path: Path,
+    execution_receipt: dict[str, Any],
+    finalization_receipt: dict[str, Any],
+) -> dict[str, Any]:
+    """CLIで別指定されたexecution/finalizationのexact parent chainを検証する。"""
+
+    execution_path = Path(execution_receipt_path).resolve(strict=True)
+    try:
+        final_execution_path = Path(
+            str(finalization_receipt.get("executionReceiptPath") or "")
+        ).resolve(strict=True)
+    except OSError as error:
+        raise ValueError("FINALIZATION_EXECUTION_CHAIN_INVALID") from error
+    expected = {
+        "executionReceiptSha256": execution_receipt.get("receiptSha256"),
+        "executionReceiptNonce": execution_receipt.get("nonce"),
+        "executionReceiptFileSha256": file_sha256(execution_path),
+    }
+    if (
+        not _same_lexical_path(final_execution_path, execution_path)
+        or any(finalization_receipt.get(field) != value for field, value in expected.items())
+    ):
+        raise ValueError("FINALIZATION_EXECUTION_CHAIN_INVALID")
+    return {
+        "schemaVersion": "NEWS_GRASP_RECOVERY_RECEIPT_CHAIN_V1",
+        "status": "Green",
+        "issueDate": execution_receipt.get("issueDate"),
+        "executionReceiptPath": str(execution_path),
+        "executionReceiptSha256": execution_receipt.get("receiptSha256"),
+        "finalizationReceiptSha256": finalization_receipt.get("receiptSha256"),
+    }
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="News-Grasp recovery receipt validator")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -1698,6 +1968,7 @@ def _parser() -> argparse.ArgumentParser:
     consume_execution = sub.add_parser("consume-execution")
     mark_execution = sub.add_parser("mark-execution-applied")
     final = sub.add_parser("validate-finalization")
+    chain = sub.add_parser("validate-chain")
     consume_final = sub.add_parser("consume-finalization")
     mark_final = sub.add_parser("mark-finalization-state-applied")
     issue = sub.add_parser("issue-finalization")
@@ -1709,6 +1980,7 @@ def _parser() -> argparse.ArgumentParser:
         consume_execution,
         mark_execution,
         final,
+        chain,
         consume_final,
         mark_final,
         issue,
@@ -1720,13 +1992,14 @@ def _parser() -> argparse.ArgumentParser:
     for item in (repair, consume_repair, mark_repair):
         item.add_argument("--production-runtime-root", type=Path, required=True)
         item.add_argument("--live-bin-root", type=Path, required=True)
-    for item in (execution, consume_execution, mark_execution, final, consume_final, mark_final, issue):
+    for item in (execution, consume_execution, mark_execution, final, chain, consume_final, mark_final, issue):
         item.add_argument("--runner-state", type=Path, required=True)
         item.add_argument("--runner-script", type=Path, required=True)
         item.add_argument("--production-runtime-root", type=Path, required=True)
         item.add_argument("--live-bin-root", type=Path, required=True)
     issue.add_argument("--manifest", type=Path, required=True)
     issue.add_argument("--output", type=Path, required=True)
+    chain.add_argument("--execution-receipt", type=Path, required=True)
     return parser
 
 
@@ -1748,7 +2021,10 @@ def main(argv: list[str] | None = None) -> int:
                 live_bin_root=args.live_bin_root,
                 kind="control_plane_repair",
             )
-            print(json.dumps(value, ensure_ascii=False, sort_keys=True))
+            # Windows PowerShell 5.1 can decode native UTF-8 stdout through an
+            # active OEM code page even when PYTHONIOENCODING is UTF-8.  Keep
+            # the transport ASCII-only; ConvertFrom-Json restores exact Unicode.
+            print(json.dumps(value, ensure_ascii=True, sort_keys=True))
             return 0
         from tools.news_grasp_control_plane import verify_control_plane
 
@@ -1800,6 +2076,7 @@ def main(argv: list[str] | None = None) -> int:
             )
     elif args.command in {
         "validate-finalization",
+        "validate-chain",
         "consume-finalization",
         "mark-finalization-state-applied",
     }:
@@ -1814,7 +2091,23 @@ def main(argv: list[str] | None = None) -> int:
             runner_script_path=args.runner_script,
             require_execution_consumed=args.command == "mark-finalization-state-applied",
         )
-        if args.command == "consume-finalization":
+        if args.command == "validate-chain":
+            execution = validate_recovery_execution_receipt(
+                receipt_path=args.execution_receipt,
+                issue_date=args.issue_date,
+                artifact_root=args.artifact_root,
+                ops_root=args.ops_root,
+                production_runtime_root=args.production_runtime_root,
+                live_bin_root=args.live_bin_root,
+                runner_state_path=args.runner_state,
+                runner_script_path=args.runner_script,
+            )
+            value = validate_execution_finalization_chain(
+                execution_receipt_path=args.execution_receipt,
+                execution_receipt=execution,
+                finalization_receipt=value,
+            )
+        elif args.command == "consume-finalization":
             execution = _validate_execution_seal(
                 _read_json(
                     Path(str(value["executionReceiptPath"])),
@@ -1889,7 +2182,7 @@ def main(argv: list[str] | None = None) -> int:
             if existing.get("receiptSha256") != pending_sha:
                 raise ValueError("FINALIZATION_PENDING_RECEIPT_INVALID")
             value = existing
-            print(json.dumps(value, ensure_ascii=False, sort_keys=True))
+            print(json.dumps(value, ensure_ascii=True, sort_keys=True))
             return 0
         manifest_path = _contained_regular_file(
             args.manifest,
@@ -1959,7 +2252,7 @@ def main(argv: list[str] | None = None) -> int:
             audit_accepted_at=str(execution["auditAcceptedAt"]),
         )
         write_atomic_json(expected_output, value, root=artifact)
-    print(json.dumps(value, ensure_ascii=False, sort_keys=True))
+    print(json.dumps(value, ensure_ascii=True, sort_keys=True))
     return 0
 
 

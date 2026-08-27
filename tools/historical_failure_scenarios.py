@@ -793,6 +793,16 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "build/incidents/2026-08-13-daily-batch-and-recovery-delay-report.html",
         "runtime_e2e_required",
     ),
+    HistoricalFailureScenario(
+        "2026-08-27",
+        "DeepDive provenance / recovery freshness / public-Green closeout / typed finalizer",
+        "BLS rejected the primary transport, recovery tooling was stale, V2 claim/provenance artifacts required manual backfill, and the finalizer omitted receipt-bound resume arguments while receipt drift was debugged serially",
+        "public recovery product/runtime composition and bounded closeout boundary",
+        "all recovery routes must share one DeepDive materializer, verify exact runtime freshness before spawn, and derive one-shot reseal plus finalizer argv only from typed receipts after public Green",
+        "BLS-profile actual Windows transport fixture, three-route issue bundle fixture, pre-spawn freshness fixture, exact-args finalizer fixture, one-shot reseal fixture, bounded closeout fixture, and one L5 production-composition node",
+        "plans/2026-08-27-news-grasp-public-recovery-closeout/operational-design.md",
+        "fixture_required",
+    ),
 )
 
 

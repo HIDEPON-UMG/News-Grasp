@@ -343,6 +343,52 @@ def select_audit_recovery_action(completion: object) -> dict[str, Any]:
     }
 
 
+def _has_verified_public_green_for_closeout(
+    *, issue_date: str, decision: Mapping[str, Any], artifact_root: Path
+) -> bool:
+    """既存のtyped completion/manifest/proofだけでpost-Green境界を判定する。"""
+
+    completion = decision.get("completionEvidence")
+    if isinstance(completion, Mapping) and audit_recovery_control.same_date_completion_green(
+        issue_date, completion
+    ):
+        return True
+    manifest_path = (
+        artifact_root / "build" / "publish-complete" / f"{issue_date}.json"
+    )
+    if audit_recovery_control._is_typed_recovery_manifest_candidate(
+        manifest_path, issue_date, artifact_root=artifact_root
+    ):
+        return True
+    return audit_recovery_control._has_verified_public_green_proof(
+        artifact_root=artifact_root, issue_date=issue_date
+    )
+
+
+def _resolve_public_green_artifact_root(
+    *, issue_date: str, backend: "ProductionBackend"
+) -> Path:
+    """live stateに記録された同日recovery artifact rootを限定解決する。"""
+
+    load_state = getattr(backend, "load_state", None)
+    if not callable(load_state):
+        # injected contract backendはrepo rootだけをauthorityとする。
+        return Path(backend.repo_root).resolve()
+    state = load_state(issue_date)
+    raw = str(state.get("artifactRoot") or state.get("repo_dir") or "").strip()
+    if not raw:
+        return backend.repo_root
+    candidate = Path(raw).resolve(strict=True)
+    if candidate.is_symlink() or not candidate.is_dir():
+        raise ValueError("POST_PUBLIC_CLOSEOUT_ARTIFACT_INVALID")
+    state_repo = str(state.get("repo_dir") or raw).strip()
+    if Path(state_repo).resolve(strict=True) != candidate:
+        raise ValueError("POST_PUBLIC_CLOSEOUT_ARTIFACT_INVALID")
+    if str(state.get("run_intent") or "") != "ScheduledRecoveryFull":
+        return backend.repo_root
+    return candidate
+
+
 def dispatch_registered_readiness_repair(
     *,
     repo_root: Path | str,
@@ -1741,6 +1787,21 @@ def _execute_audit_0640_owned(
         if action == "launch_minimal_unblocker":
             execute_minimal(Path(str(decision["decisionPath"])))
         elif action == "launch_recovery":
+            closeout_artifact_root = _resolve_public_green_artifact_root(
+                issue_date=issue_date,
+                backend=actual,
+            )
+            if _has_verified_public_green_for_closeout(
+                issue_date=issue_date,
+                decision=decision,
+                artifact_root=closeout_artifact_root,
+            ):
+                # Public Green後はrunnerを再生成・再実行せず、canonical audit ownerの
+                # exact-args finalizer pathへ一回だけ委譲する。
+                return audit_recovery_control.execute_public_green_closeout_owned(
+                    issue_date,
+                    {**decision, "artifactRepoRoot": str(closeout_artifact_root)},
+                )
             high_cost_binding = actual.resolve_high_cost_binding()
             execution_receipt: Path | None = None
             high_cost_admission_path: Path | None = None

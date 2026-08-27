@@ -501,6 +501,10 @@ def _canonical_readiness() -> dict[str, Any]:
     digest = "b" * 64
     return {
         "ok": True,
+        "external_control": {
+            "status": "ready",
+            "modelLaunchCount": 0,
+        },
         "repo_runner": {"sha256": digest},
         "live_runner": {"sha256": digest},
         "repo_watcher": {"sha256": digest},

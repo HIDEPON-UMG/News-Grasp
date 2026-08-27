@@ -1,6 +1,6 @@
 {
   "schemaVersion": "NEWS_GRASP_SPEC_DISPOSITION_V1",
-  "sourceCommit": "b5174084788443a77da3f9dad7b2e5f4a390bde9",
+  "sourceCommit": "fa0d84a736e994269d8e48f280f9e70db0175e3c",
   "rows": [
     {
       "path": "docs/spec.md",
@@ -116,6 +116,14 @@
     },
     {
       "path": "plans/2026-08-09-scheduled-production-continuation.md",
+      "disposition": "superseded_history",
+      "active": false,
+      "dependencyScan": "preserve_reference_only",
+      "deleteAuthorized": false,
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
+      "path": "plans/2026-08-27-news-grasp-public-recovery-closeout/operational-design.md",
       "disposition": "superseded_history",
       "active": false,
       "dependencyScan": "preserve_reference_only",

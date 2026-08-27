@@ -301,8 +301,25 @@ async function launchBrowser() {
     process.exit(1);
   }
   console.log(JSON.stringify({ results }, null, 2));
-})();
-"""
+    })();
+    """
+    try:
+        playwright_probe = subprocess.run(
+            ["node", "-e", "require.resolve('playwright')"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=10,
+            check=False,
+        )
+    except FileNotFoundError as error:
+        pytest.fail(f"Node.js is required for the computed visual contract: {error}")
+    if playwright_probe.returncode != 0:
+        if "Cannot find module 'playwright'" in playwright_probe.stderr:
+            pytest.skip("Playwright npm module is not installed")
+        pytest.fail(playwright_probe.stderr or playwright_probe.stdout)
     result = subprocess.run(
         ["node", "-e", script, str(html_path), str(css_path)],
         cwd=ROOT,

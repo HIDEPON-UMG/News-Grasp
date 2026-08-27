@@ -14,7 +14,6 @@ from typing import Callable
 from tools import deepdive_quality
 from tools.render_deepdive import build_deepdive_pages
 from tools.publish_inventory import CATEGORY_PATHS, scheduled_category_ids
-from tools.tts import build_deepdive_dialogue_script
 from tools.refill_category_after_quarantine import refill_category
 from tools.validate_digest_articles_reconcile import (
     reconcile,
@@ -1503,38 +1502,46 @@ def _repair_digest_articles_digest_only(ctx: RepairContext) -> RepairResult:
 
 
 def _repair_deepdive_provenance(ctx: RepairContext) -> RepairResult:
-    article = (
-        ctx.repo_root
-        / "digest"
-        / "DeepDive"
-        / f"{ctx.issue}-DeepDive.md"
-    )
     manifest = (
         ctx.repo_root
         / "data"
         / "deepdive-provenance"
         / f"{ctx.issue}.json"
     )
-    before = manifest.read_bytes() if manifest.is_file() else b""
+    dialogue = (
+        ctx.repo_root
+        / "digest"
+        / "DeepDive"
+        / f"{ctx.issue}-DeepDive-dialogue.md"
+    )
+    before = {
+        path: path.read_bytes() if path.is_file() else b""
+        for path in (manifest, dialogue)
+    }
     try:
-        deepdive_quality.capture_provenance(
-            article_path=article,
-            output_path=manifest,
+        deepdive_quality.materialize_issue_bundle(
+            repo_root=ctx.repo_root,
+            issue_date=ctx.issue,
         )
-    except (deepdive_quality.DeepDiveQualityError, OSError) as error:
+    except (deepdive_quality.DeepDiveQualityError, OSError, ValueError) as error:
         return RepairResult(
             handler_id=ctx.handler_id,
-            status="blocked_deepdive_provenance_fetch_failed",
+            status="blocked_deepdive_issue_bundle_failed",
             changed=False,
             message=str(error),
         )
-    after = manifest.read_bytes()
+    changed = any(path.read_bytes() != before[path] for path in before)
     return RepairResult(
         handler_id=ctx.handler_id,
         status=REPAIRED_STATUS,
-        changed=before != after,
-        artifacts=(f"data/deepdive-provenance/{ctx.issue}.json",),
-        message="DeepDive URL provenanceを全URLの実取得記録から再構築しました",
+        changed=changed,
+        artifacts=(
+            f"data/deepdive-claim-source/{ctx.issue}.json",
+            f"data/deepdive-provenance/{ctx.issue}.json",
+            f"digest/DeepDive/{ctx.issue}-DeepDive-dialogue.md",
+            f"data/deepdive-bundles/{ctx.issue}.json",
+        ),
+        message="DeepDive claim/provenance/dialogueを共通bundle handlerで再構築しました",
     )
 
 
@@ -1548,15 +1555,14 @@ def _repair_deepdive_dialogue(ctx: RepairContext) -> RepairResult:
     dialogue = article.with_name(f"{ctx.issue}-DeepDive-dialogue.md")
     before = dialogue.read_bytes() if dialogue.is_file() else b""
     try:
-        build_deepdive_dialogue_script.build_dialogue_script(
-            article,
-            output=dialogue,
-            force=True,
+        deepdive_quality.materialize_issue_bundle(
+            repo_root=ctx.repo_root,
+            issue_date=ctx.issue,
         )
-    except (ValueError, OSError) as error:
+    except (deepdive_quality.DeepDiveQualityError, ValueError, OSError) as error:
         return RepairResult(
             handler_id=ctx.handler_id,
-            status="blocked_deepdive_dialogue_rebuild_failed",
+            status="blocked_deepdive_issue_bundle_failed",
             changed=False,
             message=str(error),
         )
@@ -1565,8 +1571,13 @@ def _repair_deepdive_dialogue(ctx: RepairContext) -> RepairResult:
         handler_id=ctx.handler_id,
         status=REPAIRED_STATUS,
         changed=before != after,
-        artifacts=(f"digest/DeepDive/{ctx.issue}-DeepDive-dialogue.md",),
-        message="DeepDive対談を14個の独立本文根拠から再構築しました",
+        artifacts=(
+            f"data/deepdive-claim-source/{ctx.issue}.json",
+            f"data/deepdive-provenance/{ctx.issue}.json",
+            f"digest/DeepDive/{ctx.issue}-DeepDive-dialogue.md",
+            f"data/deepdive-bundles/{ctx.issue}.json",
+        ),
+        message="DeepDive claim/provenance/dialogueを共通bundle handlerで再構築しました",
     )
 
 

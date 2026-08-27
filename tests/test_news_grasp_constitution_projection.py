@@ -18,7 +18,51 @@ def test_constitution_projection_is_exact_mirrored_and_generated() -> None:
     assert result["agentProjectionMirror"] is True
     assert result["manualProjectionDrift"] is False
     assert result["mermaidDiagramCount"] == 3
+    assert result["operationalDesignDiagramCount"] == 7
     assert result["htmlLineCount"] >= 100
+
+
+def test_public_recovery_operational_design_is_trace_generated_and_hash_bound() -> None:
+    result = constitution.validate_constitution_projections(ROOT)
+    path = ROOT / constitution.PUBLIC_RECOVERY_OPERATIONAL_DESIGN_RELATIVE_PATH
+    text = path.read_text(encoding="utf-8")
+    projection = json.loads(
+        (ROOT / constitution.PROJECTION_RELATIVE_PATH).read_text(encoding="utf-8")
+    )
+    receipt = projection["publicRecoveryOperationalDesign"]
+
+    assert result["operationalDesignSha256"] == receipt["documentSha256"]
+    assert receipt["requirementIds"] == [f"NG-RC-{number:02d}" for number in range(1, 7)]
+    assert receipt["diagramCount"] == 7
+    assert text.count("```mermaid") == 7
+    for heading in (
+        "As-Is System Context",
+        "To-Be System Context",
+        "Operational Use Cases",
+        "Public Recovery L5 Sequence",
+        "Post-public-Green State Machine",
+        "Source / Worktree / Runtime Deployment",
+        "Receipt / Ledger Data Model",
+        "Operational Design Inventory",
+        "FitGap",
+        "Responsibility Matrix",
+        "Requirement–Consumer–Fixture–Evidence Traceability",
+        "Red / Green Matrix",
+    ):
+        assert heading in text
+    assert text.count("node set SHA256") == 7
+    assert text.count("edge set SHA256") == 7
+
+
+def test_public_recovery_operational_design_rejects_unknown_edge_node() -> None:
+    with pytest.raises(ValueError, match="PUBLIC_RECOVERY_DIAGRAM_EDGE_NODE_UNKNOWN"):
+        constitution._public_recovery_mermaid(
+            {
+                "kind": "flowchart",
+                "nodes": [["known", "Known"]],
+                "edges": [["known", "unknown", "must fail"]],
+            }
+        )
 
 
 def test_constitution_projection_rejects_unpaired_or_duplicate_markers() -> None:

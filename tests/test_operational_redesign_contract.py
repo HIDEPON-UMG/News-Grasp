@@ -514,9 +514,10 @@ def test_ng2_a02_recovery_rollback_previous_generation(tmp_path: Path) -> None:
 def test_ng2_wp03_installer_tasks_bind_stable_launcher_without_worktree_path() -> None:
     repo = Path(__file__).resolve().parents[1]
     installer = (repo / "scripts/ops/install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
-    assert '$runnerArgs = "`"$taskLauncherPath`" runner --scheduled-task-name `"$RunnerTaskName`" --high-cost-binding-path' in installer
+    assert '$runnerArgs = "`"$taskLauncherPath`" dispatch --schedule-id news-grasp-daily-v1 --intent reconcile"' in installer
     assert '$bootstrapArgs = "`"$taskLauncherPath`" bootstrap --scheduled-task-name `"$BootstrapTaskName`" --high-cost-binding-path' in installer
-    assert '$deadmanArgs = "`"$deadmanLauncherPath`""' in installer
+    assert '$deadmanTask = Get-ScheduledTask -TaskName $DeadmanTaskName' in installer
+    assert 'Disable-ScheduledTask -TaskName $DeadmanTaskName' in installer
     assert '--repo-dir `"$RepoDir`"' not in installer
 
 
@@ -550,6 +551,17 @@ def test_ng3_wp03_runtime_transaction_seals_active_generation(tmp_path: Path) ->
         "tools/news_grasp_generation.py",
         "tools/operational_recovery_registry.py",
         "config/operational_recovery_registry_v1.json",
+        "tools/deepdive_quality.py",
+        "tools/render_deepdive.py",
+        "tools/tts/build_deepdive_dialogue_script.py",
+        "tools/tts/deepdive_dialogue.py",
+        "tools/tts/proc.py",
+        "tools/validate_deepdive_urls.py",
+        "prompts/deepdive-template.html",
+        "prompts/deepdive-runner-prompt.md",
+        "scripts/ops/invoke-deepdive-system-fetch.ps1",
+        "tools/news_grasp_recovery_freshness.py",
+        "tools/news_grasp_recovery_closeout.py",
     )
     for relative in generation_paths:
         source = source_repo / relative
@@ -576,6 +588,38 @@ def test_ng3_wp03_runtime_transaction_seals_active_generation(tmp_path: Path) ->
         check=True,
         capture_output=True,
     )
+    task_pythonw = bin_dir / "pythonw.exe"
+    task_pythonw.write_bytes(b"pythonw fixture\n")
+    binding_path = bin_dir / "news-grasp-high-cost-binding-v1.json"
+    binding_receipt = "c" * 64
+    binding_path.write_text(
+        json.dumps(
+            {
+                "schemaVersion": "NEWS_GRASP_HIGH_COST_BINDING_V1",
+                "bindingReceiptSha256": binding_receipt,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    recovery_binding_path = bin_dir / "news-grasp-recovery-runtime-binding-v1.json"
+    recovery_binding_path.write_text(
+        json.dumps(
+            {
+                "schemaVersion": "NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1",
+                "highCostBindingPath": str(binding_path.resolve()),
+                "highCostBindingReceiptSha256": binding_receipt,
+                "taskPythonwPath": str(task_pythonw.resolve()),
+                "taskPythonwSha256": hashlib.sha256(task_pythonw.read_bytes()).hexdigest(),
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     authority = {
         "schemaVersion": "STABLE_TASK_AUTHORITY_V1",
         "taskName": "News-Grasp Runner",
@@ -583,9 +627,11 @@ def test_ng3_wp03_runtime_transaction_seals_active_generation(tmp_path: Path) ->
         "stableLauncherSha256": hashlib.sha256(launcher_path.read_bytes()).hexdigest(),
         "bootstrapPath": str((source_repo / "scripts/ops/news-grasp-bootstrap.ps1").resolve()),
         "bootstrapSha256": "b" * 64,
-        "action": ["pythonw.exe", str(launcher_path.resolve()), "runner"],
+        "action": [str(task_pythonw.resolve()), str(launcher_path.resolve()), "runner"],
         "trigger": {"daily": "06:00"},
         "repoArgumentCount": 0,
+        "highCostBindingPath": str(binding_path.resolve()),
+        "highCostBindingReceiptSha256": binding_receipt,
     }
     authority["authoritySha256"] = launcher._sha256_json(authority)
     (bin_dir / "news-grasp-stable-task-authority-v1.json").write_text(

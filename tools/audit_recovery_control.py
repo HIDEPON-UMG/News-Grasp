@@ -14,6 +14,7 @@ import sys
 import tempfile
 import threading
 import time
+from collections.abc import Mapping
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -23,6 +24,8 @@ if __package__ in {None, ""}:
 
 from tools.news_grasp_operational_contract import (
     OPERATIONAL_TRUTH_ISSUER,
+    POST_PUBLIC_CLOSEOUT_BLOCKER,
+    POST_PUBLIC_GREEN_ALLOWED_OPERATIONS,
     finalize_audit_decision,
     select_recovery_branch_from_truth,
     validate_canonical_operational_registry,
@@ -32,8 +35,11 @@ from tools.news_grasp_operational_contract import (
 from tools.news_grasp_owned_process import run_owned_bounded
 from tools import (
     news_grasp_control_plane,
+    news_grasp_recovery_closeout,
+    news_grasp_recovery_freshness,
     news_grasp_recovery_receipts,
     news_grasp_high_cost_binding,
+    verify_public_surface as news_grasp_verify_public_surface,
 )
 from tools.news_grasp_recovery_transaction import (
     RecoveryTransactionStore,
@@ -51,11 +57,7 @@ AUDIT_DECISION_SCHEMA = "AUDIT_RECOVERY_DECISION_V2"
 LEGACY_AUDIT_DECISION_SCHEMA = "AUDIT_RECOVERY_DECISION_V1"
 SAME_DAY_PUBLIC_RECOVERY_PRIORITY = "same_day_public_recovery_first"
 PUBLIC_GREEN_FOLLOWUP_PRIORITY = "runner_finalization_only"
-PUBLIC_GREEN_ALLOWED_OPERATIONS = (
-    "manifest_reverification",
-    "typed_runner_finalizer",
-    "completion_guard",
-)
+PUBLIC_GREEN_ALLOWED_OPERATIONS = POST_PUBLIC_GREEN_ALLOWED_OPERATIONS
 ALLOWED_BEFORE_PUBLIC_GREEN = [
     "scheduled_recovery",
     "minimal_recovery_unblocker",
@@ -106,6 +108,9 @@ CANONICAL_CONTROL_ROOT = Path(__file__).resolve().parents[1]
 CANONICAL_TERMINAL_ROOT = CANONICAL_REPO_ROOT / "build" / "incidents"
 CANONICAL_BROKER_PATH = Path.home() / "bin" / "ai-model-spawn-broker.py"
 CANONICAL_RUNNER_STATE_PATH = Path.home() / "bin" / "news-grasp-runner-state.json"
+CANONICAL_AUTOMATION_COMPLETION_GUARD_PATH = (
+    Path.home() / ".codex" / "automations" / "news-grasp-6-40" / "completion_guard.py"
+)
 GIT_HARDENED_CONFIG_ARGS = (
     "-c",
     f"core.hooksPath={os.devnull}",
@@ -1823,6 +1828,8 @@ def decide_audit_recovery(payload: object) -> dict[str, Any]:
                     ),
                 }
             )
+            if decision_body["recoveryBranch"] == "ResumeFromStage":
+                decision_body["resumeStage"] = str(truth.get("resumeStage") or "")
         observed_decision = seal_audit_decision(decision_body)
         external_payload = {
             key: value
@@ -2342,8 +2349,7 @@ def _fresh_reverify_publish_manifest(
     artifact_repo_root: Path,
     manifest_path: Path,
 ) -> tuple[dict[str, Any], Path, str]:
-    """既存manifestをauthorityにせず、canonical verifierで同日面を再検証する。"""
-    from tools import daily_self_heal
+    """Public Greenで確定済みのmanifest bytesをcloseout receiptへ束縛する。"""
 
     state_path = CANONICAL_RUNNER_STATE_PATH
     state = _load(state_path, expected_root=state_path.parent)
@@ -2351,9 +2357,11 @@ def _fresh_reverify_publish_manifest(
         producer_state=state,
         issue_date=issue_date,
         artifact_root=artifact_repo_root,
-        ops_root=CANONICAL_REPO_ROOT,
+        ops_root=Path(str(state.get("opsRoot") or "")),
     )
-    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    fresh = _load(manifest_path, expected_root=artifact_repo_root / "build")
+    if not _is_typed_recovery_manifest_value(fresh, issue_date):
+        raise ValueError("POST_PUBLIC_GREEN_MANIFEST_INVALID")
     producer_snapshot = (
         artifact_repo_root
         / "build"
@@ -2364,38 +2372,6 @@ def _fresh_reverify_publish_manifest(
         producer_snapshot, state, root=artifact_repo_root
     )
     producer_state_sha256 = _file_sha256(producer_snapshot)
-    wait_sec = int(payload.get("verificationWaitSec", 0))
-    poll_sec = int(payload.get("verificationPollSec", 10))
-    if wait_sec < 0 or wait_sec > 600 or poll_sec < 1 or poll_sec > 60:
-        raise ValueError("COMPLETION_VERIFICATION_BUDGET_INVALID")
-    fresh = daily_self_heal.verify_publish_complete(
-            repo_root=artifact_repo_root,
-            ops_repo_root=CANONICAL_REPO_ROOT,
-            date=issue_date,
-            remote="origin",
-            branch="main",
-            public_base_url="https://hidepon-umg.github.io/News-Grasp/",
-            wait_sec=wait_sec,
-            poll_sec=poll_sec,
-            primary_podcast_state_path=(
-                artifact_repo_root / "build" / "youtube-podcast" / "uploads.json"
-            ),
-            deepdive_podcast_state_path=(
-                artifact_repo_root
-                / "build"
-                / "youtube-podcast-deepdive"
-                / "uploads.json"
-            ),
-            notification_state_path=(
-                artifact_repo_root / "build" / "notification" / f"{issue_date}.json"
-            ),
-            producer_state_path=producer_snapshot,
-        )
-    if not _is_typed_recovery_manifest_value(fresh, issue_date):
-        raise ValueError(str(fresh.get("reason") or "FINALIZATION_REVERIFICATION_RED"))
-    news_grasp_recovery_receipts.write_atomic_json(
-        manifest_path, fresh, root=artifact_repo_root
-    )
     return fresh, producer_snapshot, producer_state_sha256
 
 
@@ -2427,7 +2403,7 @@ def _fresh_reverify_and_issue_finalization(
     receipt = news_grasp_recovery_receipts.create_finalization_receipt(
         issue_date=issue_date,
         artifact_root=artifact_repo_root,
-        ops_root=CANONICAL_REPO_ROOT,
+        ops_root=production_runtime_root,
         production_runtime_root=production_runtime_root,
         live_bin_root=live_bin_root,
         runner_state_path=CANONICAL_RUNNER_STATE_PATH,
@@ -2452,6 +2428,537 @@ def _fresh_reverify_and_issue_finalization(
         receipt_path, receipt, root=artifact_repo_root
     )
     return receipt_path
+
+
+def _verify_post_public_closeout_surface(
+    *, payload: dict[str, Any], issue_date: str, artifact_repo_root: Path
+) -> dict[str, Any]:
+    """finalizer後にpublic surfaceを同一日付・同一artifactで再検証する。"""
+
+    wait_sec = int(payload.get("verificationWaitSec", 0))
+    poll_sec = int(payload.get("verificationPollSec", 10))
+    if wait_sec < 0 or wait_sec > 600 or poll_sec < 1 or poll_sec > 60:
+        raise ValueError("COMPLETION_VERIFICATION_BUDGET_INVALID")
+    return news_grasp_verify_public_surface.verify_public_surface(
+        date=issue_date,
+        repo_root=artifact_repo_root,
+        ops_repo_root=CANONICAL_REPO_ROOT,
+        notification_state_path=(
+            artifact_repo_root / "build" / "notification" / f"{issue_date}.json"
+        ),
+        producer_state_path=CANONICAL_RUNNER_STATE_PATH,
+        remote="origin",
+        branch="main",
+        public_base_url="https://hidepon-umg.github.io/News-Grasp/",
+        wait_sec=wait_sec,
+        poll_sec=poll_sec,
+    )
+
+
+def _run_post_public_automation_completion_guard(
+    *,
+    issue_date: str,
+    artifact_repo_root: Path,
+    execution_receipt_path: Path,
+    manifest_path: Path,
+) -> dict[str, Any]:
+    """installed automation guardをreceipt由来identityで一回だけ実行する。"""
+
+    execution = news_grasp_recovery_closeout._execution_body(  # noqa: SLF001
+        execution_receipt_path
+    )
+    source_guard = _contained_file(
+        artifact_repo_root
+        / "automation"
+        / "news-grasp-6-40"
+        / "completion_guard.py",
+        root=artifact_repo_root,
+        code="AUTOMATION_COMPLETION_GUARD_INVALID",
+    )
+    installed_guard = CANONICAL_AUTOMATION_COMPLETION_GUARD_PATH.resolve(
+        strict=True
+    )
+    if (
+        installed_guard.is_symlink()
+        or not installed_guard.is_file()
+        or _file_sha256(installed_guard) != _file_sha256(source_guard)
+    ):
+        raise ValueError("AUTOMATION_COMPLETION_GUARD_DRIFT")
+    python_executable = news_grasp_recovery_closeout._resolved_field(  # noqa: SLF001
+        execution, "pythonExecutablePath"
+    )
+    ops_root = news_grasp_recovery_closeout._resolved_field(  # noqa: SLF001
+        execution, "opsRoot"
+    )
+    runner_state = Path(str(execution.get("runnerStatePath") or "")).resolve(
+        strict=True
+    )
+    news_grasp_recovery_closeout.record_closeout_operation(
+        artifact_root=artifact_repo_root,
+        issue_date=issue_date,
+        operation="completion_guard",
+    )
+    return_code, stdout = _run_bounded(
+        [
+            str(python_executable),
+            "-I",
+            "-B",
+            str(installed_guard),
+            "--issue-date",
+            issue_date,
+            "--manifest",
+            str(manifest_path),
+            "--runner-state",
+            str(runner_state),
+            "--ops-root",
+            str(ops_root),
+        ],
+        cwd=artifact_repo_root,
+        timeout=120,
+    )
+    try:
+        result = json.loads(stdout.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError("AUTOMATION_COMPLETION_GUARD_INVALID") from error
+    if (
+        return_code != 0
+        or not isinstance(result, dict)
+        or result.get("schemaVersion") != "NEWS_GRASP_640_COMPLETION_GUARD_V1"
+        or result.get("ok") is not True
+        or result.get("issueDate") != issue_date
+        or result.get("scheduled_attempt_status") != "failed_then_recovered"
+        or result.get("recovery_attempt_status") != "succeeded"
+        or result.get("public_status") != "green"
+        or result.get("runner_status") != "publish_complete"
+        or result.get("run_intent") != "ScheduledRecoveryFull"
+    ):
+        raise ValueError("AUTOMATION_COMPLETION_GUARD_RED")
+    return result
+
+
+def _completion_evidence_from_closeout(
+    *,
+    issue_date: str,
+    artifact_repo_root: Path,
+    execution_receipt_path: Path,
+    closeout_surface: dict[str, Any],
+    completion_guard: dict[str, Any],
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    """allowed verifierとapplied runner stateからsame-date evidenceを封印する。"""
+
+    state = _load(
+        CANONICAL_RUNNER_STATE_PATH,
+        expected_root=CANONICAL_RUNNER_STATE_PATH.parent,
+    )
+    execution = news_grasp_recovery_closeout._execution_body(  # noqa: SLF001
+        execution_receipt_path
+    )
+    if (
+        state.get("status") != "publish_complete"
+        or state.get("date") != issue_date
+        or state.get("run_intent") != "ScheduledRecoveryFull"
+        or state.get("scheduled_attempt_status") != "failed_then_recovered"
+        or state.get("recovery_attempt_status") != "succeeded"
+        or completion_guard.get("ok") is not True
+        or completion_guard.get("issueDate") != issue_date
+        or completion_guard.get("runner_status") != "publish_complete"
+        or closeout_surface.get("public_status") != "green"
+        or closeout_surface.get("scheduled_attempt_status")
+        != "failed_then_recovered"
+        or closeout_surface.get("recovery_attempt_status") != "succeeded"
+        or Path(str(state.get("artifactRoot") or "")).resolve(strict=True)
+        != artifact_repo_root
+        or Path(str(state.get("opsRoot") or "")).resolve(strict=True)
+        != Path(str(execution.get("opsRoot") or "")).resolve(strict=True)
+    ):
+        raise ValueError("FINALIZATION_STATE_BINDING_INVALID")
+    lineage = _completion_lineage(
+        issue_date=issue_date,
+        run_intent="ScheduledRecoveryFull",
+        run_id=state.get("run_id"),
+        artifact_root=artifact_repo_root,
+        ops_root=execution["opsRoot"],
+    )
+    for field in (
+        "dailyRootId",
+        "rootOperationId",
+        "producerOperationId",
+        "producerRunIntent",
+        "lineageReceiptSha256",
+    ):
+        if state.get(field) != lineage[field]:
+            raise ValueError("FINALIZATION_STATE_BINDING_INVALID")
+    evidence_seed = {
+        "completionGuard": completion_guard,
+        "publicSurface": closeout_surface,
+        "runnerStateSha256": _file_sha256(CANONICAL_RUNNER_STATE_PATH),
+        "executionReceiptSha256": execution["receiptSha256"],
+    }
+    typed_hashes = _typed_completion_hashes(
+        issue_date=issue_date,
+        payload={**payload, "expectedRunIntent": "ScheduledRecoveryFull"},
+        evidence=evidence_seed,
+    )
+    completion = _sealed(
+        {
+            "schemaVersion": "SAME_DATE_COMPLETION_EVIDENCE_V1",
+            "issuer": VERIFIED_COMPLETION_ISSUER,
+            "issueDate": issue_date,
+            "publishStatusIssueDate": issue_date,
+            "runIntent": "ScheduledRecoveryFull",
+            "runId": state.get("run_id"),
+            **lineage,
+            "checks": {field: True for field in COMPLETION_FIELDS},
+            "evidenceSha256": {
+                field: hashlib.sha256(
+                    _canonical({"field": field, **evidence_seed})
+                ).hexdigest()
+                for field in COMPLETION_FIELDS
+            },
+            "verificationStatus": "verified_green",
+            "publicCompletionStatus": "green",
+            "nextRunReadinessStatus": "green",
+            "phase": "post_public_closeout",
+            "reasonCode": "VERIFIED_GREEN",
+            "failedGateIds": [],
+            "completionAuthorityId": str(
+                state.get("completionAuthorityId") or ""
+            ),
+            **typed_hashes,
+        }
+    )
+    if not same_date_completion_green(issue_date, completion):
+        raise ValueError("SAME_DATE_COMPLETION_EVIDENCE_INVALID")
+    return completion
+
+
+def _execute_existing_public_green_closeout(
+    *,
+    payload: dict[str, Any],
+    decision: dict[str, Any],
+    issue_date: str,
+    audit_accepted_at: str,
+    artifact_repo_root: Path,
+    production_runtime_root: Path,
+    live_bin_root: Path,
+    runner_path: Path,
+    manifest_path: Path,
+) -> dict[str, Any]:
+    """Public Green後を既存receipt由来の有限closeoutだけで閉じる。"""
+
+    execution_receipt = (
+        artifact_repo_root
+        / "build"
+        / "recovery-authority"
+        / f"{issue_date}-execution-receipt.json"
+    )
+    finalization_receipt = manifest_path.with_name(
+        f"{issue_date}.finalization-receipt.json"
+    )
+    public_tree_before: str | None = None
+    try:
+        public_tree_before = news_grasp_recovery_closeout._tree_sha256(  # noqa: SLF001
+            artifact_repo_root / "docs"
+        )
+        if not finalization_receipt.is_file() or finalization_receipt.is_symlink():
+            raise news_grasp_recovery_closeout.PostPublicCloseoutError(
+                f"{POST_PUBLIC_CLOSEOUT_BLOCKER}:finalization_receipt_missing"
+            )
+
+        reseal_attempted = False
+        try:
+            command_receipt = news_grasp_recovery_closeout.build_exact_finalizer_command(
+                execution_receipt_path=execution_receipt,
+                finalization_receipt_path=finalization_receipt,
+                publish_manifest_path=manifest_path,
+            )
+        except news_grasp_recovery_closeout.PostPublicCloseoutError:
+            # 既知driftだけをtransactional helperへ一括委譲する。未知drift、
+            # applied ledger、authority driftはhelper内でfail-closedになる。
+            reseal_attempted = True
+            news_grasp_recovery_closeout.reseal_known_receipt_drift(
+                execution_receipt_path=execution_receipt,
+                finalization_receipt_path=finalization_receipt,
+            )
+            command_receipt = news_grasp_recovery_closeout.build_exact_finalizer_command(
+                execution_receipt_path=execution_receipt,
+                finalization_receipt_path=finalization_receipt,
+                publish_manifest_path=manifest_path,
+            )
+
+        news_grasp_recovery_closeout.record_closeout_operation(
+            artifact_root=artifact_repo_root,
+            issue_date=issue_date,
+            operation="finalizer_exact_args_replay",
+        )
+        return_code, _ = _run_bounded(
+            list(command_receipt["argv"]), cwd=artifact_repo_root, timeout=5400
+        )
+        if return_code != 0:
+            raise RuntimeError(f"FINALIZER_EXIT_{return_code}")
+
+        completion_guard = _run_post_public_automation_completion_guard(
+            issue_date=issue_date,
+            artifact_repo_root=artifact_repo_root,
+            execution_receipt_path=execution_receipt,
+            manifest_path=manifest_path,
+        )
+        closeout_surface = _verify_post_public_closeout_surface(
+            payload=payload,
+            issue_date=issue_date,
+            artifact_repo_root=artifact_repo_root,
+        )
+        if (
+            closeout_surface.get("ok") is not True
+            or closeout_surface.get("overall_status") != "green"
+        ):
+            raise RuntimeError("VERIFY_PUBLIC_SURFACE_RED")
+        public_tree_after = news_grasp_recovery_closeout._tree_sha256(  # noqa: SLF001
+            artifact_repo_root / "docs"
+        )
+        if public_tree_after != public_tree_before:
+            raise RuntimeError("PUBLIC_ARTIFACT_MUTATED_DURING_CLOSEOUT")
+
+        completion = _completion_evidence_from_closeout(
+            issue_date=issue_date,
+            artifact_repo_root=artifact_repo_root,
+            execution_receipt_path=execution_receipt,
+            closeout_surface=closeout_surface,
+            completion_guard=completion_guard,
+            payload=payload,
+        )
+        news_grasp_recovery_closeout.record_closeout_operation(
+            artifact_root=artifact_repo_root,
+            issue_date=issue_date,
+            operation="final_report",
+        )
+        final_decision = seal_audit_decision(
+            {
+                "schemaVersion": AUDIT_DECISION_SCHEMA,
+                "issueDate": issue_date,
+                "classification": "recoverable",
+                "action": "none",
+                "terminal": "audit_recovered_green",
+                "reasonCode": "POST_PUBLIC_GREEN_CLOSEOUT_COMPLETE",
+                "scheduledAttemptStatus": "failed",
+                "recoveryAttemptStatus": "succeeded",
+                "publicStatus": "green",
+                "operationState": "complete",
+                "workPriority": PUBLIC_GREEN_FOLLOWUP_PRIORITY,
+                "allowedAfterPublicGreen": PUBLIC_GREEN_ALLOWED_OPERATIONS,
+                "completionEvidenceSha256": completion["receiptSha256"],
+                "completionEvidence": completion,
+                "postPublicCloseout": {
+                    "status": "Green",
+                    "exactArgsSha256": command_receipt.get("argvSha256"),
+                    "receiptResealAttempts": 1 if reseal_attempted else 0,
+                    "publicArtifactTreeSha256Before": public_tree_before,
+                    "publicArtifactTreeSha256After": public_tree_after,
+                    "publicArtifactUnchanged": True,
+                },
+            }
+        )
+        write_audit_terminal(final_decision)
+        return final_decision
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
+        incident = _incident(
+            issue_date=issue_date,
+            scheduled_status="failed",
+            recovery_status=str(decision.get("recoveryAttemptStatus") or "succeeded"),
+            reason_code=POST_PUBLIC_CLOSEOUT_BLOCKER,
+        )
+        incident["closeoutError"] = str(error) or type(error).__name__
+        incident["receiptResealAttempts"] = int(
+            "reseal_attempted" in locals() and reseal_attempted
+        )
+        if public_tree_before is not None:
+            incident["publicArtifactTreeSha256Before"] = public_tree_before
+        write_audit_terminal(incident)
+        return incident
+
+
+def _post_public_closeout_blocker(
+    *, issue_date: str, decision: Mapping[str, Any] | None, error: BaseException
+) -> dict[str, Any]:
+    """Public Green後の失敗を、復旧再生成へ戻さずtyped terminalへ固定する。"""
+
+    incident = _incident(
+        issue_date=issue_date,
+        scheduled_status="failed",
+        recovery_status=str(
+            (decision or {}).get("recoveryAttemptStatus") or "succeeded"
+        ),
+        reason_code=POST_PUBLIC_CLOSEOUT_BLOCKER,
+    )
+    body = {
+        key: value for key, value in incident.items() if key != "receiptSha256"
+    }
+    body.update(
+        {
+            "closeoutError": str(error) or type(error).__name__,
+            "closeoutOperation": "execute_public_green_closeout_owned",
+            "sourceDecision": dict(decision or {}),
+        }
+    )
+    blocker = _sealed(body)
+    try:
+        write_audit_terminal(blocker)
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError):
+        # terminal writer側の既知replay/busyは呼出側で同じtyped blockerを扱う。
+        # ここで生成や別経路へフォールバックしない。
+        pass
+    return blocker
+
+
+def execute_public_green_closeout_owned(
+    issue_date: str, decision: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Canonical ensure-0640からpost-public-Green finalizerへ一回だけ接続する。
+
+    この入口は公開済みartifactを再生成しない。決定に束縛されたfailure/authority
+    とHumanImpactだけを受け取り、実行対象のroot、runner、HEAD、SHAはcanonical
+    sourceから再解決して既存 ``execute_audit_recovery`` へ渡す。
+    """
+
+    try:
+        normalized_date = _validate_issue_date(issue_date)
+    except (TypeError, ValueError) as error:
+        # 不正日付はaudit terminalへ安全に封印できないため、入力境界で拒否する。
+        raise ValueError("AUDIT_RECOVERY_DATE_INVALID") from error
+
+    if not isinstance(decision, Mapping):
+        return _post_public_closeout_blocker(
+            issue_date=normalized_date,
+            decision=None,
+            error=ValueError("POST_PUBLIC_CLOSEOUT_DECISION_INVALID"),
+        )
+
+    decision_value = dict(decision)
+    action = str(decision_value.get("action") or "").strip()
+    if action not in {"launch_recovery", "scheduled_recovery"}:
+        return _post_public_closeout_blocker(
+            issue_date=normalized_date,
+            decision=decision_value,
+            error=ValueError("POST_PUBLIC_CLOSEOUT_ACTION_INVALID"),
+        )
+
+    try:
+        artifact_root = _resolve_artifact_repo_root(
+            {
+                "artifactRepoRoot": decision_value.get("artifactRepoRoot"),
+                "opsRepoRoot": str(CANONICAL_REPO_ROOT),
+            }
+        )
+        artifact_head = _validate_artifact_executable_tree(artifact_root)
+        production_runtime_root = (
+            Path.home() / ".news-grasp-runtime" / "production-runtime"
+        )
+        recovery_freshness = (
+            news_grasp_recovery_freshness.verify_recovery_freshness(
+                worktree_root=artifact_root,
+                runtime_root=production_runtime_root.parent,
+            )
+        )
+        if recovery_freshness.get("ok") is not True:
+            raise ValueError(
+                "RECOVERY_DEEPDIVE_RUNTIME_FRESHNESS_MISMATCH:"
+                f"{recovery_freshness.get('detailCode') or 'unverified'}"
+            )
+
+        live_bin_root = CANONICAL_LIVE_BIN_ROOT.resolve(strict=True)
+        if live_bin_root.is_symlink() or not live_bin_root.is_dir():
+            raise ValueError("RECOVERY_RUNNER_INVALID")
+        runner_path = live_bin_root / "news-grasp-runner.ps1"
+        if runner_path.is_symlink() or not runner_path.is_file():
+            raise ValueError("RECOVERY_RUNNER_INVALID")
+        runner_sha256 = _file_sha256(runner_path)
+        if not _valid_sha256(runner_sha256):
+            raise ValueError("RECOVERY_RUNNER_INVALID")
+
+        execution_path = (
+            artifact_root
+            / "build"
+            / "recovery-authority"
+            / f"{normalized_date}-execution-receipt.json"
+        )
+        execution = news_grasp_recovery_closeout._execution_body(  # noqa: SLF001
+            execution_path
+        )
+        if (
+            execution.get("issueDate") != normalized_date
+            or Path(str(execution.get("artifactRoot") or "")).resolve(strict=True)
+            != artifact_root
+        ):
+            raise ValueError("RECOVERY_EXECUTION_RECEIPT_INVALID")
+        failure_path = _contained_file(
+            execution.get("scheduledFailureReceiptPath"),
+            root=artifact_root / "build",
+            code="SCHEDULED_ATTEMPT_EVIDENCE_INVALID",
+        )
+        authority_path = _contained_file(
+            execution.get("recoveryAuthorityPath"),
+            root=artifact_root / "build",
+            code="RECOVERY_AUTHORITY_INVALID",
+        )
+        authority_sha256 = str(execution.get("recoveryAuthorityReceiptSha256") or "")
+        if not _valid_sha256(authority_sha256):
+            raise ValueError("RECOVERY_AUTHORITY_INVALID")
+
+        human_source = decision_value.get("humanImpact")
+        if not isinstance(human_source, Mapping):
+            human_source = decision_value
+        human = {
+            field: human_source.get(field) is True
+            for field in ("noFocusTheft", "noUserMonitoring", "noAutoOpen")
+        }
+        if not all(human.values()):
+            raise ValueError("HUMAN_IMPACT_CONTRACT_INVALID")
+
+        payload: dict[str, Any] = {
+            "issueDate": normalized_date,
+            "artifactRepoRoot": str(artifact_root),
+            "opsRepoRoot": str(CANONICAL_REPO_ROOT.resolve(strict=True)),
+            "scheduledFailureReceiptPath": str(failure_path),
+            "recoveryAuthorityPath": str(authority_path),
+            "humanImpact": human,
+            "verificationWaitSec": 0,
+            "verificationPollSec": 10,
+            "recoveryExecution": {
+                "issueDate": normalized_date,
+                "runIntent": "ScheduledRecoveryFull",
+                "maxExternalModelCalls": int(
+                    execution.get("reservedMaxExternalModelCalls") or 0
+                ),
+                "maxFullE2EAttempts": 0,
+                **human,
+                "recoveryAuthorityReceiptSha256": authority_sha256,
+                "artifactRepoHead": artifact_head,
+                "runnerSha256": runner_sha256,
+            },
+        }
+        return _execute_existing_public_green_closeout(
+            payload=payload,
+            decision=decision_value,
+            issue_date=normalized_date,
+            audit_accepted_at=datetime.now().astimezone().isoformat(),
+            artifact_repo_root=artifact_root,
+            production_runtime_root=production_runtime_root,
+            live_bin_root=live_bin_root,
+            runner_path=runner_path,
+            manifest_path=(
+                artifact_root
+                / "build"
+                / "publish-complete"
+                / f"{normalized_date}.json"
+            ),
+        )
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
+        return _post_public_closeout_blocker(
+            issue_date=normalized_date,
+            decision=decision_value,
+            error=error,
+        )
 
 
 def execute_audit_recovery(payload: object) -> dict[str, Any]:
@@ -2486,31 +2993,12 @@ def execute_audit_recovery(payload: object) -> dict[str, Any]:
 
     artifact_repo_root = _resolve_artifact_repo_root(payload)
     artifact_repo_head = _validate_artifact_executable_tree(artifact_repo_root)
-    authority_path = _contained_file(
-        payload.get("recoveryAuthorityPath"),
-        root=artifact_repo_root / "build",
-        code="RECOVERY_AUTHORITY_INVALID",
-    )
     live_bin_root = CANONICAL_LIVE_BIN_ROOT
     runner_path = live_bin_root / "news-grasp-runner.ps1"
     if not runner_path.is_file() or runner_path.is_symlink():
         raise ValueError("RECOVERY_RUNNER_INVALID")
     runner_sha256 = _file_sha256(runner_path)
-    canonical_python = (CANONICAL_REPO_ROOT / ".venv" / "Scripts" / "python.exe").resolve()
-    if not canonical_python.is_file() or canonical_python.is_symlink():
-        raise ValueError("RECOVERY_RUNTIME_INTERPRETER_INVALID")
     production_runtime_root = Path.home() / ".news-grasp-runtime" / "production-runtime"
-    try:
-        high_cost_binding = resolve_live_high_cost_binding(live_bin_root)
-    except (OSError, ValueError) as error:
-        incident = _incident(
-            issue_date=issue_date,
-            scheduled_status="failed",
-            recovery_status="not_started",
-            reason_code=str(error),
-        )
-        write_audit_terminal(incident)
-        return incident
     publish_complete_manifest = (
         artifact_repo_root / "build" / "publish-complete" / f"{issue_date}.json"
     )
@@ -2523,6 +3011,53 @@ def execute_audit_recovery(payload: object) -> dict[str, Any]:
         artifact_root=artifact_repo_root,
         issue_date=issue_date,
     )
+    recovery_freshness = news_grasp_recovery_freshness.verify_recovery_freshness(
+        worktree_root=artifact_repo_root,
+        runtime_root=production_runtime_root.parent,
+    )
+    if recovery_freshness.get("ok") is not True:
+        incident = _incident(
+            issue_date=issue_date,
+            scheduled_status="failed",
+            recovery_status="not_started",
+            reason_code="RECOVERY_DEEPDIVE_RUNTIME_FRESHNESS_MISMATCH",
+        )
+        incident["recoveryFreshness"] = recovery_freshness
+        write_audit_terminal(incident)
+        return incident
+    if public_green_reached:
+        return _execute_existing_public_green_closeout(
+            payload=payload,
+            decision=decision,
+            issue_date=issue_date,
+            audit_accepted_at=audit_accepted_at,
+            artifact_repo_root=artifact_repo_root,
+            production_runtime_root=production_runtime_root,
+            live_bin_root=live_bin_root,
+            runner_path=runner_path,
+            manifest_path=publish_complete_manifest,
+        )
+
+    authority_path = _contained_file(
+        payload.get("recoveryAuthorityPath"),
+        root=artifact_repo_root / "build",
+        code="RECOVERY_AUTHORITY_INVALID",
+    )
+
+    canonical_python = (CANONICAL_REPO_ROOT / ".venv" / "Scripts" / "python.exe").resolve()
+    if not canonical_python.is_file() or canonical_python.is_symlink():
+        raise ValueError("RECOVERY_RUNTIME_INTERPRETER_INVALID")
+    try:
+        high_cost_binding = resolve_live_high_cost_binding(live_bin_root)
+    except (OSError, ValueError) as error:
+        incident = _incident(
+            issue_date=issue_date,
+            scheduled_status="failed",
+            recovery_status="not_started",
+            reason_code=str(error),
+        )
+        write_audit_terminal(incident)
+        return incident
     validate_recovery_execution_manifest(
         payload.get("recoveryExecution"),
         issue_date=issue_date,
@@ -2633,6 +3168,13 @@ def execute_audit_recovery(payload: object) -> dict[str, Any]:
         incident["controlPlanePreflight"] = control_plane
         write_audit_terminal(incident)
         return incident
+    decision_recovery_branch = str(
+        decision.get("recoveryBranch") or "ScheduledRecoveryFull"
+    )
+    decision_resume_stage = str(decision.get("resumeStage") or "").strip() or None
+    if decision_recovery_branch != "ResumeFromStage":
+        decision_recovery_branch = "ScheduledRecoveryFull"
+        decision_resume_stage = None
     try:
         execution_receipt = _issue_recovery_execution_receipt(
             payload=payload,
@@ -2643,7 +3185,8 @@ def execute_audit_recovery(payload: object) -> dict[str, Any]:
             production_runtime_root=production_runtime_root,
             live_bin_root=live_bin_root,
             runner_path=runner_path,
-            recovery_branch="ScheduledRecoveryFull",
+            recovery_branch=decision_recovery_branch,
+            resume_stage=decision_resume_stage,
             python_executable_path=canonical_python,
             capability_reservation_path=Path(str(high_cost_binding["bindingPath"])),
             capability_reservation_receipt_sha256=str(
@@ -2732,37 +3275,8 @@ def execute_audit_recovery(payload: object) -> dict[str, Any]:
         "-RecoveryExecutionReceiptPath",
         str(execution_receipt),
     ]
-    if public_green_reached:
-        try:
-            finalization_receipt = _fresh_reverify_and_issue_finalization(
-                payload=payload,
-                decision=decision,
-                issue_date=issue_date,
-                audit_accepted_at=audit_accepted_at,
-                artifact_repo_root=artifact_repo_root,
-                production_runtime_root=production_runtime_root,
-                live_bin_root=live_bin_root,
-                runner_path=runner_path,
-                manifest_path=publish_complete_manifest,
-                execution_receipt_path=execution_receipt,
-            )
-        except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
-            incident = _incident(
-                issue_date=issue_date,
-                scheduled_status="failed",
-                recovery_status=str(decision.get("recoveryAttemptStatus") or "not_started"),
-                reason_code=f"FINALIZATION_REVERIFICATION_FAILED_{type(error).__name__}",
-            )
-            write_audit_terminal(incident)
-            return incident
-        command.extend(
-            [
-                "-FinalizeVerifiedPublishManifest",
-                str(publish_complete_manifest),
-                "-RecoveryFinalizationReceiptPath",
-                str(finalization_receipt),
-            ]
-        )
+    if decision_recovery_branch == "ResumeFromStage":
+        command.extend(["-ResumeFromStage", str(decision_resume_stage)])
     return_code, _ = _run_bounded(command, cwd=artifact_repo_root, timeout=5400)
     if return_code != 0:
         incident = _incident(
@@ -2782,6 +3296,21 @@ def execute_audit_recovery(payload: object) -> dict[str, Any]:
             recovery_status="started",
             reason_code="RECOVERY_COMPLETION_INVALID",
         )
+    else:
+        try:
+            news_grasp_recovery_closeout.record_closeout_operation(
+                artifact_root=artifact_repo_root,
+                issue_date=issue_date,
+                operation="final_report",
+            )
+        except (OSError, ValueError, RuntimeError) as error:
+            final_decision = _incident(
+                issue_date=issue_date,
+                scheduled_status="failed",
+                recovery_status="succeeded",
+                reason_code=POST_PUBLIC_CLOSEOUT_BLOCKER,
+            )
+            final_decision["closeoutError"] = str(error)
     write_audit_terminal(final_decision)
     return final_decision
 

@@ -14,6 +14,10 @@ def _write_json(path: Path, payload: dict) -> None:
 def _live_runner_readiness() -> dict:
     return {
         "ok": True,
+        "external_control": {
+            "status": "ready",
+            "modelLaunchCount": 0,
+        },
         "repo_runner": {"sha256": "runner-sha"},
         "live_runner": {"sha256": "runner-sha"},
         "repo_watcher": {"sha256": "watcher-sha"},

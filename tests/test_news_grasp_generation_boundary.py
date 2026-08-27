@@ -21,6 +21,17 @@ CRITICAL_PATHS = (
     "tools/news_grasp_generation.py",
     "tools/operational_recovery_registry.py",
     "config/operational_recovery_registry_v1.json",
+    "tools/deepdive_quality.py",
+    "tools/render_deepdive.py",
+    "tools/tts/build_deepdive_dialogue_script.py",
+    "tools/tts/deepdive_dialogue.py",
+    "tools/tts/proc.py",
+    "tools/validate_deepdive_urls.py",
+    "prompts/deepdive-template.html",
+    "prompts/deepdive-runner-prompt.md",
+    "scripts/ops/invoke-deepdive-system-fetch.ps1",
+    "tools/news_grasp_recovery_freshness.py",
+    "tools/news_grasp_recovery_closeout.py",
 )
 
 
@@ -47,6 +58,38 @@ def _generation_fixture(
     runtime_root.mkdir()
     runtime_config = bin_dir / "news-grasp-runtime-root-v1.json"
     runtime_config.write_text('{"schemaVersion":"NEWS_GRASP_RUNTIME_ROOT_V1"}\n', encoding="utf-8")
+    task_pythonw = bin_dir / "pythonw.exe"
+    task_pythonw.write_bytes(b"pythonw fixture\n")
+    binding_path = bin_dir / "news-grasp-high-cost-binding-v1.json"
+    binding_receipt = "c" * 64
+    binding_path.write_text(
+        json.dumps(
+            {
+                "schemaVersion": "NEWS_GRASP_HIGH_COST_BINDING_V1",
+                "bindingReceiptSha256": binding_receipt,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    recovery_binding_path = bin_dir / "news-grasp-recovery-runtime-binding-v1.json"
+    recovery_binding_path.write_text(
+        json.dumps(
+            {
+                "schemaVersion": "NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1",
+                "highCostBindingPath": str(binding_path.resolve()),
+                "highCostBindingReceiptSha256": binding_receipt,
+                "taskPythonwPath": str(task_pythonw.resolve()),
+                "taskPythonwSha256": namespace["_file_sha256"](task_pythonw),
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     authority: dict[str, object] = {
         "schemaVersion": "STABLE_TASK_AUTHORITY_V1",
         "taskName": "News-Grasp Runner",
@@ -54,9 +97,11 @@ def _generation_fixture(
         "stableLauncherSha256": namespace["_file_sha256"](LAUNCHER.resolve()),
         "bootstrapPath": str((ROOT / "scripts" / "ops" / "news-grasp-bootstrap.ps1").resolve()),
         "bootstrapSha256": "b" * 64,
-        "action": ["pythonw.exe", str(LAUNCHER.resolve()), "runner"],
+        "action": [str(task_pythonw.resolve()), str(LAUNCHER.resolve()), "runner"],
         "trigger": {"daily": "06:00"},
         "repoArgumentCount": 0,
+        "highCostBindingPath": str(binding_path.resolve()),
+        "highCostBindingReceiptSha256": binding_receipt,
     }
     authority["authoritySha256"] = namespace["_sha256_json"](authority)
     (bin_dir / "news-grasp-stable-task-authority-v1.json").write_text(

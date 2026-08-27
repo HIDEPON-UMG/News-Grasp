@@ -22,11 +22,24 @@ AUTOMATION = (
 
 def test_runner_uses_shared_quality_engine_before_completion() -> None:
     source = RUNNER.read_text(encoding="utf-8-sig")
-    generation = source.index("build_deepdive_dialogue_script")
+    generation = source.index("materialize-issue")
     shared_gate = source.index("tools.deepdive_quality", generation)
     completion = source.index("tools.validate_daily_quality", shared_gate)
     assert generation < shared_gate < completion
     assert "audit-issue" in source[shared_gate:completion]
+
+
+def test_daily_full_recovery_and_resume_share_one_issue_materializer() -> None:
+    """RC-02: 3 runner routeに個別provenance/dialogue writerを持たせない。"""
+
+    source = RUNNER.read_text(encoding="utf-8-sig")
+    materializer = source.index("'materialize-issue'")
+    assert source.count("'materialize-issue'") == 1
+    assert source.index("ScheduledRecoveryFull") < materializer
+    assert source.index("ResumeFromStage") < materializer
+    assert source.index("ScheduledProduction") < materializer
+    assert "'capture' '--article'" not in source
+    assert "tools.tts.build_deepdive_dialogue_script" not in source
 
 
 def test_runner_preserves_shared_quality_issue_code_for_repair() -> None:

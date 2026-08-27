@@ -42,6 +42,7 @@ def _runner_state() -> dict:
         "exit_code": 0,
         "scheduled_attempt_status": "failed_then_recovered",
         "recovery_attempt_status": "succeeded",
+        "run_intent": "ScheduledRecoveryFull",
         "publish_commit": "c" * 40,
     }
 

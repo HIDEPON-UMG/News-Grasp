@@ -84,6 +84,7 @@ param(
     [string] $FinalizeVerifiedPublishManifest = '',
     [string] $RecoveryExecutionReceiptPath = '',
     [string] $RecoveryFinalizationReceiptPath = '',
+    [string] $RecoveryRuntimeBindingPath = '',
     [string] $RecoveryDecisionPath = '',
     [int] $PublishVerifyWaitSec = 600,
     [int] $PublishVerifyPollSec = 30,
@@ -112,6 +113,81 @@ function Get-NewsGraspFileSha256Hex {
     } finally {
         $sha.Dispose()
         $stream.Dispose()
+    }
+}
+
+function Resolve-NewsGraspTrustedPython {
+    param([string] $BindingPathOverride = '')
+    <#
+    Resolve the canonical runtime binding using PowerShell only.  This is the
+    sole assignment source for $PyExe; no caller-provided executable or fixed
+    AppData path may become the first Python process.
+    #>
+    $profileRoot = [Environment]::GetFolderPath([Environment+SpecialFolder]::UserProfile)
+    $canonicalBin = Join-Path $profileRoot 'bin'
+    $bindingPath = if ($BindingPathOverride) {
+        [IO.Path]::GetFullPath($BindingPathOverride)
+    } else {
+        Join-Path $canonicalBin 'news-grasp-recovery-runtime-binding-v1.json'
+    }
+    $trustedSubject = 'CN=Python Software Foundation, O=Python Software Foundation, L=Beaverton, S=Oregon, C=US'
+    $trustedThumbprint = '36168ee17c1a240517388540c903bb6717dd2563'
+
+    function Assert-TrustedRegularFile {
+        param([Parameter(Mandatory=$true)][string] $Path)
+        $item = Get-Item -LiteralPath $Path -Force -ErrorAction Stop
+        if (
+            $item.PSIsContainer -or
+            (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) -or
+            $item.LinkType
+        ) { throw 'trusted runtime file is not a regular non-reparse file' }
+        return $item
+    }
+
+    try {
+        $bindingItem = Assert-TrustedRegularFile -Path $bindingPath
+        if ([int64]$bindingItem.Length -gt 65536) { throw 'runtime binding exceeds size limit' }
+        $binding = Get-Content -LiteralPath $bindingPath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+        if (
+            $null -eq $binding -or
+            [string]$binding.schemaVersion -cne 'NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1' -or
+            $binding.PSObject.Properties.Name -notcontains 'pythonExe' -or
+            $binding.PSObject.Properties.Name -notcontains 'pythonExeSha256' -or
+            $binding.PSObject.Properties.Name -notcontains 'pythonTrustAnchor' -or
+            $binding.PSObject.Properties.Name -notcontains 'pythonSignerSubject' -or
+            $binding.PSObject.Properties.Name -notcontains 'pythonSignerThumbprint'
+        ) { throw 'runtime binding schema mismatch' }
+        $pythonValue = [string]$binding.pythonExe
+        if (-not [IO.Path]::IsPathRooted($pythonValue)) { throw 'bound Python path is not absolute' }
+        $python = (Assert-TrustedRegularFile -Path $pythonValue).FullName
+        $pythonItem = Get-Item -LiteralPath $python -Force -ErrorAction Stop
+        $cursor = $pythonItem
+        while ($null -ne $cursor) {
+            if (($cursor.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0 -or $cursor.LinkType) {
+                throw 'bound Python path traverses a reparse point'
+            }
+            $cursor = $cursor.Parent
+        }
+        $pythonHash = (Get-NewsGraspFileSha256Hex -Path $python).ToLowerInvariant()
+        if (
+            [string]$binding.pythonExeSha256 -cne $pythonHash -or
+            [string]$binding.pythonTrustAnchor -cne 'authenticode:python-software-foundation' -or
+            [string]$binding.pythonSignerSubject -cne $trustedSubject -or
+            ([string]$binding.pythonSignerThumbprint).ToLowerInvariant() -cne $trustedThumbprint
+        ) { throw 'runtime binding Python identity mismatch' }
+        $signature = Get-AuthenticodeSignature -LiteralPath $python
+        $actualSubject = [string]$signature.SignerCertificate.Subject
+        $actualThumbprint = ([string]$signature.SignerCertificate.Thumbprint).ToLowerInvariant()
+        if (
+            [string]$signature.Status -cne 'Valid' -or
+            $actualSubject -cne $trustedSubject -or
+            $actualThumbprint -cne $trustedThumbprint
+        ) { throw 'runtime binding Python signature is not trusted' }
+        $script:TrustedPythonBinding = $binding
+        $script:TrustedPythonBindingPath = [IO.Path]::GetFullPath($bindingPath)
+        return $python
+    } catch {
+        throw "RECOVERY_RUNTIME_BINDING_INVALID:$($_.Exception.Message)"
     }
 }
 
@@ -220,6 +296,46 @@ function Resolve-NewsGraspRepoDir {
     throw 'News-Grasp repo not found. Set NEWS_GRASP_REPO_DIR or pass -RepoDirOverride.'
 }
 
+function Test-NewsGraspCompletePublicGreenManifest {
+    param(
+        [Parameter(Mandatory = $true)] [object] $Verified,
+        [Parameter(Mandatory = $true)] [string] $IssueDate
+    )
+    $publishCommit = [string]$Verified.publish_commit
+    $historicalScheduledFailureRecovered = (
+        [string]$Verified.live_runner_readiness.reason -ceq 'scheduled_task_missed_runs' -and
+        [string]$Verified.live_runner_readiness.last_scheduled_attempt.status -ceq 'failed' -and
+        [int]$Verified.live_runner_readiness.last_scheduled_attempt.last_task_result -eq 1 -and
+        [string]$Verified.live_runner_readiness.next_run_readiness.reasonCode -ceq 'scheduled_task_missed_runs'
+    )
+    return (
+        [string]$Verified.schemaVersion -ceq 'NEWS_GRASP_PUBLISH_COMPLETE_V2' -and
+        $Verified.ok -eq $true -and
+        [string]$Verified.date -ceq $IssueDate -and
+        [string]$Verified.public_status -ceq 'green' -and
+        [string]$Verified.scheduled_attempt_status -ceq 'failed_then_recovered' -and
+        [string]$Verified.recovery_attempt_status -ceq 'succeeded' -and
+        [string]$Verified.source_commit -match '^[0-9a-f]{40}$' -and
+        [string]$Verified.artifact_commit -match '^[0-9a-f]{40}$' -and
+        [string]$Verified.publish_commit -match '^[0-9a-f]{40}$' -and
+        $Verified.publish.ok -eq $true -and
+        $null -ne $Verified.distribution_artifacts -and
+        @($Verified.distribution_artifacts.missing).Count -eq 0 -and
+        (
+            (
+                $Verified.live_runner_readiness.ok -eq $true -and
+                $Verified.live_runner_readiness.next_run_readiness.ok -eq $true
+            ) -or
+            $historicalScheduledFailureRecovered
+        ) -and
+        $Verified.notification.ok -eq $true -and
+        $Verified.podcasts.primary.ok -eq $true -and
+        $Verified.podcasts.deepdive.ok -eq $true -and
+        $publishCommit -and
+        $publishCommit -ceq [string]$Verified.publish.deploy_head
+    )
+}
+
 function Resolve-CodexCliExe {
     param([string] $Override)
     if ($Override) {
@@ -246,24 +362,82 @@ function Resolve-CodexCliExe {
     throw "codex.exe not found under: $extensionRoot. Set NEWS_GRASP_CODEX_EXE or pass -CodexExeOverride."
 }
 
+function Test-NewsGraspPathWithin {
+    param(
+        [Parameter(Mandatory = $true)][string] $Root,
+        [Parameter(Mandatory = $true)][string] $Candidate
+    )
+    $rootFull = [IO.Path]::GetFullPath($Root).TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar)
+    $candidateFull = [IO.Path]::GetFullPath($Candidate)
+    $prefix = $rootFull + [IO.Path]::DirectorySeparatorChar
+    return (
+        [string]::Equals($candidateFull, $rootFull, [StringComparison]::OrdinalIgnoreCase) -or
+        $candidateFull.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase)
+    )
+}
+
+function Assert-NewsGraspContainedNonReparsePath {
+    param(
+        [Parameter(Mandatory = $true)][string] $Root,
+        [Parameter(Mandatory = $true)][string] $Path
+    )
+    $rootFull = (Resolve-Path -LiteralPath $Root -ErrorAction Stop).Path
+    $resolved = (Resolve-Path -LiteralPath $Path -ErrorAction Stop).Path
+    if (-not (Test-NewsGraspPathWithin -Root $rootFull -Candidate $resolved)) {
+        throw 'trusted path escapes its authority root'
+    }
+    $cursorPath = [IO.Path]::GetFullPath($resolved)
+    while ($cursorPath) {
+        $cursor = Get-Item -LiteralPath $cursorPath -Force -ErrorAction Stop
+        if (
+            (($cursor.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) -or
+            ($cursor.PSObject.Properties.Name -contains 'LinkType' -and $cursor.LinkType)
+        ) { throw 'trusted path traverses reparse point' }
+        if ([string]::Equals($cursorPath, $rootFull, [StringComparison]::OrdinalIgnoreCase)) {
+            return $resolved
+        }
+        $parentPath = Split-Path -Parent $cursorPath
+        if (-not $parentPath -or [string]::Equals($parentPath, $cursorPath, [StringComparison]::OrdinalIgnoreCase)) {
+            break
+        }
+        $cursorPath = [IO.Path]::GetFullPath($parentPath)
+    }
+    throw 'trusted path does not terminate at its authority root'
+}
+
 function Get-NewsGraspRecoveryRuntimeBinding {
+    param([string] $BindingPathOverride = '')
     $profileRoot = [Environment]::GetFolderPath([Environment+SpecialFolder]::UserProfile)
     $canonicalBin = Join-Path $profileRoot 'bin'
-    $bindingPath = Join-Path $canonicalBin 'news-grasp-recovery-runtime-binding-v1.json'
+    $canonicalBindingPath = Join-Path $canonicalBin 'news-grasp-recovery-runtime-binding-v1.json'
+    $bindingPath = if ($BindingPathOverride) {
+        [IO.Path]::GetFullPath($BindingPathOverride)
+    } else {
+        $canonicalBindingPath
+    }
+    $isolatedIntegration = -not [string]::Equals($bindingPath, $canonicalBindingPath, [StringComparison]::OrdinalIgnoreCase)
+    if (-not $isolatedIntegration) {
+        $bindingPath = Assert-NewsGraspContainedNonReparsePath -Root $canonicalBin -Path $bindingPath
+    }
     try {
         $binding = Get-Content -LiteralPath $bindingPath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
         if ([string]$binding.schemaVersion -cne 'NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1') { throw 'schema mismatch' }
+        $bindingPath = (Resolve-Path -LiteralPath $bindingPath -ErrorAction Stop).Path
         $ops = (Resolve-Path -LiteralPath ([string]$binding.opsRepoRoot) -ErrorAction Stop).Path
         $python = (Resolve-Path -LiteralPath ([string]$binding.pythonExe) -ErrorAction Stop).Path
         $runner = (Resolve-Path -LiteralPath ([string]$binding.runnerPath) -ErrorAction Stop).Path
-        $expectedPython = (Resolve-Path -LiteralPath (Join-Path $profileRoot 'AppData\Local\Programs\Python\Python312\python.exe') -ErrorAction Stop).Path
-        $expectedRuntime = (Resolve-Path -LiteralPath (Join-Path $profileRoot '.news-grasp-runtime\production-runtime') -ErrorAction Stop).Path
+        $productionRuntime = (Resolve-Path -LiteralPath ([string]$binding.productionRuntimeRoot) -ErrorAction Stop).Path
+        $liveBin = if ($isolatedIntegration) {
+            (Resolve-Path -LiteralPath ([string]$binding.liveBinRoot) -ErrorAction Stop).Path
+        } else {
+            $canonicalBin
+        }
         $gitExe = 'C:\Program Files\Git\cmd\git.exe'
         $gitSafeArgs = @('-c', 'core.hooksPath=NUL', '-c', 'core.fsmonitor=false', '-c', 'core.attributesFile=NUL')
         $trustedRemote = 'https://github.com/HIDEPON-UMG/News-Grasp.git'
         $opsHead = (& $gitExe @gitSafeArgs -C $ops rev-parse HEAD 2>$null | Out-String).Trim().ToLowerInvariant()
-        $remoteLine = (& $gitExe @gitSafeArgs ls-remote $trustedRemote refs/heads/main 2>$null | Out-String).Trim()
-        $remoteHead = if ($remoteLine) { ($remoteLine -split '\s+')[0].ToLowerInvariant() } else { '' }
+        $remoteLine = if ($isolatedIntegration) { '' } else { (& $gitExe @gitSafeArgs ls-remote $trustedRemote refs/heads/main 2>$null | Out-String).Trim() }
+        $remoteHead = if ($isolatedIntegration) { $opsHead } elseif ($remoteLine) { ($remoteLine -split '\s+')[0].ToLowerInvariant() } else { '' }
         $opsDirty = (& $gitExe @gitSafeArgs -C $ops status --porcelain --untracked-files=all 2>$null | Out-String).Trim()
         $startupCustomizationPresent = (
             (Test-Path -LiteralPath (Join-Path $ops 'sitecustomize.py')) -or
@@ -272,19 +446,72 @@ function Get-NewsGraspRecoveryRuntimeBinding {
         $pythonSignature = Get-AuthenticodeSignature -LiteralPath $python
         $pythonSignerSubject = [string]$pythonSignature.SignerCertificate.Subject
         $pythonSignerThumbprint = ([string]$pythonSignature.SignerCertificate.Thumbprint).ToLowerInvariant()
+        if ($isolatedIntegration) {
+            if (
+                [string]$binding.executionClass -cne 'isolated_integration' -or
+                [string]$binding.trustedRemote -cne 'isolated-integration://local' -or
+                -not $FinalizeVerifiedPublishManifest -or
+                -not $RecoveryExecutionReceiptPath -or
+                -not $RecoveryFinalizationReceiptPath -or
+                -not $RepoDirOverride -or
+                -not $OpsRepoRootOverride -or
+                -not $StateFileOverride -or
+                -not $LogDirOverride -or
+                -not $HighCostBindingPath -or
+                $RunIntent -cne 'ScheduledRecoveryFull' -or
+                $SmokeTest -or $PreflightOnly -or $RecoverOnly -or $NoPublish -or $NoPush -or $ForceFullRerun
+            ) { throw 'isolated integration is restricted to exact-args finalizer-only' }
+            $integrationRoot = (Resolve-Path -LiteralPath ([string]$binding.integrationRoot) -ErrorAction Stop).Path
+            $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
+            if (
+                [string]::Equals($integrationRoot, $tempRoot.TrimEnd([IO.Path]::DirectorySeparatorChar), [StringComparison]::OrdinalIgnoreCase) -or
+                -not (Test-NewsGraspPathWithin -Root $tempRoot -Candidate $integrationRoot)
+            ) { throw 'isolated integration root is not a bounded Temp child' }
+            foreach ($isolatedPath in @(
+                $bindingPath, $integrationRoot, $ops, $runner, $productionRuntime, $liveBin,
+                $RepoDirOverride, $OpsRepoRootOverride, $StateFileOverride, $LogDirOverride,
+                $HighCostBindingPath, $ScheduledAuthorityEvidencePath,
+                $RecoveryExecutionReceiptPath, $FinalizeVerifiedPublishManifest,
+                $RecoveryFinalizationReceiptPath, [string]$binding.isolatedAuthorityBrokerPath
+            )) {
+                $null = Assert-NewsGraspContainedNonReparsePath -Root $integrationRoot -Path ([string]$isolatedPath)
+            }
+            if (
+                -not [string]::Equals(
+                    (Get-NewsGraspFileSha256Hex -Path ([string]$binding.isolatedAuthorityBrokerPath)),
+                    [string]$binding.isolatedAuthorityBrokerSha256,
+                    [StringComparison]::Ordinal
+                )
+            ) { throw 'isolated authority broker hash mismatch' }
+            $aclSections = (
+                [Security.AccessControl.AccessControlSections]::Owner -bor
+                [Security.AccessControl.AccessControlSections]::Group -bor
+                [Security.AccessControl.AccessControlSections]::Access
+            )
+            $integrationRootSddl = (Get-Acl -LiteralPath $integrationRoot -ErrorAction Stop).GetSecurityDescriptorSddlForm($aclSections)
+        } else {
+            $expectedPython = (Resolve-Path -LiteralPath (Join-Path $profileRoot 'AppData\Local\Programs\Python\Python312\python.exe') -ErrorAction Stop).Path
+            $expectedRuntime = (Resolve-Path -LiteralPath (Join-Path $profileRoot '.news-grasp-runtime\production-runtime') -ErrorAction Stop).Path
+            if (
+                -not [string]::Equals($python, $expectedPython, [StringComparison]::OrdinalIgnoreCase) -or
+                -not [string]::Equals($productionRuntime, $expectedRuntime, [StringComparison]::OrdinalIgnoreCase)
+            ) { throw 'canonical Python or production runtime path mismatch' }
+        }
+        $lineage = (Resolve-Path -LiteralPath ([string]$binding.lineagePath) -ErrorAction Stop).Path
+        $expectedLineage = (Resolve-Path -LiteralPath (Join-Path $liveBin 'news-grasp-lineage.ps1') -ErrorAction Stop).Path
         if (
-            -not [string]::Equals($python, $expectedPython, [StringComparison]::OrdinalIgnoreCase) -or
-            -not [string]::Equals((Resolve-Path -LiteralPath ([string]$binding.productionRuntimeRoot) -ErrorAction Stop).Path, $expectedRuntime, [StringComparison]::OrdinalIgnoreCase) -or
-            [string]$binding.trustedRemote -cne $trustedRemote -or
+            ((-not $isolatedIntegration) -and [string]$binding.trustedRemote -cne $trustedRemote) -or
             [string]$binding.opsHead -cne $opsHead -or
             $opsHead -notmatch '^[0-9a-f]{40}$' -or
             $opsHead -cne $remoteHead -or
-            ($opsDirty -and -not $RepoDirOverride) -or
+            ($opsDirty -and ($isolatedIntegration -or -not $RepoDirOverride)) -or
             $startupCustomizationPresent -or
             -not [string]::Equals($runner, (Resolve-Path -LiteralPath $PSCommandPath).Path, [StringComparison]::OrdinalIgnoreCase) -or
-            -not [string]::Equals((Split-Path -Parent $runner), $canonicalBin, [StringComparison]::OrdinalIgnoreCase) -or
+            -not [string]::Equals((Split-Path -Parent $runner), $liveBin, [StringComparison]::OrdinalIgnoreCase) -or
             -not [string]::Equals((Get-NewsGraspFileSha256Hex -Path $runner), [string]$binding.runnerSha256, [StringComparison]::Ordinal) -or
             -not [string]::Equals((Get-NewsGraspFileSha256Hex -Path $python), [string]$binding.pythonExeSha256, [StringComparison]::Ordinal) -or
+            -not [string]::Equals($lineage, $expectedLineage, [StringComparison]::OrdinalIgnoreCase) -or
+            -not [string]::Equals((Get-NewsGraspFileSha256Hex -Path $lineage), [string]$binding.lineageSha256, [StringComparison]::Ordinal) -or
             [string]$pythonSignature.Status -cne 'Valid' -or
             $pythonSignerSubject -notlike 'CN=Python Software Foundation, O=Python Software Foundation,*' -or
             [string]$binding.pythonTrustAnchor -cne 'authenticode:python-software-foundation' -or
@@ -296,7 +523,9 @@ function Get-NewsGraspRecoveryRuntimeBinding {
             @('controlPlaneToolPath', 'controlPlaneToolSha256'),
             @('completionGuardToolPath', 'completionGuardToolSha256'),
             @('dailySelfHealPath', 'dailySelfHealSha256'),
-            @('auditControlPath', 'auditControlSha256')
+            @('auditControlPath', 'auditControlSha256'),
+            @('recoveryCloseoutToolPath', 'recoveryCloseoutToolSha256'),
+            @('operationalContractToolPath', 'operationalContractToolSha256')
         )) {
             $toolPath = (Resolve-Path -LiteralPath ([string]$binding.($tool[0])) -ErrorAction Stop).Path
             $expectedToolPath = (Resolve-Path -LiteralPath (Join-Path $ops ('tools\' + [IO.Path]::GetFileName($toolPath))) -ErrorAction Stop).Path
@@ -307,29 +536,85 @@ function Get-NewsGraspRecoveryRuntimeBinding {
         }
         $highCostBinding = (Resolve-Path -LiteralPath ([string]$binding.highCostBindingPath) -ErrorAction Stop).Path
         if (
-            -not [string]::Equals($highCostBinding, (Join-Path $canonicalBin 'news-grasp-high-cost-binding-v1.json'), [StringComparison]::OrdinalIgnoreCase) -or
+            -not [string]::Equals($highCostBinding, (Join-Path $liveBin 'news-grasp-high-cost-binding-v1.json'), [StringComparison]::OrdinalIgnoreCase) -or
             -not [string]::Equals((Get-NewsGraspFileSha256Hex -Path $highCostBinding), [string]$binding.highCostBindingFileSha256, [StringComparison]::Ordinal) -or
             [string]$binding.highCostBindingReceiptSha256 -notmatch '^[0-9a-f]{64}$'
         ) { throw 'high-cost binding mismatch' }
         return [pscustomobject]@{
             OpsRepoRoot = $ops
             PythonExe = $python
-            ProductionRuntimeRoot = (Resolve-Path -LiteralPath ([string]$binding.productionRuntimeRoot) -ErrorAction Stop).Path
-            LiveBinRoot = $canonicalBin
+            ProductionRuntimeRoot = $productionRuntime
+            LiveBinRoot = $liveBin
+            LineagePath = $lineage
             ReceiptToolPath = (Resolve-Path -LiteralPath ([string]$binding.receiptToolPath) -ErrorAction Stop).Path
             CompletionGuardToolPath = (Resolve-Path -LiteralPath ([string]$binding.completionGuardToolPath) -ErrorAction Stop).Path
             DailySelfHealPath = (Resolve-Path -LiteralPath ([string]$binding.dailySelfHealPath) -ErrorAction Stop).Path
+            RecoveryCloseoutToolPath = (Resolve-Path -LiteralPath ([string]$binding.recoveryCloseoutToolPath) -ErrorAction Stop).Path
             HighCostBindingPath = $highCostBinding
             HighCostBindingReceiptSha256 = [string]$binding.highCostBindingReceiptSha256
+            IsolatedIntegration = $isolatedIntegration
+            IntegrationUserProfileRoot = if ($isolatedIntegration) { $integrationRoot } else { '' }
+            IntegrationRootSddl = if ($isolatedIntegration) { $integrationRootSddl } else { '' }
         }
     } catch {
         throw "RECOVERY_RUNTIME_BINDING_INVALID:$($_.Exception.Message)"
     }
 }
 
+function Assert-NewsGraspIsolatedFinalizerMutationBoundary {
+    param(
+        [Parameter(Mandatory = $true)] $Binding,
+        [Parameter(Mandatory = $true)][string[]] $Paths
+    )
+    if (-not $Binding.IsolatedIntegration) { return }
+    $integrationRoot = [string]$Binding.IntegrationUserProfileRoot
+    $aclSections = (
+        [Security.AccessControl.AccessControlSections]::Owner -bor
+        [Security.AccessControl.AccessControlSections]::Group -bor
+        [Security.AccessControl.AccessControlSections]::Access
+    )
+    $currentSddl = (Get-Acl -LiteralPath $integrationRoot -ErrorAction Stop).GetSecurityDescriptorSddlForm($aclSections)
+    if ($currentSddl -cne [string]$Binding.IntegrationRootSddl) {
+        throw 'isolated integration root authority changed after admission'
+    }
+    foreach ($candidate in $Paths) {
+        if (-not $candidate) { continue }
+        $probe = if (Test-Path -LiteralPath $candidate) { $candidate } else { Split-Path -Parent $candidate }
+        $null = Assert-NewsGraspContainedNonReparsePath -Root $integrationRoot -Path $probe
+    }
+}
+
 $RepoDir   = Resolve-NewsGraspRepoDir -Override $RepoDirOverride
+$CloseoutDateStamp = if ($DateStampOverride) { $DateStampOverride } else { Get-Date -Format 'yyyy-MM-dd' }
+$ExistingPublicGreenManifest = Join-Path $RepoDir "build\publish-complete\$CloseoutDateStamp.json"
+if (
+    $RunIntent -eq 'ScheduledRecoveryFull' -and
+    (-not $FinalizeVerifiedPublishManifest) -and
+    (Test-Path -LiteralPath $ExistingPublicGreenManifest -PathType Leaf)
+) {
+    try {
+        $existingPublicGreen = Get-Content -LiteralPath $ExistingPublicGreenManifest -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+        if (Test-NewsGraspCompletePublicGreenManifest -Verified $existingPublicGreen -IssueDate $CloseoutDateStamp) {
+            [ordered]@{
+                schemaVersion = 'NEWS_GRASP_POST_PUBLIC_CLOSEOUT_V1'
+                status = 'post_public_closeout_blocker'
+                reasonCode = 'post_public_closeout_blocker'
+                operation = 'non_finalizer_runner_reentry'
+                issueDate = $CloseoutDateStamp
+            } | ConvertTo-Json -Compress | Write-Output
+            exit 78
+        }
+    } catch {
+        # malformed/unverified manifest is not public Green authority; normal typed
+        # recovery gates below decide it without guessing completion.
+    }
+}
+# Resolve and validate the binding before any production-intent Python call.
+# The pure post-public reentry blocker above performs no process launch and must
+# remain independent from installed runtime availability.
+$PyExe     = Resolve-NewsGraspTrustedPython -BindingPathOverride $RecoveryRuntimeBindingPath
 $RecoveryRuntimeBinding = if ($RunIntent -eq 'ScheduledRecoveryFull') {
-    Get-NewsGraspRecoveryRuntimeBinding
+    Get-NewsGraspRecoveryRuntimeBinding -BindingPathOverride $RecoveryRuntimeBindingPath
 } else { $null }
 $OpsRepoRoot = if ($null -ne $RecoveryRuntimeBinding) {
     [string]$RecoveryRuntimeBinding.OpsRepoRoot
@@ -340,13 +625,17 @@ $OpsRepoRoot = if ($null -ne $RecoveryRuntimeBinding) {
 } else {
     $RepoDir
 }
-. (Join-Path $PSScriptRoot 'news-grasp-lineage.ps1')
+$LineageScriptPath = if ($null -ne $RecoveryRuntimeBinding) {
+    [string]$RecoveryRuntimeBinding.LineagePath
+} else {
+    Join-Path $PSScriptRoot 'news-grasp-lineage.ps1'
+}
+. $LineageScriptPath
 $LogDir    = Join-Path $env:USERPROFILE 'bin\news-grasp-logs'
 $GitExe    = 'C:\Program Files\Git\cmd\git.exe'
 $GitSafeArgs = @('-c', 'core.hooksPath=NUL', '-c', 'core.fsmonitor=false', '-c', 'core.attributesFile=NUL')
 $env:GIT_ATTR_NOSYSTEM = '1'
 $CodexExe  = Resolve-CodexCliExe -Override $CodexExeOverride
-$PyExe     = Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::UserProfile)) 'AppData\Local\Programs\Python\Python312\python.exe'
 $CodexWrapper = Join-Path $env:USERPROFILE 'bin\run_codex_with_timeout.ps1'
 $TimeoutSec = 4800  # 2026-06-12: 3600→4800。日次 digest の wall-clock timeout を 80 分へ延長。真の暴走は IdleTimeoutSec 900 が先に検知する
 $PromptFile = Join-Path $RepoDir 'prompts\runner-prompt.md'
@@ -362,6 +651,13 @@ $StateFile  = Join-Path $env:USERPROFILE 'bin\news-grasp-runner-state.json'
 $LiveBinDir = if ($PSCommandPath) { Split-Path -Parent $PSCommandPath } else { Join-Path $env:USERPROFILE 'bin' }
 $TrustedProductionRuntimeRoot = if ($null -ne $RecoveryRuntimeBinding) { [string]$RecoveryRuntimeBinding.ProductionRuntimeRoot } else { Join-Path $env:USERPROFILE '.news-grasp-runtime\production-runtime' }
 $TrustedRecoveryLiveBinRoot = if ($null -ne $RecoveryRuntimeBinding) { [string]$RecoveryRuntimeBinding.LiveBinRoot } else { $LiveBinDir }
+if ($null -ne $RecoveryRuntimeBinding -and $RecoveryRuntimeBinding.IsolatedIntegration -eq $true) {
+    $InvokedLog = Join-Path $TrustedRecoveryLiveBinRoot 'news-grasp-invoked.log'
+    # Only the isolated Temp-root finalizer composition redirects Path.home().
+    # The production binding cannot enter this branch and retains the canonical
+    # global recovery authority ledger broker.
+    $env:USERPROFILE = [string]$RecoveryRuntimeBinding.IntegrationUserProfileRoot
+}
 $BootstrapSmokeStateFile = Join-Path $LiveBinDir 'ng-smoke-state.json'
 $BootstrapSmokeLogDir = Join-Path $LiveBinDir 'ng-smoke-logs'
 $BootstrapSmokeEarliestMinutes = 5 * 60 + 55
@@ -370,7 +666,9 @@ $RunnerSyncReexecEnvVar = 'NEWS_GRASP_RUNNER_SYNC_REEXEC'
 $MaxParallelReporterJobs = 7
 
 if ($CodexWrapperOverride) { $CodexWrapper = $CodexWrapperOverride }
-if ($PyExeOverride) { $PyExe = $PyExeOverride }
+if ($PyExeOverride -and -not [string]::Equals((Resolve-Path -LiteralPath $PyExeOverride -ErrorAction Stop).Path, $PyExe, [StringComparison]::OrdinalIgnoreCase)) {
+    throw 'RECOVERY_RUNTIME_BINDING_INVALID:PyExeOverride does not match trusted binding'
+}
 if ($null -ne $RecoveryRuntimeBinding) {
     if (
         ($OpsRepoRootOverride -and -not [string]::Equals((Resolve-Path -LiteralPath $OpsRepoRootOverride).Path, [string]$RecoveryRuntimeBinding.OpsRepoRoot, [StringComparison]::OrdinalIgnoreCase)) -or
@@ -379,7 +677,9 @@ if ($null -ne $RecoveryRuntimeBinding) {
         ($HighCostBindingPath -and -not [string]::Equals((Resolve-Path -LiteralPath $HighCostBindingPath).Path, [string]$RecoveryRuntimeBinding.HighCostBindingPath, [StringComparison]::OrdinalIgnoreCase)) -or
         ($HighCostBindingReceiptSha256 -and [string]$HighCostBindingReceiptSha256 -cne [string]$RecoveryRuntimeBinding.HighCostBindingReceiptSha256)
     ) { throw 'RECOVERY_RUNTIME_BINDING_INVALID' }
-    $PyExe = [string]$RecoveryRuntimeBinding.PythonExe
+    if (-not [string]::Equals($PyExe, [string]$RecoveryRuntimeBinding.PythonExe, [StringComparison]::OrdinalIgnoreCase)) {
+        throw 'RECOVERY_RUNTIME_BINDING_INVALID:trusted Python drift'
+    }
     if (-not $HighCostBindingPath) { $HighCostBindingPath = [string]$RecoveryRuntimeBinding.HighCostBindingPath }
     if (-not $HighCostBindingReceiptSha256) { $HighCostBindingReceiptSha256 = [string]$RecoveryRuntimeBinding.HighCostBindingReceiptSha256 }
 }
@@ -398,35 +698,42 @@ $highCostBindingTool = Join-Path $OpsRepoRoot 'tools\news_grasp_high_cost_bindin
 if (-not (Test-Path -LiteralPath $highCostBindingTool -PathType Leaf)) {
     throw 'HIGH_COST_WORKSPACE_BINDING_MISSING'
 }
-$highCostBindingJson = (& $PyExe '-I' '-S' '-B' $highCostBindingTool 'resolve' '--binding' $HighCostBindingPath '--expected-receipt-sha256' $HighCostBindingReceiptSha256 2>&1 | Out-String).Trim()
-if ($LASTEXITCODE -ne 0) {
-    try {
-        $highCostBindingFailure = $highCostBindingJson | ConvertFrom-Json -ErrorAction Stop
-        $highCostBindingReason = [string]$highCostBindingFailure.reason
-    } catch { $highCostBindingReason = 'HIGH_COST_WORKSPACE_BINDING_MISSING' }
-    if ($highCostBindingReason -notin @(
-        'HIGH_COST_WORKSPACE_BINDING_MISSING',
-        'HIGH_COST_BROKER_UNAVAILABLE',
-        'HIGH_COST_OPERATION_ADMISSION_REQUIRED',
-        'HIGH_COST_AUTHORITY_INVALID',
-        'HIGH_COST_BUDGET_EXHAUSTED',
-        'HIGH_COST_IDENTITY_DRIFT'
-    )) { $highCostBindingReason = 'HIGH_COST_WORKSPACE_BINDING_MISSING' }
-    throw $highCostBindingReason
-}
-try { $highCostBinding = $highCostBindingJson | ConvertFrom-Json -ErrorAction Stop } catch { throw 'HIGH_COST_WORKSPACE_BINDING_MISSING' }
-if (
-    [string]$highCostBinding.bindingSchemaVersion -cne 'NEWS_GRASP_HIGH_COST_BINDING_V1' -or
-    [string]$highCostBinding.bindingReceiptSha256 -cne $HighCostBindingReceiptSha256.ToLowerInvariant() -or
-    [string]$highCostBinding.status -cne 'available'
-) { throw 'HIGH_COST_IDENTITY_DRIFT' }
-$HighCostWorkspaceRoot = [string]$highCostBinding.workspaceRoot
-$HighCostBudgetToolPath = [string]$highCostBinding.brokerInstalledPath
 $HighCostBindingResolverPath = $highCostBindingTool
 $HighCostBindingResolverSha256 = Get-NewsGraspFileSha256Hex -Path $highCostBindingTool
+if ($FinalizeVerifiedPublishManifest) {
+    # finalizer-only は外部modelを起動しない。RecoveryRuntimeBinding と execution
+    # receipt が binding file/receipt SHA を既に固定するため、global broker の
+    # availabilityをcloseout authorityへ昇格させない。
+    $HighCostWorkspaceRoot = ''
+    $HighCostBudgetToolPath = ''
+} else {
+    $highCostBindingJson = (& $PyExe '-I' '-S' '-B' $highCostBindingTool 'resolve' '--binding' $HighCostBindingPath '--expected-receipt-sha256' $HighCostBindingReceiptSha256 2>&1 | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) {
+        try {
+            $highCostBindingFailure = $highCostBindingJson | ConvertFrom-Json -ErrorAction Stop
+            $highCostBindingReason = [string]$highCostBindingFailure.reason
+        } catch { $highCostBindingReason = 'HIGH_COST_WORKSPACE_BINDING_MISSING' }
+        if ($highCostBindingReason -notin @(
+            'HIGH_COST_WORKSPACE_BINDING_MISSING',
+            'HIGH_COST_BROKER_UNAVAILABLE',
+            'HIGH_COST_OPERATION_ADMISSION_REQUIRED',
+            'HIGH_COST_AUTHORITY_INVALID',
+            'HIGH_COST_BUDGET_EXHAUSTED',
+            'HIGH_COST_IDENTITY_DRIFT'
+        )) { $highCostBindingReason = 'HIGH_COST_WORKSPACE_BINDING_MISSING' }
+        throw $highCostBindingReason
+    }
+    try { $highCostBinding = $highCostBindingJson | ConvertFrom-Json -ErrorAction Stop } catch { throw 'HIGH_COST_WORKSPACE_BINDING_MISSING' }
+    if (
+        [string]$highCostBinding.bindingSchemaVersion -cne 'NEWS_GRASP_HIGH_COST_BINDING_V1' -or
+        [string]$highCostBinding.bindingReceiptSha256 -cne $HighCostBindingReceiptSha256.ToLowerInvariant() -or
+        [string]$highCostBinding.status -cne 'available'
+    ) { throw 'HIGH_COST_IDENTITY_DRIFT' }
+    $HighCostWorkspaceRoot = [string]$highCostBinding.workspaceRoot
+    $HighCostBudgetToolPath = [string]$highCostBinding.brokerInstalledPath
+}
 $env:NEWS_GRASP_HIGH_COST_BINDING_PATH = (Resolve-Path -LiteralPath $HighCostBindingPath).Path
 $env:NEWS_GRASP_HIGH_COST_BINDING_RECEIPT_SHA256 = $HighCostBindingReceiptSha256.ToLowerInvariant()
-if ((-not $PyExeOverride) -and ($null -eq $RecoveryRuntimeBinding)) { $PyExe = Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::UserProfile)) 'AppData\Local\Programs\Python\Python312\python.exe' }
 $env:PYTHONSAFEPATH = '1'
 $env:PYTHONNOUSERSITE = '1'
 $env:PYTHONPATH = $RepoDir
@@ -467,6 +774,8 @@ $script:HighCostExpectedOperationKind = ''
 $script:HighCostExpectedIssueDate = ''
 $script:HighCostAdmissionPath = $HighCostAdmissionPath
 $script:UsesHighCostContinuationAdmission = $false
+$script:ScheduledRecoveryStageBrokerPath = ''
+$script:ScheduledRecoveryStageDecisionReceiptPath = ''
 $script:HighCostParentAuthorityPath = $HighCostParentAuthorityPath
 $script:HighCostParentAuthoritySha256 = ''
 $script:E2EFinalAdmissionPath = $E2EFinalAdmissionPath
@@ -1423,6 +1732,9 @@ function New-NewsGraspFinalizationCandidateState {
         Add-RunnerLogLine -Text 'ERROR: FINALIZATION_CANDIDATE_DATE_MISMATCH'
         return ''
     }
+    if (-not (Test-NewsGraspFinalizationStateLineage -CurrentState $before)) {
+        return ''
+    }
     $candidatePath = Join-Path $TrustedRecoveryLiveBinRoot ("news-grasp-runner-state.$DateStamp.$RunId.candidate.json")
     $candidate = $before | ConvertTo-Json -Depth 20 | ConvertFrom-Json
     $candidate.status = 'publish_complete'
@@ -1444,6 +1756,46 @@ function New-NewsGraspFinalizationCandidateState {
     } catch {
         Add-RunnerLogLine -Text "ERROR: FINALIZATION_CANDIDATE_WRITE_FAILED reason=$($_.Exception.Message)"
         return ''
+    }
+}
+
+function Test-NewsGraspFinalizationStateLineage {
+    param([Parameter(Mandatory = $true)][object] $CurrentState)
+    try {
+        if ([string]$CurrentState.date -ne $DateStamp) { throw 'date mismatch' }
+        if ([string]$CurrentState.run_intent -ne 'ScheduledRecoveryFull') { throw 'run intent mismatch' }
+        $producerPath = [IO.Path]::GetFullPath([string]$script:ValidatedFinalizationReceipt.producerStatePath)
+        $producerItem = Get-Item -LiteralPath $producerPath -Force -ErrorAction Stop
+        if (-not $producerItem.PSIsContainer -and $null -ne $producerItem.LinkType) { throw 'producer state link' }
+        if ($producerItem.PSIsContainer) { throw 'producer state is directory' }
+        $producerBytes = [IO.File]::ReadAllBytes($producerPath)
+        $sha = [Security.Cryptography.SHA256]::Create()
+        try {
+            $producerSha = ([BitConverter]::ToString($sha.ComputeHash($producerBytes))).Replace('-', '').ToLowerInvariant()
+        } finally {
+            $sha.Dispose()
+        }
+        if ($producerSha -ne [string]$script:ValidatedFinalizationReceipt.producerStateSha256) {
+            throw 'producer state hash drift'
+        }
+        $producerText = [Text.UTF8Encoding]::new($false, $true).GetString($producerBytes)
+        $producer = $producerText | ConvertFrom-Json -ErrorAction Stop
+        $lineageFields = @(
+            'date', 'run_intent', 'run_id', 'artifactRoot', 'opsRoot',
+            'dailyRootId', 'rootOperationId', 'producerOperationId',
+            'producerRunIntent', 'lineageReceiptSha256', 'completionAuthorityId'
+        )
+        foreach ($field in $lineageFields) {
+            $currentValue = [string]$CurrentState.$field
+            $producerValue = [string]$producer.$field
+            if (-not $currentValue -or $currentValue -cne $producerValue) {
+                throw "lineage mismatch field=$field"
+            }
+        }
+        return $true
+    } catch {
+        Add-RunnerLogLine -Text "ERROR: FINALIZATION_STATE_LINEAGE_INVALID reason=$($_.Exception.Message)"
+        return $false
     }
 }
 
@@ -2215,7 +2567,6 @@ function Assert-RecoveryOperationDeadline {
         $RunIntent -ne 'ScheduledRecoveryFull' -or
         $FinalizeVerifiedPublishManifest -or
         $script:UsesHighCostContinuationAdmission -or
-        $script:SameDayRecoveryAdmissionAllowsOverduePublicRepair -or
         ($ResumeFromStage -and $HighCostAdmissionPath) -or
         $null -eq $script:RecoveryHardDeadline
     ) {
@@ -2278,8 +2629,7 @@ function Invoke-CodexWrapper {
         $RunIntent -eq 'ScheduledRecoveryFull' -and
         (-not $FinalizeVerifiedPublishManifest) -and
         (-not $script:UsesHighCostContinuationAdmission) -and
-        (-not ($ResumeFromStage -and $HighCostAdmissionPath)) -and
-        (-not $script:SameDayRecoveryAdmissionAllowsOverduePublicRepair)
+        (-not ($ResumeFromStage -and $HighCostAdmissionPath))
     ) {
         $remainingSeconds = [int][Math]::Floor((([DateTimeOffset]$script:RecoveryHardDeadline) - [DateTimeOffset]::Now).TotalSeconds)
         if ($remainingSeconds -le 0) {
@@ -3510,6 +3860,8 @@ function Set-ScheduledHighCostAuthorityEnvironment {
 
 function Assert-HighCostOperationAdmission {
     Clear-ScheduledHighCostAuthorityEnvironment
+    $script:ScheduledRecoveryStageBrokerPath = ''
+    $script:ScheduledRecoveryStageDecisionReceiptPath = ''
     if ($SmokeTest -or $PreflightOnly -or $FinalizeVerifiedPublishManifest) { return }
     $modelSpawnBroker = [System.IO.Path]::GetFullPath($HighCostBudgetToolPath)
     if ((-not $HighCostWorkspaceRoot) -or (-not (Test-Path -LiteralPath $modelSpawnBroker -PathType Leaf))) {
@@ -3742,77 +4094,107 @@ function Assert-HighCostOperationAdmission {
 
     $stageDecisionReceipt = ''
     $script:UsesHighCostContinuationAdmission = $false
+    $continuationAdmissionValidated = $false
     if ($ResumeFromStage) {
         if ($HighCostAdmissionPath) {
+            # A continuation receipt is not a caller bypass.  It must be
+            # chained to the scheduled authority receipt and revalidated by
+            # the product-local closed-schema validator before any authority
+            # environment is exported or this gate returns.
+            if ([string]::IsNullOrWhiteSpace([string]$ScheduledAuthorityEvidencePath)) {
+                Add-RunnerLogLine -Text 'ERROR: SCHEDULED_RECOVERY_CONTINUATION_SCHEDULED_AUTHORITY_REQUIRED'
+                Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'SCHEDULED_RECOVERY_CONTINUATION_SCHEDULED_AUTHORITY_REQUIRED' -ExitCode 76
+                exit 76
+            }
+            if (-not (Test-Path -LiteralPath $ScheduledAuthorityEvidencePath -PathType Leaf)) {
+                Add-RunnerLogLine -Text 'ERROR: SCHEDULED_RECOVERY_CONTINUATION_SCHEDULED_AUTHORITY_MISSING'
+                Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'SCHEDULED_RECOVERY_CONTINUATION_SCHEDULED_AUTHORITY_MISSING' -ExitCode 76
+                exit 76
+            }
+            if (-not (Test-Path -LiteralPath $HighCostAdmissionPath -PathType Leaf)) {
+                Add-RunnerLogLine -Text 'ERROR: SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_MISSING'
+                Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_MISSING' -ExitCode 76
+                exit 76
+            }
             try {
-                $continuationAdmission = Get-Content -LiteralPath $HighCostAdmissionPath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+                $authority = Get-Content -LiteralPath $ScheduledAuthorityEvidencePath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+                $authorityReceiptSha256 = [string]$authority.receiptSha256
+                if ($authorityReceiptSha256 -notmatch '^[0-9a-f]{64}$') { throw 'scheduled authority receiptSha256 is invalid' }
+                $continuationValidationOutput = (& $PyExe -I -B (Join-Path $RepoDir 'tools\news_grasp_operational_contract.py') 'validate-scheduled-admission' '--path' ([System.IO.Path]::GetFullPath($HighCostAdmissionPath)) '--expected-operation-kind' 'scheduled_recovery' '--expected-issue-date' $DateStamp '--expected-operation-authority-sha256' $authorityReceiptSha256 2>&1 | Out-String).Trim()
+                if ($LASTEXITCODE -ne 0) { throw "product-local scheduled admission validation failed: $continuationValidationOutput" }
+                $continuationAdmission = $continuationValidationOutput | ConvertFrom-Json -ErrorAction Stop
+                $requiredLineageFields = @('resumeStage', 'allowedModelRoutes', 'sourceAdmissionReceiptSha256', 'sourceRunId', 'sourceRunnerStateSha256', 'sourceTerminalStatus')
+                foreach ($field in $requiredLineageFields) {
+                    if ($null -eq $continuationAdmission.$field) { throw "continuation lineage field missing: $field" }
+                }
+                $expectedRoutes = switch ($ResumeFromStage) {
+                    'post-reporter' { @('newsroom_editor', 'deepdive', 'repair:daily-quality') }
+                    'editor' { @('newsroom_editor', 'deepdive', 'repair:daily-quality') }
+                    'deepdive' { @('deepdive') }
+                    'post-daily-quality' { @('deepdive') }
+                    'post-deepdive' { @() }
+                    'generation-quality-repair' { @('repair:daily-quality', 'repair:generation-quality') }
+                    default { throw 'continuation resume stage is invalid' }
+                }
+                $actualRoutes = @($continuationAdmission.allowedModelRoutes | ForEach-Object { [string]$_ })
+                if (
+                    [string]$continuationAdmission.schemaVersion -cne 'HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1' -or
+                    [string]$continuationAdmission.operationKind -cne 'scheduled_recovery' -or
+                    [string]$continuationAdmission.issueDate -cne $DateStamp -or
+                    [string]$continuationAdmission.operationAuthoritySha256 -cne $authorityReceiptSha256 -or
+                    [string]$continuationAdmission.resumeStage -cne $ResumeFromStage -or
+                    (@($actualRoutes) -join "`n") -cne (@($expectedRoutes) -join "`n") -or
+                    [string]$continuationAdmission.sourceAdmissionReceiptSha256 -notmatch '^[0-9a-f]{64}$' -or
+                    [string]$continuationAdmission.sourceRunId -notmatch '^[0-9a-f]{32}$' -or
+                    [string]$continuationAdmission.sourceRunnerStateSha256 -notmatch '^[0-9a-f]{64}$' -or
+                    [string]$continuationAdmission.sourceTerminalStatus -notmatch '^(blocked|failed|error)[a-z0-9_]*$'
+                ) { throw 'continuation lineage fields are invalid or drifted' }
             } catch {
-                Add-RunnerLogLine -Text "ERROR: SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_INVALID $($_.Exception.Message)"
-                Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_INVALID' -ExitCode 76
+                Add-RunnerLogLine -Text "ERROR: HIGH_COST_SCHEDULED_ADMISSION_INVALID reason=$($_.Exception.Message)"
+                Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_SCHEDULED_ADMISSION_INVALID' -ExitCode 76
                 exit 76
             }
-            $continuationSchema = [string]$continuationAdmission.schemaVersion
-            $continuationResumeStage = if ($continuationAdmission.PSObject.Properties.Name -contains 'resumeStage') { [string]$continuationAdmission.resumeStage } else { '' }
-            if ($continuationSchema -eq 'HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1' -and [string]$continuationAdmission.resumeStage -ne $ResumeFromStage) {
-                throw 'SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_INVALID'
-            }
-            $validContinuationAdmission = (
-                $continuationSchema -eq 'HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1' -and
-                $continuationResumeStage -eq $ResumeFromStage
-            ) -or (
-                $continuationSchema -eq 'HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1' -and
-                (-not $continuationResumeStage)
-            ) -or (
-                $continuationSchema -eq 'HIGH_COST_SCHEDULED_INCIDENT_REPAIR_V1' -and
-                (-not $continuationResumeStage) -and
-                $continuationAdmission.PSObject.Properties.Name -contains 'allowedModelRoutes' -and
-                @($continuationAdmission.allowedModelRoutes) -contains 'repair:incident-publication'
-            )
-            if (
-                (-not $validContinuationAdmission) -or
-                [string]$continuationAdmission.operationKind -ne 'scheduled_recovery' -or
-                [string]$continuationAdmission.issueDate -ne $DateStamp
-            ) {
-                Add-RunnerLogLine -Text 'ERROR: SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_INVALID'
-                Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_INVALID' -ExitCode 76
-                exit 76
-            }
-            Set-ScheduledHighCostAuthorityEnvironment -Admission $continuationAdmission -ExpectedOperationKind $operationKind -ExpectedIssueDate $DateStamp
-            $script:UsesHighCostContinuationAdmission = $true
-            $script:HighCostExpectedOperationKind = $operationKind
-            $script:HighCostExpectedIssueDate = $DateStamp
-            return
+            # ここでは継続receiptをauthorityへ昇格させない。既存の
+            # RecoveryDecisionPath検証とfresh broker admissionへ必ず流す。
+            $continuationAdmissionValidated = $true
         }
-        if ($RunIntent -ne 'ScheduledRecoveryFull' -or (-not $RecoveryDecisionPath) -or (-not $ScheduledAuthorityEvidencePath)) {
+        $script:UsesLocalGenerationQualityContinuation = $false
+        if ($ResumeFromStage -eq 'generation-quality-repair' -and $continuationAdmissionValidated) {
+            $script:UsesHighCostContinuationAdmission = $true
+            $script:UsesLocalGenerationQualityContinuation = $true
+            Add-RunnerLogLine -Text 'scheduled recovery stage decision bypassed for validated generation-quality-repair continuation'
+        } elseif ($RunIntent -ne 'ScheduledRecoveryFull' -or (-not $RecoveryDecisionPath) -or (-not $ScheduledAuthorityEvidencePath)) {
             Add-RunnerLogLine -Text 'ERROR: SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_REQUIRED'
             Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_REQUIRED' -ExitCode 76
             exit 76
         }
-        $decisionJson = (& $PyExe '-m' 'tools.news_grasp_daily_control' 'validate-decision' '--path' $RecoveryDecisionPath 2>&1 | Out-String).Trim()
-        if ($LASTEXITCODE -ne 0) {
-            Add-RunnerLogLine -Text "ERROR: RECOVERY_DECISION_INVALID exit=$LASTEXITCODE"
-            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'RECOVERY_DECISION_INVALID' -ExitCode 76
-            exit 76
-        }
-        try {
-            $decision = $decisionJson | ConvertFrom-Json -ErrorAction Stop
-            $stageDecisionReceipt = [System.IO.Path]::GetFullPath([string]$decision.brokerStageDecisionPath)
-            if (
-                [string]$decision.issueDate -ne $DateStamp -or
-                [string]$decision.runIntent -ne 'ScheduledRecoveryFull' -or
-                [string]$decision.recoveryBranch -ne 'ResumeFromStage' -or
-                [string]$decision.resumeStage -ne $ResumeFromStage -or
-                [System.IO.Path]::GetFullPath([string]$decision.scheduledAuthorityEvidencePath) -ne [System.IO.Path]::GetFullPath($ScheduledAuthorityEvidencePath) -or
-                (-not (Test-Path -LiteralPath $stageDecisionReceipt -PathType Leaf)) -or
-                (Get-FileSha256Hex -Path $stageDecisionReceipt) -ne [string]$decision.brokerStageDecisionSha256
-            ) {
-                throw 'RECOVERY_DECISION_BRANCH_MISMATCH'
+        if (-not $script:UsesLocalGenerationQualityContinuation) {
+            $decisionJson = (& $PyExe '-m' 'tools.news_grasp_daily_control' 'validate-decision' '--path' $RecoveryDecisionPath 2>&1 | Out-String).Trim()
+            if ($LASTEXITCODE -ne 0) {
+                Add-RunnerLogLine -Text "ERROR: RECOVERY_DECISION_INVALID exit=$LASTEXITCODE"
+                Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'RECOVERY_DECISION_INVALID' -ExitCode 76
+                exit 76
             }
-            $HighCostAdmissionPath = ''
-        } catch {
-            Add-RunnerLogLine -Text "ERROR: RECOVERY_DECISION_BRANCH_MISMATCH reason=$($_.Exception.Message)"
-            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'RECOVERY_DECISION_BRANCH_MISMATCH' -ExitCode 76
-            exit 76
+            try {
+                $decision = $decisionJson | ConvertFrom-Json -ErrorAction Stop
+                $stageDecisionReceipt = [System.IO.Path]::GetFullPath([string]$decision.brokerStageDecisionPath)
+                if (
+                    [string]$decision.issueDate -ne $DateStamp -or
+                    [string]$decision.runIntent -ne 'ScheduledRecoveryFull' -or
+                    [string]$decision.recoveryBranch -ne 'ResumeFromStage' -or
+                    [string]$decision.resumeStage -ne $ResumeFromStage -or
+                    [System.IO.Path]::GetFullPath([string]$decision.scheduledAuthorityEvidencePath) -ne [System.IO.Path]::GetFullPath($ScheduledAuthorityEvidencePath) -or
+                    (-not (Test-Path -LiteralPath $stageDecisionReceipt -PathType Leaf)) -or
+                    (Get-FileSha256Hex -Path $stageDecisionReceipt) -ne [string]$decision.brokerStageDecisionSha256
+                ) {
+                    throw 'RECOVERY_DECISION_BRANCH_MISMATCH'
+                }
+                $HighCostAdmissionPath = ''
+            } catch {
+                Add-RunnerLogLine -Text "ERROR: RECOVERY_DECISION_BRANCH_MISMATCH reason=$($_.Exception.Message)"
+                Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'RECOVERY_DECISION_BRANCH_MISMATCH' -ExitCode 76
+                exit 76
+            }
         }
     }
 
@@ -3842,6 +4224,7 @@ function Assert-HighCostOperationAdmission {
             exit 76
         }
         $admissionJson = (Get-Content -LiteralPath $HighCostAdmissionPath -Raw -Encoding UTF8).Trim()
+        $admissionValidationPath = [System.IO.Path]::GetFullPath($HighCostAdmissionPath)
     } else {
         $admissionJson = (& $PyExe -I $modelSpawnBroker 'admit' '--operation-kind' $operationKind '--attempt-id' $DateStamp '--issue-date' $DateStamp '--authority-evidence' $ScheduledAuthorityEvidencePath '--expected-task-action-sha256' $taskActionSha256 '--expected-runner-sha256' $runnerSha256 2>&1 | Out-String).Trim()
         if ($LASTEXITCODE -ne 0) {
@@ -3849,10 +4232,19 @@ function Assert-HighCostOperationAdmission {
             Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_OPERATION_ADMISSION_REJECTED; local critical path remains available' -ExitCode 76
             exit 76
         }
+        # brokerのstdoutはproduct-local validatorでGreenになるまでcanonical
+        # receiptへcopyせず、一時候補だけを検証する。
+        $admissionValidationPath = Join-Path $admissionDir ".${RunId}-${operationKind}.candidate.json"
+        [System.IO.File]::WriteAllText($admissionValidationPath, ($admissionJson + [Environment]::NewLine), [System.Text.UTF8Encoding]::new($false))
     }
     try {
-        $admission = $admissionJson | ConvertFrom-Json -ErrorAction Stop
         $authority = Get-Content -LiteralPath $ScheduledAuthorityEvidencePath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+        $validationOutput = (& $PyExe -I -B (Join-Path $RepoDir 'tools\news_grasp_operational_contract.py') 'validate-scheduled-admission' '--path' $admissionValidationPath '--expected-operation-kind' $operationKind '--expected-issue-date' $DateStamp '--expected-operation-authority-sha256' ([string]$authority.receiptSha256) 2>&1 | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0) {
+            throw "product-local scheduled admission validation failed: $validationOutput"
+        }
+        $admissionJson = $validationOutput
+        $admission = $admissionJson | ConvertFrom-Json -ErrorAction Stop
         if (
             [string]$admission.schemaVersion -notin @('HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1', 'HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1', 'HIGH_COST_SCHEDULED_INCIDENT_REPAIR_V1') -or
             $admission.operationKind -ne $operationKind -or
@@ -3862,11 +4254,26 @@ function Assert-HighCostOperationAdmission {
             throw 'scheduled admission identity drift'
         }
         [System.IO.File]::WriteAllText($admissionReceipt, ($admissionJson + [Environment]::NewLine), [System.Text.UTF8Encoding]::new($false))
+        if (-not $HighCostAdmissionPath -and (Test-Path -LiteralPath $admissionValidationPath -PathType Leaf)) {
+            Remove-Item -LiteralPath $admissionValidationPath -Force -ErrorAction SilentlyContinue
+        }
         $script:HighCostAdmissionPath = $admissionReceipt
         $script:HighCostExpectedOperationKind = $operationKind
         $script:HighCostExpectedIssueDate = $DateStamp
         Set-ScheduledHighCostAuthorityEnvironment -Admission $admission -ExpectedOperationKind $operationKind -ExpectedIssueDate $DateStamp
+        if ($ResumeFromStage -and $stageDecisionReceipt) {
+            $script:ScheduledRecoveryStageBrokerPath = [System.IO.Path]::GetFullPath($modelSpawnBroker)
+            $script:ScheduledRecoveryStageDecisionReceiptPath = [System.IO.Path]::GetFullPath($stageDecisionReceipt)
+        }
+        if ($continuationAdmissionValidated) {
+            # cutoff bypassはcontinuation単体ではなく、decision/fresh brokerの
+            # 検証済み連鎖が成立した後だけ有効にする。
+            $script:UsesHighCostContinuationAdmission = $true
+        }
     } catch {
+        if ($admissionValidationPath -and (Test-Path -LiteralPath $admissionValidationPath -PathType Leaf)) {
+            Remove-Item -LiteralPath $admissionValidationPath -Force -ErrorAction SilentlyContinue
+        }
         Add-RunnerLogLine -Text "ERROR: HIGH_COST_SCHEDULED_ADMISSION_INVALID reason=$($_.Exception.Message)"
         Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_SCHEDULED_ADMISSION_INVALID' -ExitCode 76
         exit 76
@@ -3914,22 +4321,54 @@ if ($RepoDirOverride -or $SmokeTest) {
 $script:ValidatedRecoveryExecutionReceipt = $null
 $script:ValidatedFinalizationReceipt = $null
 $script:IssuedFinalizationReceiptPath = ''
+if ($RunIntent -eq 'ScheduledRecoveryFull') {
+    $recoveryFreshnessTool = Join-Path $TrustedProductionRuntimeRoot 'tools\news_grasp_recovery_freshness.py'
+    $runtimeAuthorityRoot = Split-Path -Parent $TrustedProductionRuntimeRoot
+    & $PyExe '-I' '-B' $recoveryFreshnessTool 'check' `
+        '--worktree-root' $RepoDir `
+        '--runtime-root' $runtimeAuthorityRoot | ForEach-Object {
+            Add-RunnerLogLine -Text ([string]$_)
+        }
+    $recoveryFreshnessRc = $LASTEXITCODE
+    if ($recoveryFreshnessRc -ne 0) {
+        Set-RunnerState `
+            -Status 'blocked_recovery_runtime_freshness' `
+            -Message 'RECOVERY_DEEPDIVE_RUNTIME_FRESHNESS_MISMATCH' `
+            -ExitCode 78
+        exit 78
+    }
+}
 function Invoke-RecoveryReceiptValidation {
     param(
-        [Parameter(Mandatory = $true)][ValidateSet('validate-execution', 'consume-execution', 'mark-execution-applied', 'validate-finalization', 'consume-finalization', 'mark-finalization-state-applied')][string] $Command,
-        [Parameter(Mandatory = $true)][string] $ReceiptPath
+        [Parameter(Mandatory = $true)][ValidateSet('validate-execution', 'consume-execution', 'mark-execution-applied', 'validate-finalization', 'validate-chain', 'consume-finalization', 'mark-finalization-state-applied')][string] $Command,
+        [Parameter(Mandatory = $true)][string] $ReceiptPath,
+        [string] $ExecutionReceiptPath = ''
     )
     if (-not $ReceiptPath) { return $null }
     $recoveryReceiptTool = [string]$RecoveryRuntimeBinding.ReceiptToolPath
-    $receiptJson = (& $PyExe '-I' '-B' $recoveryReceiptTool $Command `
-        '--receipt' $ReceiptPath `
-        '--issue-date' $DateStamp `
-        '--artifact-root' $RepoDir `
-        '--ops-root' $OpsRepoRoot `
-        '--production-runtime-root' $TrustedProductionRuntimeRoot `
-        '--live-bin-root' $TrustedRecoveryLiveBinRoot `
-        '--runner-state' $StateFile `
-        '--runner-script' $PSCommandPath 2>&1 | Out-String).Trim()
+    $receiptArgs = @(
+        $Command
+        '--receipt'
+        $ReceiptPath
+        '--issue-date'
+        $DateStamp
+        '--artifact-root'
+        $RepoDir
+        '--ops-root'
+        $OpsRepoRoot
+        '--production-runtime-root'
+        $TrustedProductionRuntimeRoot
+        '--live-bin-root'
+        $TrustedRecoveryLiveBinRoot
+        '--runner-state'
+        $StateFile
+        '--runner-script'
+        $PSCommandPath
+    )
+    if ($ExecutionReceiptPath) {
+        $receiptArgs += @('--execution-receipt', $ExecutionReceiptPath)
+    }
+    $receiptJson = (& $PyExe '-I' '-B' $recoveryReceiptTool @receiptArgs 2>&1 | Out-String).Trim()
     $receiptRc = $LASTEXITCODE
     if ($receiptRc -ne 0) { return $null }
     try { return $receiptJson | ConvertFrom-Json -ErrorAction Stop } catch { return $null }
@@ -3994,16 +4433,9 @@ if ($RunIntent -eq 'ScheduledRecoveryFull') {
         exit 76
     }
     $script:RecoveryHardDeadline = [DateTimeOffset]::Parse([string]$script:ValidatedRecoveryExecutionReceipt.hardDeadlineAt)
-    $script:SameDayRecoveryAdmissionAllowsOverduePublicRepair = (
-        [string]$RunIntent -eq 'ScheduledRecoveryFull' -and
-        [string]$script:HighCostAdmissionPath -and
-        (Test-Path -LiteralPath $script:HighCostAdmissionPath -PathType Leaf)
-    )
-    if ((-not $FinalizeVerifiedPublishManifest) -and (-not $script:UsesHighCostContinuationAdmission) -and (-not $script:SameDayRecoveryAdmissionAllowsOverduePublicRepair) -and (-not ($ResumeFromStage -and $HighCostAdmissionPath)) -and [DateTimeOffset]::Now -gt [DateTimeOffset]$script:RecoveryHardDeadline) {
+    if ((-not $FinalizeVerifiedPublishManifest) -and (-not $script:UsesHighCostContinuationAdmission) -and (-not ($ResumeFromStage -and $HighCostAdmissionPath)) -and [DateTimeOffset]::Now -gt [DateTimeOffset]$script:RecoveryHardDeadline) {
         Add-RunnerLogLine -Text 'ERROR: RECOVERY_EXECUTION_HARD_DEADLINE_EXCEEDED'
         exit 78
-    } elseif ((-not $FinalizeVerifiedPublishManifest) -and $script:SameDayRecoveryAdmissionAllowsOverduePublicRepair -and [DateTimeOffset]::Now -gt [DateTimeOffset]$script:RecoveryHardDeadline) {
-        Add-RunnerLogLine -Text 'WARN: RECOVERY_EXECUTION_HARD_DEADLINE_EXCEEDED_CONTINUING_FOR_SAME_DAY_PUBLIC_REPAIR'
     }
     $script:RecoveryHighCostCutoff = [DateTimeOffset]::Parse([string]$script:ValidatedRecoveryExecutionReceipt.highCostCutoffAt)
     try {
@@ -4016,11 +4448,9 @@ if ($RunIntent -eq 'ScheduledRecoveryFull') {
         Add-RunnerLogLine -Text 'ERROR: RECOVERY_EXECUTION_MODEL_BUDGET_INVALID'
         exit 76
     }
-    if ((-not $FinalizeVerifiedPublishManifest) -and (-not $script:UsesHighCostContinuationAdmission) -and (-not $script:SameDayRecoveryAdmissionAllowsOverduePublicRepair) -and (-not ($ResumeFromStage -and $HighCostAdmissionPath)) -and [DateTimeOffset]::Now -gt [DateTimeOffset]$script:RecoveryHighCostCutoff) {
+    if ((-not $FinalizeVerifiedPublishManifest) -and (-not $script:UsesHighCostContinuationAdmission) -and (-not ($ResumeFromStage -and $HighCostAdmissionPath)) -and [DateTimeOffset]::Now -gt [DateTimeOffset]$script:RecoveryHighCostCutoff) {
         Add-RunnerLogLine -Text 'ERROR: RECOVERY_EXECUTION_HIGH_COST_CUTOFF_EXCEEDED'
         exit 78
-    } elseif ((-not $FinalizeVerifiedPublishManifest) -and $script:SameDayRecoveryAdmissionAllowsOverduePublicRepair -and [DateTimeOffset]::Now -gt [DateTimeOffset]$script:RecoveryHighCostCutoff) {
-        Add-RunnerLogLine -Text 'WARN: RECOVERY_EXECUTION_HIGH_COST_CUTOFF_EXCEEDED_CONTINUING_FOR_SAME_DAY_PUBLIC_REPAIR'
     }
 }
 if ($FinalizeVerifiedPublishManifest) {
@@ -4035,6 +4465,28 @@ if ($FinalizeVerifiedPublishManifest) {
         Add-RunnerLogLine -Text 'ERROR: RECOVERY_FINALIZATION_RECEIPT_INVALID'
         exit 76
     }
+    $validatedReceiptChain = Invoke-RecoveryReceiptValidation `
+        -Command 'validate-chain' `
+        -ReceiptPath $RecoveryFinalizationReceiptPath `
+        -ExecutionReceiptPath $RecoveryExecutionReceiptPath
+    if ($null -eq $validatedReceiptChain) {
+        Add-RunnerLogLine -Text 'ERROR: FINALIZATION_EXECUTION_CHAIN_INVALID'
+        exit 76
+    }
+    $closeoutAdmissionTool = [string]$RecoveryRuntimeBinding.RecoveryCloseoutToolPath
+    if (-not (Test-Path -LiteralPath $closeoutAdmissionTool -PathType Leaf)) {
+        Add-RunnerLogLine -Text 'ERROR: post_public_closeout_blocker admission_tool_missing'
+        exit 78
+    }
+    $closeoutAdmission = (& $PyExe '-I' '-B' $closeoutAdmissionTool 'authorize-operation' `
+        '--artifact-root' $RepoDir `
+        '--date' $DateStamp `
+        '--operation' 'finalizer_exact_args_replay' 2>&1 | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) {
+        Add-RunnerLogLine -Text "ERROR: post_public_closeout_blocker $closeoutAdmission"
+        exit 78
+    }
+    Add-RunnerLogLine -Text "post-public closeout admitted operation=finalizer_exact_args_replay evidence=$closeoutAdmission"
 }
 $externalReadiness = $null
 if (-not $FinalizeVerifiedPublishManifest) {
@@ -4048,6 +4500,13 @@ if (-not $FinalizeVerifiedPublishManifest) {
     Assert-HighCostOperationAdmission
 }
 $pidStamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss.fff'
+if ($FinalizeVerifiedPublishManifest) {
+    Assert-NewsGraspIsolatedFinalizerMutationBoundary -Binding $RecoveryRuntimeBinding -Paths @(
+        $InvokedLog, $StateFile, $RecoveryExecutionReceiptPath,
+        $RecoveryFinalizationReceiptPath, $FinalizeVerifiedPublishManifest,
+        $TrustedRecoveryLiveBinRoot
+    )
+}
 Add-Content -Path $InvokedLog -Value "[$pidStamp] runner-invoked pid=$PID ps1 smoke=$SmokeTest recover=$RecoverOnly run_intent=$RunIntent no_publish=$NoPublish resume_from_stage=$ResumeFromStage" -Encoding UTF8
 
 Add-RunnerLogLine -Text ''
@@ -4093,42 +4552,19 @@ if ($FinalizeVerifiedPublishManifest) {
             $sha256.Dispose()
         }
         $publishCommit = [string]$verified.publish_commit
-        $historicalScheduledFailureRecovered = (
-            [string]$verified.live_runner_readiness.reason -eq 'scheduled_task_missed_runs' -and
-            [string]$verified.live_runner_readiness.last_scheduled_attempt.status -eq 'failed' -and
-            [int]$verified.live_runner_readiness.last_scheduled_attempt.last_task_result -eq 1 -and
-            [string]$verified.live_runner_readiness.next_run_readiness.reasonCode -eq 'scheduled_task_missed_runs'
-        )
-        $manifestGreen = (
-            [string]$verified.schemaVersion -eq 'NEWS_GRASP_PUBLISH_COMPLETE_V2' -and
-            $verified.ok -eq $true -and
-            [string]$verified.date -eq $DateStamp -and
-            [string]$verified.public_status -eq 'green' -and
-            [string]$verified.scheduled_attempt_status -eq 'failed_then_recovered' -and
-            [string]$verified.recovery_attempt_status -eq 'succeeded' -and
-            [string]$verified.source_commit -match '^[0-9a-f]{40}$' -and
-            [string]$verified.artifact_commit -match '^[0-9a-f]{40}$' -and
-            [string]$verified.publish_commit -match '^[0-9a-f]{40}$' -and
-            $verified.publish.ok -eq $true -and
-            $null -ne $verified.distribution_artifacts -and
-            @($verified.distribution_artifacts.missing).Count -eq 0 -and
-            (
-                (
-                    $verified.live_runner_readiness.ok -eq $true -and
-                    $verified.live_runner_readiness.next_run_readiness.ok -eq $true
-                ) -or
-                $historicalScheduledFailureRecovered
-            ) -and
-            $verified.notification.ok -eq $true -and
-            $verified.podcasts.primary.ok -eq $true -and
-            $verified.podcasts.deepdive.ok -eq $true -and
-            $publishCommit -and
-            $publishCommit -eq [string]$verified.publish.deploy_head
-        )
+        $manifestGreen = Test-NewsGraspCompletePublicGreenManifest -Verified $verified -IssueDate $DateStamp
         if (-not $manifestGreen) { throw 'FINALIZATION_MANIFEST_NOT_GREEN' }
         if ($manifestSha256 -ne [string]$script:ValidatedFinalizationReceipt.manifestSha256) {
             throw 'FINALIZATION_MANIFEST_DRIFT'
         }
+        $preConsumeState = Read-RunnerStateOrNull -Path $StateFile
+        if ($null -eq $preConsumeState -or (-not (Test-NewsGraspFinalizationStateLineage -CurrentState $preConsumeState))) {
+            throw 'FINALIZATION_STATE_LINEAGE_INVALID'
+        }
+        Assert-NewsGraspIsolatedFinalizerMutationBoundary -Binding $RecoveryRuntimeBinding -Paths @(
+            $StateFile, $RecoveryExecutionReceiptPath, $RecoveryFinalizationReceiptPath,
+            $TrustedRecoveryLiveBinRoot
+        )
         $consumedFinalization = Invoke-RecoveryReceiptValidation `
             -Command 'consume-finalization' `
             -ReceiptPath $RecoveryFinalizationReceiptPath
@@ -4139,6 +4575,10 @@ if ($FinalizeVerifiedPublishManifest) {
             -ManifestPath $actualManifest `
             -PublishCommit $publishCommit
         if (-not $candidateStatePath) { throw 'FINALIZATION_CANDIDATE_PREPARE_FAILED' }
+        Assert-NewsGraspIsolatedFinalizerMutationBoundary -Binding $RecoveryRuntimeBinding -Paths @(
+            $StateFile, $candidateStatePath, $RecoveryExecutionReceiptPath,
+            $RecoveryFinalizationReceiptPath, $TrustedRecoveryLiveBinRoot
+        )
         if (-not (Invoke-NewsGraspCompletionGuard `
                 -FinalizationReceiptPath $RecoveryFinalizationReceiptPath `
                 -CandidateStatePath $candidateStatePath)) {
@@ -4156,6 +4596,10 @@ if ($FinalizeVerifiedPublishManifest) {
             -PreservedScheduledFailureReceiptSha256 ([string]$script:ValidatedFinalizationReceipt.scheduledFailureReceiptSha256) `
             -FinalizationReceiptPath $RecoveryFinalizationReceiptPath `
             -FinalizationReceiptSha256 ([string]$script:ValidatedFinalizationReceipt.receiptSha256)
+        Assert-NewsGraspIsolatedFinalizerMutationBoundary -Binding $RecoveryRuntimeBinding -Paths @(
+            $StateFile, $RecoveryExecutionReceiptPath, $RecoveryFinalizationReceiptPath,
+            $TrustedRecoveryLiveBinRoot
+        )
         $stateAppliedJournal = Invoke-RecoveryReceiptValidation `
             -Command 'mark-finalization-state-applied' `
             -ReceiptPath $RecoveryFinalizationReceiptPath
@@ -4302,38 +4746,78 @@ if ($SmokeTest) {
     Exit-Runner -Status 'smoke_ok' -Message 'news-grasp-runner.ps1 SMOKE OK' -ExitCode 0
 }
 
+# ResumeFromStage は stage-specific 分岐より先に一度だけ開始境界を通す。
+# admission gate が検証済みの script-scope path だけを後段へ渡し、ローカル変数の
+# dynamic-scope 依存による broker / decision receipt の取り違えを閉じる。
+if ($ResumeFromStage -and $script:UsesLocalGenerationQualityContinuation) {
+    Set-RunnerState -Status 'running' -Message 'scheduled recovery local generation-quality continuation' -ExitCode -1 -Phase 'resume' -Step 'generation-quality-repair-continuation' -ResumeStageCheckpoint $ResumeFromStage
+    Write-Log 'scheduled recovery stage start boundary satisfied by HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1 for generation-quality-repair'
+} elseif ($ResumeFromStage) {
+    try {
+        if (
+            [string]::IsNullOrWhiteSpace([string]$script:ScheduledRecoveryStageBrokerPath) -or
+            [string]::IsNullOrWhiteSpace([string]$script:ScheduledRecoveryStageDecisionReceiptPath)
+        ) {
+            throw 'SCHEDULED_RECOVERY_STAGE_START_PATHS_INVALID'
+        }
+        $normalizedStageBrokerPath = [System.IO.Path]::GetFullPath([string]$script:ScheduledRecoveryStageBrokerPath)
+        if (-not [string]::Equals(
+                [string]$script:ScheduledRecoveryStageBrokerPath,
+                $normalizedStageBrokerPath,
+                [System.StringComparison]::OrdinalIgnoreCase
+            )) {
+            throw 'SCHEDULED_RECOVERY_STAGE_START_PATHS_INVALID'
+        }
+        $normalizedStageDecisionReceiptPath = [System.IO.Path]::GetFullPath([string]$script:ScheduledRecoveryStageDecisionReceiptPath)
+        if (-not [string]::Equals(
+                [string]$script:ScheduledRecoveryStageDecisionReceiptPath,
+                $normalizedStageDecisionReceiptPath,
+                [System.StringComparison]::OrdinalIgnoreCase
+            )) {
+            throw 'SCHEDULED_RECOVERY_STAGE_START_PATHS_INVALID'
+        }
+        if (
+            (-not (Test-Path -LiteralPath $script:ScheduledRecoveryStageBrokerPath -PathType Leaf)) -or
+            (-not (Test-Path -LiteralPath $script:ScheduledRecoveryStageDecisionReceiptPath -PathType Leaf))
+        ) {
+            throw 'SCHEDULED_RECOVERY_STAGE_START_PATHS_INVALID'
+        }
+    } catch {
+        Write-Log "ERROR: scheduled recovery stage start paths are invalid: $($_.Exception.Message)"
+        Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'SCHEDULED_RECOVERY_STAGE_START_PATHS_INVALID' -ExitCode 76 -Phase 'resume' -Step 'stage-start-boundary'
+        exit 76
+    }
+    Set-RunnerState -Status 'running' -Message 'scheduled recovery stage start boundary' -ExitCode -1 -Phase 'resume' -Step 'stage-start-boundary' -ResumeStageCheckpoint $ResumeFromStage
+    try {
+        $stageWitnessJson = (& $PyExe -I $script:ScheduledRecoveryStageBrokerPath 'start-news-grasp-recovery-stage' '--decision' $script:ScheduledRecoveryStageDecisionReceiptPath '--recovery-authority' $ScheduledAuthorityEvidencePath '--consumer-run-id' $RunId 2>&1 | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0) {
+            throw "SCHEDULED_RECOVERY_STAGE_START_FAILED exit=$LASTEXITCODE"
+        }
+        $stageWitness = $stageWitnessJson | ConvertFrom-Json -ErrorAction Stop
+        if (
+            [string]$stageWitness.schemaVersion -ne 'SCHEDULED_RECOVERY_STAGE_STARTED_V1' -or
+            [string]$stageWitness.issueDate -ne $DateStamp -or
+            [string]$stageWitness.resumeStage -ne $ResumeFromStage -or
+            [string]$stageWitness.consumerRunId -ne $RunId -or
+            [string]$stageWitness.decisionReceiptSha256 -ne [string](Get-FileSha256Hex -Path $script:ScheduledRecoveryStageDecisionReceiptPath)
+        ) {
+            throw 'SCHEDULED_RECOVERY_STAGE_START_WITNESS_INVALID'
+        }
+    } catch {
+        Write-Log "ERROR: scheduled recovery stage start boundary failed: $($_.Exception.Message)"
+        Set-RunnerState -Status 'failed' -Message 'scheduled recovery stage start boundary failed' -ExitCode 76 -Phase 'resume' -Step 'stage-start-boundary'
+        exit 76
+    }
+    if ($script:UsesHighCostContinuationAdmission) {
+        Write-Log "scheduled recovery stage start boundary satisfied by continuation + recovery decision + fresh broker + stage witness for ResumeFromStage=$ResumeFromStage"
+    }
+}
+
 if ($RecoverOnly) {
     $recoverOnlyInputManifest = Write-RecoverOnlyInputManifest
     Write-Log "RecoverOnly input manifest: $recoverOnlyInputManifest"
     Write-Log 'RecoverOnly mode: skipping digest codex; using current local digest/data commits and files'
 } elseif ($ResumeFromPostDailyQuality -or $ResumeAfterDeepDive -or $ResumeGenerationQualityRepair) {
-    # 事前admissionではdecisionを消費しない。ここが実際のResume stage開始境界であり、
-    # このstate書込より前のcrashでは同じdecisionを未開始として安全に再利用できる。
-    Set-RunnerState -Status 'running' -Message 'scheduled recovery stage start boundary' -ExitCode -1 -Phase 'resume' -Step 'stage-start-boundary' -ResumeStageCheckpoint $ResumeFromStage
-    if ($script:UsesHighCostContinuationAdmission) {
-        Write-Log "scheduled recovery stage start boundary satisfied by HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1 for ResumeFromStage=$ResumeFromStage"
-    } else {
-        try {
-            $stageWitnessJson = (& $PyExe -I $modelSpawnBroker 'start-news-grasp-recovery-stage' '--decision' $stageDecisionReceipt '--recovery-authority' $ScheduledAuthorityEvidencePath '--consumer-run-id' $RunId 2>&1 | Out-String).Trim()
-            if ($LASTEXITCODE -ne 0) {
-                throw "SCHEDULED_RECOVERY_STAGE_START_FAILED exit=$LASTEXITCODE"
-            }
-            $stageWitness = $stageWitnessJson | ConvertFrom-Json -ErrorAction Stop
-            if (
-                [string]$stageWitness.schemaVersion -ne 'SCHEDULED_RECOVERY_STAGE_STARTED_V1' -or
-                [string]$stageWitness.issueDate -ne $DateStamp -or
-                [string]$stageWitness.resumeStage -ne $ResumeFromStage -or
-                [string]$stageWitness.consumerRunId -ne $RunId -or
-                [string]$stageWitness.decisionReceiptSha256 -ne [string]$decision.brokerStageDecisionReceiptSha256
-            ) {
-                throw 'SCHEDULED_RECOVERY_STAGE_START_WITNESS_INVALID'
-            }
-        } catch {
-            Write-Log "ERROR: scheduled recovery stage start boundary failed: $($_.Exception.Message)"
-            Set-RunnerState -Status 'failed' -Message 'scheduled recovery stage start boundary failed' -ExitCode 76 -Phase 'resume' -Step 'stage-start-boundary'
-            exit 76
-        }
-    }
     if ($ResumeGenerationQualityRepair) {
         Write-Log "ResumeFromStage=${ResumeFromStage}: reusing Stage0/Reporter/Editor/daily-quality; starting at missing-artifact generation repair"
     } elseif ($ResumeAfterDeepDive) {
@@ -4587,11 +5071,7 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
         $ReporterPollSeconds = if ($Stage2EditorSmokeOnly) { 1 } else { 5 }
         $ReporterHeartbeatSeconds = 60
         $ReporterJobTimeoutSec = if ($Stage2EditorSmokeOnly) { 30 } else { $TimeoutSec + 120 }
-        if (
-            $RunIntent -eq 'ScheduledRecoveryFull' -and
-            (-not $FinalizeVerifiedPublishManifest) -and
-            (-not $script:SameDayRecoveryAdmissionAllowsOverduePublicRepair)
-        ) {
+        if ($RunIntent -eq 'ScheduledRecoveryFull' -and -not $FinalizeVerifiedPublishManifest) {
             $recoveryRemainingSeconds = [int][Math]::Floor((([DateTimeOffset]$script:RecoveryHardDeadline) - [DateTimeOffset]::Now).TotalSeconds)
             if ($recoveryRemainingSeconds -le 0) {
                 Assert-RecoveryOperationDeadline -HighCost -Stage 'reporter-wave:start'
@@ -4619,11 +5099,7 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
             $reporterCallSequence = Acquire-RecoveryHighCostBudget -Stage "model:reporter:$waveCat:attempt:$Attempt"
             $reporterTimeoutSec = $TimeoutSec
             $reporterIdleTimeoutSec = $IdleTimeoutSec
-            if (
-                $RunIntent -eq 'ScheduledRecoveryFull' -and
-                (-not $FinalizeVerifiedPublishManifest) -and
-                (-not $script:SameDayRecoveryAdmissionAllowsOverduePublicRepair)
-            ) {
+            if ($RunIntent -eq 'ScheduledRecoveryFull' -and -not $FinalizeVerifiedPublishManifest) {
                 $remainingSeconds = [int][Math]::Floor((([DateTimeOffset]$script:RecoveryHardDeadline) - [DateTimeOffset]::Now).TotalSeconds)
                 if ($remainingSeconds -le 0) {
                     Assert-RecoveryOperationDeadline -HighCost -Stage "model:reporter:$waveCat:attempt:$Attempt"
@@ -5719,24 +6195,23 @@ foreach ($ttsStep in @(
 $DeepDiveMarkdown = Join-Path $RepoDir ("digest\DeepDive\$DateStamp-DeepDive.md")
 $DeepDiveDialogueScript = Join-Path $RepoDir ("digest\DeepDive\$DateStamp-DeepDive-dialogue.md")
 $DeepDiveProvenanceManifest = Join-Path $RepoDir ("data\deepdive-provenance\$DateStamp.json")
-Write-Log "current DeepDive provenance capture start ($DateStamp)"
+Write-Log "current DeepDive issue bundle materialization start; current DeepDive provenance capture start; deepdive dialogue script build via shared handler ($DateStamp)"
 Push-Location $RepoDir
 try {
-    Invoke-Logged { & $PyExe '-m' 'tools.deepdive_quality' 'capture' '--article' $DeepDiveMarkdown '--output' $DeepDiveProvenanceManifest }
-    $currentDeepDiveProvenanceRc = $LASTEXITCODE
+    Invoke-Logged { & $PyExe '-m' 'tools.deepdive_quality' '--repo-root' $RepoDir 'materialize-issue' '--date' $DateStamp '--context-pack' $DeepDiveContextPack }
+    $currentDeepDiveBundleRc = $LASTEXITCODE
 } finally {
     Pop-Location
 }
-if ($currentDeepDiveProvenanceRc -ne 0) {
-    Write-Log "current DeepDive provenance capture failed (rc=$currentDeepDiveProvenanceRc). dialogue synthesis and normal publish are blocked."
-    Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'deepdive-shared-quality' -Reason 'deepdive_url_provenance_invalid' -ExitCode $currentDeepDiveProvenanceRc
+if ($currentDeepDiveBundleRc -ne 0) {
+    Write-Log "current DeepDive issue bundle materialization failed (rc=$currentDeepDiveBundleRc). dialogue synthesis and normal publish are blocked."
+    Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'deepdive-shared-quality' -Reason 'deepdive_issue_bundle_invalid' -ExitCode $currentDeepDiveBundleRc
 }
-Write-Log 'current DeepDive provenance capture OK'
+Write-Log 'current DeepDive issue bundle materialization OK'
 
 $deepDiveTtsPublishArgs = @('-m', 'tools.tts.deepdive_audio', $DateStamp, '--json')
 if ($NoPublish) { $deepDiveTtsPublishArgs = @('-m', 'tools.tts.deepdive_audio', $DateStamp, '--dry-run', '--json') }
 foreach ($deepDiveTtsStep in @(
-    @{ Name = 'deepdive dialogue script build'; Args = @('-m', 'tools.tts.build_deepdive_dialogue_script', $DeepDiveMarkdown, '--output', $DeepDiveDialogueScript, '--context-pack', $DeepDiveContextPack); FailureKind = 'local-tool'; GateId = 'deepdive-tts'; UseAutonomousGate = $false; Artifacts = @($DeepDiveMarkdown, $DeepDiveDialogueScript) },
     @{ Name = 'deepdive shared quality gate'; Args = @('-m', 'tools.deepdive_quality', '--repo-root', $RepoDir, 'audit-issue', '--date', $DateStamp); FailureKind = 'content'; GateId = 'deepdive-shared-quality'; UseAutonomousGate = $true; Artifacts = @($DeepDiveMarkdown, $DeepDiveDialogueScript, $DeepDiveProvenanceManifest) },
     @{ Name = 'deepdive dialogue synthesize'; Args = @('-m', 'tools.tts.deepdive_dialogue', $DeepDiveDialogueScript, '--out-name', $DateStamp); FailureKind = 'local-tool'; GateId = 'deepdive-tts'; UseAutonomousGate = $false; Artifacts = @($DeepDiveDialogueScript) },
     @{ Name = 'deepdive dialogue publish'; Args = $deepDiveTtsPublishArgs; FailureKind = 'local-tool'; GateId = 'deepdive-tts'; UseAutonomousGate = $false; Artifacts = @($DeepDiveDialogueScript) }

@@ -1405,19 +1405,19 @@ def test_generate_pages_skips_historical_deepdive_url_liveness_after_current_gat
 def test_current_deepdive_url_gate_cannot_inherit_skip_environment() -> None:
     """本番復帰時のURL gateは親プロセスのskip設定を継承してはならない。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
-    start = runner.index('Write-Log "current DeepDive provenance capture start')
-    end = runner.index("Write-Log 'current DeepDive provenance capture OK'", start)
+    start = runner.index('Write-Log "current DeepDive issue bundle materialization start')
+    end = runner.index("Write-Log 'current DeepDive issue bundle materialization OK'", start)
     block = runner[start:end]
 
     assert "tools.deepdive_quality" in block
-    assert "'capture'" in block
+    assert "'materialize-issue'" in block
     assert "NEWS_GRASP_SKIP_URL_CHECK" not in block
 
 
 def test_runner_requires_deepdive_dialogue_value_gate_before_synthesis() -> None:
     """全復帰経路で価値台帳を通さず音声・公開へ進めない。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
-    build = "deepdive dialogue script build"
+    build = "current DeepDive issue bundle materialization start"
     value_gate = "deepdive shared quality gate"
     synth = "deepdive dialogue synthesize"
     assert runner.index(build) < runner.index(value_gate) < runner.index(synth)
@@ -1428,11 +1428,10 @@ def test_runner_requires_deepdive_dialogue_value_gate_before_synthesis() -> None
 def test_runner_rejects_bad_deepdive_urls_before_dialogue_synthesis() -> None:
     """不良URLへ音声合成・公開リソースを投入しない。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
-    url_gate = 'Write-Log "current DeepDive provenance capture start'
-    build = "deepdive dialogue script build"
+    url_gate = 'Write-Log "current DeepDive issue bundle materialization start'
     synth = "deepdive dialogue synthesize"
     publish = "deepdive dialogue publish"
-    assert runner.index(url_gate) < runner.index(build) < runner.index(synth) < runner.index(publish)
+    assert runner.index(url_gate) < runner.index(synth) < runner.index(publish)
 
 
 def test_runner_writes_machine_readable_state() -> None:
@@ -1832,7 +1831,9 @@ def test_editor_materialization_uses_one_production_boundary_and_recovers_before
     assert editor_flow.rfind("--recover-only") < editor_flow.rfind("$gateAttemptDir =") or "$gateAttemptDir =" not in editor_flow
     assert "Resolve-NewsGraspTrustedPython" in runner
     assert "NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1" in runner
-    assert "Python312\\python.exe" not in runner
+    # bindingが起動元であることは維持しつつ、canonical production分岐だけは
+    # 既知system Python pathとの一致を追加検証する。
+    assert "canonical Python or production runtime path mismatch" in runner
     assert "$env:PYTHONSAFEPATH = '1'" in runner
     assert "$env:PYTHONNOUSERSITE = '1'" in runner
     assert "$env:PYTHONPATH = $RepoDir" in runner
@@ -5171,7 +5172,9 @@ def test_sec_runner_binds_trusted_python_before_any_python_invocation_for_both_i
         "ReparsePoint",
     ):
         assert marker in runner[resolver_index:]
-    assert "AppData\\Local\\Programs\\Python\\Python312\\python.exe" not in runner
+    # fixed pathは実行元ではなく、binding解決後のcanonical authority guard。
+    canonical_guard = runner.index("canonical Python or production runtime path mismatch")
+    assert canonical_guard > runner.index("$python = (Resolve-Path -LiteralPath ([string]$binding.pythonExe)")
 
 
 def test_sec_validated_admission_paths_survive_function_scope_for_stage_witness() -> None:

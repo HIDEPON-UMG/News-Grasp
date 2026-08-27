@@ -2131,64 +2131,48 @@ def _run_cleanroom_child(
         renewal_interval_seconds = max(1.0, min(300.0, float(_CLEANROOM_LEASE_SECONDS) / 3.0))
     if isinstance(renewal_interval_seconds, bool) or not isinstance(renewal_interval_seconds, (int, float)) or renewal_interval_seconds <= 0:
         raise RuntimeError("NEWS_GRASP_RENEWAL_INTERVAL_INVALID")
-    sleep = renewal_sleep if callable(renewal_sleep) else time.sleep
-    monotonic = time.monotonic
-    started = monotonic()
-    deadline = started + float(timeout_seconds)
-    next_renewal = started + float(renewal_interval_seconds)
-    with (
-        tempfile.TemporaryFile(mode="w+b") as stdout_capture,
-        tempfile.TemporaryFile(mode="w+b") as stderr_capture,
-    ):
-        process = subprocess.Popen(
-            command,
-            stdout=stdout_capture,
-            stderr=stderr_capture,
-            **{key: value for key, value in common.items() if key != "check"},
+    try:
+        owned_module = __import__(
+            "tools.news_grasp_owned_process",
+            fromlist=["run_owned_bounded"],
         )
+        owned_runner = getattr(owned_module, "run_owned_bounded", None)
+    except (ImportError, OSError, RuntimeError) as error:
+        raise RuntimeError("NEWS_GRASP_OWNED_PROCESS_RUNTIME_IMPORT_FAILED") from error
+    if not callable(owned_runner):
+        raise RuntimeError("NEWS_GRASP_OWNED_PROCESS_RUNTIME_IMPORT_FAILED")
+
+    def _renew_owned_child() -> object:
         try:
-            while True:
-                stdout_size = os.fstat(stdout_capture.fileno()).st_size
-                stderr_size = os.fstat(stderr_capture.fileno()).st_size
-                if stdout_size > _CLEANROOM_CHILD_MAX_OUTPUT_BYTES:
-                    raise RuntimeError("NEWS_GRASP_CHILD_STDOUT_LIMIT")
-                if stderr_size > _CLEANROOM_CHILD_MAX_OUTPUT_BYTES:
-                    raise RuntimeError("NEWS_GRASP_CHILD_STDERR_LIMIT")
-                returncode = process.poll()
-                if returncode is not None:
-                    if stdout_size > _CLEANROOM_CHILD_MAX_OUTPUT_BYTES:
-                        raise RuntimeError("NEWS_GRASP_CHILD_STDOUT_LIMIT")
-                    if stderr_size > _CLEANROOM_CHILD_MAX_OUTPUT_BYTES:
-                        raise RuntimeError("NEWS_GRASP_CHILD_STDERR_LIMIT")
-                    return int(returncode)
-                now = monotonic()
-                if now >= deadline:
-                    raise RuntimeError("NEWS_GRASP_CHILD_TIMEOUT")
-                if now >= next_renewal:
-                    try:
-                        renewal = renew_slot()
-                    except Exception as error:
-                        raise RuntimeError("NEWS_GRASP_SLOT_RENEWAL_FAILED") from error
-                    if renewal is False or (
-                        isinstance(renewal, Mapping) and renewal.get("status") not in {None, "renewed"}
-                    ):
-                        raise RuntimeError("NEWS_GRASP_SLOT_RENEWAL_REJECTED")
-                    next_renewal = now + float(renewal_interval_seconds)
-                sleep(min(0.25, max(0.01, next_renewal - now), max(0.01, deadline - now)))
-        finally:
-            if process.poll() is None:
-                try:
-                    process.terminate()
-                    process.wait(timeout=5)
-                except (OSError, subprocess.SubprocessError):
-                    try:
-                        process.kill()
-                    except OSError:
-                        pass
-                    try:
-                        process.wait(timeout=5)
-                    except (OSError, subprocess.SubprocessError):
-                        pass
+            renewal = renew_slot()
+        except Exception as error:
+            raise RuntimeError("NEWS_GRASP_SLOT_RENEWAL_FAILED") from error
+        if renewal is False or (
+            isinstance(renewal, Mapping)
+            and renewal.get("status") not in {None, "renewed"}
+        ):
+            raise RuntimeError("NEWS_GRASP_SLOT_RENEWAL_REJECTED")
+        return renewal
+
+    result = owned_runner(
+        command,
+        cwd=Path(bin_dir),
+        timeout=float(timeout_seconds),
+        max_output_bytes=_CLEANROOM_CHILD_MAX_OUTPUT_BYTES,
+        heartbeat=_renew_owned_child,
+        heartbeat_interval_seconds=float(renewal_interval_seconds),
+    )
+    if bool(getattr(result, "timed_out", False)):
+        raise RuntimeError("NEWS_GRASP_CHILD_TIMEOUT")
+    stdout = getattr(result, "stdout", b"")
+    stderr = getattr(result, "stderr", b"")
+    if isinstance(stdout, (bytes, bytearray)) and len(stdout) > _CLEANROOM_CHILD_MAX_OUTPUT_BYTES:
+        raise RuntimeError("NEWS_GRASP_CHILD_STDOUT_LIMIT")
+    if isinstance(stderr, (bytes, bytearray)) and len(stderr) > _CLEANROOM_CHILD_MAX_OUTPUT_BYTES:
+        raise RuntimeError("NEWS_GRASP_CHILD_STDERR_LIMIT")
+    if bool(getattr(result, "output_exceeded", False)):
+        raise RuntimeError("NEWS_GRASP_CHILD_OUTPUT_LIMIT")
+    return int(result.returncode)
 
 
 def run_cleanroom_dispatch(
@@ -3077,6 +3061,17 @@ def _seal_active_production_generation(
         "tools/news_grasp_generation.py",
         "tools/operational_recovery_registry.py",
         "config/operational_recovery_registry_v1.json",
+        "tools/deepdive_quality.py",
+        "tools/render_deepdive.py",
+        "tools/tts/build_deepdive_dialogue_script.py",
+        "tools/tts/deepdive_dialogue.py",
+        "tools/tts/proc.py",
+        "tools/validate_deepdive_urls.py",
+        "prompts/deepdive-template.html",
+        "prompts/deepdive-runner-prompt.md",
+        "scripts/ops/invoke-deepdive-system-fetch.ps1",
+        "tools/news_grasp_recovery_freshness.py",
+        "tools/news_grasp_recovery_closeout.py",
     )
     tracked: dict[str, str] = {}
     for relative in critical_paths:

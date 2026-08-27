@@ -7,7 +7,7 @@ import json
 import sys
 from datetime import date
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -28,6 +28,8 @@ def evaluate(
     manifest: dict[str, Any],
     runner_state: dict[str, Any],
     issue_date: str,
+    *,
+    historical_recovery_predicate: Callable[..., bool] | None = None,
 ) -> dict[str, Any]:
     failures: list[str] = []
     if manifest.get("_missing"):
@@ -80,9 +82,23 @@ def evaluate(
 
     readiness = manifest.get("live_runner_readiness")
     next_run = readiness.get("next_run_readiness") if isinstance(readiness, dict) else {}
-    if not isinstance(readiness, dict) or readiness.get("ok") is not True:
+    historical_recovery = bool(
+        historical_recovery_predicate
+        and historical_recovery_predicate(
+            readiness,
+            scheduled_status=str(manifest.get("scheduled_attempt_status") or ""),
+            recovery_status=str(manifest.get("recovery_attempt_status") or ""),
+        )
+    )
+    if (
+        not isinstance(readiness, dict)
+        or readiness.get("ok") is not True
+    ) and not historical_recovery:
         failures.append("live_runner_readiness_not_ok")
-    if not isinstance(next_run, dict) or next_run.get("ok") is not True:
+    if (
+        not isinstance(next_run, dict)
+        or next_run.get("ok") is not True
+    ) and not historical_recovery:
         failures.append("next_run_readiness_not_ok")
 
     if runner_state.get("date") != issue_date:
@@ -91,6 +107,8 @@ def evaluate(
         failures.append("runner_state_not_publish_complete")
     if runner_state.get("exit_code") != 0:
         failures.append("runner_state_exit_nonzero")
+    if runner_state.get("run_intent") != "ScheduledRecoveryFull":
+        failures.append("runner_state_run_intent_mismatch")
     if runner_state.get("publish_manifest_path") and manifest.get("_path"):
         if Path(str(runner_state["publish_manifest_path"])).resolve() != Path(
             str(manifest["_path"])
@@ -106,6 +124,7 @@ def evaluate(
         "recovery_attempt_status": manifest.get("recovery_attempt_status"),
         "public_status": manifest.get("public_status"),
         "runner_status": runner_state.get("status"),
+        "run_intent": runner_state.get("run_intent"),
     }
 
 
@@ -118,12 +137,40 @@ def main() -> int:
         type=Path,
         default=Path.home() / "bin" / "news-grasp-runner-state.json",
     )
+    parser.add_argument("--ops-root", type=Path, default=Path.cwd())
     args = parser.parse_args()
 
     manifest = _load_json(args.manifest)
     manifest["_path"] = str(args.manifest)
     runner_state = _load_json(args.runner_state)
-    result = evaluate(manifest, runner_state, args.issue_date)
+    try:
+        ops_root = args.ops_root.resolve(strict=True)
+        sys.path.insert(0, str(ops_root))
+        from tools.news_grasp_operational_contract import (
+            require_post_public_green_operation,
+        )
+        from tools.news_grasp_completion_guard import (
+            _historical_scheduled_failure_is_recovered,
+        )
+
+        require_post_public_green_operation("completion_guard")
+    except (OSError, ImportError, ValueError):
+        result = {
+            "schemaVersion": "NEWS_GRASP_640_COMPLETION_GUARD_V1",
+            "ok": False,
+            "issueDate": args.issue_date,
+            "failures": ["post_public_closeout_blocker"],
+        }
+        sys.stdout.write(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
+        return 2
+    result = evaluate(
+        manifest,
+        runner_state,
+        args.issue_date,
+        historical_recovery_predicate=(
+            _historical_scheduled_failure_is_recovered
+        ),
+    )
     sys.stdout.write(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
     return 0 if result["ok"] else 2
 

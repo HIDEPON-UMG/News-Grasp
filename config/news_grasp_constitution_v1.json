@@ -5,11 +5,11 @@
   "primaryUser": "ITコンサルタントとしてNews-Graspを利用するユーザー",
   "naturalRunEvidenceAllowed": false,
   "sharedGlobalHarnessMutationAllowed": false,
-  "specSha256": "8f8119221292a5853c56afe6937f46f52a70987353e107400e604f8a58c24e8f",
+  "specSha256": "d00a37f44261535685e33278b24413546dcb62e63203e4d33dbc90a7882c00e3",
   "userProvenance": {
     "sourceType": "user_confirmed_plan",
-    "confirmedAt": "2026-08-15",
-    "statement": "Product Constitution 14条項・6柱を全active仕様・skill・production consumer・状態・証拠へ結線し、2026-08-14 issue-date recovery transaction、4 terminal、V2 receipt、SLO sidecarを含めて物理提出まで閉じる。",
+    "confirmedAt": "2026-08-27",
+    "statement": "Product Constitution 14条項・6柱を全active仕様・skill・production consumer・状態・証拠へ結線し、2026-08-27 public recoveryのtransport、issue bundle、freshness、exact-args finalizer、one-shot reseal、bounded closeoutを実運用predicateと結合試験で閉じる。",
     "amendmentAuthority": "user_only"
   },
   "pillars": [

@@ -241,6 +241,116 @@
         "test_a15_boundary",
         "test_a15_recovery"
       ]
+    },
+    {
+      "acceptanceId": "A18",
+      "requirementId": "R18",
+      "requirementKey": "NG-RC-01",
+      "clauseIds": ["NGC-C02", "NGC-C05", "NGC-C10"],
+      "todoId": "TODO-20260827-RC01",
+      "productionRoute": "tools/deepdive_quality.py",
+      "consumerMarker": "NG_RC_01_DEEPDIVE_SYSTEM_TRANSPORT_FALLBACK",
+      "stateId": "deepdive_transport_provenance_bound",
+      "recoveryId": "one_shot_system_transport_or_typed_red",
+      "evidenceId": "transport_final_url_status_body_hash",
+      "perspectives": ["primary_behavior", "adversarial_boundary", "operational_recovery"],
+      "testNodeIds": ["test_bls_profile_403_uses_actual_windows_system_transport_once", "test_fetch_never_falls_back_after_404_or_410", "test_system_transport_failure_remains_typed_red"]
+    },
+    {
+      "acceptanceId": "A19",
+      "requirementId": "R19",
+      "requirementKey": "NG-RC-02",
+      "clauseIds": ["NGC-C02", "NGC-C03", "NGC-C04", "NGC-C05"],
+      "todoId": "TODO-20260827-RC02",
+      "productionRoute": "tools/deepdive_quality.py",
+      "consumerMarker": "NG_RC_02_DEEPDIVE_ISSUE_BUNDLE",
+      "stateId": "deepdive_issue_bundle_v1_bound",
+      "recoveryId": "reject_partial_bundle_before_public",
+      "evidenceId": "claim_source_transport_v2_provenance_rendered_public_hash",
+      "perspectives": ["primary_behavior", "adversarial_boundary", "operational_recovery"],
+      "testNodeIds": ["test_materialize_issue_writes_v2_provenance_dialogue_and_bundle_once", "test_materialize_issue_without_claim_transport_rejects_unrelated_url_200", "test_materialize_issue_restores_bilingual_claim_transport_after_bundle_loss"]
+    },
+    {
+      "acceptanceId": "A20",
+      "requirementId": "R20",
+      "requirementKey": "NG-RC-03",
+      "clauseIds": ["NGC-C06", "NGC-C09", "NGC-C10"],
+      "todoId": "TODO-20260827-RC03",
+      "productionRoute": "tools/news_grasp_recovery_freshness.py",
+      "consumerMarker": "NG_RC_03_RECOVERY_DEEPDIVE_RUNTIME_FRESHNESS",
+      "stateId": "recovery_runtime_freshness_admitted",
+      "recoveryId": "rebuild_from_trusted_generation_or_typed_red",
+      "evidenceId": "critical_file_sha_set_and_generation_hash",
+      "perspectives": ["primary_behavior", "adversarial_boundary", "operational_recovery"],
+      "testNodeIds": ["test_exact_sha_parity_is_green_with_per_file_and_set_evidence", "test_stale_worktree_file_is_rejected_before_spawn_callback", "test_missing_and_tampered_generation_inputs_fail_closed"]
+    },
+    {
+      "acceptanceId": "A21",
+      "requirementId": "R21",
+      "requirementKey": "NG-RC-04",
+      "clauseIds": ["NGC-C05", "NGC-C07", "NGC-C10"],
+      "todoId": "TODO-20260827-RC04",
+      "productionRoute": "tools/news_grasp_recovery_closeout.py",
+      "consumerMarker": "NG_RC_04_FINALIZER_EXACT_ARGS_REPLAY",
+      "stateId": "finalizer_exact_args_bound",
+      "recoveryId": "resume_same_receipt_only_after_finalizer_crash",
+      "evidenceId": "execution_receipt_hash_and_exact_argv_hash",
+      "perspectives": ["primary_behavior", "adversarial_boundary", "operational_recovery"],
+      "testNodeIds": ["test_resume_bound_receipt_builds_exact_finalizer_args", "test_exact_finalizer_rejects_tampered_receipt", "test_exact_finalizer_crash_reuses_same_receipt"]
+    },
+    {
+      "acceptanceId": "A22",
+      "requirementId": "R22",
+      "requirementKey": "NG-RC-05",
+      "clauseIds": ["NGC-C06", "NGC-C08", "NGC-C09"],
+      "todoId": "TODO-20260827-RC05",
+      "productionRoute": "tools/news_grasp_recovery_closeout.py",
+      "consumerMarker": "NG_RC_05_ONE_SHOT_RECEIPT_DRIFT_RESEAL",
+      "stateId": "known_receipt_drift_resealed_once",
+      "recoveryId": "unknown_or_applied_drift_to_closeout_blocker",
+      "evidenceId": "pre_post_receipt_and_public_tree_hash",
+      "perspectives": ["primary_behavior", "adversarial_boundary", "operational_recovery"],
+      "testNodeIds": ["test_one_shot_reseal_fixes_known_drift_and_preserves_public_tree", "test_unknown_receipt_drift_becomes_typed_closeout_blocker", "test_applied_receipt_ledger_blocks_reseal"]
+    },
+    {
+      "acceptanceId": "A23",
+      "requirementId": "R23",
+      "requirementKey": "NG-RC-06",
+      "clauseIds": ["NGC-C03", "NGC-C06", "NGC-C07", "NGC-C08", "NGC-C10"],
+      "todoId": "TODO-20260827-RC06",
+      "productionRoute": "tools/news_grasp_operational_contract.py",
+      "consumerMarker": "NG_RC_06_POST_PUBLIC_GREEN_CLOSEOUT",
+      "stateId": "post_public_green_bounded_closeout",
+      "recoveryId": "unknown_operation_to_post_public_closeout_blocker",
+      "evidenceId": "operation_allowlist_and_state_vector_hash",
+      "perspectives": ["primary_behavior", "adversarial_boundary", "operational_recovery"],
+      "testNodeIds": ["test_post_public_green_allows_exact_five_operations", "test_post_public_green_forbidden_operation_is_blocked", "test_post_public_green_unknown_drift_is_evidenced"]
     }
-  ]
+  ],
+  "publicRecoveryCloseout": {
+    "schemaVersion": "NEWS_GRASP_PUBLIC_RECOVERY_OPERATIONAL_DESIGN_V1",
+    "issueDate": "2026-08-27",
+    "runIntent": "ScheduledRecoveryFull",
+    "scopeOwner": "News-Grasp product_local",
+    "humanCommitment": "運用設計と実運用predicateを通る結合試験により、43分遅延を生んだproduct/runtime欠陥だけを閉じる。",
+    "forbidden": ["full_e2e", "external_model_fan_out", "fallback_publish", "nopublish_completion", "url_200_only_green", "public_regeneration"],
+    "allowedAfterPublicGreen": ["finalizer_exact_args_replay", "receipt_reseal", "completion_guard", "verify_public_surface", "final_report"],
+    "requirements": [
+      {"id":"NG-RC-01","acceptanceId":"A18","title":"DeepDive provenance transport fallback","owner":"DeepDive quality owner","trigger":"eligible primary fetch failure","entryGate":"same URL, fallback count=0, eligible status","executionPath":"primary fetch -> one-shot Windows system transport -> V2 provenance","stateOutcome":"primary_green / fallback_green / typed_red / unverified","evidence":"final URL, status, body SHA256, transport, attempt count","recovery":"system failure remains typed Red","maintenanceCost":"normal path adds zero child processes","consumer":"daily/full recovery/resume shared materializer","fitGap":"curl 403 was retried through the same transport family","responsibility":"Product quality engine","primaryFixture":"BLS-profile primary 403/system 200","adversarialFixture":"404/410 and second fallback rejected","recoveryFixture":"system transport failure is typed Red"},
+      {"id":"NG-RC-02","acceptanceId":"A19","title":"DeepDive V2 issue bundle generation","owner":"Issue materializer owner","trigger":"DeepDive article is finalized","entryGate":"claim-source or sealed bilingual transport and fetched bodies available","executionPath":"one materializer seals/restores claim-source transport and writes V2 provenance, dialogue, render, bundle receipt","stateOutcome":"bundle_green / missing_claim_red / stale_provenance_red","evidence":"DEEPDIVE_CLAIM_SOURCE_TRANSPORT_V1, DEEPDIVE_ISSUE_BUNDLE_V1 and rendered-public audit","recovery":"comment/V2 loss is restored from the sealed transport; partial bundle never becomes Green","maintenanceCost":"new route must bind to the same handler","consumer":"daily/ScheduledRecoveryFull/ResumeFromStage/repair","fitGap":"article, provenance and dialogue used separate writers and bilingual claim/evidence was not durably transported","responsibility":"Product materialization","primaryFixture":"same generator seals bilingual claim transport and writes all V2 artifacts","adversarialFixture":"tampered transport and unrelated URL 200 are typed Red","recoveryFixture":"comment/V2 loss restores from sidecar; crash leaves no partial Green bundle"},
+      {"id":"NG-RC-03","acceptanceId":"A20","title":"Recovery tooling freshness gate","owner":"Recovery control owner","trigger":"workspace creation and runner admission","entryGate":"sealed active generation and exact critical-file set","executionPath":"compare worktree tree, runtime and per-file SHA before child spawn","stateOutcome":"fresh / stale / tampered / unverified","evidence":"HEAD, per-file SHA, set hash, spawn count","recovery":"rebuild from trusted generation or typed Red","maintenanceCost":"one fixed-set read at admission","consumer":"workspace creator/audit execute/direct runner","fitGap":"clean worktree could still contain stale DeepDive tooling","responsibility":"Recovery runtime admission","primaryFixture":"exact SHA parity Green","adversarialFixture":"stale file rejected with spawn count 0","recoveryFixture":"missing/tampered manifest fails closed"},
+      {"id":"NG-RC-04","acceptanceId":"A21","title":"Post-public finalizer exact-args replay","owner":"Closeout orchestrator owner","trigger":"typed public Green manifest accepted","entryGate":"execution and finalization receipt validation Green","executionPath":"receipt-only argv builder -> actual typed finalizer","stateOutcome":"applied / already_applied / failed","evidence":"execution receipt hash, exact argv, publish_complete state","recovery":"crash may resume only the same receipt","maintenanceCost":"new args derive only from receipt constructor","consumer":"audit recovery closeout/finalizer-only runner","fitGap":"ResumeFromStage binding was omitted from finalizer invocation","responsibility":"Product closeout","primaryFixture":"resume-bound exact argv","adversarialFixture":"tampered receipt rejected","recoveryFixture":"same receipt resumes after finalizer crash"},
+      {"id":"NG-RC-05","acceptanceId":"A22","title":"One-shot receipt drift reseal","owner":"Receipt module owner","trigger":"known pre-finalization receipt drift","entryGate":"authority and ledgers are not state-applied","executionPath":"detect known drift -> one reseal -> validate execution/finalization","stateOutcome":"resealed / already_applied / blocked","evidence":"pre/post receipt hash, ledger transition, public tree hash","recovery":"unknown/applied/authority drift becomes blocker","maintenanceCost":"one attempt and no public regeneration","consumer":"receipt module/closeout orchestrator","fitGap":"HEAD, freshness, Unicode path and resume drift were debugged serially","responsibility":"Receipt lifecycle","primaryFixture":"one call reseals all known drift","adversarialFixture":"unknown hash drift blocked","recoveryFixture":"applied ledger cannot be resealed"},
+      {"id":"NG-RC-06","acceptanceId":"A23","title":"Post-public bounded closeout contract","owner":"Operational contract owner","trigger":"publicCompletionStatus becomes Green","entryGate":"operation exact allowlist membership","executionPath":"five bounded operations -> report ready","stateOutcome":"bounded_closeout / blocker / report_ready","evidence":"operation ledger, reason code, separated state vector","recovery":"unknown operation/drift becomes post_public_closeout_blocker","maintenanceCost":"single owner; consumers import exact tuple","consumer":"spec/audit/runner/automation/tests","fitGap":"public Green could re-enter generation and broad exploration","responsibility":"Product operational contract","primaryFixture":"exact five operations accepted","adversarialFixture":"regeneration/search/report polish rejected","recoveryFixture":"unknown drift evidenced as blocker"}
+    ],
+    "diagrams": [
+      {"id":"as-is-context","title":"As-Is System Context","kind":"flowchart","direction":"LR","nodes":[["trigger","Scheduled/Audit Trigger"],["runner","Recovery Runner"],["curl","curl transport"],["writers","split article/provenance/dialogue writers"],["public","Public Green"],["manual","manual receipt debugging"],["finalizer","Finalizer without exact args"],["delay","43 minute delay"]],"edges":[["trigger","runner",""],["runner","curl",""],["curl","writers","403/invalid provenance"],["writers","public","manual backfill"],["public","manual",""],["manual","finalizer",""],["finalizer","delay","exit 76"]]},
+      {"id":"to-be-context","title":"To-Be System Context","kind":"flowchart","direction":"LR","nodes":[["trigger","Scheduled/Audit Trigger"],["fresh","Freshness Gate"],["runner","Production Recovery Runner"],["transport","One-shot System Transport"],["materializer","Shared DeepDive Materializer"],["quality","Shared Quality"],["public","verify-publish-complete"],["closeout","Bounded Closeout"],["reseal","One-shot Reseal"],["finalizer","Exact-args Finalizer"],["guard","completion_guard"],["surface","verify_public_surface"],["blocker","post_public_closeout_blocker"]],"edges":[["trigger","fresh",""],["fresh","runner","SHA Green"],["runner","transport","eligible failure"],["transport","materializer","evidence"],["materializer","quality","same bundle"],["quality","public",""],["public","closeout","Green"],["closeout","reseal","known drift"],["reseal","finalizer","validated receipts"],["finalizer","guard",""],["guard","surface",""],["closeout","blocker","unknown/forbidden"]]},
+      {"id":"operational-use-case","title":"Operational Use Cases","kind":"flowchart","direction":"TB","nodes":[["operator","News-Grasp Operator"],["scheduled","Scheduled recovery"],["resume","Resume from stage"],["audit","Audit recovery"],["materialize","Materialize DeepDive bundle"],["verify","Verify public Green"],["closeout","Close out without regeneration"],["report","Receive typed final report"]],"edges":[["operator","scheduled","triggers"],["operator","resume","authorizes"],["operator","audit","observes"],["scheduled","materialize","uses"],["resume","materialize","uses"],["audit","materialize","uses"],["materialize","verify",""],["verify","closeout",""],["closeout","report",""]]},
+      {"id":"public-recovery-sequence","title":"Public Recovery L5 Sequence","kind":"sequence","participants":[["IT","Integration Harness"],["AC","Audit Control"],["FG","Freshness Gate"],["RN","Recovery Runner"],["FS","Local BLS Server"],["DQ","DeepDive Quality"],["PV","Public Verifier"],["CO","Closeout"],["FN","Actual PS Finalizer"],["CG","Completion Guard"]],"messages":[["IT","AC","2026-08-27 / ScheduledRecoveryFull"],["AC","FG","compare critical SHA"],["FG","AC","Green"],["AC","RN","ResumeFromStage=generation-quality-repair"],["RN","FS","primary transport"],["FS","RN","403"],["RN","FS","system transport once"],["FS","RN","200 + body"],["RN","DQ","seal/restore bilingual claim transport and materialize V2"],["DQ","PV","rendered-public Green"],["PV","CO","publish-complete Green"],["CO","CO","reseal known drift once"],["CO","FN","receipt-derived exact argv"],["FN","CG","runner publish_complete"],["CG","CO","Green"]]},
+      {"id":"post-public-state","title":"Post-public-Green State Machine","kind":"state","states":["public_incomplete","recovering","public_green","receipts_resealed","receipts_valid","finalized","guard_green","surface_green","report_ready","closeout_blocked","major_incident"],"transitions":[["[*]","public_incomplete",""],["public_incomplete","recovering","registered recovery"],["recovering","public_green","verify-publish-complete Green"],["recovering","major_incident","recovery Red"],["public_green","receipts_resealed","known drift"],["public_green","receipts_valid","receipts already current"],["public_green","closeout_blocked","unknown drift/forbidden op"],["receipts_resealed","receipts_valid","validate both"],["receipts_valid","finalized","exact-args finalizer"],["finalized","guard_green","completion_guard"],["guard_green","surface_green","verify_public_surface"],["surface_green","report_ready","final report"],["report_ready","[*]",""]]},
+      {"id":"deployment-freshness","title":"Source / Worktree / Runtime Deployment","kind":"flowchart","direction":"TB","nodes":[["main","origin/main trusted commit"],["worktree","Clean Recovery Worktree"],["installer","Regular Installer"],["generation","Active Generation Manifest"],["runtime","Production Ops Runtime"],["task","Installed Launcher / Task"],["sha","Canonical critical-file SHA set"],["gate","Exact SHA parity"],["admit","Runner admission"],["red","RECOVERY_DEEPDIVE_RUNTIME_FRESHNESS_MISMATCH"]],"edges":[["main","worktree",""],["main","installer",""],["installer","generation",""],["installer","runtime",""],["installer","task",""],["generation","sha",""],["worktree","gate",""],["runtime","gate",""],["sha","gate",""],["gate","admit","match"],["gate","red","mismatch"]]},
+      {"id":"receipt-data-model","title":"Receipt / Ledger Data Model","kind":"flowchart","direction":"LR","nodes":[["authority","Recovery Authority"],["failure","Scheduled Failure Receipt"],["execution","Execution Receipt V2"],["consumption","Execution Consumption Ledger"],["publish","Publish Complete Manifest"],["producer","Producer State Snapshot"],["finalization","Finalization Receipt V2"],["state","Runner State"],["closeout","Closeout Operation Ledger"]],"edges":[["authority","execution","receipt hash"],["failure","execution","preserved lineage"],["execution","consumption","nonce/hash"],["execution","finalization","exact args"],["publish","finalization","manifest hash"],["producer","finalization","state hash"],["finalization","state","publish_complete"],["execution","closeout","argv evidence"],["finalization","closeout","validation evidence"]]}
+    ]
+  }
 }

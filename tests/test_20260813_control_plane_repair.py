@@ -76,13 +76,17 @@ def test_ng813_retired_runner_launcher_does_not_invoke_canary(
         (ops_root / "scripts" / "ops" / name).write_text(source, encoding="utf-8")
         (live_bin / name).write_text(source, encoding="utf-8")
     live_launcher = live_bin / "news-grasp-task-launcher.pyw"
-    monkeypatch.setattr(
-        dsh,
-        "_scheduled_task_details",
-        lambda **kwargs: _ready_task_details(
+    def retired_launcher_details(**kwargs) -> dict:
+        details = _ready_task_details(
             task_name=str(kwargs["task_name"]), live_launcher=live_launcher
-        ),
-    )
+        )
+        if "Bootstrap" not in str(kwargs["task_name"]):
+            details["action_summary"] = (
+                f'pythonw.exe "{live_launcher}" scheduled-equivalent-nopublish'
+            )
+        return details
+
+    monkeypatch.setattr(dsh, "_scheduled_task_details", retired_launcher_details)
     monkeypatch.setattr(
         dsh,
         "_validate_live_high_cost_binding_authority",
@@ -93,6 +97,11 @@ def test_ng813_retired_runner_launcher_does_not_invoke_canary(
             "binding_receipt_sha256": "b" * 64,
             "binding_file_sha256": "c" * 64,
         },
+    )
+    monkeypatch.setattr(
+        dsh,
+        "_probe_external_control_plane_readiness",
+        lambda: {"status": "ready", "reasonCode": "", "modelLaunchCount": 0},
     )
     observed: dict = {}
 
@@ -240,19 +249,23 @@ def test_ng813_publish_complete_manifest_is_typed_even_when_red(tmp_path: Path) 
 def test_ng813_runner_finalizer_consumes_only_typed_top_level_publish_commit() -> None:
     """primary/adversarial: local/source commit を deploy commit の代用品にしない。"""
     runner = RUNNER.read_text(encoding="utf-8-sig")
-    block = runner.split("if ($FinalizeVerifiedPublishManifest)", 1)[1].split(
+    predicate = runner.split(
+        "function Test-NewsGraspCompletePublicGreenManifest", 1
+    )[1].split("\nfunction ", 1)[0]
+    finalizer = runner.rsplit("if ($FinalizeVerifiedPublishManifest)", 1)[1].split(
         "# 前回 crash の WAL", 1
     )[0]
 
-    assert "NEWS_GRASP_PUBLISH_COMPLETE_V2" in block
-    assert "$publishCommit = [string]$verified.publish_commit" in block
-    assert "$publishCommit -eq [string]$verified.publish.deploy_head" in block
-    assert "[string]$verified.source_commit -match '^[0-9a-f]{40}$'" in block
-    assert "[string]$verified.artifact_commit -match '^[0-9a-f]{40}$'" in block
-    assert "$verified.publish.ok -eq $true" in block
-    assert "@($verified.distribution_artifacts.missing).Count -eq 0" in block
-    assert "$verified.publish.local_head" not in block
-    assert "$publishCommit -eq [string]$verified.publish.remote_head" not in block
+    assert "Test-NewsGraspCompletePublicGreenManifest -Verified $verified" in finalizer
+    assert "NEWS_GRASP_PUBLISH_COMPLETE_V2" in predicate
+    assert "$publishCommit = [string]$Verified.publish_commit" in predicate
+    assert "$publishCommit -ceq [string]$Verified.publish.deploy_head" in predicate
+    assert "[string]$Verified.source_commit -match '^[0-9a-f]{40}$'" in predicate
+    assert "[string]$Verified.artifact_commit -match '^[0-9a-f]{40}$'" in predicate
+    assert "$Verified.publish.ok -eq $true" in predicate
+    assert "@($Verified.distribution_artifacts.missing).Count -eq 0" in predicate
+    assert "$Verified.publish.local_head" not in predicate
+    assert "$publishCommit -eq [string]$Verified.publish.remote_head" not in predicate
 
 
 def test_ng813_runner_passes_real_state_file_and_ops_root() -> None:
@@ -290,9 +303,11 @@ def test_ng813_public_green_contract_allows_only_finalization_critical_path() ->
     """operational recovery: Green 後は広域 root-cause repair へ戻らない。"""
     assert audit_control.PUBLIC_GREEN_FOLLOWUP_PRIORITY == "runner_finalization_only"
     assert audit_control.PUBLIC_GREEN_ALLOWED_OPERATIONS == (
-        "manifest_reverification",
-        "typed_runner_finalizer",
+        "finalizer_exact_args_replay",
+        "receipt_reseal",
         "completion_guard",
+        "verify_public_surface",
+        "final_report",
     )
 
 
@@ -360,6 +375,22 @@ def test_ng813_typed_finalizer_skips_global_high_cost_reentry_and_runs_guard() -
     assert "Assert-HighCostOperationAdmission" not in finalizer
 
 
+def test_ng813_typed_finalizer_does_not_require_high_cost_broker_availability() -> None:
+    """RC-06: modelを使わないcloseoutをglobal broker Redへ戻さない。"""
+
+    runner = RUNNER.read_text(encoding="utf-8-sig")
+    binding = runner.split(
+        "$HighCostBindingResolverPath = $highCostBindingTool", 1
+    )[1].split("$env:NEWS_GRASP_HIGH_COST_BINDING_PATH", 1)[0]
+    finalizer_branch, regular_branch = binding.split("} else {", 1)
+
+    assert "if ($FinalizeVerifiedPublishManifest)" in finalizer_branch
+    assert "highCostBindingTool 'resolve'" not in finalizer_branch
+    assert "$HighCostWorkspaceRoot = ''" in finalizer_branch
+    assert "highCostBindingTool 'resolve'" in regular_branch
+    assert "[string]$highCostBinding.status -cne 'available'" in regular_branch
+
+
 def test_ng813_typed_finalizer_requires_sealed_receipt_before_state_mutation() -> None:
     """adversarial: manifest pathだけの直呼びはstateを書換えられない。"""
     runner = RUNNER.read_text(encoding="utf-8-sig")
@@ -374,9 +405,28 @@ def test_ng813_typed_finalizer_requires_sealed_receipt_before_state_mutation() -
     assert "-Command 'consume-finalization'" in runner
     assert "news-grasp-recovery-consumption-v1.sqlite3" not in runner
     manifest_hash = runner.index("FINALIZATION_MANIFEST_DRIFT", validation_call)
+    lineage_gate = runner.index(
+        "Test-NewsGraspFinalizationStateLineage -CurrentState $preConsumeState",
+        manifest_hash,
+    )
     final_consumption = runner.index("-Command 'consume-finalization'", manifest_hash)
     final_state = runner.index("Set-RunnerState -Status 'publish_complete'", final_consumption)
-    assert manifest_hash < final_consumption < final_state
+    assert manifest_hash < lineage_gate < final_consumption < final_state
+    lineage_function = runner.split(
+        "function Test-NewsGraspFinalizationStateLineage", 1
+    )[1].split("\nfunction ", 1)[0]
+    for field in (
+        "run_intent",
+        "run_id",
+        "artifactRoot",
+        "opsRoot",
+        "dailyRootId",
+        "rootOperationId",
+        "producerOperationId",
+        "lineageReceiptSha256",
+    ):
+        assert f"'{field}'" in lineage_function
+    assert "producerStateSha256" in lineage_function
 
 
 def test_ng813_typed_finalizer_preserves_scheduled_failure_provenance() -> None:
@@ -516,8 +566,12 @@ def test_ng813_finalizer_guards_candidate_before_state_applied() -> None:
     state = finalizer.index("Set-RunnerState -Status 'publish_complete'", guard)
     mark = finalizer.index("-Command 'mark-finalization-state-applied'", state)
     assert consume < guard < state < mark
-    assert "$historicalScheduledFailureRecovered" in finalizer
-    assert "scheduled_task_missed_runs" in finalizer
+    predicate = runner.split(
+        "function Test-NewsGraspCompletePublicGreenManifest", 1
+    )[1].split("\nfunction ", 1)[0]
+    assert "Test-NewsGraspCompletePublicGreenManifest -Verified $verified" in finalizer
+    assert "$historicalScheduledFailureRecovered" in predicate
+    assert "scheduled_task_missed_runs" in predicate
 
 
 def _load_control_plane_module():

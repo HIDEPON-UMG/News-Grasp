@@ -529,6 +529,7 @@ function Assert-NewsGraspInstalledState {
         -not (Test-NewsGraspSamePath -Left ([string]$recoveryBinding.opsRepoRoot) -Right $runtimeEvidenceRepoDir) -or
         -not (Test-NewsGraspSamePath -Left ([string]$recoveryBinding.productionRuntimeRoot) -Right $productionRuntimePath) -or
         -not (Test-NewsGraspSamePath -Left ([string]$recoveryBinding.pythonExe) -Right $runtimePythonPath) -or
+        -not (Test-NewsGraspSamePath -Left ([string]$recoveryBinding.lineagePath) -Right (Join-Path $canonicalBinDir 'news-grasp-lineage.ps1')) -or
         -not (Test-NewsGraspSamePath -Left ([string]$recoveryBinding.highCostBindingPath) -Right $highCostBindingPath) -or
         -not (Test-NewsGraspSamePath -Left ([string]$recoveryBinding.highCostBindingResolverPath) -Right $highCostBindingResolverDestination) -or
         [string]$recoveryBinding.highCostBindingReceiptSha256 -cne $highCostBindingReceiptSha256
@@ -542,11 +543,14 @@ function Assert-NewsGraspInstalledState {
         [string]$recoveryBinding.completionGuardToolSha256,
         [string]$recoveryBinding.dailySelfHealSha256,
         [string]$recoveryBinding.auditControlSha256,
+        [string]$recoveryBinding.recoveryCloseoutToolSha256,
+        [string]$recoveryBinding.operationalContractToolSha256,
         [string]$recoveryBinding.highCostBindingReceiptSha256,
         [string]$recoveryBinding.highCostBindingFileSha256,
         [string]$recoveryBinding.highCostBindingResolverSha256,
         [string]$recoveryBinding.bootstrapSha256,
-        [string]$recoveryBinding.runnerSha256
+        [string]$recoveryBinding.runnerSha256,
+        [string]$recoveryBinding.lineageSha256
     )) {
         if ($bindingHash -notmatch '^[0-9a-f]{64}$') { throw 'recovery runtime binding hash invalid' }
     }
@@ -1272,6 +1276,14 @@ $auditControlSnapshot = Read-NewsGraspVerifiedFile `
     -Path (Join-Path $runtimeEvidenceRepoDir 'tools\audit_recovery_control.py') `
     -TrustedBoundary $installTrustedBoundary `
     -RequireSingleLink
+$recoveryCloseoutToolSnapshot = Read-NewsGraspVerifiedFile `
+    -Path (Join-Path $runtimeEvidenceRepoDir 'tools\news_grasp_recovery_closeout.py') `
+    -TrustedBoundary $installTrustedBoundary `
+    -RequireSingleLink
+$operationalContractToolSnapshot = Read-NewsGraspVerifiedFile `
+    -Path (Join-Path $runtimeEvidenceRepoDir 'tools\news_grasp_operational_contract.py') `
+    -TrustedBoundary $installTrustedBoundary `
+    -RequireSingleLink
 $startupCustomizationPresent = (
     (Test-Path -LiteralPath (Join-Path $runtimeEvidenceRepoDir 'sitecustomize.py')) -or
     (Test-Path -LiteralPath (Join-Path $runtimeEvidenceRepoDir 'usercustomize.py'))
@@ -1330,6 +1342,10 @@ $recoveryRuntimeBinding = [ordered]@{
     dailySelfHealSha256 = ([string]$dailySelfHealSnapshot.Sha256).ToLowerInvariant()
     auditControlPath = (Join-Path $runtimeEvidenceRepoDir 'tools\audit_recovery_control.py')
     auditControlSha256 = ([string]$auditControlSnapshot.Sha256).ToLowerInvariant()
+    recoveryCloseoutToolPath = (Join-Path $runtimeEvidenceRepoDir 'tools\news_grasp_recovery_closeout.py')
+    recoveryCloseoutToolSha256 = ([string]$recoveryCloseoutToolSnapshot.Sha256).ToLowerInvariant()
+    operationalContractToolPath = (Join-Path $runtimeEvidenceRepoDir 'tools\news_grasp_operational_contract.py')
+    operationalContractToolSha256 = ([string]$operationalContractToolSnapshot.Sha256).ToLowerInvariant()
     highCostBindingPath = $highCostBindingPath
     highCostBindingReceiptSha256 = $highCostBindingReceiptSha256
     highCostBindingFileSha256 = ([string]$highCostBindingAfterHash).ToLowerInvariant()
@@ -1339,6 +1355,8 @@ $recoveryRuntimeBinding = [ordered]@{
     bootstrapSha256 = ([string]$sourceSnapshots['news-grasp-bootstrap.ps1'].Sha256).ToLowerInvariant()
     runnerPath = (Join-Path $BinDir 'news-grasp-runner.ps1')
     runnerSha256 = ([string]$sourceSnapshots['news-grasp-runner.ps1'].Sha256).ToLowerInvariant()
+    lineagePath = (Join-Path $BinDir 'news-grasp-lineage.ps1')
+    lineageSha256 = ([string]$sourceSnapshots['news-grasp-lineage.ps1'].Sha256).ToLowerInvariant()
 }
 Write-AtomicUtf8Text -Path $recoveryRuntimeBindingPath -Text (($recoveryRuntimeBinding | ConvertTo-Json -Depth 4) + [Environment]::NewLine)
 $recoveryRuntimeBindingInstalled = Read-NewsGraspVerifiedFile `

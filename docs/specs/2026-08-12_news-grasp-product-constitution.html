@@ -63,13 +63,13 @@
     <div class="container">
       <p class="spec-eyebrow">NEWS-GRASP / PRODUCT CONSTITUTION / GENERATED PROJECTION</p>
       <h1>公開価値と運用完全性を、同じ正本で閉じる。</h1>
-      <p class="lead">Product Constitution 14条項・6柱を全active仕様・skill・production consumer・状態・証拠へ結線し、2026-08-14 issue-date recovery transaction、4 terminal、V2 receipt、SLO sidecarを含めて物理提出まで閉じる。</p>
+      <p class="lead">Product Constitution 14条項・6柱を全active仕様・skill・production consumer・状態・証拠へ結線し、2026-08-27 public recoveryのtransport、issue bundle、freshness、exact-args finalizer、one-shot reseal、bounded closeoutを実運用predicateと結合試験で閉じる。</p>
     </div>
   </header>
   <main class="container" id="main">
     <section class="summary" aria-labelledby="summary-title">
       <h2 id="summary-title">結論</h2>
-      <p><span class="badge">6 pillars / 14 clauses / 17 acceptances</span></p>
+      <p><span class="badge">6 pillars / 14 clauses / 23 acceptances</span></p>
       <p>固定generation上で、生成・checkpoint・登録済み復旧・公開確認・readinessを人手なしで閉じる。自然scheduled run待ちとshared/global harness変更は完了条件に含めない。</p>
     </section>
     <nav class="tabs" role="tablist" aria-label="仕様書セクション">
@@ -181,477 +181,639 @@
   n0015[&quot;A15&quot;]
   n0016[&quot;A16&quot;]
   n0017[&quot;A17&quot;]
-  n0018[&quot;config/news_grasp_constitution_trace_v1.json&quot;]
-  n0019[&quot;config/news_grasp_constitution_v1.json&quot;]
-  n0020[&quot;config/news_grasp_skill_binding_v1.json&quot;]
-  n0021[&quot;config/news_grasp_spec_disposition_v1.json&quot;]
-  n0022[&quot;scripts/ops/invoke-scheduled-equivalent-nopublish.ps1&quot;]
-  n0023[&quot;tools/historical_failure_scenarios.py&quot;]
-  n0024[&quot;tools/news_grasp_change_control.py&quot;]
-  n0025[&quot;tools/news_grasp_checkpoint.py&quot;]
-  n0026[&quot;tools/news_grasp_constitution.py&quot;]
-  n0027[&quot;tools/news_grasp_daily_control.py&quot;]
-  n0028[&quot;tools/news_grasp_gate_profiles.py&quot;]
-  n0029[&quot;tools/news_grasp_generation.py&quot;]
-  n0030[&quot;tools/news_grasp_operational_contract.py&quot;]
-  n0031[&quot;tools/news_grasp_task_packet.py&quot;]
-  n0032[&quot;tools/operational_recovery_registry.py&quot;]
-  n0033[&quot;NGC-C01 利用者の業務価値へ接続する&quot;]
-  n0034[&quot;NGC-C02 編集・出典・鮮度・関連性品質を守る&quot;]
-  n0035[&quot;NGC-C03 必須公開bundleの部分完了を認めない&quot;]
-  n0036[&quot;NGC-C04 日次全工程を人手なしで閉じる&quot;]
-  n0037[&quot;NGC-C05 repair-firstで同日公開成果を守る&quot;]
-  n0038[&quot;NGC-C06 危険・secret・破壊・public regressionをfail-closedにする&quot;]
-  n0039[&quot;NGC-C07 scheduled/recovery/public/readiness/audit/externalを分離する&quot;]
-  n0040[&quot;NGC-C08 checkpointと因果retryで再生成を防ぐ&quot;]
-  n0041[&quot;NGC-C09 immutable generationとsingle writerを守る&quot;]
-  n0042[&quot;NGC-C10 登録済み復旧だけを実行する&quot;]
-  n0043[&quot;NGC-C11 noFocusTheft・noAutoOpen・noMonitoring・即時停止を守る&quot;]
-  n0044[&quot;NGC-C12 Sol/Luna/local toolをentropyに応じて配置する&quot;]
-  n0045[&quot;NGC-C13 commit/push/install/runtime/task/rollbackを閉じる&quot;]
-  n0046[&quot;NGC-C14 全active仕様を憲法へ結び、憲法改変をユーザーだけに限定する&quot;]
-  n0047[&quot;Product Constitution&quot;]
-  n0048[&quot;DailyProductGateProfileV1&quot;]
-  n0049[&quot;NEWS_GRASP_CONSTITUTION_TRACE_V1&quot;]
-  n0050[&quot;NEWS_GRASP_PRODUCT_CHANGE_ALLOWLIST_V1&quot;]
-  n0051[&quot;exact_handler_dispatch&quot;]
-  n0052[&quot;ONE_MONTH_OPERATIONAL_FAILURE_CORPUS_V1&quot;]
-  n0053[&quot;installed_launcher_identity&quot;]
-  n0054[&quot;NEWS_GRASP_TASK_CONSTITUTION_ADMISSION_V1&quot;]
-  n0055[&quot;NEWS_GRASP_CONSTITUTION_V1&quot;]
-  n0056[&quot;dailyOperationLineageId&quot;]
-  n0057[&quot;NEWS_GRASP_SKILL_BINDING_V1&quot;]
-  n0058[&quot;NEWS_GRASP_SPEC_DISPOSITION_V1&quot;]
-  n0059[&quot;ProductionGenerationManifestV2&quot;]
-  n0060[&quot;COMPLETION_STATE_VECTOR_V3&quot;]
-  n0061[&quot;generate_mermaid_projection&quot;]
-  n0062[&quot;ArtifactCheckpointV1&quot;]
-  n0063[&quot;immutable_generation&quot;]
-  n0064[&quot;unresolvedDecisionIds&quot;]
-  n0065[&quot;artifact_checkpoint_hash&quot;]
-  n0066[&quot;causal_retry_ledger_hash&quot;]
-  n0067[&quot;completion_state_vector_hash&quot;]
-  n0068[&quot;constitution_source_hash_and_user_provenance&quot;]
-  n0069[&quot;gate_profile_set_hash&quot;]
-  n0070[&quot;immutable_generation_input_hash&quot;]
-  n0071[&quot;installed_launcher_identity_hash&quot;]
-  n0072[&quot;luna_packet_validation_receipt&quot;]
-  n0073[&quot;monthly_corpus_replay_hash&quot;]
-  n0074[&quot;product_change_admission_receipt&quot;]
-  n0075[&quot;production_generation_manifest_hash&quot;]
-  n0076[&quot;projection_node_edge_hash&quot;]
-  n0077[&quot;recovery_registry_hash&quot;]
-  n0078[&quot;skill_source_installed_hash_parity&quot;]
-  n0079[&quot;spec_disposition_set_hash&quot;]
-  n0080[&quot;task_request_hash_and_constitution_binding&quot;]
-  n0081[&quot;trace_projection_hash&quot;]
-  n0082[&quot;意思決定・提案・設計・顧客対話に使える&quot;]
-  n0083[&quot;記事、Web、音声、Podcast、通知が一体で届く&quot;]
-  n0084[&quot;生成から次回準備まで自然実行だけで閉じる&quot;]
-  n0085[&quot;公開Greenと正しいruntime authorityを守る&quot;]
-  n0086[&quot;人間負担・手戻り・総期待資源を抑える&quot;]
-  n0087[&quot;利用可能状態と監査証拠を残す&quot;]
-  n0088[&quot;物理提出&quot;]
-  n0089[&quot;NGP-P01 利用者価値&quot;]
-  n0090[&quot;NGP-P02 完全な公開体験&quot;]
-  n0091[&quot;NGP-P03 人手なしの日次運用&quot;]
-  n0092[&quot;NGP-P04 壊さない・信頼できる運用&quot;]
-  n0093[&quot;NGP-P05 持続可能な作業&quot;]
-  n0094[&quot;NGP-P06 物理提出と説明責任&quot;]
-  n0095[&quot;replay_registered_handler_or_typed_external_to_finite_terminal&quot;]
-  n0096[&quot;allow_one_retry_only_after_masked_input_change&quot;]
-  n0097[&quot;continue_deterministic_without_model_reexecution&quot;]
-  n0098[&quot;disable_then_dependency_scan_before_delete&quot;]
-  n0099[&quot;disable_unclassified_skill_then_reconcile_installer&quot;]
-  n0100[&quot;reject_packet_then_reseal_against_authoritative_generation&quot;]
-  n0101[&quot;freeze_attempt_on_installed_identity_drift&quot;]
-  n0102[&quot;invalidate_generation_on_bound_input_drift&quot;]
-  n0103[&quot;reject_invalid_constitution&quot;]
-  n0104[&quot;reject_projection_drift&quot;]
-  n0105[&quot;reject_release_oracle_from_scheduled_call_graph&quot;]
-  n0106[&quot;reject_unbound_active_object&quot;]
-  n0107[&quot;repair_only_red_substate_then_pure_reprobe&quot;]
-  n0108[&quot;retain_old_generation_until_transaction_commit&quot;]
-  n0109[&quot;return_to_sol_before_execution&quot;]
-  n0110[&quot;return_to_structured_question_before_mutation&quot;]
-  n0111[&quot;unknown_reason_to_append_only_major_incident&quot;]
-  n0112[&quot;R01&quot;]
-  n0113[&quot;R02&quot;]
-  n0114[&quot;R03&quot;]
-  n0115[&quot;R04&quot;]
-  n0116[&quot;R05&quot;]
-  n0117[&quot;R06&quot;]
-  n0118[&quot;R07&quot;]
-  n0119[&quot;R08&quot;]
-  n0120[&quot;R09&quot;]
-  n0121[&quot;R10&quot;]
-  n0122[&quot;R11&quot;]
-  n0123[&quot;R12&quot;]
-  n0124[&quot;R13&quot;]
-  n0125[&quot;R14&quot;]
-  n0126[&quot;R15&quot;]
-  n0127[&quot;R16&quot;]
-  n0128[&quot;R17&quot;]
-  n0129[&quot;acceptance_trace_compiled&quot;]
-  n0130[&quot;all_product_mutation_routes_admitted_by_one_consumer&quot;]
-  n0131[&quot;all_specs_dispositioned&quot;]
-  n0132[&quot;artifact_checkpoint_continuation_bound&quot;]
-  n0133[&quot;completion_state_vector_v3_bound&quot;]
-  n0134[&quot;constitution_compiled&quot;]
-  n0135[&quot;daily_and_release_profiles_disjoint&quot;]
-  n0136[&quot;daily_lineage_causal_retry_bound&quot;]
-  n0137[&quot;immutable_generation_and_input_bound&quot;]
-  n0138[&quot;installed_launcher_nopublish_single_route&quot;]
-  n0139[&quot;luna_packet_decision_complete&quot;]
-  n0140[&quot;mermaid_projection_compiled&quot;]
-  n0141[&quot;monthly_failure_corpus_bound&quot;]
-  n0142[&quot;production_generation_bound&quot;]
-  n0143[&quot;registered_recovery_exact_dispatch&quot;]
-  n0144[&quot;skills_audited_and_bound&quot;]
-  n0145[&quot;task_constitution_admitted&quot;]
-  n0146[&quot;test_a01_boundary&quot;]
-  n0147[&quot;test_a01_primary&quot;]
-  n0148[&quot;test_a01_recovery&quot;]
-  n0149[&quot;test_a02_boundary&quot;]
-  n0150[&quot;test_a02_primary&quot;]
-  n0151[&quot;test_a02_recovery&quot;]
-  n0152[&quot;test_a03_boundary&quot;]
-  n0153[&quot;test_a03_primary&quot;]
-  n0154[&quot;test_a03_recovery&quot;]
-  n0155[&quot;test_a04_boundary&quot;]
-  n0156[&quot;test_a04_primary&quot;]
-  n0157[&quot;test_a04_recovery&quot;]
-  n0158[&quot;test_a05_boundary&quot;]
-  n0159[&quot;test_a05_primary&quot;]
-  n0160[&quot;test_a05_recovery&quot;]
-  n0161[&quot;test_a06_boundary&quot;]
-  n0162[&quot;test_a06_primary&quot;]
-  n0163[&quot;test_a06_recovery&quot;]
-  n0164[&quot;test_a07_boundary&quot;]
-  n0165[&quot;test_a07_primary&quot;]
-  n0166[&quot;test_a07_recovery&quot;]
-  n0167[&quot;test_a08_boundary&quot;]
-  n0168[&quot;test_a08_primary&quot;]
-  n0169[&quot;test_a08_recovery&quot;]
-  n0170[&quot;test_a09_boundary&quot;]
-  n0171[&quot;test_a09_primary&quot;]
-  n0172[&quot;test_a09_recovery&quot;]
-  n0173[&quot;test_a10_boundary&quot;]
-  n0174[&quot;test_a10_primary&quot;]
-  n0175[&quot;test_a10_recovery&quot;]
-  n0176[&quot;test_a11_boundary&quot;]
-  n0177[&quot;test_a11_primary&quot;]
-  n0178[&quot;test_a11_recovery&quot;]
-  n0179[&quot;test_a12_boundary&quot;]
-  n0180[&quot;test_a12_primary&quot;]
-  n0181[&quot;test_a12_recovery&quot;]
-  n0182[&quot;test_a13_boundary&quot;]
-  n0183[&quot;test_a13_primary&quot;]
-  n0184[&quot;test_a13_recovery&quot;]
-  n0185[&quot;test_a14_boundary&quot;]
-  n0186[&quot;test_a14_primary&quot;]
-  n0187[&quot;test_a14_recovery&quot;]
-  n0188[&quot;test_a15_boundary&quot;]
-  n0189[&quot;test_a15_primary&quot;]
-  n0190[&quot;test_a15_recovery&quot;]
-  n0191[&quot;test_a16_boundary&quot;]
-  n0192[&quot;test_a16_primary&quot;]
-  n0193[&quot;test_a16_recovery&quot;]
-  n0194[&quot;test_a17_boundary&quot;]
-  n0195[&quot;test_a17_primary&quot;]
-  n0196[&quot;test_a17_recovery&quot;]
-  n0197[&quot;TODO-146&quot;]
-  n0198[&quot;TODO-147&quot;]
-  n0199[&quot;TODO-148&quot;]
-  n0200[&quot;TODO-149&quot;]
-  n0201[&quot;TODO-150&quot;]
-  n0202[&quot;TODO-151&quot;]
-  n0047 --&gt; n0089
-  n0089 --&gt; n0082
-  n0047 --&gt; n0090
-  n0090 --&gt; n0083
-  n0047 --&gt; n0091
-  n0091 --&gt; n0084
-  n0047 --&gt; n0092
-  n0092 --&gt; n0085
-  n0047 --&gt; n0093
-  n0093 --&gt; n0086
-  n0047 --&gt; n0094
-  n0094 --&gt; n0087
-  n0082 --&gt; n0033
-  n0082 --&gt; n0034
-  n0083 --&gt; n0035
-  n0084 --&gt; n0036
-  n0084 --&gt; n0037
-  n0085 --&gt; n0038
-  n0085 --&gt; n0039
-  n0086 --&gt; n0040
-  n0085 --&gt; n0041
-  n0085 --&gt; n0042
-  n0086 --&gt; n0043
-  n0086 --&gt; n0044
-  n0087 --&gt; n0045
-  n0087 --&gt; n0046
-  n0033 --&gt; n0112
-  n0046 --&gt; n0112
-  n0112 --&gt; n0001
-  n0001 --&gt; n0197
-  n0197 --&gt; n0019
-  n0019 --&gt; n0055
-  n0055 --&gt; n0134
-  n0134 --&gt; n0103
-  n0103 --&gt; n0068
-  n0068 --&gt; n0147
-  n0147 --&gt; n0088
-  n0068 --&gt; n0146
-  n0146 --&gt; n0088
-  n0068 --&gt; n0148
-  n0148 --&gt; n0088
-  n0043 --&gt; n0113
-  n0046 --&gt; n0113
-  n0113 --&gt; n0002
-  n0002 --&gt; n0197
-  n0197 --&gt; n0030
-  n0030 --&gt; n0054
+  n0018[&quot;A18&quot;]
+  n0019[&quot;A19&quot;]
+  n0020[&quot;A20&quot;]
+  n0021[&quot;A21&quot;]
+  n0022[&quot;A22&quot;]
+  n0023[&quot;A23&quot;]
+  n0024[&quot;config/news_grasp_constitution_trace_v1.json&quot;]
+  n0025[&quot;config/news_grasp_constitution_v1.json&quot;]
+  n0026[&quot;config/news_grasp_skill_binding_v1.json&quot;]
+  n0027[&quot;config/news_grasp_spec_disposition_v1.json&quot;]
+  n0028[&quot;scripts/ops/invoke-scheduled-equivalent-nopublish.ps1&quot;]
+  n0029[&quot;tools/deepdive_quality.py&quot;]
+  n0030[&quot;tools/historical_failure_scenarios.py&quot;]
+  n0031[&quot;tools/news_grasp_change_control.py&quot;]
+  n0032[&quot;tools/news_grasp_checkpoint.py&quot;]
+  n0033[&quot;tools/news_grasp_constitution.py&quot;]
+  n0034[&quot;tools/news_grasp_daily_control.py&quot;]
+  n0035[&quot;tools/news_grasp_gate_profiles.py&quot;]
+  n0036[&quot;tools/news_grasp_generation.py&quot;]
+  n0037[&quot;tools/news_grasp_operational_contract.py&quot;]
+  n0038[&quot;tools/news_grasp_recovery_closeout.py&quot;]
+  n0039[&quot;tools/news_grasp_recovery_freshness.py&quot;]
+  n0040[&quot;tools/news_grasp_task_packet.py&quot;]
+  n0041[&quot;tools/operational_recovery_registry.py&quot;]
+  n0042[&quot;NGC-C01 利用者の業務価値へ接続する&quot;]
+  n0043[&quot;NGC-C02 編集・出典・鮮度・関連性品質を守る&quot;]
+  n0044[&quot;NGC-C03 必須公開bundleの部分完了を認めない&quot;]
+  n0045[&quot;NGC-C04 日次全工程を人手なしで閉じる&quot;]
+  n0046[&quot;NGC-C05 repair-firstで同日公開成果を守る&quot;]
+  n0047[&quot;NGC-C06 危険・secret・破壊・public regressionをfail-closedにする&quot;]
+  n0048[&quot;NGC-C07 scheduled/recovery/public/readiness/audit/externalを分離する&quot;]
+  n0049[&quot;NGC-C08 checkpointと因果retryで再生成を防ぐ&quot;]
+  n0050[&quot;NGC-C09 immutable generationとsingle writerを守る&quot;]
+  n0051[&quot;NGC-C10 登録済み復旧だけを実行する&quot;]
+  n0052[&quot;NGC-C11 noFocusTheft・noAutoOpen・noMonitoring・即時停止を守る&quot;]
+  n0053[&quot;NGC-C12 Sol/Luna/local toolをentropyに応じて配置する&quot;]
+  n0054[&quot;NGC-C13 commit/push/install/runtime/task/rollbackを閉じる&quot;]
+  n0055[&quot;NGC-C14 全active仕様を憲法へ結び、憲法改変をユーザーだけに限定する&quot;]
+  n0056[&quot;Product Constitution&quot;]
+  n0057[&quot;DailyProductGateProfileV1&quot;]
+  n0058[&quot;NEWS_GRASP_CONSTITUTION_TRACE_V1&quot;]
+  n0059[&quot;NEWS_GRASP_PRODUCT_CHANGE_ALLOWLIST_V1&quot;]
+  n0060[&quot;NG_RC_06_POST_PUBLIC_GREEN_CLOSEOUT&quot;]
+  n0061[&quot;exact_handler_dispatch&quot;]
+  n0062[&quot;ONE_MONTH_OPERATIONAL_FAILURE_CORPUS_V1&quot;]
+  n0063[&quot;installed_launcher_identity&quot;]
+  n0064[&quot;NEWS_GRASP_TASK_CONSTITUTION_ADMISSION_V1&quot;]
+  n0065[&quot;NEWS_GRASP_CONSTITUTION_V1&quot;]
+  n0066[&quot;dailyOperationLineageId&quot;]
+  n0067[&quot;NEWS_GRASP_SKILL_BINDING_V1&quot;]
+  n0068[&quot;NG_RC_04_FINALIZER_EXACT_ARGS_REPLAY&quot;]
+  n0069[&quot;NG_RC_05_ONE_SHOT_RECEIPT_DRIFT_RESEAL&quot;]
+  n0070[&quot;NG_RC_01_DEEPDIVE_SYSTEM_TRANSPORT_FALLBACK&quot;]
+  n0071[&quot;NEWS_GRASP_SPEC_DISPOSITION_V1&quot;]
+  n0072[&quot;ProductionGenerationManifestV2&quot;]
+  n0073[&quot;NG_RC_03_RECOVERY_DEEPDIVE_RUNTIME_FRESHNESS&quot;]
+  n0074[&quot;COMPLETION_STATE_VECTOR_V3&quot;]
+  n0075[&quot;generate_mermaid_projection&quot;]
+  n0076[&quot;NG_RC_02_DEEPDIVE_ISSUE_BUNDLE&quot;]
+  n0077[&quot;ArtifactCheckpointV1&quot;]
+  n0078[&quot;immutable_generation&quot;]
+  n0079[&quot;unresolvedDecisionIds&quot;]
+  n0080[&quot;claim_source_transport_v2_provenance_rendered_public_hash&quot;]
+  n0081[&quot;artifact_checkpoint_hash&quot;]
+  n0082[&quot;causal_retry_ledger_hash&quot;]
+  n0083[&quot;completion_state_vector_hash&quot;]
+  n0084[&quot;constitution_source_hash_and_user_provenance&quot;]
+  n0085[&quot;critical_file_sha_set_and_generation_hash&quot;]
+  n0086[&quot;execution_receipt_hash_and_exact_argv_hash&quot;]
+  n0087[&quot;gate_profile_set_hash&quot;]
+  n0088[&quot;immutable_generation_input_hash&quot;]
+  n0089[&quot;installed_launcher_identity_hash&quot;]
+  n0090[&quot;luna_packet_validation_receipt&quot;]
+  n0091[&quot;monthly_corpus_replay_hash&quot;]
+  n0092[&quot;operation_allowlist_and_state_vector_hash&quot;]
+  n0093[&quot;pre_post_receipt_and_public_tree_hash&quot;]
+  n0094[&quot;product_change_admission_receipt&quot;]
+  n0095[&quot;production_generation_manifest_hash&quot;]
+  n0096[&quot;projection_node_edge_hash&quot;]
+  n0097[&quot;recovery_registry_hash&quot;]
+  n0098[&quot;skill_source_installed_hash_parity&quot;]
+  n0099[&quot;spec_disposition_set_hash&quot;]
+  n0100[&quot;task_request_hash_and_constitution_binding&quot;]
+  n0101[&quot;trace_projection_hash&quot;]
+  n0102[&quot;transport_final_url_status_body_hash&quot;]
+  n0103[&quot;意思決定・提案・設計・顧客対話に使える&quot;]
+  n0104[&quot;記事、Web、音声、Podcast、通知が一体で届く&quot;]
+  n0105[&quot;生成から次回準備まで自然実行だけで閉じる&quot;]
+  n0106[&quot;公開Greenと正しいruntime authorityを守る&quot;]
+  n0107[&quot;人間負担・手戻り・総期待資源を抑える&quot;]
+  n0108[&quot;利用可能状態と監査証拠を残す&quot;]
+  n0109[&quot;物理提出&quot;]
+  n0110[&quot;NGP-P01 利用者価値&quot;]
+  n0111[&quot;NGP-P02 完全な公開体験&quot;]
+  n0112[&quot;NGP-P03 人手なしの日次運用&quot;]
+  n0113[&quot;NGP-P04 壊さない・信頼できる運用&quot;]
+  n0114[&quot;NGP-P05 持続可能な作業&quot;]
+  n0115[&quot;NGP-P06 物理提出と説明責任&quot;]
+  n0116[&quot;replay_registered_handler_or_typed_external_to_finite_terminal&quot;]
+  n0117[&quot;allow_one_retry_only_after_masked_input_change&quot;]
+  n0118[&quot;continue_deterministic_without_model_reexecution&quot;]
+  n0119[&quot;disable_then_dependency_scan_before_delete&quot;]
+  n0120[&quot;disable_unclassified_skill_then_reconcile_installer&quot;]
+  n0121[&quot;reject_packet_then_reseal_against_authoritative_generation&quot;]
+  n0122[&quot;freeze_attempt_on_installed_identity_drift&quot;]
+  n0123[&quot;invalidate_generation_on_bound_input_drift&quot;]
+  n0124[&quot;one_shot_system_transport_or_typed_red&quot;]
+  n0125[&quot;rebuild_from_trusted_generation_or_typed_red&quot;]
+  n0126[&quot;reject_invalid_constitution&quot;]
+  n0127[&quot;reject_partial_bundle_before_public&quot;]
+  n0128[&quot;reject_projection_drift&quot;]
+  n0129[&quot;reject_release_oracle_from_scheduled_call_graph&quot;]
+  n0130[&quot;reject_unbound_active_object&quot;]
+  n0131[&quot;repair_only_red_substate_then_pure_reprobe&quot;]
+  n0132[&quot;resume_same_receipt_only_after_finalizer_crash&quot;]
+  n0133[&quot;retain_old_generation_until_transaction_commit&quot;]
+  n0134[&quot;return_to_sol_before_execution&quot;]
+  n0135[&quot;return_to_structured_question_before_mutation&quot;]
+  n0136[&quot;unknown_operation_to_post_public_closeout_blocker&quot;]
+  n0137[&quot;unknown_or_applied_drift_to_closeout_blocker&quot;]
+  n0138[&quot;unknown_reason_to_append_only_major_incident&quot;]
+  n0139[&quot;R01&quot;]
+  n0140[&quot;R02&quot;]
+  n0141[&quot;R03&quot;]
+  n0142[&quot;R04&quot;]
+  n0143[&quot;R05&quot;]
+  n0144[&quot;R06&quot;]
+  n0145[&quot;R07&quot;]
+  n0146[&quot;R08&quot;]
+  n0147[&quot;R09&quot;]
+  n0148[&quot;R10&quot;]
+  n0149[&quot;R11&quot;]
+  n0150[&quot;R12&quot;]
+  n0151[&quot;R13&quot;]
+  n0152[&quot;R14&quot;]
+  n0153[&quot;R15&quot;]
+  n0154[&quot;R16&quot;]
+  n0155[&quot;R17&quot;]
+  n0156[&quot;R18&quot;]
+  n0157[&quot;R19&quot;]
+  n0158[&quot;R20&quot;]
+  n0159[&quot;R21&quot;]
+  n0160[&quot;R22&quot;]
+  n0161[&quot;R23&quot;]
+  n0162[&quot;acceptance_trace_compiled&quot;]
+  n0163[&quot;all_product_mutation_routes_admitted_by_one_consumer&quot;]
+  n0164[&quot;all_specs_dispositioned&quot;]
+  n0165[&quot;artifact_checkpoint_continuation_bound&quot;]
+  n0166[&quot;completion_state_vector_v3_bound&quot;]
+  n0167[&quot;constitution_compiled&quot;]
+  n0168[&quot;daily_and_release_profiles_disjoint&quot;]
+  n0169[&quot;daily_lineage_causal_retry_bound&quot;]
+  n0170[&quot;deepdive_issue_bundle_v1_bound&quot;]
+  n0171[&quot;deepdive_transport_provenance_bound&quot;]
+  n0172[&quot;finalizer_exact_args_bound&quot;]
+  n0173[&quot;immutable_generation_and_input_bound&quot;]
+  n0174[&quot;installed_launcher_nopublish_single_route&quot;]
+  n0175[&quot;known_receipt_drift_resealed_once&quot;]
+  n0176[&quot;luna_packet_decision_complete&quot;]
+  n0177[&quot;mermaid_projection_compiled&quot;]
+  n0178[&quot;monthly_failure_corpus_bound&quot;]
+  n0179[&quot;post_public_green_bounded_closeout&quot;]
+  n0180[&quot;production_generation_bound&quot;]
+  n0181[&quot;recovery_runtime_freshness_admitted&quot;]
+  n0182[&quot;registered_recovery_exact_dispatch&quot;]
+  n0183[&quot;skills_audited_and_bound&quot;]
+  n0184[&quot;task_constitution_admitted&quot;]
+  n0185[&quot;test_stale_worktree_file_is_rejected_before_spawn_callback&quot;]
+  n0186[&quot;test_bls_profile_403_uses_actual_windows_system_transport_once&quot;]
+  n0187[&quot;test_one_shot_reseal_fixes_known_drift_and_preserves_public_tree&quot;]
+  n0188[&quot;test_materialize_issue_writes_v2_provenance_dialogue_and_bundle_once&quot;]
+  n0189[&quot;test_unknown_receipt_drift_becomes_typed_closeout_blocker&quot;]
+  n0190[&quot;test_exact_sha_parity_is_green_with_per_file_and_set_evidence&quot;]
+  n0191[&quot;test_materialize_issue_restores_bilingual_claim_transport_after_bundle_loss&quot;]
+  n0192[&quot;test_materialize_issue_without_claim_transport_rejects_unrelated_url_200&quot;]
+  n0193[&quot;test_a01_boundary&quot;]
+  n0194[&quot;test_a01_primary&quot;]
+  n0195[&quot;test_a01_recovery&quot;]
+  n0196[&quot;test_a02_boundary&quot;]
+  n0197[&quot;test_a02_primary&quot;]
+  n0198[&quot;test_a02_recovery&quot;]
+  n0199[&quot;test_a03_boundary&quot;]
+  n0200[&quot;test_a03_primary&quot;]
+  n0201[&quot;test_a03_recovery&quot;]
+  n0202[&quot;test_a04_boundary&quot;]
+  n0203[&quot;test_a04_primary&quot;]
+  n0204[&quot;test_a04_recovery&quot;]
+  n0205[&quot;test_a05_boundary&quot;]
+  n0206[&quot;test_a05_primary&quot;]
+  n0207[&quot;test_a05_recovery&quot;]
+  n0208[&quot;test_a06_boundary&quot;]
+  n0209[&quot;test_a06_primary&quot;]
+  n0210[&quot;test_a06_recovery&quot;]
+  n0211[&quot;test_a07_boundary&quot;]
+  n0212[&quot;test_a07_primary&quot;]
+  n0213[&quot;test_a07_recovery&quot;]
+  n0214[&quot;test_a08_boundary&quot;]
+  n0215[&quot;test_a08_primary&quot;]
+  n0216[&quot;test_a08_recovery&quot;]
+  n0217[&quot;test_a09_boundary&quot;]
+  n0218[&quot;test_a09_primary&quot;]
+  n0219[&quot;test_a09_recovery&quot;]
+  n0220[&quot;test_a10_boundary&quot;]
+  n0221[&quot;test_a10_primary&quot;]
+  n0222[&quot;test_a10_recovery&quot;]
+  n0223[&quot;test_a11_boundary&quot;]
+  n0224[&quot;test_a11_primary&quot;]
+  n0225[&quot;test_a11_recovery&quot;]
+  n0226[&quot;test_a12_boundary&quot;]
+  n0227[&quot;test_a12_primary&quot;]
+  n0228[&quot;test_a12_recovery&quot;]
+  n0229[&quot;test_a13_boundary&quot;]
+  n0230[&quot;test_a13_primary&quot;]
+  n0231[&quot;test_a13_recovery&quot;]
+  n0232[&quot;test_a14_boundary&quot;]
+  n0233[&quot;test_a14_primary&quot;]
+  n0234[&quot;test_a14_recovery&quot;]
+  n0235[&quot;test_a15_boundary&quot;]
+  n0236[&quot;test_a15_primary&quot;]
+  n0237[&quot;test_a15_recovery&quot;]
+  n0238[&quot;test_a16_boundary&quot;]
+  n0239[&quot;test_a16_primary&quot;]
+  n0240[&quot;test_a16_recovery&quot;]
+  n0241[&quot;test_a17_boundary&quot;]
+  n0242[&quot;test_a17_primary&quot;]
+  n0243[&quot;test_a17_recovery&quot;]
+  n0244[&quot;test_applied_receipt_ledger_blocks_reseal&quot;]
+  n0245[&quot;test_exact_finalizer_crash_reuses_same_receipt&quot;]
+  n0246[&quot;test_exact_finalizer_rejects_tampered_receipt&quot;]
+  n0247[&quot;test_fetch_never_falls_back_after_404_or_410&quot;]
+  n0248[&quot;test_missing_and_tampered_generation_inputs_fail_closed&quot;]
+  n0249[&quot;test_post_public_green_allows_exact_five_operations&quot;]
+  n0250[&quot;test_post_public_green_forbidden_operation_is_blocked&quot;]
+  n0251[&quot;test_post_public_green_unknown_drift_is_evidenced&quot;]
+  n0252[&quot;test_resume_bound_receipt_builds_exact_finalizer_args&quot;]
+  n0253[&quot;test_system_transport_failure_remains_typed_red&quot;]
+  n0254[&quot;TODO-146&quot;]
+  n0255[&quot;TODO-147&quot;]
+  n0256[&quot;TODO-148&quot;]
+  n0257[&quot;TODO-149&quot;]
+  n0258[&quot;TODO-150&quot;]
+  n0259[&quot;TODO-151&quot;]
+  n0260[&quot;TODO-20260827-RC01&quot;]
+  n0261[&quot;TODO-20260827-RC02&quot;]
+  n0262[&quot;TODO-20260827-RC03&quot;]
+  n0263[&quot;TODO-20260827-RC04&quot;]
+  n0264[&quot;TODO-20260827-RC05&quot;]
+  n0265[&quot;TODO-20260827-RC06&quot;]
+  n0056 --&gt; n0110
+  n0110 --&gt; n0103
+  n0056 --&gt; n0111
+  n0111 --&gt; n0104
+  n0056 --&gt; n0112
+  n0112 --&gt; n0105
+  n0056 --&gt; n0113
+  n0113 --&gt; n0106
+  n0056 --&gt; n0114
+  n0114 --&gt; n0107
+  n0056 --&gt; n0115
+  n0115 --&gt; n0108
+  n0103 --&gt; n0042
+  n0103 --&gt; n0043
+  n0104 --&gt; n0044
+  n0105 --&gt; n0045
+  n0105 --&gt; n0046
+  n0106 --&gt; n0047
+  n0106 --&gt; n0048
+  n0107 --&gt; n0049
+  n0106 --&gt; n0050
+  n0106 --&gt; n0051
+  n0107 --&gt; n0052
+  n0107 --&gt; n0053
+  n0108 --&gt; n0054
+  n0108 --&gt; n0055
+  n0042 --&gt; n0139
+  n0055 --&gt; n0139
+  n0139 --&gt; n0001
+  n0001 --&gt; n0254
+  n0254 --&gt; n0025
+  n0025 --&gt; n0065
+  n0065 --&gt; n0167
+  n0167 --&gt; n0126
+  n0126 --&gt; n0084
+  n0084 --&gt; n0194
+  n0194 --&gt; n0109
+  n0084 --&gt; n0193
+  n0193 --&gt; n0109
+  n0084 --&gt; n0195
+  n0195 --&gt; n0109
+  n0052 --&gt; n0140
+  n0055 --&gt; n0140
+  n0140 --&gt; n0002
+  n0002 --&gt; n0254
+  n0254 --&gt; n0037
+  n0037 --&gt; n0064
+  n0064 --&gt; n0184
+  n0184 --&gt; n0135
+  n0135 --&gt; n0100
+  n0100 --&gt; n0197
+  n0197 --&gt; n0109
+  n0100 --&gt; n0196
+  n0196 --&gt; n0109
+  n0100 --&gt; n0198
+  n0198 --&gt; n0109
+  n0055 --&gt; n0141
+  n0141 --&gt; n0003
+  n0003 --&gt; n0254
+  n0254 --&gt; n0024
+  n0024 --&gt; n0058
+  n0058 --&gt; n0162
+  n0162 --&gt; n0130
+  n0130 --&gt; n0101
+  n0101 --&gt; n0200
+  n0200 --&gt; n0109
+  n0101 --&gt; n0199
+  n0199 --&gt; n0109
+  n0101 --&gt; n0201
+  n0201 --&gt; n0109
+  n0050 --&gt; n0142
+  n0055 --&gt; n0142
+  n0142 --&gt; n0004
+  n0004 --&gt; n0255
+  n0255 --&gt; n0027
+  n0027 --&gt; n0071
+  n0071 --&gt; n0164
+  n0164 --&gt; n0119
+  n0119 --&gt; n0099
+  n0099 --&gt; n0202
+  n0202 --&gt; n0109
+  n0099 --&gt; n0204
+  n0204 --&gt; n0109
+  n0099 --&gt; n0203
+  n0203 --&gt; n0109
+  n0042 --&gt; n0143
+  n0055 --&gt; n0143
+  n0143 --&gt; n0005
+  n0005 --&gt; n0254
+  n0254 --&gt; n0033
+  n0033 --&gt; n0075
+  n0075 --&gt; n0177
+  n0177 --&gt; n0128
+  n0128 --&gt; n0096
+  n0096 --&gt; n0206
+  n0206 --&gt; n0109
+  n0096 --&gt; n0205
+  n0205 --&gt; n0109
+  n0096 --&gt; n0207
+  n0207 --&gt; n0109
+  n0047 --&gt; n0144
+  n0050 --&gt; n0144
+  n0053 --&gt; n0144
+  n0055 --&gt; n0144
+  n0144 --&gt; n0006
+  n0006 --&gt; n0257
+  n0257 --&gt; n0031
+  n0031 --&gt; n0059
+  n0059 --&gt; n0163
+  n0163 --&gt; n0121
+  n0121 --&gt; n0094
+  n0094 --&gt; n0208
+  n0208 --&gt; n0109
+  n0094 --&gt; n0210
+  n0210 --&gt; n0109
+  n0094 --&gt; n0209
+  n0209 --&gt; n0109
+  n0050 --&gt; n0145
   n0054 --&gt; n0145
-  n0145 --&gt; n0110
-  n0110 --&gt; n0080
-  n0080 --&gt; n0150
-  n0150 --&gt; n0088
-  n0080 --&gt; n0149
-  n0149 --&gt; n0088
-  n0080 --&gt; n0151
-  n0151 --&gt; n0088
-  n0046 --&gt; n0114
-  n0114 --&gt; n0003
-  n0003 --&gt; n0197
-  n0197 --&gt; n0018
-  n0018 --&gt; n0049
-  n0049 --&gt; n0129
-  n0129 --&gt; n0106
-  n0106 --&gt; n0081
-  n0081 --&gt; n0153
-  n0153 --&gt; n0088
-  n0081 --&gt; n0152
-  n0152 --&gt; n0088
-  n0081 --&gt; n0154
-  n0154 --&gt; n0088
-  n0041 --&gt; n0115
-  n0046 --&gt; n0115
-  n0115 --&gt; n0004
-  n0004 --&gt; n0198
-  n0198 --&gt; n0021
-  n0021 --&gt; n0058
-  n0058 --&gt; n0131
-  n0131 --&gt; n0098
-  n0098 --&gt; n0079
-  n0079 --&gt; n0155
-  n0155 --&gt; n0088
-  n0079 --&gt; n0157
-  n0157 --&gt; n0088
-  n0079 --&gt; n0156
-  n0156 --&gt; n0088
-  n0033 --&gt; n0116
-  n0046 --&gt; n0116
-  n0116 --&gt; n0005
-  n0005 --&gt; n0197
-  n0197 --&gt; n0026
-  n0026 --&gt; n0061
-  n0061 --&gt; n0140
-  n0140 --&gt; n0104
-  n0104 --&gt; n0076
-  n0076 --&gt; n0159
-  n0159 --&gt; n0088
-  n0076 --&gt; n0158
-  n0158 --&gt; n0088
-  n0076 --&gt; n0160
-  n0160 --&gt; n0088
-  n0038 --&gt; n0117
-  n0041 --&gt; n0117
-  n0044 --&gt; n0117
-  n0046 --&gt; n0117
-  n0117 --&gt; n0006
-  n0006 --&gt; n0200
-  n0200 --&gt; n0024
-  n0024 --&gt; n0050
-  n0050 --&gt; n0130
-  n0130 --&gt; n0100
-  n0100 --&gt; n0074
-  n0074 --&gt; n0161
-  n0161 --&gt; n0088
-  n0074 --&gt; n0163
-  n0163 --&gt; n0088
-  n0074 --&gt; n0162
-  n0162 --&gt; n0088
-  n0041 --&gt; n0118
-  n0045 --&gt; n0118
-  n0118 --&gt; n0007
-  n0007 --&gt; n0201
-  n0201 --&gt; n0029
-  n0029 --&gt; n0059
-  n0059 --&gt; n0142
-  n0142 --&gt; n0108
-  n0108 --&gt; n0075
-  n0075 --&gt; n0164
-  n0164 --&gt; n0088
-  n0075 --&gt; n0166
-  n0166 --&gt; n0088
-  n0075 --&gt; n0165
-  n0165 --&gt; n0088
-  n0043 --&gt; n0119
-  n0044 --&gt; n0119
-  n0046 --&gt; n0119
-  n0119 --&gt; n0008
-  n0008 --&gt; n0199
-  n0199 --&gt; n0020
-  n0020 --&gt; n0057
-  n0057 --&gt; n0144
-  n0144 --&gt; n0099
-  n0099 --&gt; n0078
-  n0078 --&gt; n0167
-  n0167 --&gt; n0088
-  n0078 --&gt; n0169
-  n0169 --&gt; n0088
-  n0078 --&gt; n0168
-  n0168 --&gt; n0088
-  n0040 --&gt; n0120
-  n0041 --&gt; n0120
-  n0120 --&gt; n0009
-  n0009 --&gt; n0201
-  n0201 --&gt; n0030
-  n0030 --&gt; n0056
-  n0056 --&gt; n0136
-  n0136 --&gt; n0096
-  n0096 --&gt; n0066
-  n0066 --&gt; n0170
-  n0170 --&gt; n0088
-  n0066 --&gt; n0172
-  n0172 --&gt; n0088
-  n0066 --&gt; n0171
-  n0171 --&gt; n0088
-  n0039 --&gt; n0121
-  n0121 --&gt; n0010
-  n0010 --&gt; n0201
-  n0201 --&gt; n0027
-  n0027 --&gt; n0060
-  n0060 --&gt; n0133
-  n0133 --&gt; n0107
-  n0107 --&gt; n0067
-  n0067 --&gt; n0173
-  n0173 --&gt; n0088
-  n0067 --&gt; n0175
-  n0175 --&gt; n0088
-  n0067 --&gt; n0174
-  n0174 --&gt; n0088
-  n0040 --&gt; n0122
-  n0041 --&gt; n0122
-  n0122 --&gt; n0011
-  n0011 --&gt; n0201
-  n0029 --&gt; n0063
-  n0063 --&gt; n0137
-  n0137 --&gt; n0102
-  n0102 --&gt; n0070
-  n0070 --&gt; n0176
-  n0176 --&gt; n0088
-  n0070 --&gt; n0178
-  n0178 --&gt; n0088
-  n0070 --&gt; n0177
-  n0177 --&gt; n0088
-  n0040 --&gt; n0123
-  n0123 --&gt; n0012
-  n0012 --&gt; n0201
-  n0201 --&gt; n0025
-  n0025 --&gt; n0062
-  n0062 --&gt; n0132
-  n0132 --&gt; n0097
-  n0097 --&gt; n0065
-  n0065 --&gt; n0179
-  n0179 --&gt; n0088
-  n0065 --&gt; n0181
-  n0181 --&gt; n0088
-  n0065 --&gt; n0180
-  n0180 --&gt; n0088
-  n0042 --&gt; n0124
-  n0124 --&gt; n0013
-  n0013 --&gt; n0201
-  n0201 --&gt; n0032
-  n0032 --&gt; n0051
-  n0051 --&gt; n0143
-  n0143 --&gt; n0111
-  n0111 --&gt; n0077
-  n0077 --&gt; n0182
-  n0182 --&gt; n0088
-  n0077 --&gt; n0184
-  n0184 --&gt; n0088
-  n0077 --&gt; n0183
-  n0183 --&gt; n0088
-  n0035 --&gt; n0125
-  n0036 --&gt; n0125
-  n0042 --&gt; n0125
-  n0125 --&gt; n0014
-  n0014 --&gt; n0201
-  n0201 --&gt; n0028
-  n0028 --&gt; n0048
-  n0048 --&gt; n0135
-  n0135 --&gt; n0105
-  n0105 --&gt; n0069
-  n0069 --&gt; n0185
-  n0185 --&gt; n0088
-  n0069 --&gt; n0187
-  n0187 --&gt; n0088
-  n0069 --&gt; n0186
-  n0186 --&gt; n0088
-  n0043 --&gt; n0126
-  n0046 --&gt; n0126
-  n0126 --&gt; n0015
-  n0015 --&gt; n0197
-  n0197 --&gt; n0031
-  n0031 --&gt; n0064
-  n0064 --&gt; n0139
-  n0139 --&gt; n0109
-  n0109 --&gt; n0072
-  n0072 --&gt; n0189
-  n0189 --&gt; n0088
-  n0072 --&gt; n0188
-  n0188 --&gt; n0088
-  n0072 --&gt; n0190
-  n0190 --&gt; n0088
-  n0041 --&gt; n0127
-  n0043 --&gt; n0127
-  n0045 --&gt; n0127
-  n0127 --&gt; n0016
-  n0016 --&gt; n0201
-  n0201 --&gt; n0022
-  n0022 --&gt; n0053
-  n0053 --&gt; n0138
-  n0138 --&gt; n0101
-  n0101 --&gt; n0071
-  n0071 --&gt; n0191
-  n0191 --&gt; n0088
-  n0071 --&gt; n0193
-  n0193 --&gt; n0088
-  n0071 --&gt; n0192
-  n0192 --&gt; n0088
-  n0034 --&gt; n0128
-  n0035 --&gt; n0128
-  n0036 --&gt; n0128
-  n0037 --&gt; n0128
-  n0039 --&gt; n0128
-  n0040 --&gt; n0128
-  n0042 --&gt; n0128
-  n0128 --&gt; n0017
-  n0017 --&gt; n0202
-  n0202 --&gt; n0023
-  n0023 --&gt; n0052
-  n0052 --&gt; n0141
-  n0141 --&gt; n0095
-  n0095 --&gt; n0073
-  n0073 --&gt; n0194
-  n0194 --&gt; n0088
-  n0073 --&gt; n0196
-  n0196 --&gt; n0088
-  n0073 --&gt; n0195
-  n0195 --&gt; n0088</code></pre>
+  n0145 --&gt; n0007
+  n0007 --&gt; n0258
+  n0258 --&gt; n0036
+  n0036 --&gt; n0072
+  n0072 --&gt; n0180
+  n0180 --&gt; n0133
+  n0133 --&gt; n0095
+  n0095 --&gt; n0211
+  n0211 --&gt; n0109
+  n0095 --&gt; n0213
+  n0213 --&gt; n0109
+  n0095 --&gt; n0212
+  n0212 --&gt; n0109
+  n0052 --&gt; n0146
+  n0053 --&gt; n0146
+  n0055 --&gt; n0146
+  n0146 --&gt; n0008
+  n0008 --&gt; n0256
+  n0256 --&gt; n0026
+  n0026 --&gt; n0067
+  n0067 --&gt; n0183
+  n0183 --&gt; n0120
+  n0120 --&gt; n0098
+  n0098 --&gt; n0214
+  n0214 --&gt; n0109
+  n0098 --&gt; n0216
+  n0216 --&gt; n0109
+  n0098 --&gt; n0215
+  n0215 --&gt; n0109
+  n0049 --&gt; n0147
+  n0050 --&gt; n0147
+  n0147 --&gt; n0009
+  n0009 --&gt; n0258
+  n0258 --&gt; n0037
+  n0037 --&gt; n0066
+  n0066 --&gt; n0169
+  n0169 --&gt; n0117
+  n0117 --&gt; n0082
+  n0082 --&gt; n0217
+  n0217 --&gt; n0109
+  n0082 --&gt; n0219
+  n0219 --&gt; n0109
+  n0082 --&gt; n0218
+  n0218 --&gt; n0109
+  n0048 --&gt; n0148
+  n0148 --&gt; n0010
+  n0010 --&gt; n0258
+  n0258 --&gt; n0034
+  n0034 --&gt; n0074
+  n0074 --&gt; n0166
+  n0166 --&gt; n0131
+  n0131 --&gt; n0083
+  n0083 --&gt; n0220
+  n0220 --&gt; n0109
+  n0083 --&gt; n0222
+  n0222 --&gt; n0109
+  n0083 --&gt; n0221
+  n0221 --&gt; n0109
+  n0049 --&gt; n0149
+  n0050 --&gt; n0149
+  n0149 --&gt; n0011
+  n0011 --&gt; n0258
+  n0036 --&gt; n0078
+  n0078 --&gt; n0173
+  n0173 --&gt; n0123
+  n0123 --&gt; n0088
+  n0088 --&gt; n0223
+  n0223 --&gt; n0109
+  n0088 --&gt; n0225
+  n0225 --&gt; n0109
+  n0088 --&gt; n0224
+  n0224 --&gt; n0109
+  n0049 --&gt; n0150
+  n0150 --&gt; n0012
+  n0012 --&gt; n0258
+  n0258 --&gt; n0032
+  n0032 --&gt; n0077
+  n0077 --&gt; n0165
+  n0165 --&gt; n0118
+  n0118 --&gt; n0081
+  n0081 --&gt; n0226
+  n0226 --&gt; n0109
+  n0081 --&gt; n0228
+  n0228 --&gt; n0109
+  n0081 --&gt; n0227
+  n0227 --&gt; n0109
+  n0051 --&gt; n0151
+  n0151 --&gt; n0013
+  n0013 --&gt; n0258
+  n0258 --&gt; n0041
+  n0041 --&gt; n0061
+  n0061 --&gt; n0182
+  n0182 --&gt; n0138
+  n0138 --&gt; n0097
+  n0097 --&gt; n0229
+  n0229 --&gt; n0109
+  n0097 --&gt; n0231
+  n0231 --&gt; n0109
+  n0097 --&gt; n0230
+  n0230 --&gt; n0109
+  n0044 --&gt; n0152
+  n0045 --&gt; n0152
+  n0051 --&gt; n0152
+  n0152 --&gt; n0014
+  n0014 --&gt; n0258
+  n0258 --&gt; n0035
+  n0035 --&gt; n0057
+  n0057 --&gt; n0168
+  n0168 --&gt; n0129
+  n0129 --&gt; n0087
+  n0087 --&gt; n0232
+  n0232 --&gt; n0109
+  n0087 --&gt; n0234
+  n0234 --&gt; n0109
+  n0087 --&gt; n0233
+  n0233 --&gt; n0109
+  n0052 --&gt; n0153
+  n0055 --&gt; n0153
+  n0153 --&gt; n0015
+  n0015 --&gt; n0254
+  n0254 --&gt; n0040
+  n0040 --&gt; n0079
+  n0079 --&gt; n0176
+  n0176 --&gt; n0134
+  n0134 --&gt; n0090
+  n0090 --&gt; n0236
+  n0236 --&gt; n0109
+  n0090 --&gt; n0235
+  n0235 --&gt; n0109
+  n0090 --&gt; n0237
+  n0237 --&gt; n0109
+  n0050 --&gt; n0154
+  n0052 --&gt; n0154
+  n0054 --&gt; n0154
+  n0154 --&gt; n0016
+  n0016 --&gt; n0258
+  n0258 --&gt; n0028
+  n0028 --&gt; n0063
+  n0063 --&gt; n0174
+  n0174 --&gt; n0122
+  n0122 --&gt; n0089
+  n0089 --&gt; n0238
+  n0238 --&gt; n0109
+  n0089 --&gt; n0240
+  n0240 --&gt; n0109
+  n0089 --&gt; n0239
+  n0239 --&gt; n0109
+  n0043 --&gt; n0155
+  n0044 --&gt; n0155
+  n0045 --&gt; n0155
+  n0046 --&gt; n0155
+  n0048 --&gt; n0155
+  n0049 --&gt; n0155
+  n0051 --&gt; n0155
+  n0155 --&gt; n0017
+  n0017 --&gt; n0259
+  n0259 --&gt; n0030
+  n0030 --&gt; n0062
+  n0062 --&gt; n0178
+  n0178 --&gt; n0116
+  n0116 --&gt; n0091
+  n0091 --&gt; n0241
+  n0241 --&gt; n0109
+  n0091 --&gt; n0243
+  n0243 --&gt; n0109
+  n0091 --&gt; n0242
+  n0242 --&gt; n0109
+  n0043 --&gt; n0156
+  n0046 --&gt; n0156
+  n0051 --&gt; n0156
+  n0156 --&gt; n0018
+  n0018 --&gt; n0260
+  n0260 --&gt; n0029
+  n0029 --&gt; n0070
+  n0070 --&gt; n0171
+  n0171 --&gt; n0124
+  n0124 --&gt; n0102
+  n0102 --&gt; n0186
+  n0186 --&gt; n0109
+  n0102 --&gt; n0247
+  n0247 --&gt; n0109
+  n0102 --&gt; n0253
+  n0253 --&gt; n0109
+  n0043 --&gt; n0157
+  n0044 --&gt; n0157
+  n0045 --&gt; n0157
+  n0046 --&gt; n0157
+  n0157 --&gt; n0019
+  n0019 --&gt; n0261
+  n0261 --&gt; n0029
+  n0029 --&gt; n0076
+  n0076 --&gt; n0170
+  n0170 --&gt; n0127
+  n0127 --&gt; n0080
+  n0080 --&gt; n0188
+  n0188 --&gt; n0109
+  n0080 --&gt; n0192
+  n0192 --&gt; n0109
+  n0080 --&gt; n0191
+  n0191 --&gt; n0109
+  n0047 --&gt; n0158
+  n0050 --&gt; n0158
+  n0051 --&gt; n0158
+  n0158 --&gt; n0020
+  n0020 --&gt; n0262
+  n0262 --&gt; n0039
+  n0039 --&gt; n0073
+  n0073 --&gt; n0181
+  n0181 --&gt; n0125
+  n0125 --&gt; n0085
+  n0085 --&gt; n0190
+  n0190 --&gt; n0109
+  n0085 --&gt; n0185
+  n0185 --&gt; n0109
+  n0085 --&gt; n0248
+  n0248 --&gt; n0109
+  n0046 --&gt; n0159
+  n0048 --&gt; n0159
+  n0051 --&gt; n0159
+  n0159 --&gt; n0021
+  n0021 --&gt; n0263
+  n0263 --&gt; n0038
+  n0038 --&gt; n0068
+  n0068 --&gt; n0172
+  n0172 --&gt; n0132
+  n0132 --&gt; n0086
+  n0086 --&gt; n0252
+  n0252 --&gt; n0109
+  n0086 --&gt; n0246
+  n0246 --&gt; n0109
+  n0086 --&gt; n0245
+  n0245 --&gt; n0109
+  n0047 --&gt; n0160
+  n0049 --&gt; n0160
+  n0050 --&gt; n0160
+  n0160 --&gt; n0022
+  n0022 --&gt; n0264
+  n0264 --&gt; n0038
+  n0038 --&gt; n0069
+  n0069 --&gt; n0175
+  n0175 --&gt; n0137
+  n0137 --&gt; n0093
+  n0093 --&gt; n0187
+  n0187 --&gt; n0109
+  n0093 --&gt; n0189
+  n0189 --&gt; n0109
+  n0093 --&gt; n0244
+  n0244 --&gt; n0109
+  n0044 --&gt; n0161
+  n0047 --&gt; n0161
+  n0048 --&gt; n0161
+  n0049 --&gt; n0161
+  n0051 --&gt; n0161
+  n0161 --&gt; n0023
+  n0023 --&gt; n0265
+  n0265 --&gt; n0037
+  n0037 --&gt; n0060
+  n0060 --&gt; n0179
+  n0179 --&gt; n0136
+  n0136 --&gt; n0092
+  n0092 --&gt; n0249
+  n0249 --&gt; n0109
+  n0092 --&gt; n0250
+  n0250 --&gt; n0109
+  n0092 --&gt; n0251
+  n0251 --&gt; n0109</code></pre>
       <h3>skill目的・flow・task・consumer・state・evidence</h3>
       <pre class="mermaid" id="skill-map"><code>flowchart LR
   s0001[&quot;automation/skills/news-grasp-e2e-discipline/SKILL.md&quot;]
@@ -811,6 +973,12 @@
           <tr><td><code>A03</code></td><td><code>R03</code></td><td><code>TODO-146</code></td><td><code>config/news_grasp_constitution_trace_v1.json</code></td><td><code>acceptance_trace_compiled</code><br>reject_unbound_active_object</td></tr>
           <tr><td><code>A05</code></td><td><code>R05</code></td><td><code>TODO-146</code></td><td><code>tools/news_grasp_constitution.py</code></td><td><code>mermaid_projection_compiled</code><br>reject_projection_drift</td></tr>
           <tr><td><code>A15</code></td><td><code>R15</code></td><td><code>TODO-146</code></td><td><code>tools/news_grasp_task_packet.py</code></td><td><code>luna_packet_decision_complete</code><br>return_to_sol_before_execution</td></tr>
+          <tr><td><code>A18</code></td><td><code>R18</code></td><td><code>TODO-20260827-RC01</code></td><td><code>tools/deepdive_quality.py</code></td><td><code>deepdive_transport_provenance_bound</code><br>one_shot_system_transport_or_typed_red</td></tr>
+          <tr><td><code>A19</code></td><td><code>R19</code></td><td><code>TODO-20260827-RC02</code></td><td><code>tools/deepdive_quality.py</code></td><td><code>deepdive_issue_bundle_v1_bound</code><br>reject_partial_bundle_before_public</td></tr>
+          <tr><td><code>A20</code></td><td><code>R20</code></td><td><code>TODO-20260827-RC03</code></td><td><code>tools/news_grasp_recovery_freshness.py</code></td><td><code>recovery_runtime_freshness_admitted</code><br>rebuild_from_trusted_generation_or_typed_red</td></tr>
+          <tr><td><code>A21</code></td><td><code>R21</code></td><td><code>TODO-20260827-RC04</code></td><td><code>tools/news_grasp_recovery_closeout.py</code></td><td><code>finalizer_exact_args_bound</code><br>resume_same_receipt_only_after_finalizer_crash</td></tr>
+          <tr><td><code>A22</code></td><td><code>R22</code></td><td><code>TODO-20260827-RC05</code></td><td><code>tools/news_grasp_recovery_closeout.py</code></td><td><code>known_receipt_drift_resealed_once</code><br>unknown_or_applied_drift_to_closeout_blocker</td></tr>
+          <tr><td><code>A23</code></td><td><code>R23</code></td><td><code>TODO-20260827-RC06</code></td><td><code>tools/news_grasp_operational_contract.py</code></td><td><code>post_public_green_bounded_closeout</code><br>unknown_operation_to_post_public_closeout_blocker</td></tr>
           <tr><td><code>A04</code></td><td><code>R04</code></td><td><code>TODO-147</code></td><td><code>config/news_grasp_spec_disposition_v1.json</code></td><td><code>all_specs_dispositioned</code><br>disable_then_dependency_scan_before_delete</td></tr>
           <tr><td><code>A08</code></td><td><code>R08</code></td><td><code>TODO-148</code></td><td><code>config/news_grasp_skill_binding_v1.json</code></td><td><code>skills_audited_and_bound</code><br>disable_unclassified_skill_then_reconcile_installer</td></tr>
           <tr><td><code>A06</code></td><td><code>R06</code></td><td><code>TODO-149</code></td><td><code>tools/news_grasp_change_control.py</code></td><td><code>all_product_mutation_routes_admitted_by_one_consumer</code><br>reject_packet_then_reseal_against_authoritative_generation</td></tr>
@@ -829,10 +997,10 @@
     <section class="tab-panel" role="tabpanel" id="playground" aria-labelledby="tab-playground" hidden>
       <h2>生成証拠</h2>
       <div class="playground">
-        <p><strong>constitution</strong><br><code>9dbb8f0d8f953eb0e85380d12be506a578bc315da3f6c8b2d70634c9ce5e1a84</code></p>
-        <p><strong>trace</strong><br><code>e101f7c0c95fa7952c4d85258fb3eaf5495abf5c69b8f1f222576689e990dd1e</code></p>
+        <p><strong>constitution</strong><br><code>5456cf73fdfc684cd96a540360b95cd436b30ace85210b199dc75b1fbdf95309</code></p>
+        <p><strong>trace</strong><br><code>e9f6a6f551407e8242542df9b13da5f6f60de26231e67c9574660e762d06c8c1</code></p>
         <p><strong>projection</strong><br><code>691cc6ae3de9fa93e550490aa9f9c4ee07824eb2a8caa296163798a2b5f32418</code></p>
-        <p><strong>product assets</strong><br><code>078c7ffea642ce77aa6479d5ab72a94fd0bf59d6f11a24bca82d50443ec6abc2</code></p>
+        <p><strong>product assets</strong><br><code>50a7dc04d64afe34a22b38b23587e883c56ed34ba2ff981cac7de994921ba7bb</code></p>
         <p id="prompt-text">News-Graspの変更をNEWS_GRASP_CONSTITUTION_V1へ照合し、clause、acceptance、consumer、state、recovery、evidence、test、physical deliveryを列挙する。</p>
         <button id="copy-prompt" type="button">照合プロンプトをコピー</button>
         <p id="copy-status" role="status" aria-live="polite"></p>
