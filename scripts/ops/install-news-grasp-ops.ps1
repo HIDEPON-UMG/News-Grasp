@@ -1541,7 +1541,11 @@ $stableTaskAuthority = [ordered]@{
     repoArgumentCount = 0
 }
 $stableTaskAuthority = (($stableTaskAuthority | ConvertTo-Json -Depth 6) | ConvertFrom-Json -ErrorAction Stop)
-$stableAuthorityBody = $stableTaskAuthority | ConvertTo-Json -Depth 6 -Compress
+$stableAuthorityBody = (($stableTaskAuthority | ConvertTo-Json -Depth 6 -Compress) `
+    -replace '\\u0026', '&' `
+    -replace '\\u0027', "'" `
+    -replace '\\u003c', '<' `
+    -replace '\\u003e', '>')
 $stableAuthorityHasher = [Security.Cryptography.SHA256]::Create()
 try {
     $stableAuthorityBytes = [Text.Encoding]::UTF8.GetBytes($stableAuthorityBody)

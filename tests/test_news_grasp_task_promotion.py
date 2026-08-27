@@ -80,12 +80,14 @@ def test_installer_canonicalizes_and_revalidates_stable_task_authority() -> None
         "$stableTaskAuthority = (($stableTaskAuthority | ConvertTo-Json -Depth 6) | "
         "ConvertFrom-Json -ErrorAction Stop)"
     )
-    hash_at = source.index("$stableAuthorityBody = $stableTaskAuthority | ConvertTo-Json")
+    hash_at = source.index("$stableAuthorityBody = (($stableTaskAuthority | ConvertTo-Json")
     write_at = source.index("Write-AtomicUtf8Text -Path $stableTaskAuthorityPath")
     validate_at = source.index("from tools.news_grasp_generation import validate_stable_task_authority")
     installed_at = source.index("$stableTaskAuthorityInstalled = Read-NewsGraspVerifiedFile")
 
     assert normalize_at < hash_at < write_at < validate_at < installed_at
+    for escaped in (r"\\u0026", r"\\u0027", r"\\u003c", r"\\u003e"):
+        assert f"-replace '{escaped}'" in source
     assert "& $runtimePythonPath -I -c $stableAuthorityValidationScript" in source
     assert "throw 'NEWS_GRASP_STABLE_TASK_AUTHORITY_INVALID'" in source
 
