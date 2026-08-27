@@ -531,7 +531,7 @@ def test_post_reporter_recovery_continuation_allows_only_remaining_generation_ro
     assert continuation["allowedModelRoutes"] == [
         "newsroom_editor",
         "deepdive",
-        "repair:generation-quality",
+        "repair:daily-quality",
     ]
     high_cost.reserve_scheduled_model_call_in_store(
         store=store,
@@ -671,7 +671,10 @@ def test_recovery_continuation_chains_only_into_generation_quality_repair(
         resume_stage="generation-quality-repair",
     )
     assert second["sourceAdmissionReceiptSha256"] == first["receiptSha256"]
-    assert second["allowedModelRoutes"] == ["repair:generation-quality"]
+    assert second["allowedModelRoutes"] == [
+        "repair:daily-quality",
+        "repair:generation-quality",
+    ]
     with pytest.raises(
         high_cost.ControlError,
         match="SCHEDULED_RECOVERY_CONTINUATION_ROUTE_FORBIDDEN",

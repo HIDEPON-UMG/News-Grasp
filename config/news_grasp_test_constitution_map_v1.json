@@ -1,8 +1,8 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 2955,
-  "collectedNodeSetSha256": "e4ad4a2702fa8609d8c58fc63182ab32b86eb734a4b82a6717bd4e2141a37269",
+  "collectedNodeCount": 2956,
+  "collectedNodeSetSha256": "11d39c594c5253b754e8ca9e0dd4ac053a5e726f4093095e78b4ba372aaf3457",
   "files": [
     {
       "path": "tests/test_20260813_control_plane_repair.py",
@@ -2919,7 +2919,7 @@
     },
     {
       "path": "tests/test_news_grasp_public_recovery_l5.py",
-      "sha256": "4869dd70191ed20f732afef0ba8c756cfc49222813cadf0aff086cccb8ef4585",
+      "sha256": "10efe40dff3945a0b8dcda3df4ab844eced200e80d88b8fa7015725b30372384",
       "nodeCount": 1,
       "nodeIds": [
         "tests/test_news_grasp_public_recovery_l5.py::test_20260827_public_recovery_production_composition_l5"
@@ -2931,8 +2931,8 @@
     },
     {
       "path": "tests/test_news_grasp_recovery_closeout.py",
-      "sha256": "cbc9cf1480d788b3b737f688f53e2df88114a24f141b75a03da6751aa71ba556",
-      "nodeCount": 25,
+      "sha256": "10a50f96b608734e2c4ba9e0a7c96a5ee1d70f7be46e9715cdbe7f8faf8d7731",
+      "nodeCount": 26,
       "nodeIds": [
         "tests/test_news_grasp_recovery_closeout.py::test_actual_runner_blocks_non_finalizer_reentry_after_public_green",
         "tests/test_news_grasp_recovery_closeout.py::test_applied_receipt_ledger_blocks_reseal",
@@ -2951,6 +2951,7 @@
         "tests/test_news_grasp_recovery_closeout.py::test_post_public_green_forbidden_operation_is_blocked[report_polish]",
         "tests/test_news_grasp_recovery_closeout.py::test_post_public_green_forbidden_operation_is_blocked[runner_regeneration]",
         "tests/test_news_grasp_recovery_closeout.py::test_post_public_green_unknown_drift_is_evidenced",
+        "tests/test_news_grasp_recovery_closeout.py::test_recovery_runner_preserves_canonical_paths_and_seals_lineage",
         "tests/test_news_grasp_recovery_closeout.py::test_reseal_lock_rejects_parallel_one_shot",
         "tests/test_news_grasp_recovery_closeout.py::test_reseal_transaction_recovers_uncaught_crash_on_next_one_shot",
         "tests/test_news_grasp_recovery_closeout.py::test_reseal_transaction_rolls_back_near_limit_receipt",
@@ -4036,7 +4037,7 @@
     },
     {
       "path": "tests/test_runner_convergence_contract.py",
-      "sha256": "c1c1352088644020b437b85a10ae6266e5caa9a4577c400e48d1bd61d968f5b5",
+      "sha256": "b6fdc126aa5c4032aa349dd9a12dfeb534b41828a24cc45a6006933c516dc2d6",
       "nodeCount": 209,
       "nodeIds": [
         "tests/test_runner_convergence_contract.py::test_atomic_install_failure_preserves_old_destination",
@@ -4360,7 +4361,7 @@
     },
     {
       "path": "tests/test_scheduled_high_cost_separation.py",
-      "sha256": "adabda7aa47593d12c434bb1909c395d0980ed71af3deef83e0c1fbbf3096d92",
+      "sha256": "3c08487e695e14dcaf8adf87007c0af6db816649e64bba2e62a53c59b8654e65",
       "nodeCount": 85,
       "nodeIds": [
         "tests/test_scheduled_high_cost_separation.py::test_attempt_status_is_derived_from_canonical_ledger_not_caller_text",
