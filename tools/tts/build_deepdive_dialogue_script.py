@@ -4,6 +4,7 @@ import argparse
 import ast
 from dataclasses import dataclass
 from datetime import date, timedelta
+import hashlib
 import re
 from pathlib import Path
 
@@ -39,6 +40,11 @@ class ContextSource:
 def _frontmatter_value(markdown: str, key: str, default: str) -> str:
     frontmatter = _frontmatter_map(markdown)
     return frontmatter.get(key, default) or default
+
+
+def _canonical_source_sha256(markdown: str) -> str:
+    normalized = markdown.replace("\r\n", "\n").replace("\r", "\n")
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
 
 def _frontmatter_map(markdown: str) -> dict[str, str]:
@@ -268,6 +274,10 @@ def _context_source_dates(markdown: str) -> list[str]:
 def _existing_script_is_valid(markdown: str, source_markdown: str, source_name: str) -> bool:
     if _frontmatter_value(markdown, "source", "") != source_name:
         return False
+    if _frontmatter_value(markdown, "source_sha256", "") != _canonical_source_sha256(
+        source_markdown
+    ):
+        return False
     return not deepdive_dialogue.validate_dialogue_document(
         markdown,
         source_markdown=source_markdown,
@@ -394,6 +404,7 @@ def build_dialogue_markdown(
 title: "DeepDive解説対談: {title}"
 date: "{issue_date}"
 source: "{source_name}"
+source_sha256: "{_canonical_source_sha256(source_markdown)}"
 type: "deepdive-dialogue"
 audio_target_minutes: {audio_target_minutes}
 {_context_frontmatter(contexts)}

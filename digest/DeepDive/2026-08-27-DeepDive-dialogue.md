@@ -2,6 +2,7 @@
 title: "DeepDive解説対談: 米景気減速、PCE再加速が利上げを呼ぶ"
 date: "2026-08-27"
 source: "digest/DeepDive/2026-08-27-DeepDive.md"
+source_sha256: "5d90f2896e66fc7f5da07a280f9f3826df787385c9a5363fe8ca2f14fdd3b5ea"
 type: "deepdive-dialogue"
 audio_target_minutes: 5
 context_sources:
@@ -19,9 +20,9 @@ roles:
 
 <!-- value:current_signal evidence:source:0 support:source:1 -->
 
-若手: 「前回は日本銀行の利上げペースと企業財務の組み替えを扱った。」という記述で、以前と違う対象はどこですか。
+若手: 「<!--claim-source:{"claimId":"claim-001","claim":"実質GDPが年率1.5%へ減速した","sourceUrl":"https://www.bea。」という記述で、以前と違う対象はどこですか。
 
-先輩: 前回は日本銀行の利上げペースと企業財務の組み替えを扱った。 対照になる材料は、今回の変化点は、米国で実質GDPが年率1.5%へ減速する一方、7月PCEが前年比3.7%へ上がり、FOMCの据え置きに3票の利上げ反対票が付いたことだ。 両者の対象と時点の差が、今回更新された認識です。
+先輩: <!--claim-source:{"claimId":"claim-001","claim":"実質GDPが年率1.5%へ減速した","sourceUrl":"https://www.bea.gov/news/2026/gdp-second-estimate-and-corporate-profits-2nd-quarter-2026","evi。 対照になる材料は、今回の変化点は、米国で実質GDPが年率1.5%へ減速する一方、7月PCEが前年比3.7%へ上がり、FOMCの据え置きに3票の利上げ反対票が付いたことだ。 両者の対象と時点の差が、今回更新された認識です。
 
 <!-- value:evidence evidence:source:2 support:source:3 -->
 

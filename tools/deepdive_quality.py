@@ -12,6 +12,7 @@ import sys
 import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, datetime, timedelta, timezone
+from html import unescape
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
@@ -23,17 +24,25 @@ from tools.tts import deepdive_dialogue, proc
 from tools.validate_deepdive_urls import extract_urls
 
 
-SCHEMA = "DEEPDIVE_SOURCE_PROVENANCE_V1"
+LEGACY_SCHEMA = "DEEPDIVE_SOURCE_PROVENANCE_V1"
+SCHEMA = "DEEPDIVE_SOURCE_PROVENANCE_V2"
 REPORT_SCHEMA = "DEEPDIVE_SHARED_QUALITY_REPORT_V1"
 MAX_AUDIT_PERIOD_DAYS = 31
 OBSERVATION_CACHE_SCHEMA = "DEEPDIVE_URL_OBSERVATION_CACHE_V1"
 HEX_64_RE = re.compile(r"^[a-f0-9]{64}$")
 ISSUE_DATE_RE = re.compile(r"^(20\d{2}-\d{2}-\d{2})-DeepDive\.md$")
+CLAIM_SOURCE_ENFORCEMENT_DATE = date(2026, 8, 25)
+CLAIM_SOURCE_RE = re.compile(
+    r"<!--\s*claim-source:\s*(\{.*?\})\s*-->",
+    re.DOTALL,
+)
+CLAIM_ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
 MAX_OBSERVED_BYTES = 4 * 1024 * 1024
+MAX_CLAIM_EVIDENCE_BYTES = 512 * 1024
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
     "AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/124.0 Safari/537.36"
+    "Chrome/138.0.0.0 Safari/537.36"
 )
 SOFT_404_PATTERNS = (
     re.compile(rb"<title[^>]*>[^<]*(?:404|not[ -]?found|page not found)[^<]*</title>", re.I),
@@ -161,11 +170,16 @@ def _write_observation_cache(
     path: Path,
     observations: dict[str, dict[str, object]],
 ) -> None:
+    cache_fields = ("url", "finalUrl", "httpStatus", "fetchedAt", "contentSha256")
     value: dict[str, Any] = {
         "schemaVersion": OBSERVATION_CACHE_SCHEMA,
         "status": "Green",
         "observations": {
-            url: observations[url] for url in sorted(observations)
+            url: {
+                field: observations[url][field]
+                for field in cache_fields
+            }
+            for url in sorted(observations)
         },
     }
     value["cacheSha256"] = _canonical_sha256(value)
@@ -210,6 +224,85 @@ def _article_url_locations(article_text: str) -> dict[str, list[str]]:
     return {url: sorted(locations) for url, locations in sorted(result.items())}
 
 
+def _normalized_evidence_text(value: str) -> str:
+    """取得本文と短い根拠spanをmarkup差に左右されず照合する。"""
+
+    without_markup = re.sub(r"<[^>]+>", " ", unescape(value))
+    return re.sub(r"\s+", " ", without_markup).strip().casefold()
+
+
+def _claim_source_declarations(article_text: str) -> list[dict[str, str]]:
+    declarations: list[dict[str, str]] = []
+    seen_ids: set[str] = set()
+    for match in CLAIM_SOURCE_RE.finditer(article_text):
+        try:
+            raw = json.loads(match.group(1))
+        except json.JSONDecodeError as error:
+            raise DeepDiveQualityError(
+                "DEEPDIVE_CLAIM_SOURCE_FIT_INVALID malformed_binding"
+            ) from error
+        if not isinstance(raw, dict) or set(raw) != {
+            "claimId",
+            "claim",
+            "sourceUrl",
+            "evidence",
+        }:
+            raise DeepDiveQualityError(
+                "DEEPDIVE_CLAIM_SOURCE_FIT_INVALID binding_schema"
+            )
+        row = {key: str(raw[key]).strip() for key in raw}
+        claim_id = row["claimId"]
+        if (
+            CLAIM_ID_RE.fullmatch(claim_id) is None
+            or claim_id in seen_ids
+            or not row["claim"]
+            or not row["sourceUrl"].startswith(("http://", "https://"))
+            or len(_normalized_evidence_text(row["evidence"])) < 12
+        ):
+            raise DeepDiveQualityError(
+                "DEEPDIVE_CLAIM_SOURCE_FIT_INVALID binding_value"
+            )
+        seen_ids.add(claim_id)
+        declarations.append(row)
+    return declarations
+
+
+def _claim_binding_fingerprint(row: dict[str, str]) -> dict[str, str]:
+    return {
+        "claimId": row["claimId"],
+        "claimSha256": hashlib.sha256(row["claim"].encode("utf-8")).hexdigest(),
+        "sourceUrl": row["sourceUrl"],
+        "evidenceSha256": hashlib.sha256(
+            _normalized_evidence_text(row["evidence"]).encode("utf-8")
+        ).hexdigest(),
+    }
+
+
+def _build_claim_bindings(
+    *,
+    article_text: str,
+    issue_date: str,
+    observed: dict[str, dict[str, object]],
+) -> list[dict[str, str]]:
+    declarations = _claim_source_declarations(article_text)
+    if date.fromisoformat(issue_date) >= CLAIM_SOURCE_ENFORCEMENT_DATE and not declarations:
+        raise DeepDiveQualityError(
+            "DEEPDIVE_CLAIM_SOURCE_FIT_INVALID bindings_missing"
+        )
+    bindings: list[dict[str, str]] = []
+    for row in declarations:
+        record = observed.get(row["sourceUrl"])
+        observed_text = str((record or {}).get("observedText") or "")
+        evidence = _normalized_evidence_text(row["evidence"])
+        if not record or not observed_text or evidence not in _normalized_evidence_text(observed_text):
+            raise DeepDiveQualityError(
+                "DEEPDIVE_CLAIM_SOURCE_FIT_INVALID "
+                f"claim={row['claimId']} source={row['sourceUrl']}"
+            )
+        bindings.append(_claim_binding_fingerprint(row))
+    return sorted(bindings, key=lambda item: item["claimId"])
+
+
 def _normalize_fetch_records(
     records: list[dict[str, object]],
     *,
@@ -220,7 +313,12 @@ def _normalize_fetch_records(
     normalized: dict[str, dict[str, object]] = {}
     required = {"url", "finalUrl", "httpStatus", "fetchedAt", "contentSha256"}
     for row in records:
-        if not isinstance(row, dict) or set(row) != required:
+        if (
+            not isinstance(row, dict)
+            or not required.issubset(row)
+            or set(row) - required != ({"observedText"} if "observedText" in row else set())
+            or ("observedText" in row and not isinstance(row["observedText"], str))
+        ):
             raise DeepDiveQualityError("DEEPDIVE_FETCH_RECORD_INVALID")
         url = str(row["url"])
         status = row["httpStatus"]
@@ -262,6 +360,7 @@ def build_provenance_manifest(
     except OSError as error:
         raise DeepDiveQualityError("DEEPDIVE_ARTICLE_MISSING") from error
     text = article.read_text(encoding="utf-8-sig")
+    issue_date = _issue_date(article)
     locations = _article_url_locations(text)
     if not locations:
         raise DeepDiveQualityError("DEEPDIVE_URL_SET_EMPTY")
@@ -281,15 +380,33 @@ def build_provenance_manifest(
         }
         for url in sorted(locations)
     ]
+    claim_bindings = _build_claim_bindings(
+        article_text=text,
+        issue_date=issue_date,
+        observed=observed,
+    )
+    schema = (
+        SCHEMA
+        if date.fromisoformat(issue_date) >= CLAIM_SOURCE_ENFORCEMENT_DATE
+        or claim_bindings
+        else LEGACY_SCHEMA
+    )
     value: dict[str, Any] = {
-        "schemaVersion": SCHEMA,
+        "schemaVersion": schema,
         "status": "Green",
-        "issueDate": _issue_date(article),
+        "issueDate": issue_date,
         "articlePath": _portable_article_path(article),
         "articleSha256": _canonical_text_sha256(article.read_bytes()),
         "sources": sources,
         "sourceSetSha256": _canonical_sha256(sources),
     }
+    if schema == SCHEMA:
+        value.update(
+            {
+                "claimBindings": claim_bindings,
+                "claimSetSha256": _canonical_sha256(claim_bindings),
+            }
+        )
     value["manifestSha256"] = canonical_manifest_sha256(value)
     _atomic_write_json(Path(output_path).resolve(), value)
     return value
@@ -347,7 +464,71 @@ def validate_rendered_public_surface(
         f"DEEPDIVE_RENDERED_PUBLIC_HREF_MISSING {href}"
         for href in sorted(required_hrefs - collector.hrefs)
     ]
+    if value.get("schemaVersion") == SCHEMA:
+        source_sha = str(value.get("articleSha256") or "")
+        source_marker = re.search(
+            r'<meta\s+name=["\']news-grasp-source-sha256["\']\s+'
+            r'content=["\']([a-f0-9]{64})["\']\s*/?>',
+            rendered_text,
+            re.IGNORECASE,
+        )
+        if source_marker is None:
+            issues.append("DEEPDIVE_RENDERED_SOURCE_SHA_MISSING")
+        elif source_marker.group(1).casefold() != source_sha.casefold():
+            issues.append("DEEPDIVE_RENDERED_SOURCE_DRIFT")
     return issues, [_audit_file_evidence(rendered, rendered_bytes)]
+
+
+def validate_claim_source_fit(
+    article_path: Path,
+    manifest_path: Path,
+) -> list[str]:
+    """生成時に実取得本文へ照合したclaim bindingを記事とmanifestへ再束縛する。"""
+
+    article = Path(article_path).resolve()
+    manifest = Path(manifest_path).resolve()
+    if not article.is_file() or not manifest.is_file():
+        return []
+    try:
+        article_text = article.read_text(encoding="utf-8-sig")
+        value = json.loads(manifest.read_text(encoding="utf-8-sig"))
+        issue_day = date.fromisoformat(_issue_date(article))
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError):
+        return ["DEEPDIVE_CLAIM_SOURCE_FIT_INVALID"]
+    if not isinstance(value, dict):
+        return ["DEEPDIVE_CLAIM_SOURCE_FIT_INVALID"]
+    schema = value.get("schemaVersion")
+    if schema == LEGACY_SCHEMA:
+        return (
+            ["DEEPDIVE_CLAIM_SOURCE_MANIFEST_LEGACY"]
+            if issue_day >= CLAIM_SOURCE_ENFORCEMENT_DATE
+            else []
+        )
+    if schema != SCHEMA:
+        return ["DEEPDIVE_CLAIM_SOURCE_SCHEMA_INVALID"]
+    try:
+        expected = sorted(
+            (_claim_binding_fingerprint(row) for row in _claim_source_declarations(article_text)),
+            key=lambda item: item["claimId"],
+        )
+    except DeepDiveQualityError as error:
+        return [str(error)]
+    if issue_day >= CLAIM_SOURCE_ENFORCEMENT_DATE and not expected:
+        return ["DEEPDIVE_CLAIM_SOURCE_BINDINGS_MISSING"]
+    actual = value.get("claimBindings")
+    issues: list[str] = []
+    if actual != expected:
+        issues.append("DEEPDIVE_CLAIM_SOURCE_BINDING_DRIFT")
+    if value.get("claimSetSha256") != _canonical_sha256(actual):
+        issues.append("DEEPDIVE_CLAIM_SOURCE_SET_DRIFT")
+    source_urls = {
+        str(row.get("url"))
+        for row in value.get("sources", [])
+        if isinstance(row, dict)
+    }
+    if any(row["sourceUrl"] not in source_urls for row in expected):
+        issues.append("DEEPDIVE_CLAIM_SOURCE_URL_UNBOUND")
+    return sorted(set(issues))
 
 
 def _validate_provenance_with_evidence(
@@ -389,7 +570,10 @@ def _validate_provenance_with_evidence(
         "sourceSetSha256",
         "manifestSha256",
     }
-    if set(value) != required_fields or value.get("schemaVersion") != SCHEMA:
+    schema = value.get("schemaVersion")
+    if schema == SCHEMA:
+        required_fields.update({"claimBindings", "claimSetSha256"})
+    if set(value) != required_fields or schema not in {LEGACY_SCHEMA, SCHEMA}:
         return ["DEEPDIVE_PROVENANCE_SCHEMA_INVALID"], evidence
     if value.get("status") != "Green":
         issues.append("DEEPDIVE_PROVENANCE_NOT_GREEN")
@@ -410,6 +594,10 @@ def _validate_provenance_with_evidence(
         return issues + ["DEEPDIVE_PROVENANCE_SOURCES_INVALID"], evidence
     if value.get("sourceSetSha256") != _canonical_sha256(sources):
         issues.append("DEEPDIVE_SOURCE_SET_DRIFT")
+    if schema == SCHEMA and value.get("claimSetSha256") != _canonical_sha256(
+        value.get("claimBindings")
+    ):
+        issues.append("DEEPDIVE_CLAIM_SOURCE_SET_DRIFT")
     actual_urls: set[str] = set()
     required_source_fields = {
         "url",
@@ -492,6 +680,9 @@ def _observed_record(
         "httpStatus": status,
         "fetchedAt": datetime.now(timezone.utc).isoformat(),
         "contentSha256": hashlib.sha256(observed).hexdigest(),
+        "observedText": observed[:MAX_CLAIM_EVIDENCE_BYTES].decode(
+            "utf-8", errors="replace"
+        ),
     }
 
 
@@ -667,6 +858,13 @@ def capture_period_provenance(
         )
         current += timedelta(days=1)
     unique_urls = sorted({url for urls in article_urls.values() for url in urls})
+    claim_source_urls = {
+        row["sourceUrl"]
+        for article in articles
+        for row in _claim_source_declarations(
+            article.read_text(encoding="utf-8-sig")
+        )
+    }
     cache_path = (
         Path(observation_cache_path).resolve()
         if observation_cache_path is not None
@@ -680,8 +878,15 @@ def capture_period_provenance(
     observed = {
         url: record for url, record in observed.items() if url in unique_urls
     }
-    reused_url_count = len(observed)
-    pending_urls = [url for url in unique_urls if url not in observed]
+    pending_urls = [
+        url
+        for url in unique_urls
+        if url not in observed
+        or (url in claim_source_urls and not observed[url].get("observedText"))
+    ]
+    reused_url_count = len(observed) - len(
+        [url for url in pending_urls if url in observed]
+    )
     failures: list[dict[str, str]] = []
     worker_count = max(1, min(8, len(pending_urls)))
     with ThreadPoolExecutor(max_workers=worker_count) as executor:
@@ -748,6 +953,31 @@ def _dialogue_paths_for_period(
     return paths
 
 
+def _dialogue_source_lineage_issues(
+    dialogue_path: Path,
+    manifest_path: Path,
+) -> list[str]:
+    if not dialogue_path.is_file() or not manifest_path.is_file():
+        return []
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
+        dialogue_text = dialogue_path.read_text(encoding="utf-8-sig")
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return ["DEEPDIVE_DIALOGUE_SOURCE_LINEAGE_INVALID"]
+    if not isinstance(manifest, dict) or manifest.get("schemaVersion") != SCHEMA:
+        return []
+    match = re.search(
+        r'^source_sha256:\s*["\']?([a-f0-9]{64})["\']?\s*$',
+        dialogue_text,
+        re.MULTILINE,
+    )
+    if match is None:
+        return ["DEEPDIVE_DIALOGUE_SOURCE_SHA_MISSING"]
+    if match.group(1).casefold() != str(manifest.get("articleSha256") or "").casefold():
+        return ["DEEPDIVE_DIALOGUE_SOURCE_DRIFT"]
+    return []
+
+
 def audit_issue(
     *,
     repo_root: Path,
@@ -772,6 +1002,10 @@ def audit_issue(
     if provenance_issues:
         issue_codes.append("deepdive_url_provenance_invalid")
         issues.extend(provenance_issues)
+    claim_source_issues = validate_claim_source_fit(article, manifest)
+    if claim_source_issues:
+        issue_codes.append("deepdive_claim_source_fit_invalid")
+        issues.extend(claim_source_issues)
     rendered_evidence: list[dict[str, str]] = []
     if require_rendered_public:
         rendered_issues, rendered_evidence = validate_rendered_public_surface(
@@ -787,6 +1021,9 @@ def audit_issue(
         dialogue_issues = deepdive_dialogue.validate_dialogue_document(
             dialogue.read_text(encoding="utf-8-sig"),
             source_markdown=article.read_text(encoding="utf-8-sig"),
+        )
+        dialogue_issues.extend(
+            _dialogue_source_lineage_issues(dialogue, manifest)
         )
     if dialogue_issues:
         issue_codes.append("deepdive_dialogue_value_invalid")
@@ -934,7 +1171,7 @@ def main(argv: list[str] | None = None) -> int:
             status = result["status"]
     except (DeepDiveQualityError, ValueError, OSError) as error:
         print(str(error), file=sys.stderr)
-        return 2
+        return 3 if "DEEPDIVE_CLAIM_SOURCE_FIT_INVALID" in str(error) else 2
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))
     return 0 if status == "Green" else 1
 

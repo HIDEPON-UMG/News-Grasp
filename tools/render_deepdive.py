@@ -33,6 +33,7 @@ DeepDive を含めない。
 from __future__ import annotations
 
 import html as _html
+import hashlib
 import json
 import math
 import re
@@ -1730,6 +1731,8 @@ def build_deepdive_context(
 ) -> dict[str, Any]:
     """DeepDive md 1 件から Jinja テンプレ用 context を組み立てる。"""
     text = Path(md_path).read_text(encoding="utf-8")
+    canonical_text = text.replace("\r\n", "\n").replace("\r", "\n")
+    source_sha256 = hashlib.sha256(canonical_text.encode("utf-8")).hexdigest()
     fm, body = parse_frontmatter(text)
     blocks = extract_blocks(body)
     _require_blocks(md_path, blocks)  # 必須ブロック欠落は hard fail (未完成記事を公開しない)
@@ -1822,6 +1825,7 @@ def build_deepdive_context(
     return {
         # meta / OGP
         "title": title,
+        "source_sha256": source_sha256,
         "date": date_str,
         "date_dot": date_str.replace("-", "."),
         "issue": issue,
