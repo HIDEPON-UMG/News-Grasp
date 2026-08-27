@@ -71,6 +71,25 @@ def test_ng3_a19_installer_persists_stable_task_authority() -> None:
     assert "repoArgumentCount = 0" in source
 
 
+def test_installer_canonicalizes_and_revalidates_stable_task_authority() -> None:
+    """PowerShellの型差を正本validatorへ持ち込まず、invalid authorityでGreenにしない。"""
+    installer = Path(__file__).parents[1] / "scripts" / "ops" / "install-news-grasp-ops.ps1"
+    source = installer.read_text(encoding="utf-8-sig")
+
+    normalize_at = source.index(
+        "$stableTaskAuthority = (($stableTaskAuthority | ConvertTo-Json -Depth 6) | "
+        "ConvertFrom-Json -ErrorAction Stop)"
+    )
+    hash_at = source.index("$stableAuthorityBody = $stableTaskAuthority | ConvertTo-Json")
+    write_at = source.index("Write-AtomicUtf8Text -Path $stableTaskAuthorityPath")
+    validate_at = source.index("from tools.news_grasp_generation import validate_stable_task_authority")
+    installed_at = source.index("$stableTaskAuthorityInstalled = Read-NewsGraspVerifiedFile")
+
+    assert normalize_at < hash_at < write_at < validate_at < installed_at
+    assert "& $runtimePythonPath -I -c $stableAuthorityValidationScript" in source
+    assert "throw 'NEWS_GRASP_STABLE_TASK_AUTHORITY_INVALID'" in source
+
+
 def test_ngc_c07_installer_does_not_gate_deterministic_promotion_on_external_model_control() -> None:
     """runtime同期はexternal model readinessと分離し、model実行側だけをfail-closedにする。"""
     root = Path(__file__).parents[1]

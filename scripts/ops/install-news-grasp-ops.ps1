@@ -1540,13 +1540,36 @@ $stableTaskAuthority = [ordered]@{
     highCostBindingReceiptSha256 = $highCostBindingReceiptSha256
     repoArgumentCount = 0
 }
+$stableTaskAuthority = (($stableTaskAuthority | ConvertTo-Json -Depth 6) | ConvertFrom-Json -ErrorAction Stop)
 $stableAuthorityBody = $stableTaskAuthority | ConvertTo-Json -Depth 6 -Compress
 $stableAuthorityHasher = [Security.Cryptography.SHA256]::Create()
 try {
     $stableAuthorityBytes = [Text.Encoding]::UTF8.GetBytes($stableAuthorityBody)
-    $stableTaskAuthority.authoritySha256 = ([BitConverter]::ToString($stableAuthorityHasher.ComputeHash($stableAuthorityBytes)) -replace '-', '').ToLowerInvariant()
+    $stableAuthoritySha256 = ([BitConverter]::ToString($stableAuthorityHasher.ComputeHash($stableAuthorityBytes)) -replace '-', '').ToLowerInvariant()
 } finally { $stableAuthorityHasher.Dispose() }
+$stableTaskAuthority | Add-Member -NotePropertyName authoritySha256 -NotePropertyValue $stableAuthoritySha256
 Write-AtomicUtf8Text -Path $stableTaskAuthorityPath -Text (($stableTaskAuthority | ConvertTo-Json -Depth 6) + [Environment]::NewLine)
+$stableAuthorityValidationScript = @'
+import json
+import pathlib
+import sys
+
+sys.path.insert(0, sys.argv[2])
+from tools.news_grasp_generation import validate_stable_task_authority
+
+authority = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8-sig"))
+print(validate_stable_task_authority(authority)["authoritySha256"])
+'@
+$stableAuthorityValidationOutput = @(
+    & $runtimePythonPath -I -c $stableAuthorityValidationScript $stableTaskAuthorityPath $runtimeEvidenceRepoDir 2>&1
+)
+if (
+    $LASTEXITCODE -ne 0 -or
+    $stableAuthorityValidationOutput.Count -ne 1 -or
+    [string]$stableAuthorityValidationOutput[0] -cne [string]$stableTaskAuthority.authoritySha256
+) {
+    throw 'NEWS_GRASP_STABLE_TASK_AUTHORITY_INVALID'
+}
 $stableTaskAuthorityInstalled = Read-NewsGraspVerifiedFile `
     -Path $stableTaskAuthorityPath `
     -TrustedBoundary $canonicalBinDir `
