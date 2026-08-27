@@ -1984,6 +1984,21 @@ def _latest_deepdive_card(target_date: str | None = None) -> dict[str, Any] | No
     }
 
 
+def _latest_deepdive_issue_date() -> str | None:
+    src_dir = _PKG_ROOT / "digest" / "DeepDive"
+    if not src_dir.exists():
+        return None
+    dates = sorted(
+        {
+            m.group(1)
+            for path in src_dir.glob("*-DeepDive.md")
+            if (m := re.match(r"^(20\d{2}-\d{2}-\d{2})-DeepDive\.md$", path.name))
+        },
+        reverse=True,
+    )
+    return dates[0] if dates else None
+
+
 def build_index(entries: list[dict[str, Any]], docs_root: Path,
                 recent_days: int = TOP_RECENT_DAYS,
                 *, target_date: str | None = None, is_yesterday: bool = False) -> Path:
@@ -3541,7 +3556,12 @@ def main(argv: list[str] | None = None) -> int:
     # 遅延 import (循環回避)
     from tools.render_deepdive import (build_deepdive_archive, build_deepdive_pages,
                                        collect_archive_items)
-    dd_pages = build_deepdive_pages(docs_root=docs_root, full=args.full)
+    latest_deepdive_date = _latest_deepdive_issue_date()
+    dd_pages = build_deepdive_pages(
+        docs_root=docs_root,
+        full=args.full,
+        issue_date=latest_deepdive_date,
+    )
     build_deepdive_archive(docs_root=docs_root)  # テーマ書架 (/deepdive/) も同時に生成
     if dd_pages:
         print(f"wrote {len(dd_pages)} DeepDive page(s)")

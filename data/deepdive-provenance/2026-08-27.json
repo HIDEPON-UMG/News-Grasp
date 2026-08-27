@@ -1,0 +1,79 @@
+{
+  "articlePath": "digest/DeepDive/2026-08-27-DeepDive.md",
+  "articleSha256": "0eca5867046c9c60a027def01db2a4ac75f74f48567e0895c9d792007c759882",
+  "issueDate": "2026-08-27",
+  "manifestSha256": "f7ade8afa7ca33511ede5deb1c117fc820d4a3d1308ad7aef613df6ecc771ce2",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "05d0aafb9c0995ba2b767918134815d9de46a2328d53b507d1d6d1d503282f93",
+  "sources": [
+    {
+      "contentSha256": "2a0afce2c96c4ba383d382de93747e5b5da7d49f8fff923cda089285184b185e",
+      "fetchedAt": "2026-08-26T23:09:21.067247+00:00",
+      "finalUrl": "https://www.bea.gov/news/2026/gdp-second-estimate-and-corporate-profits-2nd-quarter-2026",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.bea.gov/news/2026/gdp-second-estimate-and-corporate-profits-2nd-quarter-2026",
+      "url": "https://www.bea.gov/news/2026/gdp-second-estimate-and-corporate-profits-2nd-quarter-2026"
+    },
+    {
+      "contentSha256": "131a34937193d5631ac80c606ab233febeb7cbbb267ac6ccdaf9a091a9fee9f7",
+      "fetchedAt": "2026-08-26T23:09:22.186672+00:00",
+      "finalUrl": "https://www.bea.gov/news/2026/personal-income-and-outlays-july-2026",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.bea.gov/news/2026/personal-income-and-outlays-july-2026",
+      "url": "https://www.bea.gov/news/2026/personal-income-and-outlays-july-2026"
+    },
+    {
+      "contentSha256": "2ccdac91250738a0f7c92a3684bc5b66f76857acb95492bfa25998e86a4c1c67",
+      "fetchedAt": "2026-08-26T23:09:24.045800+00:00",
+      "finalUrl": "https://www.bls.gov/news.release/archives/cpi_08122026.htm",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.bls.gov/news.release/archives/cpi_08122026.htm",
+      "url": "https://www.bls.gov/news.release/archives/cpi_08122026.htm"
+    },
+    {
+      "contentSha256": "6214922fc90e38f2f9e63b0b6a9f046b970a435d0bf0c3f29bb239acd8f1b288",
+      "fetchedAt": "2026-08-26T23:09:24.449355+00:00",
+      "finalUrl": "https://www.federalreserve.gov/monetarypolicy/fomcprojtabl20260617.htm",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.federalreserve.gov/monetarypolicy/fomcprojtabl20260617.htm",
+      "url": "https://www.federalreserve.gov/monetarypolicy/fomcprojtabl20260617.htm"
+    },
+    {
+      "contentSha256": "7b1e5c376956520f918525030b3a62a3657c0f01a92c6c91e707c27e6398bdf2",
+      "fetchedAt": "2026-08-26T23:09:24.651150+00:00",
+      "finalUrl": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260729a.htm",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260729a.htm",
+      "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260729a.htm"
+    }
+  ],
+  "status": "Green"
+}
