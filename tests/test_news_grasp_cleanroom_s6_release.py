@@ -84,7 +84,7 @@ def _manifest() -> dict[str, Any]:
     assert value["scheduleId"] == SCHEDULE_ID
     assert len(value["tasks"]) == 1
     task = value["tasks"][0]
-    assert [item["triggerId"] for item in task["triggers"]] == ["scheduled-0600", "audit-0640"]
+    assert [item["triggerId"] for item in task["triggers"]] == ["scheduled-0600"]
     assert set(task["action"]) == {"entryModule", "argv", "workingDirectoryToken"}
     return value
 

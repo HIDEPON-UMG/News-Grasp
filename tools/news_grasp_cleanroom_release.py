@@ -181,7 +181,7 @@ def validate_live_task_parity(manifest: Any, live_snapshot: Any) -> bool:
     _exact_keys(manifest_task, _CLEANROOM_TASK_KEYS, "manifest.tasks[0]")
     if manifest_task.get("taskPath") != "\\" or manifest_task.get("taskName") != "News-Grasp Production":
         _error("IDENTITY", "manifest task")
-    if manifest_task.get("multipleInstancesPolicy") != "Parallel":
+    if manifest_task.get("multipleInstancesPolicy") != "IgnoreNew":
         _error("POLICY", "manifest multipleInstancesPolicy")
     action = _mapping(manifest_task.get("action"), "manifest.tasks[0].action")
     _exact_keys(action, _CLEANROOM_ACTION_KEYS, "manifest action")
@@ -190,7 +190,6 @@ def validate_live_task_parity(manifest: Any, live_snapshot: Any) -> bool:
     triggers = _list(manifest_task.get("triggers"), "manifest task triggers")
     expected_triggers = [
         {"triggerId": "scheduled-0600", "kind": "daily", "localTime": "06:00:00", "timeZone": "Asia/Tokyo"},
-        {"triggerId": "audit-0640", "kind": "daily", "localTime": "06:40:00", "timeZone": "Asia/Tokyo"},
     ]
     if triggers != expected_triggers:
         _error("TRIGGERS", "manifest task triggers")
@@ -371,12 +370,11 @@ def _validate_task_authority(value: Mapping[str, Any], installed_root: Path) -> 
         _error("TASK", "production workingDirectory")
     if parsed["executable"] != str(installed_root.parent / "pythonw.exe"):
         _error("TASK", "production executable")
-    if parsed["multipleInstancesPolicy"] != "Parallel":
+    if parsed["multipleInstancesPolicy"] != "IgnoreNew":
         _error("TASK", "multipleInstancesPolicy")
     triggers = _list(parsed["triggers"], "taskXml.triggers")
     expected_triggers = [
         {"triggerId": "scheduled-0600", "kind": "daily", "localTime": "06:00:00", "timeZone": "Asia/Tokyo"},
-        {"triggerId": "audit-0640", "kind": "daily", "localTime": "06:40:00", "timeZone": "Asia/Tokyo"},
     ]
     if triggers != expected_triggers:
         _error("TASK", "production triggers")

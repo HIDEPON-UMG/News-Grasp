@@ -624,12 +624,12 @@ def validate_manifest(value: Mapping[str, Any]) -> dict[str, Any]:
         _entry_fail(ENTRY_MANIFEST_INVALID, "task fields are invalid")
     if task.get("taskPath") != "\\" or task.get("taskName") != "News-Grasp Production":
         _entry_fail(ENTRY_MANIFEST_INVALID, "task identity is invalid")
-    if task.get("multipleInstancesPolicy") != "Parallel":
+    if task.get("multipleInstancesPolicy") != "IgnoreNew":
         _entry_fail(ENTRY_MANIFEST_INVALID, "multiple instance policy is invalid")
     triggers = task.get("triggers")
-    if not isinstance(triggers, list) or len(triggers) != 2:
-        _entry_fail(ENTRY_MANIFEST_INVALID, "manifest must contain two ordered triggers")
-    trigger_ids = {"scheduled-0600", "audit-0640"}
+    if not isinstance(triggers, list) or len(triggers) != 1:
+        _entry_fail(ENTRY_MANIFEST_INVALID, "manifest must contain the 06:00 Production trigger")
+    trigger_ids = {"scheduled-0600"}
     seen_trigger_ids: set[str] = set()
     for index, trigger in enumerate(triggers):
         if not isinstance(trigger, dict) or set(trigger) != _ENTRY_TRIGGER_KEYS:
@@ -640,7 +640,7 @@ def validate_manifest(value: Mapping[str, Any]) -> dict[str, Any]:
         seen_trigger_ids.add(trigger_id)
         if trigger.get("kind") != "daily" or trigger.get("timeZone") != "Asia/Tokyo":
             _entry_fail(ENTRY_MANIFEST_INVALID, "trigger kind or timezone is invalid")
-        expected_time = "06:00:00" if index == 0 else "06:40:00"
+        expected_time = "06:00:00"
         if trigger.get("localTime") != expected_time:
             _entry_fail(ENTRY_MANIFEST_INVALID, "trigger order or local time is invalid")
     action = task.get("action")

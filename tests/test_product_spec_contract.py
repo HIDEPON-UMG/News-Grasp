@@ -148,7 +148,10 @@ def test_product_constitution_maps_category_schedule_impact() -> None:
         "repo/live watcher SHA",
         "repo/live bootstrap SHA",
         "Scheduled Task watcher/bootstrap target",
-        "Runner task の 06:00 trigger",
+        "Production 06:00のみ/IgnoreNew",
+        "Bootstrap 05:55/IgnoreNew",
+        "Deadman 06:40+PT1H/P1D/IgnoreNew",
+        "Pull/legacy Runner disabled-or-absent",
         "NextRunTime",
         "NumberOfMissedRuns=0",
         "Runner Action 本番起動 mode",
@@ -247,6 +250,25 @@ def test_runner_matrix_separates_scheduled_production_from_final_e2e_budget() ->
         "復旧は同じ日付identityの残予算を共有",
     ):
         assert phrase in text
+
+
+def test_product_constitution_locks_exact_scheduled_task_role_commitments() -> None:
+    """06:40事故の再発防止としてTask役割・時刻・重複方針を仕様正本へ固定する。"""
+    text = _read(SPEC)
+
+    required = (
+        "正規日次roleはBootstrap=05:55 enabled/IgnoreNew、"
+        "Production=06:00のみ enabled/IgnoreNew、"
+        "Deadman=06:40開始+PT1H/P1D enabled/IgnoreNewとし、"
+        "Pull/legacy RunnerはDisabledを維持する。"
+    )
+    assert required in text
+    assert "Production=06:00のみ enabled/IgnoreNew" in text
+    assert "Deadman=06:40開始+PT1H/P1D enabled/IgnoreNew" in text
+    assert "Pull/legacy RunnerはDisabledを維持する" in text
+    assert "Production=06:40" not in text
+    assert "Production=06:00/06:40" not in text
+    assert "Parallel" not in text[text.index("Scheduled Task / runner / bootstrap / deadman") : text.index("Scheduled Task / runner / bootstrap / deadman") + 600]
 
 
 def test_product_constitution_defines_sustainable_complete_repair_invariants() -> None:

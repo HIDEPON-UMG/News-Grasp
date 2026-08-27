@@ -646,12 +646,12 @@ class InstallCutoverController:
             raise InstallControlError("manifest_task_keys_invalid")
         if task.get("taskPath") != "\\" or task.get("taskName") != _NEW_TASK:
             raise InstallControlError("manifest_task_identity_invalid")
-        if task.get("multipleInstancesPolicy") != "Parallel":
+        if task.get("multipleInstancesPolicy") != "IgnoreNew":
             raise InstallControlError("manifest_policy_invalid")
         triggers = task.get("triggers")
-        if not isinstance(triggers, list) or len(triggers) != 2:
+        if not isinstance(triggers, list) or len(triggers) != 1:
             raise InstallControlError("manifest_triggers_invalid")
-        expected_ids = ["scheduled-0600", "audit-0640"]
+        expected_ids = ["scheduled-0600"]
         for index, trigger in enumerate(triggers):
             if not isinstance(trigger, Mapping) or set(trigger) != _TRIGGER_KEYS:
                 raise InstallControlError("manifest_trigger_keys_invalid")
@@ -659,7 +659,7 @@ class InstallCutoverController:
                 raise InstallControlError("manifest_trigger_identity_invalid")
             if trigger.get("kind") != "daily" or trigger.get("timeZone") != "Asia/Tokyo":
                 raise InstallControlError("manifest_trigger_invalid")
-            if not isinstance(trigger.get("localTime"), str):
+            if trigger.get("localTime") != "06:00:00":
                 raise InstallControlError("manifest_trigger_time_invalid")
         action = task.get("action")
         if not isinstance(action, Mapping) or set(action) != _ACTION_KEYS:

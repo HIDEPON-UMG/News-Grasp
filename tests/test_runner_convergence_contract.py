@@ -1745,9 +1745,11 @@ def test_deadman_task_launcher_uses_pythonw_and_create_no_window() -> None:
     assert "news-grasp-deadman-launcher.pyw" in installer_text
     assert 'parser.add_argument("--repo-dir", type=Path)' in launcher_text
     assert '["-RepoDir", str(repo_dir)]' in launcher_text
-    assert '$deadmanArgs = "`"$deadmanLauncherPath`""' not in installer_text
-    assert "Register-ScheduledTask -TaskName $DeadmanTaskName" not in installer_text
-    assert "Disable-ScheduledTask -TaskName $DeadmanTaskName -ErrorAction Stop" in installer_text
+    assert '$deadmanArgs = "`"$deadmanLauncherPath`""' in installer_text
+    assert "Register-ScheduledTask -TaskPath '\\' -TaskName $DeadmanTaskName" in installer_text
+    assert "Enable-ScheduledTask -TaskPath '\\' -TaskName $DeadmanTaskName -ErrorAction Stop" in installer_text
+    assert r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" in launcher_text
+    assert "Get-AuthenticodeSignature" in launcher_text
     assert 'news-grasp-runtime-root-v1.json' in launcher_text
     assert '{"schemaVersion", "repoDir", "pythonExe", "evidenceRepoDir"}' in launcher_text
     assert '["-PythonExe", str(python_exe)]' in launcher_text
@@ -1787,14 +1789,14 @@ def test_runner_and_bootstrap_tasks_use_pythonw_no_console_launcher() -> None:
     assert "Invoke-NewsGraspInstallRollback" in installer_text
     assert "existed_before" in installer_text
     assert "Export-ScheduledTask" in installer_text
-    assert "Register-ScheduledTask -TaskName $taskName -Xml $xml -Force" in installer_text
+    assert "Register-ScheduledTask -TaskPath '\\' -TaskName $taskName -Xml $xml -Force" in installer_text
     assert "execute = $pythonw" in installer_text
     assert "[Console]::OutputEncoding" in installer_text
-    assert "Register-ScheduledTask -TaskName $RunnerTaskName -Action $runnerAction -Trigger @($runnerTrigger, $auditTrigger) -Settings $runnerSettings" in installer_text
-    assert "Enable-ScheduledTask -TaskName $RunnerTaskName" in installer_text
-    assert "$auditTrigger = New-ScheduledTaskTrigger -Daily -At 6:40am" in installer_text
-    assert "New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances Parallel" in installer_text
-    assert "Disable-ScheduledTask -TaskName $DeadmanTaskName -ErrorAction Stop" in installer_text
+    assert "Register-ScheduledTask -TaskPath '\\' -TaskName $RunnerTaskName -Action $runnerAction -Trigger $runnerTrigger -Settings $runnerSettings" in installer_text
+    assert "Enable-ScheduledTask -TaskPath '\\' -TaskName $RunnerTaskName" in installer_text
+    assert "$auditTrigger = New-ScheduledTaskTrigger -Daily -At 6:40am" not in installer_text
+    assert "New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew" in installer_text
+    assert "Enable-ScheduledTask -TaskPath '\\' -TaskName $DeadmanTaskName -ErrorAction Stop" in installer_text
     assert "if (-not $runnerRegistered) {" in installer_text
     assert 'throw "failed to converge $RunnerTaskName action:' in installer_text
 
@@ -2045,19 +2047,32 @@ def test_ops_installer_initializes_journal_authority_before_mutation_and_trap() 
 
 
 def test_ops_installer_task_specs_are_shape_complete_under_strict_mode() -> None:
-    """canonical 2 task specは複数triggerを含む同一property shapeを持つ。"""
+    """canonical role specは同一property shapeを持ち、legacy 2件も管理対象に含む。"""
     text = (OPS_DIR / "install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
     expected_block = text.split("$expected = @(", 1)[1].split("    )", 1)[0]
     task_specs = [line for line in expected_block.splitlines() if "[ordered]@{" in line]
 
-    assert len(task_specs) == 2
+    assert len(task_specs) == 3
     for spec in task_specs:
+        assert "taskPath = '\\'" in spec, spec
         assert "starts =" in spec, spec
         assert "policy =" in spec, spec
-    assert "$canonicalProductionTriggers = @('T06:00', 'T06:40')" in text
-    assert "Parallel" in task_specs[0]
+        assert "interval =" in spec, spec
+        assert "duration =" in spec, spec
+    assert "$canonicalProductionTriggers = @('T06:00:00')" in text
+    assert "IgnoreNew" in task_specs[0]
     assert "T05:55" in task_specs[1]
     assert "IgnoreNew" in task_specs[1]
+    assert "T06:40" in task_specs[2]
+    assert "PT1H" in task_specs[2]
+    managed_names = (
+        "$RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName, "
+        "$PullTaskName, $LegacyRunnerTaskName"
+    )
+    assert f"$managedTaskNames = @({managed_names})" in text
+    assert f"foreach ($taskName in @({managed_names}))" in text
+    assert "-ExpectedTaskNames $managedTaskNames" in text
+    assert "foreach ($disabledTaskName in @($PullTaskName, $LegacyRunnerTaskName))" in text
 
 
 def test_ops_installer_task_rollback_fails_closed_before_rolled_back_receipt() -> None:
@@ -2124,27 +2139,29 @@ def test_install_guard_limits_reparse_check_to_the_trusted_managed_root() -> Non
     assert completed.returncode == 0, completed.stderr
 
 
-def test_ops_installer_disables_legacy_tasks_after_canonical_convergence() -> None:
-    """旧 Deadman/Runner はsnapshotを保持したまま、2件のcanonical task収束後に無効化する。"""
+def test_ops_installer_disables_pull_and_legacy_runner_after_canonical_convergence() -> None:
+    """Deadmanはcanonical roleとして有効化し、Pull/旧Runnerを無効化・再検証する。"""
     text = (OPS_DIR / "install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
 
+    assert "[string] $PullTaskName = 'News-Grasp Pull'" in text
     assert "[string] $LegacyRunnerTaskName = 'News-Grasp Runner'" in text
-    assert "@($RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName, $LegacyRunnerTaskName)" in text
-    assert "Disable-ScheduledTask -TaskName $DeadmanTaskName -ErrorAction Stop" in text
-    assert "Disable-ScheduledTask -TaskName $LegacyRunnerTaskName -ErrorAction Stop" in text
-    assert "legacy task remains enabled" in text
-    assert "Register-ScheduledTask -TaskName $DeadmanTaskName" not in text
-    assert "Enable-ScheduledTask -TaskName $DeadmanTaskName" not in text
+    assert "@($RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName, $PullTaskName, $LegacyRunnerTaskName)" in text
+    assert "Enable-ScheduledTask -TaskPath '\\' -TaskName $DeadmanTaskName -ErrorAction Stop" in text
+    assert "Disable-ScheduledTask -TaskPath '\\' -TaskName $disabledTaskName -ErrorAction Stop" in text
+    assert "foreach ($disabledTaskName in @($PullTaskName, $LegacyRunnerTaskName))" in text
+    assert "legacy task state invalid" in text
+    assert "Register-ScheduledTask -TaskPath '\\' -TaskName $DeadmanTaskName" in text
     assert "Register-ScheduledTask -TaskName $LegacyRunnerTaskName" not in text
     assert "Enable-ScheduledTask -TaskName $LegacyRunnerTaskName" not in text
-    legacy_disable = text.index(
-        "Disable-ScheduledTask -TaskName $LegacyRunnerTaskName -ErrorAction Stop"
+    pull_disable = text.rindex(
+        "foreach ($disabledTaskName in @($PullTaskName, $LegacyRunnerTaskName))"
     )
-    deadman_disable = text.index(
-        "Disable-ScheduledTask -TaskName $DeadmanTaskName -ErrorAction Stop"
+    legacy_disable = pull_disable
+    deadman_enable = text.index(
+        "Enable-ScheduledTask -TaskPath '\\' -TaskName $DeadmanTaskName -ErrorAction Stop"
     )
     tasks_converged = text.index("Write-NewsGraspInstallJournal -Phase 'tasks_converged'")
-    assert deadman_disable < legacy_disable < tasks_converged
+    assert deadman_enable < pull_disable < tasks_converged
 
 
 def test_interrupted_install_rejects_forged_journal_paths_and_task_names_before_mutation(
@@ -2433,11 +2450,23 @@ def test_install_journal_writer_shape_with_delivery_state_is_accepted_by_recover
     journal_path.write_text(json.dumps(journal), encoding="utf-8")
     verified_completed = _run_install_guard(command)
 
+    def registry_values(name: str) -> set[str]:
+        match = re.search(
+            rf"\$script:{re.escape(name)}\s*=\s*@\((.*?)\)",
+            guard,
+            flags=re.DOTALL,
+        )
+        return set(re.findall(r"'([^']+)'", match.group(1))) if match else set()
+
+    recoverable_phases = registry_values("NewsGraspInstallJournalRecoverablePhases")
+    terminal_phases = registry_values("NewsGraspInstallJournalTerminalPhases")
+    registered_phases = recoverable_phases | terminal_phases
     writer_phases = set(
         re.findall(r"Write-NewsGraspInstallJournal\s+-Phase\s+'([^']+)'", installer)
     )
     expected_writer_phases = {
         "prepared",
+        "tasks_quiesced",
         "files_installed",
         "authority_issued",
         "tasks_converged",
@@ -2448,24 +2477,22 @@ def test_install_journal_writer_shape_with_delivery_state_is_accepted_by_recover
     recovery = installer.split("function Recover-NewsGraspInterruptedInstall", 1)[1].split(
         "function Invoke-NewsGraspInstallRollback", 1
     )[0]
-    recovery_phase_match = re.search(
-        r"\$journal\.phase\s+-notin\s+@\((.*?)\)",
-        recovery,
-        flags=re.DOTALL,
-    )
-    recovery_phases = set(re.findall(r"'([^']+)'", recovery_phase_match.group(1))) if recovery_phase_match else set()
+    recovery_phases = registered_phases if all(
+        reference in recovery
+        for reference in (
+            "$script:NewsGraspInstallJournalRecoverablePhases",
+            "$script:NewsGraspInstallJournalTerminalPhases",
+        )
+    ) else set()
     guard_recovery = guard.split("function Assert-NewsGraspRecoveryJournal", 1)[1].split(
         "function ", 1
     )[0]
-    guard_phase_match = re.search(
-        r"\$Journal\.phase\s+-notin\s+@\((.*?)\)",
-        guard_recovery,
-        flags=re.DOTALL,
-    )
-    guard_phases = set(re.findall(r"'([^']+)'", guard_phase_match.group(1))) if guard_phase_match else set()
+    guard_phases = recoverable_phases if "$script:NewsGraspInstallJournalRecoverablePhases" in guard_recovery else set()
     expected_nonterminal = expected_writer_phases - {"committed", "rolled_back"}
     failures: list[str] = []
     writer_files = {str(item["file"]) for item in rows}
+    if registered_phases != expected_writer_phases:
+        failures.append(f"phase registry drift: expected={sorted(expected_writer_phases)} actual={sorted(registered_phases)}")
     if writer_phases != expected_writer_phases:
         failures.append(f"writer phases drift: {sorted(writer_phases)}")
     if recovery_phases != expected_writer_phases:

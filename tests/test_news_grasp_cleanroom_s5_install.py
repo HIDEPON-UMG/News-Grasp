@@ -19,9 +19,8 @@ import pytest
 
 
 FIXTURE_PATH = Path(__file__).parent / "fixtures" / "news_grasp_cleanroom_s5_cases.json"
-CANONICAL_MANIFEST_PATH = Path(__file__).parents[1] / "config" / "news_grasp_cleanroom_task_manifest_v1.json"
-CANONICAL_MANIFEST_SHA256 = "99888f219a8483e5d8c8698538444cf84d68fc36ab40e842962447982d86e641"
-CANONICAL_MANIFEST_BYTES = 872
+REPO_ROOT = Path(__file__).parents[1]
+TOPOLOGY_AUTHORITY_PATH = REPO_ROOT / "config" / "news_grasp_task_topology_authority_v1.json"
 TOKYO = ZoneInfo("Asia/Tokyo")
 CREATE_NO_WINDOW = 0x08000000
 OLD_TASK = "News-Grasp Production (old)"
@@ -56,12 +55,41 @@ def _cases() -> dict[str, Any]:
     return value
 
 
-def _manifest() -> dict[str, Any]:
-    """Tracked canonical manifestをそのまま読み、driftをRed oracleにする。"""
+def _current_topology_authority() -> dict[str, Any]:
+    """typed registryのcurrentAuthorityだけを実行可能topologyの入口にする。"""
 
-    raw = CANONICAL_MANIFEST_PATH.read_bytes()
-    assert len(raw) == CANONICAL_MANIFEST_BYTES
-    assert hashlib.sha256(raw).hexdigest() == CANONICAL_MANIFEST_SHA256
+    registry_raw = TOPOLOGY_AUTHORITY_PATH.read_bytes()
+    registry = json.loads(registry_raw.decode("utf-8"))
+    assert registry["schemaVersion"] == "NEWS_GRASP_TASK_TOPOLOGY_AUTHORITY_V1"
+    assert registry["status"] == "current"
+    current = registry["currentAuthority"]
+    assert isinstance(current, dict)
+    relative_path = current["path"]
+    assert isinstance(relative_path, str)
+    manifest_path = (REPO_ROOT / relative_path).resolve()
+    assert manifest_path.is_relative_to(REPO_ROOT.resolve())
+    assert manifest_path == (REPO_ROOT / "config" / "news_grasp_cleanroom_task_manifest_v1.json").resolve()
+    assert isinstance(current.get("sha256"), str)
+    assert current["production"] == {
+        "taskPath": "\\",
+        "taskName": "News-Grasp Production",
+        "enabled": True,
+        "multipleInstancesPolicy": "IgnoreNew",
+        "localTimes": ["06:00:00"],
+    }
+    assert current["deadman"]["launcherTimeoutMinutes"] == 100
+    assert current["deadman"]["executionTimeLimit"] == "PT1H45M"
+    assert current["disabledOrAbsent"] == ["News-Grasp Pull", "News-Grasp Runner"]
+    return current
+
+
+def _manifest() -> dict[str, Any]:
+    """typed currentAuthorityのpath/hashでmanifestを検証し、V2内部契約を維持する。"""
+
+    current = _current_topology_authority()
+    manifest_path = (REPO_ROOT / str(current["path"])).resolve()
+    raw = manifest_path.read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == current["sha256"]
     value = json.loads(raw.decode("utf-8"))
     assert set(value) == {"schemaVersion", "scheduleId", "tasks"}
     assert value["schemaVersion"] == "NEWS_GRASP_CONTROL_MANIFEST_V1"
@@ -79,7 +107,14 @@ def _manifest() -> dict[str, Any]:
     assert set(task["action"]) == {"entryModule", "argv", "workingDirectoryToken"}
     assert task["action"]["entryModule"] == "tools.news_grasp_cleanroom_dispatch"
     assert task["action"]["workingDirectoryToken"] == "<RUNTIME_ROOT>"
-    assert [trigger["triggerId"] for trigger in task["triggers"]] == ["scheduled-0600", "audit-0640"]
+    assert task["triggers"] == [
+        {
+            "triggerId": "scheduled-0600",
+            "kind": "daily",
+            "localTime": "06:00:00",
+            "timeZone": "Asia/Tokyo",
+        }
+    ]
     return value
 
 

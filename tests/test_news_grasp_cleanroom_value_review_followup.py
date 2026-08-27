@@ -68,7 +68,7 @@ def test_r10_cleanroom_binding_requires_production_bootstrap_authority_execute_m
         "action": [authority_exec, *runner_args],
         "taskName": "News-Grasp Production",
         "taskPath": "\\",
-        "multipleInstancesPolicy": "Parallel",
+        "multipleInstancesPolicy": "IgnoreNew",
         "manifestAction": dict(dsh._CLEANROOM_MANIFEST_ACTION),
         "workingDirectoryToken": "<RUNTIME_ROOT>",
         "triggers": [dict(row) for row in dsh._CLEANROOM_MANIFEST_TRIGGERS],

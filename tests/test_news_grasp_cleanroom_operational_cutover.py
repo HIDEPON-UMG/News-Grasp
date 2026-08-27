@@ -23,6 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 LAUNCHER_PATH = ROOT / "scripts" / "ops" / "news-grasp-task-launcher.pyw"
 INSTALLER_PATH = ROOT / "scripts" / "ops" / "install-news-grasp-ops.ps1"
 MANIFEST_PATH = ROOT / "config" / "news_grasp_cleanroom_task_manifest_v1.json"
+TOPOLOGY_AUTHORITY_PATH = ROOT / "config" / "news_grasp_task_topology_authority_v1.json"
 OBSERVED_AT = datetime(2026, 8, 22, 6, 0, tzinfo=timezone(timedelta(hours=9)))
 EXPECTED_RUNTIME_ROOT = Path.home() / ".news-grasp-runtime"
 EXPECTED_MANIFEST_NAME = "news_grasp_cleanroom_task_manifest_v1.json"
@@ -175,6 +176,27 @@ def _install_dispatch_authority(module: Any, bin_dir: Path) -> None:
     )
 
 
+def _install_task_topology_authority(tmp_path: Path) -> Path:
+    """production launcherが読むtyped current-authorityを隔離runtimeへ配置する。"""
+    registry_bytes = TOPOLOGY_AUTHORITY_PATH.read_bytes()
+    registry = json.loads(registry_bytes.decode("utf-8-sig"))
+    authority = registry["currentAuthority"]
+    relative = Path(str(authority["path"]).replace("/", os.sep))
+    manifest_source = ROOT / relative
+    manifest_bytes = manifest_source.read_bytes()
+    assert hashlib.sha256(manifest_bytes).hexdigest() == str(authority["sha256"]).lower()
+
+    runtime_root = tmp_path / ".news-grasp-runtime"
+    production_runtime = runtime_root / "production-runtime"
+    config_root = production_runtime / "config"
+    config_root.mkdir(parents=True, exist_ok=True)
+    (config_root / TOPOLOGY_AUTHORITY_PATH.name).write_bytes(registry_bytes)
+    manifest_path = production_runtime / relative
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_bytes(manifest_bytes)
+    return runtime_root
+
+
 def _dispatch_task_origin_witness_payload(module: Any, *, task_pythonw: str) -> dict[str, Any]:
     """current R1/R9 validatorが要求するcanonical parent/service chain。"""
     parent_pid = max(1, os.getpid() - 1)
@@ -200,7 +222,7 @@ def _dispatch_task_origin_witness_payload(module: Any, *, task_pythonw: str) -> 
         "state": "Running",
         "lastRunTime": OBSERVED_AT.isoformat(),
         "taskPath": "\\",
-        "multipleInstancesPolicy": "Parallel",
+        "multipleInstancesPolicy": "IgnoreNew",
         "actions": [
             {
                 "execute": task_pythonw,
@@ -219,7 +241,6 @@ def _dispatch_task_origin_witness_payload(module: Any, *, task_pythonw: str) -> 
         ],
         "triggers": [
             {"enabled": True, "kind": "MSFT_TaskDailyTrigger", "startBoundary": "2026-08-22T06:00:00+09:00"},
-            {"enabled": True, "kind": "MSFT_TaskDailyTrigger", "startBoundary": "2026-08-22T06:40:00+09:00"},
         ],
         "ancestorChain": [
             {
@@ -406,6 +427,7 @@ def _run_dispatch(
     tmp_path: Path,
     decision: Mapping[str, Any],
     *,
+    monkeypatch: pytest.MonkeyPatch,
     child_exit: int = 0,
     task_context_validator: Any = None,
 ) -> tuple[Any, _FakeController, list[tuple[tuple[Any, ...], dict[str, Any]]], dict[str, Any]]:
@@ -427,6 +449,8 @@ def _run_dispatch(
     if task_context_validator is None:
         task_context_validator = lambda **_context: True
     module = helper.__globals__
+    monkeypatch.setattr(module["Path"], "home", classmethod(lambda _cls: tmp_path))
+    _install_task_topology_authority(tmp_path)
     _install_dispatch_authority(SimpleNamespace(**module), tmp_path / "bin")
     result = helper(
         EXPECTED_SCHEDULE_ID,
@@ -481,18 +505,12 @@ def _canonical_readiness() -> dict[str, Any]:
             "localTime": "06:00:00",
             "timeZone": "Asia/Tokyo",
         },
-        {
-            "triggerId": "audit-0640",
-            "kind": "daily",
-            "localTime": "06:40:00",
-            "timeZone": "Asia/Tokyo",
-        },
     ]
     authority = {
         "schemaVersion": "STABLE_TASK_AUTHORITY_V1",
         "taskName": "News-Grasp Production",
         "taskPath": "\\",
-        "multipleInstancesPolicy": "Parallel",
+        "multipleInstancesPolicy": "IgnoreNew",
         "action": deepcopy(action),
         "triggers": deepcopy(triggers),
         "workingDirectoryToken": "<RUNTIME_ROOT>",
@@ -517,7 +535,7 @@ def _canonical_readiness() -> dict[str, Any]:
             "ok": True,
             "taskName": "News-Grasp Production",
             "taskPath": "\\",
-            "multipleInstancesPolicy": "Parallel",
+            "multipleInstancesPolicy": "IgnoreNew",
             "action": deepcopy(action),
             "triggers": deepcopy(triggers),
             "stableAuthority": authority,
@@ -538,6 +556,7 @@ def test_launcher_exposes_dispatch_api_and_cli_surface() -> None:
 
 
 def test_dispatch_task_context_validator_rejects_before_side_effects_and_default_guard_is_read_only(
+    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     """Task観測はchild/controller/commitより前に拒否し、既定guardはread-only canonical観測だけを行う。"""
@@ -556,9 +575,8 @@ def test_dispatch_task_context_validator_rejects_before_side_effects_and_default
         EXPECTED_SCHEDULE_ID,
         "--intent",
         EXPECTED_INTENT,
-        "Parallel",
+        "IgnoreNew",
         "06:00",
-        "06:40",
         "production-runtime",
     ):
         assert token in source, f"default task-context guard must bind {token!r}"
@@ -577,6 +595,7 @@ def test_dispatch_task_context_validator_rejects_before_side_effects_and_default
                 helper,
                 tmp_path,
                 _decision(status="ACQUIRED", slot_kind="Scheduled"),
+                monkeypatch=monkeypatch,
                 task_context_validator=validator,
             )
         except Exception as error:  # typed rejection is acceptable at this seam
@@ -602,7 +621,10 @@ def test_dispatch_task_context_validator_rejects_before_side_effects_and_default
         assert controller.commits == []
 
 
-def test_dispatch_rejects_unknown_schedule_or_intent_and_binds_runtime_manifest(tmp_path: Path) -> None:
+def test_dispatch_rejects_unknown_schedule_or_intent_and_binds_runtime_manifest(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     _module, helper = _dispatch_helper()
     factory_calls = 0
 
@@ -627,25 +649,30 @@ def test_dispatch_rejects_unknown_schedule_or_intent_and_binds_runtime_manifest(
     assert factory_calls == 0
 
     result, _controller, _children, factory = _run_dispatch(
-        helper, tmp_path, _decision(status="NOT_DUE")
+        helper, tmp_path, _decision(status="NOT_DUE"), monkeypatch=monkeypatch
     )
     assert result == 0
     runtime_root = _find_value(factory, {"runtime_root", "runtimeRoot"})
     manifest_path = _find_value(factory, {"manifest_path", "manifestPath"})
-    assert runtime_root is not None and Path(str(runtime_root)).resolve() == EXPECTED_RUNTIME_ROOT.resolve()
+    expected_runtime_root = (tmp_path / ".news-grasp-runtime").resolve()
+    assert runtime_root is not None and Path(str(runtime_root)).resolve() == expected_runtime_root
     assert manifest_path is not None
     manifest = Path(str(manifest_path)).resolve()
     assert EXPECTED_MANIFEST_NAME == manifest.name
     assert "production-runtime" in {part.casefold() for part in manifest.parts}
 
 
-def test_dispatch_routes_acquired_scheduled_and_audit_exactly_once(tmp_path: Path) -> None:
+def test_dispatch_routes_acquired_scheduled_and_audit_exactly_once(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     _module, helper = _dispatch_helper()
     for slot_kind, expected_child in (("Scheduled", "runner"), ("Audit", "deadman")):
         result, controller, children, _factory = _run_dispatch(
             helper,
             tmp_path,
             _decision(status="ACQUIRED", slot_kind=slot_kind),
+            monkeypatch=monkeypatch,
         )
         assert result == 0
         assert len(children) == 1
@@ -654,20 +681,27 @@ def test_dispatch_routes_acquired_scheduled_and_audit_exactly_once(tmp_path: Pat
         assert len(controller.commits) == 1
 
 
-def test_dispatch_keeps_attached_not_due_and_terminal_noop_childless(tmp_path: Path) -> None:
+def test_dispatch_keeps_attached_not_due_and_terminal_noop_childless(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     _module, helper = _dispatch_helper()
     for status in ("NOT_DUE", "ATTACHED", "TERMINAL_NOOP"):
         result, controller, children, _factory = _run_dispatch(
             helper,
             tmp_path,
             _decision(status=status),
+            monkeypatch=monkeypatch,
         )
         assert result == 0
         assert children == []
         assert controller.commits == []
 
 
-def test_dispatch_commits_child_outcome_once_with_slot_writer_fence_and_no_window_seam(tmp_path: Path) -> None:
+def test_dispatch_commits_child_outcome_once_with_slot_writer_fence_and_no_window_seam(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     module, helper = _dispatch_helper()
     source = LAUNCHER_PATH.read_text(encoding="utf-8-sig")
     assert "shell=False" in source
@@ -678,6 +712,7 @@ def test_dispatch_commits_child_outcome_once_with_slot_writer_fence_and_no_windo
             helper,
             tmp_path,
             decision,
+            monkeypatch=monkeypatch,
             child_exit=child_exit,
         )
         assert result == child_exit
@@ -692,16 +727,17 @@ def test_dispatch_commits_child_outcome_once_with_slot_writer_fence_and_no_windo
     assert module.__file__ == str(LAUNCHER_PATH)
 
 
-def test_installer_uses_single_canonical_dispatch_task_and_disables_legacy_controls() -> None:
+def test_installer_separates_production_bootstrap_and_deadman_roles() -> None:
     source = INSTALLER_PATH.read_text(encoding="utf-8-sig")
     assert re.search(r"dispatch.*--schedule-id.*news-grasp-daily-v1.*--intent.*reconcile", source, re.I | re.S)
     assert all(token in source for token in ("06:00", "06:40", "05:55"))
-    assert re.search(r"MultipleInstances(?:'|\s*=\s*|\s+)Parallel", source, re.I)
-    assert not re.search(r"(?:Register|Enable)-ScheduledTask\s+[^\r\n]*\$DeadmanTaskName", source, re.I)
+    assert not re.search(r"MultipleInstances(?:'|\s*=\s*|\s+)Parallel", source, re.I)
+    assert re.search(r"Register-ScheduledTask\s+[^\r\n]*\$DeadmanTaskName", source, re.I)
+    assert re.search(r"Enable-ScheduledTask\s+[^\r\n]*\$DeadmanTaskName", source, re.I)
     assert not re.search(r"(?:Register|Enable)-ScheduledTask\s+[^\r\n]*\$LegacyRunnerTaskName", source, re.I)
     assert "function Assert-NewsGraspInstalledState" in source
     authority_block = source[source.index("function Assert-NewsGraspInstalledState") :]
-    assert "dispatch" in authority_block and "Parallel" in authority_block
+    assert "dispatch" in authority_block and "IgnoreNew" in authority_block
 
 
 def test_release_live_task_parity_accepts_canonical_and_rejects_all_drift_classes() -> None:
@@ -727,13 +763,13 @@ def test_release_live_task_parity_accepts_canonical_and_rejects_all_drift_classe
         elif path == ("triggers",):
             negative["tasks"][0]["triggers"][0]["localTime"] = "06:01:00"
         elif path == ("multipleInstancesPolicy",):
-            negative["tasks"][0]["multipleInstancesPolicy"] = "IgnoreNew"
+            negative["tasks"][0]["multipleInstancesPolicy"] = "Parallel"
         elif path == ("workingDirectory",):
             negative["tasks"][0]["action"]["workingDirectory"] = "<WRONG_RUNTIME_ROOT>"
         elif path == ("taskName",):
             negative["tasks"][0]["taskName"] = "News-Grasp Runner"
         else:
-            negative["extraEnabledTasks"] = [{"taskName": "News-Grasp Deadman", "enabled": True}]
+            negative["extraEnabledTasks"] = [{"taskName": "Unexpected Task", "enabled": True}]
         drift_cases.append(negative)
     for negative in drift_cases:
         with pytest.raises(Exception):

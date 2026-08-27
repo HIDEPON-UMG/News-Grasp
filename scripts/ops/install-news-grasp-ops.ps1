@@ -6,6 +6,7 @@
     [string] $RunnerTaskName = 'News-Grasp Production',
     [string] $BootstrapTaskName = 'News-Grasp Bootstrap',
     [string] $DeadmanTaskName = 'News-Grasp Deadman',
+    [string] $PullTaskName = 'News-Grasp Pull',
     [string] $LegacyRunnerTaskName = 'News-Grasp Runner',
     [switch] $SkipTaskRegistration
 )
@@ -20,6 +21,32 @@ $script:DeliveryReceiptSummary = $null
 $missionAuthorityPath = ''
 
 . (Join-Path $PSScriptRoot 'install-news-grasp-ops-guard.ps1')
+
+$canonicalTaskNames = [ordered]@{
+    Runner = 'News-Grasp Production'
+    Bootstrap = 'News-Grasp Bootstrap'
+    Deadman = 'News-Grasp Deadman'
+    Pull = 'News-Grasp Pull'
+    LegacyRunner = 'News-Grasp Runner'
+}
+if (
+    $RunnerTaskName -cne [string]$canonicalTaskNames.Runner -or
+    $BootstrapTaskName -cne [string]$canonicalTaskNames.Bootstrap -or
+    $DeadmanTaskName -cne [string]$canonicalTaskNames.Deadman -or
+    $PullTaskName -cne [string]$canonicalTaskNames.Pull -or
+    $LegacyRunnerTaskName -cne [string]$canonicalTaskNames.LegacyRunner
+) {
+    throw 'NEWS_GRASP_TASK_NAME_AUTHORITY_INVALID'
+}
+$taskWriterMutex = [Threading.Mutex]::new($false, 'Local\NewsGraspOpsInstallV1')
+try {
+    $taskWriterLeaseAcquired = $taskWriterMutex.WaitOne(0)
+} catch [Threading.AbandonedMutexException] {
+    $taskWriterLeaseAcquired = $true
+}
+if (-not $taskWriterLeaseAcquired) {
+    throw 'NEWS_GRASP_TASK_WRITER_LEASE_UNAVAILABLE'
+}
 
 function Write-AtomicUtf8Text {
     param([string] $Path, [string] $Text)
@@ -249,15 +276,15 @@ function Stop-NewsGraspTaskAndWait {
     if ($TimeoutSeconds -lt 1 -or $TimeoutSeconds -gt 120) {
         throw 'NEWS_GRASP_TASK_QUIESCE_TIMEOUT_INVALID'
     }
-    $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+    $task = Get-ScheduledTask -TaskPath '\' -TaskName $TaskName -ErrorAction SilentlyContinue
     if (-not $task) { return }
-    Disable-ScheduledTask -TaskName $TaskName -ErrorAction Stop | Out-Null
+    Disable-ScheduledTask -TaskPath '\' -TaskName $TaskName -ErrorAction Stop | Out-Null
     if ([string]$task.State -eq 'Running') {
-        Stop-ScheduledTask -TaskName $TaskName -ErrorAction Stop | Out-Null
+        Stop-ScheduledTask -TaskPath '\' -TaskName $TaskName -ErrorAction Stop | Out-Null
     }
     $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
     while ($true) {
-        $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+        $task = Get-ScheduledTask -TaskPath '\' -TaskName $TaskName -ErrorAction Stop
         if ([string]$task.State -ne 'Running') { return }
         if ((Get-Date) -ge $deadline) {
             throw "NEWS_GRASP_TASK_QUIESCE_TIMEOUT:$TaskName"
@@ -290,7 +317,7 @@ function Invoke-NewsGraspRollbackJournal {
     }
     foreach ($snapshot in @($Journal.task_snapshots)) {
         $taskName = [string]$snapshot.task_name
-        $currentTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+        $currentTask = Get-ScheduledTask -TaskPath '\' -TaskName $taskName -ErrorAction SilentlyContinue
         $taskNeedsRestore = $true
         if ([bool]$snapshot.existed_before) {
             $xml = Read-NewsGraspVerifiedTaskXml `
@@ -298,7 +325,7 @@ function Invoke-NewsGraspRollbackJournal {
                 -TrustedBoundary $journalDirectory `
                 -ExpectedSha256 ([string]$snapshot.xml_backup_sha256)
             if ($currentTask) {
-                $currentXml = Export-ScheduledTask -TaskName $taskName
+                $currentXml = Export-ScheduledTask -TaskPath '\' -TaskName $taskName
                 if (
                     $currentXml.Trim() -eq $xml.Trim() -and
                     [bool]$currentTask.Settings.Enabled -eq [bool]$snapshot.enabled_before
@@ -307,17 +334,17 @@ function Invoke-NewsGraspRollbackJournal {
                 }
             }
             if (-not $taskNeedsRestore) { continue }
-            Register-ScheduledTask -TaskName $taskName -Xml $xml -Force -ErrorAction Stop | Out-Null
+            Register-ScheduledTask -TaskPath '\' -TaskName $taskName -Xml $xml -Force -ErrorAction Stop | Out-Null
             if ([bool]$snapshot.enabled_before) {
-                Enable-ScheduledTask -TaskName $taskName -ErrorAction Stop | Out-Null
+                Enable-ScheduledTask -TaskPath '\' -TaskName $taskName -ErrorAction Stop | Out-Null
             } else {
-                Disable-ScheduledTask -TaskName $taskName -ErrorAction Stop | Out-Null
+                Disable-ScheduledTask -TaskPath '\' -TaskName $taskName -ErrorAction Stop | Out-Null
             }
         } elseif (-not $currentTask) {
             $taskNeedsRestore = $false
             if (-not $taskNeedsRestore) { continue }
         } else {
-            Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction Stop
+            Unregister-ScheduledTask -TaskPath '\' -TaskName $taskName -Confirm:$false -ErrorAction Stop
         }
     }
     $Journal.phase = 'rolled_back'
@@ -360,13 +387,13 @@ function Recover-NewsGraspInterruptedInstall {
             [string]$journal.schemaVersion -ne 'NEWS_GRASP_OPS_INSTALL_JOURNAL_V1' -or
             [string]$journal.transaction_id -ne $transactionDir.Name -or
             [string]$journal.phase -notin @(
-                'prepared', 'files_installed', 'authority_issued',
-                'tasks_converged', 'verified', 'committed', 'rolled_back'
+                $script:NewsGraspInstallJournalRecoverablePhases
+                $script:NewsGraspInstallJournalTerminalPhases
             )
         ) {
             throw 'NEWS_GRASP_INSTALL_JOURNAL_INGEST_INVALID'
         }
-        if ([string]$journal.phase -notin @('committed', 'rolled_back')) {
+        if ([string]$journal.phase -notin $script:NewsGraspInstallJournalTerminalPhases) {
             Assert-NewsGraspRecoveryJournal `
                 -JournalPath $journalPath `
                 -Journal $journal `
@@ -401,7 +428,7 @@ function Invoke-NewsGraspInstallRollback {
     }
     foreach ($snapshot in $taskSnapshots) {
         $taskName = [string]$snapshot.task_name
-        $currentTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+        $currentTask = Get-ScheduledTask -TaskPath '\' -TaskName $taskName -ErrorAction SilentlyContinue
         $taskNeedsRestore = $true
         if ([bool]$snapshot.existed_before) {
             $xml = Read-NewsGraspVerifiedTaskXml `
@@ -409,7 +436,7 @@ function Invoke-NewsGraspInstallRollback {
                 -TrustedBoundary $BackupDir `
                 -ExpectedSha256 ([string]$snapshot.xml_backup_sha256)
             if ($currentTask) {
-                $currentXml = Export-ScheduledTask -TaskName $taskName
+                $currentXml = Export-ScheduledTask -TaskPath '\' -TaskName $taskName
                 if (
                     $currentXml.Trim() -eq $xml.Trim() -and
                     [bool]$currentTask.Settings.Enabled -eq [bool]$snapshot.enabled_before
@@ -418,17 +445,17 @@ function Invoke-NewsGraspInstallRollback {
                 }
             }
             if (-not $taskNeedsRestore) { continue }
-            Register-ScheduledTask -TaskName $taskName -Xml $xml -Force -ErrorAction Stop | Out-Null
+            Register-ScheduledTask -TaskPath '\' -TaskName $taskName -Xml $xml -Force -ErrorAction Stop | Out-Null
             if ([bool]$snapshot.enabled_before) {
-                Enable-ScheduledTask -TaskName $taskName -ErrorAction Stop | Out-Null
+                Enable-ScheduledTask -TaskPath '\' -TaskName $taskName -ErrorAction Stop | Out-Null
             } else {
-                Disable-ScheduledTask -TaskName $taskName -ErrorAction Stop | Out-Null
+                Disable-ScheduledTask -TaskPath '\' -TaskName $taskName -ErrorAction Stop | Out-Null
             }
         } elseif (-not $currentTask) {
             $taskNeedsRestore = $false
             if (-not $taskNeedsRestore) { continue }
         } else {
-            Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction Stop
+            Unregister-ScheduledTask -TaskPath '\' -TaskName $taskName -Confirm:$false -ErrorAction Stop
         }
     }
 }
@@ -461,10 +488,81 @@ function Write-NewsGraspInstallJournal {
             schema = 'AUDIT_MISSION_AUTHORITY_V1'
         }
         scheduled_tasks = $scheduledTasks
-        task_snapshots = $taskSnapshots
+        task_snapshots = @($taskSnapshots | ForEach-Object {
+            [ordered]@{
+                task_name = [string]$_.task_name
+                existed_before = [bool]$_.existed_before
+                enabled_before = [bool]$_.enabled_before
+                xml_backup = [string]$_.xml_backup
+                xml_backup_sha256 = [string]$_.xml_backup_sha256
+            }
+        })
         delivery_state = $script:DeliveryReceiptSummary
     }
     Write-AtomicUtf8Text -Path $ManifestPath -Text (($journal | ConvertTo-Json -Depth 10) + [Environment]::NewLine)
+}
+
+function Get-NewsGraspTaskXmlSha256 {
+    param([Parameter(Mandatory = $true)][string] $TaskName)
+    $xml = Export-ScheduledTask -TaskPath '\' -TaskName $TaskName -ErrorAction Stop
+    $hasher = [Security.Cryptography.SHA256]::Create()
+    try {
+        return (([BitConverter]::ToString(
+            $hasher.ComputeHash([Text.Encoding]::Unicode.GetBytes($xml))
+        )) -replace '-', '').ToLowerInvariant()
+    } finally { $hasher.Dispose() }
+}
+
+function Enter-NewsGraspTaskMutationBoundary {
+    foreach ($snapshot in $taskSnapshots) {
+        $taskName = [string]$snapshot.task_name
+        $current = Get-ScheduledTask -TaskPath '\' -TaskName $taskName -ErrorAction SilentlyContinue
+        if ([bool]$snapshot.existed_before -ne [bool]$current) {
+            throw "NEWS_GRASP_TASK_PREIMAGE_EXISTENCE_DRIFT:$taskName"
+        }
+        if (-not $current) { continue }
+        $currentSha = Get-NewsGraspTaskXmlSha256 -TaskName $taskName
+        if ($currentSha -cne [string]$snapshot.xml_backup_sha256) {
+            throw "NEWS_GRASP_TASK_PREIMAGE_CAS_MISMATCH:$taskName"
+        }
+        if ([string]$current.State -ceq 'Running') {
+            throw "NEWS_GRASP_TASK_QUIESCENCE_REQUIRED:$taskName"
+        }
+        Disable-ScheduledTask -TaskPath '\' -TaskName $taskName -ErrorAction Stop | Out-Null
+        $snapshot['quiesced_xml_sha256'] = Get-NewsGraspTaskXmlSha256 -TaskName $taskName
+    }
+}
+
+function Assert-NewsGraspTaskMutationBoundaryCurrent {
+    foreach ($snapshot in $taskSnapshots) {
+        if ($snapshot.mutation_applied) { continue }
+        if (-not [bool]$snapshot.existed_before) {
+            if (Get-ScheduledTask -TaskPath '\' -TaskName ([string]$snapshot.task_name) -ErrorAction SilentlyContinue) {
+                throw "NEWS_GRASP_TASK_CREATED_AFTER_PREIMAGE:$($snapshot.task_name)"
+            }
+            continue
+        }
+        $taskName = [string]$snapshot.task_name
+        $current = Get-ScheduledTask -TaskPath '\' -TaskName $taskName -ErrorAction Stop
+        if ([string]$current.State -ceq 'Running') {
+            throw "NEWS_GRASP_TASK_QUIESCENCE_LOST:$taskName"
+        }
+        if (
+            [string]$snapshot.quiesced_xml_sha256 -notmatch '^[0-9a-f]{64}$' -or
+            (Get-NewsGraspTaskXmlSha256 -TaskName $taskName) -cne [string]$snapshot.quiesced_xml_sha256
+        ) {
+            throw "NEWS_GRASP_TASK_QUIESCED_CAS_MISMATCH:$taskName"
+        }
+    }
+}
+
+function Set-NewsGraspTaskMutationApplied {
+    param([Parameter(Mandatory = $true)][string] $TaskName)
+    $snapshot = @($taskSnapshots | Where-Object { $_.task_name -ceq $TaskName })
+    if ($snapshot.Count -ne 1) {
+        throw "NEWS_GRASP_TASK_SNAPSHOT_CARDINALITY_INVALID:$TaskName"
+    }
+    $snapshot[0]['mutation_applied'] = $true
 }
 
 function Assert-NewsGraspInstalledState {
@@ -556,18 +654,25 @@ function Assert-NewsGraspInstalledState {
     }
     if ($SkipTaskRegistration) { return }
     $canonicalProductionArgs = "`"$taskLauncherPath`" dispatch --schedule-id news-grasp-daily-v1 --intent reconcile"
-    $canonicalProductionTriggers = @('T06:00', 'T06:40')
+    $canonicalProductionTriggers = @('T06:00:00')
     $expected = @(
-        [ordered]@{ name = $RunnerTaskName; execute = $pythonw; arguments = $canonicalProductionArgs; working = $productionRuntimePath; starts = $canonicalProductionTriggers; policy = 'Parallel' },
-        [ordered]@{ name = $BootstrapTaskName; execute = $pythonw; arguments = $bootstrapArgs; working = $BinDir; starts = @('T05:55'); policy = 'IgnoreNew' }
+        [ordered]@{ name = $RunnerTaskName; taskPath = '\'; execute = $pythonw; arguments = $canonicalProductionArgs; working = $productionRuntimePath; starts = $canonicalProductionTriggers; policy = 'IgnoreNew'; interval = ''; duration = ''; principal = $taskPrincipalUserId },
+        [ordered]@{ name = $BootstrapTaskName; taskPath = '\'; execute = $pythonw; arguments = $bootstrapArgs; working = $BinDir; starts = @('T05:55:00'); policy = 'IgnoreNew'; interval = ''; duration = ''; principal = $taskPrincipalUserId },
+        [ordered]@{ name = $DeadmanTaskName; taskPath = '\'; execute = $pythonw; arguments = $deadmanArgs; working = $BinDir; starts = @('T06:40:00'); policy = 'IgnoreNew'; interval = 'PT1H'; duration = 'P1D'; executionTimeLimit = 'PT1H45M'; principal = $taskPrincipalUserId }
     )
     foreach ($spec in $expected) {
-        $task = Get-ScheduledTask -TaskName ([string]$spec.name) -ErrorAction Stop
+        $task = Get-ScheduledTask -TaskPath '\' -TaskName ([string]$spec.name) -ErrorAction Stop
         $actions = @($task.Actions)
         $triggers = @($task.Triggers)
         if ($actions.Count -ne 1 -or $triggers.Count -ne @($spec.starts).Count) { throw "scheduled task cardinality mismatch: $($spec.name)" }
         $action = $actions[0]
         if (-not $task.Settings.Enabled) { throw "scheduled task disabled: $($spec.name)" }
+        if ([string]$task.TaskPath -cne [string]$spec.taskPath) { throw "scheduled task path mismatch: $($spec.name)" }
+        if (
+            [string]$task.Principal.UserId -cne [string]$spec.principal -or
+            [string]$task.Principal.LogonType -cne 'Interactive' -or
+            [string]$task.Principal.RunLevel -cne 'Limited'
+        ) { throw "scheduled task principal mismatch: $($spec.name)" }
         if (
             [string]$action.Execute -ne [string]$spec.execute -or
             [string]$action.Arguments -ne [string]$spec.arguments -or
@@ -577,26 +682,40 @@ function Assert-NewsGraspInstalledState {
         }
         if (-not [bool]$task.Settings.StartWhenAvailable) { throw "scheduled task start-when-available mismatch: $($spec.name)" }
         if ([string]$task.Settings.MultipleInstances -ne [string]$spec.policy) { throw "scheduled task instance policy mismatch: $($spec.name)" }
+        if ([string]$spec.executionTimeLimit -and [string]$task.Settings.ExecutionTimeLimit -ne [string]$spec.executionTimeLimit) {
+            throw "scheduled task execution time limit mismatch: $($spec.name)"
+        }
         for ($index = 0; $index -lt $triggers.Count; $index += 1) {
             $trigger = $triggers[$index]
             if (-not [bool]$trigger.Enabled) { throw "scheduled task trigger disabled: $($spec.name)" }
-            if ([string]$trigger.StartBoundary -notlike "*$($spec.starts[$index])*" -or [int]$trigger.DaysInterval -ne 1) {
+            $expectedLocalTime = ([string]$spec.starts[$index]).TrimStart('T')
+            $observedLocalTime = ([datetime]$trigger.StartBoundary).ToString('HH:mm:ss')
+            if ($observedLocalTime -cne $expectedLocalTime -or [int]$trigger.DaysInterval -ne 1) {
                 throw "scheduled task trigger mismatch: $($spec.name)"
             }
-            if ([string]$trigger.Repetition.Interval -or [string]$trigger.Repetition.Duration) {
+            if ([string]$spec.interval) {
+                if ([string]$trigger.Repetition.Interval -ne [string]$spec.interval) {
+                    throw "scheduled task repetition mismatch: $($spec.name)"
+                }
+                if ([string]$trigger.Repetition.Duration -ne [string]$spec.duration) {
+                    throw "scheduled task repetition duration mismatch: $($spec.name)"
+                }
+                if ([bool]$trigger.Repetition.StopAtDurationEnd) {
+                    throw "scheduled task repetition stop policy mismatch: $($spec.name)"
+                }
+            } elseif ([string]$trigger.Repetition.Interval -or [string]$trigger.Repetition.Duration) {
                 throw "scheduled task unexpected repetition: $($spec.name)"
             }
         }
     }
-    $productionTask = Get-ScheduledTask -TaskName $RunnerTaskName -ErrorAction Stop
-    if ([string]$productionTask.TaskPath -ne '\') { throw 'production task path mismatch' }
-    $legacyTask = Get-ScheduledTask -TaskName $LegacyRunnerTaskName -ErrorAction SilentlyContinue
-    if ($legacyTask -and $legacyTask.Settings.Enabled) {
-        throw "legacy task remains enabled: $LegacyRunnerTaskName"
-    }
-    $deadmanTask = Get-ScheduledTask -TaskName $DeadmanTaskName -ErrorAction SilentlyContinue
-    if ($deadmanTask -and $deadmanTask.Settings.Enabled) {
-        throw "deadman task remains enabled: $DeadmanTaskName"
+    foreach ($disabledTaskName in @($PullTaskName, $LegacyRunnerTaskName)) {
+        $disabledTask = Get-ScheduledTask -TaskPath '\' -TaskName $disabledTaskName -ErrorAction SilentlyContinue
+        if ($disabledTask -and (
+            $disabledTask.Settings.Enabled -or
+            [string]$disabledTask.TaskPath -cne '\'
+        )) {
+            throw "legacy task state invalid: $disabledTaskName"
+        }
     }
 }
 
@@ -637,19 +756,19 @@ function Invoke-NewsGraspProductionEntryCanary {
     $instanceClosed = $false
     try {
         # Full XML is the transaction snapshot.  Trigger quiescence precedes the
-        # temporary action so the 06:00/06:40 Production triggers cannot fire.
-        $productionTaskSnapshot = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
-        $productionTaskSnapshotXml = Export-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+        # temporary action so the 06:00 Production trigger cannot fire.
+        $productionTaskSnapshot = Get-ScheduledTask -TaskPath '\' -TaskName $TaskName -ErrorAction Stop
+        $productionTaskSnapshotXml = Export-ScheduledTask -TaskPath '\' -TaskName $TaskName -ErrorAction Stop
         if ([string]::IsNullOrWhiteSpace($productionTaskSnapshotXml)) {
             throw 'NEWS_GRASP_ENTRY_CANARY_TASK_SNAPSHOT_MISSING'
         }
         $productionTaskWasEnabled = [bool]$productionTaskSnapshot.Settings.Enabled
-        Disable-ScheduledTask -TaskName $TaskName -ErrorAction Stop | Out-Null
+        Disable-ScheduledTask -TaskPath '\' -TaskName $TaskName -ErrorAction Stop | Out-Null
         # Keep a valid far-future one-shot trigger while disabled; the full
-        # snapshot restores the canonical 06:00/06:40 triggers.
-        Set-ScheduledTask -TaskName $TaskName -Trigger $canaryTrigger -Action $entryCanaryAction -ErrorAction Stop | Out-Null
-        Enable-ScheduledTask -TaskName $TaskName -ErrorAction Stop | Out-Null
-        Start-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+        # snapshot restores the canonical 06:00 trigger.
+        Set-ScheduledTask -TaskPath '\' -TaskName $TaskName -Trigger $canaryTrigger -Action $entryCanaryAction -ErrorAction Stop | Out-Null
+        Enable-ScheduledTask -TaskPath '\' -TaskName $TaskName -ErrorAction Stop | Out-Null
+        Start-ScheduledTask -TaskPath '\' -TaskName $TaskName -ErrorAction Stop
         $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
         do {
             if (Test-Path -LiteralPath $receiptPath -PathType Leaf) {
@@ -660,8 +779,8 @@ function Invoke-NewsGraspProductionEntryCanary {
                     }
                 } catch { $receipt = $null }
             }
-            $currentTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
-            $currentTaskInfo = Get-ScheduledTaskInfo -TaskName $TaskName -ErrorAction Stop
+            $currentTask = Get-ScheduledTask -TaskPath '\' -TaskName $TaskName -ErrorAction Stop
+            $currentTaskInfo = Get-ScheduledTaskInfo -TaskPath '\' -TaskName $TaskName -ErrorAction Stop
             $instanceClosed = [string]$currentTask.State -ne 'Running'
             if (
                 $receipt -and
@@ -695,14 +814,14 @@ function Invoke-NewsGraspProductionEntryCanary {
         # finish before Register-ScheduledTask restores the full XML snapshot.
         Stop-NewsGraspTaskAndWait -TaskName $TaskName -TimeoutSeconds 15
         if ($productionTaskSnapshotXml) {
-            Register-ScheduledTask -TaskName $TaskName -Xml $productionTaskSnapshotXml -Force -ErrorAction Stop | Out-Null
+            Register-ScheduledTask -TaskPath '\' -TaskName $TaskName -Xml $productionTaskSnapshotXml -Force -ErrorAction Stop | Out-Null
             if ($productionTaskWasEnabled) {
-                Enable-ScheduledTask -TaskName $TaskName -ErrorAction Stop | Out-Null
+                Enable-ScheduledTask -TaskPath '\' -TaskName $TaskName -ErrorAction Stop | Out-Null
             } else {
-                Disable-ScheduledTask -TaskName $TaskName -ErrorAction Stop | Out-Null
+                Disable-ScheduledTask -TaskPath '\' -TaskName $TaskName -ErrorAction Stop | Out-Null
             }
         } else {
-            Set-ScheduledTask -TaskName $TaskName -Action $canonicalAction -ErrorAction Stop | Out-Null
+            Set-ScheduledTask -TaskPath '\' -TaskName $TaskName -Action $canonicalAction -ErrorAction Stop | Out-Null
         }
         Assert-NewsGraspInstalledState
     }
@@ -778,13 +897,21 @@ foreach ($asset in $automationAssetRows) {
     $automationAssetInstallPaths[[string]$asset.installPath] = $true
 }
 $TaskPythonwPath = Resolve-NewsGraspTaskPythonw -Override $TaskPythonwPath -ResolvedRepoDir $RepoDir
+$taskPrincipalUserId = [Security.Principal.WindowsIdentity]::GetCurrent().Name
+if ([string]::IsNullOrWhiteSpace($taskPrincipalUserId)) {
+    throw 'NEWS_GRASP_TASK_PRINCIPAL_UNAVAILABLE'
+}
+$taskPrincipal = New-ScheduledTaskPrincipal `
+    -UserId $taskPrincipalUserId `
+    -LogonType Interactive `
+    -RunLevel Limited
 # runtime/task/asset の決定論的promotionはexternal model readinessと分離する。
 # modelを必要とするrunner stageは、tools.news_grasp_daily_controlのpure probeで
 # external authorityをfail-closedに検証し、unavailableならtyped deferredへ遷移する。
 $ops = Join-Path $RepoDir 'scripts\ops'
 $installTrustedBoundary = (Resolve-Path -LiteralPath $env:USERPROFILE).Path
 $canonicalBinDir = Join-Path $installTrustedBoundary 'bin'
-$managedTaskNames = @($RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName, $LegacyRunnerTaskName)
+$managedTaskNames = @($RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName, $PullTaskName, $LegacyRunnerTaskName)
 $runtimeRootAuthoritySha = Assert-NewsGraspCanonicalInstallSource `
     -ResolvedRepoDir $RepoDir `
     -RequestedBinDir $BinDir `
@@ -996,12 +1123,19 @@ $highCostBindingRow = [ordered]@{
 $manifestFiles += $highCostBindingRow
 
 if (-not $SkipTaskRegistration) {
-    foreach ($taskName in @($RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName, $LegacyRunnerTaskName)) {
-        $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+    foreach ($taskName in @($RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName, $PullTaskName, $LegacyRunnerTaskName)) {
+        $taskMatches = @(Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue)
+        if (
+            $taskMatches.Count -gt 1 -or
+            @($taskMatches | Where-Object { [string]$_.TaskPath -cne '\' }).Count -gt 0
+        ) {
+            throw "NEWS_GRASP_TASK_PATH_AUTHORITY_INVALID:$taskName"
+        }
+        $task = @($taskMatches | Where-Object { [string]$_.TaskPath -ceq '\' }) | Select-Object -First 1
         $xmlPath = Join-Path $BackupDir (("task-{0}.xml" -f ($taskName -replace '[^A-Za-z0-9._-]', '_')))
         $taskXmlSha256 = ''
         if ($task) {
-            $taskXml = Export-ScheduledTask -TaskName $taskName
+            $taskXml = Export-ScheduledTask -TaskPath '\' -TaskName $taskName
             $taskXmlSha256 = Write-NewsGraspAtomicFile `
                 -Path $xmlPath `
                 -TrustedBoundary $BackupDir `
@@ -1179,10 +1313,31 @@ $stableTaskAuthorityRow = [ordered]@{
     after_sha256 = ''
 }
 $manifestFiles += $stableTaskAuthorityRow
+$trustedGitRemote = 'https://github.com/HIDEPON-UMG/News-Grasp.git'
+$recoveryGitExe = 'C:\Program Files\Git\cmd\git.exe'
+$env:GIT_TERMINAL_PROMPT = '0'
+$recoveryGitSafeArgs = @(
+    '-c', 'core.hooksPath=NUL',
+    '-c', 'core.fsmonitor=false',
+    '-c', 'core.attributesFile=NUL',
+    '-c', 'http.lowSpeedLimit=1',
+    '-c', 'http.lowSpeedTime=15'
+)
+$opsHead = (& $recoveryGitExe @recoveryGitSafeArgs -C $runtimeEvidenceRepoDir rev-parse HEAD 2>$null | Out-String).Trim().ToLowerInvariant()
+$trustedRemoteHeadLine = (& $recoveryGitExe @recoveryGitSafeArgs ls-remote $trustedGitRemote refs/heads/main 2>$null | Out-String).Trim()
+$trustedRemoteHead = if ($trustedRemoteHeadLine) { ($trustedRemoteHeadLine -split '\s+')[0].ToLowerInvariant() } else { '' }
+$opsDirty = (& $recoveryGitExe @recoveryGitSafeArgs -C $runtimeEvidenceRepoDir status --porcelain --untracked-files=all 2>$null | Out-String).Trim()
+if ($LASTEXITCODE -ne 0 -or $opsHead -notmatch '^[0-9a-f]{40}$' -or $opsHead -ne $trustedRemoteHead -or $opsDirty) {
+    throw 'NEWS_GRASP_RECOVERY_OPS_GENERATION_INVALID'
+}
 $scheduledTasks = @()
 $rollbackCommands = @('Invoke-NewsGraspInstallRollback')
 Write-NewsGraspInstallJournal -Phase 'prepared'
 $script:InstallationMutationStarted = $true
+if (-not $SkipTaskRegistration) {
+    Enter-NewsGraspTaskMutationBoundary
+    Write-NewsGraspInstallJournal -Phase 'tasks_quiesced'
+}
 New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
 
 foreach ($file in $files) {
@@ -1289,16 +1444,6 @@ $startupCustomizationPresent = (
     (Test-Path -LiteralPath (Join-Path $runtimeEvidenceRepoDir 'usercustomize.py'))
 )
 if ($startupCustomizationPresent) { throw 'NEWS_GRASP_RECOVERY_OPS_STARTUP_CUSTOMIZATION_FORBIDDEN' }
-$trustedGitRemote = 'https://github.com/HIDEPON-UMG/News-Grasp.git'
-$recoveryGitExe = 'C:\Program Files\Git\cmd\git.exe'
-$recoveryGitSafeArgs = @('-c', 'core.hooksPath=NUL', '-c', 'core.fsmonitor=false', '-c', 'core.attributesFile=NUL')
-$opsHead = (& $recoveryGitExe @recoveryGitSafeArgs -C $runtimeEvidenceRepoDir rev-parse HEAD 2>$null | Out-String).Trim().ToLowerInvariant()
-$trustedRemoteHeadLine = (& $recoveryGitExe @recoveryGitSafeArgs ls-remote $trustedGitRemote refs/heads/main 2>$null | Out-String).Trim()
-$trustedRemoteHead = if ($trustedRemoteHeadLine) { ($trustedRemoteHeadLine -split '\s+')[0].ToLowerInvariant() } else { '' }
-$opsDirty = (& $recoveryGitExe @recoveryGitSafeArgs -C $runtimeEvidenceRepoDir status --porcelain --untracked-files=all 2>$null | Out-String).Trim()
-if ($LASTEXITCODE -ne 0 -or $opsHead -notmatch '^[0-9a-f]{40}$' -or $opsHead -ne $trustedRemoteHead -or $opsDirty) {
-    throw 'NEWS_GRASP_RECOVERY_OPS_GENERATION_INVALID'
-}
 $pythonSignature = Get-AuthenticodeSignature -LiteralPath $runtimePythonPath
 $pythonSignerSubject = [string]$pythonSignature.SignerCertificate.Subject
 $pythonSignerThumbprint = ([string]$pythonSignature.SignerCertificate.Thumbprint).ToLowerInvariant()
@@ -1381,11 +1526,15 @@ $stableTaskAuthority = [ordered]@{
         workingDirectoryToken = '<RUNTIME_ROOT>'
     }
     triggers = @(
-        [ordered]@{ triggerId = 'scheduled-0600'; kind = 'daily'; localTime = '06:00:00'; timeZone = 'Asia/Tokyo' },
-        [ordered]@{ triggerId = 'audit-0640'; kind = 'daily'; localTime = '06:40:00'; timeZone = 'Asia/Tokyo' }
+        [ordered]@{ triggerId = 'scheduled-0600'; kind = 'daily'; localTime = '06:00:00'; timeZone = 'Asia/Tokyo' }
     )
     taskPath = '\'
-    multipleInstancesPolicy = 'Parallel'
+    multipleInstancesPolicy = 'IgnoreNew'
+    principal = [ordered]@{
+        userId = $taskPrincipalUserId
+        logonType = 'Interactive'
+        runLevel = 'Limited'
+    }
     workingDirectoryToken = '<RUNTIME_ROOT>'
     highCostBindingPath = $highCostBindingPath
     highCostBindingReceiptSha256 = $highCostBindingReceiptSha256
@@ -1427,8 +1576,25 @@ if ($reuseExistingMissionAuthority) {
         throw 'News-Grasp audit mission authority broker is unavailable.'
     }
     New-Item -ItemType Directory -Force -Path $authorityDir | Out-Null
-    $missionAuthorityJson = (& $pythonPath $brokerPath 'issue-news-grasp-audit-mission' 2>&1 | Out-String).Trim()
-    if ($LASTEXITCODE -ne 0) { throw "audit mission authority issuance failed exit=$LASTEXITCODE" }
+    $brokerStdoutPath = Join-Path $BackupDir 'audit-mission-broker.stdout.txt'
+    $brokerStderrPath = Join-Path $BackupDir 'audit-mission-broker.stderr.txt'
+    $brokerProcess = Start-Process `
+        -FilePath $pythonPath `
+        -ArgumentList @($brokerPath, 'issue-news-grasp-audit-mission') `
+        -RedirectStandardOutput $brokerStdoutPath `
+        -RedirectStandardError $brokerStderrPath `
+        -WindowStyle Hidden `
+        -PassThru
+    if (-not $brokerProcess.WaitForExit(30000)) {
+        $brokerProcess.Kill()
+        $brokerProcess.WaitForExit()
+        throw 'NEWS_GRASP_AUDIT_MISSION_BROKER_TIMEOUT'
+    }
+    $missionAuthorityJson = (Get-Content -LiteralPath $brokerStdoutPath -Raw -Encoding UTF8).Trim()
+    if ($brokerProcess.ExitCode -ne 0) {
+        $brokerError = (Get-Content -LiteralPath $brokerStderrPath -Raw -Encoding UTF8).Trim()
+        throw "audit mission authority issuance failed exit=$($brokerProcess.ExitCode):$brokerError"
+    }
     Write-AtomicUtf8Text -Path $missionAuthorityPath -Text ($missionAuthorityJson + [Environment]::NewLine)
 }
 $null = Assert-NewsGraspCanonicalInstallSource `
@@ -1445,6 +1611,7 @@ $missionAuthorityInstalled = Read-NewsGraspVerifiedFile `
 $missionAuthorityRow['after_sha256'] = [string]$missionAuthorityInstalled.Sha256
 Write-NewsGraspInstallJournal -Phase 'authority_issued'
 if (-not $SkipTaskRegistration) {
+    Assert-NewsGraspTaskMutationBoundaryCurrent
     $null = Assert-NewsGraspCanonicalInstallSource `
         -ResolvedRepoDir $RepoDir `
         -RequestedBinDir $BinDir `
@@ -1462,13 +1629,14 @@ if (-not $SkipTaskRegistration) {
     $runnerArgs = "`"$taskLauncherPath`" dispatch --schedule-id news-grasp-daily-v1 --intent reconcile"
     $runnerAction = New-ScheduledTaskAction -Execute $pythonw -Argument $runnerArgs -WorkingDirectory $productionRuntimePath
     $runnerTrigger = New-ScheduledTaskTrigger -Daily -At 6:00am
-    $auditTrigger = New-ScheduledTaskTrigger -Daily -At 6:40am
-    $runnerSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances Parallel
+    $runnerSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew
     $runnerRegistered = $false
     $runnerRegisterError = ''
     try {
-        Register-ScheduledTask -TaskName $RunnerTaskName -Action $runnerAction -Trigger @($runnerTrigger, $auditTrigger) -Settings $runnerSettings -Description 'News-Grasp canonical clean-room dispatch.' -Force -ErrorAction Stop | Out-Null
-        Enable-ScheduledTask -TaskName $RunnerTaskName -ErrorAction Stop | Out-Null
+        Assert-NewsGraspTaskMutationBoundaryCurrent
+        Register-ScheduledTask -TaskPath '\' -TaskName $RunnerTaskName -Action $runnerAction -Trigger $runnerTrigger -Settings $runnerSettings -Principal $taskPrincipal -Description 'News-Grasp canonical clean-room dispatch.' -Force -ErrorAction Stop | Out-Null
+        Set-NewsGraspTaskMutationApplied -TaskName $RunnerTaskName
+        Enable-ScheduledTask -TaskPath '\' -TaskName $RunnerTaskName -ErrorAction Stop | Out-Null
         $runnerRegistered = $true
         $scheduledTasks += [ordered]@{
             task_name = $RunnerTaskName
@@ -1476,10 +1644,9 @@ if (-not $SkipTaskRegistration) {
             arguments = $runnerArgs
             workingDirectory = $productionRuntimePath
             taskPath = '\'
-            multipleInstancesPolicy = 'Parallel'
+            multipleInstancesPolicy = 'IgnoreNew'
             triggers = @(
-                [ordered]@{ triggerId = 'scheduled-0600'; kind = 'daily'; localTime = '06:00:00'; timeZone = 'Asia/Tokyo' },
-                [ordered]@{ triggerId = 'audit-0640'; kind = 'daily'; localTime = '06:40:00'; timeZone = 'Asia/Tokyo' }
+                [ordered]@{ triggerId = 'scheduled-0600'; kind = 'daily'; localTime = '06:00:00'; timeZone = 'Asia/Tokyo' }
             )
             action = [ordered]@{
                 entryModule = 'tools.news_grasp_cleanroom_dispatch'
@@ -1496,10 +1663,9 @@ if (-not $SkipTaskRegistration) {
             arguments = $runnerArgs
             workingDirectory = $productionRuntimePath
             taskPath = '\'
-            multipleInstancesPolicy = 'Parallel'
+            multipleInstancesPolicy = 'IgnoreNew'
             triggers = @(
-                [ordered]@{ triggerId = 'scheduled-0600'; kind = 'daily'; localTime = '06:00:00'; timeZone = 'Asia/Tokyo' },
-                [ordered]@{ triggerId = 'audit-0640'; kind = 'daily'; localTime = '06:40:00'; timeZone = 'Asia/Tokyo' }
+                [ordered]@{ triggerId = 'scheduled-0600'; kind = 'daily'; localTime = '06:00:00'; timeZone = 'Asia/Tokyo' }
             )
             status = 'register_failed_bootstrap_required'
             error = $runnerRegisterError
@@ -1511,8 +1677,10 @@ if (-not $SkipTaskRegistration) {
     $bootstrapTrigger = New-ScheduledTaskTrigger -Daily -At 5:55am
     $bootstrapSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew
     try {
-        Register-ScheduledTask -TaskName $BootstrapTaskName -Action $bootstrapAction -Trigger $bootstrapTrigger -Settings $bootstrapSettings -Description 'News-Grasp pre-run self repair bootstrap.' -Force -ErrorAction Stop | Out-Null
-        Enable-ScheduledTask -TaskName $BootstrapTaskName -ErrorAction Stop | Out-Null
+        Assert-NewsGraspTaskMutationBoundaryCurrent
+        Register-ScheduledTask -TaskPath '\' -TaskName $BootstrapTaskName -Action $bootstrapAction -Trigger $bootstrapTrigger -Settings $bootstrapSettings -Principal $taskPrincipal -Description 'News-Grasp pre-run self repair bootstrap.' -Force -ErrorAction Stop | Out-Null
+        Set-NewsGraspTaskMutationApplied -TaskName $BootstrapTaskName
+        Enable-ScheduledTask -TaskPath '\' -TaskName $BootstrapTaskName -ErrorAction Stop | Out-Null
         $scheduledTasks += [ordered]@{
             task_name = $BootstrapTaskName
             execute = $pythonw
@@ -1544,32 +1712,43 @@ if (-not $SkipTaskRegistration) {
         }
     }
 
-    # Production登録成功後だけ、分離Deadmanと旧Runnerを無効化する。
-    $deadmanTask = Get-ScheduledTask -TaskName $DeadmanTaskName -ErrorAction SilentlyContinue
-    if ($deadmanTask -and $deadmanTask.Settings.Enabled) {
-        Disable-ScheduledTask -TaskName $DeadmanTaskName -ErrorAction Stop | Out-Null
+    $deadmanArgs = "`"$deadmanLauncherPath`""
+    $deadmanAction = New-ScheduledTaskAction -Execute $pythonw -Argument $deadmanArgs -WorkingDirectory $BinDir
+    $deadmanTrigger = New-ScheduledTaskTrigger -Daily -At 6:40am
+    $deadmanRepetition = New-CimInstance -Namespace 'Root/Microsoft/Windows/TaskScheduler' -ClassName 'MSFT_TaskRepetitionPattern' -ClientOnly -Property @{
+        Interval = 'PT1H'
+        Duration = 'P1D'
+        StopAtDurationEnd = $false
     }
-    $deadmanEnabledAfter = $false
-    if ($deadmanTask) {
-        $deadmanEnabledAfter = [bool](Get-ScheduledTask -TaskName $DeadmanTaskName -ErrorAction Stop).Settings.Enabled
-    }
+    $deadmanTrigger.Repetition = $deadmanRepetition
+    $deadmanSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 105)
+    Assert-NewsGraspTaskMutationBoundaryCurrent
+    Register-ScheduledTask -TaskPath '\' -TaskName $DeadmanTaskName -Action $deadmanAction -Trigger $deadmanTrigger -Settings $deadmanSettings -Principal $taskPrincipal -Description 'News-Grasp hourly audit and bounded recovery control.' -Force -ErrorAction Stop | Out-Null
+    Set-NewsGraspTaskMutationApplied -TaskName $DeadmanTaskName
+    Enable-ScheduledTask -TaskPath '\' -TaskName $DeadmanTaskName -ErrorAction Stop | Out-Null
     $scheduledTasks += [ordered]@{
         task_name = $DeadmanTaskName
-        status = if ($deadmanTask) { 'deadman_task_disabled' } else { 'deadman_task_absent' }
-        enabled = $deadmanEnabledAfter
+        execute = $pythonw
+        arguments = $deadmanArgs
+        trigger = 'daily 06:40 with hourly repetition'
+        status = 'registered_deadman_control'
     }
-    $legacyTask = Get-ScheduledTask -TaskName $LegacyRunnerTaskName -ErrorAction SilentlyContinue
-    if ($legacyTask -and $legacyTask.Settings.Enabled) {
-        Disable-ScheduledTask -TaskName $LegacyRunnerTaskName -ErrorAction Stop | Out-Null
-    }
-    $legacyEnabledAfter = $false
-    if ($legacyTask) {
-        $legacyEnabledAfter = [bool](Get-ScheduledTask -TaskName $LegacyRunnerTaskName -ErrorAction Stop).Settings.Enabled
-    }
-    $scheduledTasks += [ordered]@{
-        task_name = $LegacyRunnerTaskName
-        status = if ($legacyTask) { 'legacy_task_disabled' } else { 'legacy_task_absent' }
-        enabled = $legacyEnabledAfter
+    Assert-NewsGraspTaskMutationBoundaryCurrent
+    foreach ($disabledTaskName in @($PullTaskName, $LegacyRunnerTaskName)) {
+        $disabledTask = Get-ScheduledTask -TaskPath '\' -TaskName $disabledTaskName -ErrorAction SilentlyContinue
+        if ($disabledTask -and $disabledTask.Settings.Enabled) {
+            Disable-ScheduledTask -TaskPath '\' -TaskName $disabledTaskName -ErrorAction Stop | Out-Null
+        }
+        $disabledEnabledAfter = $false
+        if ($disabledTask) {
+            $disabledEnabledAfter = [bool](Get-ScheduledTask -TaskPath '\' -TaskName $disabledTaskName -ErrorAction Stop).Settings.Enabled
+        }
+        $scheduledTasks += [ordered]@{
+            task_name = $disabledTaskName
+            status = if ($disabledTask) { 'legacy_task_disabled' } else { 'legacy_task_absent' }
+            enabled = $disabledEnabledAfter
+        }
+        Set-NewsGraspTaskMutationApplied -TaskName $disabledTaskName
     }
     $entryCanary = Invoke-NewsGraspProductionEntryCanary `
         -TaskName $RunnerTaskName `
@@ -1674,5 +1853,10 @@ $script:DeliveryReceiptSummary = [ordered]@{
 Write-NewsGraspInstallJournal -Phase 'verified'
 Write-NewsGraspInstallJournal -Phase 'committed'
 $script:InstallationCommitted = $true
+if ($taskWriterLeaseAcquired) {
+    $taskWriterMutex.ReleaseMutex()
+    $taskWriterMutex.Dispose()
+    $taskWriterLeaseAcquired = $false
+}
 Write-Host "News-Grasp ops scripts installed to $BinDir"
 Write-Host "Backup manifest: $ManifestPath"

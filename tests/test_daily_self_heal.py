@@ -322,18 +322,12 @@ def _canonical_live_runner_readiness_manifest() -> dict:
             "localTime": "06:00:00",
             "timeZone": "Asia/Tokyo",
         },
-        {
-            "triggerId": "audit-0640",
-            "kind": "daily",
-            "localTime": "06:40:00",
-            "timeZone": "Asia/Tokyo",
-        },
     ]
     authority = {
         "schemaVersion": "STABLE_TASK_AUTHORITY_V1",
         "taskName": "News-Grasp Production",
         "taskPath": "\\",
-        "multipleInstancesPolicy": "Parallel",
+        "multipleInstancesPolicy": "IgnoreNew",
         "action": deepcopy(action),
         "triggers": deepcopy(triggers),
         "workingDirectoryToken": "<RUNTIME_ROOT>",
@@ -357,7 +351,7 @@ def _canonical_live_runner_readiness_manifest() -> dict:
             "ok": True,
             "taskName": "News-Grasp Production",
             "taskPath": "\\",
-            "multipleInstancesPolicy": "Parallel",
+            "multipleInstancesPolicy": "IgnoreNew",
             "action": deepcopy(action),
             "triggers": deepcopy(triggers),
             "stableAuthority": deepcopy(authority),
@@ -513,6 +507,131 @@ def test_deadman_accepts_fresh_today_ok() -> None:
     )
 
     assert decision["alert"] is False
+
+
+def _deadman_topology_fixture(tmp_path: Path) -> tuple[dict[str, object], Path, Path]:
+    """DeadmanのTaskPath/Action/Principal/triggerを全項目持つ純粋fixture。"""
+    pythonw = tmp_path / "Python312" / "pythonw.exe"
+    launcher = tmp_path / "bin" / "news-grasp-deadman-launcher.pyw"
+    pythonw.parent.mkdir(parents=True)
+    launcher.parent.mkdir(parents=True)
+    pythonw.write_bytes(b"pythonw fixture")
+    launcher.write_text("# deadman launcher fixture\n", encoding="utf-8")
+    current_user = r"CONTOSO\hidek"
+    row = {
+        "task_name": "News-Grasp Deadman",
+        "task_path": "\\",
+        "enabled": True,
+        "state": "Ready",
+        "multiple_instances_policy": "IgnoreNew",
+        "execution_time_limit": "PT1H45M",
+        "principal_user_id": current_user,
+        "principal_logon_type": "Interactive",
+        "principal_run_level": "Limited",
+        "actions": [
+            {
+                "execute": str(pythonw),
+                "arguments": subprocess.list2cmdline([str(launcher)]),
+                "workingDirectory": str(launcher.parent),
+            }
+        ],
+        "triggers": [
+            {
+                "enabled": True,
+                "trigger_type": "MSFT_TaskDailyTrigger",
+                "days_interval": 1,
+                "start_boundary": "2026-08-22T06:40:00",
+                "repetition_interval": "PT1H",
+                "repetition_duration": "P1D",
+                "stop_at_duration_end": False,
+            }
+        ],
+    }
+    return {"current_user_id": current_user, "task_topology": [row]}, pythonw, launcher
+
+
+def test_deadman_topology_requires_exact_path_action_and_principal(tmp_path: Path) -> None:
+    """Deadmanはcanonical pythonw、単一launcher argv、TaskPath/Principalを同時に検査する。"""
+    details, pythonw, launcher = _deadman_topology_fixture(tmp_path)
+    contract = dsh._deadman_topology_contract(
+        details,
+        live_deadman_launcher_path=launcher,
+        expected_pythonw_path=pythonw,
+    )
+    assert contract == {"ok": True, "reason": ""}
+
+    invalid_cases: list[tuple[str, object]] = []
+    wrong_path = deepcopy(details)
+    wrong_path["task_topology"][0]["task_path"] = "\\News-Grasp"
+    invalid_cases.append(("task_path", wrong_path))
+    wrong_executable = deepcopy(details)
+    wrong_executable["task_topology"][0]["actions"][0]["execute"] = "pythonw.exe"
+    invalid_cases.append(("relative_pythonw", wrong_executable))
+    extra_argv = deepcopy(details)
+    extra_argv["task_topology"][0]["actions"][0]["arguments"] = subprocess.list2cmdline(
+        [str(launcher), "--unexpected"]
+    )
+    invalid_cases.append(("extra_launcher_argv", extra_argv))
+    wrong_user = deepcopy(details)
+    wrong_user["task_topology"][0]["principal_user_id"] = r"CONTOSO\other"
+    invalid_cases.append(("principal_user", wrong_user))
+    wrong_logon = deepcopy(details)
+    wrong_logon["task_topology"][0]["principal_logon_type"] = "Password"
+    invalid_cases.append(("principal_logon", wrong_logon))
+    wrong_level = deepcopy(details)
+    wrong_level["task_topology"][0]["principal_run_level"] = "Highest"
+    invalid_cases.append(("principal_level", wrong_level))
+    wrong_repetition = deepcopy(details)
+    wrong_repetition["task_topology"][0]["triggers"][0]["repetition_interval"] = "PT2H"
+    invalid_cases.append(("repetition_interval", wrong_repetition))
+    unknown_enabled = deepcopy(details)
+    unknown_enabled["task_topology"][0]["enabled"] = None
+    invalid_cases.append(("unknown_enabled", unknown_enabled))
+
+    for _label, candidate in invalid_cases:
+        result = dsh._deadman_topology_contract(
+            candidate,
+            live_deadman_launcher_path=launcher,
+            expected_pythonw_path=pythonw,
+        )
+        assert result["ok"] is False
+        assert result["reason"] == "deadman_task_definition_invalid"
+
+
+@pytest.mark.parametrize("enabled", [True, None, "unknown"])
+def test_disabled_legacy_tasks_require_absence_or_explicit_disabled(
+    enabled: object,
+) -> None:
+    """Pull/legacy Runnerのenabled/unknown観測はRed、disabledまたは不在だけを許可する。"""
+    for task_name in ("News-Grasp Pull", "News-Grasp Runner"):
+        result = dsh._disabled_legacy_topology_contract(
+            {
+                "task_topology": [
+                    {
+                        "task_name": task_name,
+                        "task_path": "\\",
+                        "enabled": enabled,
+                    }
+                ]
+            }
+        )
+        assert result["ok"] is False
+        assert result["reason"] == "legacy_task_remains_enabled"
+
+
+def test_disabled_legacy_tasks_accept_absent_or_disabled_root_tasks() -> None:
+    assert dsh._disabled_legacy_topology_contract({"task_topology": []}) == {
+        "ok": True,
+        "reason": "",
+    }
+    assert dsh._disabled_legacy_topology_contract(
+        {
+            "task_topology": [
+                {"task_name": "News-Grasp Pull", "task_path": "\\", "enabled": False},
+                {"task_name": "News-Grasp Runner", "task_path": "\\", "enabled": False},
+            ]
+        }
+    ) == {"ok": True, "reason": ""}
 
 
 def test_failure_signature_normalizes_url_to_host() -> None:
@@ -2789,15 +2908,17 @@ def _write_live_binding_authority_fixture(
 
 
 @pytest.mark.parametrize(
-    ("bootstrap_last_result", "expected_ok", "expected_reason"),
+    ("deadman_enabled", "bootstrap_last_result", "expected_ok", "expected_reason"),
     [
-        (0, True, ""),
-        (1, False, "bootstrap_task_last_result_not_ok"),
+        (True, 0, True, ""),
+        (True, 1, False, "bootstrap_task_last_result_not_ok"),
+        (False, 0, False, "deadman_task_definition_invalid"),
     ],
 )
 def test_verify_live_runner_readiness_accepts_pythonw_task_launcher_contract(
     monkeypatch,
     tmp_path: Path,
+    deadman_enabled: bool,
     bootstrap_last_result: int,
     expected_ok: bool,
     expected_reason: str,
@@ -2903,15 +3024,79 @@ creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
 
     runner_action = action_details(canonical_runner_argv, working_directory=production_runtime)
     bootstrap_action = action_details(canonical_bootstrap_argv)
+    deadman_launcher = live_bin / "news-grasp-deadman-launcher.pyw"
+    deadman_launcher.write_text("# deadman launcher fixture\n", encoding="utf-8")
+    current_user_id = r"CONTOSO\hidek"
+    runner_action["current_user_id"] = current_user_id
+    runner_action["task_topology"] = [
+        {
+            "task_name": "News-Grasp Deadman",
+            "task_path": "\\",
+            "enabled": deadman_enabled,
+            "state": "Ready",
+            "multiple_instances_policy": "IgnoreNew",
+            "execution_time_limit": "PT1H45M",
+            "principal_user_id": current_user_id,
+            "principal_logon_type": "Interactive",
+            "principal_run_level": "Limited",
+            "actions": [
+                {
+                    "execute": executable,
+                    "arguments": subprocess.list2cmdline([str(deadman_launcher.resolve())]),
+                    "workingDirectory": str(live_bin.resolve()),
+                }
+            ],
+            "triggers": [
+                {
+                    "enabled": True,
+                    "trigger_type": "MSFT_TaskDailyTrigger",
+                    "days_interval": 1,
+                    "start_boundary": "2026-08-22T06:40:00",
+                    "repetition_interval": "PT1H",
+                    "repetition_duration": "P1D",
+                    "stop_at_duration_end": False,
+                }
+            ],
+        },
+        {
+            "task_name": "News-Grasp Pull",
+            "task_path": "\\",
+            "enabled": False,
+            "state": "Ready",
+        },
+        {
+            "task_name": "News-Grasp Runner",
+            "task_path": "\\",
+            "enabled": False,
+            "state": "Ready",
+        },
+    ]
     cleanroom_triggers = [
-        {"enabled": True, "start_boundary": "2026-08-22T06:00:00"},
-        {"enabled": True, "start_boundary": "2026-08-22T06:40:00"},
+        {
+            "triggerId": "scheduled-0600",
+            "kind": "daily",
+            "localTime": "06:00:00",
+            "timeZone": "Asia/Tokyo",
+        },
+    ]
+    cleanroom_task_triggers = [
+        {
+            "enabled": True,
+            "trigger_type": "MSFT_TaskDailyTrigger",
+            "days_interval": 1,
+            "start_boundary": "2026-08-22T06:00:00",
+        }
     ]
     authority = {
         "schemaVersion": "STABLE_TASK_AUTHORITY_V1",
         "taskName": "News-Grasp Production",
         "taskPath": "\\",
-        "multipleInstancesPolicy": "Parallel",
+        "multipleInstancesPolicy": "IgnoreNew",
+        "principal": {
+            "userId": current_user_id,
+            "logonType": "Interactive",
+            "runLevel": "Limited",
+        },
         "action": canonical_runner_argv,
         "manifestAction": {
             "entryModule": "tools.news_grasp_cleanroom_dispatch",
@@ -2929,12 +3114,6 @@ creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
                 "triggerId": "scheduled-0600",
                 "kind": "daily",
                 "localTime": "06:00:00",
-                "timeZone": "Asia/Tokyo",
-            },
-            {
-                "triggerId": "audit-0640",
-                "kind": "daily",
-                "localTime": "06:40:00",
                 "timeZone": "Asia/Tokyo",
             },
         ],
@@ -2984,9 +3163,13 @@ creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
             "enabled": True,
             "task_name": "News-Grasp Production",
             "task_path": "\\",
-            "multiple_instances_policy": "Parallel",
+            "multiple_instances_policy": "IgnoreNew",
+            "current_user_id": current_user_id,
+            "principal_user_id": current_user_id,
+            "principal_logon_type": "Interactive",
+            "principal_run_level": "Limited",
             "state": "Ready",
-            "triggers": cleanroom_triggers,
+            "triggers": cleanroom_task_triggers,
             "last_task_result": 0,
             "next_run_time": "2026-08-22T06:00:00",
             "number_of_missed_runs": 0,
@@ -2999,8 +3182,19 @@ creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
             "task_name": "News-Grasp Bootstrap",
             "task_path": "\\",
             "multiple_instances_policy": "IgnoreNew",
+            "current_user_id": current_user_id,
+            "principal_user_id": current_user_id,
+            "principal_logon_type": "Interactive",
+            "principal_run_level": "Limited",
             "state": "Ready",
-            "triggers": [{"enabled": True, "start_boundary": "2026-08-22T05:55:00"}],
+            "triggers": [
+                {
+                    "enabled": True,
+                    "trigger_type": "MSFT_TaskDailyTrigger",
+                    "days_interval": 1,
+                    "start_boundary": "2026-08-22T05:55:00",
+                }
+            ],
             "last_task_result": bootstrap_last_result,
             "next_run_time": "2026-08-22T05:55:00",
             "last_run_time": "2026-08-22T05:55:00+09:00",
@@ -3078,10 +3272,10 @@ creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
 
     assert result["ok"] is expected_ok
     assert result["reason"] == expected_reason
-    assert result["scheduled_task"]["definition_ok"] is True
+    assert result["scheduled_task"]["definition_ok"] is deadman_enabled
     assert result["scheduled_task"]["bootstrap_last_task_result"] == bootstrap_last_result
-    assert result["scheduled_task"]["targets_live_task_launcher"] is True
-    assert result["scheduled_task"]["task_launcher_mode_ok"] is True
+    assert result["scheduled_task"]["targets_live_task_launcher"] is deadman_enabled
+    assert result["scheduled_task"]["task_launcher_mode_ok"] is deadman_enabled
     assert result["scheduled_task"]["bootstrap_definition_ok"] is True
     assert result["scheduled_task"]["high_cost_binding_action_ok"] is True
     assert result["external_control"]["status"] == "ready"

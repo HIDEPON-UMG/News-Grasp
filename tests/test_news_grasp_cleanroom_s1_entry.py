@@ -27,6 +27,8 @@ import pytest
 
 
 FIXTURE_PATH = Path(__file__).parent / "fixtures" / "news_grasp_cleanroom_s1_cases.json"
+REPO_ROOT = FIXTURE_PATH.parents[2]
+TOPOLOGY_AUTHORITY_PATH = REPO_ROOT / "config" / "news_grasp_task_topology_authority_v1.json"
 ACTIVE_TZ = ZoneInfo("Asia/Tokyo")
 EXPECTED_TOP_LEVEL_NODES = (
     "test_s1_manifest_single_entry",
@@ -55,6 +57,38 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _current_authority_manifest(root: Path) -> dict[str, Any]:
+    """typed topology registryのcurrentAuthority path/hashからmanifestを読む。"""
+    registry = json.loads(TOPOLOGY_AUTHORITY_PATH.read_text(encoding="utf-8"))
+    assert registry["schemaVersion"] == "NEWS_GRASP_TASK_TOPOLOGY_AUTHORITY_V1"
+    assert registry["status"] == "current"
+    authority = registry["currentAuthority"]
+    assert isinstance(authority, dict)
+    manifest_path = (root / str(authority["path"])).resolve()
+    assert manifest_path.is_relative_to(root.resolve())
+    raw = manifest_path.read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == authority["sha256"]
+    value = json.loads(raw.decode("utf-8"))
+    assert isinstance(value, dict)
+    return {
+        "schemaVersion": value["schemaVersion"],
+        "topLevelKeys": ["schemaVersion", "scheduleId", "tasks"],
+        "scheduleId": value["scheduleId"],
+        "tasksLength": len(value["tasks"]),
+        "taskKeys": [
+            "taskPath",
+            "taskName",
+            "multipleInstancesPolicy",
+            "triggers",
+            "action",
+        ],
+        "task": value["tasks"][0],
+        "keyOrderSignificant": False,
+        "arrayOrderSignificant": True,
+        "extraOrMissingKeyPolicy": "NEWS_GRASP_ENTRY_MANIFEST_INVALID",
+    }
+
+
 def _load_fixture() -> dict[str, Any]:
     data = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
     assert data["schemaVersion"] == "NEWS_GRASP_CLEANROOM_S1_CASES_V1"
@@ -63,7 +97,7 @@ def _load_fixture() -> dict[str, Any]:
     assert tuple(data["topLevelTestNodes"]) == EXPECTED_TOP_LEVEL_NODES
     assert len(data["topLevelTestNodes"]) == len(set(data["topLevelTestNodes"])) == 15
 
-    root = FIXTURE_PATH.parents[2]
+    root = REPO_ROOT
     expected_source_artifacts = {
         "config/news_grasp_cleanroom_control_s0_v2.json": "2b76d2b0aa73d22a43e0279c93cea3eecf3dff0874da6384c6abb74ed61d3a91",
         "config/news_grasp_cleanroom_s1_impact_receipt_v1.json": "8127c93297ce8d82528654751a4996c4ea085d91d888be651ea64ac5c3dd685c",
@@ -88,7 +122,14 @@ def _load_fixture() -> dict[str, Any]:
         (root / "config/news_grasp_cleanroom_s1_impact_receipt_v3.json").read_text(encoding="utf-8")
     )
     normative = data["normative"]
-    assert normative["manifest"] == v2["exactSchemas"]["manifest"]
+    current_manifest = _current_authority_manifest(root)
+    assert normative["manifest"] == current_manifest
+    assert v2["exactSchemas"]["manifest"] != current_manifest
+    assert v2["exactSchemas"]["manifest"]["task"]["multipleInstancesPolicy"] == "Parallel"
+    assert [trigger["triggerId"] for trigger in v2["exactSchemas"]["manifest"]["task"]["triggers"]] == [
+        "scheduled-0600",
+        "audit-0640",
+    ]
     assert normative["rawArgv"] == v2["exactSchemas"]["rawArgv"]
     assert normative["writer"] == v2["exactSchemas"]["writer"]
     assert normative["time"] == v2["exactSchemas"]["time"]
@@ -286,6 +327,30 @@ def test_s1_manifest_single_entry() -> None:
         production["error"],
         "NEWS_GRASP_ENTRY_MANIFEST_INVALID",
         lambda: production["validate_manifest"](invalid),
+    )
+
+
+def test_s1_current_authority_rejects_superseded_parallel_0640_manifest() -> None:
+    """旧V2のParallel+06:40は履歴入力に留まり、current manifestへ昇格できない。"""
+    data = _load_fixture()
+    production = _production()
+    current = _manifest(data)
+    assert production["validate_manifest"](current) == current
+
+    superseded = deepcopy(current)
+    superseded["tasks"][0]["multipleInstancesPolicy"] = "Parallel"
+    superseded["tasks"][0]["triggers"].append(
+        {
+            "triggerId": "audit-0640",
+            "kind": "daily",
+            "localTime": "06:40:00",
+            "timeZone": "Asia/Tokyo",
+        }
+    )
+    _expect_reason(
+        production["error"],
+        "NEWS_GRASP_ENTRY_MANIFEST_INVALID",
+        lambda: production["validate_manifest"](superseded),
     )
 
 

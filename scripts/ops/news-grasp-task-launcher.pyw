@@ -57,6 +57,7 @@ RUNTIME_PRODUCTION_MUTEX_PREFIX = "Global\\NewsGraspProductionRuntime-"
 RUNTIME_LEGACY_MUTEX_NAME = "Global\\NewsGraspProductionRuntimeConvergence"
 INSTALLED_NOPUBLISH_AUTHORITY_SCHEMA = "NEWS_GRASP_INSTALLED_NOPUBLISH_LAUNCH_AUTHORITY_V1"
 STABLE_TASK_AUTHORITY_SCHEMA = "STABLE_TASK_AUTHORITY_V1"
+TASK_TOPOLOGY_AUTHORITY_SCHEMA = "NEWS_GRASP_TASK_TOPOLOGY_AUTHORITY_V1"
 NEWS_GRASP_TASK_CONTEXT_REJECTED_EXIT = 67
 GLOBAL_GENERATION_MANIFEST_SCHEMA = (
     "NEWS_GRASP_GLOBAL_DEPENDENCY_GENERATION_MANIFEST_V1"
@@ -81,6 +82,51 @@ GLOBAL_GENERATION_MANIFEST_FIELDS = {
     "ownerAuthorityReceiptSha256",
     "validForGoalId",
 }
+
+
+def _task_topology_manifest_path(runtime_root: Path) -> Path:
+    """typed current-authorityがwhole-file hash束縛したmanifestだけを返す。"""
+    config_root = runtime_root.resolve(strict=True) / "config"
+    registry_path = config_root / "news_grasp_task_topology_authority_v1.json"
+    if (
+        not registry_path.is_file()
+        or registry_path.is_symlink()
+        or registry_path.stat().st_size > 64 * 1024
+    ):
+        raise RuntimeError("NEWS_GRASP_TASK_TOPOLOGY_AUTHORITY_INVALID")
+    try:
+        registry = json.loads(registry_path.read_text(encoding="utf-8-sig"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise RuntimeError("NEWS_GRASP_TASK_TOPOLOGY_AUTHORITY_INVALID") from exc
+    if (
+        not isinstance(registry, dict)
+        or set(registry) != {
+            "schemaVersion",
+            "status",
+            "currentAuthority",
+            "supersededTopologySources",
+        }
+        or registry.get("schemaVersion") != TASK_TOPOLOGY_AUTHORITY_SCHEMA
+        or registry.get("status") != "current"
+        or not isinstance(registry.get("currentAuthority"), dict)
+    ):
+        raise RuntimeError("NEWS_GRASP_TASK_TOPOLOGY_AUTHORITY_INVALID")
+    authority = registry["currentAuthority"]
+    relative = authority.get("path")
+    expected_sha256 = str(authority.get("sha256") or "").lower()
+    if (
+        relative != "config/news_grasp_cleanroom_task_manifest_v1.json"
+        or re.fullmatch(r"[0-9a-f]{64}", expected_sha256) is None
+    ):
+        raise RuntimeError("NEWS_GRASP_TASK_TOPOLOGY_AUTHORITY_INVALID")
+    manifest_path = runtime_root.resolve(strict=True) / str(relative)
+    if (
+        not manifest_path.is_file()
+        or manifest_path.is_symlink()
+        or hashlib.sha256(manifest_path.read_bytes()).hexdigest() != expected_sha256
+    ):
+        raise RuntimeError("NEWS_GRASP_TASK_TOPOLOGY_AUTHORITY_INVALID")
+    return manifest_path.resolve(strict=True)
 E2E_ATTEMPT_POLICY_ARGUMENT = "-E2EAttemptPolicyPath"
 E2E_LOGICAL_ATTEMPT_ARGUMENT = "-E2ELogicalAttempt"
 E2E_FINAL_ADMISSION_ARGUMENT = "-E2EFinalAdmissionPath"
@@ -833,7 +879,7 @@ _CLEANROOM_BOOTSTRAP_TASK_NAME = "News-Grasp Bootstrap"
 _CLEANROOM_CONTEXT_TIMEOUT_SECONDS = 10
 _CLEANROOM_CONTEXT_MAX_OUTPUT_BYTES = 256 * 1024
 _CLEANROOM_CONTEXT_MAX_ANCESTORS = 8
-_CLEANROOM_CONTEXT_EXPECTED_TRIGGER_TIMES = ("06:00:00", "06:40:00")
+_CLEANROOM_CONTEXT_EXPECTED_TRIGGER_TIMES = ("06:00:00",)
 _CLEANROOM_CHILD_TIMEOUT_SECONDS = 3600
 _CLEANROOM_CHILD_MAX_OUTPUT_BYTES = 256 * 1024
 _CLEANROOM_CONTEXT_PAYLOAD_FIELDS = frozenset(
@@ -1248,7 +1294,7 @@ def _cleanroom_default_task_context_validator(
         or payload.get("enabled") is not True
         or payload.get("state") != "Running"
         or payload.get("taskPath") != "\\"
-        or payload.get("multipleInstancesPolicy") != "Parallel"
+        or payload.get("multipleInstancesPolicy") != "IgnoreNew"
     ):
         return False
     try:
@@ -1305,7 +1351,7 @@ def _cleanroom_default_task_context_validator(
         return False
 
     triggers = payload.get("triggers")
-    if type(triggers) is not list or len(triggers) != 2:
+    if type(triggers) is not list or len(triggers) != 1:
         return False
     observed_trigger_times: list[str] = []
     for trigger in triggers:
@@ -1398,7 +1444,7 @@ def _cleanroom_default_task_origin_validator(
         or payload.get("enabled") is not True
         or payload.get("state") != "Running"
         or payload.get("taskPath") != "\\"
-        or payload.get("multipleInstancesPolicy") != "Parallel"
+        or payload.get("multipleInstancesPolicy") != "IgnoreNew"
     ):
         return False
     try:
@@ -1594,10 +1640,9 @@ def run_task_origin_canary(
             runtime_root
             or (Path.home() / ".news-grasp-runtime" / "production-runtime")
         ).resolve()
-        canary_manifest = Path(
-            manifest_path
-            or (canary_runtime / "config" / "news_grasp_cleanroom_task_manifest_v1.json")
-        ).resolve()
+        canary_manifest = _task_topology_manifest_path(canary_runtime)
+        if manifest_path is not None and Path(manifest_path).resolve() != canary_manifest:
+            raise RuntimeError("NEWS_GRASP_TASK_TOPOLOGY_AUTHORITY_INVALID")
         pipeline_receipt = _run_cleanroom_entry_canary_pipeline(
             nonce=nonce,
             generation=canary_generation,
@@ -2222,7 +2267,7 @@ def run_cleanroom_dispatch(
         # stable authorityを確定する。欠落・不正は副作用なしでfail-closed。
         return 66
     runtime_root = Path.home() / ".news-grasp-runtime"
-    manifest_path = runtime_root / "production-runtime" / "config" / "news_grasp_cleanroom_task_manifest_v1.json"
+    manifest_path = _task_topology_manifest_path(runtime_root / "production-runtime")
     raw_argv = [
         "dispatch",
         "--schedule-id",
@@ -5243,7 +5288,7 @@ def main() -> int:
             generation = _cleanroom_canary_generation(args.canary_generation)
             observed = datetime.now(_CLEANROOM_TOKYO)
             runtime_root = Path(args.runtime_root or (Path.home() / ".news-grasp-runtime" / "production-runtime"))
-            manifest_path = runtime_root / "config" / "news_grasp_cleanroom_task_manifest_v1.json"
+            manifest_path = _task_topology_manifest_path(runtime_root)
             receipt_path = args.canary_receipt_path or (
                 bin_dir / f"news-grasp-entry-canary-{nonce}.json"
             )

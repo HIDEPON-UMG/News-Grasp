@@ -437,6 +437,84 @@ def _task_action_records(details: dict) -> list[dict[str, str]]:
     return records
 
 
+def _deadman_topology_contract(
+    task_details: dict,
+    *,
+    live_deadman_launcher_path: Path,
+    expected_pythonw_path: Path,
+) -> dict[str, object]:
+    """Production観測に同梱されたDeadmanのAction/triggerをexact検査する。"""
+    topology = task_details.get("task_topology")
+    if isinstance(topology, dict):
+        topology = [topology]
+    if not isinstance(topology, list):
+        return {"ok": False, "reason": "deadman_task_observation_missing"}
+    matches = [
+        row
+        for row in topology
+        if isinstance(row, dict) and row.get("task_name") == "News-Grasp Deadman"
+    ]
+    if len(matches) != 1:
+        return {"ok": False, "reason": "deadman_task_cardinality_invalid"}
+    row = matches[0]
+    actions = _task_action_records(row)
+    triggers = row.get("triggers")
+    if isinstance(triggers, dict):
+        triggers = [triggers]
+    if len(actions) != 1 or not isinstance(triggers, list) or len(triggers) != 1:
+        return {"ok": False, "reason": "deadman_task_cardinality_invalid"}
+    action = actions[0]
+    trigger = triggers[0] if isinstance(triggers[0], dict) else {}
+    launcher_text = _command_path_text(live_deadman_launcher_path)
+    argument_values = _windows_action_arguments(str(action.get("arguments") or ""))
+    working_text = _command_path_text(action.get("workingDirectory") or "")
+    expected_working = _command_path_text(live_deadman_launcher_path.parent)
+    current_user_id = str(task_details.get("current_user_id") or "")
+    ok = bool(
+        row.get("task_path") == "\\"
+        and row.get("enabled") is True
+        and str(row.get("state") or "") in {"Ready", "Running"}
+        and row.get("multiple_instances_policy") == "IgnoreNew"
+        and row.get("execution_time_limit") == "PT1H45M"
+        and _command_path_text(action.get("execute") or "")
+        == _command_path_text(expected_pythonw_path)
+        and [_command_path_text(value) for value in argument_values] == [launcher_text]
+        and working_text == expected_working
+        and current_user_id
+        and str(row.get("principal_user_id") or "").casefold() == current_user_id.casefold()
+        and str(row.get("principal_logon_type") or "") == "Interactive"
+        and str(row.get("principal_run_level") or "") == "Limited"
+        and _daily_trigger_local_time(trigger) == "06:40:00"
+        and trigger.get("repetition_interval") == "PT1H"
+        and trigger.get("repetition_duration") == "P1D"
+        and trigger.get("stop_at_duration_end") is False
+    )
+    return {"ok": ok, "reason": "" if ok else "deadman_task_definition_invalid"}
+
+
+def _disabled_legacy_topology_contract(task_details: dict) -> dict[str, object]:
+    """Pullと旧Runnerは不存在またはroot配下のdisabled一件だけを許す。"""
+    topology = task_details.get("task_topology")
+    if isinstance(topology, dict):
+        topology = [topology]
+    if not isinstance(topology, list):
+        return {"ok": False, "reason": "legacy_task_observation_missing"}
+    for task_name in ("News-Grasp Pull", "News-Grasp Runner"):
+        matches = [
+            row
+            for row in topology
+            if isinstance(row, dict) and row.get("task_name") == task_name
+        ]
+        if len(matches) > 1:
+            return {"ok": False, "reason": "legacy_task_cardinality_invalid"}
+        if matches and (
+            matches[0].get("enabled") is not False
+            or str(matches[0].get("task_path") or "") != "\\"
+        ):
+            return {"ok": False, "reason": "legacy_task_remains_enabled"}
+    return {"ok": True, "reason": ""}
+
+
 def _windows_action_arguments(arguments: str) -> list[str]:
     try:
         values = shlex.split(arguments, posix=False)
@@ -450,6 +528,24 @@ def _windows_action_arguments(arguments: str) -> list[str]:
             return []
         normalized.append(value)
     return normalized
+
+
+def _daily_trigger_local_time(trigger: dict) -> str | None:
+    """Scheduled Task daily triggerのlocal時刻と型を秒までexactに検査する。"""
+    if (
+        str(trigger.get("trigger_type") or "") != "MSFT_TaskDailyTrigger"
+        or trigger.get("days_interval") != 1
+        or trigger.get("enabled") is not True
+    ):
+        return None
+    boundary = str(trigger.get("start_boundary") or "")
+    try:
+        observed = datetime.fromisoformat(boundary.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if observed.microsecond != 0:
+        return None
+    return observed.strftime("%H:%M:%S")
 
 
 def _ancestor_identities(path: Path) -> tuple[tuple[str, int, int, int], ...]:
@@ -808,7 +904,13 @@ def _validate_live_high_cost_binding_authority(
             if (
                 authority.get("taskName") != "News-Grasp Production"
                 or authority.get("taskPath") != "\\"
-                or authority.get("multipleInstancesPolicy") != "Parallel"
+                or authority.get("multipleInstancesPolicy") != "IgnoreNew"
+                or authority.get("principal")
+                != {
+                    "userId": str(task_details.get("current_user_id") or ""),
+                    "logonType": "Interactive",
+                    "runLevel": "Limited",
+                }
                 or authority.get("manifestAction") != expected_manifest_action
                 or authority.get("workingDirectoryToken") != "<RUNTIME_ROOT>"
                 or authority.get("triggers") != expected_triggers
@@ -1134,7 +1236,11 @@ def _cleanroom_enabled_topology_extras(*details: dict) -> list[dict[str, object]
             rows.extend(value)
     if not observed:
         return None
-    canonical = {"News-Grasp Production", "News-Grasp Bootstrap"}
+    canonical = {
+        "News-Grasp Production",
+        "News-Grasp Bootstrap",
+        "News-Grasp Deadman",
+    }
     extras: list[dict[str, object]] = []
     seen: set[tuple[str, str]] = set()
     for row in rows:
@@ -1152,14 +1258,32 @@ def _cleanroom_enabled_topology_extras(*details: dict) -> list[dict[str, object]
 
 
 def _load_cleanroom_control_manifest(ops_repo_root: Path) -> dict | None:
-    """release parityへ渡すmanifestをrepoの正本ファイルから読む。"""
-    candidates = (
-        ops_repo_root / "config" / "news_grasp_cleanroom_task_manifest_v1.json",
-        Path(__file__).resolve().parents[1] / "config" / "news_grasp_cleanroom_task_manifest_v1.json",
-    )
-    for candidate in candidates:
+    """typed topology authorityがhash束縛したcurrent manifestだけを読む。"""
+    roots = (ops_repo_root, Path(__file__).resolve().parents[1])
+    for root in roots:
+        registry_path = root / "config" / "news_grasp_task_topology_authority_v1.json"
         try:
-            if not candidate.is_file() or candidate.is_symlink():
+            if not registry_path.is_file() or registry_path.is_symlink():
+                continue
+            registry = json.loads(registry_path.read_text(encoding="utf-8-sig"))
+            if (
+                not isinstance(registry, dict)
+                or registry.get("schemaVersion") != "NEWS_GRASP_TASK_TOPOLOGY_AUTHORITY_V1"
+                or registry.get("status") != "current"
+                or not isinstance(registry.get("currentAuthority"), dict)
+            ):
+                continue
+            authority = registry["currentAuthority"]
+            if authority.get("path") != "config/news_grasp_cleanroom_task_manifest_v1.json":
+                continue
+            expected_sha256 = str(authority.get("sha256") or "").lower()
+            candidate = root / str(authority["path"])
+            if (
+                not re.fullmatch(r"[0-9a-f]{64}", expected_sha256)
+                or not candidate.is_file()
+                or candidate.is_symlink()
+                or sha256_file(candidate).lower() != expected_sha256
+            ):
                 continue
             value = json.loads(candidate.read_text(encoding="utf-8-sig"))
             if isinstance(value, dict):
@@ -1209,14 +1333,13 @@ def _cleanroom_live_task_definition(
     observed_times: list[str] = []
     if isinstance(trigger_rows, list):
         for trigger in trigger_rows:
-            if not isinstance(trigger, dict) or trigger.get("enabled") is False:
+            if not isinstance(trigger, dict):
                 continue
-            boundary = str(trigger.get("start_boundary") or "")
-            match = re.search(r"T(\d{2}):(\d{2})(?::\d{2})?", boundary)
-            if match:
-                observed_times.append(f"{int(match.group(1)):02d}:{int(match.group(2)):02d}:00")
+            observed_time = _daily_trigger_local_time(trigger)
+            if observed_time is not None:
+                observed_times.append(observed_time)
     observed_times = sorted(observed_times)
-    expected_times = sorted(["06:00:00", "06:40:00"])
+    expected_times = ["06:00:00"]
     authority_path = live_task_launcher_path.resolve().parent / "news-grasp-stable-task-authority-v1.json"
     authority: dict = {}
     try:
@@ -1231,6 +1354,7 @@ def _cleanroom_live_task_definition(
             "taskName",
             "taskPath",
             "multipleInstancesPolicy",
+            "principal",
             "manifestAction",
             "triggers",
             "workingDirectoryToken",
@@ -1258,7 +1382,12 @@ def _cleanroom_live_task_definition(
         and task_details.get("enabled") is True
         and str(task_details.get("task_name") or "") == "News-Grasp Production"
         and str(task_details.get("task_path") or "\\") == "\\"
-        and str(task_details.get("multiple_instances_policy") or "") == "Parallel"
+        and str(task_details.get("multiple_instances_policy") or "") == "IgnoreNew"
+        and str(task_details.get("principal_user_id") or "").casefold()
+        == str(task_details.get("current_user_id") or "").casefold()
+        and bool(task_details.get("current_user_id"))
+        and str(task_details.get("principal_logon_type") or "") == "Interactive"
+        and str(task_details.get("principal_run_level") or "") == "Limited"
         and runner_argv == expected_argv
         and os.path.normcase(working_directory) == os.path.normcase(expected_working_directory)
         and observed_times == expected_times
@@ -1267,7 +1396,13 @@ def _cleanroom_live_task_definition(
         and authority_projection.get("schemaVersion") == "STABLE_TASK_AUTHORITY_V1"
         and authority_projection.get("taskName") == "News-Grasp Production"
         and authority_projection.get("taskPath") == "\\"
-        and authority_projection.get("multipleInstancesPolicy") == "Parallel"
+        and authority_projection.get("multipleInstancesPolicy") == "IgnoreNew"
+        and authority_projection.get("principal")
+        == {
+            "userId": str(task_details.get("current_user_id") or ""),
+            "logonType": "Interactive",
+            "runLevel": "Limited",
+        }
         and authority_projection.get("workingDirectoryToken") == "<RUNTIME_ROOT>"
         and authority_projection.get("authoritySha256")
     )
@@ -1281,7 +1416,7 @@ def _cleanroom_live_task_definition(
         "stableAuthority": logical_authority,
         "taskName": "News-Grasp Production",
         "taskPath": "\\",
-        "multipleInstancesPolicy": "Parallel",
+        "multipleInstancesPolicy": "IgnoreNew",
         "workingDirectory": working_directory,
         "bootstrap": bootstrap_details,
         "bootstrapExecutionReceipt": execution_receipt or {},
@@ -1295,7 +1430,7 @@ def _cleanroom_live_task_definition(
                     {
                         "taskPath": "\\",
                         "taskName": "News-Grasp Production",
-                        "multipleInstancesPolicy": "Parallel",
+                        "multipleInstancesPolicy": "IgnoreNew",
                         "triggers": [dict(item) for item in _CLEANROOM_MANIFEST_TRIGGERS],
                         "action": dict(_CLEANROOM_MANIFEST_ACTION),
                     }
@@ -1308,7 +1443,7 @@ def _cleanroom_live_task_definition(
                         "taskPath": "\\",
                         "taskName": "News-Grasp Production",
                         "enabled": True,
-                        "multipleInstancesPolicy": "Parallel",
+                        "multipleInstancesPolicy": "IgnoreNew",
                         "triggers": [dict(item) for item in _CLEANROOM_MANIFEST_TRIGGERS],
                         "action": dict(_CLEANROOM_MANIFEST_ACTION),
                     }
@@ -1789,12 +1924,6 @@ _CLEANROOM_MANIFEST_TRIGGERS = [
         "localTime": "06:00:00",
         "timeZone": "Asia/Tokyo",
     },
-    {
-        "triggerId": "audit-0640",
-        "kind": "daily",
-        "localTime": "06:40:00",
-        "timeZone": "Asia/Tokyo",
-    },
 ]
 
 
@@ -1815,7 +1944,7 @@ def _cleanroom_readiness_shape_ok(readiness: dict) -> bool:
     if (
         scheduled_task.get("taskName") != "News-Grasp Production"
         or scheduled_task.get("taskPath") != "\\"
-        or scheduled_task.get("multipleInstancesPolicy") != "Parallel"
+        or scheduled_task.get("multipleInstancesPolicy") != "IgnoreNew"
         or scheduled_task.get("action") != _CLEANROOM_MANIFEST_ACTION
         or scheduled_task.get("triggers") != _CLEANROOM_MANIFEST_TRIGGERS
     ):
@@ -1832,7 +1961,7 @@ def _cleanroom_readiness_shape_ok(readiness: dict) -> bool:
         "schemaVersion": "STABLE_TASK_AUTHORITY_V1",
         "taskName": "News-Grasp Production",
         "taskPath": "\\",
-        "multipleInstancesPolicy": "Parallel",
+        "multipleInstancesPolicy": "IgnoreNew",
         "action": _CLEANROOM_MANIFEST_ACTION,
         "triggers": _CLEANROOM_MANIFEST_TRIGGERS,
         "workingDirectoryToken": "<RUNTIME_ROOT>",
@@ -2029,11 +2158,26 @@ def _scheduled_task_details(
         "$generationTimestamp=[string]$generation.issuedAtUtc; "
         "if ([string]::IsNullOrWhiteSpace($generationTimestamp)) { $generationTimestamp=[string]$generation.generationCreatedAt }; "
         "if ([string]::IsNullOrWhiteSpace($generationTimestamp)) { $generationTimestamp=[string]$generation.createdAt } } catch {} }; "
+        "$currentUserId=[Security.Principal.WindowsIdentity]::GetCurrent().Name; "
         "$taskTopology=@(Get-ScheduledTask -ErrorAction Stop | Where-Object { "
-        "$_.TaskName -in @('News-Grasp Production','News-Grasp Bootstrap','News-Grasp Deadman','News-Grasp Runner') "
+        "$_.TaskName -in @('News-Grasp Production','News-Grasp Bootstrap','News-Grasp Deadman','News-Grasp Pull','News-Grasp Runner') "
         "-or $_.TaskName -like 'News-Grasp *' } | ForEach-Object { "
-        "[ordered]@{ task_name=[string]$_.TaskName; task_path=[string]$_.TaskPath; "
-        "enabled=[bool]$_.Settings.Enabled; state=[string]$_.State } }); "
+        "$topologyTask=$_; "
+        "$topologyActions=@($topologyTask.Actions)|ForEach-Object { "
+        "[ordered]@{execute=[string]$_.Execute;arguments=[string]$_.Arguments;workingDirectory=[string]$_.WorkingDirectory} }; "
+        "$topologyTriggers=@($topologyTask.Triggers)|ForEach-Object { "
+        "[ordered]@{start_boundary=[string]$_.StartBoundary;enabled=[bool]$_.Enabled;"
+        "trigger_type=[string]$_.CimClass.CimClassName;days_interval=[int]$_.DaysInterval;"
+        "repetition_interval=[string]$_.Repetition.Interval;repetition_duration=[string]$_.Repetition.Duration;"
+        "stop_at_duration_end=[bool]$_.Repetition.StopAtDurationEnd} }; "
+        "[ordered]@{ task_name=[string]$topologyTask.TaskName; task_path=[string]$topologyTask.TaskPath; "
+        "enabled=[bool]$topologyTask.Settings.Enabled; state=[string]$topologyTask.State; "
+        "multiple_instances_policy=[string]$topologyTask.Settings.MultipleInstances; "
+        "execution_time_limit=[string]$topologyTask.Settings.ExecutionTimeLimit; "
+        "principal_user_id=[string]$topologyTask.Principal.UserId; "
+        "principal_logon_type=[string]$topologyTask.Principal.LogonType; "
+        "principal_run_level=[string]$topologyTask.Principal.RunLevel; "
+        "actions=@($topologyActions);triggers=@($topologyTriggers) } }); "
         "$actions=(@($task.Actions) | ForEach-Object { "
         "(([string]$_.Execute + ' ' + [string]$_.Arguments).Trim()) "
         "}) -join ' ; '; "
@@ -2041,7 +2185,8 @@ def _scheduled_task_details(
         "[ordered]@{ execute=[string]$_.Execute; arguments=[string]$_.Arguments; workingDirectory=[string]$_.WorkingDirectory } "
         "}; "
         "$triggers=@($task.Triggers) | ForEach-Object { "
-        "[ordered]@{ start_boundary=[string]$_.StartBoundary; enabled=[bool]$_.Enabled } "
+        "[ordered]@{ start_boundary=[string]$_.StartBoundary; enabled=[bool]$_.Enabled; "
+        "trigger_type=[string]$_.CimClass.CimClassName; days_interval=[int]$_.DaysInterval } "
         "}; "
         "[ordered]@{ "
         "ok=$true; "
@@ -2050,6 +2195,10 @@ def _scheduled_task_details(
         "enabled=[bool]$task.Settings.Enabled; "
         "state=[string]$task.State; "
         "multiple_instances_policy=[string]$task.Settings.MultipleInstances; "
+        "principal_user_id=[string]$task.Principal.UserId; "
+        "principal_logon_type=[string]$task.Principal.LogonType; "
+        "principal_run_level=[string]$task.Principal.RunLevel; "
+        "current_user_id=$currentUserId; "
         "action_summary=$actions; "
         "actions=$actionRecords; "
         "triggers=$triggers; "
@@ -2498,14 +2647,11 @@ def verify_live_runner_readiness(
         bootstrap_times: list[str] = []
         if isinstance(bootstrap_triggers, list):
             for trigger in bootstrap_triggers:
-                if not isinstance(trigger, dict) or trigger.get("enabled") is False:
+                if not isinstance(trigger, dict):
                     continue
-                boundary = str(trigger.get("start_boundary") or "")
-                match = re.search(r"T(\d{2}):(\d{2})(?::\d{2})?", boundary)
-                if match:
-                    bootstrap_times.append(
-                        f"{int(match.group(1)):02d}:{int(match.group(2)):02d}:00"
-                    )
+                observed_time = _daily_trigger_local_time(trigger)
+                if observed_time is not None:
+                    bootstrap_times.append(observed_time)
         bootstrap_action_records = _task_action_records(bootstrap_details)
         bootstrap_definition_ok = bool(
             bootstrap_details.get("ok") is True
@@ -2514,6 +2660,11 @@ def verify_live_runner_readiness(
             and str(bootstrap_details.get("task_name") or "") == "News-Grasp Bootstrap"
             and str(bootstrap_details.get("task_path") or "\\") == "\\"
             and str(bootstrap_details.get("multiple_instances_policy") or "") == "IgnoreNew"
+            and str(bootstrap_details.get("principal_user_id") or "").casefold()
+            == str(bootstrap_details.get("current_user_id") or "").casefold()
+            and bool(bootstrap_details.get("current_user_id"))
+            and str(bootstrap_details.get("principal_logon_type") or "") == "Interactive"
+            and str(bootstrap_details.get("principal_run_level") or "") == "Limited"
             and sorted(bootstrap_times) == ["05:55:00"]
             and len(bootstrap_action_records) == 1
         )
@@ -2524,10 +2675,25 @@ def verify_live_runner_readiness(
         bootstrap_repairs_before_run = bool(
             bootstrap_definition_ok and bootstrap_last_observation_ok
         )
+        deadman_contract = _deadman_topology_contract(
+            task_details,
+            live_deadman_launcher_path=(
+                live_task_launcher_path.resolve().parent
+                / "news-grasp-deadman-launcher.pyw"
+            ),
+            expected_pythonw_path=Path(
+                str(cleanroom_binding.get("task_pythonw_path") or "")
+            ),
+        )
+        deadman_definition_ok = deadman_contract.get("ok") is True
+        legacy_contract = _disabled_legacy_topology_contract(task_details)
+        legacy_definition_ok = legacy_contract.get("ok") is True
         cleanroom_definition_ok = bool(
             cleanroom_definition.get("ok") is True
             and cleanroom_binding.get("ok") is True
             and bootstrap_definition_ok
+            and deadman_definition_ok
+            and legacy_definition_ok
             and str(task_details.get("state") or "") in {"Ready", "Running"}
             and task_launcher_checksum["synced"]
             and task_launcher_contract.get("ok") is True
@@ -2542,7 +2708,7 @@ def verify_live_runner_readiness(
             "task_name": "News-Grasp Production",
             "state": task_details.get("state"),
             "enabled": task_details.get("enabled"),
-            "multipleInstancesPolicy": "Parallel",
+            "multipleInstancesPolicy": "IgnoreNew",
             "action": dict(_CLEANROOM_MANIFEST_ACTION),
             "triggers": [dict(item) for item in _CLEANROOM_MANIFEST_TRIGGERS],
             "stableAuthority": cleanroom_definition.get("stableAuthority", {}),
@@ -2556,10 +2722,12 @@ def verify_live_runner_readiness(
             "targets_live_task_launcher": cleanroom_definition_ok,
             "task_launcher_mode_ok": cleanroom_definition_ok,
             "task_launcher_ready": task_launcher_checksum["synced"] and task_launcher_contract.get("ok"),
-            "multiple_instances_policy_ok": task_details.get("multiple_instances_policy") == "Parallel",
+            "multiple_instances_policy_ok": task_details.get("multiple_instances_policy") == "IgnoreNew",
             "trigger_is_daily_0600": True,
-            "trigger_is_daily_0640": True,
+            "trigger_is_daily_0640": False,
             "bootstrap_definition_ok": bootstrap_definition_ok,
+            "deadman_definition_ok": deadman_definition_ok,
+            "legacy_definition_ok": legacy_definition_ok,
             "bootstrap_last_observation_ok": bootstrap_last_observation_ok,
             "bootstrap_repairs_before_run": bootstrap_repairs_before_run,
             "bootstrap_state": bootstrap_details.get("state"),
@@ -2574,7 +2742,11 @@ def verify_live_runner_readiness(
         }
         result["stable_authority"] = cleanroom_definition.get("stableAuthority", {})
         if not cleanroom_task_ok:
-            if cleanroom_definition_ok and not bootstrap_last_observation_ok:
+            if not deadman_definition_ok:
+                reason = str(deadman_contract.get("reason") or "deadman_task_definition_invalid")
+            elif not legacy_definition_ok:
+                reason = str(legacy_contract.get("reason") or "legacy_task_definition_invalid")
+            elif cleanroom_definition_ok and not bootstrap_last_observation_ok:
                 reason = str(
                     cleanroom_definition.get("bootstrapObservationReason")
                     or "bootstrap_task_last_result_not_ok"

@@ -5,18 +5,12 @@
     {
       "taskPath": "\\",
       "taskName": "News-Grasp Production",
-      "multipleInstancesPolicy": "Parallel",
+      "multipleInstancesPolicy": "IgnoreNew",
       "triggers": [
         {
           "triggerId": "scheduled-0600",
           "kind": "daily",
           "localTime": "06:00:00",
-          "timeZone": "Asia/Tokyo"
-        },
-        {
-          "triggerId": "audit-0640",
-          "kind": "daily",
-          "localTime": "06:40:00",
           "timeZone": "Asia/Tokyo"
         }
       ],

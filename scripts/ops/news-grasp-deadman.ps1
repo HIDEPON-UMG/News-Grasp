@@ -42,12 +42,18 @@ $RepoDir = Resolve-NewsGraspRepoDir -Override $RepoDir
 if ($EvidenceRepoDir) { $env:NEWS_GRASP_EVIDENCE_REPO_DIR = (Resolve-Path -LiteralPath $EvidenceRepoDir).Path }
 function Get-CanonicalRecoveryControlBinding {
     $profileRoot = [Environment]::GetFolderPath([Environment+SpecialFolder]::UserProfile)
-    $canonicalOps = Join-Path $profileRoot 'OneDrive\ドキュメント\ProjectFolders\News-Grasp'
     $canonicalPython = Join-Path $profileRoot 'AppData\Local\Programs\Python\Python312\python.exe'
     $canonicalRuntime = Join-Path $profileRoot '.news-grasp-runtime\production-runtime'
     $trustedRemote = 'https://github.com/HIDEPON-UMG/News-Grasp.git'
     $gitExe = 'C:\Program Files\Git\cmd\git.exe'
-    $gitSafeArgs = @('-c', 'core.hooksPath=NUL', '-c', 'core.fsmonitor=false', '-c', 'core.attributesFile=NUL')
+    $env:GIT_TERMINAL_PROMPT = '0'
+    $gitSafeArgs = @(
+        '-c', 'core.hooksPath=NUL',
+        '-c', 'core.fsmonitor=false',
+        '-c', 'core.attributesFile=NUL',
+        '-c', 'http.lowSpeedLimit=1',
+        '-c', 'http.lowSpeedTime=15'
+    )
     $bindingPath = Join-Path $env:USERPROFILE 'bin\news-grasp-recovery-runtime-binding-v1.json'
     try {
         $bindingItem = Get-Item -LiteralPath $bindingPath -Force -ErrorAction Stop
@@ -58,7 +64,6 @@ function Get-CanonicalRecoveryControlBinding {
         $python = (Resolve-Path -LiteralPath ([string]$binding.pythonExe) -ErrorAction Stop).Path
         $audit = (Resolve-Path -LiteralPath ([string]$binding.auditControlPath) -ErrorAction Stop).Path
         $daily = (Resolve-Path -LiteralPath ([string]$binding.dailySelfHealPath) -ErrorAction Stop).Path
-        $expectedOps = (Resolve-Path -LiteralPath $canonicalOps -ErrorAction Stop).Path
         $expectedPython = (Resolve-Path -LiteralPath $canonicalPython -ErrorAction Stop).Path
         $expectedRuntime = (Resolve-Path -LiteralPath $canonicalRuntime -ErrorAction Stop).Path
         $opsHead = (& $gitExe @gitSafeArgs -C $ops rev-parse HEAD 2>$null | Out-String).Trim().ToLowerInvariant()
@@ -69,7 +74,6 @@ function Get-CanonicalRecoveryControlBinding {
         $pythonSignerSubject = [string]$pythonSignature.SignerCertificate.Subject
         $pythonSignerThumbprint = ([string]$pythonSignature.SignerCertificate.Thumbprint).ToLowerInvariant()
         if (
-            -not [string]::Equals($ops, $expectedOps, [StringComparison]::OrdinalIgnoreCase) -or
             -not [string]::Equals($python, $expectedPython, [StringComparison]::OrdinalIgnoreCase) -or
             -not [string]::Equals((Resolve-Path -LiteralPath ([string]$binding.productionRuntimeRoot) -ErrorAction Stop).Path, $expectedRuntime, [StringComparison]::OrdinalIgnoreCase) -or
             [string]$binding.trustedRemote -cne $trustedRemote -or

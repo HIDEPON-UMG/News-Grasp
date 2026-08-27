@@ -878,8 +878,8 @@ def test_installer_rollback_restores_absent_files_and_task_definitions() -> None
     assert "Export-ScheduledTask" in source
     assert "existed_before" in source
     assert "enabled_before" in source
-    assert "Register-ScheduledTask -TaskName $taskName -Xml $xml -Force" in source
-    assert "Unregister-ScheduledTask -TaskName $taskName -Confirm:$false" in source
+    assert "Register-ScheduledTask -TaskPath '\\' -TaskName $taskName -Xml $xml -Force" in source
+    assert "Unregister-ScheduledTask -TaskPath '\\' -TaskName $taskName -Confirm:$false" in source
     assert "Remove-NewsGraspVerifiedFile" in source
     assert "$missionAuthorityBackup" in source
     assert "file = 'audit-mission-authority-v1.json'" in source
@@ -899,21 +899,24 @@ def test_installer_rollback_restores_absent_files_and_task_definitions() -> None
     verified = source.rindex("Assert-NewsGraspInstalledState")
     committed = source.rindex("$script:InstallationCommitted = $true")
     assert verified < committed, "INSTALL_COMMITTED_BEFORE_RELOAD_VERIFICATION"
-    assert "Enable-ScheduledTask -TaskName $RunnerTaskName" in source
-    assert "Enable-ScheduledTask -TaskName $BootstrapTaskName" in source
+    assert "Enable-ScheduledTask -TaskPath '\\' -TaskName $RunnerTaskName" in source
+    assert "Enable-ScheduledTask -TaskPath '\\' -TaskName $BootstrapTaskName" in source
     assert "if (-not $runnerWasEnabled)" not in source
     assert "if (-not $bootstrapWasEnabled)" not in source
-    assert "Register-ScheduledTask -TaskName $DeadmanTaskName" not in source
-    assert "Enable-ScheduledTask -TaskName $DeadmanTaskName" not in source
+    assert "Register-ScheduledTask -TaskPath '\\' -TaskName $DeadmanTaskName" in source
+    assert "Enable-ScheduledTask -TaskPath '\\' -TaskName $DeadmanTaskName" in source
+    assert "[string] $PullTaskName = 'News-Grasp Pull'" in source
+    assert "Disable-ScheduledTask -TaskPath '\\' -TaskName $disabledTaskName -ErrorAction Stop" in source
     assert "Register-ScheduledTask -TaskName $LegacyRunnerTaskName" not in source
     assert "Enable-ScheduledTask -TaskName $LegacyRunnerTaskName" not in source
+    assert "foreach ($disabledTaskName in @($PullTaskName, $LegacyRunnerTaskName))" in source
     assert "schtasks.exe /Query /TN $DeadmanTaskName" not in source
     assert "if ($actions.Count -ne 1 -or $triggers.Count -ne @($spec.starts).Count)" in source
     assert "[string]$action.WorkingDirectory" in source
     assert "[bool]$task.Settings.StartWhenAvailable" in source
     assert "[string]$task.Settings.MultipleInstances -ne [string]$spec.policy" in source
-    assert "$canonicalProductionTriggers = @('T06:00', 'T06:40')" in source
-    assert "policy = 'Parallel'" in source
+    assert "$canonicalProductionTriggers = @('T06:00:00')" in source
+    assert "policy = 'Parallel'" not in source
     assert "policy = 'IgnoreNew'" in source
     assert "news-grasp-daily-v1" in source
     assert "tools.news_grasp_cleanroom_dispatch" in source
@@ -923,9 +926,15 @@ def test_installer_rollback_restores_absent_files_and_task_definitions() -> None
     assert "06:00" in source
     assert "06:40" in source
     assert "05:55" in source
-    assert "$deadmanRepetition = New-CimInstance" not in source
-    assert "-ClassName 'MSFT_TaskRepetitionPattern'" not in source
-    assert "$deadmanTrigger.Repetition = $deadmanRepetition" not in source
+    assert "$deadmanRepetition = New-CimInstance" in source
+    assert "-ClassName 'MSFT_TaskRepetitionPattern'" in source
+    assert "$deadmanTrigger.Repetition = $deadmanRepetition" in source
+    assert "NEWS_GRASP_TASK_NAME_AUTHORITY_INVALID" in source
+    assert "$managedTaskNames = @($RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName, $PullTaskName, $LegacyRunnerTaskName)" in source
+    assert "foreach ($taskName in @($RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName, $PullTaskName, $LegacyRunnerTaskName))" in source
+    assert "-ExpectedTaskNames $managedTaskNames" in source
+    assert "foreach ($disabledTaskName in @($PullTaskName, $LegacyRunnerTaskName))" in source
+    assert "legacy task state invalid" in source
     assert "trap {" in source
     assert "Invoke-NewsGraspInstallRollback" in source
 

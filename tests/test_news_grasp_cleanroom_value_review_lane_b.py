@@ -58,7 +58,12 @@ def _stable_authority(daily_self_heal: Any, *, generation_id: str) -> dict[str, 
         "schemaVersion": "STABLE_TASK_AUTHORITY_V1",
         "taskName": "News-Grasp Production",
         "taskPath": "\\",
-        "multipleInstancesPolicy": "Parallel",
+        "multipleInstancesPolicy": "IgnoreNew",
+        "principal": {
+            "userId": "TEST\\news-grasp",
+            "logonType": "Interactive",
+            "runLevel": "Limited",
+        },
         "manifestAction": deepcopy(daily_self_heal._CLEANROOM_MANIFEST_ACTION),
         "triggers": deepcopy(daily_self_heal._CLEANROOM_MANIFEST_TRIGGERS),
         "workingDirectoryToken": "<RUNTIME_ROOT>",
@@ -84,6 +89,8 @@ def _patch_readiness_seams(
     launcher = tmp_path / "bin" / "news-grasp-task-launcher.pyw"
     launcher.parent.mkdir(parents=True, exist_ok=True)
     launcher.write_text("# deterministic lane-b launcher fixture\n", encoding="utf-8")
+    deadman_launcher = launcher.parent / "news-grasp-deadman-launcher.pyw"
+    deadman_launcher.write_text("# deterministic deadman fixture\n", encoding="utf-8")
     binding_path = tmp_path / "bin" / "news-grasp-high-cost-binding-v1.json"
     binding_path.write_text("{}\n", encoding="utf-8")
 
@@ -102,12 +109,20 @@ def _patch_readiness_seams(
         "state": "Ready",
         "task_name": "News-Grasp Production",
         "task_path": "\\",
-        "multiple_instances_policy": "Parallel",
+        "multiple_instances_policy": "IgnoreNew",
+        "principal_user_id": "TEST\\news-grasp",
+        "current_user_id": "TEST\\news-grasp",
+        "principal_logon_type": "Interactive",
+        "principal_run_level": "Limited",
         "last_task_result": 0,
         "last_run_time": "2026-08-22T06:00:00+09:00",
         "triggers": [
-            {"enabled": True, "start_boundary": "2026-08-22T06:00:00+09:00"},
-            {"enabled": True, "start_boundary": "2026-08-22T06:40:00+09:00"},
+            {
+                "enabled": True,
+                "trigger_type": "MSFT_TaskDailyTrigger",
+                "days_interval": 1,
+                "start_boundary": "2026-08-22T06:00:00+09:00",
+            },
         ],
         "actions": [
             {
@@ -115,6 +130,39 @@ def _patch_readiness_seams(
                 "arguments": "news-grasp-task-launcher.pyw dispatch",
                 "workingDirectory": str(RUNTIME_ROOT / "production-runtime"),
             }
+        ],
+        "task_topology": [
+            {
+                "task_name": "News-Grasp Deadman",
+                "task_path": "\\",
+                "enabled": True,
+                "state": "Ready",
+                "multiple_instances_policy": "IgnoreNew",
+                "execution_time_limit": "PT1H45M",
+                "principal_user_id": "TEST\\news-grasp",
+                "principal_logon_type": "Interactive",
+                "principal_run_level": "Limited",
+                "actions": [
+                    {
+                        "execute": "C:\\Python312\\pythonw.exe",
+                        "arguments": subprocess.list2cmdline([str(deadman_launcher)]),
+                        "workingDirectory": str(deadman_launcher.parent),
+                    }
+                ],
+                "triggers": [
+                    {
+                        "enabled": True,
+                        "trigger_type": "MSFT_TaskDailyTrigger",
+                        "days_interval": 1,
+                        "start_boundary": "2026-08-22T06:40:00+09:00",
+                        "repetition_interval": "PT1H",
+                        "repetition_duration": "P1D",
+                        "stop_at_duration_end": False,
+                    }
+                ],
+            },
+            {"task_name": "News-Grasp Pull", "task_path": "\\", "enabled": False},
+            {"task_name": "News-Grasp Runner", "task_path": "\\", "enabled": False},
         ],
     }
     bootstrap_details = {
@@ -124,6 +172,10 @@ def _patch_readiness_seams(
         "task_name": "News-Grasp Bootstrap",
         "task_path": "\\",
         "multiple_instances_policy": "IgnoreNew",
+        "principal_user_id": "TEST\\news-grasp",
+        "current_user_id": "TEST\\news-grasp",
+        "principal_logon_type": "Interactive",
+        "principal_run_level": "Limited",
         "last_task_result": 0,
         "last_run_time": bootstrap_last_run_time,
         "lastRunTime": bootstrap_last_run_time,
@@ -132,7 +184,12 @@ def _patch_readiness_seams(
         "generation_id": bootstrap_generation_id,
         "generationId": bootstrap_generation_id,
         "triggers": [
-            {"enabled": True, "start_boundary": "2026-08-22T05:55:00+09:00"}
+            {
+                "enabled": True,
+                "trigger_type": "MSFT_TaskDailyTrigger",
+                "days_interval": 1,
+                "start_boundary": "2026-08-22T05:55:00+09:00",
+            }
         ],
         "actions": [
             {
@@ -160,6 +217,7 @@ def _patch_readiness_seams(
         "ok": True,
         "binding_path": str(binding_path),
         "binding_receipt_sha256": "b" * 64,
+        "task_pythonw_path": "C:\\Python312\\pythonw.exe",
     }
 
     monkeypatch.setattr(daily_self_heal, "compare_files", checksum)
@@ -243,7 +301,11 @@ def _definition_fixture(
         "state": "Ready",
         "task_name": "News-Grasp Production",
         "task_path": "\\",
-        "multiple_instances_policy": "Parallel",
+        "multiple_instances_policy": "IgnoreNew",
+        "principal_user_id": "TEST\\news-grasp",
+        "current_user_id": "TEST\\news-grasp",
+        "principal_logon_type": "Interactive",
+        "principal_run_level": "Limited",
         "actions": [
             {
                 "execute": str(pythonw),
@@ -252,8 +314,12 @@ def _definition_fixture(
             }
         ],
         "triggers": [
-            {"enabled": True, "start_boundary": "2026-08-22T06:00:00+09:00"},
-            {"enabled": True, "start_boundary": "2026-08-22T06:40:00+09:00"},
+            {
+                "enabled": True,
+                "trigger_type": "MSFT_TaskDailyTrigger",
+                "days_interval": 1,
+                "start_boundary": "2026-08-22T06:00:00+09:00",
+            },
         ],
     }
     bootstrap_details = {
@@ -263,6 +329,10 @@ def _definition_fixture(
         "task_name": "News-Grasp Bootstrap",
         "task_path": "\\",
         "multiple_instances_policy": "IgnoreNew",
+        "principal_user_id": "TEST\\news-grasp",
+        "current_user_id": "TEST\\news-grasp",
+        "principal_logon_type": "Interactive",
+        "principal_run_level": "Limited",
         "last_task_result": 0,
         "last_run_time": bootstrap_last_run_time,
         "lastRunTime": bootstrap_last_run_time,
@@ -277,7 +347,12 @@ def _definition_fixture(
         "installed_manifest_sha256": hashlib.sha256(MANIFEST_PATH.read_bytes()).hexdigest(),
         "installedManifestSha256": hashlib.sha256(MANIFEST_PATH.read_bytes()).hexdigest(),
         "triggers": [
-            {"enabled": True, "start_boundary": "2026-08-22T05:55:00+09:00"}
+            {
+                "enabled": True,
+                "trigger_type": "MSFT_TaskDailyTrigger",
+                "days_interval": 1,
+                "start_boundary": "2026-08-22T05:55:00+09:00",
+            }
         ],
         "actions": [
             {

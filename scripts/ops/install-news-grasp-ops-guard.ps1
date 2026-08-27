@@ -2,6 +2,12 @@
 
 . (Join-Path $PSScriptRoot 'install-news-grasp-verified-file-boundary.ps1')
 
+$script:NewsGraspInstallJournalRecoverablePhases = @(
+    'prepared', 'tasks_quiesced', 'files_installed', 'authority_issued',
+    'tasks_converged', 'verified'
+)
+$script:NewsGraspInstallJournalTerminalPhases = @('committed', 'rolled_back')
+
 function Test-NewsGraspWindowsAbsolutePath {
     param([Parameter(Mandatory = $true)][string] $Path)
     return $Path -match '^(?:[A-Za-z]:[\\/]|\\\\)'
@@ -658,10 +664,7 @@ function Assert-NewsGraspRecoveryJournal {
     if (
         [string]$Journal.schemaVersion -ne 'NEWS_GRASP_OPS_INSTALL_JOURNAL_V1' -or
         [string]$Journal.transaction_id -notmatch '^\d{8}-\d{6}$' -or
-        [string]$Journal.phase -notin @(
-            'prepared', 'files_installed', 'authority_issued',
-            'tasks_converged', 'verified'
-        )
+        [string]$Journal.phase -notin $script:NewsGraspInstallJournalRecoverablePhases
     ) {
         throw 'NEWS_GRASP_INSTALL_JOURNAL_SCHEMA_INVALID'
     }

@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "NEWS_GRASP_TASK_TOPOLOGY_AUTHORITY_V1",
+  "status": "current",
+  "currentAuthority": {
+    "path": "config/news_grasp_cleanroom_task_manifest_v1.json",
+    "sha256": "59157a5a9f831b3cf0c2336fe78781377f6843acb3ab57ac1750b28a8b4a17c7",
+    "production": {
+      "taskPath": "\\",
+      "taskName": "News-Grasp Production",
+      "enabled": true,
+      "multipleInstancesPolicy": "IgnoreNew",
+      "localTimes": ["06:00:00"]
+    },
+    "bootstrap": {
+      "taskPath": "\\",
+      "taskName": "News-Grasp Bootstrap",
+      "enabled": true,
+      "multipleInstancesPolicy": "IgnoreNew",
+      "localTimes": ["05:55:00"]
+    },
+    "deadman": {
+      "taskPath": "\\",
+      "taskName": "News-Grasp Deadman",
+      "enabled": true,
+      "multipleInstancesPolicy": "IgnoreNew",
+      "localTimes": ["06:40:00"],
+      "repetitionInterval": "PT1H",
+      "repetitionDuration": "P1D",
+      "launcherTimeoutMinutes": 100,
+      "executionTimeLimit": "PT1H45M"
+    },
+    "disabledOrAbsent": ["News-Grasp Pull", "News-Grasp Runner"]
+  },
+  "supersededTopologySources": [
+    {
+      "path": "config/news_grasp_cleanroom_s1_impact_receipt_v1.json",
+      "sha256": "8127c93297ce8d82528654751a4996c4ea085d91d888be651ea64ac5c3dd685c",
+      "supersededJsonPointers": ["/manifest"],
+      "disposition": "topology_evidence_only"
+    },
+    {
+      "path": "config/news_grasp_cleanroom_s1_impact_receipt_v2.json",
+      "sha256": "fdd3f3bcc8b83c458a8df5f5a7a9767767871c098adfe9feedebd502a11850ef",
+      "supersededJsonPointers": ["/exactSchemas/manifest"],
+      "disposition": "topology_evidence_only"
+    },
+    {
+      "path": "config/news_grasp_cleanroom_s1_impl_packet_v1.json",
+      "sha256": "8300a0d3b42903aee094b64a060aa0e07ad812d59cffbad01c854174c640fa70",
+      "disposition": "superseded_nonexecutable"
+    },
+    {
+      "path": "config/news_grasp_cleanroom_s1_impl_packet_v2.json",
+      "sha256": "199b10f01f33560772f7083c8720182f4a9e82d30aef1923a2e600dc6857025d",
+      "disposition": "superseded_nonexecutable"
+    },
+    {
+      "path": "config/news_grasp_cleanroom_s5_impl_packet_v1.json",
+      "sha256": "cfc21da692113128c926de699e2a2c294a50bb21d884760ce0c07fc8365c0a31",
+      "disposition": "superseded_nonexecutable"
+    }
+  ]
+}

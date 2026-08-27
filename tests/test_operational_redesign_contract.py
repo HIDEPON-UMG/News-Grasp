@@ -516,8 +516,21 @@ def test_ng2_wp03_installer_tasks_bind_stable_launcher_without_worktree_path() -
     installer = (repo / "scripts/ops/install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
     assert '$runnerArgs = "`"$taskLauncherPath`" dispatch --schedule-id news-grasp-daily-v1 --intent reconcile"' in installer
     assert '$bootstrapArgs = "`"$taskLauncherPath`" bootstrap --scheduled-task-name `"$BootstrapTaskName`" --high-cost-binding-path' in installer
-    assert '$deadmanTask = Get-ScheduledTask -TaskName $DeadmanTaskName' in installer
-    assert 'Disable-ScheduledTask -TaskName $DeadmanTaskName' in installer
+    assert "[string] $PullTaskName = 'News-Grasp Pull'" in installer
+    assert "Register-ScheduledTask -TaskPath '\\' -TaskName $DeadmanTaskName" in installer
+    assert "Enable-ScheduledTask -TaskPath '\\' -TaskName $DeadmanTaskName" in installer
+    assert 'Disable-ScheduledTask -TaskName $DeadmanTaskName' not in installer
+    assert "Disable-ScheduledTask -TaskPath '\\' -TaskName $disabledTaskName -ErrorAction Stop" in installer
+    assert "foreach ($disabledTaskName in @($PullTaskName, $LegacyRunnerTaskName))" in installer
+    managed_names = (
+        "$RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName, "
+        "$PullTaskName, $LegacyRunnerTaskName"
+    )
+    assert f"$managedTaskNames = @({managed_names})" in installer
+    assert f"foreach ($taskName in @({managed_names}))" in installer
+    assert "-ExpectedTaskNames $managedTaskNames" in installer
+    assert "foreach ($disabledTaskName in @($PullTaskName, $LegacyRunnerTaskName))" in installer
+    assert 'NEWS_GRASP_TASK_NAME_AUTHORITY_INVALID' in installer
     assert '--repo-dir `"$RepoDir`"' not in installer
 
 
