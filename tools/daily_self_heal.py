@@ -52,6 +52,35 @@ RUNNER_START_MINUTES = 6 * 60
 BOOTSTRAP_START_MINUTES = 5 * 60 + 55
 
 
+def _same_local_windows_principal(observed: object, expected: object) -> bool:
+    """Task Schedulerがローカルaccountを短縮して返す場合だけ同一視する。"""
+    observed_text = str(observed or "").strip()
+    expected_text = str(expected or "").strip()
+    if not observed_text or not expected_text:
+        return False
+    if observed_text.casefold() == expected_text.casefold():
+        return True
+    computer = str(os.environ.get("COMPUTERNAME") or "").strip()
+    if not computer:
+        return False
+
+    def split_local(value: str) -> tuple[str, str] | None:
+        if "\\" not in value:
+            return "", value
+        domain, username = value.rsplit("\\", 1)
+        if domain.casefold() != computer.casefold():
+            return None
+        return domain, username
+
+    observed_parts = split_local(observed_text)
+    expected_parts = split_local(expected_text)
+    if observed_parts is None or expected_parts is None:
+        return False
+    if not observed_parts[0] and not expected_parts[0]:
+        return False
+    return observed_parts[1].casefold() == expected_parts[1].casefold()
+
+
 def _current_jst_date() -> str:
     """次回production readinessを検証する現在のJST日付を返す。"""
     return datetime.now(timezone(timedelta(hours=9))).date().isoformat()
@@ -481,7 +510,7 @@ def _deadman_topology_contract(
         and [_command_path_text(value) for value in argument_values] == [launcher_text]
         and working_text == expected_working
         and current_user_id
-        and str(row.get("principal_user_id") or "").casefold() == current_user_id.casefold()
+        and _same_local_windows_principal(row.get("principal_user_id"), current_user_id)
         and str(row.get("principal_logon_type") or "") == "Interactive"
         and str(row.get("principal_run_level") or "") == "Limited"
         and _daily_trigger_local_time(trigger) == "06:40:00"
@@ -905,12 +934,13 @@ def _validate_live_high_cost_binding_authority(
                 authority.get("taskName") != "News-Grasp Production"
                 or authority.get("taskPath") != "\\"
                 or authority.get("multipleInstancesPolicy") != "IgnoreNew"
-                or authority.get("principal")
-                != {
-                    "userId": str(task_details.get("current_user_id") or ""),
-                    "logonType": "Interactive",
-                    "runLevel": "Limited",
-                }
+                or not isinstance(authority.get("principal"), dict)
+                or not _same_local_windows_principal(
+                    authority["principal"].get("userId"),
+                    task_details.get("current_user_id"),
+                )
+                or authority["principal"].get("logonType") != "Interactive"
+                or authority["principal"].get("runLevel") != "Limited"
                 or authority.get("manifestAction") != expected_manifest_action
                 or authority.get("workingDirectoryToken") != "<RUNTIME_ROOT>"
                 or authority.get("triggers") != expected_triggers
@@ -1383,8 +1413,9 @@ def _cleanroom_live_task_definition(
         and str(task_details.get("task_name") or "") == "News-Grasp Production"
         and str(task_details.get("task_path") or "\\") == "\\"
         and str(task_details.get("multiple_instances_policy") or "") == "IgnoreNew"
-        and str(task_details.get("principal_user_id") or "").casefold()
-        == str(task_details.get("current_user_id") or "").casefold()
+        and _same_local_windows_principal(
+            task_details.get("principal_user_id"), task_details.get("current_user_id")
+        )
         and bool(task_details.get("current_user_id"))
         and str(task_details.get("principal_logon_type") or "") == "Interactive"
         and str(task_details.get("principal_run_level") or "") == "Limited"
@@ -1397,12 +1428,13 @@ def _cleanroom_live_task_definition(
         and authority_projection.get("taskName") == "News-Grasp Production"
         and authority_projection.get("taskPath") == "\\"
         and authority_projection.get("multipleInstancesPolicy") == "IgnoreNew"
-        and authority_projection.get("principal")
-        == {
-            "userId": str(task_details.get("current_user_id") or ""),
-            "logonType": "Interactive",
-            "runLevel": "Limited",
-        }
+        and isinstance(authority_projection.get("principal"), dict)
+        and _same_local_windows_principal(
+            authority_projection["principal"].get("userId"),
+            task_details.get("current_user_id"),
+        )
+        and authority_projection["principal"].get("logonType") == "Interactive"
+        and authority_projection["principal"].get("runLevel") == "Limited"
         and authority_projection.get("workingDirectoryToken") == "<RUNTIME_ROOT>"
         and authority_projection.get("authoritySha256")
     )
@@ -2660,8 +2692,10 @@ def verify_live_runner_readiness(
             and str(bootstrap_details.get("task_name") or "") == "News-Grasp Bootstrap"
             and str(bootstrap_details.get("task_path") or "\\") == "\\"
             and str(bootstrap_details.get("multiple_instances_policy") or "") == "IgnoreNew"
-            and str(bootstrap_details.get("principal_user_id") or "").casefold()
-            == str(bootstrap_details.get("current_user_id") or "").casefold()
+            and _same_local_windows_principal(
+                bootstrap_details.get("principal_user_id"),
+                bootstrap_details.get("current_user_id"),
+            )
             and bool(bootstrap_details.get("current_user_id"))
             and str(bootstrap_details.get("principal_logon_type") or "") == "Interactive"
             and str(bootstrap_details.get("principal_run_level") or "") == "Limited"

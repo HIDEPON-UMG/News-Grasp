@@ -24,6 +24,16 @@ from tools.daily_self_heal import (
 )
 
 
+def test_local_windows_principal_accepts_scheduler_short_name_only_for_local_domain(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("COMPUTERNAME", "HIDEKI-AI-PRO")
+    assert dsh._same_local_windows_principal("hideki", r"HIDEKI-AI-PRO\hideki")
+    assert dsh._same_local_windows_principal(r"HIDEKI-AI-PRO\hideki", "hideki")
+    assert not dsh._same_local_windows_principal("hideki", r"FOREIGN\hideki")
+    assert not dsh._same_local_windows_principal("other", r"HIDEKI-AI-PRO\hideki")
+
+
 def _write_local_sw(repo_root: Path, version: str = "expected-version") -> None:
     docs = repo_root / "docs"
     docs.mkdir(parents=True, exist_ok=True)
