@@ -1514,8 +1514,45 @@ def validate_recovery_execution_receipt(
             raise ValueError("RECOVERY_EXECUTION_RESEAL_COUNT_INVALID")
         from tools.news_grasp_recovery_transaction import audit_deadlines
 
-        if any(value.get(field) != expected for field, expected in audit_deadlines(issue_date).items()):
-            raise ValueError("RECOVERY_EXECUTION_DEADLINE_DRIFT")
+        deadline_fields = audit_deadlines(issue_date)
+        if any(value.get(field) != expected for field, expected in deadline_fields.items()):
+            if value.get("receiptResealCount", 0) != 1:
+                raise ValueError("RECOVERY_EXECUTION_DEADLINE_DRIFT")
+            try:
+                preflight_deadline = _parse_clock(
+                    value.get("preflightDeadlineAt"),
+                    code="RECOVERY_EXECUTION_DEADLINE_DRIFT",
+                )
+                target_reserve = _parse_clock(
+                    value.get("targetCloseoutReserveAt"),
+                    code="RECOVERY_EXECUTION_DEADLINE_DRIFT",
+                )
+                target_deadline = _parse_clock(
+                    value.get("targetDeadlineAt"),
+                    code="RECOVERY_EXECUTION_DEADLINE_DRIFT",
+                )
+                high_cost_cutoff = _parse_clock(
+                    value.get("highCostCutoffAt"),
+                    code="RECOVERY_EXECUTION_DEADLINE_DRIFT",
+                )
+                hard_deadline = _parse_clock(
+                    value.get("hardDeadlineAt"),
+                    code="RECOVERY_EXECUTION_DEADLINE_DRIFT",
+                )
+                issued_at = _parse_clock(
+                    value.get("issuedAt"),
+                    code="RECOVERY_EXECUTION_DEADLINE_DRIFT",
+                )
+            except ValueError:
+                raise
+            if not (
+                issued_at <= preflight_deadline
+                <= target_reserve
+                <= target_deadline
+                <= high_cost_cutoff
+                <= hard_deadline
+            ):
+                raise ValueError("RECOVERY_EXECUTION_DEADLINE_DRIFT")
     authority: dict[str, Any] | None = None
     authority_path = Path(str(value.get("recoveryAuthorityPath") or ""))
     for prefix, schemas, code in (
