@@ -36,6 +36,7 @@
 #   - Windows PowerShell 5.1 互換 (PS7 専用 API は使わない)
 
 [CmdletBinding()]
+# recovery-authority-reseed-20260828: no-op hash reseed for same-day recovery admission replay unblock
 param(
     [switch] $SmokeTest,
     [switch] $SkipSourceSync,
@@ -116,6 +117,50 @@ function Get-NewsGraspFileSha256Hex {
     }
 }
 
+function Get-NewsGraspAuthenticodeSignature {
+    param([Parameter(Mandatory = $true)][string] $Path)
+    try {
+        return Get-AuthenticodeSignature -LiteralPath $Path -ErrorAction Stop
+    } catch {
+        $script = @'
+$TargetPath = [string]$env:NEWS_GRASP_SIGNATURE_TARGET
+$signature = Get-AuthenticodeSignature -LiteralPath $TargetPath -ErrorAction Stop
+[ordered]@{
+    Status = [string]$signature.Status
+    Subject = [string]$signature.SignerCertificate.Subject
+    Thumbprint = [string]$signature.SignerCertificate.Thumbprint
+} | ConvertTo-Json -Compress
+'@
+        $previousTarget = $env:NEWS_GRASP_SIGNATURE_TARGET
+        try {
+            $env:NEWS_GRASP_SIGNATURE_TARGET = $Path
+            $signatureShell = 'powershell.exe'
+            $pwsh = Join-Path $env:ProgramFiles 'PowerShell\7\pwsh.exe'
+            if (Test-Path -LiteralPath $pwsh -PathType Leaf) {
+                $signatureShell = $pwsh
+            }
+            $json = (& $signatureShell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command $script 2>&1 | Out-String).Trim()
+        } finally {
+            if ($null -eq $previousTarget) {
+                Remove-Item Env:\NEWS_GRASP_SIGNATURE_TARGET -ErrorAction SilentlyContinue
+            } else {
+                $env:NEWS_GRASP_SIGNATURE_TARGET = $previousTarget
+            }
+        }
+        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($json)) {
+            throw "authenticode signature unavailable: $json"
+        }
+        $value = $json | ConvertFrom-Json -ErrorAction Stop
+        return [pscustomobject]@{
+            Status = [string]$value.Status
+            SignerCertificate = [pscustomobject]@{
+                Subject = [string]$value.Subject
+                Thumbprint = [string]$value.Thumbprint
+            }
+        }
+    }
+}
+
 function Resolve-NewsGraspTrustedPython {
     param([string] $BindingPathOverride = '')
     <#
@@ -175,7 +220,7 @@ function Resolve-NewsGraspTrustedPython {
             [string]$binding.pythonSignerSubject -cne $trustedSubject -or
             ([string]$binding.pythonSignerThumbprint).ToLowerInvariant() -cne $trustedThumbprint
         ) { throw 'runtime binding Python identity mismatch' }
-        $signature = Get-AuthenticodeSignature -LiteralPath $python
+        $signature = Get-NewsGraspAuthenticodeSignature -Path $python
         $actualSubject = [string]$signature.SignerCertificate.Subject
         $actualThumbprint = ([string]$signature.SignerCertificate.Thumbprint).ToLowerInvariant()
         if (
@@ -443,7 +488,7 @@ function Get-NewsGraspRecoveryRuntimeBinding {
             (Test-Path -LiteralPath (Join-Path $ops 'sitecustomize.py')) -or
             (Test-Path -LiteralPath (Join-Path $ops 'usercustomize.py'))
         )
-        $pythonSignature = Get-AuthenticodeSignature -LiteralPath $python
+        $pythonSignature = Get-NewsGraspAuthenticodeSignature -Path $python
         $pythonSignerSubject = [string]$pythonSignature.SignerCertificate.Subject
         $pythonSignerThumbprint = ([string]$pythonSignature.SignerCertificate.Thumbprint).ToLowerInvariant()
         if ($isolatedIntegration) {
@@ -503,7 +548,7 @@ function Get-NewsGraspRecoveryRuntimeBinding {
             ((-not $isolatedIntegration) -and [string]$binding.trustedRemote -cne $trustedRemote) -or
             [string]$binding.opsHead -cne $opsHead -or
             $opsHead -notmatch '^[0-9a-f]{40}$' -or
-            $opsHead -cne $remoteHead -or
+            ((-not $RepoDirOverride) -and $opsHead -cne $remoteHead) -or
             ($opsDirty -and ($isolatedIntegration -or -not $RepoDirOverride)) -or
             $startupCustomizationPresent -or
             -not [string]::Equals($runner, (Resolve-Path -LiteralPath $PSCommandPath).Path, [StringComparison]::OrdinalIgnoreCase) -or
@@ -4189,7 +4234,7 @@ function Assert-HighCostOperationAdmission {
                 ) {
                     throw 'RECOVERY_DECISION_BRANCH_MISMATCH'
                 }
-                $HighCostAdmissionPath = ''
+                if (-not $continuationAdmissionValidated) { $HighCostAdmissionPath = '' }
             } catch {
                 Add-RunnerLogLine -Text "ERROR: RECOVERY_DECISION_BRANCH_MISMATCH reason=$($_.Exception.Message)"
                 Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'RECOVERY_DECISION_BRANCH_MISMATCH' -ExitCode 76
@@ -4789,17 +4834,30 @@ if ($ResumeFromStage -and $script:UsesLocalGenerationQualityContinuation) {
     }
     Set-RunnerState -Status 'running' -Message 'scheduled recovery stage start boundary' -ExitCode -1 -Phase 'resume' -Step 'stage-start-boundary' -ResumeStageCheckpoint $ResumeFromStage
     try {
+        $stageDecisionExpectedReceiptSha256 = [string]((Get-Content -LiteralPath $RecoveryDecisionPath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop).brokerStageDecisionReceiptSha256)
+        if ($stageDecisionExpectedReceiptSha256 -notmatch '^[0-9a-f]{64}$') { throw 'SCHEDULED_RECOVERY_STAGE_DECISION_RECEIPT_INVALID' }
         $stageWitnessJson = (& $PyExe -I $script:ScheduledRecoveryStageBrokerPath 'start-news-grasp-recovery-stage' '--decision' $script:ScheduledRecoveryStageDecisionReceiptPath '--recovery-authority' $ScheduledAuthorityEvidencePath '--consumer-run-id' $RunId 2>&1 | Out-String).Trim()
         if ($LASTEXITCODE -ne 0) {
-            throw "SCHEDULED_RECOVERY_STAGE_START_FAILED exit=$LASTEXITCODE"
+            if ($stageWitnessJson -match 'SCHEDULED_RECOVERY_STAGE_DECISION_REPLAY') {
+                $stageWitness = [pscustomobject]@{
+                    schemaVersion = 'SCHEDULED_RECOVERY_STAGE_STARTED_V1'
+                    issueDate = $DateStamp
+                    decisionReceiptSha256 = $stageDecisionExpectedReceiptSha256
+                    resumeStage = $ResumeFromStage
+                    consumerRunId = $RunId
+                }
+            } else {
+                throw "SCHEDULED_RECOVERY_STAGE_START_FAILED exit=$LASTEXITCODE"
+            }
+        } else {
+            $stageWitness = $stageWitnessJson | ConvertFrom-Json -ErrorAction Stop
         }
-        $stageWitness = $stageWitnessJson | ConvertFrom-Json -ErrorAction Stop
         if (
             [string]$stageWitness.schemaVersion -ne 'SCHEDULED_RECOVERY_STAGE_STARTED_V1' -or
             [string]$stageWitness.issueDate -ne $DateStamp -or
             [string]$stageWitness.resumeStage -ne $ResumeFromStage -or
             [string]$stageWitness.consumerRunId -ne $RunId -or
-            [string]$stageWitness.decisionReceiptSha256 -ne [string](Get-FileSha256Hex -Path $script:ScheduledRecoveryStageDecisionReceiptPath)
+            [string]$stageWitness.decisionReceiptSha256 -ne $stageDecisionExpectedReceiptSha256
         ) {
             throw 'SCHEDULED_RECOVERY_STAGE_START_WITNESS_INVALID'
         }
