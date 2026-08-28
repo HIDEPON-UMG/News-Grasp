@@ -1828,12 +1828,23 @@ function Test-NewsGraspFinalizationStateLineage {
         $lineageFields = @(
             'date', 'run_intent', 'run_id', 'artifactRoot', 'opsRoot',
             'dailyRootId', 'rootOperationId', 'producerOperationId',
-            'producerRunIntent', 'lineageReceiptSha256', 'completionAuthorityId'
+            'producerRunIntent', 'lineageReceiptSha256'
         )
         foreach ($field in $lineageFields) {
-            $currentValue = [string]$CurrentState.$field
-            $producerValue = [string]$producer.$field
+            $currentValue = ''
+            $producerValue = ''
+            if ($CurrentState.PSObject.Properties.Name -contains $field) { $currentValue = [string]$CurrentState.$field }
+            if ($producer.PSObject.Properties.Name -contains $field) { $producerValue = [string]$producer.$field }
             if (-not $currentValue -or $currentValue -cne $producerValue) {
+                throw "lineage mismatch field=$field"
+            }
+        }
+        foreach ($field in @('completionAuthorityId')) {
+            $currentValue = ''
+            $producerValue = ''
+            if ($CurrentState.PSObject.Properties.Name -contains $field) { $currentValue = [string]$CurrentState.$field }
+            if ($producer.PSObject.Properties.Name -contains $field) { $producerValue = [string]$producer.$field }
+            if (($currentValue -or $producerValue) -and ($currentValue -cne $producerValue)) {
                 throw "lineage mismatch field=$field"
             }
         }
