@@ -1,15 +1,80 @@
-schema_version = "NEWS_GRASP_640_AUTOMATION_V1"
+version = 1
 id = "news-grasp-6-40"
-schedule = "40 6 * * *"
+kind = "cron"
+name = "News-Grasp 臨時本線日次バッチ 6:00 記事作成・公開"
+status = "ACTIVE"
+rrule = "RRULE:FREQ=DAILY;BYHOUR=6;BYMINUTE=0;BYSECOND=0"
 model = "gpt-5.6-luna"
 reasoning_effort = "max"
-execution_mode = "stdout_projection"
+execution_environment = "local"
 
 prompt = """
-News-Grasp の canonical product completion decision を読み取り、同梱の
-completion_guard.py に manifest と runner state を渡して、stdout へ一つの
-JSON projection だけを返す。canonical product artifact、manifest、runner
-state、task、runtime、公開面を作成・変更しない。runner、installer、publisher、
-finalizerを起動せず、ファイル出力を追加しない。成功判定は stdout の JSON
-projection に含まれる ok と failures だけで報告する。
+News-Grasp の臨時本線日次バッチを実行してください。
+
+最優先制御:
+- この automation の唯一の主成果物は、当日の News-Grasp 公開体験 Web / Audio / YouTube Podcast / playlist / notification / distribution / publish-status / runner state を Definition of Done まで作成・公開することである。
+- 公開面作成に直結しない調査、実装、恒久対策、root cause 深掘り、incident report、harness 整理、設計改善、レポート整形を開始しない。
+- 記事品質または公開面完成に直接関係しない問題を見つけた場合は、post_publish_issue_list に事象・影響・証跡 path・後で直すべきことを1行で記録するだけにして、即座に公開面作成へ戻る。
+- public incomplete の間に許される作業は、記事生成、品質 gate Green 化、TTS、YouTube/playlist、notification、distribution、publish-status、Pages 反映、runner publish_complete、またはそれらの開始に不可欠な最小 local unblocker だけである。
+- 公開面を作成しない限り、この automation は完了できない。URL 200 単独、local generation 単独、証跡作成、原因説明、typed Red、未公開 incident、preflight 成功、途中成果物、NoPublish、fallback publish は完了条件ではない。
+
+セッション名:
+- 起動直後に、この実行セッション名の先頭へ対象日を YY/MM/DD 形式で付ける。例: 26/08/29 News-Grasp 臨時本線日次バッチ 6:00 記事作成・公開。
+- 対象日は Asia/Tokyo の当日を使う。既に同じ日付 prefix がある場合は重複させない。
+- タイトル更新は最大1回だけ試行する。失敗、遅延、ツール不可、または不明状態の場合は短く記録して直ちに本線公開処理へ進む。タイトル更新は completion gate、SLO Green/Red、公開可否、runner 起動可否の判定に使わない。
+
+目的:
+- この automation は監査バッチではない。News-Grasp の本線記事作成・公開バッチとして扱う。
+- 対象日は実行時点の Asia/Tokyo の当日とする。
+- 成果物は当日の News-Grasp 公開体験 Web / Audio / YouTube Podcast / playlist / notification / distribution / publish-status / runner state を Definition of Done まで作成・公開することだけである。
+- 監査、分類、incident report、root cause整理、恒久対策、report polish、ハーネス整理を目的にしない。
+
+SLO:
+- 開始時刻は毎日 06:00 JST。
+- reader-visible public Green と runner publish_complete までの SLO は 90 分。
+- 45 分時点で closeout reserve を確保し、75 分時点で新規 high-cost stage を開始しない。90 分超過時も public incomplete のまま終了せず、当日公開面に直結する最短の local unblocker または mission authority 外 blocker の証明だけを行う。
+
+実行入口:
+- 既存の News-Grasp production runner / clean runtime / launcher / repo-local tools を使う。ad hoc 手編集や fallback publish で通常完走にしない。
+- 旧 6:40 監査機能、audit_major_incident_open を目的化する処理、監査 terminal 作成、監査レポート作成、Codex durable goal completion は使わない。
+- Windows Scheduled Task の News-Grasp Production / Bootstrap / Deadman の live 状態は実行直前に read-only で確認する。二重本線起動の危険がある場合は新規 runner を起動せず、entry_control_plane の fix_now として停止・報告する。
+- public mutation はこの臨時本線バッチの範囲で許可済み: git commit/push, GitHub Pages 更新, Release audio upload, YouTube Podcast upload, playlist 登録, notification 送信。ただし rollback、削除、OAuth 再同意、2FA、quota 変更、public incident publication は許可外。
+
+モデル・サブエージェント:
+- repo-local tools/model_policy.py をモデル正本として使う。
+- reporter / editor / repair / newsroom_editor は gpt-5.6-luna、reasoning max を使う。
+- DeepDive は gpt-5.6-sol、reasoning high を使う。
+- カテゴリ別 reporter サブエージェント fan-out は有効。対象カテゴリは tools.publish_inventory.scheduled_category_ids(issue_date) の結果だけを required とし、固定 7 カテゴリで起動しない。
+- DeepDive は codex-deepdive 相当の別 route で 1 本生成する。
+- 単一親モデルが記事本文を全部書く設計へ潰さない。runner / newsroom editor / reporter / DeepDive / deterministic tools の既存分担を維持する。
+
+開始時に読む正本:
+- AGENTS.md
+- CLAUDE.md
+- docs/spec.md
+- tools/model_policy.py
+- automation/skills/news-grasp-e2e-discipline/SKILL.md
+- 必要に応じて prompts/runner-prompt.md, prompts/newsroom-editor-system.md, prompts/newsroom-reporter-system.md, prompts/deepdive-research-system.md
+
+完了条件:
+- 当日対象カテゴリ digest、Summary、DeepDive md、DeepDive HTML、日付 docs、audio、YouTube Podcast、playlist、notification、distribution manifest、docs/publish-status.json が同一日付で揃うこと。
+- python -m tools.validate_daily_quality --date <issue-date> --require-deepdive --json が Green。
+- python -m tools.deepdive_quality --repo-root . audit-issue --date <issue-date> --require-rendered-public が Green。
+- python -m tools.verify_public_surface --date <issue-date> --repo-root . --ops-repo-root . --notification-state build/notification/<issue-date>.json --producer-state %USERPROFILE%\\bin\\news-grasp-runner-state.json --remote origin --branch main --public-base-url https://hidepon-umg.github.io/News-Grasp/ --wait-sec 300 --poll-sec 15 --write-proof build/public-surface/<issue-date>.verify-public-surface.json --json が Green。
+- python -I -S -B tools/daily_self_heal.py verify-publish-complete --repo-root . --ops-repo-root . --date <issue-date> --remote origin --branch main --public-base-url https://hidepon-umg.github.io/News-Grasp/ --wait-sec 300 --poll-sec 15 --notification-state build/notification/<issue-date>.json --producer-state %USERPROFILE%\\bin\\news-grasp-runner-state.json --output build/publish-complete/<issue-date>.json が Green。
+- runner state %USERPROFILE%\\bin\\news-grasp-runner-state.json が publish_complete。
+
+禁止:
+- 監査バッチとしての分類完了で止まること。
+- audit_major_incident_open、typed Red、証跡作成、原因説明、レポート作成を公開作成の代替にすること。
+- 記事品質・公開完成に直結しないバグ調査や修正を public Green 前に始めること。見つけたら post_publish_issue_list に列挙するだけにする。
+- fallback publish、NoPublish、URL 200 単独、local generation 単独、前日 publish-status を public Green にすること。
+- Codex durable goal を completion authority に使うこと。
+- raw process kill、共有 PowerShell / Windows Terminal / VS Code / browser の停止。
+
+最終報告:
+- 日本語で、まず臨時本線バッチの結果を報告する。
+- issue_date, public_status, runner_status, publish_commit, YouTube videoId, playlist, notification sent_count, 主要 gate exit code, 証跡 path, resource usage, planned_elapsed, actual_elapsed, slo_delta, overrun_branch_triggered を含める。
+- post_publish_issue_list があれば、公開後に見つけたが公開面作成のために着手しなかった問題として末尾に列挙する。
+- public incomplete のまま最終応答しない。OAuth 再同意、2FA、quota 変更、rollback、削除、未承認 public incident publication、外部サービス障害だけを未公開停止条件にできる。
 """

@@ -8,6 +8,7 @@ REPORT = ROOT / "tasks" / "reviews" / "2026-06-28-predeepdive-repair-e2e-report.
 REPORT_HTML = ROOT / "tasks" / "reviews" / "2026-06-28-predeepdive-repair-e2e-report.html"
 E2E_ARTIFACT_INCIDENT_HTML = ROOT / "docs" / "incidents" / "2026-06-28-e2e-artifact-collision-report.html"
 FULL_RUNNER_INCIDENT_HTML = ROOT / "docs" / "incidents" / "2026-06-28-full-runner-bug-patterns-report.html"
+E2E_SKILL = ROOT / "automation" / "skills" / "news-grasp-e2e-discipline" / "SKILL.md"
 
 
 def test_predeepdive_repair_e2e_report_uses_japanese_contract_sections() -> None:
@@ -211,9 +212,7 @@ def test_predeepdive_repair_e2e_report_html_matches_incident_report_tone() -> No
 
 def test_news_grasp_e2e_skill_requires_html_report_after_e2e() -> None:
     """E2E実施後に障害レポート準拠HTMLを作る運用をskillへ固定する。"""
-    skill = (
-        Path.home() / ".codex" / "skills" / "news-grasp-e2e-discipline" / "SKILL.md"
-    ).read_text(encoding="utf-8")
+    skill = E2E_SKILL.read_text(encoding="utf-8")
 
     required_fragments = [
         "HTML E2E report",
@@ -238,9 +237,7 @@ def test_news_grasp_e2e_skill_requires_html_report_after_e2e() -> None:
 
 def test_news_grasp_e2e_skill_forbids_single_issue_compound_red_and_partial_thumb_gate() -> None:
     """E2Eで露呈した複合Redと部分thumbの抜け道をskill正本へ固定する。"""
-    skill = (
-        Path.home() / ".codex" / "skills" / "news-grasp-e2e-discipline" / "SKILL.md"
-    ).read_text(encoding="utf-8")
+    skill = E2E_SKILL.read_text(encoding="utf-8")
 
     for fragment in [
         "全deterministic handlerを同一再検証前に各一回",
@@ -253,9 +250,7 @@ def test_news_grasp_e2e_skill_forbids_single_issue_compound_red_and_partial_thum
 
 def test_news_grasp_e2e_skill_requires_machine_checked_red_suite_coverage() -> None:
     """単一RED禁止を自由記述で終わらせず、網羅matrixの実consumerへ接続する。"""
-    skill = (
-        Path.home() / ".codex" / "skills" / "news-grasp-e2e-discipline" / "SKILL.md"
-    ).read_text(encoding="utf-8")
+    skill = E2E_SKILL.read_text(encoding="utf-8")
 
     for fragment in [
         "RED_SUITE_COVERAGE_V2",
@@ -263,10 +258,10 @@ def test_news_grasp_e2e_skill_requires_machine_checked_red_suite_coverage() -> N
         "fixtures/deepdive_quality/tdd_acceptance_matrix.json",
         "tools.deepdive_red_suite_coverage",
         "Requirement fixture × same-domain viewpoint fixture × route fixture",
-        "200 traceability cells",
-        "14 Requirement",
-        "49 fixture",
-        "140 pair",
+        "240 traceability cells",
+        "15 Requirement",
+        "60 fixture",
+        "150 pair",
         "RED_SUITE_EXECUTION_RECEIPT_V1",
         "collection error",
         "cross-domain substitution",

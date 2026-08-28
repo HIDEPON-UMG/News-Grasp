@@ -11,13 +11,7 @@ REPAIR_MATRIX = ROOT / "tools" / "repair_coverage_matrix.py"
 REPAIR_REGISTRY = ROOT / "tools" / "repair_registry.py"
 PUBLISH_COMPLETE = ROOT / "tools" / "daily_self_heal.py"
 ROUTES = ROOT / "config" / "deepdive_quality_routes.json"
-AUTOMATION = (
-    Path.home()
-    / ".codex"
-    / "automations"
-    / "news-grasp-6-40"
-    / "automation.toml"
-)
+AUTOMATION = ROOT / "automation" / "news-grasp-6-40" / "automation.toml.template"
 
 
 def test_runner_uses_shared_quality_engine_before_completion() -> None:
@@ -107,13 +101,11 @@ def test_publish_complete_rechecks_shared_quality_before_public_probe() -> None:
     assert "deepdive_shared_quality_invalid" in function
 
 
-def test_codex_daily_audit_uses_same_shared_quality_cli() -> None:
+def test_codex_mainline_automation_uses_same_shared_quality_cli() -> None:
     source = AUTOMATION.read_text(encoding="utf-8-sig")
     assert "tools.deepdive_quality" in source
     assert "audit-issue" in source
-    assert "audit-period" in source
     assert "audit-issue --date <issue-date> --require-rendered-public" in source
-    assert "audit-period --start <start> --end <end> --require-rendered-public" in source
     assert "2026-07-02" not in source
 
 

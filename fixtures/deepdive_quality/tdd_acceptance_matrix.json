@@ -99,7 +99,7 @@
       {"id":"production_generation","scope":"shared_quality","fixture":"tests/test_deepdive_quality_route_contract.py::test_runner_uses_shared_quality_engine_before_completion","productionConsumer":"runner production generation -> tools.deepdive_quality"},
       {"id":"repair_publish","scope":"shared_quality","fixture":"tests/test_deepdive_quality_route_contract.py::test_repair_matrix_owns_shared_quality_issue_codes","productionConsumer":"repair matrix and registry -> tools.deepdive_quality issue codes"},
       {"id":"daily_quality","scope":"shared_quality","fixture":"tests/test_deepdive_quality_route_contract.py::test_daily_quality_uses_shared_quality_engine","productionConsumer":"tools.validate_daily_quality -> tools.deepdive_quality"},
-      {"id":"codex_daily_audit","scope":"shared_quality","fixture":"tests/test_deepdive_quality_route_contract.py::test_codex_daily_audit_uses_same_shared_quality_cli","productionConsumer":"news-grasp-6-40 automation -> tools.deepdive_quality audit-period"},
+      {"id":"codex_daily_audit","scope":"shared_quality","fixture":"tests/test_deepdive_quality_route_contract.py::test_codex_mainline_automation_uses_same_shared_quality_cli","productionConsumer":"news-grasp-6-40 temporary mainline automation -> tools.deepdive_quality audit-issue --require-rendered-public"},
       {"id":"final_e2e_wrapper","scope":"final_e2e","fixture":"tests/test_e2e_final_admission_bridge.py::test_final_e2e_wrapper_consumes_before_runner_and_forbids_resume","productionConsumer":"scripts/ops/invoke-news-grasp-final-e2e.ps1 -> final admission -> runner"}
     ],
     "requirements": [
@@ -257,7 +257,7 @@
     {"id":"ROUTE-01","family":"route_parity","polarity":"positive","requirement":"production runnerが共有engineを生成直後に呼ぶ","failureMode":"runner bypass","fixture":"tests/test_deepdive_quality_route_contract.py::test_runner_uses_shared_quality_engine_before_completion"},
     {"id":"ROUTE-02","family":"route_parity","polarity":"positive","requirement":"daily qualityが共有engineを呼ぶ","failureMode":"duplicate audit logic","fixture":"tests/test_deepdive_quality_route_contract.py::test_daily_quality_uses_shared_quality_engine"},
     {"id":"ROUTE-03","family":"route_parity","polarity":"positive","requirement":"repair matrixが2 issue codeを所有","failureMode":"unclassified repair","fixture":"tests/test_deepdive_quality_route_contract.py::test_repair_matrix_owns_shared_quality_issue_codes"},
-    {"id":"ROUTE-04","family":"route_parity","polarity":"positive","requirement":"Codex日次監査が同じCLIを呼ぶ","failureMode":"automation ad hoc audit","fixture":"tests/test_deepdive_quality_route_contract.py::test_codex_daily_audit_uses_same_shared_quality_cli"},
+    {"id":"ROUTE-04","family":"route_parity","polarity":"positive","requirement":"Codex臨時本線automationが同じCLIを呼ぶ","failureMode":"automation ad hoc deepdive validation","fixture":"tests/test_deepdive_quality_route_contract.py::test_codex_mainline_automation_uses_same_shared_quality_cli"},
     {"id":"ROUTE-05","family":"route_parity","polarity":"negative","requirement":"未知routeをfail-closed","failureMode":"declared and consumer routes differ","fixture":"tests/test_deepdive_quality_route_contract.py::test_declared_consumer_and_fixture_routes_match_exactly"}
   ]
 }
