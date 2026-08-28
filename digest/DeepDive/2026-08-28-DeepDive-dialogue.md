@@ -2,7 +2,7 @@
 title: "DeepDive解説対談: AI供給網、メモリーと工場が次の壁に"
 date: "2026-08-28"
 source: "digest/DeepDive/2026-08-28-DeepDive.md"
-source_sha256: "0d652ee59e24ed72ac36c0edc42193a5e520f02a1c37727a0c8751e21f336e45"
+source_sha256: "0f6edef87e5bafb1836258ab25691c6c05417066bfafc955c7af376dac07c1d7"
 type: "deepdive-dialogue"
 audio_target_minutes: 5
 context_sources:
