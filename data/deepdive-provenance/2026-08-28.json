@@ -1,0 +1,135 @@
+{
+  "articlePath": "digest/DeepDive/2026-08-28-DeepDive.md",
+  "articleSha256": "0d652ee59e24ed72ac36c0edc42193a5e520f02a1c37727a0c8751e21f336e45",
+  "claimBindings": [
+    {
+      "claimId": "jmtba-july-11",
+      "claimSha256": "7bac6c84c32820bbbcef213b8ac5b98dd089a6e2296a0fdd5d60a82958c84c97",
+      "evidenceSha256": "4f873a32251e6029e7ff736ca6ef9bfb8158d9f2d74c1c0f27f8e2b1d9196b29",
+      "sourceUrl": "https://www.jmtba.or.jp/statistics/"
+    },
+    {
+      "claimId": "sk-ecosystem-03",
+      "claimSha256": "d0ef78fc931b2ae38f734bb1dd484f23a6558416d130450e702181ba427db695",
+      "evidenceSha256": "6c55c2ca4046ed743599808a4bc0ea3d7a4e6097083d5d7334e2cf6f6ae58710",
+      "sourceUrl": "https://news.skhynix.com/en/groundbreaking-ceremony-in-indiana/"
+    },
+    {
+      "claimId": "sk-investment-02",
+      "claimSha256": "479c5f7d0a6aa87eab729d95fa0918e72ba5a1ed764dd479c31dd00b230e3985",
+      "evidenceSha256": "33b6bcddca43c595c2d8cad80bf9c8720ca6f2d99eb12f7b04b7543dda561ebb",
+      "sourceUrl": "https://news.skhynix.com/en/groundbreaking-ceremony-in-indiana/"
+    },
+    {
+      "claimId": "sk-production-08",
+      "claimSha256": "6a99e6e3c798013e9b36893fc24f18ab44ecdbaeec9e4ed1d6210c42f9800acb",
+      "evidenceSha256": "b76986fba16f22636deda49b9681675449dbc79b6bae0a5bb1b3f127bf333150",
+      "sourceUrl": "https://news.skhynix.com/en/groundbreaking-ceremony-in-indiana/"
+    }
+  ],
+  "claimSetSha256": "a61bcd7521cd9a366126e2b1c1b09b530a867134f4acfbc2adf5713eab4ff2bb",
+  "issueDate": "2026-08-28",
+  "manifestSha256": "c7771f6f78b7fa4d08efc8e21caeacdd0a6afa0ac15eb7777fbcdc8cfd2ad6f1",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V2",
+  "sourceSetSha256": "c64c50aeb9ff7aa77a7a4404884529c063295559052315d6e0a5a0e4b1e3a8d9",
+  "sources": [
+    {
+      "contentSha256": "d9baa75e62c320b7c89102a225e781623105676c54b87f0209b278116f3d9b7b",
+      "fetchedAt": "2026-08-28T01:45:41.682957+00:00",
+      "finalUrl": "https://news.skhynix.com/en/groundbreaking-ceremony-in-indiana/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://news.skhynix.com/en/groundbreaking-ceremony-in-indiana/",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://news.skhynix.com/en/groundbreaking-ceremony-in-indiana/"
+    },
+    {
+      "contentSha256": "c6b374d2550e6d63a227bd306432ce9c73af2422f77cc7aa8d1ef97cc7091bcb",
+      "fetchedAt": "2026-08-28T01:45:42.115601+00:00",
+      "finalUrl": "https://www.jmtba.or.jp/statistics/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.jmtba.or.jp/statistics/",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://www.jmtba.or.jp/statistics/"
+    },
+    {
+      "contentSha256": "fa21c4ef28bae9d4d97eac55b055f1a7855440921f00c1409c7411d5a894e928",
+      "fetchedAt": "2026-08-28T01:45:42.312662+00:00",
+      "finalUrl": "https://www.jmtba.or.jp/wjmtbap/wp-content/uploads/2026/08/sokuhou2608.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "table.source"
+      ],
+      "publicHref": "https://www.jmtba.or.jp/wjmtbap/wp-content/uploads/2026/08/sokuhou2608.pdf",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://www.jmtba.or.jp/wjmtbap/wp-content/uploads/2026/08/sokuhou2608.pdf"
+    },
+    {
+      "contentSha256": "563d98c12053d1784ec2c93baa91facbf315c59511fbc1f85a994835db732227",
+      "fetchedAt": "2026-08-28T01:45:42.532394+00:00",
+      "finalUrl": "https://www.jmtba.or.jp/wjmtbap/wp-content/uploads/2026/08/syuyoutoukei2606.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs"
+      ],
+      "publicHref": "https://www.jmtba.or.jp/wjmtbap/wp-content/uploads/2026/08/syuyoutoukei2606.pdf",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://www.jmtba.or.jp/wjmtbap/wp-content/uploads/2026/08/syuyoutoukei2606.pdf"
+    },
+    {
+      "contentSha256": "22fa8d125012c3e430e5462d1fc61998a11e851df9de6a196d2c0db06324d42b",
+      "fetchedAt": "2026-08-28T01:45:42.796762+00:00",
+      "finalUrl": "https://www.kioxia-holdings.com/content/dam/kioxia-hd/en-jp/ir/library/event/asset/Investor-Day-2026-Eng-QA.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.kioxia-holdings.com/content/dam/kioxia-hd/en-jp/ir/library/event/asset/Investor-Day-2026-Eng-QA.pdf",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://www.kioxia-holdings.com/content/dam/kioxia-hd/en-jp/ir/library/event/asset/Investor-Day-2026-Eng-QA.pdf"
+    }
+  ],
+  "status": "Green",
+  "transportEvidenceVersion": 1
+}

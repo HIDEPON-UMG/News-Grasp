@@ -1,0 +1,34 @@
+{
+  "articleContentSha256": "db0793473e8390384fbbb209c7e271234a7fc695dea7921b6989ae2c2506dad0",
+  "articlePath": "digest/DeepDive/2026-08-28-DeepDive.md",
+  "bindings": [
+    {
+      "claim": "JMTBAの統計ページには2026年7月分の受注速報が掲載されている。",
+      "claimId": "jmtba-july-11",
+      "evidence": "受注統計 速報 2026年7月分",
+      "sourceUrl": "https://www.jmtba.or.jp/statistics/"
+    },
+    {
+      "claim": "100社超のパートナーを巻き込み、直接・間接で7,000人の雇用を生む計画だ。",
+      "claimId": "sk-ecosystem-03",
+      "evidence": "more than 100 partners and creating 7,000 direct/indirect local jobs",
+      "sourceUrl": "https://news.skhynix.com/en/groundbreaking-ceremony-in-indiana/"
+    },
+    {
+      "claim": "SK hynixがインディアナ州の工場に40億ドル超を投じる。",
+      "claimId": "sk-investment-02",
+      "evidence": "Investing over $4 billion in Indiana fab",
+      "sourceUrl": "https://news.skhynix.com/en/groundbreaking-ceremony-in-indiana/"
+    },
+    {
+      "claim": "SK hynixの米国量産開始は2029年後半である。",
+      "claimId": "sk-production-08",
+      "evidence": "mass production in U.S. to begin in H2 2029",
+      "sourceUrl": "https://news.skhynix.com/en/groundbreaking-ceremony-in-indiana/"
+    }
+  ],
+  "issueDate": "2026-08-28",
+  "schemaVersion": "DEEPDIVE_CLAIM_SOURCE_TRANSPORT_V1",
+  "status": "Green",
+  "transportSha256": "40e36767957dc97c1805bc69338be0eb5094417031687abfdc652e4a15a8a4f8"
+}
