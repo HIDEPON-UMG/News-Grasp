@@ -1,0 +1,65 @@
+{
+  "articlePath": "digest/DeepDive/2026-08-29-DeepDive.md",
+  "articleSha256": "18e7d6d88d2feda903afa935259a9265b80a681f45f590b5d8ceecc67e96a7e8",
+  "claimBindings": [
+    {
+      "claimId": "abuse-title-02",
+      "claimSha256": "c1144f1483519f61525709623af13cd4a1142745f97225ae8c3279d2d390f4cf",
+      "evidenceSha256": "e4eff16a2f301140b7bc9aaaaca4957ea2b157f6fc6018c525f54a7f1c70c291",
+      "sourceUrl": "https://news.yahoo.co.jp/expert/articles/d50a58a4ba4c59fb106055d566bbce33c234e1f8"
+    },
+    {
+      "claimId": "academy-title-01",
+      "claimSha256": "e0e67be65efe7833d0668b7c50f5ec77c2eab943f1678bfcd993edf75762d9a5",
+      "evidenceSha256": "4f4cf494757970236290f23988ac37be82db8274f70c979cc5d4fce8d1dcf0a7",
+      "sourceUrl": "https://ledge.ai/articles/anthropic_claude_academy"
+    }
+  ],
+  "claimSetSha256": "f61d8bf99cf5e2f72441aae11dcf8f2f2bf560d21e845eec2991b2c1cf8c5e41",
+  "issueDate": "2026-08-29",
+  "manifestSha256": "5952638da8c9721c5c4a41b37cb07e4929fe3ad2e0c3912b76ad2eca6da6d2b1",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V2",
+  "sourceSetSha256": "ec8ce5ee4949b8b22580262637a0186843d42cecfd22094450e61fc467eba1e8",
+  "sources": [
+    {
+      "contentSha256": "47e0b25b6cfb53383fee6ba768eb994211438f4ab2aba5cbe8bf3af8a6a01b03",
+      "fetchedAt": "2026-08-29T03:52:56.748177+00:00",
+      "finalUrl": "https://ledge.ai/articles/anthropic_claude_academy",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://ledge.ai/articles/anthropic_claude_academy",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://ledge.ai/articles/anthropic_claude_academy"
+    },
+    {
+      "contentSha256": "0662b67dd9b9a6080a9288770021ca1053a776d4350be608079388400f1a2724",
+      "fetchedAt": "2026-08-29T03:52:56.994899+00:00",
+      "finalUrl": "https://news.yahoo.co.jp/expert/articles/d50a58a4ba4c59fb106055d566bbce33c234e1f8",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://news.yahoo.co.jp/expert/articles/d50a58a4ba4c59fb106055d566bbce33c234e1f8",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://news.yahoo.co.jp/expert/articles/d50a58a4ba4c59fb106055d566bbce33c234e1f8"
+    }
+  ],
+  "status": "Green",
+  "transportEvidenceVersion": 1
+}

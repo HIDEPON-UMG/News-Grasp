@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp — Daily Overview 2026-08-29</title>
+<meta name="description" content="2026-08-29 のニュース俯瞰 — 6 レンズ × 各 10 記事の温度感を 1 ページで掴む。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/2026-08-29/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp — Daily Overview 2026-08-29">
+<meta property="og:description" content="2026-08-29 のニュース俯瞰 — 6 レンズ × 各 10 記事の温度感を 1 ページで掴む。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/2026-08-29/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/summary.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp — Daily Overview 2026-08-29">
+<meta name="twitter:description" content="2026-08-29 のニュース俯瞰 — 6 レンズ × 各 10 記事の温度感を 1 ページで掴む。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/summary.jpg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="summary">
+
+<!-- ============= Brand zone (compact, 56px wordmark) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/2026-08-29/summary/">§ ESSAY</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Page header (DAILY OVERVIEW · ISSUE # + 56px date + stats 2x2) ============= -->
+<section class="overview-page-header">
+  <div class="overview-page-header__left">
+    <div class="overview-page-header__eyebrow">━━ DAILY OVERVIEW · ISSUE #20260829</div>
+    <h2 class="overview-page-header__title">
+      <span class="date-mmdd">08·29</span> <span class="em">—</span> 本日のニュース俯瞰
+    </h2>
+    <div class="overview-page-header__sub">6 レンズ × 各 10 記事の温度感を 1 ページで掴む</div>
+  </div>
+  <div class="overview-stats">
+    <div class="overview-stats__cell">
+      <span class="overview-stats__label">STORIES</span>
+      <span class="overview-stats__num">25</span>
+    </div>
+    <div class="overview-stats__cell">
+      <span class="overview-stats__label">LENSES</span>
+      <span class="overview-stats__num">5</span>
+    </div>
+    <div class="overview-stats__cell">
+      <span class="overview-stats__label">ESSAY §</span>
+      <span class="overview-stats__num">7</span>
+    </div>
+    <div class="overview-stats__cell">
+      <span class="overview-stats__label">FULL READ</span>
+      <span class="overview-stats__num">~15<span class="overview-stats__unit">MIN</span></span>
+    </div>
+  </div>
+</section>
+
+<!-- ============= Theme banner (navy, 24px) ============= -->
+<section class="overview-theme">
+  <div class="overview-theme__inner">
+    <span class="overview-theme__eyebrow">━━ TODAY'S THEME</span>
+    <h3 class="overview-theme__title">
+
+        <span style="background: rgba(201,161,85,0.3); padding: 0 6px;">米国金利上昇、ドル円159円台へ</span>
+
+    </h3>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/2026-08-29/summary/" class="overview-theme__cta">READ § ESSAY →</a>
+
+  </div>
+</section>
+
+<!-- ============= Category rows × 6 ============= -->
+<div>
+
+  <div class="overview-row cat-fx">
+    <div class="overview-row__inner">
+
+      <!-- KV + summary -->
+      <div>
+        <div class="overview-kv">
+          <img src="https://hidepon-umg.github.io/News-Grasp/assets/og/fx.jpg" alt="" loading="lazy">
+          <div class="overview-kv__gradient"></div>
+          <div class="overview-kv__caption">
+            <div class="overview-kv__title-row">
+              <span class="overview-kv__glyph">¥</span>
+              <div class="overview-kv__title">為替</div>
+            </div>
+            <div class="overview-kv__sub">FOREIGN EXCHANGE · 5 STORIES</div>
+          </div>
+        </div>
+
+        <p class="overview-row__summary">FRB議長が利上げ排除せず、ドル円は米金利再評価へ。 FRB議長はインフレが高過ぎるとして追加利上げの可能性を排除しなかった。為替市場では米金利見通しの上振れがドル円の主要材料になる。</p>
+
+      </div>
+
+      <!-- Top 3 headlines -->
+      <div>
+        <div class="overview-top3__head">━━ TOP 3 BY SCORE</div>
+
+
+          <a class="overview-top3__row" href="https://hidepon-umg.github.io/News-Grasp/fx/2026-08-29/">
+            <span class="overview-top3__no">01</span>
+            <div>
+              <div class="overview-top3__meta">2026-08-29 10:42 · 時事ドットコム</div>
+              <h4 class="overview-top3__title">
+                FRB議長が利上げ排除せず、ドル円は米金利再評価へ
+
+              </h4>
+            </div>
+            <div class="overview-top3__score-cell">
+              <div class="overview-top3__score">95</div>
+              <div class="overview-top3__score-label">SCORE</div>
+            </div>
+          </a>
+
+          <a class="overview-top3__row" href="https://hidepon-umg.github.io/News-Grasp/fx/2026-08-29/">
+            <span class="overview-top3__no">02</span>
+            <div>
+              <div class="overview-top3__meta">2026-08-29 03:47 · 日本経済新聞</div>
+              <h4 class="overview-top3__title">
+                9月利上げ観測が拡大、FRB発言がドル高圧力に
+
+              </h4>
+            </div>
+            <div class="overview-top3__score-cell">
+              <div class="overview-top3__score">93</div>
+              <div class="overview-top3__score-label">SCORE</div>
+            </div>
+          </a>
+
+          <a class="overview-top3__row" href="https://hidepon-umg.github.io/News-Grasp/fx/2026-08-29/">
+            <span class="overview-top3__no">03</span>
+            <div>
+              <div class="overview-top3__meta">2026-08-29 06:02 · 外為どっとコム</div>
+              <h4 class="overview-top3__title">
+                協調介入後のドル円、160円台定着はG20と米雇用が左右
+
+              </h4>
+            </div>
+            <div class="overview-top3__score-cell">
+              <div class="overview-top3__score">90</div>
+              <div class="overview-top3__score-label">SCORE</div>
+            </div>
+          </a>
+
+
+      </div>
+
+      <!-- Score distribution + CTA -->
+      <div class="overview-dist">
+        <div class="overview-dist__head">━━ SCORE DISTRIBUTION</div>
+        <div class="overview-dist__bars">
+
+          <div class="overview-dist__bar" style="opacity: 0.96; height: 95%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.95; height: 93%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.93; height: 90%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.92; height: 88%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.90; height: 86%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.30; height: 0%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.30; height: 0%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.30; height: 0%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.30; height: 0%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.30; height: 0%;"></div>
+
+        </div>
+        <div class="overview-dist__legend">
+          <span>AVG <span class="num">90</span></span>
+          <span>MAX <span class="num">95</span></span>
+        </div>
+        <a class="overview-dist__cta" href="https://hidepon-umg.github.io/News-Grasp/fx/2026-08-29/">
+          <span>VIEW ALL 5 FOREIGN EXCHANGE</span>
+          <span>→</span>
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="overview-row cat-ai">
+    <div class="overview-row__inner">
+
+      <!-- KV + summary -->
+      <div>
+        <div class="overview-kv">
+          <img src="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg" alt="" loading="lazy">
+          <div class="overview-kv__gradient"></div>
+          <div class="overview-kv__caption">
+            <div class="overview-kv__title-row">
+              <span class="overview-kv__glyph">◆</span>
+              <div class="overview-kv__title">AI</div>
+            </div>
+            <div class="overview-kv__sub">ARTIFICIAL INTELLIGENCE · 5 STORIES</div>
+          </div>
+        </div>
+
+        <p class="overview-row__summary">AnthropicがClaude Academy公開、AIエージェント教育を拡充。 AnthropicはClaude CodeやMCP、AIの能力と限界を学べる無料学習サイトを公開した。利用者教育がAI導入の実運用要件…</p>
+
+      </div>
+
+      <!-- Top 3 headlines -->
+      <div>
+        <div class="overview-top3__head">━━ TOP 3 BY SCORE</div>
+
+
+          <a class="overview-top3__row" href="https://hidepon-umg.github.io/News-Grasp/ai/2026-08-29/">
+            <span class="overview-top3__no">01</span>
+            <div>
+              <div class="overview-top3__meta">2026-08-29 12:07 · Ledge.ai</div>
+              <h4 class="overview-top3__title">
+                AnthropicがClaude Academy公開、AIエージェント教育を拡充
+
+              </h4>
+            </div>
+            <div class="overview-top3__score-cell">
+              <div class="overview-top3__score">95</div>
+              <div class="overview-top3__score-label">SCORE</div>
+            </div>
+          </a>
+
+          <a class="overview-top3__row" href="https://hidepon-umg.github.io/News-Grasp/ai/2026-08-29/">
+            <span class="overview-top3__no">02</span>
+            <div>
+              <div class="overview-top3__meta">2026-08-29 08:00 · @IT</div>
+              <h4 class="overview-top3__title">
+                メルカリのClaude Code全社展開、開発現場のAI前提化が進む
+
+              </h4>
+            </div>
+            <div class="overview-top3__score-cell">
+              <div class="overview-top3__score">92</div>
+              <div class="overview-top3__score-label">SCORE</div>
+            </div>
+          </a>
+
+          <a class="overview-top3__row" href="https://hidepon-umg.github.io/News-Grasp/ai/2026-08-29/">
+            <span class="overview-top3__no">03</span>
+            <div>
+              <div class="overview-top3__meta">2026-08-29 12:00 · Yahoo!ニュース エキスパート</div>
+              <h4 class="overview-top3__title">
+                生成AIを使う情報工作、投稿生成と反応調整が高度化
+
+              </h4>
+            </div>
+            <div class="overview-top3__score-cell">
+              <div class="overview-top3__score">88</div>
+              <div class="overview-top3__score-label">SCORE</div>
+            </div>
+          </a>
+
+
+      </div>
+
+      <!-- Score distribution + CTA -->
+      <div class="overview-dist">
+        <div class="overview-dist__head">━━ SCORE DISTRIBUTION</div>
+        <div class="overview-dist__bars">
+
+          <div class="overview-dist__bar" style="opacity: 0.96; height: 95%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.94; height: 92%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.92; height: 88%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.90; height: 85%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.87; height: 82%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.30; height: 0%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.30; height: 0%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.30; height: 0%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.30; height: 0%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.30; height: 0%;"></div>
+
+        </div>
+        <div class="overview-dist__legend">
+          <span>AVG <span class="num">88</span></span>
+          <span>MAX <span class="num">95</span></span>
+        </div>
+        <a class="overview-dist__cta" href="https://hidepon-umg.github.io/News-Grasp/ai/2026-08-29/">
+          <span>VIEW ALL 5 ARTIFICIAL INTELLIGENCE</span>
+          <span>→</span>
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="overview-row cat-it">
+    <div class="overview-row__inner">
+
+      <!-- KV + summary -->
+      <div>
+        <div class="overview-kv">
+          <img src="https://hidepon-umg.github.io/News-Grasp/assets/og/it.jpg" alt="" loading="lazy">
+          <div class="overview-kv__gradient"></div>
+          <div class="overview-kv__caption">
+            <div class="overview-kv__title-row">
+              <span class="overview-kv__glyph">⌗</span>
+              <div class="overview-kv__title">IT-Consulting</div>
+            </div>
+            <div class="overview-kv__sub">IT &amp; CONSULTING · 5 STORIES</div>
+          </div>
+        </div>
+
+        <p class="overview-row__summary">国産クラウドがOSS活用で米大手寡占に挑む。 クオリティクラウドはOSS活用を軸に国産クラウドの展開を進める。米大手に偏るクラウド市場で、主権やコストの観点が改めて焦点になる。</p>
+
+      </div>
+
+      <!-- Top 3 headlines -->
+      <div>
+        <div class="overview-top3__head">━━ TOP 3 BY SCORE</div>
+
+
+          <a class="overview-top3__row" href="https://hidepon-umg.github.io/News-Grasp/it/2026-08-29/">
+            <span class="overview-top3__no">01</span>
+            <div>
+              <div class="overview-top3__meta">2026-08-29 06:06 · ニュースイッチ</div>
+              <h4 class="overview-top3__title">
+                国産クラウドがOSS活用で米大手寡占に挑む
+
+              </h4>
+            </div>
+            <div class="overview-top3__score-cell">
+              <div class="overview-top3__score">94</div>
+              <div class="overview-top3__score-label">SCORE</div>
+            </div>
+          </a>
+
+          <a class="overview-top3__row" href="https://hidepon-umg.github.io/News-Grasp/it/2026-08-29/">
+            <span class="overview-top3__no">02</span>
+            <div>
+              <div class="overview-top3__meta">2026-08-28 20:10 · GMOサイバーセキュリティ</div>
+              <h4 class="overview-top3__title">
+                DEF CONで強要下の開示制御ツール、セキュリティ運用の実装論点に
+
+              </h4>
+            </div>
+            <div class="overview-top3__score-cell">
+              <div class="overview-top3__score">91</div>
+              <div class="overview-top3__score-label">SCORE</div>
+            </div>
+          </a>
+
+          <a class="overview-top3__row" href="https://hidepon-umg.github.io/News-Grasp/it/2026-08-29/">
+            <span class="overview-top3__no">03</span>
+            <div>
+              <div class="overview-top3__meta">2026-08-29 01:26 · moomoo証券</div>
+              <h4 class="overview-top3__title">
+                セキュリティ支出は堅調、CrowdStrikeとSentinelOneに投資家の視線
+
+              </h4>
+            </div>
+            <div class="overview-top3__score-cell">
+              <div class="overview-top3__score">88</div>
+              <div class="overview-top3__score-label">SCORE</div>
+            </div>
+          </a>
+
+
+      </div>
+
+      <!-- Score distribution + CTA -->
+      <div class="overview-dist">
+        <div class="overview-dist__head">━━ SCORE DISTRIBUTION</div>
+        <div class="overview-dist__bars">
+
+          <div class="overview-dist__bar" style="opacity: 0.96; height: 94%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.94; height: 91%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.92; height: 88%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.90; height: 85%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.87; height: 82%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.30; height: 0%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.30; height: 0%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.30; height: 0%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.30; height: 0%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.30; height: 0%;"></div>
+
+        </div>
+        <div class="overview-dist__legend">
+          <span>AVG <span class="num">88</span></span>
+          <span>MAX <span class="num">94</span></span>
+        </div>
+        <a class="overview-dist__cta" href="https://hidepon-umg.github.io/News-Grasp/it/2026-08-29/">
+          <span>VIEW ALL 5 IT &amp; CONSULTING</span>
+          <span>→</span>
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="overview-row cat-mobility">
+    <div class="overview-row__inner">
+
+      <!-- KV + summary -->
+      <div>
+        <div class="overview-kv">
+          <img src="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg" alt="" loading="lazy">
+          <div class="overview-kv__gradient"></div>
+          <div class="overview-kv__caption">
+            <div class="overview-kv__title-row">
+              <span class="overview-kv__glyph">◎</span>
+              <div class="overview-kv__title">モビリティ</div>
+            </div>
+            <div class="overview-kv__sub">MOBILITY · 5 STORIES</div>
+          </div>
+        </div>
+
+        <p class="overview-row__summary">Uberロボタクシー、日本で日産・日の丸交通と連携へ。 Uberのロボタクシー構想が日本で日産、日の丸交通との連携により具体化する可能性が報じられた。自動運転配車の商用化が近づく。</p>
+
+      </div>
+
+      <!-- Top 3 headlines -->
+      <div>
+        <div class="overview-top3__head">━━ TOP 3 BY SCORE</div>
+
+
+          <a class="overview-top3__row" href="https://hidepon-umg.github.io/News-Grasp/mobility/2026-08-29/">
+            <span class="overview-top3__no">01</span>
+            <div>
+              <div class="overview-top3__meta">2026-08-29 10:20 · 自動運転ラボ</div>
+              <h4 class="overview-top3__title">
+                Uberロボタクシー、日本で日産・日の丸交通と連携へ
+
+              </h4>
+            </div>
+            <div class="overview-top3__score-cell">
+              <div class="overview-top3__score">95</div>
+              <div class="overview-top3__score-label">SCORE</div>
+            </div>
+          </a>
+
+          <a class="overview-top3__row" href="https://hidepon-umg.github.io/News-Grasp/mobility/2026-08-29/">
+            <span class="overview-top3__no">02</span>
+            <div>
+              <div class="overview-top3__meta">2026-08-29 10:00 · 時事ドットコム</div>
+              <h4 class="overview-top3__title">
+                BYDが2半期連続減益、中国EV市場の価格競争が重荷
+
+              </h4>
+            </div>
+            <div class="overview-top3__score-cell">
+              <div class="overview-top3__score">92</div>
+              <div class="overview-top3__score-label">SCORE</div>
+            </div>
+          </a>
+
+          <a class="overview-top3__row" href="https://hidepon-umg.github.io/News-Grasp/mobility/2026-08-29/">
+            <span class="overview-top3__no">03</span>
+            <div>
+              <div class="overview-top3__meta">2026-08-29 09:55 · Biggo Finance</div>
+              <h4 class="overview-top3__title">
+                Zooxがサンフランシスコでロボタクシー投入、Waymo・Teslaと競争
+
+              </h4>
+            </div>
+            <div class="overview-top3__score-cell">
+              <div class="overview-top3__score">89</div>
+              <div class="overview-top3__score-label">SCORE</div>
+            </div>
+          </a>
+
+
+      </div>
+
+      <!-- Score distribution + CTA -->
+      <div class="overview-dist">
+        <div class="overview-dist__head">━━ SCORE DISTRIBUTION</div>
+        <div class="overview-dist__bars">
+
+          <div class="overview-dist__bar" style="opacity: 0.96; height: 95%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.94; height: 92%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.92; height: 89%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.90; height: 86%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.87; height: 82%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.30; height: 0%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.30; height: 0%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.30; height: 0%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.30; height: 0%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.30; height: 0%;"></div>
+
+        </div>
+        <div class="overview-dist__legend">
+          <span>AVG <span class="num">89</span></span>
+          <span>MAX <span class="num">95</span></span>
+        </div>
+        <a class="overview-dist__cta" href="https://hidepon-umg.github.io/News-Grasp/mobility/2026-08-29/">
+          <span>VIEW ALL 5 MOBILITY</span>
+          <span>→</span>
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="overview-row cat-game">
+    <div class="overview-row__inner">
+
+      <!-- KV + summary -->
+      <div>
+        <div class="overview-kv">
+          <img src="https://hidepon-umg.github.io/News-Grasp/assets/og/game.jpg" alt="" loading="lazy">
+          <div class="overview-kv__gradient"></div>
+          <div class="overview-kv__caption">
+            <div class="overview-kv__title-row">
+              <span class="overview-kv__glyph">▶</span>
+              <div class="overview-kv__title">ゲーム</div>
+            </div>
+            <div class="overview-kv__sub">GAMING · 5 STORIES</div>
+          </div>
+        </div>
+
+        <p class="overview-row__summary">ニンテンドーeショップ新作情報、週末の購入候補が更新。 任天堂はニンテンドーeショップの新作ソフト情報を更新した。週末のダウンロード販売では、ラインアップとセール導線が購買の焦点になる。</p>
+
+      </div>
+
+      <!-- Top 3 headlines -->
+      <div>
+        <div class="overview-top3__head">━━ TOP 3 BY SCORE</div>
+
+
+          <a class="overview-top3__row" href="https://hidepon-umg.github.io/News-Grasp/game/2026-08-29/">
+            <span class="overview-top3__no">01</span>
+            <div>
+              <div class="overview-top3__meta">2026-08-28 21:31 · 任天堂</div>
+              <h4 class="overview-top3__title">
+                ニンテンドーeショップ新作情報、週末の購入候補が更新
+
+              </h4>
+            </div>
+            <div class="overview-top3__score-cell">
+              <div class="overview-top3__score">94</div>
+              <div class="overview-top3__score-label">SCORE</div>
+            </div>
+          </a>
+
+          <a class="overview-top3__row" href="https://hidepon-umg.github.io/News-Grasp/game/2026-08-29/">
+            <span class="overview-top3__no">02</span>
+            <div>
+              <div class="overview-top3__meta">2026-08-28 20:24 · ガンダム公式</div>
+              <h4 class="overview-top3__title">
+                GUNDAM ROGUE ORBITがTGS2026出展、試遊応募も開始
+
+              </h4>
+            </div>
+            <div class="overview-top3__score-cell">
+              <div class="overview-top3__score">91</div>
+              <div class="overview-top3__score-label">SCORE</div>
+            </div>
+          </a>
+
+          <a class="overview-top3__row" href="https://hidepon-umg.github.io/News-Grasp/game/2026-08-29/">
+            <span class="overview-top3__no">03</span>
+            <div>
+              <div class="overview-top3__meta">2026-08-29 12:10 · PR TIMES</div>
+              <h4 class="overview-top3__title">
+                BLEACH新作スマホゲームが事前登録、IPゲーム競争が続く
+
+              </h4>
+            </div>
+            <div class="overview-top3__score-cell">
+              <div class="overview-top3__score">88</div>
+              <div class="overview-top3__score-label">SCORE</div>
+            </div>
+          </a>
+
+
+      </div>
+
+      <!-- Score distribution + CTA -->
+      <div class="overview-dist">
+        <div class="overview-dist__head">━━ SCORE DISTRIBUTION</div>
+        <div class="overview-dist__bars">
+
+          <div class="overview-dist__bar" style="opacity: 0.96; height: 94%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.94; height: 91%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.92; height: 88%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.90; height: 85%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.87; height: 81%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.30; height: 0%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.30; height: 0%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.30; height: 0%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.30; height: 0%;"></div>
+
+          <div class="overview-dist__bar" style="opacity: 0.30; height: 0%;"></div>
+
+        </div>
+        <div class="overview-dist__legend">
+          <span>AVG <span class="num">88</span></span>
+          <span>MAX <span class="num">94</span></span>
+        </div>
+        <a class="overview-dist__cta" href="https://hidepon-umg.github.io/News-Grasp/game/2026-08-29/">
+          <span>VIEW ALL 5 GAMING</span>
+          <span>→</span>
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · #20260829 · 2026-08-29
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/2026-08-29/summary/">§ SUMMARY</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>

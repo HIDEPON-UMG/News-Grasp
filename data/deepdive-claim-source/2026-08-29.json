@@ -1,0 +1,22 @@
+{
+  "articleContentSha256": "727d28670b05583baa1db4f07a44ee37e3a8eff8549bf7639fe4ec256fe0d50e",
+  "articlePath": "digest/DeepDive/2026-08-29-DeepDive.md",
+  "bindings": [
+    {
+      "claim": "親ロシア勢力は生成AIとSNSをどう使うのか――投稿生成・発信偽装・反応に応じた調整で情報工作を継続",
+      "claimId": "abuse-title-02",
+      "evidence": "投稿生成・発信偽装・反応に応じた調整で情報工作を継続",
+      "sourceUrl": "https://news.yahoo.co.jp/expert/articles/d50a58a4ba4c59fb106055d566bbce33c234e1f8"
+    },
+    {
+      "claim": "Anthropic、無料学習サイト「Claude Academy」公開　Claude CodeやMCP、AIの能力と限界まで学べる",
+      "claimId": "academy-title-01",
+      "evidence": "Anthropic、無料学習サイト「Claude Academy」公開　Claude CodeやMCP、AIの能力と限界まで学べる",
+      "sourceUrl": "https://ledge.ai/articles/anthropic_claude_academy"
+    }
+  ],
+  "issueDate": "2026-08-29",
+  "schemaVersion": "DEEPDIVE_CLAIM_SOURCE_TRANSPORT_V1",
+  "status": "Green",
+  "transportSha256": "29f8d8c891279936e07aa4a517e694388fca18e5a1fd3aed8c63a1ee757b7c52"
+}
