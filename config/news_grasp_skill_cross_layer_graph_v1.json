@@ -146,6 +146,26 @@
       ]
     },
     {
+      "skillId": "news-grasp-direct-mainline",
+      "purposeIds": ["purpose-direct-same-day-publication"],
+      "clauseIds": ["NGC-C02", "NGC-C03", "NGC-C04", "NGC-C05", "NGC-C13"],
+      "flowIds": ["flow-direct-scheduled-publication"],
+      "taskIds": ["task-direct-mainline-21-stages"],
+      "consumerRoutes": ["tools/news_grasp_completion_guard.py"],
+      "stateIds": ["state-direct-public-v1"],
+      "evidenceIds": ["evidence-direct-public-conjunctive-receipt"],
+      "sourceEvidenceAuthority": "product_overlay",
+      "sourceEvidence": ["# News-Grasp Direct Mainline", "Direct 本線工程", "public incomplete"],
+      "consumerEvidenceByRoute": {
+        "tools/news_grasp_completion_guard.py": ["def evaluate_direct_public"]
+      },
+      "owner": "product-direct-mainline-overlay",
+      "dependsOn": [
+        "news-grasp-e2e-discipline",
+        "ops-human-friendly-work-governance"
+      ]
+    },
+    {
       "skillId": "ops-safe-commit",
       "purposeIds": ["purpose-safe-physical-source-delivery"],
       "clauseIds": ["NGC-C06", "NGC-C09", "NGC-C13"],

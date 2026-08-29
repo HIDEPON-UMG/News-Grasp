@@ -131,7 +131,8 @@ def evaluate(
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--issue-date", default=date.today().isoformat())
-    parser.add_argument("--manifest", type=Path, required=True)
+    parser.add_argument("--direct-receipt", type=Path)
+    parser.add_argument("--manifest", type=Path)
     parser.add_argument(
         "--runner-state",
         type=Path,
@@ -139,6 +140,28 @@ def main() -> int:
     )
     parser.add_argument("--ops-root", type=Path, default=Path.cwd())
     args = parser.parse_args()
+
+    if args.direct_receipt is not None:
+        try:
+            ops_root = args.ops_root.resolve(strict=True)
+            sys.path.insert(0, str(ops_root))
+            from tools.news_grasp_completion_guard import evaluate_direct_public
+
+            result = evaluate_direct_public(
+                _load_json(args.direct_receipt), args.issue_date
+            )
+        except (OSError, ImportError, ValueError):
+            result = {
+                "schemaVersion": "NEWS_GRASP_DIRECT_COMPLETION_GUARD_V1",
+                "ok": False,
+                "issue_date": args.issue_date,
+                "failures": ["direct_completion_receipt_invalid"],
+            }
+        sys.stdout.write(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
+        return 0 if result["ok"] else 2
+
+    if args.manifest is None:
+        parser.error("--manifest is required unless --direct-receipt is supplied")
 
     manifest = _load_json(args.manifest)
     manifest["_path"] = str(args.manifest)

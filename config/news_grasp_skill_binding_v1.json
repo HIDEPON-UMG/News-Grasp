@@ -42,10 +42,22 @@
       "sharedInstalledSha256": "896ce7022f26b32e4f330f8d62e3e3b4fb3e03ab9c3faffc67179f8422225452",
       "sharedInstalledStatus": "stale_pending_installer",
       "overlayPath": "automation/skills/news-grasp-e2e-discipline",
-      "overlaySha256": "0283e13d76306826232f92d94d7a4c622a3fbe2f24beddfaf43746e5e9cb2823",
+      "overlaySha256": "3bec5803b947423edf18a3c6dfcf298ac0313d0bc8f91eaa26888e694e19679e",
       "installedPath": "news-grasp-assets/skills/news-grasp-e2e-discipline",
       "consumer": "Scheduled-equivalent NoPublish E2E admission",
       "reason": "News-Grasp-specific final-only E2E rules require a product-owned versioned projection."
+    },
+    {
+      "skillId": "news-grasp-direct-mainline",
+      "role": "operational",
+      "classification": "repo_versioned_overlay",
+      "sourceLocator": "shared-skill://news-grasp-direct-mainline/SKILL.md",
+      "sourceSha256": "e58fc8d1c89d74086b43dfd77bbb91e10b4e3db187823fdd3ce430a27deb8e8e",
+      "overlayPath": "automation/skills/news-grasp-direct-mainline",
+      "overlaySha256": "35d4a876320d22c061f8cba774cbb58d66878c97b127439c7c4514de05eebc51",
+      "installedPath": "news-grasp-assets/skills/news-grasp-direct-mainline",
+      "consumer": "06:00 direct article generation and public completion",
+      "reason": "The product-owned direct skill binds scheduled inventory, shared quality, public surfaces, exact successor recovery, and runner-free completion."
     },
     {
       "skillId": "news-grasp-repair-method",

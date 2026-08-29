@@ -3418,7 +3418,6 @@ def test_verify_live_runner_readiness_rejects_legacy_tombstone_as_canonical_succ
     repo_ops.mkdir(parents=True)
     live_bin.mkdir(parents=True)
     for name in (
-        "news-grasp-runner.ps1",
         "watch-news-grasp-runner.ps1",
         "news-grasp-bootstrap.ps1",
         "news-grasp-task-launcher.pyw",
@@ -3426,6 +3425,10 @@ def test_verify_live_runner_readiness_rejects_legacy_tombstone_as_canonical_succ
         source = (source_ops / name).read_text(encoding="utf-8-sig")
         (repo_ops / name).write_text(source, encoding="utf-8")
         (live_bin / name).write_text(source, encoding="utf-8")
+
+    tombstone = "# legacy News-Grasp runner removed; direct mainline is authoritative\n"
+    (repo_ops / "news-grasp-runner.ps1").write_text(tombstone, encoding="utf-8")
+    (live_bin / "news-grasp-runner.ps1").write_text(tombstone, encoding="utf-8")
 
     live_runner = live_bin / "news-grasp-runner.ps1"
     live_launcher = live_bin / "news-grasp-task-launcher.pyw"
@@ -3463,7 +3466,7 @@ def test_verify_live_runner_readiness_rejects_legacy_tombstone_as_canonical_succ
     )
 
     assert result["ok"] is False
-    assert result["reason"] == "scheduled_task_launcher_required"
+    assert result["reason"] == "direct_runner_pre_run_interlock_missing"
     assert result["scheduled_task"]["legacy_direct_clean_runtime_trampoline"] is False
     assert result["scheduled_task"]["targets_live_runner"] is True
     assert result["scheduled_task"]["bootstrap_targets_live_task_launcher"] is True

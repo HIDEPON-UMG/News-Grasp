@@ -1,6 +1,6 @@
 {
   "schemaVersion": "NEWS_GRASP_SPEC_DISPOSITION_V1",
-  "sourceCommit": "21d5d768d421b6aad072855433d8b016598ce51e",
+  "sourceCommit": "e3a5e0947f24565c760ad30100d8bf5f04bafaf2",
   "rows": [
     {
       "path": "docs/spec.md",

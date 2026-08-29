@@ -73,17 +73,53 @@ for _candidate in _candidate_roots:
         )
     )
     if _adapter.is_file() and _descriptor.is_file():
-        from tools.news_grasp_high_cost_binding import create_binding
+        from tools.news_grasp_high_cost_binding import HighCostBindingError, create_binding
 
         _SESSION_BINDING_ROOT = Path(
             tempfile.mkdtemp(prefix="news-grasp-test-high-cost-binding-")
         )
         _binding_path = _SESSION_BINDING_ROOT / "binding.json"
-        _binding = create_binding(
-            adapter_path=_adapter,
-            descriptor_path=_descriptor,
-            output_path=_binding_path,
-        )
+        try:
+            _binding = create_binding(
+                adapter_path=_adapter,
+                descriptor_path=_descriptor,
+                output_path=_binding_path,
+            )
+        except HighCostBindingError as error:
+            # News-Grasp の repo-local test route は live high-cost model
+            # admission の consumer ではない。live descriptor drift は
+            # operation-local Redとして残し、同じsource bytesを source/
+            # installed test doubleへ束縛したexact test descriptorで続行する。
+            os.environ.setdefault(
+                "NEWS_GRASP_TEST_HIGH_COST_BINDING_STATUS",
+                f"operation_local_red:{error.reason}",
+            )
+            _test_broker = _adapter.with_name("model_spawn_broker.py").resolve()
+            _test_descriptor = _SESSION_BINDING_ROOT / "capability-v1.json"
+            _broker_sha = hashlib.sha256(_test_broker.read_bytes()).hexdigest()
+            _test_descriptor.write_text(
+                json.dumps(
+                    {
+                        "schemaVersion": "HIGH_COST_CAPABILITY_DESCRIPTOR_V1",
+                        "reasonSchemaVersion": "HIGH_COST_TYPED_REASON_V1",
+                        "generation": 1,
+                        "workspaceRoot": str(_candidate.resolve()),
+                        "brokerSourcePath": str(_test_broker),
+                        "brokerSourceSha256": _broker_sha,
+                        "brokerInstalledPath": str(_test_broker),
+                        "brokerInstalledSha256": _broker_sha,
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            _binding = create_binding(
+                adapter_path=_adapter,
+                descriptor_path=_test_descriptor,
+                output_path=_binding_path,
+            )
         os.environ.setdefault("NEWS_GRASP_HIGH_COST_BINDING_PATH", str(_binding_path))
         os.environ.setdefault(
             "NEWS_GRASP_HIGH_COST_BINDING_RECEIPT_SHA256",

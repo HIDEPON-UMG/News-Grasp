@@ -1,8 +1,8 @@
 {
   "schemaVersion": "NEWS_GRASP_CONSTITUTION_PROJECTION_V1",
-  "constitutionVersion": "2026-08-28",
+  "constitutionVersion": "2026-08-29-direct-mainline",
   "generator": "tools/news_grasp_constitution.py",
-  "constitutionSha256": "ba5bb99ff6366cc54dc9b0c68debb18a6998bdcd282a5de5f07e46aa0aba2dc0",
+  "constitutionSha256": "cbb19720d5b7f53f95f3d18ade5af180034c3e8f5f6ae497ddac24dea0cc9bb1",
   "traceSha256": "e9f6a6f551407e8242542df9b13da5f6f60de26231e67c9574660e762d06c8c1",
   "projectionSha256": "691cc6ae3de9fa93e550490aa9f9c4ee07824eb2a8caa296163798a2b5f32418",
   "mermaidDiagramCount": 3,
@@ -22,14 +22,14 @@
     {
       "id": "skill-map",
       "title": "skill目的・flow・task・consumer・state・evidence",
-      "source": "flowchart LR\n  s0001[\"automation/skills/news-grasp-e2e-discipline/SKILL.md\"]\n  s0002[\"diagram-tech-graph\"]\n  s0003[\"evidence-durable-delta-packet\"]\n  s0004[\"evidence-final-state-vector\"]\n  s0005[\"evidence-human-impact-green\"]\n  s0006[\"evidence-mermaid-edge-set-hash\"]\n  s0007[\"evidence-nopublish-e2e-terminal\"]\n  s0008[\"evidence-private-incident-report\"]\n  s0009[\"evidence-recovery-dispatch-receipt\"]\n  s0010[\"evidence-red-green-receipt\"]\n  s0011[\"evidence-remote-install-parity\"]\n  s0012[\"evidence-skill-package-contract\"]\n  s0013[\"evidence-task-packet-validation\"]\n  s0014[\"flow-decision-graph-continuation\"]\n  s0015[\"flow-human-impact-admission\"]\n  s0016[\"flow-impact-red-green\"]\n  s0017[\"flow-installed-launcher-nopublish-e2e\"]\n  s0018[\"flow-requirement-to-task-packet\"]\n  s0019[\"flow-safe-commit-push-install\"]\n  s0020[\"flow-skill-source-to-installed-overlay\"]\n  s0021[\"flow-state-vector-to-user-report\"]\n  s0022[\"flow-terminal-to-incident-evidence\"]\n  s0023[\"flow-trace-to-mermaid-projection\"]\n  s0024[\"flow-typed-failure-to-registered-handler\"]\n  s0025[\"news-grasp-e2e-discipline\"]\n  s0026[\"news-grasp-repair-method\"]\n  s0027[\"ops-codex-long-running-work\"]\n  s0028[\"ops-human-friendly-work-governance\"]\n  s0029[\"ops-safe-commit\"]\n  s0030[\"ops-sdd-tdd-harness-governance\"]\n  s0031[\"ops-write-operational-plan\"]\n  s0032[\"purpose-constitution-bound-sdd-tdd\"]\n  s0033[\"purpose-decision-complete-operational-plan\"]\n  s0034[\"purpose-final-only-scheduled-equivalent-e2e\"]\n  s0035[\"purpose-finite-durable-task-continuation\"]\n  s0036[\"purpose-human-safe-unattended-work\"]\n  s0037[\"purpose-machine-projected-constitution-graph\"]\n  s0038[\"purpose-private-typed-incident-evidence\"]\n  s0039[\"purpose-registered-product-recovery\"]\n  s0040[\"purpose-safe-physical-source-delivery\"]\n  s0041[\"purpose-separate-verified-completion-fields\"]\n  s0042[\"purpose-versioned-product-skill-package\"]\n  s0043[\"report-completion-format\"]\n  s0044[\"report-news-grasp-incident\"]\n  s0045[\"scripts/ops/install-news-grasp-ops.ps1\"]\n  s0046[\"scripts/ops/invoke-scheduled-equivalent-nopublish.ps1\"]\n  s0047[\"scripts/ops/run_codex_with_timeout.ps1\"]\n  s0048[\"skill-creator\"]\n  s0049[\"state-completion-report\"]\n  s0050[\"state-constitution-diagram-projection\"]\n  s0051[\"state-e2e-composition-authority\"]\n  s0052[\"state-human-impact-contract\"]\n  s0053[\"state-incident-observation\"]\n  s0054[\"state-operation-decision-graph\"]\n  s0055[\"state-physical-delivery\"]\n  s0056[\"state-product-skill-package\"]\n  s0057[\"state-registered-recovery\"]\n  s0058[\"state-task-constitution-admission\"]\n  s0059[\"state-tdd-capability\"]\n  s0060[\"task-append-incident-observation\"]\n  s0061[\"task-compile-luna-work-packet\"]\n  s0062[\"task-consume-one-shot-e2e-authority\"]\n  s0063[\"task-deliver-clean-generation\"]\n  s0064[\"task-dispatch-exact-recovery-handler\"]\n  s0065[\"task-enforce-owned-process-boundary\"]\n  s0066[\"task-freeze-consumer-oracle-fixture\"]\n  s0067[\"task-generate-verified-graph-projection\"]\n  s0068[\"task-render-completion-state-vector\"]\n  s0069[\"task-transition-or-terminal\"]\n  s0070[\"task-validate-product-skill-package\"]\n  s0071[\"tests/test_news_grasp_constitution_acceptance.py\"]\n  s0072[\"tools/audit_recovery_control.py\"]\n  s0073[\"tools/news_grasp_constitution.py\"]\n  s0074[\"tools/news_grasp_operational_contract.py\"]\n  s0075[\"tools/news_grasp_task_packet.py\"]\n  s0076[\"tools/operational_recovery_registry.py\"]\n  s0032 --> s0016\n  s0016 --> s0066\n  s0066 --> s0071\n  s0071 --> s0059\n  s0059 --> s0010\n  s0036 --> s0015\n  s0015 --> s0065\n  s0065 --> s0047\n  s0047 --> s0052\n  s0052 --> s0005\n  s0033 --> s0018\n  s0018 --> s0061\n  s0061 --> s0075\n  s0075 --> s0058\n  s0058 --> s0013\n  s0030 --> s0031\n  s0035 --> s0014\n  s0014 --> s0069\n  s0069 --> s0074\n  s0074 --> s0054\n  s0054 --> s0003\n  s0028 --> s0027\n  s0031 --> s0027\n  s0039 --> s0024\n  s0024 --> s0064\n  s0064 --> s0076\n  s0076 --> s0057\n  s0057 --> s0009\n  s0028 --> s0026\n  s0030 --> s0026\n  s0038 --> s0022\n  s0022 --> s0060\n  s0060 --> s0072\n  s0072 --> s0053\n  s0053 --> s0008\n  s0026 --> s0044\n  s0028 --> s0044\n  s0034 --> s0017\n  s0017 --> s0062\n  s0062 --> s0046\n  s0046 --> s0051\n  s0051 --> s0007\n  s0027 --> s0025\n  s0028 --> s0025\n  s0030 --> s0025\n  s0040 --> s0019\n  s0019 --> s0063\n  s0063 --> s0045\n  s0045 --> s0055\n  s0055 --> s0011\n  s0028 --> s0029\n  s0030 --> s0029\n  s0041 --> s0021\n  s0021 --> s0068\n  s0068 --> s0074\n  s0074 --> s0049\n  s0049 --> s0004\n  s0030 --> s0043\n  s0042 --> s0020\n  s0020 --> s0070\n  s0070 --> s0001\n  s0001 --> s0056\n  s0056 --> s0012\n  s0030 --> s0048\n  s0037 --> s0023\n  s0023 --> s0067\n  s0067 --> s0073\n  s0073 --> s0050\n  s0050 --> s0006\n  s0030 --> s0002",
-      "sourceSha256": "e4e2cb6a12c60999e163369bd3222948497c482424189b9673a895c26fce73ad"
+      "source": "flowchart LR\n  s0001[\"automation/skills/news-grasp-e2e-discipline/SKILL.md\"]\n  s0002[\"diagram-tech-graph\"]\n  s0003[\"evidence-direct-public-conjunctive-receipt\"]\n  s0004[\"evidence-durable-delta-packet\"]\n  s0005[\"evidence-final-state-vector\"]\n  s0006[\"evidence-human-impact-green\"]\n  s0007[\"evidence-mermaid-edge-set-hash\"]\n  s0008[\"evidence-nopublish-e2e-terminal\"]\n  s0009[\"evidence-private-incident-report\"]\n  s0010[\"evidence-recovery-dispatch-receipt\"]\n  s0011[\"evidence-red-green-receipt\"]\n  s0012[\"evidence-remote-install-parity\"]\n  s0013[\"evidence-skill-package-contract\"]\n  s0014[\"evidence-task-packet-validation\"]\n  s0015[\"flow-decision-graph-continuation\"]\n  s0016[\"flow-direct-scheduled-publication\"]\n  s0017[\"flow-human-impact-admission\"]\n  s0018[\"flow-impact-red-green\"]\n  s0019[\"flow-installed-launcher-nopublish-e2e\"]\n  s0020[\"flow-requirement-to-task-packet\"]\n  s0021[\"flow-safe-commit-push-install\"]\n  s0022[\"flow-skill-source-to-installed-overlay\"]\n  s0023[\"flow-state-vector-to-user-report\"]\n  s0024[\"flow-terminal-to-incident-evidence\"]\n  s0025[\"flow-trace-to-mermaid-projection\"]\n  s0026[\"flow-typed-failure-to-registered-handler\"]\n  s0027[\"news-grasp-direct-mainline\"]\n  s0028[\"news-grasp-e2e-discipline\"]\n  s0029[\"news-grasp-repair-method\"]\n  s0030[\"ops-codex-long-running-work\"]\n  s0031[\"ops-human-friendly-work-governance\"]\n  s0032[\"ops-safe-commit\"]\n  s0033[\"ops-sdd-tdd-harness-governance\"]\n  s0034[\"ops-write-operational-plan\"]\n  s0035[\"purpose-constitution-bound-sdd-tdd\"]\n  s0036[\"purpose-decision-complete-operational-plan\"]\n  s0037[\"purpose-direct-same-day-publication\"]\n  s0038[\"purpose-final-only-scheduled-equivalent-e2e\"]\n  s0039[\"purpose-finite-durable-task-continuation\"]\n  s0040[\"purpose-human-safe-unattended-work\"]\n  s0041[\"purpose-machine-projected-constitution-graph\"]\n  s0042[\"purpose-private-typed-incident-evidence\"]\n  s0043[\"purpose-registered-product-recovery\"]\n  s0044[\"purpose-safe-physical-source-delivery\"]\n  s0045[\"purpose-separate-verified-completion-fields\"]\n  s0046[\"purpose-versioned-product-skill-package\"]\n  s0047[\"report-completion-format\"]\n  s0048[\"report-news-grasp-incident\"]\n  s0049[\"scripts/ops/install-news-grasp-ops.ps1\"]\n  s0050[\"scripts/ops/invoke-scheduled-equivalent-nopublish.ps1\"]\n  s0051[\"scripts/ops/run_codex_with_timeout.ps1\"]\n  s0052[\"skill-creator\"]\n  s0053[\"state-completion-report\"]\n  s0054[\"state-constitution-diagram-projection\"]\n  s0055[\"state-direct-public-v1\"]\n  s0056[\"state-e2e-composition-authority\"]\n  s0057[\"state-human-impact-contract\"]\n  s0058[\"state-incident-observation\"]\n  s0059[\"state-operation-decision-graph\"]\n  s0060[\"state-physical-delivery\"]\n  s0061[\"state-product-skill-package\"]\n  s0062[\"state-registered-recovery\"]\n  s0063[\"state-task-constitution-admission\"]\n  s0064[\"state-tdd-capability\"]\n  s0065[\"task-append-incident-observation\"]\n  s0066[\"task-compile-luna-work-packet\"]\n  s0067[\"task-consume-one-shot-e2e-authority\"]\n  s0068[\"task-deliver-clean-generation\"]\n  s0069[\"task-direct-mainline-21-stages\"]\n  s0070[\"task-dispatch-exact-recovery-handler\"]\n  s0071[\"task-enforce-owned-process-boundary\"]\n  s0072[\"task-freeze-consumer-oracle-fixture\"]\n  s0073[\"task-generate-verified-graph-projection\"]\n  s0074[\"task-render-completion-state-vector\"]\n  s0075[\"task-transition-or-terminal\"]\n  s0076[\"task-validate-product-skill-package\"]\n  s0077[\"tests/test_news_grasp_constitution_acceptance.py\"]\n  s0078[\"tools/audit_recovery_control.py\"]\n  s0079[\"tools/news_grasp_completion_guard.py\"]\n  s0080[\"tools/news_grasp_constitution.py\"]\n  s0081[\"tools/news_grasp_operational_contract.py\"]\n  s0082[\"tools/news_grasp_task_packet.py\"]\n  s0083[\"tools/operational_recovery_registry.py\"]\n  s0035 --> s0018\n  s0018 --> s0072\n  s0072 --> s0077\n  s0077 --> s0064\n  s0064 --> s0011\n  s0040 --> s0017\n  s0017 --> s0071\n  s0071 --> s0051\n  s0051 --> s0057\n  s0057 --> s0006\n  s0036 --> s0020\n  s0020 --> s0066\n  s0066 --> s0082\n  s0082 --> s0063\n  s0063 --> s0014\n  s0033 --> s0034\n  s0039 --> s0015\n  s0015 --> s0075\n  s0075 --> s0081\n  s0081 --> s0059\n  s0059 --> s0004\n  s0031 --> s0030\n  s0034 --> s0030\n  s0043 --> s0026\n  s0026 --> s0070\n  s0070 --> s0083\n  s0083 --> s0062\n  s0062 --> s0010\n  s0031 --> s0029\n  s0033 --> s0029\n  s0042 --> s0024\n  s0024 --> s0065\n  s0065 --> s0078\n  s0078 --> s0058\n  s0058 --> s0009\n  s0029 --> s0048\n  s0031 --> s0048\n  s0038 --> s0019\n  s0019 --> s0067\n  s0067 --> s0050\n  s0050 --> s0056\n  s0056 --> s0008\n  s0030 --> s0028\n  s0031 --> s0028\n  s0033 --> s0028\n  s0037 --> s0016\n  s0016 --> s0069\n  s0069 --> s0079\n  s0079 --> s0055\n  s0055 --> s0003\n  s0028 --> s0027\n  s0031 --> s0027\n  s0044 --> s0021\n  s0021 --> s0068\n  s0068 --> s0049\n  s0049 --> s0060\n  s0060 --> s0012\n  s0031 --> s0032\n  s0033 --> s0032\n  s0045 --> s0023\n  s0023 --> s0074\n  s0074 --> s0081\n  s0081 --> s0053\n  s0053 --> s0005\n  s0033 --> s0047\n  s0046 --> s0022\n  s0022 --> s0076\n  s0076 --> s0001\n  s0001 --> s0061\n  s0061 --> s0013\n  s0033 --> s0052\n  s0041 --> s0025\n  s0025 --> s0073\n  s0073 --> s0080\n  s0080 --> s0054\n  s0054 --> s0007\n  s0033 --> s0002",
+      "sourceSha256": "dfac504ee9cb49ce6241975a3c0847dda6294dd8e08368b6d9dc513db3ef36f2"
     }
   ],
   "assetProjection": {
     "manifestPath": "config/news_grasp_automation_assets_v2.json",
-    "manifestSha256": "dfdfc155df0753258ac26f15bf3c9a28c38b792b7b3d17f6f10ae937424e400e",
-    "assetCount": 14,
+    "manifestSha256": "3f7f95e0ecf8fbd921027596c00a886062df98a34f9105b0026eec3da920e5c1",
+    "assetCount": 16,
     "assets": [
       {
         "assetId": "operational-recovery-skill-v1",
@@ -57,7 +57,7 @@
         "kind": "skill",
         "sourcePath": "automation/skills/news-grasp-e2e-discipline/SKILL.md",
         "installPath": "skills/news-grasp-e2e-discipline/SKILL.md",
-        "sourceSha256": "31514db9592e81e8350d790c7a7a45da28500a1e0e159a8ee42c13dca0ab3da3"
+        "sourceSha256": "96e220f27b0e5601676985e45ea5d67ca864ae9b89f915354b03eaa1b1964e9c"
       },
       {
         "assetId": "e2e-discipline-openai-yaml-v2",
@@ -79,6 +79,20 @@
         "sourcePath": "automation/skills/news-grasp-repair-method/agents/openai.yaml",
         "installPath": "skills/news-grasp-repair-method/agents/openai.yaml",
         "sourceSha256": "a186949df2436d8ec1d7a1101f94c263e02a1ef1b5c67da9623dcc3ca968b72c"
+      },
+      {
+        "assetId": "direct-mainline-skill-md-v1",
+        "kind": "skill",
+        "sourcePath": "automation/skills/news-grasp-direct-mainline/SKILL.md",
+        "installPath": "skills/news-grasp-direct-mainline/SKILL.md",
+        "sourceSha256": "e58fc8d1c89d74086b43dfd77bbb91e10b4e3db187823fdd3ce430a27deb8e8e"
+      },
+      {
+        "assetId": "direct-mainline-openai-yaml-v1",
+        "kind": "skill",
+        "sourcePath": "automation/skills/news-grasp-direct-mainline/agents/openai.yaml",
+        "installPath": "skills/news-grasp-direct-mainline/agents/openai.yaml",
+        "sourceSha256": "d254ba94f06569f052abd0b3856ce9abadc8f5679c243323444c196c0e1cd2a7"
       },
       {
         "assetId": "incident-report-skill-md-v2",
@@ -120,17 +134,17 @@
         "kind": "automation",
         "sourcePath": "automation/news-grasp-6-40/automation.toml.template",
         "installPath": "automations/news-grasp-6-40/automation.toml",
-        "sourceSha256": "e3da5b55e1ff03c46f370b43218f142497224e1f909f00ddd674acfa250a231a"
+        "sourceSha256": "ff86c479d60aa13aee306d18773cb533740deb6b747ecd4155d1270fa2e856d3"
       },
       {
         "assetId": "news-grasp-6-40-completion-guard-projection-v1",
         "kind": "automation",
         "sourcePath": "automation/news-grasp-6-40/completion_guard.py",
         "installPath": "automations/news-grasp-6-40/completion_guard.py",
-        "sourceSha256": "158498aceac41f2590a708a68bba78991682a7bec4060454447d99c2750f49de"
+        "sourceSha256": "c2f119363ac07af147685a0ab9d94cadc15b2e9a4fb80a1422c349045b5bf46d"
       }
     ],
-    "assetSetSha256": "50a7dc04d64afe34a22b38b23587e883c56ed34ba2ff981cac7de994921ba7bb"
+    "assetSetSha256": "e2ff0f74c1c7d2df778399181747dbd97f716eb8533ab652aed656cc96a7c72d"
   },
   "publicRecoveryOperationalDesign": {
     "schemaVersion": "NEWS_GRASP_PUBLIC_RECOVERY_OPERATIONAL_DESIGN_V1",
@@ -151,16 +165,16 @@
   "outputs": [
     {
       "path": "AGENTS.md",
-      "managedBlockSha256": "62f6f8ba1ff489b244d2cbc8ddc0996922d8794b6fff73e9d945073121752ab0"
+      "managedBlockSha256": "129db89caf9eb080047764a223bac2d110e2b80af378876d78e192ec8e29dff6"
     },
     {
       "path": "CLAUDE.md",
-      "managedBlockSha256": "62f6f8ba1ff489b244d2cbc8ddc0996922d8794b6fff73e9d945073121752ab0"
+      "managedBlockSha256": "129db89caf9eb080047764a223bac2d110e2b80af378876d78e192ec8e29dff6"
     },
     {
       "path": "docs/specs/2026-08-12_news-grasp-product-constitution.html",
-      "sha256": "4f6bf33366675369e6520014b889a693b3a5a56bcd3d2c42e80469c27b6702ab",
-      "lineCount": 1050
+      "sha256": "60b6a47c0532c22d92e1b39d14bf58a89dfae0fdf4d83e0e75e98f9b480e527c",
+      "lineCount": 1064
     },
     {
       "path": "plans/2026-08-27-news-grasp-public-recovery-closeout/operational-design.md",

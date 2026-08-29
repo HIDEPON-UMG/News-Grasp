@@ -1,0 +1,4 @@
+interface:
+  display_name: "News-Grasp Direct Mainline"
+  short_description: "Run the 06:00 direct publication mainline"
+  default_prompt: "Use $news-grasp-direct-mainline to create, validate, and publish today's News-Grasp edition."

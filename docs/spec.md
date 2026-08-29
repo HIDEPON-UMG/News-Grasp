@@ -700,3 +700,38 @@ lunaJudgmentIds=[]
 - Team charter / project charter の考え方: 目的、価値、成功条件、運用ルールを共有する。
 - Architecture Decision Record の考え方: 重要判断は context、decision、consequence を短く残す。
 - SRE monitoring の考え方: 長時間処理は latency、errors、saturation、progress を観測可能にする。
+
+## 06:00 direct mainline（2026-08-29 以降）
+
+06:00 の標準経路は Codex automation が `$news-grasp-direct-mainline` を使用する direct 本線である。`news_grasp_runner.py`、`news_grasp_nopublish.py`、`scripts/ops/news-grasp-runner.ps1` は復活・起動・completion authority 化しない。既存runnerの工程知識とfixtureは履歴・移行知識としてread-only利用できる。
+
+### Definition of Done
+
+- 対象カテゴリは `tools.publish_inventory.scheduled_category_ids(issue_date)` の結果であり、固定7カテゴリではない。
+- title controlは最初の実作業として最大1回行う。期待titleは exact `YY/MM/DD News-Grasp 臨時本線日次バッチ 6:00 記事作成・公開`。`updated|already_ok` は実title一致を必須とし、`unavailable|failed|skipped` は `post_publish_issue_list` に残して非阻害とする。
+- reporter/digest/articles.jsonl/Summary/Daily audio/DeepDive/HTML docsを順に生成し、DeepDive provenance/dialogue/rendered HTMLと `validate_daily_quality --require-deepdive` をGreenにする。
+- Web、Daily audio、DeepDive article/audio、Daily/DeepDive YouTube、playlist、notification、distribution、publish-status、remote commit、Pagesを同一issue-date/run-intentで連言検証する。
+- `runner state`、readiness、durable goal、publish-status単独、URL 200単独、NoPublish、fallback publishはpublic completion authorityではない。
+
+```mermaid
+flowchart TD
+    A[06:00 issue-scoped lease] --> T[title control]
+    T -->|success| I[scheduled inventory]
+    T -->|unavailable failed skipped| P[post_publish_issue_list]
+    P --> I
+    I --> C[collect dedup freshness URL evidence]
+    C --> G[digests articles Summary audio DeepDive HTML]
+    G --> Q[validate_daily_quality require-deepdive]
+    Q -->|Red| R[bounded artifact repair]
+    R --> Q
+    Q -->|Green| U[upload playlist notify distribution commit push]
+    U --> V[direct public completion]
+    V -->|runnable gap| X[exact missing successor]
+    X --> V
+    V -->|surface blocker evidence| D[defer affected surface; no false Green]
+    V -->|all surfaces Green| Z[final report]
+```
+
+### Time / recovery boundary
+
+45分を目標、75分で任意polish・追加review・新規high-cost stageを凍結、90分をSLOとする。90分超過はSLO debtでありhard deadlineではない。実行可能なpublic-critical successorを止めない。high-cost ledger/binding失敗はmodel operationだけのzero-call Red、OAuth/2FA/quotaは該当surfaceだけのdefer、title失敗はpost-publish issueとする。public incompleteのまま完了報告しない。

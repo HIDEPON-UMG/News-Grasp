@@ -495,23 +495,13 @@ def test_watcher_attaches_failed_production_to_canonical_recovery_owner() -> Non
     assert "Start-RecoveryFromDecision" not in source
 
 
-def test_runner_serializes_daily_log_append_and_hash_at_one_boundary() -> None:
-    runner = (REPO / "scripts" / "ops" / "news-grasp-runner.ps1").read_text(
-        encoding="utf-8-sig"
+def test_legacy_runner_is_removed_and_direct_receipt_owns_stage_history() -> None:
+    assert not (REPO / "scripts" / "ops" / "news-grasp-runner.ps1").exists()
+    direct = (REPO / "tools" / "news_grasp_completion_guard.py").read_text(
+        encoding="utf-8"
     )
-    assert "function Invoke-WithRunnerLogLock" in runner
-    assert "function Add-RunnerLogLine" in runner
-    assert "function Get-RunnerLogSha256" in runner
-    assert "function New-ScheduledFailureTerminalInput" in runner
-    terminalizer = runner[runner.index("function Invoke-ScheduledFailureTerminalizer") :]
-    assert "NEWS_GRASP_SCHEDULED_FAILURE_TERMINAL_INPUT_V1" in terminalizer
-    assert "--run-id" in terminalizer
-    assert "stateEvidenceSha256" in terminalizer
-    assert "logEvidenceSha256" in terminalizer
-    assert "Get-RunnerLogSha256" not in terminalizer
-    assert "Get-FileSha256Hex -Path $StateFile" not in terminalizer
-    assert "Add-Content -Path $LogPath" not in runner
-    assert "Add-Content -LiteralPath $LogPath" not in runner
+    assert '"stage_history"' in direct
+    assert '"direct_public_v1"' in direct
 
 
 def test_bootstrap_startup_failure_terminalizer_passes_run_id() -> None:
@@ -537,30 +527,17 @@ def test_deadman_calls_same_controller_for_public_incomplete() -> None:
     assert "audit canonical executor" in source
 
 
-def test_resume_branch_consumes_recovery_authority_not_failed_production_admission() -> None:
-    runner = (REPO / "scripts" / "ops" / "news-grasp-runner.ps1").read_text(
-        encoding="utf-8-sig"
+def test_direct_resume_uses_exact_successor_and_never_restores_runner() -> None:
+    assert not (REPO / "scripts" / "ops" / "news-grasp-runner.ps1").exists()
+    skill = (REPO / "automation" / "skills" / "news-grasp-direct-mainline" / "SKILL.md").read_text(
+        encoding="utf-8"
     )
     watcher = (REPO / "scripts" / "ops" / "watch-news-grasp-runner.ps1").read_text(
         encoding="utf-8-sig"
     )
-    assert "[string] $RecoveryDecisionPath" in runner
-    assert "validate-decision" in runner
-    assert "RECOVERY_DECISION_BRANCH_MISMATCH" in runner
+    assert "exact public successor" in skill
+    assert "news-grasp-runner.ps1`を起動しない" in skill
     assert "RecoveryDecisionPath" not in watcher
-    resume_block = runner[
-        runner.index("if ($ResumeFromStage)") : runner.index(
-            "if ($HighCostAdmissionPath)", runner.index("if ($ResumeFromStage)")
-        )
-    ]
-    assert "admit-news-grasp-recovery-continuation" not in resume_block
-    assert "ScheduledAuthorityEvidencePath" in resume_block
-    assert "start-news-grasp-recovery-stage" in runner
-    assert "consume-news-grasp-recovery-stage-decision" not in runner
-    assert runner.index("start-news-grasp-recovery-stage") < runner.index(
-        "} elseif ($ResumeFromPostDailyQuality -or $ResumeAfterDeepDive -or $ResumeGenerationQualityRepair) {"
-    )
-    assert "sourceAdmissionReceipt" not in resume_block
 
 
 def test_resume_plan_without_broker_ledger_decision_fails_closed() -> None:
@@ -732,6 +709,9 @@ def test_invalid_existing_scheduled_admission_is_not_copied_or_reused(
     repo = tmp_path / "current"
     evidence = tmp_path / "evidence"
     authority_path = tmp_path / "recovery-authority.json"
+    fixture_runner = repo / "scripts" / "ops" / "news-grasp-runner.ps1"
+    fixture_runner.parent.mkdir(parents=True)
+    fixture_runner.write_text("# test-only legacy identity fixture\n", encoding="utf-8")
     authority = control._sealed(
         {
             "schemaVersion": "SCHEDULED_RECOVERY_AUTHORITY_V1",
@@ -774,6 +754,7 @@ def test_invalid_existing_scheduled_admission_is_not_copied_or_reused(
         {key: value for key, value in replacement.items() if key != "receiptSha256"}
     )
     backend = control.ProductionBackend(repo_root=repo, evidence_root=evidence)
+    backend.runner_path = fixture_runner
     monkeypatch.setattr(
         backend,
         "_run_broker",

@@ -70,6 +70,7 @@ EXPECTED_SKILL_ROLES = {
     "ops-write-operational-plan": "operational",
     "ops-codex-long-running-work": "operational",
     "news-grasp-e2e-discipline": "operational",
+    "news-grasp-direct-mainline": "operational",
     "news-grasp-repair-method": "operational",
     "report-news-grasp-incident": "operational",
     "ops-safe-commit": "operational",
@@ -82,6 +83,7 @@ EXPECTED_SKILL_ROLES = {
 PRODUCT_OVERLAY_SKILLS = frozenset(
     {
         "news-grasp-e2e-discipline",
+        "news-grasp-direct-mainline",
         "news-grasp-repair-method",
         "report-news-grasp-incident",
     }
@@ -90,6 +92,7 @@ SHARED_SKILL_SOURCE_PATHS = {
     "ops-write-operational-plan": Path(".codex/skills/ops-write-operational-plan/SKILL.md"),
     "ops-codex-long-running-work": Path(".codex/skills/ops-codex-long-running-work/SKILL.md"),
     "news-grasp-e2e-discipline": Path(".codex/skills/news-grasp-e2e-discipline/SKILL.md"),
+    "news-grasp-direct-mainline": Path(".codex/skills/news-grasp-direct-mainline/SKILL.md"),
     "news-grasp-repair-method": Path(".codex/skills/news-grasp-repair-method/SKILL.md"),
     "report-news-grasp-incident": Path(".codex/skills/report-news-grasp-incident/SKILL.md"),
     "ops-safe-commit": Path(".codex/skills/ops-safe-commit/SKILL.md"),
@@ -317,7 +320,7 @@ def validate_skill_binding(
         role: sum(1 for row in rows if row["role"] == role)
         for role in {"operational", "design_read_only"}
     }
-    if role_counts != {"operational": 8, "design_read_only": 3}:
+    if role_counts != {"operational": 9, "design_read_only": 3}:
         raise ValueError("CONSTITUTION_SKILL_ROLE_COUNT_INVALID")
     return value
 
@@ -766,11 +769,19 @@ def collect_test_nodes(repo_root: Path | str = ROOT) -> list[str]:
         temporary_root = Path(temporary).resolve()
         fixture_workspace = temporary_root / "workspace"
         fixture_harness = fixture_workspace / "tools" / "harness"
-        workspace_harness = root.parent.parent / "tools" / "harness"
-        if not workspace_harness.is_dir():
+        workspace_root = next(
+            (
+                candidate
+                for candidate in (root.parent, root.parent.parent)
+                if (candidate / "tools" / "harness").is_dir()
+            ),
+            None,
+        )
+        if workspace_root is None:
             raise ValueError("CONSTITUTION_COLLECTION_HARNESS_UNAVAILABLE")
+        workspace_harness = workspace_root / "tools" / "harness"
         shutil.copytree(workspace_harness, fixture_harness)
-        workspace_harness_docs = root.parent.parent / "docs" / "harness"
+        workspace_harness_docs = workspace_root / "docs" / "harness"
         if workspace_harness_docs.is_dir():
             shutil.copytree(
                 workspace_harness_docs,

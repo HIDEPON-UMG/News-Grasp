@@ -1,8 +1,8 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 2969,
-  "collectedNodeSetSha256": "7bf5f905b80eca450a7731174bad20d53f70c9ec8d4efca5b99190919c33b16e",
+  "collectedNodeCount": 3006,
+  "collectedNodeSetSha256": "85a40ac95d98420f23198c22cd52704a10c45ab6b877c3a0ae0fad61b804853f",
   "files": [
     {
       "path": "tests/test_20260813_control_plane_repair.py",
@@ -746,7 +746,7 @@
     },
     {
       "path": "tests/test_daily_model_cost_projection.py",
-      "sha256": "585ffb26581a14c3288eb03558cd1077ef57f81eb3745989a611536866397545",
+      "sha256": "64de482531c5d2666445f01f5483f5ce7ff3196383775364f8dbed3ca2ca2851",
       "nodeCount": 3,
       "nodeIds": [
         "tests/test_daily_model_cost_projection.py::test_calibration_uses_current_model_policy_without_retired_fallback",
@@ -774,8 +774,8 @@
     },
     {
       "path": "tests/test_daily_self_heal.py",
-      "sha256": "858accf513eaa4ec6cf4b2dfc5ec66f8f7bfc46af2ef9c86801c8ab7a759ff0f",
-      "nodeCount": 120,
+      "sha256": "8178761c56b3a692e962f3a210c2b4d64ea09572b54212b483094789b41d014d",
+      "nodeCount": 121,
       "nodeIds": [
         "tests/test_daily_self_heal.py::test_authenticode_identity_uses_tracked_powershell_helper",
         "tests/test_daily_self_heal.py::test_authenticode_timeout_is_typed_failure",
@@ -809,6 +809,7 @@
         "tests/test_daily_self_heal.py::test_live_startup_canary_rejects_ops_provenance_drift_before_launch",
         "tests/test_daily_self_heal.py::test_live_startup_canary_rejects_partial_high_cost_binding_before_launch",
         "tests/test_daily_self_heal.py::test_live_startup_canary_removes_stale_log_before_run",
+        "tests/test_daily_self_heal.py::test_local_windows_principal_accepts_scheduler_short_name_only_for_local_domain",
         "tests/test_daily_self_heal.py::test_ng_red_04_typed_completion_keeps_public_green_when_readiness_is_red",
         "tests/test_daily_self_heal.py::test_ng_red_06_typed_completion_readiness_repair_converges_without_public_recovery",
         "tests/test_daily_self_heal.py::test_ng_red_10_causal_retry_same_cause_is_suppressed",
@@ -1113,10 +1114,10 @@
     },
     {
       "path": "tests/test_deepdive_quality_route_contract.py",
-      "sha256": "5756df685c6452305a6e146dd822563bdb1bba9cfde4d8f896694c16f463d38f",
+      "sha256": "0f97790587d01ed4018a3045959f214aba53a1f86d2b524ab4e1e675989adbf8",
       "nodeCount": 9,
       "nodeIds": [
-        "tests/test_deepdive_quality_route_contract.py::test_codex_daily_audit_uses_same_shared_quality_cli",
+        "tests/test_deepdive_quality_route_contract.py::test_codex_mainline_automation_uses_same_shared_quality_cli",
         "tests/test_deepdive_quality_route_contract.py::test_daily_full_recovery_and_resume_share_one_issue_materializer",
         "tests/test_deepdive_quality_route_contract.py::test_daily_quality_uses_shared_quality_engine",
         "tests/test_deepdive_quality_route_contract.py::test_declared_consumer_and_fixture_routes_match_exactly",
@@ -1246,7 +1247,7 @@
     },
     {
       "path": "tests/test_deepdive_terra_benchmark.py",
-      "sha256": "7755bf21b3e15ae7fb4cdf19a9452ecd2ba415116b5ad269bc5cff750a298455",
+      "sha256": "fe98a928ff1be3f3ce25586b292434d0cc5a86c6b98cbd7df6dfde2716b10daf",
       "nodeCount": 2,
       "nodeIds": [
         "tests/test_deepdive_terra_benchmark.py::test_blind_bundle_removes_model_identity_and_self_scores",
@@ -1259,7 +1260,7 @@
     },
     {
       "path": "tests/test_deepdive_triad_judge.py",
-      "sha256": "dfd31be392a16f8e092a1f85739c4d2dfe391c3f90fc79f8bf0bbeb2ba21a9e3",
+      "sha256": "982347f373ec637508c1ead1cd3fdcb1d7e01575bfe3370f3345867b3db96436",
       "nodeCount": 2,
       "nodeIds": [
         "tests/test_deepdive_triad_judge.py::test_deepdive_weights_prioritize_decision_support",
@@ -1411,9 +1412,13 @@
     },
     {
       "path": "tests/test_e2e_first_principles_contract.py",
-      "sha256": "535c6a4a45312c24b9e4988b109e780e1b817e606ba1280e821b999a75db6376",
-      "nodeCount": 13,
+      "sha256": "56581fcfb68b1baa31c515c30dd5b069691f2226232cb597d93f582368858819",
+      "nodeCount": 18,
       "nodeIds": [
+        "tests/test_e2e_first_principles_contract.py::test_completion_viability_branching_prefers_deterministic_evidence_over_llm_judgment",
+        "tests/test_e2e_first_principles_contract.py::test_completion_viability_failure_destinations_are_closed_world",
+        "tests/test_e2e_first_principles_contract.py::test_completion_viability_matrix_defines_conditions_methods_and_destinations",
+        "tests/test_e2e_first_principles_contract.py::test_completion_viability_reports_the_user_facing_decision_first",
         "tests/test_e2e_first_principles_contract.py::test_e2e_attempt_identity_cannot_reset_through_aliases_or_resume",
         "tests/test_e2e_first_principles_contract.py::test_e2e_checkpoint_boundary_allows_recovery_but_never_final_resume",
         "tests/test_e2e_first_principles_contract.py::test_e2e_completion_boundary_cannot_substitute_nopublish_for_public_green",
@@ -1426,7 +1431,8 @@
         "tests/test_e2e_first_principles_contract.py::test_e2e_resource_budget_is_single_use_and_non_resettable",
         "tests/test_e2e_first_principles_contract.py::test_e2e_side_effect_boundary_requires_nopublish_and_no_push_evidence",
         "tests/test_e2e_first_principles_contract.py::test_e2e_stop_and_failure_consumes_attempt_and_returns_upstream",
-        "tests/test_e2e_first_principles_contract.py::test_scheduled_production_budget_is_disjoint_from_final_e2e_budget"
+        "tests/test_e2e_first_principles_contract.py::test_scheduled_production_budget_is_disjoint_from_final_e2e_budget",
+        "tests/test_e2e_first_principles_contract.py::test_temporary_mainline_automation_template_matches_viability_contract"
       ],
       "clauseIds": [
         "NGC-C06",
@@ -1455,7 +1461,7 @@
     },
     {
       "path": "tests/test_e2e_report_contract.py",
-      "sha256": "03e5bc400c95643c08ce71ba99bd3d2cfd0f63134c556473f4cdbdc4d21ea31e",
+      "sha256": "e56d33343aea5e500b77afcd84030d9a702a5e560ad133a47475cd9b8bace391",
       "nodeCount": 11,
       "nodeIds": [
         "tests/test_e2e_report_contract.py::test_20260628_e2e_artifact_collision_has_separate_incident_report",
@@ -1603,7 +1609,7 @@
     },
     {
       "path": "tests/test_gate_contract.py",
-      "sha256": "c23cbfa2b55641f2cd806667fcbac22bdb184f50d94caa9741b785aeee0d5110",
+      "sha256": "51819dd1c476d05c5f1b90ca7f67f9b118591cdd1255cbd59a48adae4b74f4e7",
       "nodeCount": 8,
       "nodeIds": [
         "tests/test_gate_contract.py::test_category_budget_allows_distinct_failures_after_artifact_changes",
@@ -1636,7 +1642,7 @@
     },
     {
       "path": "tests/test_generate_pages.py",
-      "sha256": "cd8687a04727725304b99560e06d6918f184b30b9758054cb613bd13b62a5371",
+      "sha256": "6c70f1a443511bb969cfe781dd9245d7af3f3bf612c825c75fda86e1d48c86c9",
       "nodeCount": 21,
       "nodeIds": [
         "tests/test_generate_pages.py::test_article_thumb_accepts_non_thumb_markdown_alt",
@@ -1684,7 +1690,7 @@
     },
     {
       "path": "tests/test_generate_pages_integration.py",
-      "sha256": "eb30c8934768c7c30750a04194f8bbe3b2944bdb97c6138a7417d0c3f3865a33",
+      "sha256": "4696fae39a6c584468e09307a19ec6110dc3787d18a569c09f433cb3176ae10f",
       "nodeCount": 11,
       "nodeIds": [
         "tests/test_generate_pages_integration.py::test_all_required_ogp_meta_present",
@@ -1922,7 +1928,7 @@
     },
     {
       "path": "tests/test_home_variant_b.py",
-      "sha256": "421469a6e62300d63aaa1e3f327748f136f68fea756318d972d8545f3904fa23",
+      "sha256": "979ad493e64146a728278d23de74681f0a0bfa709ace01f229e532ef44337be7",
       "nodeCount": 42,
       "nodeIds": [
         "tests/test_home_variant_b.py::test_brand_zone_present",
@@ -1991,7 +1997,7 @@
     },
     {
       "path": "tests/test_incident_report_tracking_policy.py",
-      "sha256": "8837189f90c6010d5f89c510837f95e35efbdd2af6b8f662ff55a1c269332768",
+      "sha256": "617d55824c8be50f91410058dafdb47f7f547406c0520a3387f3d75821836d9a",
       "nodeCount": 4,
       "nodeIds": [
         "tests/test_incident_report_tracking_policy.py::test_2026_06_30_public_report_is_not_tracked",
@@ -2067,7 +2073,7 @@
     },
     {
       "path": "tests/test_model_benchmark.py",
-      "sha256": "7902dfb51ebc873c788bb619a4211d07f2e7fcdaaabea60408a62dad52a7d1b9",
+      "sha256": "66530115ab81ecadb2a591de72fbf523c364abfd419983a00de7b64afe7e5f92",
       "nodeCount": 3,
       "nodeIds": [
         "tests/test_model_benchmark.py::test_official_api_prices_are_recorded_per_million_tokens",
@@ -2118,7 +2124,7 @@
     },
     {
       "path": "tests/test_model_policy_and_eval.py",
-      "sha256": "12837306387e5596f2641193aee3632d67c156037fa36ec0ddd1f23be26c29b6",
+      "sha256": "1a448b74f163874682d5f1e74decf3e4225dec461169ab0f7efae12476c914aa",
       "nodeCount": 10,
       "nodeIds": [
         "tests/test_model_policy_and_eval.py::test_build_eval_fixture_samples_three_per_category",
@@ -2139,7 +2145,7 @@
     },
     {
       "path": "tests/test_model_selection_html_report.py",
-      "sha256": "7cae92be02a536dc74606aec7ce9a38346cb947b5179b0628512119ee217ecd5",
+      "sha256": "2596127f08d35c51eb59938e22342c8cb5df8b4b6dad639b5ad5c228aae7deb0",
       "nodeCount": 3,
       "nodeIds": [
         "tests/test_model_selection_html_report.py::test_deepdive_stacks_sum_to_displayed_scores_with_unique_axis_colors",
@@ -2596,7 +2602,7 @@
     },
     {
       "path": "tests/test_news_grasp_daily_control.py",
-      "sha256": "85074b9ce24432cd15d53ce6a3f14a0c088086a4ac55958d2e9cc3e24503d302",
+      "sha256": "27fdb9ae50aacc46f99e9c3a8ff18f8627f5ae619da8676d14f60cbda2c0736d",
       "nodeCount": 38,
       "nodeIds": [
         "tests/test_news_grasp_daily_control.py::test_audit_controller_failure_writes_owned_major_incident",
@@ -2612,10 +2618,12 @@
         "tests/test_news_grasp_daily_control.py::test_deadman_calls_same_controller_for_public_incomplete",
         "tests/test_news_grasp_daily_control.py::test_deadman_delegates_to_single_canonical_audit_executor",
         "tests/test_news_grasp_daily_control.py::test_default_command_runner_uses_owned_job_and_bounded_results",
+        "tests/test_news_grasp_daily_control.py::test_direct_resume_uses_exact_successor_and_never_restores_runner",
         "tests/test_news_grasp_daily_control.py::test_existing_recovery_green_preserves_recovery_terminal_status",
         "tests/test_news_grasp_daily_control.py::test_failure_classification_is_derived_from_observed_state_only",
         "tests/test_news_grasp_daily_control.py::test_installer_rollback_restores_absent_files_and_task_definitions",
         "tests/test_news_grasp_daily_control.py::test_invalid_existing_scheduled_admission_is_not_copied_or_reused",
+        "tests/test_news_grasp_daily_control.py::test_legacy_runner_is_removed_and_direct_receipt_owns_stage_history",
         "tests/test_news_grasp_daily_control.py::test_minimal_unblocker_requires_sealed_public_proof",
         "tests/test_news_grasp_daily_control.py::test_ng_red_01_green_valueerror_green_preserves_public_authority",
         "tests/test_news_grasp_daily_control.py::test_ng_red_03_green_valueerror_green_cli_returns_typed_exit_two",
@@ -2627,16 +2635,42 @@
         "tests/test_news_grasp_daily_control.py::test_public_green_closeout_blocker_is_typed_terminal_and_preserves_attempt_lineage",
         "tests/test_news_grasp_daily_control.py::test_recovery_plan_is_bounded_and_preserves_scheduled_failure",
         "tests/test_news_grasp_daily_control.py::test_registry_requires_production_call_edge",
-        "tests/test_news_grasp_daily_control.py::test_resume_branch_consumes_recovery_authority_not_failed_production_admission",
         "tests/test_news_grasp_daily_control.py::test_resume_plan_binds_broker_ledger_decision",
         "tests/test_news_grasp_daily_control.py::test_resume_plan_without_broker_ledger_decision_fails_closed",
-        "tests/test_news_grasp_daily_control.py::test_runner_serializes_daily_log_append_and_hash_at_one_boundary",
         "tests/test_news_grasp_daily_control.py::test_sec_red_actual_completion_producer_feeds_causal_retry_gate",
         "tests/test_news_grasp_daily_control.py::test_sec_red_causal_retry_compare_and_consume_is_single_writer",
         "tests/test_news_grasp_daily_control.py::test_sec_red_causal_retry_rejects_state_path_escape",
         "tests/test_news_grasp_daily_control.py::test_second_recovery_attempt_becomes_major_incident_not_loop",
         "tests/test_news_grasp_daily_control.py::test_startup_self_repair_failure_keeps_recovery_attempt_available",
         "tests/test_news_grasp_daily_control.py::test_watcher_attaches_failed_production_to_canonical_recovery_owner"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
+      "path": "tests/test_news_grasp_direct_mainline_integration.py",
+      "sha256": "506cb6bbf34c9b76254d79f1055793bd7033e945869fd7d69b5c50c4de1b5b6d",
+      "nodeCount": 17,
+      "nodeIds": [
+        "tests/test_news_grasp_direct_mainline_integration.py::test_automation_and_skill_bind_direct_contract",
+        "tests/test_news_grasp_direct_mainline_integration.py::test_direct_completion_rejects_quality_and_completion_shortcuts[<lambda>-daily_quality_gate_not_green]",
+        "tests/test_news_grasp_direct_mainline_integration.py::test_direct_completion_rejects_quality_and_completion_shortcuts[<lambda>-fallback_publish_not_completion]",
+        "tests/test_news_grasp_direct_mainline_integration.py::test_direct_completion_rejects_quality_and_completion_shortcuts[<lambda>-nopublish_not_completion]",
+        "tests/test_news_grasp_direct_mainline_integration.py::test_direct_completion_rejects_quality_and_completion_shortcuts[<lambda>-pages_content_identity_unverified]",
+        "tests/test_news_grasp_direct_mainline_integration.py::test_direct_completion_rejects_quality_and_completion_shortcuts[<lambda>-publish_status_not_published_ok]",
+        "tests/test_news_grasp_direct_mainline_integration.py::test_direct_completion_rejects_quality_and_completion_shortcuts[<lambda>-stage_order_invalid]",
+        "tests/test_news_grasp_direct_mainline_integration.py::test_direct_public_completion_accepts_public_only_evidence_without_runner",
+        "tests/test_news_grasp_direct_mainline_integration.py::test_installed_completion_guard_direct_canary",
+        "tests/test_news_grasp_direct_mainline_integration.py::test_inventory_deepdive_and_distribution_bindings_are_conjunctive",
+        "tests/test_news_grasp_direct_mainline_integration.py::test_slo_overrun_records_debt_but_does_not_turn_public_green_red",
+        "tests/test_news_grasp_direct_mainline_integration.py::test_title_unavailable_is_nonblocking_only_when_issue_is_recorded",
+        "tests/test_news_grasp_direct_mainline_integration.py::test_virtual_clock_45_75_90_boundaries_keep_public_successor[45-target-False-True]",
+        "tests/test_news_grasp_direct_mainline_integration.py::test_virtual_clock_45_75_90_boundaries_keep_public_successor[74-closeout-False-True]",
+        "tests/test_news_grasp_direct_mainline_integration.py::test_virtual_clock_45_75_90_boundaries_keep_public_successor[75-public_critical_only-True-True]",
+        "tests/test_news_grasp_direct_mainline_integration.py::test_virtual_clock_45_75_90_boundaries_keep_public_successor[90-public_critical_only-True-True]",
+        "tests/test_news_grasp_direct_mainline_integration.py::test_virtual_clock_45_75_90_boundaries_keep_public_successor[91-slo_debt_continue_public-True-False]"
       ],
       "clauseIds": [
         "NGC-C06",
@@ -3062,7 +3096,7 @@
     },
     {
       "path": "tests/test_news_grasp_skill_cross_layer_graph.py",
-      "sha256": "a711c1bc5397c4fb30636cf4b673cb642aae8c9510cdfaa6d5d668381b7334fd",
+      "sha256": "7cf6e69127c060f72d6cbe7b1de1aee09142f09124bdc8640d22cf895cd98b39",
       "nodeCount": 5,
       "nodeIds": [
         "tests/test_news_grasp_skill_cross_layer_graph.py::test_skill_cross_layer_graph_boundary_rejects_stale_shared_skill_hash",
@@ -3078,9 +3112,10 @@
     },
     {
       "path": "tests/test_news_grasp_task_promotion.py",
-      "sha256": "26093a98a9c16dd7c59636dc30d537efc473d22ac461317ac1e5df195dc6910d",
-      "nodeCount": 7,
+      "sha256": "c6b0d2475fc1db729c1ccfe5e4a026fa4956a65dc2aeb1d089a789b3741b8255",
+      "nodeCount": 8,
       "nodeIds": [
+        "tests/test_news_grasp_task_promotion.py::test_installer_canonicalizes_and_revalidates_stable_task_authority",
         "tests/test_news_grasp_task_promotion.py::test_installer_reuses_only_exact_valid_audit_mission_authority",
         "tests/test_news_grasp_task_promotion.py::test_installer_verifies_runtime_root_against_fixed_production_runtime",
         "tests/test_news_grasp_task_promotion.py::test_ng3_a19_adversarial_task_fire_during_promotion_is_old_or_new_only",
@@ -3095,8 +3130,43 @@
       ]
     },
     {
+      "path": "tests/test_news_grasp_title_control.py",
+      "sha256": "33fcc94d46f211baa36546e30ffa96484b331cbc560b07b08c1a123c9f821657",
+      "nodeCount": 8,
+      "nodeIds": [
+        "tests/test_news_grasp_title_control.py::test_expected_title_and_exact_validation",
+        "tests/test_news_grasp_title_control.py::test_nonblocking_title_failure_is_recorded_in_post_publish_issues",
+        "tests/test_news_grasp_title_control.py::test_success_status_cannot_claim_a_malformed_actual_title",
+        "tests/test_news_grasp_title_control.py::test_title_validation_rejects_non_contract_shapes[08/30/26 News-Grasp /u81e8/u6642/u672c/u7dda/u65e5/u6b21/u30d0/u30c3/u30c1 6:00 /u8a18/u4e8b/u4f5c/u6210/u30fb/u516c/u958b-wrong_issue_date]",
+        "tests/test_news_grasp_title_control.py::test_title_validation_rejects_non_contract_shapes[2026/08/30 News-Grasp /u81e8/u6642/u672c/u7dda/u65e5/u6b21/u30d0/u30c3/u30c1 6:00 /u8a18/u4e8b/u4f5c/u6210/u30fb/u516c/u958b-invalid_format]",
+        "tests/test_news_grasp_title_control.py::test_title_validation_rejects_non_contract_shapes[26/08/30 News-Grasp /u81e8/u6642/u672c/u7dda/u65e5/u6b21/u30d0/u30c3/u30c1 6:00 /u8a18/u4e8b/u4f5c/u6210/u30fb/u516c/u958b extra-unexpected_suffix]",
+        "tests/test_news_grasp_title_control.py::test_title_validation_rejects_non_contract_shapes[News-Grasp /u81e8/u6642/u672c/u7dda/u65e5/u6b21/u30d0/u30c3/u30c1 6:00 /u8a18/u4e8b/u4f5c/u6210/u30fb/u516c/u958b-date_missing]",
+        "tests/test_news_grasp_title_control.py::test_title_validation_rejects_non_contract_shapes[TT26/08/30 News-Grasp /u81e8/u6642/u672c/u7dda/u65e5/u6b21/u30d0/u30c3/u30c1 6:00 /u8a18/u4e8b/u4f5c/u6210/u30fb/u516c/u958b-unexpected_prefix]"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
+      "path": "tests/test_news_grasp_viability_check.py",
+      "sha256": "861dd23daf0d0cdd4bd817b8a623c7391cfd6517312b57589714b928c167add2",
+      "nodeCount": 5,
+      "nodeIds": [
+        "tests/test_news_grasp_viability_check.py::test_viability_check_demotes_live_duplicate_scheduler_to_entry_red",
+        "tests/test_news_grasp_viability_check.py::test_viability_check_demotes_red_suite_failure_to_quality_red",
+        "tests/test_news_grasp_viability_check.py::test_viability_check_has_closed_condition_set",
+        "tests/test_news_grasp_viability_check.py::test_viability_check_is_bound_to_direct_assets_not_legacy_runner",
+        "tests/test_news_grasp_viability_check.py::test_viability_check_returns_green_for_repo_local_contracts"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
       "path": "tests/test_newsroom_append_safety_benchmark.py",
-      "sha256": "e27ef9fa5e8db50807415d35bce4300175b213a93d0312865afeb6983e9b518d",
+      "sha256": "1c2be89b05bb7078945c2cdbe86ae4d7aa3b55fbed193cfe93da972388dacb2e",
       "nodeCount": 2,
       "nodeIds": [
         "tests/test_newsroom_append_safety_benchmark.py::test_append_safety_fixture_covers_five_failure_boundaries",
@@ -3129,7 +3199,7 @@
     },
     {
       "path": "tests/test_newsroom_prompts.py",
-      "sha256": "ac9ab1e1e6c41ce4593abad1ec6d49c2c2036226c4276421fe72e636825c69b1",
+      "sha256": "15744653a0a60c53fb5fcf2358082a0143639342b742b32b63ae1e0f643b9530",
       "nodeCount": 22,
       "nodeIds": [
         "tests/test_newsroom_prompts.py::test_active_newsroom_prompts_do_not_reference_legacy_agents",
@@ -3363,7 +3433,7 @@
     },
     {
       "path": "tests/test_overview_pattern_c.py",
-      "sha256": "0b6d7336e8175382745085a67380b2f6c696ec0c72fc9dc07ac5758982ba0c7b",
+      "sha256": "813dbde6d855331838e0f010e20659d31ec12cdaf1bc8b984da947a7344cd3e0",
       "nodeCount": 11,
       "nodeIds": [
         "tests/test_overview_pattern_c.py::test_build_all_overviews_creates_unique_dates_only",
@@ -3427,7 +3497,7 @@
     },
     {
       "path": "tests/test_prepare_editor_workspace.py",
-      "sha256": "f97df29ae5e5a46d4c075b662e550065ec1eeb23e9ec71b8a210cd4732500d68",
+      "sha256": "2397a1d5dc51876312932b41b109986ec22fd82039206f2a9cef6c26d21fc632",
       "nodeCount": 1,
       "nodeIds": [
         "tests/test_prepare_editor_workspace.py::test_prepare_editor_workspace_removes_only_target_issue_date"
@@ -3840,7 +3910,7 @@
     },
     {
       "path": "tests/test_repair_coverage_matrix.py",
-      "sha256": "7b602f864c3fd2d1c7e082cca3973b84b85629f2d32e367589d079cb57ce3e0d",
+      "sha256": "667f69d857605c5e857edfefd70c20dc07e7904cc19cc3edb967313ccb46a486",
       "nodeCount": 30,
       "nodeIds": [
         "tests/test_repair_coverage_matrix.py::test_audio_script_quality_invalid_routes_to_llm_rewrite_not_append_patch",
@@ -3917,7 +3987,7 @@
     },
     {
       "path": "tests/test_repair_registry.py",
-      "sha256": "1692a0f1d2f6a119cd9df8599f9fa00f07627ab59c38539bdc102674c02e9e57",
+      "sha256": "8afbbb93cefb28b0f888b152516308eed59fa2409b45e580eaad9508973e42fe",
       "nodeCount": 52,
       "nodeIds": [
         "tests/test_repair_registry.py::test_articles_only_handler_generates_digest_card_and_reconcile_turns_green",
@@ -4385,7 +4455,7 @@
     },
     {
       "path": "tests/test_scheduled_high_cost_separation.py",
-      "sha256": "3c08487e695e14dcaf8adf87007c0af6db816649e64bba2e62a53c59b8654e65",
+      "sha256": "be715f412f15a5a9894945dd07bf5553efc2b2aa6f827ee51defa657f2707ffb",
       "nodeCount": 85,
       "nodeIds": [
         "tests/test_scheduled_high_cost_separation.py::test_attempt_status_is_derived_from_canonical_ledger_not_caller_text",
@@ -4397,13 +4467,17 @@
         "tests/test_scheduled_high_cost_separation.py::test_broker_exposes_attempt_ledger_inspection_command",
         "tests/test_scheduled_high_cost_separation.py::test_broker_exposes_ledger_backed_recovery_authority_validation",
         "tests/test_scheduled_high_cost_separation.py::test_broker_exposes_typed_recovery_startup_reconcile_command",
-        "tests/test_scheduled_high_cost_separation.py::test_clean_runtime_identity_is_forwarded_to_runner_and_detached_push_is_exact",
         "tests/test_scheduled_high_cost_separation.py::test_clean_runtime_is_created_via_transaction_owned_staging",
         "tests/test_scheduled_high_cost_separation.py::test_current_scheduled_failure_is_atomically_recorded_for_recovery",
         "tests/test_scheduled_high_cost_separation.py::test_current_scheduled_failure_terminalizer_rejects_replay_and_missing_reservation",
+        "tests/test_scheduled_high_cost_separation.py::test_direct_completion_consumes_typed_run_intent_without_runner_state",
         "tests/test_scheduled_high_cost_separation.py::test_direct_converge_cannot_borrow_unrelated_bootstrap_mutex_holder",
         "tests/test_scheduled_high_cost_separation.py::test_direct_converge_runtime_is_blocked_while_bootstrap_runtime_lifecycle_mutex_is_held",
         "tests/test_scheduled_high_cost_separation.py::test_direct_converge_runtime_requires_same_runtime_mutex_across_processes",
+        "tests/test_scheduled_high_cost_separation.py::test_direct_identity_uses_issue_scoped_completion_and_detached_push_is_exact",
+        "tests/test_scheduled_high_cost_separation.py::test_direct_mainline_keeps_broker_operation_identity_without_legacy_runner",
+        "tests/test_scheduled_high_cost_separation.py::test_direct_resume_uses_exact_public_successor_without_runner_continuation",
+        "tests/test_scheduled_high_cost_separation.py::test_direct_title_control_validates_issue_date_before_receipt_write",
         "tests/test_scheduled_high_cost_separation.py::test_dirty_production_runtime_is_quarantined_and_replaced_without_data_loss",
         "tests/test_scheduled_high_cost_separation.py::test_dirty_runtime_dependency_junctions_are_quarantined_with_bindings",
         "tests/test_scheduled_high_cost_separation.py::test_execution_rejects_valid_receipt_substitution_before_reservation[admission0-scheduled_production-2026-08-03]",
@@ -4433,10 +4507,6 @@
         "tests/test_scheduled_high_cost_separation.py::test_recovery_continuation_reuses_admission_and_remaining_budget",
         "tests/test_scheduled_high_cost_separation.py::test_recovery_reclaims_only_unleased_reporter_reservations",
         "tests/test_scheduled_high_cost_separation.py::test_recovery_reuses_same_date_identity_attempt_and_remaining_budget",
-        "tests/test_scheduled_high_cost_separation.py::test_runner_consumes_typed_scheduled_authority_and_separates_recovery_state",
-        "tests/test_scheduled_high_cost_separation.py::test_runner_resume_uses_broker_issued_recovery_continuation",
-        "tests/test_scheduled_high_cost_separation.py::test_runner_validates_issue_date_before_any_date_scoped_write",
-        "tests/test_scheduled_high_cost_separation.py::test_runner_wrapper_and_broker_bind_expected_operation_identity",
         "tests/test_scheduled_high_cost_separation.py::test_runtime_mutex_owner_rejects_process_beyond_bounded_ancestry",
         "tests/test_scheduled_high_cost_separation.py::test_runtime_mutex_owner_snapshot_failure_is_fail_closed",
         "tests/test_scheduled_high_cost_separation.py::test_runtime_recovery_and_installer_phase_contract_is_forward_only",
@@ -4462,7 +4532,7 @@
         "tests/test_scheduled_high_cost_separation.py::test_runtime_recovery_requires_maintenance_before_64_committed_turnovers",
         "tests/test_scheduled_high_cost_separation.py::test_runtime_recovery_requires_runtime_external_canonical_authority_ledger",
         "tests/test_scheduled_high_cost_separation.py::test_scheduled_cli_cannot_mint_another_date_budget",
-        "tests/test_scheduled_high_cost_separation.py::test_scheduled_failure_is_terminalized_for_audit_recovery_lineage",
+        "tests/test_scheduled_high_cost_separation.py::test_scheduled_high_cost_failure_is_operation_local_for_direct_recovery",
         "tests/test_scheduled_high_cost_separation.py::test_scheduled_identity_is_date_scoped_and_not_goal_e2e_identity",
         "tests/test_scheduled_high_cost_separation.py::test_scheduled_launcher_enters_clean_production_runtime_and_smoke_is_fail_closed",
         "tests/test_scheduled_high_cost_separation.py::test_scheduled_model_start_requires_same_receipt_reservation",
@@ -4518,7 +4588,7 @@
     },
     {
       "path": "tests/test_session_url_fragments.py",
-      "sha256": "9960ce058151ffcb5d3584ae119557f028d69f14c8bdba1b35340c29908a1c44",
+      "sha256": "1695970b346507e447e75eab2510a4d9bddcae10ac55878b9babda736c64de0b",
       "nodeCount": 4,
       "nodeIds": [
         "tests/test_session_url_fragments.py::test_broken_fragment_is_warn_skipped",
@@ -4639,7 +4709,7 @@
     },
     {
       "path": "tests/test_summary_pattern_d.py",
-      "sha256": "52e410e6ead384187415a8f4eaa1aa96f10019127839bfb2c36ba8a7406eb862",
+      "sha256": "e2a0d472776abffa271071d7b5246b37aea18d2bb1f8cf1f69c9888b537c8781",
       "nodeCount": 26,
       "nodeIds": [
         "tests/test_summary_pattern_d.py::test_3_takeaways_always_rendered",
@@ -4873,7 +4943,7 @@
     },
     {
       "path": "tests/test_tts_generate_bgm.py",
-      "sha256": "988ff8382149c3e8805ca94cfdfb56e0a6bad8113e6c610ebb70136d0add37bb",
+      "sha256": "1ee3a906ecdbb60af426ba06e46993320bf57548436442eaad6d6b6e67a51867",
       "nodeCount": 19,
       "nodeIds": [
         "tests/test_tts_generate_bgm.py::test_all_styles_render_mono_quiet_and_deterministic",
@@ -4983,7 +5053,7 @@
     },
     {
       "path": "tests/test_validate_daily_quality.py",
-      "sha256": "66fcd7bead5f39b4b480489b6ecad6b8daed97c1c6447a765622e90b86f37dee",
+      "sha256": "44390a4969e0d7316aa28c3e9790cf770aa453880fafb71258feaf0c1900001d",
       "nodeCount": 47,
       "nodeIds": [
         "tests/test_validate_daily_quality.py::test_card_emphasis_coverage_accepts_three_tier_bullets",
@@ -5041,7 +5111,7 @@
     },
     {
       "path": "tests/test_validate_editor_output_preview.py",
-      "sha256": "f51fd549da466f6d9671ea90a787ea73ac2bb7eee814dc90357ca7762daf118d",
+      "sha256": "8467f651772a4e0d0e65441dd5b3797a766b4058eb5441242fa455387ad58e7d",
       "nodeCount": 5,
       "nodeIds": [
         "tests/test_validate_editor_output_preview.py::test_accepts_semantically_valid_editor_payload",
@@ -5212,7 +5282,7 @@
     },
     {
       "path": "tests/test_youtube_podcast_upload.py",
-      "sha256": "8b7e7233929d7f65a4b679ccc8d5eb0747e6cb316f353e94aef9c8dcb87fc71a",
+      "sha256": "e4111b064eeb897fd797b756f4c456b9c02989d9537af6431ab637e880f80b29",
       "nodeCount": 13,
       "nodeIds": [
         "tests/test_youtube_podcast_upload.py::test_audit_playlist_uniqueness_rejects_e2e_leftovers",

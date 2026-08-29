@@ -13,6 +13,52 @@
   "maintenance": "contract test and route parity audit run before source promotion",
   "contractTest": "tests/test_news_grasp_daily_control.py",
   "operationalCost": "one bounded local registry validation at each controller entry",
+  "activeMainline": "direct_public_v1",
+  "legacyRunnerStatus": "disabled_history_only",
+  "directMainline": {
+    "schemaVersion": "NEWS_GRASP_DIRECT_MAINLINE_ROUTES_V1",
+    "completionMode": "direct_public_v1",
+    "declaredRouteIds": [
+      "title_control",
+      "scheduled_inventory",
+      "direct_generation",
+      "shared_quality",
+      "direct_publish",
+      "direct_completion"
+    ],
+    "consumerRouteIds": [
+      "title_control",
+      "scheduled_inventory",
+      "direct_generation",
+      "shared_quality",
+      "direct_publish",
+      "direct_completion"
+    ],
+    "positiveFixtureRouteIds": [
+      "title_control",
+      "scheduled_inventory",
+      "direct_generation",
+      "shared_quality",
+      "direct_publish",
+      "direct_completion"
+    ],
+    "negativeFixtureRouteIds": [
+      "title_control",
+      "scheduled_inventory",
+      "direct_generation",
+      "shared_quality",
+      "direct_publish",
+      "direct_completion"
+    ],
+    "routes": [
+      {"routeId": "title_control", "consumerPath": "tools/news_grasp_title_control.py", "consumerSymbol": "record_title_status"},
+      {"routeId": "scheduled_inventory", "consumerPath": "tools/publish_inventory.py", "consumerSymbol": "scheduled_category_ids"},
+      {"routeId": "direct_generation", "consumerPath": "automation/skills/news-grasp-direct-mainline/SKILL.md", "consumerSymbol": "Direct 本線工程"},
+      {"routeId": "shared_quality", "consumerPath": "tools/validate_daily_quality.py", "consumerSymbol": "--require-deepdive"},
+      {"routeId": "direct_publish", "consumerPath": "automation/skills/news-grasp-direct-mainline/SKILL.md", "consumerSymbol": "Quality・公開gate"},
+      {"routeId": "direct_completion", "consumerPath": "tools/news_grasp_completion_guard.py", "consumerSymbol": "evaluate_direct_public"}
+    ]
+  },
   "declaredRouteIds": [
     "scheduled_runner",
     "producer_lineage",

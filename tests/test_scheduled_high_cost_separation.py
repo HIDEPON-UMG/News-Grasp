@@ -900,27 +900,29 @@ def test_execution_rejects_valid_receipt_substitution_before_reservation(
         )
 
 
-def test_runner_validates_issue_date_before_any_date_scoped_write() -> None:
-    runner = (
-        Path(__file__).resolve().parents[1] / "scripts" / "ops" / "news-grasp-runner.ps1"
-    ).read_text(encoding="utf-8-sig")
+def test_direct_title_control_validates_issue_date_before_receipt_write(tmp_path) -> None:
+    from tools.news_grasp_title_control import TitleControlError, record_title_status
 
-    validation = runner.index("NEWS_GRASP_DATE_STAMP_INVALID")
-    assert validation < runner.index("$LogPath = Join-Path")
-    assert validation < runner.index("build\\high-cost-operation-admissions")
+    output = tmp_path / "title-status.json"
+    with pytest.raises(TitleControlError, match="TITLE_ISSUE_DATE_INVALID"):
+        record_title_status(
+            issue_date="2026-8-3",
+            status="failed",
+            actual_title="",
+            reason="fixture",
+            post_publish_issue_list=[],
+            output_path=output,
+        )
+    assert not output.exists()
 
 
-def test_runner_wrapper_and_broker_bind_expected_operation_identity() -> None:
+def test_direct_mainline_keeps_broker_operation_identity_without_legacy_runner() -> None:
     root = Path(__file__).resolve().parents[1]
-    runner = (root / "scripts" / "ops" / "news-grasp-runner.ps1").read_text(
-        encoding="utf-8-sig"
-    )
     wrapper = (root / "scripts" / "ops" / "run_codex_with_timeout.ps1").read_text(
         encoding="utf-8-sig"
     )
 
-    assert "HighCostExpectedOperationKind" in runner
-    assert "HighCostExpectedIssueDate" in runner
+    assert not (root / "scripts" / "ops" / "news-grasp-runner.ps1").exists()
     assert "'--expected-operation-kind', $HighCostExpectedOperationKind" in wrapper
     assert "'--expected-issue-date', $HighCostExpectedIssueDate" in wrapper
     assert "Test-Path -LiteralPath $HighCostAdmissionPath -PathType Leaf" in wrapper
@@ -2351,35 +2353,35 @@ def test_production_runtime_self_repair_evidence_is_written_outside_clean_worktr
     assert "$backupDir = Join-Path $repairEvidenceRoot $timestamp" in evidence_block
 
 
-def test_clean_runtime_identity_is_forwarded_to_runner_and_detached_push_is_exact() -> None:
+def test_direct_identity_uses_issue_scoped_completion_and_detached_push_is_exact() -> None:
     root = Path(__file__).resolve().parents[1]
-    watcher = (root / "scripts" / "ops" / "watch-news-grasp-runner.ps1").read_text(
-        encoding="utf-8-sig"
+    assert not (root / "scripts" / "ops" / "news-grasp-runner.ps1").exists()
+    skill = (root / "automation/skills/news-grasp-direct-mainline/SKILL.md").read_text(
+        encoding="utf-8"
     )
-    runner = (root / "scripts" / "ops" / "news-grasp-runner.ps1").read_text(
-        encoding="utf-8-sig"
+    completion = (root / "tools/news_grasp_completion_guard.py").read_text(
+        encoding="utf-8"
     )
-    start_body = watcher.split("function Start-RunnerProcess", 1)[1].split(
-        "function Test-TerminalState", 1
-    )[0]
-    assert "RepoDirOverride = $RepoDir" in start_body
-    assert "push origin HEAD:main" in runner
-    assert "push origin main" not in runner.split("if ($NoPush)", 1)[1].split(
-        "# ===== publish reflection verify", 1
-    )[0]
+    assert "automation_id + canonical cwd + issue_date" in skill
+    assert "`origin/main`へpush" in skill
+    assert 'receipt.get("automation_id")' in completion
+    assert 'receipt.get("cwd")' in completion
 
 
-def test_scheduled_failure_is_terminalized_for_audit_recovery_lineage() -> None:
+def test_scheduled_high_cost_failure_is_operation_local_for_direct_recovery() -> None:
     root = Path(__file__).resolve().parents[1]
-    runner = (root / "scripts" / "ops" / "news-grasp-runner.ps1").read_text(
-        encoding="utf-8-sig"
+    assert not (root / "scripts" / "ops" / "news-grasp-runner.ps1").exists()
+    decision = high_cost.scheduled_operation_failure_disposition(
+        issue_date="2026-08-30",
+        operation="reporter_model_call",
+        reason_code="HIGH_COST_OPERATION_ADMISSION_REJECTED",
+        model_launch_count=0,
+        exact_successor="reuse_fresh_reporter_artifact",
     )
-    assert "function Invoke-ScheduledFailureTerminalizer" in runner
-    assert "record-news-grasp-failure" in runner
-    assert "scheduled_failure_receipt_path" in runner
-    assert "Invoke-ScheduledFailureTerminalizer" in runner.split(
-        "function Exit-Runner", 1
-    )[1].split("function Write-Log", 1)[0]
+    assert decision["operation_status"] == "red"
+    assert decision["task_terminal"] is False
+    assert decision["task_wide_stop"] is False
+    assert decision["exact_successor"] == "reuse_fresh_reporter_artifact"
 
 
 def test_task_launcher_freezes_pre_runner_failure_in_fixed_state(tmp_path: Path) -> None:
@@ -2409,39 +2411,30 @@ def test_task_launcher_freezes_pre_runner_failure_in_fixed_state(tmp_path: Path)
     assert state["recovery_class"] == "startup_self_repair_failure"
 
 
-def test_runner_consumes_typed_scheduled_authority_and_separates_recovery_state() -> None:
+def test_direct_completion_consumes_typed_run_intent_without_runner_state() -> None:
     root = Path(__file__).resolve().parents[1]
-    runner = (root / "scripts" / "ops" / "news-grasp-runner.ps1").read_text(
-        encoding="utf-8-sig"
+    assert not (root / "scripts" / "ops" / "news-grasp-runner.ps1").exists()
+    completion = (root / "tools/news_grasp_completion_guard.py").read_text(
+        encoding="utf-8"
     )
-    assert "[ValidateSet('ScheduledProduction', 'ScheduledRecoveryFull')]" in runner
-    assert "ScheduledAuthorityEvidencePath" in runner
-    assert "--authority-evidence" in runner
-    assert "--expected-task-action-sha256" in runner
-    assert "--expected-runner-sha256" in runner
-    assert "$operationKind = 'scheduled_recovery'" in runner
+    direct = completion.split("def evaluate_direct_public", 1)[1].split(
+        "def _canonical_bytes", 1
+    )[0]
+    assert 'receipt.get("run_intent") != "ScheduledProductionDirect"' in direct
+    assert "runner_state" not in direct
+    assert 'receipt.get("readiness")' not in direct
+    assert "receipt.get('readiness')" not in direct
 
 
-def test_runner_resume_uses_broker_issued_recovery_continuation() -> None:
+def test_direct_resume_uses_exact_public_successor_without_runner_continuation() -> None:
     root = Path(__file__).resolve().parents[1]
-    runner = (root / "scripts" / "ops" / "news-grasp-runner.ps1").read_text(
-        encoding="utf-8-sig"
+    assert not (root / "scripts" / "ops" / "news-grasp-runner.ps1").exists()
+    skill = (root / "automation/skills/news-grasp-direct-mainline/SKILL.md").read_text(
+        encoding="utf-8"
     )
-    assert "admit-news-grasp-recovery-continuation" not in runner
-    assert "SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_REQUIRED" in runner
-    assert "tools.news_grasp_daily_control" in runner
-    assert "validate-decision" in runner
-    assert "RECOVERY_DECISION_BRANCH_MISMATCH" in runner
-    assert "ScheduledAuthorityEvidencePath" in runner
-    assert "generation-quality-repair" in runner
-    assert "generation-quality gate owns missing artifact repair" in runner
-    artifact_guards = [
-        line
-        for line in runner.splitlines()
-        if "Test-DailyArtifactsExist -TargetDate $DateStamp" in line
-    ]
-    assert len(artifact_guards) == 2
-    assert all("(-not $ResumeGenerationQualityRepair)" in line for line in artifact_guards)
+    assert "実行可能なexact public successorを継続" in skill
+    assert "quality Redは該当artifactだけを修復" in skill
+    assert "旧 runner、NoPublish、fallbackへ切り替えない" in skill
 
 
 def test_installer_seals_recurring_audit_mission_authority() -> None:

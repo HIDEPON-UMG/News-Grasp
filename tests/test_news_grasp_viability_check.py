@@ -40,6 +40,13 @@ def test_viability_check_returns_green_for_repo_local_contracts() -> None:
     assert {row["status"] for row in result["rows"]} == {"green"}
 
 
+def test_viability_check_is_bound_to_direct_assets_not_legacy_runner() -> None:
+    source = (ROOT / "tools" / "news_grasp_viability_check.py").read_text(encoding="utf-8")
+    assert "news-grasp-direct-mainline" in source
+    assert "tools/news_grasp_completion_guard.py" in source
+    assert 'runner = _read(' not in source
+
+
 def test_viability_check_demotes_live_duplicate_scheduler_to_entry_red(
     monkeypatch,
 ) -> None:

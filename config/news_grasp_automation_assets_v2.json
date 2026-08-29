@@ -1,7 +1,7 @@
 {
   "schemaVersion": "NEWS_GRASP_AUTOMATION_ASSET_MANIFEST_V2",
   "productId": "News-Grasp",
-  "assetVersion": "2026-08-16.v3",
+  "assetVersion": "2026-08-29.direct-mainline-v1",
   "installRoot": "news-grasp-assets",
   "assets": [
     {
@@ -45,6 +45,18 @@
       "kind": "skill",
       "sourcePath": "automation/skills/news-grasp-repair-method/agents/openai.yaml",
       "installPath": "skills/news-grasp-repair-method/agents/openai.yaml"
+    },
+    {
+      "assetId": "direct-mainline-skill-md-v1",
+      "kind": "skill",
+      "sourcePath": "automation/skills/news-grasp-direct-mainline/SKILL.md",
+      "installPath": "skills/news-grasp-direct-mainline/SKILL.md"
+    },
+    {
+      "assetId": "direct-mainline-openai-yaml-v1",
+      "kind": "skill",
+      "sourcePath": "automation/skills/news-grasp-direct-mainline/agents/openai.yaml",
+      "installPath": "skills/news-grasp-direct-mainline/agents/openai.yaml"
     },
     {
       "assetId": "incident-report-skill-md-v2",

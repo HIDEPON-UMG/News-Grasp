@@ -5,10 +5,12 @@ import json
 import subprocess
 import sys
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
-from zoneinfo import ZoneInfo
+
+
+JST = timezone(timedelta(hours=9), "JST")
 
 
 CONDITION_IDS = (
@@ -124,12 +126,13 @@ def evaluate(
 ) -> dict[str, Any]:
     repo_root = repo_root.resolve()
     template = _read(repo_root / "automation" / "news-grasp-6-40" / "automation.toml.template")
-    skill = _read(repo_root / "automation" / "skills" / "news-grasp-e2e-discipline" / "SKILL.md")
-    runner = _read(repo_root / "scripts" / "ops" / "news-grasp-runner.ps1")
-    wrapper = _read(repo_root / "scripts" / "ops" / "invoke-scheduled-equivalent-nopublish.ps1")
+    skill = _read(repo_root / "automation" / "skills" / "news-grasp-direct-mainline" / "SKILL.md")
+    title_control = _read(repo_root / "tools" / "news_grasp_title_control.py")
+    completion_guard = _read(repo_root / "tools" / "news_grasp_completion_guard.py")
+    automation_guard = _read(repo_root / "automation" / "news-grasp-6-40" / "completion_guard.py")
     publish_inventory = _read(repo_root / "tools" / "publish_inventory.py")
-    verify_public = _read(repo_root / "tools" / "verify_public_surface.py")
-    daily_self_heal = _read(repo_root / "tools" / "daily_self_heal.py")
+    daily_quality = _read(repo_root / "tools" / "validate_daily_quality.py")
+    deepdive_quality = _read(repo_root / "tools" / "deepdive_quality.py")
     model_policy = _read(repo_root / "tools" / "model_policy.py")
     completion_guard_exists = (
         repo_root / "automation" / "news-grasp-6-40" / "completion_guard.py"
@@ -143,8 +146,9 @@ def evaluate(
             'rrule = "RRULE:FREQ=DAILY;BYHOUR=6;BYMINUTE=0;BYSECOND=0"',
             'model = "gpt-5.6-luna"',
             'reasoning_effort = "max"',
-            "automation は監査バッチではない",
-            "entry_control_plane の fix_now",
+            "automation は監査バッチではありません",
+            "$news-grasp-direct-mainline",
+            "既存 News-Grasp runner も使いません",
         ),
     ) and "stdout_projection" not in template
     entry_status, entry_reason = _status(entry_ok, missing_reason="temporary mainline automation template drift")
@@ -157,6 +161,7 @@ def evaluate(
                 'rrule = "RRULE:FREQ=DAILY;BYHOUR=6;BYMINUTE=0;BYSECOND=0"',
                 'model = "gpt-5.6-luna"',
                 'reasoning_effort = "max"',
+                "$news-grasp-direct-mainline",
             ),
         )
         entry_evidence.append(str(installed_automation))
@@ -175,40 +180,40 @@ def evaluate(
     ]
 
     input_ok = _has_all(
-        publish_inventory + runner,
+        publish_inventory + skill,
         (
             "def scheduled_category_ids",
-            "scheduled_category_ids(issue)",
+            "scheduled_category_ids(issue_date)",
             "CATEGORY_PATHS",
         ),
     )
     st, reason = _status(input_ok, missing_reason="scheduled category inventory contract missing")
-    rows.append(Row("input_inventory", st, "fix_now", ["tools/publish_inventory.py", "scripts/ops/news-grasp-runner.ps1"], reason))
+    rows.append(Row("input_inventory", st, "fix_now", ["tools/publish_inventory.py", "automation/skills/news-grasp-direct-mainline/SKILL.md"], reason))
 
-    model_ok = _has_all(template + model_policy, ("gpt-5.6-luna", "gpt-5.6-sol", "reasoning max", "reasoning high")) or _has_all(template, ("gpt-5.6-luna", "gpt-5.6-sol"))
+    model_ok = _has_all(template + skill + model_policy, ("gpt-5.6-luna", "gpt-5.6-sol", "reasoning max", "reasoning high"))
     st, reason = _status(model_ok, missing_reason="model route authority contract missing")
     rows.append(Row("model_route_authority", st, "fix_now", ["automation/news-grasp-6-40/automation.toml.template", "tools/model_policy.py"], reason))
 
     artifact_ok = _has_all(
-        runner + publish_inventory,
+        template + skill + publish_inventory,
         (
             "required_digest_artifacts",
             "required_published_artifacts",
             "required_distribution_artifacts",
-            "build/tts/latest_audio.json",
-            "build/tts/deepdive/latest_audio.json",
-            "data/distribution/{issue_str}.json",
+            "Daily audio script",
+            "DeepDive audio",
+            "distribution manifest",
             "docs/publish-status.json",
         ),
     )
     st, reason = _status(artifact_ok, missing_reason="artifact generation contract missing")
-    rows.append(Row("artifact_generation_contract", st, "fix_now", ["scripts/ops/news-grasp-runner.ps1", "tools/publish_inventory.py"], reason))
+    rows.append(Row("artifact_generation_contract", st, "fix_now", ["automation/skills/news-grasp-direct-mainline/SKILL.md", "tools/publish_inventory.py"], reason))
 
     quality_status = "green"
     quality_reason = "deterministic predicates matched"
-    quality_evidence = ["automation/skills/news-grasp-e2e-discipline/SKILL.md", "fixtures/deepdive_quality/tdd_acceptance_matrix.json"]
-    if not _has_all(skill, ("15 Requirement", "4 domain scopes", "60 fixtures", "150 pair cases", "240 traceability cells", "211実行node")):
-        quality_status, quality_reason = "red", "skill red-suite counts drift"
+    quality_evidence = ["automation/skills/news-grasp-direct-mainline/SKILL.md", "tools/validate_daily_quality.py", "tools/deepdive_quality.py"]
+    if not _has_all(skill + daily_quality + deepdive_quality, ("--require-deepdive", "provenance", "dialogue", "rendered")):
+        quality_status, quality_reason = "red", "direct shared-quality route drift"
     if run_red_suite_coverage:
         rc, value, output = _run_json([sys.executable, "-m", "tools.deepdive_red_suite_coverage"], cwd=repo_root)
         quality_evidence.append("python -m tools.deepdive_red_suite_coverage")
@@ -216,25 +221,43 @@ def evaluate(
             quality_status, quality_reason = "red", f"red suite coverage failed rc={rc}: {output[:200]}"
     rows.append(Row("quality_repair_routing", quality_status, "fix_now", quality_evidence, quality_reason))
 
-    dry_ok = _has_all(wrapper + runner, ("-NoPublish", "publish_dry_run_ok", "publish_complete")) and "ResumeFromStage" not in wrapper
-    st, reason = _status(dry_ok, missing_reason="NoPublish side-effect boundary missing")
-    rows.append(Row("dry_public_boundary", st, "fix_now", ["scripts/ops/invoke-scheduled-equivalent-nopublish.ps1", "scripts/ops/news-grasp-runner.ps1"], reason))
+    dry_ok = _has_all(skill + template, ("NoPublish", "fallback", "旧 runner", "public incomplete")) and not any(
+        command in template
+        for command in ("news_grasp_runner.py", "news_grasp_nopublish.py", "news-grasp-runner.ps1")
+    )
+    st, reason = _status(dry_ok, missing_reason="direct public boundary missing")
+    rows.append(Row("dry_public_boundary", st, "fix_now", ["automation/skills/news-grasp-direct-mainline/SKILL.md", "automation/news-grasp-6-40/automation.toml.template"], reason))
 
-    completion_ok = _has_all(template + runner + verify_public + daily_self_heal, ("verify-publish-complete", "tools.verify_public_surface", "tools.deepdive_quality", "require-rendered-public", "runner state")) and completion_guard_exists
+    completion_ok = _has_all(
+        template + skill + completion_guard + automation_guard,
+        (
+            "direct_public_v1",
+            "evaluate_direct_public",
+            "validate_daily_quality",
+            "--require-deepdive",
+            "fallback",
+            "NoPublish",
+            "publish_commit",
+            "post_publish_issue_list",
+        ),
+    ) and completion_guard_exists
     st, reason = _status(completion_ok, missing_reason="production completion authority missing")
-    rows.append(Row("production_completion_authority", st, "recover_now", ["automation/news-grasp-6-40/completion_guard.py", "tools/verify_public_surface.py", "tools/daily_self_heal.py"], reason))
+    rows.append(Row("production_completion_authority", st, "recover_now", ["automation/news-grasp-6-40/completion_guard.py", "tools/news_grasp_completion_guard.py"], reason))
 
-    slo_ok = _has_all(template + skill, ("45 分", "75 分", "90 分", "artifact count/hash delta"))
+    slo_ok = _has_all(template + skill, ("45 分", "75 分", "90 分", "exact public successor"))
     st, reason = _status(slo_ok, missing_reason="bounded SLO control missing")
-    rows.append(Row("bounded_slo_control", st, "recover_now", ["automation/news-grasp-6-40/automation.toml.template", "automation/skills/news-grasp-e2e-discipline/SKILL.md"], reason))
+    rows.append(Row("bounded_slo_control", st, "recover_now", ["automation/news-grasp-6-40/automation.toml.template", "automation/skills/news-grasp-direct-mainline/SKILL.md"], reason))
 
-    post_ok = _has_all(template + skill, ("post_publish_issue_list", "post_publish_issue", "public Green前"))
+    post_ok = _has_all(template + skill, ("post_publish_issue_list", "公開作業を止めない"))
     st, reason = _status(post_ok, missing_reason="post-publish issue boundary missing")
-    rows.append(Row("post_publish_issue_boundary", st, "post_publish_issue", ["automation/news-grasp-6-40/automation.toml.template", "automation/skills/news-grasp-e2e-discipline/SKILL.md"], reason))
+    post_ok = post_ok and _has_all(title_control, ("post_publish_issue_list", "updated", "already_ok", "unavailable", "failed", "skipped"))
+    if not post_ok:
+        st, reason = "red", "post-publish issue boundary missing"
+    rows.append(Row("post_publish_issue_boundary", st, "post_publish_issue", ["automation/news-grasp-6-40/automation.toml.template", "automation/skills/news-grasp-direct-mainline/SKILL.md", "tools/news_grasp_title_control.py"], reason))
 
-    external_ok = _has_all(template + skill, ("OAuth", "2FA", "quota", "外部サービス障害", "external_blocker"))
+    external_ok = _has_all(template + skill, ("OAuth", "2FA", "quota", "外部障害", "surfaceだけ"))
     st, reason = _status(external_ok, missing_reason="external blocker boundary missing")
-    rows.append(Row("external_dependency_boundary", st, "external_blocker", ["automation/news-grasp-6-40/automation.toml.template", "automation/skills/news-grasp-e2e-discipline/SKILL.md"], reason))
+    rows.append(Row("external_dependency_boundary", st, "external_blocker", ["automation/news-grasp-6-40/automation.toml.template", "automation/skills/news-grasp-direct-mainline/SKILL.md"], reason))
 
     status_set = {row.status for row in rows}
     if "red" in status_set:
@@ -247,7 +270,7 @@ def evaluate(
         "schemaVersion": "NEWS_GRASP_COMPLETION_VIABILITY_V1",
         "issueDate": issue_date,
         "repoRoot": str(repo_root),
-        "createdAt": datetime.now(ZoneInfo("Asia/Tokyo")).isoformat(),
+        "createdAt": datetime.now(JST).isoformat(),
         "viability": viability,
         "rows": [row.as_dict() for row in rows],
     }
@@ -256,7 +279,7 @@ def evaluate(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo-root", type=Path, default=Path("."))
-    parser.add_argument("--issue-date", default=datetime.now(ZoneInfo("Asia/Tokyo")).date().isoformat())
+    parser.add_argument("--issue-date", default=datetime.now(JST).date().isoformat())
     parser.add_argument("--installed-automation", type=Path, default=Path.home() / ".codex" / "automations" / "news-grasp-6-40" / "automation.toml")
     parser.add_argument("--check-live-tasks", action="store_true")
     parser.add_argument("--run-red-suite-coverage", action="store_true")

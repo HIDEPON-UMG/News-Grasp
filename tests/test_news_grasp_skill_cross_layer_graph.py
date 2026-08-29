@@ -18,7 +18,7 @@ def test_skill_cross_layer_graph_primary_binds_all_loaded_skills() -> None:
     assert "skillCrossLayerGraph" in compiled, "NGC_RED_SKILL_GRAPH_MISSING"
     graph = compiled["skillCrossLayerGraph"]
     assert graph["schemaVersion"] == "NEWS_GRASP_SKILL_CROSS_LAYER_GRAPH_V1"
-    assert len(graph["skills"]) == 11
+    assert len(graph["skills"]) == 12
     assert graph["orphanSkillIds"] == []
     assert graph["cycleSkillIds"] == []
     assert graph["duplicateStateOwnerIds"] == []

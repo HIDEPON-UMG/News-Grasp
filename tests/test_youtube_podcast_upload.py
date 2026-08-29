@@ -215,8 +215,24 @@ def test_finalize_publicizes_prepared_video_and_adds_playlist(tmp_path, monkeypa
     ]
 
 
-def test_youtube_client_marks_uploaded_and_finalized_videos_embeddable(tmp_path):
+def test_youtube_client_marks_uploaded_and_finalized_videos_embeddable(tmp_path, monkeypatch):
+    import sys
+    import types
+
     from tools.youtube_podcast import upload_episode
+
+    google_module = types.ModuleType("googleapiclient")
+    http_module = types.ModuleType("googleapiclient.http")
+
+    class FakeMediaFileUpload:
+        def __init__(self, filename, **kwargs):
+            self.filename = filename
+            self.kwargs = kwargs
+
+    http_module.MediaFileUpload = FakeMediaFileUpload
+    google_module.http = http_module
+    monkeypatch.setitem(sys.modules, "googleapiclient", google_module)
+    monkeypatch.setitem(sys.modules, "googleapiclient.http", http_module)
 
     bodies: list[dict] = []
 
