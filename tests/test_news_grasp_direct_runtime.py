@@ -1020,6 +1020,121 @@ def test_start_cli_uses_jst_today_when_issue_date_is_omitted(
     assert output["exact_successor"] == "title_control"
 
 
+def test_advance_cli_records_exact_successor_title_stage(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """automationから呼べるCLIだけでtitle_controlをstage_historyへ記録する。"""
+
+    api = _api()
+    state_root = tmp_path / "direct-mainline"
+    monkeypatch.setattr(api, "_now_jst", lambda: STARTED_AT)
+    monkeypatch.chdir(REPO)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "news_grasp_direct_runtime.py",
+            "start",
+            "--state-root",
+            str(state_root),
+        ],
+    )
+    assert api._main() == 0
+    started = json.loads(capsys.readouterr().out)
+    evidence = json.dumps(
+        {
+            "ok": True,
+            "status": "green",
+            "issue_date": ISSUE_DATE,
+            "title_status": "already_ok",
+            "actual_title": EXPECTED_TITLE,
+            "post_publish_issue_list": [],
+        },
+        ensure_ascii=False,
+    )
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "news_grasp_direct_runtime.py",
+            "advance",
+            "--state-root",
+            str(state_root),
+            "--run-id",
+            started["run_id"],
+            "--writer-lease",
+            started["writer_lease"],
+            "--evidence-json",
+            evidence,
+        ],
+    )
+
+    assert api._main() == 0
+    advanced = json.loads(capsys.readouterr().out)
+    assert advanced["completed_stage"] == "title_control"
+    assert advanced["current_stage"] == "issue_inventory"
+    assert advanced["title_status"] == "already_ok"
+    assert advanced["actual_title"] == EXPECTED_TITLE
+
+
+def test_advance_cli_public_completion_calls_consumer_owned_verifier(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """public_completionのCLI advanceはpublic verifier実体に委譲する。"""
+
+    api = _api()
+    completion = importlib.import_module("tools.news_grasp_direct_completion")
+    store, clock, _, verifier = _store(api, tmp_path)
+    state_root = store.state_root
+    cwd = tmp_path / "repo"
+    cwd.mkdir()
+    run = _start(api, store, cwd)
+    _complete_before(api, store, run, verifier, "public_completion", clock=clock)
+    calls: list[dict[str, Any]] = []
+
+    def public_green(**kwargs: Any) -> dict[str, Any]:
+        calls.append(dict(kwargs))
+        return {
+            "schemaVersion": "NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1",
+            "ok": True,
+            "completion_mode": "direct_public_v1",
+            "issue_date": ISSUE_DATE,
+            "status": "green",
+            "public_surfaces": _public_rows(),
+            "failures": [],
+        }
+
+    monkeypatch.setattr(completion, "verify_direct_public_completion", public_green)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "news_grasp_direct_runtime.py",
+            "advance",
+            "--state-root",
+            str(state_root),
+            "--run-id",
+            _run_id(run),
+            "--writer-lease",
+            _lease(run),
+            "--repo-root",
+            str(REPO),
+            "--public-base-url",
+            "https://hidepon-umg.github.io/News-Grasp",
+            "--wait-sec",
+            "0",
+            "--poll-sec",
+            "0",
+        ],
+    )
+
+    assert api._main() == 0
+    advanced = json.loads(capsys.readouterr().out)
+    assert calls
+    assert calls[0]["repo_root"] == REPO
+    assert advanced["status"] in {"completed", "green"}
+
+
 @pytest.mark.parametrize(
     "public_base_url",
     (

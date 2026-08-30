@@ -47,6 +47,7 @@ News-Grasp の臨時本線日次バッチを実行してください。
 - 既存 runner / clean runtime launcher / audit recovery control は使いません。
 - 最初に `python -m tools.news_grasp_direct_runtime start --state-root build/direct-mainline` で direct runtime run を開始してください。対象日は runtime が Asia/Tokyo の当日から確定します。明示指定が必要な時だけ `--issue-date 2026-08-30` のように実日付を渡し、角括弧付きの placeholder を実行しないでください。
 - `tools.news_grasp_direct_runtime.DIRECT_STAGES` の 21工程だけを順番 authority とし、stage_history と `NEWS_GRASP_DIRECT_RUNTIME_V1` state を生成してください。skill 本文、TODO、自己申告 JSON、URL 200、publish-status 単独を stage / completion authority にしないでください。
+- 各工程の実作業を repo-local tool / Codex direct work で終えたら、`python -m tools.news_grasp_direct_runtime advance --state-root build/direct-mainline --run-id <startが返したrun_id> --writer-lease <startが返したwriter_lease> --evidence-file <実工程の検証JSON>` で現在の exact successor だけを記録してください。`public_completion` だけは `--repo-root . --public-base-url https://hidepon-umg.github.io/News-Grasp` を渡して consumer-owned public verifier に実成果物と公開面を読ませてください。
 - `automation/news-grasp-6-40/completion_guard.py` は read-only stdout projection として使い、`--direct-state-root build/direct-mainline --direct-run-id` には direct runtime が返した実 run_id を渡して canonical runtime state と public verifier を読ませてください。completion_mode は `direct_public_v1` だけを使います。caller が作った `--direct-receipt` は Green authority ではありません。
 - repo-local deterministic tools は使ってよいです。通常公開の ad hoc 手編集は避け、生成・検証・公開は repo-local tools と Codex direct work で行ってください。
 - Windows Scheduled Task の News-Grasp Production / Bootstrap / Deadman / Runner が再有効化されていないことを read-only で確認し、二重起動の危険だけを避けてください。
@@ -95,4 +96,4 @@ News-Grasp の臨時本線日次バッチを実行してください。
 - public incomplete のまま最終応答しないでください。OAuth 再同意、2FA、quota 変更、rollback、削除、未承認 public incident publication、外部サービス障害だけを未公開停止条件にできます。
 """
 created_at = 1788014431516
-updated_at = 1788069149338
+updated_at = 1788077226171

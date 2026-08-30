@@ -421,7 +421,7 @@ def _public_web(
 
 
 def _up_to_date_observation(repo_root: Path, remote: str, branch: str) -> dict[str, Any]:
-    proc = subprocess.run(
+    status_proc = subprocess.run(
         ["git", "status", "--porcelain=v1", "-b"],
         cwd=str(repo_root),
         capture_output=True,
@@ -431,9 +431,8 @@ def _up_to_date_observation(repo_root: Path, remote: str, branch: str) -> dict[s
         timeout=30,
         check=False,
     )
-    text = proc.stdout
-    head_proc = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
+    tracked_diff_proc = subprocess.run(
+        ["git", "diff", "--quiet"],
         cwd=str(repo_root),
         capture_output=True,
         text=True,
@@ -442,8 +441,8 @@ def _up_to_date_observation(repo_root: Path, remote: str, branch: str) -> dict[s
         timeout=30,
         check=False,
     )
-    remote_proc = subprocess.run(
-        ["git", "rev-parse", f"{remote}/{branch}"],
+    staged_diff_proc = subprocess.run(
+        ["git", "diff", "--cached", "--quiet"],
         cwd=str(repo_root),
         capture_output=True,
         text=True,
@@ -452,21 +451,43 @@ def _up_to_date_observation(repo_root: Path, remote: str, branch: str) -> dict[s
         timeout=30,
         check=False,
     )
-    head = head_proc.stdout.strip()
-    remote_head = remote_proc.stdout.strip()
+    remote_contains_local_proc = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", "HEAD", f"{remote}/{branch}"],
+        cwd=str(repo_root),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=30,
+        check=False,
+    )
+    local_contains_remote_proc = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", f"{remote}/{branch}", "HEAD"],
+        cwd=str(repo_root),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=30,
+        check=False,
+    )
+    text = status_proc.stdout
     status_lines = [line for line in text.splitlines() if not line.startswith("##")]
-    branch_ok = f"## {branch}..." in text or (
-        text.lstrip().startswith("## HEAD (no branch)")
-        and head
-        and head == remote_head
+    branch_ok = f"## {branch}..." in text or text.lstrip().startswith("## HEAD (no branch)")
+    local_clean = (
+        status_proc.returncode == 0
+        and tracked_diff_proc.returncode == 0
+        and staged_diff_proc.returncode == 0
+        and not status_lines
+    )
+    remote_graph_aligned = (
+        remote_contains_local_proc.returncode == 0
+        and local_contains_remote_proc.returncode == 0
     )
     ok = (
-        proc.returncode == 0
-        and head_proc.returncode == 0
-        and remote_proc.returncode == 0
-        and not status_lines
+        local_clean
         and branch_ok
-        and head == remote_head
+        and remote_graph_aligned
         and "ahead" not in text
         and "behind" not in text
     )
@@ -475,9 +496,13 @@ def _up_to_date_observation(repo_root: Path, remote: str, branch: str) -> dict[s
         "remote": remote,
         "branch": branch,
         "stdout": text,
-        "exit_code": proc.returncode,
-        "head": head,
-        "remote_head": remote_head,
+        "exit_code": status_proc.returncode,
+        "local_clean": local_clean,
+        "tracked_diff_exit_code": tracked_diff_proc.returncode,
+        "staged_diff_exit_code": staged_diff_proc.returncode,
+        "remote_contains_local": remote_contains_local_proc.returncode == 0,
+        "local_contains_remote": local_contains_remote_proc.returncode == 0,
+        "remote_graph_aligned": remote_graph_aligned,
         "detached_worktree": text.lstrip().startswith("## HEAD (no branch)"),
         "semantic_ok": ok,
         "status": "green" if ok else "red",

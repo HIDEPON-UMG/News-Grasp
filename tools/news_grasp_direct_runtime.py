@@ -70,6 +70,7 @@ AUTOMATION_ID = "news-grasp-6-40"
 JST = timezone(timedelta(hours=9), name="Asia/Tokyo")
 TITLE_SUCCESS = {"updated", "already_ok"}
 TITLE_NONBLOCKING = {"unavailable", "failed", "skipped"}
+MAX_CLI_EVIDENCE_BYTES = 1024 * 1024
 
 
 def _now_jst() -> datetime:
@@ -946,6 +947,73 @@ def validate_installed_automation_semantics(path: str | Path | None = None) -> d
     }
 
 
+def _load_cli_mapping(*, evidence_json: str | None, evidence_file: Path | None) -> dict[str, Any]:
+    evidence: dict[str, Any] = {}
+    if evidence_file is not None:
+        if not evidence_file.is_file():
+            raise ValueError("evidence_file_missing")
+        if evidence_file.stat().st_size > MAX_CLI_EVIDENCE_BYTES:
+            raise ValueError("evidence_file_too_large")
+        loaded = json.loads(evidence_file.read_text(encoding="utf-8-sig"))
+        if not isinstance(loaded, Mapping):
+            raise ValueError("evidence_file_not_object")
+        evidence.update(dict(loaded))
+    if evidence_json:
+        loaded = json.loads(evidence_json)
+        if not isinstance(loaded, Mapping):
+            raise ValueError("evidence_json_not_object")
+        evidence.update(dict(loaded))
+    return evidence
+
+
+def _cli_stage_verifier(
+    stage_id: str,
+    *,
+    run: Mapping[str, Any],
+    evidence: Mapping[str, Any],
+    repo_root: Path | None,
+    public_base_url: str | None,
+    remote: str,
+    branch: str,
+    wait_sec: int,
+    poll_sec: int,
+) -> dict[str, Any]:
+    if stage_id == "public_completion" and repo_root is not None and public_base_url:
+        from tools.news_grasp_direct_completion import verify_direct_public_completion
+
+        return verify_direct_public_completion(
+            repo_root=repo_root,
+            issue_date=str(run.get("issue_date") or ""),
+            public_base_url=public_base_url,
+            remote=remote,
+            branch=branch,
+            wait_sec=wait_sec,
+            poll_sec=poll_sec,
+        )
+    if not evidence:
+        return {
+            "ok": False,
+            "status": "stage_evidence_missing",
+            "failures": [f"stage_evidence_missing:{stage_id}"],
+        }
+    row = dict(evidence)
+    if row.get("issue_date") not in {None, "", run.get("issue_date")}:
+        return {
+            **row,
+            "ok": False,
+            "status": "stage_issue_date_mismatch",
+            "failures": list(row.get("failures") or []) + ["stage_issue_date_mismatch"],
+        }
+    if row.get("ok") is not True:
+        return {
+            **row,
+            "ok": False,
+            "status": str(row.get("status") or "semantic_red"),
+            "failures": list(row.get("failures") or [str(row.get("reason") or "semantic_red")]),
+        }
+    return {**row, "status": str(row.get("status") or "green")}
+
+
 def _main() -> int:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -965,6 +1033,19 @@ def _main() -> int:
     inspect = sub.add_parser("inspect")
     inspect.add_argument("--state-root", type=Path, required=True)
     inspect.add_argument("--run-id", required=True)
+
+    advance = sub.add_parser("advance")
+    advance.add_argument("--state-root", type=Path, required=True)
+    advance.add_argument("--run-id", required=True)
+    advance.add_argument("--writer-lease", required=True)
+    advance.add_argument("--evidence-json", default=None)
+    advance.add_argument("--evidence-file", type=Path, default=None)
+    advance.add_argument("--repo-root", type=Path, default=None)
+    advance.add_argument("--public-base-url", default="")
+    advance.add_argument("--remote", default="origin")
+    advance.add_argument("--branch", default="main")
+    advance.add_argument("--wait-sec", type=int, default=0)
+    advance.add_argument("--poll-sec", type=int, default=30)
 
     verify = sub.add_parser("verify-public")
     verify.add_argument("--state-root", type=Path, required=True)
@@ -990,6 +1071,27 @@ def _main() -> int:
             )
         elif args.cmd == "inspect":
             result = inspect_run(store, run_id=args.run_id)
+        elif args.cmd == "advance":
+            evidence = _load_cli_mapping(
+                evidence_json=args.evidence_json,
+                evidence_file=args.evidence_file,
+            )
+            result = run_exact_successor(
+                store,
+                run_id=args.run_id,
+                writer_lease=args.writer_lease,
+                semantic_verifier=lambda stage_id, **kwargs: _cli_stage_verifier(
+                    stage_id,
+                    run=kwargs.get("run") or {},
+                    evidence=evidence,
+                    repo_root=args.repo_root,
+                    public_base_url=args.public_base_url or None,
+                    remote=args.remote,
+                    branch=args.branch,
+                    wait_sec=args.wait_sec,
+                    poll_sec=args.poll_sec,
+                ),
+            )
         else:
             result = verify_public_completion(
                 store,
