@@ -15,6 +15,7 @@ TITLE_SUFFIX = "News-Grasp 臨時本線日次バッチ 6:00 記事作成・公�
 TITLE_PATTERN = re.compile(rf"^\d{{2}}/\d{{2}}/\d{{2}} {re.escape(TITLE_SUFFIX)}$")
 TITLE_STATUSES = {"updated", "already_ok", "unavailable", "failed", "skipped"}
 SUCCESS_STATUSES = {"updated", "already_ok"}
+MAX_TITLE_ATTEMPTS = 2
 
 
 class TitleControlError(ValueError):
@@ -79,13 +80,23 @@ def record_title_status(
     actual_title: str,
     reason: str,
     post_publish_issue_list: Iterable[str] | None,
+    attempt_count: int = 1,
     output_path: Path | None = None,
 ) -> dict[str, Any]:
-    """title status を非阻害 receipt として記録する。"""
+    """title status を非阻害 receipt として記録する。
+
+    ``attempt_count`` は、初回 timeout/unavailable/unknown 後の一度だけ許可する
+    同一 title action の再試行を含む。タイトル未達は公開可否とは別に
+    ``title_completion=deferred`` として機械的に残す。
+    """
 
     normalized_status = str(status or "").strip()
     if normalized_status not in TITLE_STATUSES:
         raise TitleControlError("TITLE_STATUS_INVALID")
+    if isinstance(attempt_count, bool) or not isinstance(attempt_count, int):
+        raise TitleControlError("TITLE_ATTEMPT_COUNT_INVALID")
+    if not 1 <= attempt_count <= MAX_TITLE_ATTEMPTS:
+        raise TitleControlError("TITLE_ATTEMPT_COUNT_INVALID")
     issue = _issue_date(issue_date).isoformat()
     validation = validate_title(actual_title, issue)
     issues = [str(item) for item in (post_publish_issue_list or []) if str(item)]
@@ -107,6 +118,10 @@ def record_title_status(
         "validation": validation,
         "reason": str(reason or ""),
         "publication_blocked": False,
+        "title_attempt_count": attempt_count,
+        "title_completion": (
+            "fulfilled" if normalized_status in SUCCESS_STATUSES else "deferred"
+        ),
         "post_publish_issue_list": issues,
     }
     if output_path is not None:
@@ -121,6 +136,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--actual-title", default="")
     parser.add_argument("--reason", default="")
     parser.add_argument("--post-publish-issue", action="append", default=[])
+    parser.add_argument("--attempt-count", type=int, default=1)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args(argv)
     try:
@@ -130,6 +146,7 @@ def main(argv: list[str] | None = None) -> int:
             actual_title=args.actual_title,
             reason=args.reason,
             post_publish_issue_list=args.post_publish_issue,
+            attempt_count=args.attempt_count,
             output_path=args.output,
         )
     except TitleControlError as error:

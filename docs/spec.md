@@ -718,7 +718,7 @@ lunaJudgmentIds=[]
 ### Definition of Done
 
 - 対象カテゴリは `tools.publish_inventory.scheduled_category_ids(issue_date)` の結果であり、固定7カテゴリではない。
-- title controlは最初の実作業として最大1回行う。期待titleは exact `YY/MM/DD News-Grasp 臨時本線日次バッチ 6:00 記事作成・公開`。`updated|already_ok` は実title一致を必須とし、`unavailable|failed|skipped` は `post_publish_issue_list` に残して非阻害とする。
+- 正本を読む準備作業を除き、title controlの最初の実行操作は `set_thread_title` とする。runtime起動、scheduler確認、title status記録、記事処理を先に行わない。初回が timeout / unavailable / unknown の場合だけ同じ exact title action を1回再試行し、合計2回を上限とする。期待titleは exact `YY/MM/DD News-Grasp 臨時本線日次バッチ 6:00 記事作成・公開`。`updated|already_ok` は実title一致を必須とし、`unavailable|failed|skipped` は `title_completion=deferred` と `post_publish_issue_list` に残して非阻害とする。
 - reporter/digest/articles.jsonl/Summary/Daily audio/DeepDive/HTML docsを順に生成し、DeepDive provenance/dialogue/rendered HTMLと `validate_daily_quality --require-deepdive` をGreenにする。
 - Web、Daily audio、DeepDive article/audio、Daily/DeepDive YouTube、playlist、notification、distribution、publish-status、remote commit、Pagesを同一issue-date/run-intentで連言検証する。
 - `runner state`、readiness、durable goal、publish-status単独、URL 200単独、NoPublish、fallback publishはpublic completion authorityではない。

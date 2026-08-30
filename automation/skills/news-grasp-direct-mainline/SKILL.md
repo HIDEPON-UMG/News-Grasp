@@ -10,8 +10,8 @@ description: Run the 06:00 News-Grasp scheduled production directly with Codex, 
 ## 開始契約
 
 1. Asia/Tokyo の `issue_date` を確定し、`automation_id + canonical cwd + issue_date` の current execution だけを使用する。
-2. 最初の実作業として host の title action を最大1回だけ試す。期待値は `YY/MM/DD News-Grasp 臨時本線日次バッチ 6:00 記事作成・公開` とする。
-3. `python -m tools.news_grasp_title_control` で `updated / title_status=already_ok / unavailable / failed / skipped` を記録する。成功statusは実titleのexact一致を必須にする。失敗statusは `post_publish_issue_list` に残し、公開作業を止めない。
+2. 正本を読む準備作業を除き、最初の実行操作は host の `set_thread_title` とする。runtime起動、scheduler確認、title status記録、記事処理を先に行ってはならない。期待値は `YY/MM/DD News-Grasp 臨時本線日次バッチ 6:00 記事作成・公開` とする。初回が timeout / unavailable / unknown の場合だけ同じexact title actionを1回だけ再試行し、合計2回を上限とする。成功時は返却された実titleのexact一致を確認する。
+3. `python -m tools.news_grasp_title_control` で `updated / title_status=already_ok / unavailable / failed / skipped` を記録する。`--attempt-count 1|2` と `title_completion=fulfilled|deferred` を必ず記録し、2回とも成功しなければ `title_completion=deferred` と `post_publish_issue_list` に残す。タイトル未達は公開作業を止めないが、最終報告でタイトル達成と混同しない。
 4. `python -m tools.news_grasp_direct_runtime start --state-root build/direct-mainline` で run を開始する。対象日は runtime が Asia/Tokyo の当日から確定する。明示指定が必要な時だけ `--issue-date 2026-08-30` のように実日付を渡し、角括弧付きの placeholder は実行しない。
 5. 各工程の実作業を repo-local tool / Codex direct work で終えたら、`python -m tools.news_grasp_direct_runtime advance --state-root build/direct-mainline --run-id <startが返したrun_id> --writer-lease <startが返したwriter_lease> --evidence-file <実工程の検証JSON>` で現在の exact successor だけを進める。`public_completion` だけは `--repo-root . --public-base-url https://hidepon-umg.github.io/News-Grasp` を渡し、consumer-owned public verifier に実成果物と公開面を読ませる。
 6. 以後の工程は `tools.news_grasp_direct_runtime` の stage order と `advance`/`run_exact_successor` を通す。

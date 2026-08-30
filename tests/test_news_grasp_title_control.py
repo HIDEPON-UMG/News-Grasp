@@ -54,6 +54,47 @@ def test_nonblocking_title_failure_is_recorded_in_post_publish_issues(tmp_path: 
     assert json.loads(output.read_text(encoding="utf-8")) == receipt
 
 
+def test_title_receipt_exposes_deferred_completion_and_attempt_count() -> None:
+    receipt = record_title_status(
+        issue_date=ISSUE_DATE,
+        status="unavailable",
+        actual_title="",
+        reason="host_title_action_timeout",
+        post_publish_issue_list=[],
+        attempt_count=2,
+    )
+
+    assert receipt["title_attempt_count"] == 2
+    assert receipt["title_completion"] == "deferred"
+    assert receipt["publication_blocked"] is False
+
+
+def test_title_receipt_rejects_attempt_count_above_two() -> None:
+    with pytest.raises(TitleControlError, match="TITLE_ATTEMPT_COUNT_INVALID"):
+        record_title_status(
+            issue_date=ISSUE_DATE,
+            status="unavailable",
+            actual_title="",
+            reason="host_title_action_timeout",
+            post_publish_issue_list=[],
+            attempt_count=3,
+        )
+
+
+def test_successful_title_receipt_marks_completion_fulfilled() -> None:
+    receipt = record_title_status(
+        issue_date=ISSUE_DATE,
+        status="updated",
+        actual_title=EXPECTED,
+        reason="",
+        post_publish_issue_list=[],
+        attempt_count=2,
+    )
+
+    assert receipt["title_attempt_count"] == 2
+    assert receipt["title_completion"] == "fulfilled"
+
+
 def test_success_status_cannot_claim_a_malformed_actual_title() -> None:
     with pytest.raises(TitleControlError, match="TITLE_STATUS_ACTUAL_TITLE_INVALID"):
         record_title_status(
