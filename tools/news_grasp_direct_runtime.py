@@ -886,6 +886,20 @@ def validate_installed_automation_semantics(path: str | Path | None = None) -> d
         failures.append("automation_reasoning_not_max")
     if str(value.get("rrule") or "").upper() != "RRULE:FREQ=DAILY;BYHOUR=6;BYMINUTE=0;BYSECOND=0":
         failures.append("automation_schedule_not_0600")
+    created_at = value.get("created_at")
+    updated_at = value.get("updated_at")
+    if not isinstance(created_at, int) or isinstance(created_at, bool) or created_at <= 0:
+        failures.append("automation_app_schema_created_at_invalid")
+    if not isinstance(updated_at, int) or isinstance(updated_at, bool) or updated_at <= 0:
+        failures.append("automation_app_schema_updated_at_invalid")
+    if (
+        isinstance(created_at, int)
+        and not isinstance(created_at, bool)
+        and isinstance(updated_at, int)
+        and not isinstance(updated_at, bool)
+        and updated_at < created_at
+    ):
+        failures.append("automation_app_schema_timestamp_order_invalid")
     cwds = value.get("cwds")
     if not isinstance(cwds, list) or not cwds:
         failures.append("automation_cwds_missing")
@@ -927,6 +941,8 @@ def validate_installed_automation_semantics(path: str | Path | None = None) -> d
         "model": value.get("model"),
         "reasoning_effort": value.get("reasoning_effort"),
         "rrule": value.get("rrule"),
+        "created_at": created_at,
+        "updated_at": updated_at,
     }
 
 

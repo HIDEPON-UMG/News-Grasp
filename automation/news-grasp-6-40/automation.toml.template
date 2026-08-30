@@ -94,3 +94,5 @@ News-Grasp の臨時本線日次バッチを実行してください。
 - post_publish_issue_list があれば、公開後に見つけたが公開面作成のために着手しなかった問題として末尾に列挙してください。
 - public incomplete のまま最終応答しないでください。OAuth 再同意、2FA、quota 変更、rollback、削除、未承認 public incident publication、外部サービス障害だけを未公開停止条件にできます。
 """
+created_at = 1788014431516
+updated_at = 1788069149338

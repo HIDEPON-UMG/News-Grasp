@@ -932,6 +932,12 @@ def test_installed_direct_config_semantics_are_validated_by_producer() -> None:
     assert str(value.get("rrule", "")).upper() == (
         "RRULE:FREQ=DAILY;BYHOUR=6;BYMINUTE=0;BYSECOND=0"
     )
+    assert isinstance(value.get("created_at"), int)
+    assert isinstance(value.get("updated_at"), int)
+    assert value["created_at"] > 0
+    assert value["updated_at"] >= value["created_at"]
+    assert result.get("created_at") == value["created_at"]
+    assert result.get("updated_at") == value["updated_at"]
     cwds = value.get("cwds")
     assert isinstance(cwds, list) and cwds
     resolved_cwds = {str(Path(str(item)).expanduser().resolve()) for item in cwds}
@@ -941,6 +947,32 @@ def test_installed_direct_config_semantics_are_validated_by_producer() -> None:
     assert "YY/MM/DD" in prompt
     assert "title_status" in prompt
     assert "post_publish_issue_list" in prompt
+
+
+def test_installed_direct_config_rejects_codex_app_schema_timestamp_gaps(
+    tmp_path: Path,
+) -> None:
+    """Codex App loaderで必須のcreated_at/updated_at欠落をRedにする。"""
+
+    api = _api()
+    template_path = REPO / "automation/news-grasp-6-40/automation.toml.template"
+    template_text = template_path.read_text(encoding="utf-8-sig")
+    stale_text = "\n".join(
+        line
+        for line in template_text.splitlines()
+        if not line.startswith("created_at =") and not line.startswith("updated_at =")
+    )
+    path = tmp_path / "automation.toml"
+    path.write_text(
+        stale_text.replace("${NEWS_GRASP_REPO_ROOT}", str(REPO.resolve())),
+        encoding="utf-8",
+    )
+
+    result = _mapping(api.validate_installed_automation_semantics(path))
+
+    assert result.get("ok") is False
+    assert "automation_app_schema_created_at_invalid" in result.get("failures", [])
+    assert "automation_app_schema_updated_at_invalid" in result.get("failures", [])
 
 
 def test_public_template_uses_portable_cwd_placeholder_while_installed_is_bound() -> None:
