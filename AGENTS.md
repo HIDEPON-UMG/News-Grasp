@@ -4,6 +4,14 @@ This is the root routing contract for Claude Code and Codex.
 
 ## Root Workflow Contract
 
+### 2026-08-30 direct 06:00 mainline supersession
+
+- 06:00 Codex automation の通常日次公開は `$news-grasp-direct-mainline` を使う direct 本線である。旧 runner、NoPublish、fallback publish、runner state、readiness、goal、audit/report、URL 200単独、publish-status単独は、この route の public completion authority ではない。
+- この route は `tools.news_grasp_direct_runtime` の21工程 state と `NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1` の consumer-owned public verifier を authority にする。caller作成の completion JSON、文字列 marker、fixture、URL 200、commit/push 単独を Green に読み替えない。
+- title は最初の実作業で `YY/MM/DD News-Grasp 臨時本線日次バッチ 6:00 記事作成・公開` を試行し、`updated / already_ok / unavailable / failed / skipped` を記録する。title 失敗は公開作業を止めず、`post_publish_issue_list` に残す。
+- content-derived identity、SHA、digest、hash、fingerprint、Merkle は 06:00 direct 本線の active 制御 authority に使わない。カテゴリ digest のような記事生成物名称はこの禁止に含めない。
+- 以下の Same-day public recovery constitution は legacy recovery/history にだけ適用し、06:00 direct 本線と矛盾する場合は本 supersession が優先する。
+
 ### Same-day public recovery constitution
 
 - `same_day_public_recovery_first`: 対象日の公開面が Definition of Done を満たさない間は、同日公開の typed recovery を最優先の作業とする。

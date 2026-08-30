@@ -7,6 +7,7 @@ rrule = "RRULE:FREQ=DAILY;BYHOUR=6;BYMINUTE=0;BYSECOND=0"
 model = "gpt-5.6-luna"
 reasoning_effort = "max"
 execution_environment = "local"
+cwds = ['${NEWS_GRASP_REPO_ROOT}']
 
 prompt = """
 News-Grasp の臨時本線日次バッチを実行してください。
@@ -44,7 +45,9 @@ News-Grasp の臨時本線日次バッチを実行してください。
 
 実行入口:
 - 既存 runner / clean runtime launcher / audit recovery control は使いません。
-- `automation/news-grasp-6-40/completion_guard.py` は read-only stdout projection として使い、canonical product stateを書き換えません。
+- 最初に `python -m tools.news_grasp_direct_runtime start --state-root build/direct-mainline` で direct runtime run を開始してください。対象日は runtime が Asia/Tokyo の当日から確定します。明示指定が必要な時だけ `--issue-date 2026-08-30` のように実日付を渡し、角括弧付きの placeholder を実行しないでください。
+- `tools.news_grasp_direct_runtime.DIRECT_STAGES` の 21工程だけを順番 authority とし、stage_history と `NEWS_GRASP_DIRECT_RUNTIME_V1` state を生成してください。skill 本文、TODO、自己申告 JSON、URL 200、publish-status 単独を stage / completion authority にしないでください。
+- `automation/news-grasp-6-40/completion_guard.py` は read-only stdout projection として使い、`--direct-state-root build/direct-mainline --direct-run-id` には direct runtime が返した実 run_id を渡して canonical runtime state と public verifier を読ませてください。completion_mode は `direct_public_v1` だけを使います。caller が作った `--direct-receipt` は Green authority ではありません。
 - repo-local deterministic tools は使ってよいです。通常公開の ad hoc 手編集は避け、生成・検証・公開は repo-local tools と Codex direct work で行ってください。
 - Windows Scheduled Task の News-Grasp Production / Bootstrap / Deadman / Runner が再有効化されていないことを read-only で確認し、二重起動の危険だけを避けてください。
 - public mutation はこの臨時本線バッチの範囲で許可済みです: git commit/push, GitHub Pages 更新, Release audio upload, YouTube Podcast upload, playlist 登録, notification 送信。
@@ -68,8 +71,8 @@ News-Grasp の臨時本線日次バッチを実行してください。
 完了条件:
 - title_status が updated / already_ok / unavailable / failed / skipped のいずれかで記録されていること。updated / already_ok の場合は task title が exact `YY/MM/DD News-Grasp 臨時本線日次バッチ 6:00 記事作成・公開` に一致すること。
 - 当日対象カテゴリ digest、Summary、DeepDive md、DeepDive HTML、日付 docs、Daily audio、DeepDive audio、YouTube Podcast、playlist、notification、distribution manifest、docs/publish-status.json が同一日付で揃うこと。
-- python -m tools.validate_daily_quality --date <issue-date> --require-deepdive --json が Green。
-- python -m tools.deepdive_quality --repo-root . audit-issue --date <issue-date> --require-rendered-public が Green。
+- `python -m tools.validate_daily_quality --date YYYY-MM-DD --require-deepdive --json` を対象日の実日付で実行して Green。
+- `python -m tools.deepdive_quality --repo-root . audit-issue --date YYYY-MM-DD --require-rendered-public` を対象日の実日付で実行して Green。
 - runner/readiness を含まない public-only 検証で、Web / audio / Podcast / playlist / notification / distribution / publish-status / Pages が Green。
 - docs/publish-status.json が対象日 published_ok。
 - origin/main への push と GitHub Pages 反映が確認済み。
@@ -87,7 +90,7 @@ News-Grasp の臨時本線日次バッチを実行してください。
 最終報告:
 - 日本語で、まず臨時本線バッチの結果を報告してください。
 - ユーザー向け冒頭は次の形を守ってください: **結論**、- **状態**、- **根拠**、- **残るリスク**、- **次の作業**。
-- issue_date, title_status, public_status, publish_commit, YouTube videoId, playlist, notification sent_count, 主要 gate exit code, 証跡 path, resource usage, planned_elapsed, actual_elapsed, slo_delta, overrun_branch_triggered を含めてください。
+- issue_date, title_status, public_status, remote publish observation, YouTube videoId, playlist, notification sent_count, 主要 gate exit code, 証跡 path, resource usage, planned_elapsed, actual_elapsed, slo_delta, overrun_branch_triggered を含めてください。Git commit ID は観測値としてだけ扱い、制御 authority にはしないでください。
 - post_publish_issue_list があれば、公開後に見つけたが公開面作成のために着手しなかった問題として末尾に列挙してください。
 - public incomplete のまま最終応答しないでください。OAuth 再同意、2FA、quota 変更、rollback、削除、未承認 public incident publication、外部サービス障害だけを未公開停止条件にできます。
 """

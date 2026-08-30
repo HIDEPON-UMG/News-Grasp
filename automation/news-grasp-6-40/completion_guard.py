@@ -132,6 +132,14 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--issue-date", default=date.today().isoformat())
     parser.add_argument("--direct-receipt", type=Path)
+    parser.add_argument("--direct-run-id")
+    parser.add_argument("--direct-state-root", type=Path)
+    parser.add_argument("--repo-root", type=Path, default=None)
+    parser.add_argument("--public-base-url", default="")
+    parser.add_argument("--remote", default="origin")
+    parser.add_argument("--branch", default="main")
+    parser.add_argument("--wait-sec", type=int, default=0)
+    parser.add_argument("--poll-sec", type=int, default=30)
     parser.add_argument("--manifest", type=Path)
     parser.add_argument(
         "--runner-state",
@@ -141,21 +149,88 @@ def main() -> int:
     parser.add_argument("--ops-root", type=Path, default=Path.cwd())
     args = parser.parse_args()
 
-    if args.direct_receipt is not None:
-        try:
-            ops_root = args.ops_root.resolve(strict=True)
-            sys.path.insert(0, str(ops_root))
-            from tools.news_grasp_completion_guard import evaluate_direct_public
-
-            result = evaluate_direct_public(
-                _load_json(args.direct_receipt), args.issue_date
-            )
-        except (OSError, ImportError, ValueError):
+    if args.direct_run_id or args.direct_state_root is not None:
+        if not args.direct_run_id or args.direct_state_root is None:
             result = {
                 "schemaVersion": "NEWS_GRASP_DIRECT_COMPLETION_GUARD_V1",
                 "ok": False,
                 "issue_date": args.issue_date,
-                "failures": ["direct_completion_receipt_invalid"],
+                "failures": ["direct_runtime_arguments_incomplete"],
+            }
+            sys.stdout.write(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
+            return 2
+        try:
+            ops_root = args.ops_root.resolve(strict=True)
+            sys.path.insert(0, str(ops_root))
+            from tools.news_grasp_direct_runtime import (
+                DirectRunStore,
+                verify_public_completion,
+            )
+
+            result = verify_public_completion(
+                DirectRunStore(args.direct_state_root, create=False),
+                run_id=args.direct_run_id,
+                repo_root=args.repo_root or ops_root,
+                public_base_url=args.public_base_url or None,
+                remote=args.remote,
+                branch=args.branch,
+                wait_sec=args.wait_sec,
+                poll_sec=args.poll_sec,
+            )
+        except (OSError, ImportError, ValueError, RuntimeError) as exc:
+            result = {
+                "schemaVersion": "NEWS_GRASP_DIRECT_COMPLETION_GUARD_V1",
+                "ok": False,
+                "issue_date": args.issue_date,
+                "failures": [f"direct_runtime_verification_failed:{exc}"],
+            }
+        sys.stdout.write(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
+        return 0 if result["ok"] else 2
+
+    if args.direct_receipt is not None:
+        receipt = _load_json(args.direct_receipt)
+        state_root = receipt.get("state_root") or receipt.get("stateRoot")
+        run_id = receipt.get("run_id") or receipt.get("runId")
+        if state_root and run_id:
+            try:
+                ops_root = args.ops_root.resolve(strict=True)
+                sys.path.insert(0, str(ops_root))
+                from tools.news_grasp_direct_runtime import (
+                    DirectRunStore,
+                    verify_public_completion,
+                )
+
+                result = verify_public_completion(
+                    DirectRunStore(Path(str(state_root)), create=False),
+                    run_id=str(run_id),
+                    repo_root=receipt.get("repo_root") or receipt.get("repoRoot") or ops_root,
+                    public_base_url=receipt.get("public_base_url") or receipt.get("publicBaseUrl") or None,
+                    remote=str(receipt.get("remote") or "origin"),
+                    branch=str(receipt.get("branch") or "main"),
+                    wait_sec=int(receipt.get("wait_sec") or receipt.get("waitSec") or 0),
+                    poll_sec=int(receipt.get("poll_sec") or receipt.get("pollSec") or 30),
+                )
+                if result.get("issue_date") != args.issue_date:
+                    result = {
+                        **result,
+                        "ok": False,
+                        "failures": list(result.get("failures") or []) + ["issue_date_mismatch"],
+                    }
+            except (OSError, ImportError, ValueError, RuntimeError) as exc:
+                result = {
+                    "schemaVersion": "NEWS_GRASP_DIRECT_COMPLETION_GUARD_V1",
+                    "ok": False,
+                    "completion_mode": "direct_public_v1",
+                    "issue_date": args.issue_date,
+                    "failures": [f"direct_runtime_verification_failed:{exc}"],
+                }
+        else:
+            result = {
+                "schemaVersion": "NEWS_GRASP_DIRECT_COMPLETION_GUARD_V1",
+                "ok": False,
+                "completion_mode": "direct_public_v1",
+                "issue_date": args.issue_date,
+                "failures": ["direct_completion_requires_canonical_runtime_state"],
             }
         sys.stdout.write(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
         return 0 if result["ok"] else 2

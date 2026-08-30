@@ -497,11 +497,15 @@ def test_watcher_attaches_failed_production_to_canonical_recovery_owner() -> Non
 
 def test_legacy_runner_is_removed_and_direct_receipt_owns_stage_history() -> None:
     assert not (REPO / "scripts" / "ops" / "news-grasp-runner.ps1").exists()
-    direct = (REPO / "tools" / "news_grasp_completion_guard.py").read_text(
+    runtime = (REPO / "tools" / "news_grasp_direct_runtime.py").read_text(
         encoding="utf-8"
     )
-    assert '"stage_history"' in direct
-    assert '"direct_public_v1"' in direct
+    guard = (REPO / "tools" / "news_grasp_completion_guard.py").read_text(
+        encoding="utf-8"
+    )
+    assert '"stage_history"' in runtime
+    assert '"direct_public_v1"' in runtime
+    assert "direct_completion_requires_canonical_runtime_state" in guard
 
 
 def test_bootstrap_startup_failure_terminalizer_passes_run_id() -> None:

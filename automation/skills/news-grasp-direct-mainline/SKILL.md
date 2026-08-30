@@ -11,8 +11,9 @@ description: Run the 06:00 News-Grasp scheduled production directly with Codex, 
 
 1. Asia/Tokyo の `issue_date` を確定し、`automation_id + canonical cwd + issue_date` の current execution だけを使用する。
 2. 最初の実作業として host の title action を最大1回だけ試す。期待値は `YY/MM/DD News-Grasp 臨時本線日次バッチ 6:00 記事作成・公開` とする。
-3. `python -m tools.news_grasp_title_control` で `updated / already_ok / unavailable / failed / skipped` を記録する。成功statusは実titleのexact一致を必須にする。失敗statusは `post_publish_issue_list` に残し、公開作業を止めない。
-4. `tools.publish_inventory.scheduled_category_ids(issue_date)` を対象カテゴリ正本にする。固定7カテゴリへ戻さない。
+3. `python -m tools.news_grasp_title_control` で `updated / title_status=already_ok / unavailable / failed / skipped` を記録する。成功statusは実titleのexact一致を必須にする。失敗statusは `post_publish_issue_list` に残し、公開作業を止めない。
+4. `python -m tools.news_grasp_direct_runtime start --state-root build/direct-mainline` で run を開始する。対象日は runtime が Asia/Tokyo の当日から確定する。明示指定が必要な時だけ `--issue-date 2026-08-30` のように実日付を渡し、角括弧付きの placeholder は実行しない。以後の工程は `tools.news_grasp_direct_runtime` の stage order と `run_exact_successor` を通す。
+5. `tools.publish_inventory.scheduled_category_ids(issue_date)` を対象カテゴリ正本にする。固定7カテゴリへ戻さない。
 
 ## Direct 本線工程
 
@@ -29,14 +30,14 @@ description: Run the 06:00 News-Grasp scheduled production directly with Codex, 
 9. DeepDive記事を生成する。
 10. shared DeepDive qualityでprovenance、dialogue、rendered HTMLを検証する。
 11. 日付HTML docsを生成する。
-12. `python -m tools.validate_daily_quality --date <issue-date> --require-deepdive --json`をGreenにする。
+12. `python -m tools.validate_daily_quality --date YYYY-MM-DD --require-deepdive --json` を対象日の実日付で実行してGreenにする。短縮表記では `validate_daily_quality --require-deepdive` を必須gate名とする。
 13. Daily/DeepDive YouTube Podcastを作成・uploadする。
 14. playlistへ登録する。
 15. notificationを送信する。
 16. distribution manifestを作成する。
 17. `docs/publish-status.json`を対象日の`published_ok`へ更新する。
 18. commitし、`origin/main`へpushする。
-19. Pagesの対象日content identityを確認する。
+19. Pagesの対象日semantic contentを確認する。
 20. runner/readinessを含まないdirect public completionを検証する。
 21. title status、actual title、public evidence、SLO debt、post-publish issuesを報告する。
 
@@ -46,9 +47,11 @@ Reporter/editor/repair/newsroom_editor は repo-local model policy の Luna/max�
 
 - `quality`より前にupload/publish完了を主張しない。
 - DeepDiveのMarkdown存在だけでなく、provenance、dialogue、rendered publicをGreenにする。
-- direct completion receiptはWeb、Daily audio、DeepDive article/audio、Daily/DeepDive YouTube、playlist、notification、distribution、publish-status、remote commit、Pagesを同一issue-dateで連言評価する。
-- `publish_commit`をdistribution、remote commit、Pages反映と一致させる。
+- direct completion は caller が作った receipt JSON ではなく、canonical runtime state と consumer-owned public verifier で、Web、Daily audio、DeepDive article/audio、Daily/DeepDive YouTube、playlist、notification、distribution、publish-status、remote observation、Pagesを同一issue-dateで連言評価する。
+- `NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1` は `tools.news_grasp_direct_runtime.verify_public_completion` が作る public-only projection だけを authority にする。caller作成の completion JSON は Green authority ではない。
+- Git commit ID は観測値としてだけ報告してよい。distribution、remote observation、Pages反映の制御 authority には content-derived ID を使わない。
 - title失敗は非阻害だが、`updated/already_ok`の不正title claimと失敗statusのissue未記録は拒否する。
+- runner state、readiness、durable goal、URL 200単独、publish-status単独、NoPublish、fallback は public completion authorityではない。
 
 ## 速度・回復
 

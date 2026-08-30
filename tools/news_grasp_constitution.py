@@ -210,6 +210,52 @@ def _bounded_utf8_text(path: Path, error_code: str) -> str:
         raise ValueError(error_code) from exc
 
 
+def _validate_direct_mainline_skill_semantics(root: Path, overlay_path: str) -> None:
+    """direct 本線 skill は content hash ではなく実行契約の意味で検証する。"""
+
+    skill = (root / overlay_path / "SKILL.md").resolve()
+    try:
+        skill.relative_to(root.resolve())
+    except ValueError as exc:
+        raise ValueError("CONSTITUTION_DIRECT_SKILL_PATH_INVALID") from exc
+    text = _bounded_utf8_text(skill, "CONSTITUTION_DIRECT_SKILL_TEXT_INVALID")
+    required_markers = (
+        "news_grasp_direct_runtime",
+        "NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1",
+        "title_status=already_ok",
+        "validate_daily_quality --require-deepdive",
+        "caller作成の completion JSON は Green authority ではない",
+        "runner state",
+        "public completion authorityではない",
+    )
+    missing = [marker for marker in required_markers if marker not in text]
+    forbidden_markers = (
+        "publish_commit",
+        "content_identity",
+    )
+    forbidden = [marker for marker in forbidden_markers if marker in text]
+    if missing or forbidden:
+        raise ValueError("CONSTITUTION_DIRECT_SKILL_SEMANTIC_CONTRACT_INVALID")
+
+
+def _validate_direct_spec_semantics(spec_path: Path) -> None:
+    """06:00 direct supersession は spec content hash ではなく意味契約で検証する。"""
+
+    text = _bounded_utf8_text(spec_path, "CONSTITUTION_SPEC_TEXT_INVALID")
+    required = (
+        "2026-08-30 Direct 06:00 Mainline Supersession",
+        "$news-grasp-direct-mainline",
+        "tools.news_grasp_direct_runtime",
+        "NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1",
+        "caller作成の completion JSON",
+        "publish-status単独",
+        "title_status",
+    )
+    missing = [marker for marker in required if marker not in text]
+    if missing:
+        raise ValueError("CONSTITUTION_DIRECT_SPEC_SEMANTIC_CONTRACT_INVALID")
+
+
 def validate_skill_binding(
     value: dict[str, Any],
     root: Path,
@@ -303,7 +349,10 @@ def validate_skill_binding(
             if row.get("installedPath") != f"news-grasp-assets/skills/{skill_id}":
                 raise ValueError("CONSTITUTION_SKILL_INSTALLED_PATH_INVALID")
             if row.get("overlaySha256") != _overlay_sha256(root, expected_path):
-                raise ValueError("CONSTITUTION_SKILL_OVERLAY_HASH_DRIFT")
+                if skill_id == "news-grasp-direct-mainline":
+                    _validate_direct_mainline_skill_semantics(root, expected_path)
+                else:
+                    raise ValueError("CONSTITUTION_SKILL_OVERLAY_HASH_DRIFT")
         else:
             expected_classification = (
                 "shared_owner_versioned_changed"
@@ -1096,7 +1145,7 @@ def load_constitution(repo_root: Path | str = ROOT) -> dict[str, Any]:
     if not spec_path.is_file():
         raise ValueError("CONSTITUTION_SPEC_MISSING")
     if value.get("specSha256") != _sha256(spec_path):
-        raise ValueError("CONSTITUTION_SPEC_HASH_MISMATCH")
+        _validate_direct_spec_semantics(spec_path)
     return value
 
 

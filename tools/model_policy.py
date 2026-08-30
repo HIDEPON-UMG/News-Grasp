@@ -3,16 +3,16 @@
 from __future__ import annotations
 
 LUNA_MODEL = "gpt-5.6-luna"
-LUNA_REASONING = "high"
+LUNA_REASONING = "max"
 
 DEFAULT_MODEL_POLICY: dict[str, dict[str, object]] = {
     "reporter": {
         "default": LUNA_MODEL,
         "escalate": LUNA_MODEL,
-        "selection_variant": "reporter-56-luna-high",
-        "selection_combo": "luna-high-unified",
+        "selection_variant": "reporter-56-luna-max",
+        "selection_combo": "luna-max-unified",
         "selection_summary": "build/model-comparison-20260715-luna-high-replacement/summary.json",
-        "selection_source": "luna_high_replacement_benchmark_2026_07_15",
+        "selection_source": "luna_max_scheduled_direct_mainline_2026_08_30",
         "reasoning": LUNA_REASONING,
         "escalate_reasoning": LUNA_REASONING,
         "always_escalate_categories": [],
@@ -22,9 +22,9 @@ DEFAULT_MODEL_POLICY: dict[str, dict[str, object]] = {
     "editor": {
         "default": LUNA_MODEL,
         "escalate": LUNA_MODEL,
-        "selection_variant": "style-editor-56-luna-high",
+        "selection_variant": "style-editor-56-luna-max",
         "selection_summary": "build/model-comparison-20260715-luna-high-replacement/summary.json",
-        "selection_source": "luna_high_replacement_benchmark_2026_07_15",
+        "selection_source": "luna_max_scheduled_direct_mainline_2026_08_30",
         "previous_selection_source": "full__mini-editor",
         "scope": "style_rewrite_only",
         "mode": "selective_rewrite",
@@ -37,7 +37,7 @@ DEFAULT_MODEL_POLICY: dict[str, dict[str, object]] = {
     "repair": {
         "default": LUNA_MODEL,
         "escalate": LUNA_MODEL,
-        "selection_source": "model_retirement_luna_high_policy_2026_07_16",
+        "selection_source": "luna_max_scheduled_direct_mainline_2026_08_30",
         "scope": "llm_repair_worker",
         "reasoning": LUNA_REASONING,
         "escalate_reasoning": LUNA_REASONING,
@@ -56,14 +56,14 @@ DEFAULT_MODEL_POLICY: dict[str, dict[str, object]] = {
         "default": LUNA_MODEL,
         "escalate": LUNA_MODEL,
         "selection_status": "selected",
-        "selection_variant": "newsroom-editor-56-luna-high",
-        "quality_leader_variant": "newsroom-editor-56-luna-high",
+        "selection_variant": "newsroom-editor-56-luna-max",
+        "quality_leader_variant": "newsroom-editor-56-luna-max",
         "selection_summary": "build/model-comparison-20260715-luna-high-replacement/summary.json",
         "safety_summary": "build/model-eval-5.6/newsroom-append-safety/summary.json",
-        "selection_source": "luna_high_replacement_benchmark_2026_07_15",
+        "selection_source": "luna_max_scheduled_direct_mainline_2026_08_30",
         "previous_selection_source": "tts_script_quality_override_2026_07_02",
         "candidate_variants": [
-            "newsroom-editor-56-luna-high",
+            "newsroom-editor-56-luna-max",
         ],
         "reasoning": LUNA_REASONING,
         "escalate_reasoning": LUNA_REASONING,

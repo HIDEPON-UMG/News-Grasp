@@ -86,162 +86,64 @@ def _direct_stage_failures(value: object) -> list[str]:
 
 
 def evaluate_direct_public(receipt: dict[str, Any], issue_date: str) -> dict[str, Any]:
-    """runner/readinessを参照せず、direct公開証拠だけを連言評価する。"""
+    """direct completionは canonical runtime state だけを public authority にする。
 
-    from tools.news_grasp_title_control import SUCCESS_STATUSES, expected_title, validate_title
+    旧実装は caller が作った ``NEWS_GRASP_DIRECT_MAINLINE_RECEIPT_V1`` を検査し、
+    その中の ``ok`` や公開面 self-report を Green にできた。direct 本線では
+    receipt JSON 自体を completion authority にしない。互換入口から呼ばれた
+    場合は state root / run id が明示された時だけ runtime verifier へ委譲し、
+    それ以外は常に Red とする。
+    """
 
-    failures: list[str] = []
-    if receipt.get("schemaVersion") != DIRECT_RECEIPT_SCHEMA:
-        failures.append("direct_receipt_schema_invalid")
-    if receipt.get("completion_mode") != "direct_public_v1":
-        failures.append("completion_mode_invalid")
-    if receipt.get("issue_date") != issue_date:
-        failures.append("issue_date_mismatch")
-    if receipt.get("run_intent") != "ScheduledProductionDirect":
-        failures.append("run_intent_invalid")
-    if not str(receipt.get("automation_id") or "").strip() or not str(
-        receipt.get("cwd") or ""
-    ).strip():
-        failures.append("automation_identity_missing")
+    state_root = receipt.get("state_root") or receipt.get("stateRoot")
+    run_id = receipt.get("run_id") or receipt.get("runId")
+    if state_root and run_id:
+        try:
+            from tools.news_grasp_direct_runtime import DirectRunStore, verify_public_completion
 
-    inventory = receipt.get("scheduled_inventory")
-    if not isinstance(inventory, dict):
-        failures.append("scheduled_inventory_missing")
-    else:
-        scheduled_ids = inventory.get("scheduled_category_ids")
-        generated_ids = inventory.get("generated_digest_category_ids")
-        if (
-            not isinstance(scheduled_ids, list)
-            or not scheduled_ids
-            or len(scheduled_ids) != len(set(scheduled_ids))
-            or generated_ids != scheduled_ids
-        ):
-            failures.append("scheduled_inventory_digest_mismatch")
-
-    title = receipt.get("title")
-    post_issues = receipt.get("post_publish_issue_list")
-    if not isinstance(title, dict):
-        failures.append("title_receipt_missing")
-        title = {}
-    if not isinstance(post_issues, list):
-        failures.append("post_publish_issue_list_invalid")
-        post_issues = []
-    title_status = str(title.get("title_status") or "")
-    actual_title = str(title.get("actual_title") or "")
-    if title.get("expected_title") != expected_title(issue_date):
-        failures.append("expected_title_mismatch")
-    if title_status in SUCCESS_STATUSES:
-        if validate_title(actual_title, issue_date)["ok"] is not True:
-            failures.append("title_success_claim_invalid")
-    elif title_status in {"unavailable", "failed", "skipped"}:
-        if not any("title" in str(item).casefold() for item in post_issues):
-            failures.append("title_failure_issue_not_recorded")
-    else:
-        failures.append("title_status_invalid")
-    if title.get("publication_blocked") is not False:
-        failures.append("title_publication_boundary_invalid")
-
-    failures.extend(_direct_stage_failures(receipt.get("stage_history")))
-    quality = receipt.get("quality_gate")
-    if not isinstance(quality, dict) or quality.get("ok") is not True:
-        failures.append("daily_quality_gate_not_green")
-    else:
-        command = str(quality.get("command") or "")
-        if quality.get("issue_date") != issue_date:
-            failures.append("daily_quality_issue_date_mismatch")
-        if "validate_daily_quality" not in command or "--require-deepdive" not in command:
-            failures.append("daily_quality_require_deepdive_missing")
-    deepdive = receipt.get("deepdive_quality")
-    if (
-        not isinstance(deepdive, dict)
-        or deepdive.get("ok") is not True
-        or deepdive.get("issue_date") != issue_date
-        or deepdive.get("rendered_public") is not True
-        or deepdive.get("provenance_valid") is not True
-        or deepdive.get("dialogue_valid") is not True
-    ):
-        failures.append("deepdive_quality_not_green")
-
-    surfaces = receipt.get("public_surfaces")
-    if not isinstance(surfaces, dict):
-        failures.append("public_surfaces_missing")
-        surfaces = {}
-    for name in DIRECT_PUBLIC_SURFACES:
-        row = surfaces.get(name)
-        if not isinstance(row, dict) or row.get("ok") is not True:
-            failures.append(f"public_surface_not_green:{name}")
-            continue
-        if row.get("issue_date") != issue_date or not str(row.get("evidence") or ""):
-            failures.append(f"public_surface_evidence_invalid:{name}")
-    if not isinstance(surfaces.get("web"), dict) or surfaces.get("web", {}).get(
-        "content_identity_verified"
-    ) is not True:
-        failures.append("web_content_identity_unverified")
-    if not isinstance(surfaces.get("pages"), dict) or surfaces.get("pages", {}).get(
-        "content_identity_verified"
-    ) is not True:
-        failures.append("pages_content_identity_unverified")
-    for name in ("youtube_daily", "youtube_deepdive"):
-        if not str((surfaces.get(name) or {}).get("video_id") or "").strip():
-            failures.append(f"youtube_video_id_missing:{name}")
-    if (surfaces.get("playlist") or {}).get("membership_verified") is not True:
-        failures.append("playlist_membership_unverified")
-    sent_count = (surfaces.get("notification") or {}).get("sent_count")
-    if isinstance(sent_count, bool) or not isinstance(sent_count, int) or sent_count < 1:
-        failures.append("notification_receipt_invalid")
-
-    publish_commit = str(receipt.get("publish_commit") or "")
-    if not GIT_COMMIT_RE.fullmatch(publish_commit):
-        failures.append("publish_commit_invalid")
-    distribution = surfaces.get("distribution") or {}
-    if distribution.get("publish_commit") != publish_commit:
-        failures.append("distribution_publish_commit_mismatch")
-    if (surfaces.get("remote_commit") or {}).get("commit") != publish_commit:
-        failures.append("remote_publish_commit_mismatch")
-    if (surfaces.get("publish_status") or {}).get("status") != "published_ok":
-        failures.append("publish_status_not_published_ok")
-    if receipt.get("fallback_publish") is not False:
-        failures.append("fallback_publish_not_completion")
-    if receipt.get("no_publish") is not False:
-        failures.append("nopublish_not_completion")
-
-    elapsed = receipt.get("elapsed_minutes")
-    if isinstance(elapsed, bool) or not isinstance(elapsed, (int, float)) or elapsed < 0:
-        failures.append("elapsed_minutes_invalid")
-        elapsed_value = None
-    else:
-        elapsed_value = float(elapsed)
-    if elapsed_value is None:
-        time_band = "invalid"
-    elif elapsed_value <= 45:
-        time_band = "target"
-    elif elapsed_value < 75:
-        time_band = "closeout"
-    elif elapsed_value <= 90:
-        time_band = "public_critical_only"
-    else:
-        time_band = "slo_debt_continue_public"
+            trusted_repo_root = Path(__file__).resolve().parents[1]
+            result = verify_public_completion(
+                DirectRunStore(Path(str(state_root)), create=False),
+                run_id=str(run_id),
+                repo_root=trusted_repo_root,
+                public_base_url=receipt.get("public_base_url") or receipt.get("publicBaseUrl"),
+                remote=str(receipt.get("remote") or "origin"),
+                branch=str(receipt.get("branch") or "main"),
+                wait_sec=int(receipt.get("wait_sec") or receipt.get("waitSec") or 0),
+                poll_sec=int(receipt.get("poll_sec") or receipt.get("pollSec") or 30),
+            )
+        except Exception as exc:  # noqa: BLE001 - projection must report failure.
+            return {
+                "schemaVersion": DIRECT_SCHEMA_VERSION,
+                "ok": False,
+                "completion_mode": "direct_public_v1",
+                "issue_date": issue_date,
+                "failures": [f"direct_runtime_verification_failed:{exc}"],
+            }
+        failures = list(result.get("failures") or [])
+        if result.get("issue_date") != issue_date:
+            failures.append("issue_date_mismatch")
+        return {
+            "schemaVersion": DIRECT_SCHEMA_VERSION,
+            "ok": not failures and result.get("ok") is True,
+            "completion_mode": "direct_public_v1",
+            "issue_date": issue_date,
+            "title_status": result.get("title_status", ""),
+            "actual_title": result.get("actual_title", ""),
+            "failures": failures,
+            "post_publish_issue_list": list(result.get("post_publish_issue_list") or []),
+            "slo": result.get("slo", {}),
+        }
     return {
         "schemaVersion": DIRECT_SCHEMA_VERSION,
-        "ok": not failures,
+        "ok": False,
         "completion_mode": "direct_public_v1",
         "issue_date": issue_date,
-        "title_status": title_status,
-        "actual_title": actual_title,
-        "publish_commit": publish_commit,
-        "failures": failures,
-        "post_publish_issue_list": list(post_issues),
-        "slo": {
-            "elapsed_minutes": elapsed_value,
-            "target_minutes": 45,
-            "optional_high_cost_freeze_minutes": 75,
-            "slo_minutes": 90,
-            "target_met": elapsed_value is not None and elapsed_value <= 45,
-            "optional_high_cost_frozen": elapsed_value is not None and elapsed_value >= 75,
-            "slo_met": elapsed_value is not None and elapsed_value <= 90,
-            "time_band": time_band,
-            "continue_public_successors": True,
-        },
+        "title_status": "",
+        "actual_title": "",
+        "failures": ["direct_completion_requires_canonical_runtime_state"],
+        "post_publish_issue_list": [],
+        "slo": {"continue_public_successors": True},
     }
 
 
