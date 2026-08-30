@@ -203,7 +203,7 @@ def _deepdive_quality(repo_root: Path, issue_date: str) -> dict[str, Any]:
 
         result = deepdive_quality.audit_issue(
             repo_root=repo_root,
-            date=issue_date,
+            issue_date=issue_date,
             require_rendered_public=True,
         )
     except Exception as exc:  # noqa: BLE001 - verifier reports a typed Red.
@@ -214,11 +214,37 @@ def _deepdive_quality(repo_root: Path, issue_date: str) -> dict[str, Any]:
             "semantic_ok": False,
             "status": "red",
         }
-    ok = isinstance(result, dict) and result.get("ok") is True
+    ok = (
+        isinstance(result, dict)
+        and result.get("status") == "Green"
+        and not result.get("issueCodes")
+        and not result.get("issues")
+    )
     return {
         "ok": ok,
         "issue_date": issue_date,
         "result": result,
+        "semantic_ok": ok,
+        "status": "green" if ok else "red",
+    }
+
+
+def _deepdive_audio(repo_root: Path, issue_date: str) -> dict[str, Any]:
+    state = _load_json(repo_root / "build" / "tts" / "latest_deepdive_audio.json")
+    value = state.get("value") if isinstance(state.get("value"), dict) else {}
+    audio_date = value.get("deepdive_audio_date")
+    audio_url = value.get("deepdive_audio_url")
+    ok = (
+        state.get("ok") is True
+        and audio_date == issue_date
+        and isinstance(audio_url, str)
+        and audio_url.startswith("https://")
+        and f"/{issue_date}.mp3" in audio_url
+    )
+    return {
+        "ok": ok,
+        "issue_date": issue_date,
+        "state": state,
         "semantic_ok": ok,
         "status": "green" if ok else "red",
     }
@@ -406,13 +432,53 @@ def _up_to_date_observation(repo_root: Path, remote: str, branch: str) -> dict[s
         check=False,
     )
     text = proc.stdout
-    ok = proc.returncode == 0 and f"## {branch}..." in text and "ahead" not in text and "behind" not in text
+    head_proc = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=str(repo_root),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=30,
+        check=False,
+    )
+    remote_proc = subprocess.run(
+        ["git", "rev-parse", f"{remote}/{branch}"],
+        cwd=str(repo_root),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=30,
+        check=False,
+    )
+    head = head_proc.stdout.strip()
+    remote_head = remote_proc.stdout.strip()
+    status_lines = [line for line in text.splitlines() if not line.startswith("##")]
+    branch_ok = f"## {branch}..." in text or (
+        text.lstrip().startswith("## HEAD (no branch)")
+        and head
+        and head == remote_head
+    )
+    ok = (
+        proc.returncode == 0
+        and head_proc.returncode == 0
+        and remote_proc.returncode == 0
+        and not status_lines
+        and branch_ok
+        and head == remote_head
+        and "ahead" not in text
+        and "behind" not in text
+    )
     return {
         "ok": ok,
         "remote": remote,
         "branch": branch,
         "stdout": text,
         "exit_code": proc.returncode,
+        "head": head,
+        "remote_head": remote_head,
+        "detached_worktree": text.lstrip().startswith("## HEAD (no branch)"),
         "semantic_ok": ok,
         "status": "green" if ok else "red",
     }
@@ -434,10 +500,7 @@ def verify_direct_public_completion(
     surfaces["web"] = _required_docs(repo, issue_date)
     surfaces["deepdive_article"] = _deepdive_quality(repo, issue_date)
     surfaces["daily_audio"] = _daily_quality(repo, issue_date)
-    surfaces["deepdive_audio"] = {
-        **_load_json(repo / "build" / "tts" / "latest_deepdive_audio.json"),
-        "issue_date": issue_date,
-    }
+    surfaces["deepdive_audio"] = _deepdive_audio(repo, issue_date)
     surfaces["distribution"] = _required_distribution(repo, issue_date)
     surfaces["publish_status"] = _publish_status(repo, issue_date)
     surfaces.update(_podcast_rows(repo, issue_date, wait_sec=wait_sec, poll_sec=poll_sec))
