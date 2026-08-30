@@ -51,13 +51,21 @@ def test_default_raw_roots_are_ignored_ops_paths() -> None:
     assert lifecycle.default_raw_root("external-benchmark-matrix").as_posix() == "_ops/benchmark-runs/external-benchmark-matrix"
 
 
-def test_runner_editor_attempt_snapshots_use_owned_temp_root() -> None:
-    runner = (REPO_ROOT / "scripts" / "ops" / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
-    assert "[System.IO.Path]::GetTempPath()" in runner
-    assert "news-grasp-editor-snapshot-$DateStamp-$PID-$Attempt-" in runner
-    assert "function Remove-EditorAttemptSnapshot" in runner
-    assert '"_ops\\editor-attempt-snapshots\\$DateStamp\\attempt-$Attempt"' not in runner
-    assert '"build\\editor-attempt-snapshots\\$DateStamp\\attempt-$Attempt"' not in runner
+def test_retired_runner_has_no_editor_attempt_snapshot_authority() -> None:
+    """旧runner削除後はrunner内snapshot契約を復活させず、legacy tombstoneだけを許す。"""
+
+    runner_path = REPO_ROOT / "scripts" / "ops" / "news-grasp-runner.ps1"
+    bootstrap = (REPO_ROOT / "scripts" / "ops" / "news-grasp-bootstrap.ps1").read_text(
+        encoding="utf-8-sig"
+    )
+
+    assert not runner_path.exists()
+    assert "retired News-Grasp Runner is a legacy tombstone only" in bootstrap
+    assert "news-grasp-runner.ps1" in bootstrap
+    assert "New-EditorAttemptSnapshot" not in bootstrap
+    assert "Remove-EditorAttemptSnapshot" not in bootstrap
+    assert '"_ops\\editor-attempt-snapshots\\$DateStamp\\attempt-$Attempt"' not in bootstrap
+    assert '"build\\editor-attempt-snapshots\\$DateStamp\\attempt-$Attempt"' not in bootstrap
 
 
 def test_archive_transaction_resumes_without_recopying_verified_file(tmp_path: Path) -> None:

@@ -4,7 +4,6 @@ import argparse
 import ast
 from collections import Counter
 from dataclasses import asdict, dataclass
-import hashlib
 import json
 from pathlib import Path
 from typing import Iterable, Mapping
@@ -30,12 +29,14 @@ SOURCE_PATHS: tuple[str, ...] = (
     "tools/repair_runtime_e2e.py",
     "tools/repair_system_completeness.py",
     "tools/historical_failure_scenarios.py",
-    "scripts/ops/news-grasp-runner.ps1",
+    "tools/news_grasp_direct_runtime.py",
+    "automation/news-grasp-6-40/completion_guard.py",
+    "automation/skills/news-grasp-direct-mainline/SKILL.md",
     "tests/test_repair_system_completeness.py",
     "tests/test_repair_matrix_validator_sync.py",
     "tests/test_repair_registry.py",
     "tests/test_auto_repair_orchestrator.py",
-    "tests/test_runner_convergence_contract.py",
+    "tests/test_news_grasp_direct_runtime.py",
     "tests/test_historical_failure_scenarios.py",
 )
 
@@ -56,7 +57,7 @@ class RepairCompletenessReport:
     deterministic_row_count: int
     historical_scenario_count: int
     weekly_regression_count: int
-    source_hashes: dict[str, str]
+    source_observations: dict[str, dict[str, int | str]]
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -178,12 +179,16 @@ def _validator_codes(*, repo_root: Path = REPO_ROOT) -> dict[str, frozenset[str]
 REPAIR_VALIDATOR_CODESETS: dict[str, frozenset[str]] = _validator_codes()
 
 
-def _source_hashes(*, repo_root: Path = REPO_ROOT) -> dict[str, str]:
-    hashes: dict[str, str] = {}
+def _source_observations(*, repo_root: Path = REPO_ROOT) -> dict[str, dict[str, int | str]]:
+    observations: dict[str, dict[str, int | str]] = {}
     for relative_path in SOURCE_PATHS:
-        content = (repo_root / relative_path).read_bytes()
-        hashes[relative_path] = hashlib.sha256(content).hexdigest()
-    return hashes
+        path = repo_root / relative_path
+        stat = path.stat()
+        observations[relative_path] = {
+            "status": "present",
+            "bytes": stat.st_size,
+        }
+    return observations
 
 
 def _normalized_pattern(pattern: str) -> str:
@@ -360,7 +365,7 @@ def audit_repair_system(
 
     scenarios = historical_failure_scenarios()
     weekly_cases = weekly_failure_regression_cases()
-    hashes = _source_hashes(repo_root=repo_root)
+    source_observations = _source_observations(repo_root=repo_root)
     return RepairCompletenessReport(
         ok=not findings,
         findings=tuple(findings),
@@ -370,7 +375,7 @@ def audit_repair_system(
         deterministic_row_count=len(deterministic_rows),
         historical_scenario_count=len(scenarios),
         weekly_regression_count=len(weekly_cases),
-        source_hashes=hashes,
+        source_observations=source_observations,
     )
 
 

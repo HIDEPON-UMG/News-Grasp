@@ -1,15 +1,15 @@
 {
   "schemaVersion": "NEWS_GRASP_DAILY_CONTROL_REGISTRY_V1",
   "owner": "News-Grasp Operator",
-  "trigger": "06:00 scheduled production and 06:40 audit recovery",
-  "actor": "launcher, runner, broker, audit controller, completion verifier",
-  "entryGate": "typed scheduled authority plus immutable attempt witness",
-  "executionPath": "launcher -> runner -> broker -> artifacts -> completion; all recovery triggers -> canonical ensure -> transaction -> observer -> recovery",
-  "states": ["reserved", "running", "failed", "recovery_required", "recovered", "public_green", "incident_open"],
-  "statePredicate": "scheduled, recovery, and public state are independently materialized",
-  "outcomes": ["same_day_public_green", "scheduled_failure_retained", "major_incident_continuation"],
-  "evidence": ["attempt ledger witness", "artifact manifest hash", "producer lineage", "same-date completion receipt"],
-  "recovery": "stop point evidence selects ResumeFromStage, ScheduledRecoveryFull, or minimal_unblocker",
+  "trigger": "06:00 Codex scheduled production direct mainline",
+  "actor": "Codex automation, direct runtime, repo-local content tools, public completion verifier",
+  "entryGate": "installed Codex automation must be gpt-5.6-luna with reasoning_effort=max and direct-mainline prompt",
+  "executionPath": "Codex automation -> title control -> direct runtime stage_history -> repo-local generation and quality tools -> public surfaces -> direct public completion verifier",
+  "states": ["active", "executing", "stage_red", "surface_deferred", "completed", "automation_config_red"],
+  "statePredicate": "direct runtime state, stage history, and public verifier observations are independently materialized",
+  "outcomes": ["same_day_public_green", "surface_scoped_defer", "exact_successor_required"],
+  "evidence": ["title status receipt", "stage_history", "quality verifier output", "public verifier observation", "automation config semantic observation"],
+  "recovery": "operation-local Red returns exact successor; title failures and scoped external failures are recorded without becoming runner/readiness authority",
   "maintenance": "contract test and route parity audit run before source promotion",
   "contractTest": "tests/test_news_grasp_daily_control.py",
   "operationalCost": "one bounded local registry validation at each controller entry",
@@ -60,48 +60,43 @@
     ]
   },
   "declaredRouteIds": [
-    "scheduled_runner",
-    "producer_lineage",
-    "production_self_heal",
-    "audit_0640_control",
-    "audit_observer",
-    "audit_decision",
-    "completion_verifier"
+    "title_control",
+    "scheduled_inventory",
+    "direct_runtime_stage_history",
+    "daily_quality",
+    "deepdive_quality",
+    "direct_completion"
   ],
   "consumerRouteIds": [
-    "scheduled_runner",
-    "producer_lineage",
-    "production_self_heal",
-    "audit_0640_control",
-    "audit_observer",
-    "audit_decision",
-    "completion_verifier"
+    "title_control",
+    "scheduled_inventory",
+    "direct_runtime_stage_history",
+    "daily_quality",
+    "deepdive_quality",
+    "direct_completion"
   ],
   "positiveFixtureRouteIds": [
-    "scheduled_runner",
-    "producer_lineage",
-    "production_self_heal",
-    "audit_0640_control",
-    "audit_observer",
-    "audit_decision",
-    "completion_verifier"
+    "title_control",
+    "scheduled_inventory",
+    "direct_runtime_stage_history",
+    "daily_quality",
+    "deepdive_quality",
+    "direct_completion"
   ],
   "negativeFixtureRouteIds": [
-    "scheduled_runner",
-    "producer_lineage",
-    "production_self_heal",
-    "audit_0640_control",
-    "audit_observer",
-    "audit_decision",
-    "completion_verifier"
+    "title_control",
+    "scheduled_inventory",
+    "direct_runtime_stage_history",
+    "daily_quality",
+    "deepdive_quality",
+    "direct_completion"
   ],
   "routes": [
-    {"routeId": "scheduled_runner", "consumerPath": "scripts/ops/news-grasp-runner.ps1", "consumerSymbol": "Set-RunnerState", "productionCallerPath": "scripts/ops/news-grasp-runner.ps1", "productionCallSymbol": "Set-RunnerState"},
-    {"routeId": "producer_lineage", "consumerPath": "scripts/ops/news-grasp-lineage.ps1", "consumerSymbol": "New-NewsGraspProducerLineage", "productionCallerPath": "scripts/ops/news-grasp-runner.ps1", "productionCallSymbol": "New-NewsGraspProducerLineage"},
-    {"routeId": "production_self_heal", "consumerPath": "tools/audit_recovery_control.py", "consumerSymbol": "ensure_audit_0640", "productionCallerPath": "scripts/ops/watch-news-grasp-runner.ps1", "productionCallSymbol": "ensure-0640"},
-    {"routeId": "audit_0640_control", "consumerPath": "tools/audit_recovery_control.py", "consumerSymbol": "ensure_audit_0640", "productionCallerPath": "scripts/ops/news-grasp-deadman.ps1", "productionCallSymbol": "ensure-0640"},
-    {"routeId": "audit_observer", "consumerPath": "tools/audit_recovery_control.py", "consumerSymbol": "_observe_operational_truth", "productionCallerPath": "tools/news_grasp_daily_control.py", "productionCallSymbol": "_observe_operational_truth"},
-    {"routeId": "audit_decision", "consumerPath": "tools/audit_recovery_control.py", "consumerSymbol": "decide_audit_recovery", "productionCallerPath": "tools/news_grasp_daily_control.py", "productionCallSymbol": "decide_audit_recovery"},
-    {"routeId": "completion_verifier", "consumerPath": "tools/daily_self_heal.py", "consumerSymbol": "verify_publish_complete", "productionCallerPath": "tools/audit_recovery_control.py", "productionCallSymbol": "verify_publish_complete"}
+    {"routeId": "title_control", "consumerPath": "tools/news_grasp_title_control.py", "consumerSymbol": "expected_title", "productionCallerPath": "tools/news_grasp_direct_runtime.py", "productionCallSymbol": "_expected_title"},
+    {"routeId": "scheduled_inventory", "consumerPath": "tools/publish_inventory.py", "consumerSymbol": "scheduled_category_ids", "productionCallerPath": "automation/skills/news-grasp-direct-mainline/SKILL.md", "productionCallSymbol": "scheduled_category_ids"},
+    {"routeId": "direct_runtime_stage_history", "consumerPath": "tools/news_grasp_direct_runtime.py", "consumerSymbol": "DIRECT_STAGES", "productionCallerPath": "tools/news_grasp_direct_runtime.py", "productionCallSymbol": "start_run"},
+    {"routeId": "daily_quality", "consumerPath": "tools/validate_daily_quality.py", "consumerSymbol": "require_deepdive", "productionCallerPath": "automation/skills/news-grasp-direct-mainline/SKILL.md", "productionCallSymbol": "validate_daily_quality"},
+    {"routeId": "deepdive_quality", "consumerPath": "tools/deepdive_quality.py", "consumerSymbol": "audit_issue", "productionCallerPath": "automation/skills/news-grasp-direct-mainline/SKILL.md", "productionCallSymbol": "audit-issue"},
+    {"routeId": "direct_completion", "consumerPath": "tools/news_grasp_direct_runtime.py", "consumerSymbol": "verify_public_completion", "productionCallerPath": "automation/news-grasp-6-40/completion_guard.py", "productionCallSymbol": "verify_public_completion"}
   ]
 }

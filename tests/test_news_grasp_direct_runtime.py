@@ -11,6 +11,7 @@ import ast
 import importlib
 import json
 import re
+import sqlite3
 import sys
 import tomllib
 from collections.abc import Mapping
@@ -946,7 +947,352 @@ def test_installed_direct_config_semantics_are_validated_by_producer() -> None:
     assert "$news-grasp-direct-mainline" in prompt
     assert "YY/MM/DD" in prompt
     assert "title_status" in prompt
+    assert "title_status=already_ok" in prompt
     assert "post_publish_issue_list" in prompt
+    assert "direct completion guard" in prompt
+
+    live_result = _mapping(api.validate_installed_automation_semantics())
+    assert live_result.get("ok") is True
+    assert live_result.get("app_db", {}).get("reasoning_effort") == "max"
+    assert live_result.get("snapshots")
+    assert all(item.get("ok") is True for item in live_result["snapshots"])
+
+
+def test_codex_automation_sync_renders_luna_max_and_preserves_app_target(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """staleなtargetをApp project registryのNews-Grasp bindingへ復旧する。"""
+
+    monkeypatch.setenv("NEWS_GRASP_ALLOW_TEST_SYNC_PATHS", "1")
+    syncer = importlib.import_module("tools.sync_news_grasp_codex_automation")
+    app_state = tmp_path / ".codex-global-state.json"
+    app_state.write_text(
+        json.dumps(
+            {
+                "local-projects": {
+                    "local-test-project": {
+                        "id": "local-test-project",
+                        "name": "News-Grasp",
+                        "rootPaths": [str(REPO.resolve())],
+                    }
+                }
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(syncer, "_default_app_global_state", lambda: app_state, raising=False)
+    template_path = REPO / "automation/news-grasp-6-40/automation.toml.template"
+    fixture_root = tmp_path / "news-grasp-sync-fixture"
+    installed_path = fixture_root / "automation.toml"
+    installed_path.parent.mkdir(parents=True)
+    installed_path.write_text(
+        "\n".join(
+            [
+                'version = 1',
+                f'id = "{AUTOMATION_ID}"',
+                'kind = "cron"',
+                'name = "News-Grasp 臨時本線日次バッチ 6:00 記事作成・公開"',
+                'prompt = "old"',
+                'status = "ACTIVE"',
+                'rrule = "RRULE:FREQ=DAILY;BYHOUR=6;BYMINUTE=0;BYSECOND=0"',
+                'model = "gpt-5.6-luna"',
+                'reasoning_effort = "medium"',
+                'execution_environment = "local"',
+                'target = { type = "project", project_id = "local-stale-project" }',
+                f"cwds = [{json.dumps(str(tmp_path), ensure_ascii=False)}]",
+                'created_at = 10',
+                'updated_at = 20',
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    result = syncer.sync(
+        repo_root=REPO,
+        template_path=template_path,
+        installed_path=installed_path,
+        allow_custom_paths=True,
+    )
+    value = tomllib.loads(installed_path.read_text(encoding="utf-8-sig"))
+
+    assert result["ok"] is True
+    assert value["reasoning_effort"] == "max"
+    assert value["target"]["project_id"] == "local-test-project"
+    assert value["cwds"] == [str(REPO.resolve())]
+    assert "$news-grasp-direct-mainline" in value["prompt"]
+    assert "title_status=already_ok" in value["prompt"]
+    assert "direct completion guard" in value["prompt"]
+    assert "public incomplete のまま最終応答しないでください" not in value["prompt"]
+    assert "最初に `python -m tools.news_grasp_direct_runtime start" not in value["prompt"]
+
+
+def test_codex_automation_sync_can_project_direct_skill_to_installed_copy(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """automation prompt が読む installed skill を repo source と同じ内容へ同期できる。"""
+
+    monkeypatch.setenv("NEWS_GRASP_ALLOW_TEST_SYNC_PATHS", "1")
+    syncer = importlib.import_module("tools.sync_news_grasp_codex_automation")
+    template_path = REPO / "automation/news-grasp-6-40/automation.toml.template"
+    fixture_root = tmp_path / "news-grasp-sync-fixture"
+    installed_path = fixture_root / "automation.toml"
+    installed_path.parent.mkdir(parents=True)
+    installed_path.write_text(template_path.read_text(encoding="utf-8-sig"), encoding="utf-8")
+    source_skill = REPO / "automation/skills/news-grasp-direct-mainline/SKILL.md"
+    installed_skill = fixture_root / "skills" / "news-grasp-direct-mainline" / "SKILL.md"
+    installed_skill.parent.mkdir(parents=True)
+    installed_skill.write_text("# stale\n最大1回だけ試す\n", encoding="utf-8")
+
+    result = syncer.sync(
+        repo_root=REPO,
+        template_path=template_path,
+        installed_path=installed_path,
+        source_skill_path=source_skill,
+        installed_skill_path=installed_skill,
+        write_skill=True,
+        allow_custom_paths=True,
+    )
+
+    assert result["ok"] is True
+    assert result["skill_changed"] is True
+    assert result["skill"]["ok"] is True
+    assert installed_skill.read_text(encoding="utf-8-sig") == source_skill.read_text(encoding="utf-8-sig")
+
+
+def test_codex_automation_sync_cli_rejects_custom_write_paths_without_explicit_allow(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """CLIのpath overrideは、明示allowなしで任意書込に使えない。"""
+
+    monkeypatch.delenv("NEWS_GRASP_ALLOW_TEST_SYNC_PATHS", raising=False)
+    syncer = importlib.import_module("tools.sync_news_grasp_codex_automation")
+    rc = syncer._main(  # noqa: SLF001
+        [
+            "--installed",
+            str(tmp_path / "automation.toml"),
+            "--write-snapshot",
+        ]
+    )
+    result = json.loads(capsys.readouterr().out)
+
+    assert rc == 2
+    assert result["ok"] is False
+    assert result["failures"] == [
+        "custom_path_override_requires_explicit_allow_custom_paths"
+    ]
+    assert result["custom_path_args"] == {"installed": True}
+    assert not (tmp_path / "automation.toml").exists()
+
+
+def test_codex_automation_sync_updates_app_visible_db_row(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """App画面が参照するSQLite rowもMedium/旧promptからtemplateへ同期できる。"""
+
+    monkeypatch.setenv("NEWS_GRASP_ALLOW_TEST_SYNC_PATHS", "1")
+    syncer = importlib.import_module("tools.sync_news_grasp_codex_automation")
+    app_state = tmp_path / ".codex-global-state.json"
+    app_state.write_text(
+        json.dumps(
+            {
+                "local-projects": {
+                    "local-test-project": {
+                        "id": "local-test-project",
+                        "name": "News-Grasp",
+                        "rootPaths": [str(REPO.resolve())],
+                    }
+                }
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(syncer, "_default_app_global_state", lambda: app_state, raising=False)
+    template_path = REPO / "automation/news-grasp-6-40/automation.toml.template"
+    fixture_root = tmp_path / "news-grasp-sync-fixture"
+    installed_path = fixture_root / "automation.toml"
+    installed_path.parent.mkdir(parents=True)
+    installed_path.write_text(template_path.read_text(encoding="utf-8-sig"), encoding="utf-8")
+    app_db = fixture_root / "codex-dev.db"
+    conn = sqlite3.connect(app_db)
+    conn.execute(
+        """
+        create table automations (
+            id text primary key,
+            name text not null,
+            prompt text not null,
+            status text not null default 'ACTIVE',
+            next_run_at integer,
+            last_run_at integer,
+            cwds text not null default '[]',
+            rrule text not null,
+            model text,
+            reasoning_effort text,
+            created_at integer not null,
+            updated_at integer not null,
+            target_type text,
+            project_id text
+        )
+        """
+    )
+    conn.execute(
+        """
+        insert into automations
+        (id, name, prompt, status, next_run_at, last_run_at, cwds, rrule, model,
+         reasoning_effort, created_at, updated_at, target_type, project_id)
+        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            AUTOMATION_ID,
+            "News-Grasp 臨時本線日次バッチ 6:00 記事作成・公開",
+            "最初に `python -m tools.news_grasp_direct_runtime start --state-root build/direct-mainline`",
+            "ACTIVE",
+            123,
+            100,
+            json.dumps([str(tmp_path)], ensure_ascii=False),
+            "RRULE:FREQ=DAILY;BYHOUR=6;BYMINUTE=0;BYSECOND=0",
+            "gpt-5.6-luna",
+            "medium",
+            10,
+            20,
+            "project",
+            "local-stale-project",
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+    result = syncer.sync(
+        repo_root=REPO,
+        template_path=template_path,
+        installed_path=installed_path,
+        app_db_path=app_db,
+        write_app_db=True,
+        allow_custom_paths=True,
+    )
+
+    assert result["ok"] is True
+    assert result["app_db"]["ok"] is True
+    assert result["app_db_changed"] is True
+    conn = sqlite3.connect(app_db)
+    conn.row_factory = sqlite3.Row
+    row = dict(conn.execute("select * from automations where id = ?", (AUTOMATION_ID,)).fetchone())
+    conn.close()
+    assert row["reasoning_effort"] == "max"
+    assert row["model"] == "gpt-5.6-luna"
+    assert json.loads(row["cwds"]) == [str(REPO.resolve())]
+    assert row["project_id"] == "local-test-project"
+    assert "$news-grasp-direct-mainline" in row["prompt"]
+    assert "public incomplete のまま最終応答しないでください" not in row["prompt"]
+    assert "最初に `python -m tools.news_grasp_direct_runtime start" not in row["prompt"]
+
+
+@pytest.mark.parametrize(
+    ("projects", "expected_failure"),
+    [
+        ({}, "app_project_binding_missing"),
+        (
+            {
+                "local-project-a": {
+                    "id": "local-project-a",
+                    "name": "News-Grasp A",
+                    "rootPaths": [str(REPO.resolve())],
+                },
+                "local-project-b": {
+                    "id": "local-project-b",
+                    "name": "News-Grasp B",
+                    "rootPaths": [str(REPO.resolve())],
+                },
+            },
+            "app_project_binding_ambiguous",
+        ),
+    ],
+)
+def test_codex_automation_sync_rejects_missing_or_ambiguous_app_project_binding(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    projects: dict[str, Any],
+    expected_failure: str,
+) -> None:
+    """App正本にexact-one project bindingが無ければwrite前にfail-closedする。"""
+
+    monkeypatch.setenv("NEWS_GRASP_ALLOW_TEST_SYNC_PATHS", "1")
+    syncer = importlib.import_module("tools.sync_news_grasp_codex_automation")
+    app_state = tmp_path / ".codex-global-state.json"
+    app_state.write_text(
+        json.dumps({"local-projects": projects}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(syncer, "_default_app_global_state", lambda: app_state, raising=False)
+    fixture_root = tmp_path / "news-grasp-sync-fixture"
+    installed_path = fixture_root / "automation.toml"
+    installed_path.parent.mkdir(parents=True)
+    original = (REPO / "automation/news-grasp-6-40/automation.toml.template").read_text(
+        encoding="utf-8-sig"
+    )
+    installed_path.write_text(original, encoding="utf-8")
+
+    result = syncer.sync(
+        repo_root=REPO,
+        template_path=REPO / "automation/news-grasp-6-40/automation.toml.template",
+        installed_path=installed_path,
+        allow_custom_paths=True,
+    )
+
+    assert result["ok"] is False
+    assert result["failures"] == [expected_failure]
+    assert result["changed"] is False
+    assert installed_path.read_text(encoding="utf-8-sig") == original
+
+
+def test_codex_automation_sync_updates_project_and_shadow_snapshots(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """runtime freshness用snapshotを、project側とshadow側の両方で同期する。"""
+
+    monkeypatch.setenv("NEWS_GRASP_ALLOW_TEST_SYNC_PATHS", "1")
+    syncer = importlib.import_module("tools.sync_news_grasp_codex_automation")
+    template_path = REPO / "automation/news-grasp-6-40/automation.toml.template"
+    fixture_root = tmp_path / "news-grasp-sync-fixture"
+    installed_path = fixture_root / "automation.toml"
+    project_snapshot = fixture_root / "AIHarnessState" / "snapshot" / "codex" / "automations" / AUTOMATION_ID / "automation.toml"
+    shadow_snapshot = fixture_root / ".codex" / "state" / "harness-worktrees" / "AIHarnessState-global-harness-v1" / "snapshot" / "codex" / "automations" / AUTOMATION_ID / "automation.toml"
+
+    installed_path.parent.mkdir(parents=True)
+    installed_path.write_text(template_path.read_text(encoding="utf-8-sig"), encoding="utf-8")
+    project_snapshot.parent.mkdir(parents=True)
+    project_snapshot.write_text('id = "news-grasp-6-40"\nreasoning_effort = "medium"\n', encoding="utf-8")
+    shadow_snapshot.parent.mkdir(parents=True)
+    shadow_snapshot.write_text('id = "news-grasp-6-40"\nmodel = "gpt-5.5"\n', encoding="utf-8")
+
+    monkeypatch.setattr(syncer, "_default_snapshot", lambda repo_root: project_snapshot)
+    monkeypatch.setattr(syncer, "_default_shadow_snapshot", lambda: shadow_snapshot)
+
+    result = syncer.sync(
+        repo_root=REPO,
+        template_path=template_path,
+        installed_path=installed_path,
+        write_snapshot=True,
+        allow_custom_paths=True,
+    )
+
+    assert result["ok"] is True
+    assert result["snapshot_changed"] is True
+    assert {Path(item["path"]) for item in result["snapshots"]} == {
+        project_snapshot,
+        shadow_snapshot,
+    }
+    assert all(item["ok"] is True for item in result["snapshots"])
+    assert tomllib.loads(project_snapshot.read_text(encoding="utf-8-sig"))["reasoning_effort"] == "max"
+    assert tomllib.loads(shadow_snapshot.read_text(encoding="utf-8-sig"))["model"] == "gpt-5.6-luna"
 
 
 def test_installed_direct_config_rejects_codex_app_schema_timestamp_gaps(
@@ -1018,6 +1364,135 @@ def test_start_cli_uses_jst_today_when_issue_date_is_omitted(
     assert output["schemaVersion"] == "NEWS_GRASP_DIRECT_RUNTIME_V1"
     assert output["issue_date"] == ISSUE_DATE
     assert output["exact_successor"] == "title_control"
+
+
+def test_start_cli_repairs_live_installed_config_once_before_run_creation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """live automation Red は開始前に一度だけ同期し、Green化できたら記事工程へ進む。"""
+
+    api = _api()
+    calls: list[str] = []
+
+    def validate(path: Path | None = None) -> dict[str, Any]:
+        assert path is None
+        calls.append("validate")
+        if calls.count("validate") == 1:
+            return {
+                "schemaVersion": "NEWS_GRASP_DIRECT_AUTOMATION_CONFIG_V1",
+                "ok": False,
+                "failures": ["automation_reasoning_not_max"],
+            }
+        return {
+            "schemaVersion": "NEWS_GRASP_DIRECT_AUTOMATION_CONFIG_V1",
+            "ok": True,
+            "failures": [],
+            "model": "gpt-5.6-luna",
+            "reasoning_effort": "max",
+        }
+
+    def repair(*, cwd: Path) -> dict[str, Any]:
+        calls.append("repair")
+        assert cwd == REPO
+        return {
+            "schemaVersion": "NEWS_GRASP_CODEX_AUTOMATION_SYNC_V1",
+            "ok": True,
+            "changed": True,
+            "app_db_changed": True,
+        }
+
+    monkeypatch.setattr(api, "validate_installed_automation_semantics", validate)
+    monkeypatch.setattr(api, "_repair_installed_automation_config_once", repair)
+    monkeypatch.setattr(api, "_now_jst", lambda: STARTED_AT)
+    monkeypatch.chdir(REPO)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "news_grasp_direct_runtime.py",
+            "start",
+            "--state-root",
+            str(tmp_path / "direct-mainline"),
+        ],
+    )
+
+    assert api._main() == 0
+    output = json.loads(capsys.readouterr().out)
+    assert calls == ["validate", "repair", "validate"]
+    assert output["schemaVersion"] == "NEWS_GRASP_DIRECT_RUNTIME_V1"
+    assert output["exact_successor"] == "title_control"
+    assert output["config_repair"]["ok"] is True
+    assert "automation_config_repaired_before_stage_start" in output["post_publish_issue_list"]
+
+
+def test_start_cli_forbids_installed_config_override_outside_test_mode(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """本番startではcaller提供TOMLをlive automation authorityの代替にできない。"""
+
+    api = _api()
+    stale = tmp_path / "automation.toml"
+    stale.write_text('id = "news-grasp-6-40"\nreasoning_effort = "medium"\n', encoding="utf-8")
+    monkeypatch.delenv("NEWS_GRASP_DIRECT_RUNTIME_ALLOW_TEST_INSTALLED_CONFIG", raising=False)
+    monkeypatch.setattr(api, "_now_jst", lambda: STARTED_AT)
+    monkeypatch.chdir(REPO)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "news_grasp_direct_runtime.py",
+            "start",
+            "--state-root",
+            str(tmp_path / "direct-mainline"),
+            "--installed-config",
+            str(stale),
+        ],
+    )
+
+    assert api._main() == 2
+    output = json.loads(capsys.readouterr().out)
+    assert output["status"] == "installed_config_override_forbidden"
+    assert output["failures"] == ["installed_config_override_test_only"]
+    assert output["exact_successor"] == "use live installed automation without --installed-config"
+
+
+def test_start_cli_rejects_medium_installed_config_before_run_creation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """live automation が medium へ戻っていたら、記事処理に入らず exact successor を返す。"""
+
+    api = _api()
+    installed = Path.home() / ".codex" / "automations" / AUTOMATION_ID / "automation.toml"
+    text = installed.read_text(encoding="utf-8-sig")
+    assert 'reasoning_effort = "max"' in text
+    stale = tmp_path / "automation.toml"
+    stale.write_text(text.replace('reasoning_effort = "max"', 'reasoning_effort = "medium"'), encoding="utf-8")
+    state_root = tmp_path / "direct-mainline"
+    monkeypatch.setenv("NEWS_GRASP_DIRECT_RUNTIME_ALLOW_TEST_INSTALLED_CONFIG", "1")
+    monkeypatch.setattr(api, "_now_jst", lambda: STARTED_AT)
+    monkeypatch.chdir(REPO)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "news_grasp_direct_runtime.py",
+            "start",
+            "--state-root",
+            str(state_root),
+            "--installed-config",
+            str(stale),
+        ],
+    )
+
+    assert api._main() == 2
+    output = json.loads(capsys.readouterr().out)
+    assert output["schemaVersion"] == "NEWS_GRASP_DIRECT_RUNTIME_V1"
+    assert output["status"] == "automation_config_red"
+    assert "automation_reasoning_not_max" in output["failures"]
+    assert output["exact_successor"] == (
+        "python -m tools.sync_news_grasp_codex_automation --write-snapshot --write-skill --write-app-db"
+    )
+    assert output["post_publish_issue_list"]
 
 
 def test_advance_cli_records_exact_successor_title_stage(

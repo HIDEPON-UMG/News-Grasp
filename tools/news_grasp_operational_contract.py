@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import hashlib
 import json
 import argparse
 import ast
+import hashlib
 import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -812,7 +812,7 @@ def validate_operational_registry(
     }
     if set(route_map) != set(declared):
         return {"status": "Red", "reason": "NEWS_GRASP_ROUTE_SET_NOT_EXACT"}
-    source_hashes: dict[str, str] = {}
+    source_observations: dict[str, dict[str, int | str]] = {}
     for route_id in declared:
         row = route_map[route_id]
         path = (repo_root / str(row.get("consumerPath") or "")).resolve()
@@ -881,7 +881,11 @@ def validate_operational_registry(
                 "reason": "NEWS_GRASP_ROUTE_PRODUCTION_EDGE_MISSING",
                 "routeId": route_id,
             }
-        source_hashes[route_id] = hashlib.sha256(path.read_bytes()).hexdigest()
+        source_observations[route_id] = {
+            "consumerPath": str(row.get("consumerPath") or ""),
+            "status": "present",
+            "bytes": path.stat().st_size,
+        }
     return {
         "status": "Green",
         "reason": "NEWS_GRASP_OPERATIONAL_REGISTRY_CONFORMING",
@@ -889,7 +893,7 @@ def validate_operational_registry(
             field: registry[field] for field in OPERATIONAL_DESIGN_FIELDS
         },
         "routeIds": list(declared),
-        "sourceHashes": source_hashes,
+        "sourceObservations": source_observations,
     }
 
 

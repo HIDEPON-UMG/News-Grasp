@@ -460,22 +460,23 @@ def test_all_recovery_triggers_route_to_canonical_ensure_owner() -> None:
 def test_execution_receipt_v2_binds_branch_python_reservation_and_deadlines() -> None:
     from tools import news_grasp_recovery_receipts as receipts
 
-    runner = (REPO / "scripts" / "ops" / "news-grasp-runner.ps1").read_text(
+    direct_runtime = (REPO / "tools" / "news_grasp_direct_runtime.py").read_text(
+        encoding="utf-8-sig"
+    )
+    prompt = (REPO / "automation" / "news-grasp-6-40" / "automation.toml.template").read_text(
         encoding="utf-8-sig"
     )
 
     assert receipts.EXECUTION_SCHEMA == "RECOVERY_EXECUTION_RECEIPT_V2"
-    assert "RECOVERY_EXECUTION_BRANCH_MISMATCH" in runner
-    assert "RECOVERY_EXECUTION_PYTHON_MISMATCH" in runner
-    assert "RECOVERY_EXECUTION_HARD_DEADLINE_EXCEEDED" in runner
-    assert "Acquire-RecoveryHighCostBudget -Stage \"model:$FlowName\"" in runner
-    assert "$script:HighCostCallSequence -ge $script:RecoveryMaxExternalModelCalls" in runner
-    assert "$TimeoutSec = [Math]::Max(1, [Math]::Min($TimeoutSec, $remainingSeconds))" in runner
-    assert runner.index("Acquire-RecoveryHighCostBudget -Stage \"model:$FlowName\"") < runner.index("& $CodexWrapper @codexArgs")
-    assert 'Acquire-RecoveryHighCostBudget -Stage "model:reporter:$waveCat:attempt:$Attempt"' in runner
-    assert "$reporterTimeoutSec" in runner
-    assert "$reporterIdleTimeoutSec" in runner
-    assert runner.index('Acquire-RecoveryHighCostBudget -Stage "model:reporter:$waveCat:attempt:$Attempt"') < runner.index("$job = Start-Job")
+    assert not (REPO / "scripts" / "ops" / "news-grasp-runner.ps1").exists()
+    assert '"target_minutes": 45' in direct_runtime
+    assert '"optional_high_cost_freeze_minutes": 75' in direct_runtime
+    assert '"slo_minutes": 90' in direct_runtime
+    assert '"continue_public_successors": True' in direct_runtime
+    assert "slo_debt_continue_public" in direct_runtime
+    assert "90 分を超えた場合は SLO 超過を記録" in prompt
+    assert "実行可能な public-critical successor がある限り継続" in prompt
+    assert "Acquire-RecoveryHighCostBudget" not in direct_runtime
 
 
 def test_recovery_controllers_reject_ambient_python_and_module_resolution() -> None:

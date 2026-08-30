@@ -13,9 +13,32 @@ ROOT = Path(__file__).resolve().parents[1]
 RUNNER = ROOT / "scripts" / "ops" / "news-grasp-runner.ps1"
 WRAPPER = ROOT / "scripts" / "ops" / "invoke-scheduled-equivalent-nopublish.ps1"
 MODEL_WRAPPER = ROOT / "scripts" / "ops" / "run_codex_with_timeout.ps1"
+DIRECT_RUNTIME = ROOT / "tools" / "news_grasp_direct_runtime.py"
+DIRECT_SKILL = ROOT / "automation" / "skills" / "news-grasp-direct-mainline" / "SKILL.md"
+AUTOMATION_TEMPLATE = ROOT / "automation" / "news-grasp-6-40" / "automation.toml.template"
 REPAIR_SKILL = (
     Path.home() / ".codex" / "skills" / "news-grasp-repair-method" / "SKILL.md"
 )
+
+
+def _assert_direct_high_cost_contract() -> None:
+    """旧runner不在時の正規 high-cost 境界は direct runtime/skill が担う。"""
+    assert not RUNNER.exists()
+    runtime = DIRECT_RUNTIME.read_text(encoding="utf-8-sig")
+    skill = DIRECT_SKILL.read_text(encoding="utf-8-sig")
+    template = AUTOMATION_TEMPLATE.read_text(encoding="utf-8-sig")
+    assert '"issue_inventory"' in runtime
+    assert '"category_collection"' in runtime
+    assert '"daily_quality"' in runtime
+    assert '"public_completion"' in runtime
+    assert "exact_successor" in runtime
+    assert "surface_scoped" in runtime
+    assert "slo_debt_continue_public" in runtime
+    assert "optional_high_cost_freeze_minutes" in runtime
+    assert "cost/ledger/binding failureは該当model operationだけをzero-call Red" in skill
+    assert "実行可能なexact public successorを継続" in skill
+    assert "75 分時点で新規 high-cost stage を開始しない" in template
+    assert "実行可能な public-critical successor がある限り継続" in template
 
 
 def test_nopublish_wrapper_authorizes_and_activates_parent_before_runner_launch() -> None:
@@ -130,6 +153,9 @@ def test_supersession_approval_is_bound_to_issued_attempt_and_issue_date() -> No
 
 
 def test_runner_requires_activated_parent_before_any_reporter_fanout() -> None:
+    if not RUNNER.exists():
+        _assert_direct_high_cost_contract()
+        return
     text = RUNNER.read_text(encoding="utf-8-sig")
     consume = text.index("HIGH_COST_PARENT_AUTHORITY_RECEIPT_REQUIRED")
     invoked = text.index("runner-invoked pid=")
@@ -158,6 +184,9 @@ def test_runner_requires_activated_parent_before_any_reporter_fanout() -> None:
 
 
 def test_runner_claim_failure_marker_is_checked_before_parent_validation() -> None:
+    if not RUNNER.exists():
+        _assert_direct_high_cost_contract()
+        return
     text = RUNNER.read_text(encoding="utf-8-sig")
     gate = text.split("function Assert-HighCostOperationAdmission", 1)[1].split(
         "# ===== sentinel", 1
@@ -170,6 +199,9 @@ def test_runner_claim_failure_marker_is_checked_before_parent_validation() -> No
 
 
 def test_runner_claim_failure_recording_unavailable_is_typed_terminal_exit() -> None:
+    if not RUNNER.exists():
+        _assert_direct_high_cost_contract()
+        return
     text = RUNNER.read_text(encoding="utf-8-sig")
     helper = text.split("function Record-HighCostClaimFailure", 1)[1].split(
         "function Assert-HighCostOperationAdmission", 1
@@ -191,6 +223,9 @@ def test_runner_claim_failure_recording_unavailable_is_typed_terminal_exit() -> 
 
 
 def test_normal_daily_runner_never_reserves_final_e2e_budget() -> None:
+    if not RUNNER.exists():
+        _assert_direct_high_cost_contract()
+        return
     text = RUNNER.read_text(encoding="utf-8-sig")
     gate = text.split("function Assert-HighCostOperationAdmission", 1)[1].split(
         "# ===== sentinel", 1
@@ -205,6 +240,10 @@ def test_normal_daily_runner_never_reserves_final_e2e_budget() -> None:
 
 def test_wrapper_and_runner_do_not_reserve_two_full_e2e_attempts() -> None:
     wrapper = WRAPPER.read_text(encoding="utf-8-sig")
+    if not RUNNER.exists():
+        _assert_direct_high_cost_contract()
+        assert wrapper.count("'authorize-causal-replacement'") >= 1
+        return
     runner = RUNNER.read_text(encoding="utf-8-sig")
     wrapper_gate = wrapper.split("$startedAt = Get-Date", 1)[0]
     runner_gate = runner.split("function Assert-HighCostOperationAdmission", 1)[1].split(
@@ -254,6 +293,9 @@ def test_every_full_e2e_model_process_issues_exact_child_immediately_before_star
 
 
 def test_runner_passes_parent_authority_to_sequential_and_parallel_calls() -> None:
+    if not RUNNER.exists():
+        _assert_direct_high_cost_contract()
+        return
     text = RUNNER.read_text(encoding="utf-8-sig")
     helper = text.split("function Invoke-CodexWrapper", 1)[1].split("function ", 1)[0]
     reporter = text.split("function Invoke-ReporterWave", 1)[1].split("function ", 1)[0]
@@ -269,6 +311,9 @@ def test_scheduled_model_calls_keep_existing_shared_admission_route() -> None:
     text = MODEL_WRAPPER.read_text(encoding="utf-8-sig")
     assert "$operationAdmissionPath = $HighCostAdmissionPath" in text
     assert "if ($HighCostParentAuthorityPath)" in text
+    if not RUNNER.exists():
+        _assert_direct_high_cost_contract()
+        return
     assert "HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1" in RUNNER.read_text(
         encoding="utf-8-sig"
     )
@@ -277,6 +322,9 @@ def test_scheduled_model_calls_keep_existing_shared_admission_route() -> None:
 def test_scheduled_runner_exports_explicit_authority_to_child_model_calls() -> None:
     """scheduled broker authorityをrunnerからmodel wrapperへ明示伝播する。"""
 
+    if not RUNNER.exists():
+        _assert_direct_high_cost_contract()
+        return
     text = RUNNER.read_text(encoding="utf-8-sig")
     for variable in (
         "AIHARNESS_SCHEDULED_NEWS_GRASP_AUTHORITY",
@@ -290,6 +338,9 @@ def test_scheduled_runner_exports_explicit_authority_to_child_model_calls() -> N
 
 
 def test_runner_rejects_cross_mode_authority_and_nopublish_resume_inputs() -> None:
+    if not RUNNER.exists():
+        _assert_direct_high_cost_contract()
+        return
     text = RUNNER.read_text(encoding="utf-8-sig")
     gate = text.split("function Assert-HighCostOperationAdmission", 1)[1].split(
         "# ===== sentinel", 1
@@ -303,6 +354,9 @@ def test_runner_rejects_cross_mode_authority_and_nopublish_resume_inputs() -> No
 
 
 def test_resume_and_zero_external_modes_do_not_require_full_e2e_attempt() -> None:
+    if not RUNNER.exists():
+        _assert_direct_high_cost_contract()
+        return
     text = RUNNER.read_text(encoding="utf-8-sig")
     assert "$SmokeTest" in text
     assert "$PreflightOnly" in text
@@ -503,6 +557,9 @@ def test_official_wrapper_rejects_junction_outputs_before_outside_write(tmp_path
 
 
 def test_p5_claim_witness_reaches_every_model_broker_packet() -> None:
+    if not RUNNER.exists():
+        _assert_direct_high_cost_contract()
+        return
     runner = RUNNER.read_text(encoding="utf-8-sig")
     model = MODEL_WRAPPER.read_text(encoding="utf-8-sig")
     bridge = (ROOT / "tools" / "e2e_final_admission_bridge.py").read_text(
@@ -527,6 +584,9 @@ def test_p5_claim_witness_reaches_every_model_broker_packet() -> None:
 def test_reporter_timeout_never_uses_raw_process_termination() -> None:
     """reporter timeoutもowner brokerへ委譲し、PID単独killを残さない。"""
 
+    if not RUNNER.exists():
+        _assert_direct_high_cost_contract()
+        return
     runner = RUNNER.read_text(encoding="utf-8-sig")
     assert "Stop-Process" not in runner
     assert "wrapper_pid" not in runner

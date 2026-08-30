@@ -30,7 +30,7 @@ description: Run the 06:00 News-Grasp scheduled production directly with Codex, 
 7. Summaryを生成する。
 8. Daily audio script、TTS、audio publishを行う。
 9. DeepDive記事を生成する。
-10. shared DeepDive qualityでprovenance、dialogue、rendered HTMLを検証する。
+10. shared DeepDive qualityでprovenance、dialogue、rendered HTMLを検証する。実コマンドは `python -m tools.deepdive_quality audit-issue --date YYYY-MM-DD --require-rendered-public` とする。
 11. 日付HTML docsを生成する。
 12. `python -m tools.validate_daily_quality --date YYYY-MM-DD --require-deepdive --json` を対象日の実日付で実行してGreenにする。短縮表記では `validate_daily_quality --require-deepdive` を必須gate名とする。
 13. Daily/DeepDive YouTube Podcastを作成・uploadする。

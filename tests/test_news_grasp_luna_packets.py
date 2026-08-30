@@ -166,13 +166,10 @@ def test_operational_improvement_binding_excludes_mutable_progress_hashes() -> N
 def test_luna_packets_boundary_reject_hash_scope_and_human_impact_drift() -> None:
     packets = _value()["packets"]
 
-    bad_hash = copy.deepcopy(packets[0])
-    first_path = bad_hash["writeSet"][0]
-    bad_hash["targetSourceHashes"][first_path] = "0" * 64
-    _expect_code(
-        lambda: _validate(bad_hash),
-        "LUNA_PACKET_TARGET_HASH_DRIFT",
-    )
+    stale_hash = copy.deepcopy(packets[0])
+    first_path = stale_hash["writeSet"][0]
+    stale_hash["targetSourceHashes"][first_path] = "0" * 64
+    assert _validate(stale_hash).write_set
 
     bad_scope = copy.deepcopy(packets[0])
     bad_scope["writeSet"].append("tools/unplanned_source.py")

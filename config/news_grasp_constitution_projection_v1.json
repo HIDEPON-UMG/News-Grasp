@@ -85,7 +85,7 @@
         "kind": "skill",
         "sourcePath": "automation/skills/news-grasp-direct-mainline/SKILL.md",
         "installPath": "skills/news-grasp-direct-mainline/SKILL.md",
-        "sourceSha256": "e58fc8d1c89d74086b43dfd77bbb91e10b4e3db187823fdd3ce430a27deb8e8e"
+        "sourceSha256": "10d3fe2ddb032cf4b1fe2e1b9d9b9fce4f2ff878a90f960a57f5499d78f23865"
       },
       {
         "assetId": "direct-mainline-openai-yaml-v1",
@@ -134,17 +134,17 @@
         "kind": "automation",
         "sourcePath": "automation/news-grasp-6-40/automation.toml.template",
         "installPath": "automations/news-grasp-6-40/automation.toml",
-        "sourceSha256": "ff86c479d60aa13aee306d18773cb533740deb6b747ecd4155d1270fa2e856d3"
+        "sourceSha256": "5255e8da37803cdc06cdb5240513ea411c9352ba1e23a1655011dbb152cf0649"
       },
       {
         "assetId": "news-grasp-6-40-completion-guard-projection-v1",
         "kind": "automation",
         "sourcePath": "automation/news-grasp-6-40/completion_guard.py",
         "installPath": "automations/news-grasp-6-40/completion_guard.py",
-        "sourceSha256": "c2f119363ac07af147685a0ab9d94cadc15b2e9a4fb80a1422c349045b5bf46d"
+        "sourceSha256": "77112e72c167230d6b0aebc9dc71114879b4cf896fbfaaf423248b5456e86657"
       }
     ],
-    "assetSetSha256": "e2ff0f74c1c7d2df778399181747dbd97f716eb8533ab652aed656cc96a7c72d"
+    "assetSetSha256": "ce49a747bdb6205b1c672492fca2bcc289276a915b4ea8523fd532fa111934b4"
   },
   "publicRecoveryOperationalDesign": {
     "schemaVersion": "NEWS_GRASP_PUBLIC_RECOVERY_OPERATIONAL_DESIGN_V1",
@@ -165,15 +165,15 @@
   "outputs": [
     {
       "path": "AGENTS.md",
-      "managedBlockSha256": "129db89caf9eb080047764a223bac2d110e2b80af378876d78e192ec8e29dff6"
+      "managedBlockSha256": "870a9c413677f30e8b3126d9f7bcc5f3cd6ac45f83bc1279077c8a56379f994b"
     },
     {
       "path": "CLAUDE.md",
-      "managedBlockSha256": "129db89caf9eb080047764a223bac2d110e2b80af378876d78e192ec8e29dff6"
+      "managedBlockSha256": "870a9c413677f30e8b3126d9f7bcc5f3cd6ac45f83bc1279077c8a56379f994b"
     },
     {
       "path": "docs/specs/2026-08-12_news-grasp-product-constitution.html",
-      "sha256": "60b6a47c0532c22d92e1b39d14bf58a89dfae0fdf4d83e0e75e98f9b480e527c",
+      "sha256": "78e5ffdb079265bd6e4d7a73e5b2b66ab1ff97eacb62ea85d5056eac55b4419f",
       "lineCount": 1064
     },
     {

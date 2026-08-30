@@ -1,78 +1,97 @@
+"""direct 本線 automation のモデル・reasoning 契約テスト。"""
 from __future__ import annotations
 
 import json
-import os
-import subprocess
+import sys
+import tomllib
 from pathlib import Path
 
-
-WRAPPER = Path("scripts/ops/run_codex_with_timeout.ps1")
-RUNNER = Path("scripts/ops/news-grasp-runner.ps1")
-INSTALLER = Path("scripts/ops/install-news-grasp-ops.ps1")
+import pytest
 
 
-def test_repo_managed_wrapper_passes_model_and_high_effort(
+ROOT = Path(__file__).resolve().parent.parent
+AUTOMATION_TEMPLATE = ROOT / "automation" / "news-grasp-6-40" / "automation.toml.template"
+
+
+def test_repo_template_uses_luna_max_for_scheduled_direct_mainline() -> None:
+    value = tomllib.loads(AUTOMATION_TEMPLATE.read_text(encoding="utf-8-sig"))
+
+    assert value["model"] == "gpt-5.6-luna"
+    assert value["reasoning_effort"] == "max"
+    assert value["rrule"].upper() == "RRULE:FREQ=DAILY;BYHOUR=6;BYMINUTE=0;BYSECOND=0"
+    assert "$news-grasp-direct-mainline" in value["prompt"]
+
+
+def test_direct_runtime_forbids_installed_config_override_by_default(
     tmp_path: Path,
-    canonical_model_broker: tuple[list[str], dict[str, str]],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
-    assert WRAPPER.exists()
-    capture = tmp_path / "args.txt"
-    fake = tmp_path / "fake-codex.ps1"
-    fake.write_text(
-        "$args -join ' ' | Set-Content -LiteralPath $env:CAPTURE -Encoding utf8\nexit 0\n",
-        encoding="utf-8-sig",
-    )
-    prompt = tmp_path / "prompt.md"
-    prompt.write_text("test", encoding="utf-8")
-    log = tmp_path / "wrapper.log"
-    usage = tmp_path / "usage.jsonl"
-    high_cost_args, env = canonical_model_broker
-    env["CAPTURE"] = str(capture)
+    """caller提供TOMLを production authority にできない。"""
 
-    completed = subprocess.run(
+    api = __import__("tools.news_grasp_direct_runtime", fromlist=["_main"])
+    stale = tmp_path / "automation.toml"
+    stale.write_text('id = "news-grasp-6-40"\nreasoning_effort = "medium"\n', encoding="utf-8")
+    monkeypatch.chdir(ROOT)
+    monkeypatch.delenv("NEWS_GRASP_DIRECT_RUNTIME_ALLOW_TEST_INSTALLED_CONFIG", raising=False)
+    monkeypatch.setattr(
+        sys,
+        "argv",
         [
-            "pwsh", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(WRAPPER),
-            "-CodexExe", str(fake), "-PromptFile", str(prompt), "-LogFile", str(log),
-            "-TimeoutSec", "10", "-IdleTimeoutSec", "0", "-HeartbeatSec", "0",
-            "-WorkingDirectory", str(tmp_path), "-Model", "gpt-5.6-luna",
-            "-ReasoningEffort", "high", "-FlowName", "test", "-UsageLog", str(usage),
-            *high_cost_args,
+            "news_grasp_direct_runtime.py",
+            "start",
+            "--state-root",
+            str(tmp_path / "state"),
+            "--installed-config",
+            str(stale),
         ],
-        text=True,
-        capture_output=True,
-        encoding="utf-8",
-        errors="replace",
-        env=env,
-        check=False,
-        timeout=30,
     )
 
-    assert completed.returncode == 0, completed.stderr + completed.stdout
-    args = capture.read_text(encoding="utf-8-sig", errors="replace")
-    assert "--model gpt-5.6-luna" in args
-    assert "model_reasoning_effort" in args
-    assert "high" in args
-    record = json.loads(usage.read_text(encoding="utf-8-sig").splitlines()[0])
-    assert record["model"] == "gpt-5.6-luna"
-    assert record["reasoning_effort"] == "high"
+    assert api._main() == 2
+    result = json.loads(capsys.readouterr().out)
+    assert result["status"] == "installed_config_override_forbidden"
+    assert result["failures"] == ["installed_config_override_test_only"]
 
 
-def test_runner_passes_reasoning_effort_for_every_codex_role() -> None:
-    source = RUNNER.read_text(encoding="utf-8-sig")
+def test_syncer_default_projection_hardcodes_luna_max_without_runner(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """installed projection は template から Luna/max direct 契約だけを描画する。"""
 
-    assert "[string] $ReasoningEffort = ''" in source
-    assert "$codexArgs['ReasoningEffort'] = $ReasoningEffort" in source
-    assert "ReporterReasoningEffort" in source
-    assert "RepairReasoningEffort" in source
-    assert "NewsroomEditorReasoningEffort" in source
-    assert "DeepDiveReasoningEffort" in source
-    assert source.count("-ReasoningEffort") >= 4
+    monkeypatch.setenv("NEWS_GRASP_ALLOW_TEST_SYNC_PATHS", "1")
+    syncer = __import__("tools.sync_news_grasp_codex_automation", fromlist=["sync"])
+    fixture_root = tmp_path / "news-grasp-sync-fixture"
+    installed = fixture_root / "automation.toml"
+    installed.parent.mkdir(parents=True)
+    installed.write_text(
+        "\n".join(
+            [
+                'id = "news-grasp-6-40"',
+                'kind = "cron"',
+                'name = "News-Grasp 臨時本線日次バッチ 6:00 記事作成・公開"',
+                'status = "ACTIVE"',
+                'rrule = "RRULE:FREQ=DAILY;BYHOUR=6;BYMINUTE=0;BYSECOND=0"',
+                'model = "gpt-5.6-luna"',
+                'reasoning_effort = "medium"',
+                'cwds = []',
+                'created_at = 1',
+                'updated_at = 1',
+                'prompt = "old"',
+            ]
+        ),
+        encoding="utf-8",
+    )
 
+    result = syncer.sync(
+        repo_root=ROOT,
+        template_path=AUTOMATION_TEMPLATE,
+        installed_path=installed,
+        allow_custom_paths=True,
+    )
 
-def test_installer_syncs_wrapper_with_backup_and_rollback() -> None:
-    source = INSTALLER.read_text(encoding="utf-8-sig")
-
-    assert source.count("run_codex_with_timeout.ps1") >= 1
-    assert "$backup = Join-Path $BackupDir $file" in source
-    assert "install-news-grasp-ops-guard.ps1" in source
-    assert "rollback_commands" in source
+    assert result["ok"] is True
+    value = tomllib.loads(installed.read_text(encoding="utf-8-sig"))
+    assert value["model"] == "gpt-5.6-luna"
+    assert value["reasoning_effort"] == "max"
+    assert "news-grasp-runner.ps1" not in value["prompt"]

@@ -147,12 +147,12 @@ def test_temporary_mainline_automation_template_matches_viability_contract() -> 
         'model = "gpt-5.6-luna"',
         'reasoning_effort = "max"',
         "SLO は 90 分",
-        "automation は監査バッチではない",
-        "public incomplete の間に許される作業",
+        "automation は監査バッチではありません",
+        "public incomplete を Green として最終応答しない",
         "post_publish_issue_list",
         "tools.publish_inventory.scheduled_category_ids(issue_date)",
         "automation/skills/news-grasp-e2e-discipline/SKILL.md",
-        "entry_control_plane の fix_now",
+        "tools.news_grasp_direct_runtime.DIRECT_STAGES",
     )
     assert all(fragment in template for fragment in required)
     forbidden = (

@@ -33,8 +33,8 @@ def _record(cat: str, idx: int) -> dict:
 def test_default_model_policy_uses_evaluated_reporter_selection() -> None:
     assert DEFAULT_MODEL_POLICY["reporter"]["default"] == "gpt-5.6-luna"
     assert DEFAULT_MODEL_POLICY["reporter"]["escalate"] == "gpt-5.6-luna"
-    assert DEFAULT_MODEL_POLICY["reporter"]["reasoning"] == "high"
-    assert DEFAULT_MODEL_POLICY["reporter"]["escalate_reasoning"] == "high"
+    assert DEFAULT_MODEL_POLICY["reporter"]["reasoning"] == "max"
+    assert DEFAULT_MODEL_POLICY["reporter"]["escalate_reasoning"] == "max"
     assert "fx" not in DEFAULT_MODEL_POLICY["reporter"].get("always_escalate_categories", [])
 
 
@@ -49,11 +49,11 @@ def test_editor_policy_adopts_evaluated_editor_without_full_rewrite_by_default()
     editor = DEFAULT_MODEL_POLICY["editor"]
     assert editor["default"] == "gpt-5.6-luna"
     assert editor["escalate"] == "gpt-5.6-luna"
-    assert editor["reasoning"] == "high"
-    assert editor["escalate_reasoning"] == "high"
-    assert editor["selection_variant"] == "style-editor-56-luna-high"
+    assert editor["reasoning"] == "max"
+    assert editor["escalate_reasoning"] == "max"
+    assert editor["selection_variant"] == "style-editor-56-luna-max"
     assert editor["selection_summary"] == "build/model-comparison-20260715-luna-high-replacement/summary.json"
-    assert editor["selection_source"] == "luna_high_replacement_benchmark_2026_07_15"
+    assert editor["selection_source"] == "luna_max_scheduled_direct_mainline_2026_08_30"
     assert editor["scope"] == "style_rewrite_only"
     assert editor["mode"] == "selective_rewrite"
     assert editor["rewrite_all"] is False
@@ -62,13 +62,13 @@ def test_editor_policy_adopts_evaluated_editor_without_full_rewrite_by_default()
     assert should_rewrite_with_editor(naturalness_score=5, style_score=5, validator_failed=True) is True
 
 
-def test_repair_policy_uses_luna_high_for_llm_repair_worker() -> None:
+def test_repair_policy_uses_luna_max_for_llm_repair_worker() -> None:
     """repair は文体 editor ではなく、修復判断用 role のモデルを使う。"""
     repair = DEFAULT_MODEL_POLICY["repair"]
     assert repair["default"] == "gpt-5.6-luna"
     assert repair["escalate"] == "gpt-5.6-luna"
-    assert repair["reasoning"] == "high"
-    assert repair["escalate_reasoning"] == "high"
+    assert repair["reasoning"] == "max"
+    assert repair["escalate_reasoning"] == "max"
     assert repair["scope"] == "llm_repair_worker"
     assert "mini" not in str(repair["default"])
     assert select_repair_model(
@@ -80,8 +80,8 @@ def test_repair_policy_uses_luna_high_for_llm_repair_worker() -> None:
     ) == "gpt-5.6-luna"
 
 
-def test_repair_model_escalates_complex_patterns_to_luna_high() -> None:
-    """複雑な repair pattern も Luna の high effort へ統一する。"""
+def test_repair_model_escalates_complex_patterns_to_luna_max() -> None:
+    """複雑な repair pattern も Luna の max effort へ統一する。"""
     cases = [
         (
             "compound issue ledger",
@@ -140,18 +140,18 @@ def test_repair_model_escalates_complex_patterns_to_luna_high() -> None:
         assert select_repair_model(**signals) == "gpt-5.6-luna", label
 
 
-def test_newsroom_editor_policy_uses_luna_high() -> None:
-    """編集長生成は Luna の high effort へ統一する。"""
+def test_newsroom_editor_policy_uses_luna_max() -> None:
+    """編集長生成は Luna の max effort へ統一する。"""
     newsroom_editor = DEFAULT_MODEL_POLICY["newsroom_editor"]
     assert newsroom_editor["selection_summary"] == "build/model-comparison-20260715-luna-high-replacement/summary.json"
     assert newsroom_editor["safety_summary"] == "build/model-eval-5.6/newsroom-append-safety/summary.json"
     assert newsroom_editor["selection_status"] == "selected"
     assert newsroom_editor["default"] == "gpt-5.6-luna"
-    assert newsroom_editor["selection_variant"] == "newsroom-editor-56-luna-high"
-    assert newsroom_editor["quality_leader_variant"] == "newsroom-editor-56-luna-high"
+    assert newsroom_editor["selection_variant"] == "newsroom-editor-56-luna-max"
+    assert newsroom_editor["quality_leader_variant"] == "newsroom-editor-56-luna-max"
     assert newsroom_editor["escalate"] == "gpt-5.6-luna"
-    assert newsroom_editor["reasoning"] == "high"
-    assert newsroom_editor["escalate_reasoning"] == "high"
+    assert newsroom_editor["reasoning"] == "max"
+    assert newsroom_editor["escalate_reasoning"] == "max"
     assert DEFAULT_MODEL_POLICY["deepdive"]["default"] == "gpt-5.6-sol"
     assert DEFAULT_MODEL_POLICY["deepdive"]["selection_source"] == "weighted_triad_benchmark_2026_07_10"
 

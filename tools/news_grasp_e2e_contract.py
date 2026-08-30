@@ -12,11 +12,12 @@ class E2ECompositionContractError(RuntimeError):
 
 
 ROUTES = {
-    "official_wrapper": "scripts/ops/invoke-scheduled-equivalent-nopublish.ps1",
-    "launcher": "scripts/ops/news-grasp-task-launcher.pyw",
-    "runner": "scripts/ops/news-grasp-runner.ps1",
-    "wrapper": "scripts/ops/run_codex_with_timeout.ps1",
-    "bridge": "tools/e2e_final_admission_bridge.py",
+    "automation": "automation/news-grasp-6-40/automation.toml.template",
+    "skill": "automation/skills/news-grasp-direct-mainline/SKILL.md",
+    "runtime": "tools/news_grasp_direct_runtime.py",
+    "completion": "tools/news_grasp_direct_completion.py",
+    "title_control": "tools/news_grasp_title_control.py",
+    "guard": "automation/news-grasp-6-40/completion_guard.py",
 }
 
 
@@ -40,7 +41,7 @@ def validate_e2e_launch_contract(
     *,
     source_overrides: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
-    """installed launcherからbroker execまでのidentity bundleを検証する。"""
+    """06:00 Codex automation から direct public completion までの構成を検証する。"""
 
     root = Path(repo_root).resolve(strict=True)
     overrides = dict(source_overrides or {})
@@ -51,117 +52,92 @@ def validate_e2e_launch_contract(
         name: _read(root, relative, overrides)
         for name, relative in ROUTES.items()
     }
-    official_wrapper = sources["official_wrapper"]
-    launcher = sources["launcher"]
-    runner = sources["runner"]
-    wrapper = sources["wrapper"]
-    bridge = sources["bridge"]
+    automation = sources["automation"]
+    skill = sources["skill"]
+    runtime = sources["runtime"]
+    completion = sources["completion"]
+    title_control = sources["title_control"]
+    guard = sources["guard"]
 
-    official_markers = (
-        "'validate-issued'",
-        "$authorizeOutput =",
-        "'activate'",
-        "'validate-activated'",
-        "'consume'",
-        "& $installedTaskPythonPath @installedLauncherArguments",
+    automation_markers = (
+        '$news-grasp-direct-mainline',
+        'model = "gpt-5.6-luna"',
+        'reasoning_effort = "max"',
+        "tools.news_grasp_direct_runtime.DIRECT_STAGES",
+        "NEWS_GRASP_DIRECT_MAINLINE_RECEIPT_V1",
+        "NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1",
     )
-
-    launcher_markers = (
-        "def _run_installed_nopublish_authority(",
-        "NEWS_GRASP_INSTALLED_NOPUBLISH_LAUNCH_AUTHORITY_V1",
-        "externalHealthAuthorityFixtureSha256",
-        "runnerArgumentsFileSha256",
-        "runnerExecutableSha256",
-        "executionRepoRoot",
-        "subprocess.run(",
+    skill_markers = (
+        "host の `set_thread_title`",
+        "python -m tools.news_grasp_direct_runtime start",
+        "run_exact_successor",
+        "validate_daily_quality --date YYYY-MM-DD --require-deepdive",
+        "public incompleteかつexact successorがある状態で終了しない",
     )
-    runner_markers = (
-        "'validate-activated'",
-        "'claim-runner'",
-        "'write-runner-claim-witness'",
-        "'--expected-owner-pid' $PID",
-        "'HighCostClaimWitness' = [string]$script:HighCostClaimWitness",
-        "Invoke-CodexWrapper",
+    runtime_markers = (
+        "DIRECT_STAGES = (",
+        '"title_control"',
+        '"daily_quality"',
+        '"public_completion"',
+        "run_exact_successor(",
+        "verify_public_completion(",
+        "validate_installed_automation_semantics(",
     )
-    wrapper_markers = (
-        "'validate-runner-claim-witness'",
-        "'--expected-execution-root' $script:CanonicalExecutionRoot",
-        "'--execution-root', $script:CanonicalExecutionRoot",
-        "'--timeout-seconds', [string]$TimeoutSec",
-        "'--idle-timeout-seconds', [string]$IdleTimeoutSec",
-        "'--executable', $modelExecutable",
-        "'--e2e-final-claim-receipt', $E2EFinalClaimReceiptPath",
-        "'--e2e-final-claim-witness', $HighCostClaimWitness",
-        "CreateSuspendedAssignedProcess",
+    completion_markers = (
+        "NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1",
+        "verify_direct_public_completion(",
+        "validate_daily_quality",
+        "deepdive_quality",
+        "publish_status",
     )
-    bridge_markers = (
-        "SHGetKnownFolderPath",
-        "_managed_authority_root()",
-        "_issue_execution_lock(",
-        '"NEWS_GRASP_E2E_ADMISSION_WAL_V1"',
-        '"runner_reserved"',
-        '"runner_claimed"',
-        "_recover_wal(",
+    title_markers = (
+        "expected_title(",
+        "validate_title(",
+        "record_title_status(",
+        "post_publish_issue_list",
+    )
+    guard_markers = (
+        "NEWS_GRASP_DIRECT_MAINLINE_RECEIPT_V1",
+        "NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1",
+        "public incomplete",
     )
     for code, source, markers in (
-        ("NEWS_GRASP_E2E_OFFICIAL_WRAPPER_INVALID", official_wrapper, official_markers),
-        ("NEWS_GRASP_E2E_LAUNCHER_BINDING_INVALID", launcher, launcher_markers),
-        ("NEWS_GRASP_E2E_RUNNER_CLAIM_INVALID", runner, runner_markers),
-        ("NEWS_GRASP_E2E_BROKER_BUNDLE_INVALID", wrapper, wrapper_markers),
-        ("NEWS_GRASP_E2E_WAL_INVALID", bridge, bridge_markers),
+        ("NEWS_GRASP_E2E_AUTOMATION_INVALID", automation, automation_markers),
+        ("NEWS_GRASP_E2E_SKILL_INVALID", skill, skill_markers),
+        ("NEWS_GRASP_E2E_RUNTIME_INVALID", runtime, runtime_markers),
+        ("NEWS_GRASP_E2E_COMPLETION_INVALID", completion, completion_markers),
+        ("NEWS_GRASP_E2E_TITLE_CONTROL_INVALID", title_control, title_markers),
+        ("NEWS_GRASP_E2E_GUARD_INVALID", guard, guard_markers),
     ):
         if any(marker not in source for marker in markers):
             raise E2ECompositionContractError(code)
 
-    prepare_at = official_wrapper.index("'validate-issued'")
-    authorize_at = official_wrapper.index("$authorizeOutput =")
-    parent_activate_at = official_wrapper.index("$activateOutput =")
-    parent_validate_at = official_wrapper.index("$validatedOutput =")
-    consume_at = official_wrapper.index("'consume'", parent_validate_at)
-    installed_launch_at = official_wrapper.index(
-        "& $installedTaskPythonPath @installedLauncherArguments"
-    )
-    if not (
-        prepare_at
-        < authorize_at
-        < parent_activate_at
-        < parent_validate_at
-        < consume_at
-        < installed_launch_at
-    ):
-        raise E2ECompositionContractError("NEWS_GRASP_E2E_PARENT_ORDER_INVALID")
-
-    activate_at = runner.index("'validate-activated'")
-    claim_at = runner.index("'claim-runner'")
-    witness_at = runner.index("'write-runner-claim-witness'")
-    invocation_at = runner.index("$agentRc = Invoke-CodexWrapper")
-    if not activate_at < claim_at < witness_at < invocation_at:
-        raise E2ECompositionContractError("NEWS_GRASP_E2E_CLAIM_ORDER_INVALID")
-
-    witness_validate_at = wrapper.index("'validate-runner-claim-witness'")
-    broker_args_at = wrapper.index("$effectiveArgs = @(")
-    process_create_at = wrapper.index("CreateSuspendedAssignedProcess", broker_args_at)
-    if not witness_validate_at < broker_args_at < process_create_at:
-        raise E2ECompositionContractError("NEWS_GRASP_E2E_BROKER_ORDER_INVALID")
+    title_at = automation.index("title_status")
+    runtime_at = automation.index("tools.news_grasp_direct_runtime.DIRECT_STAGES")
+    quality_at = automation.index("validate_daily_quality")
+    completion_at = automation.index("NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1", quality_at)
+    if not title_at < runtime_at < quality_at < completion_at:
+        raise E2ECompositionContractError("NEWS_GRASP_E2E_DIRECT_ORDER_INVALID")
+    if "news-grasp-runner.ps1" in automation + runtime + completion + guard:
+        raise E2ECompositionContractError("NEWS_GRASP_E2E_LEGACY_RUNNER_ROUTE_PRESENT")
 
     return {
-        "schemaVersion": "E2E_COMPOSITION_AUTHORITY_V1",
+        "schemaVersion": "NEWS_GRASP_DIRECT_E2E_COMPOSITION_V1",
         "status": "green",
-        "route": "installed_launcher_to_runner_claim_to_broker_exec",
+        "route": "codex_automation_to_direct_runtime_to_public_completion",
         "executionRootBound": True,
         "executableBound": True,
-        "ownerClaimBound": True,
-        "timeoutBrokerOwned": True,
+        "ownerClaimBound": False,
+        "timeoutBrokerOwned": False,
         "directEntryRejected": True,
         "oneShotWalBound": True,
         "fixedManagedRoot": True,
         "compositionOrder": [
-            "prepare",
-            "authorize",
-            "activate",
-            "consume",
-            "claim",
-            "launch",
+            "automation_prompt",
+            "title_control",
+            "direct_runtime_start",
+            "stage_successors",
+            "public_verification",
         ],
         "routeHashes": {
             ROUTES[name]: _sha256(source) for name, source in sources.items()

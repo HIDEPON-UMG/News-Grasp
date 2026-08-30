@@ -172,24 +172,22 @@ def test_resume_bound_receipt_builds_exact_finalizer_args(
 
 
 def test_recovery_runner_preserves_canonical_paths_and_seals_lineage() -> None:
-    """Security Red/Green: isolated L5 seamがcanonical authorityを弱めない。"""
+    """Security Red/Green: direct本線がrunner復活なしでcanonical routeを保つ。"""
 
     root = Path(__file__).resolve().parents[1]
-    runner = (root / "scripts" / "ops" / "news-grasp-runner.ps1").read_text(
-        encoding="utf-8-sig"
+    direct_runtime = (root / "tools" / "news_grasp_direct_runtime.py").read_text(
+        encoding="utf-8"
     )
-    installer = (
-        root / "scripts" / "ops" / "install-news-grasp-ops.ps1"
-    ).read_text(encoding="utf-8-sig")
+    syncer = (root / "tools" / "sync_news_grasp_codex_automation.py").read_text(
+        encoding="utf-8"
+    )
 
-    assert "canonical Python or production runtime path mismatch" in runner
-    assert "AppData\\Local\\Programs\\Python\\Python312\\python.exe" in runner
-    assert ".news-grasp-runtime\\production-runtime" in runner
-    assert "[string]$binding.lineagePath" in runner
-    assert "[string]$binding.lineageSha256" in runner
-    assert ". $LineageScriptPath" in runner
-    assert "lineagePath = (Join-Path $BinDir 'news-grasp-lineage.ps1')" in installer
-    assert "lineageSha256 = ([string]$sourceSnapshots['news-grasp-lineage.ps1'].Sha256)" in installer
+    assert not (root / "scripts" / "ops" / "news-grasp-runner.ps1").exists()
+    assert "validate_installed_automation_semantics(" in direct_runtime
+    assert "_repair_installed_automation_config_once(" in direct_runtime
+    assert "run_exact_successor(" in direct_runtime
+    assert "--write-app-db" in syncer
+    assert "news-grasp-runner.ps1" not in direct_runtime
 
 
 def test_exact_finalizer_rejects_tampered_receipt(
@@ -771,7 +769,7 @@ def test_post_public_green_forbidden_operation_is_blocked(
 def test_actual_runner_blocks_non_finalizer_reentry_after_public_green(
     tmp_path: Path,
 ) -> None:
-    """RC-06 integration: public Green後の実runner通常入口をbinding前に拒否する。"""
+    """RC-06 integration: public Green後に旧runner通常入口を復活させない。"""
 
     artifact = tmp_path / "artifact"
     manifest = artifact / "build" / "publish-complete" / f"{ISSUE_DATE}.json"
@@ -780,108 +778,58 @@ def test_actual_runner_blocks_non_finalizer_reentry_after_public_green(
         json.dumps(_complete_public_green_manifest()),
         encoding="utf-8",
     )
-    runner = (
-        Path(__file__).resolve().parents[1]
-        / "scripts"
-        / "ops"
-        / "news-grasp-runner.ps1"
+    repo = Path(__file__).resolve().parents[1]
+    direct_runtime = (repo / "tools" / "news_grasp_direct_runtime.py").read_text(
+        encoding="utf-8"
     )
-    completed = subprocess.run(
-        [
-            "powershell.exe",
-            "-NoProfile",
-            "-NonInteractive",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-File",
-            str(runner),
-            "-RunIntent",
-            "ScheduledRecoveryFull",
-            "-DateStampOverride",
-            ISSUE_DATE,
-            "-RepoDirOverride",
-            str(artifact),
-        ],
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        check=False,
-        timeout=30,
-        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-    )
-
-    assert completed.returncode == 78
-    assert "post_public_closeout_blocker" in completed.stdout
-    assert "non_finalizer_runner_reentry" in completed.stdout
+    assert not (repo / "scripts" / "ops" / "news-grasp-runner.ps1").exists()
+    assert "run_exact_successor(" in direct_runtime
+    assert "post_publish_issue_list" in direct_runtime
 
 
 def test_runner_public_green_predicate_rejects_partial_manifest(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """RC-06 adversarial: 4項目だけのpartial JSONを完了authorityにしない。"""
+    """RC-06 adversarial: direct public verifierはpartial JSONを完了authorityにしない。"""
 
-    runner = (
-        Path(__file__).resolve().parents[1]
-        / "scripts"
-        / "ops"
-        / "news-grasp-runner.ps1"
-    )
-    source = runner.read_text(encoding="utf-8-sig")
-    start = source.index("function Test-NewsGraspCompletePublicGreenManifest {")
-    end = source.index("\nfunction ", start + len("function "))
-    predicate = source[start:end]
-    probe = tmp_path / "public-green-predicate.ps1"
-    probe.write_text(
-        "param([string] $ManifestPath, [string] $IssueDate)\n"
-        + predicate
-        + "\n"
-        + "$verified = Get-Content -LiteralPath $ManifestPath -Raw -Encoding UTF8 | ConvertFrom-Json\n"
-        + "if (Test-NewsGraspCompletePublicGreenManifest -Verified $verified -IssueDate $IssueDate) { exit 0 }\n"
-        + "exit 4\n",
-        encoding="utf-8",
-    )
-    complete = tmp_path / "complete.json"
-    partial = tmp_path / "partial.json"
-    complete.write_text(json.dumps(_complete_public_green_manifest()), encoding="utf-8")
-    partial.write_text(
-        json.dumps(
-            {
-                "schemaVersion": "NEWS_GRASP_PUBLISH_COMPLETE_V2",
-                "date": ISSUE_DATE,
-                "ok": True,
-                "public_status": "green",
-            }
-        ),
-        encoding="utf-8",
+    from tools import news_grasp_direct_completion as direct_completion
+    repo = Path(__file__).resolve().parents[1]
+
+    def green(*_args: object, **_kwargs: object) -> dict[str, object]:
+        return {"ok": True, "semantic_ok": True, "status": "green"}
+
+    monkeypatch.setattr(direct_completion, "_required_docs", green)
+    monkeypatch.setattr(direct_completion, "_deepdive_quality", green)
+    monkeypatch.setattr(direct_completion, "_daily_quality", green)
+    monkeypatch.setattr(direct_completion, "_deepdive_audio", green)
+    monkeypatch.setattr(direct_completion, "_podcast_rows", lambda *_args, **_kwargs: {
+        "youtube_daily": green(),
+        "youtube_deepdive": green(),
+        "playlist": green(),
+    })
+    monkeypatch.setattr(direct_completion, "_notification", green)
+    monkeypatch.setattr(direct_completion, "_public_web", green)
+    monkeypatch.setattr(direct_completion, "_up_to_date_observation", green)
+    monkeypatch.setattr(direct_completion, "_publish_status", green)
+    monkeypatch.setattr(
+        direct_completion,
+        "_required_distribution",
+        lambda *_args, **_kwargs: {
+            "ok": False,
+            "semantic_ok": False,
+            "status": "red",
+            "reason": "distribution_manifest_incomplete",
+        },
     )
 
-    def invoke(path: Path) -> subprocess.CompletedProcess[str]:
-        return subprocess.run(
-            [
-                "powershell.exe",
-                "-NoProfile",
-                "-NonInteractive",
-                "-ExecutionPolicy",
-                "Bypass",
-                "-File",
-                str(probe),
-                "-ManifestPath",
-                str(path),
-                "-IssueDate",
-                ISSUE_DATE,
-            ],
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            check=False,
-            timeout=30,
-            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-        )
-
-    assert invoke(complete).returncode == 0
-    assert invoke(partial).returncode == 4
+    result = direct_completion.verify_direct_public_completion(
+        issue_date=ISSUE_DATE,
+        repo_root=repo,
+        public_base_url="https://hidepon-umg.github.io/News-Grasp/",
+    )
+    assert result["ok"] is False
+    assert "public_surface_red:distribution" in result["failures"]
 
 
 def test_post_public_green_unknown_drift_is_evidenced(
@@ -922,36 +870,23 @@ def test_post_public_green_unknown_drift_is_evidenced(
 
 
 def test_post_public_green_consumers_delegate_to_single_admission_owner() -> None:
-    """RC-06 contract: runner/guard/surface/reportがhelper単体を迂回しない。"""
+    """RC-06 contract: direct consumersはpublic verifierを迂回しない。"""
 
     repo = Path(__file__).resolve().parents[1]
     sources = {
-        "finalizer_exact_args_replay": (
-            repo / "scripts" / "ops" / "news-grasp-runner.ps1"
-        ).read_text(encoding="utf-8-sig"),
-        "receipt_reseal": (
-            repo / "tools" / "news_grasp_recovery_closeout.py"
-        ).read_text(encoding="utf-8"),
-        "completion_guard": (
-            repo / "tools" / "news_grasp_completion_guard.py"
-        ).read_text(encoding="utf-8"),
-        "verify_public_surface": (
-            repo / "tools" / "verify_public_surface.py"
-        ).read_text(encoding="utf-8"),
-        "final_report": (
-            repo / "tools" / "audit_recovery_control.py"
+        "direct_runtime": (repo / "tools" / "news_grasp_direct_runtime.py").read_text(
+            encoding="utf-8"
+        ),
+        "direct_completion": (
+            repo / "tools" / "news_grasp_direct_completion.py"
         ).read_text(encoding="utf-8"),
     }
     automation = (
         repo / "automation" / "news-grasp-6-40" / "completion_guard.py"
     ).read_text(encoding="utf-8")
 
-    assert tuple(sources) == POST_PUBLIC_GREEN_ALLOWED_OPERATIONS
+    assert not (repo / "scripts" / "ops" / "news-grasp-runner.ps1").exists()
     for operation, source in sources.items():
-        assert operation in source
-        assert (
-            "record_closeout_operation" in source
-            or "authorize-operation" in source
-        )
-    assert "require_post_public_green_operation" in automation
-    assert 'require_post_public_green_operation("completion_guard")' in automation
+        assert "NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1" in source, operation
+    assert "NEWS_GRASP_DIRECT_MAINLINE_RECEIPT_V1" in automation
+    assert "NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1" in automation

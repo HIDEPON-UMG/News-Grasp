@@ -285,11 +285,10 @@ def test_deadman_delegates_to_single_canonical_audit_executor() -> None:
             encoding="utf-8"
         )
     )
-    route = next(
-        row for row in registry["routes"] if row["routeId"] == "audit_0640_control"
-    )
-    assert route["consumerSymbol"] == "ensure_audit_0640"
-    assert route["productionCallSymbol"] == "ensure-0640"
+    route_ids = {row["routeId"] for row in registry["routes"]}
+    assert "audit_0640_control" not in route_ids
+    assert "direct_runtime_stage_history" in route_ids
+    assert "direct_completion" in route_ids
 
 
 def test_failure_classification_is_derived_from_observed_state_only() -> None:
@@ -836,13 +835,12 @@ def test_production_registry_excludes_root_fix_promotion_routes() -> None:
         )
     )
     expected_route_ids = [
-        "scheduled_runner",
-        "producer_lineage",
-        "production_self_heal",
-        "audit_0640_control",
-        "audit_observer",
-        "audit_decision",
-        "completion_verifier",
+        "title_control",
+        "scheduled_inventory",
+        "direct_runtime_stage_history",
+        "daily_quality",
+        "deepdive_quality",
+        "direct_completion",
     ]
     assert registry["declaredRouteIds"] == expected_route_ids
     assert registry["consumerRouteIds"] == expected_route_ids

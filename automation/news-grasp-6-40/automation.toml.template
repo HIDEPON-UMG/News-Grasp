@@ -35,7 +35,7 @@ News-Grasp の臨時本線日次バッチを実行してください。
 - 余計な文字列を混ぜないでください。例: TT26/08/30 は不合格です。
 - タイトル更新は通常1回です。初回が timeout / unavailable / unknown の場合だけ、同じ exact title action を1回だけ再試行し、合計2回を上限とします。成功時は返却された実titleのexact一致を確認してください。
 - 2回とも成功しない場合は `--attempt-count 2` と `title_completion=deferred` を記録し、post_publish_issue_list に1行で残して公開処理へ進んでください。タイトル未達を最終報告で達成済みと混同しないでください。
-- タイトル更新は公開可否を止める gate ではありません。ただし最終報告では、title_status を updated / already_ok / unavailable / failed / skipped のいずれかで必ず報告してください。
+- タイトル更新は公開可否を止める gate ではありません。ただし最終報告では、title_status を updated / already_ok / unavailable / failed / skipped のいずれかで必ず報告してください。成功claimは `title_status=updated` または `title_status=already_ok` の形で、返却された実titleの exact 一致と一緒に記録してください。
 
 品質と速度:
 - 開始時刻は毎日 06:00 JST。
@@ -43,14 +43,14 @@ News-Grasp の臨時本線日次バッチを実行してください。
 - 目標は 45 分以内、SLO は 90 分以内です。
 - 45 分時点で、未完了 stage、残 gate、残 external publish を列挙し、closeout reserve を確保してください。
 - 75 分時点で新規 high-cost stage を開始しないでください。以後は公開に直結する最短作業だけに絞ってください。
-- 90 分を超えても public incomplete のまま終了しないでください。許されるのは当日公開面へ直結する最短作業、または OAuth 再同意、2FA、quota 変更、rollback、削除、未承認 public incident publication、外部サービス障害の具体的証明だけです。
+- 90 分を超えた場合は SLO 超過を記録し、新規 high-cost stage / 追加分析 / report polish を増やさず、実行可能な public-critical successor がある限り継続してください。OAuth 再同意、2FA、quota 変更、rollback、削除、未承認 public incident publication、外部サービス障害の具体的証明だけが残る場合は、Green ではなく未完了/blocked として exact successor と残surfaceを報告してください。
 
 実行入口:
 - 既存 runner / clean runtime launcher / audit recovery control は使いません。
-- 最初に `python -m tools.news_grasp_direct_runtime start --state-root build/direct-mainline` で direct runtime run を開始してください。対象日は runtime が Asia/Tokyo の当日から確定します。明示指定が必要な時だけ `--issue-date 2026-08-30` のように実日付を渡し、角括弧付きの placeholder を実行しないでください。
-- `tools.news_grasp_direct_runtime.DIRECT_STAGES` の 21工程だけを順番 authority とし、stage_history と `NEWS_GRASP_DIRECT_RUNTIME_V1` state を生成してください。skill 本文、TODO、自己申告 JSON、URL 200、publish-status 単独を stage / completion authority にしないでください。
+- title action と title status 記録を終えたら、`python -m tools.news_grasp_direct_runtime start --state-root build/direct-mainline` で direct runtime run を開始してください。対象日は runtime が Asia/Tokyo の当日から確定します。明示指定が必要な時だけ `--issue-date 2026-08-30` のように実日付を渡し、角括弧付きの placeholder を実行しないでください。
+- `tools.news_grasp_direct_runtime.DIRECT_STAGES` の 21工程だけを順番 authority とし、stage_history、`NEWS_GRASP_DIRECT_RUNTIME_V1` state、`NEWS_GRASP_DIRECT_MAINLINE_RECEIPT_V1` receipt を生成してください。skill 本文、TODO、自己申告 JSON、URL 200、publish-status 単独を stage / completion authority にしないでください。
 - 各工程の実作業を repo-local tool / Codex direct work で終えたら、`python -m tools.news_grasp_direct_runtime advance --state-root build/direct-mainline --run-id <startが返したrun_id> --writer-lease <startが返したwriter_lease> --evidence-file <実工程の検証JSON>` で現在の exact successor だけを記録してください。`public_completion` だけは `--repo-root . --public-base-url https://hidepon-umg.github.io/News-Grasp` を渡して consumer-owned public verifier に実成果物と公開面を読ませてください。
-- `automation/news-grasp-6-40/completion_guard.py` は read-only stdout projection として使い、`--direct-state-root build/direct-mainline --direct-run-id` には direct runtime が返した実 run_id を渡して canonical runtime state と public verifier を読ませてください。completion_mode は `direct_public_v1` だけを使います。caller が作った `--direct-receipt` は Green authority ではありません。
+- direct completion guard は `automation/news-grasp-6-40/completion_guard.py` の read-only stdout projection として使い、`--direct-state-root build/direct-mainline --direct-run-id` には direct runtime が返した実 run_id を渡して canonical runtime state と `NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1` public verifier を読ませてください。completion_mode は `direct_public_v1` だけを使います。caller が作った `--direct-receipt` は Green authority ではありません。
 - repo-local deterministic tools は使ってよいです。通常公開の ad hoc 手編集は避け、生成・検証・公開は repo-local tools と Codex direct work で行ってください。
 - Windows Scheduled Task の News-Grasp Production / Bootstrap / Deadman / Runner が再有効化されていないことを read-only で確認し、二重起動の危険だけを避けてください。
 - public mutation はこの臨時本線バッチの範囲で許可済みです: git commit/push, GitHub Pages 更新, Release audio upload, YouTube Podcast upload, playlist 登録, notification 送信。
@@ -76,6 +76,7 @@ News-Grasp の臨時本線日次バッチを実行してください。
 - 当日対象カテゴリ digest、Summary、DeepDive md、DeepDive HTML、日付 docs、Daily audio、DeepDive audio、YouTube Podcast、playlist、notification、distribution manifest、docs/publish-status.json が同一日付で揃うこと。
 - `python -m tools.validate_daily_quality --date YYYY-MM-DD --require-deepdive --json` を対象日の実日付で実行して Green。
 - `python -m tools.deepdive_quality --repo-root . audit-issue --date YYYY-MM-DD --require-rendered-public` を対象日の実日付で実行して Green。
+- `NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1` の direct public verifier が実成果物と公開面を読んで Green。
 - runner/readiness を含まない public-only 検証で、Web / audio / Podcast / playlist / notification / distribution / publish-status / Pages が Green。
 - docs/publish-status.json が対象日 published_ok。
 - origin/main への push と GitHub Pages 反映が確認済み。
@@ -95,7 +96,7 @@ News-Grasp の臨時本線日次バッチを実行してください。
 - ユーザー向け冒頭は次の形を守ってください: **結論**、- **状態**、- **根拠**、- **残るリスク**、- **次の作業**。
 - issue_date, title_status, public_status, remote publish observation, YouTube videoId, playlist, notification sent_count, 主要 gate exit code, 証跡 path, resource usage, planned_elapsed, actual_elapsed, slo_delta, overrun_branch_triggered を含めてください。Git commit ID は観測値としてだけ扱い、制御 authority にはしないでください。
 - post_publish_issue_list があれば、公開後に見つけたが公開面作成のために着手しなかった問題として末尾に列挙してください。
-- public incomplete のまま最終応答しないでください。OAuth 再同意、2FA、quota 変更、rollback、削除、未承認 public incident publication、外部サービス障害だけを未公開停止条件にできます。
+- public incomplete を Green として最終応答しないでください。OAuth 再同意、2FA、quota 変更、rollback、削除、未承認 public incident publication、外部サービス障害だけを未公開停止条件にできます。その場合も、完了ではなく未完了/blocked として exact successor と残surfaceを報告してください。
 """
 created_at = 1788014431516
 updated_at = 1788077226171

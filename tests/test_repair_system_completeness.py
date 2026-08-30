@@ -48,9 +48,16 @@ def test_current_repair_system_is_closed_world() -> None:
         "tests/test_repair_matrix_validator_sync.py",
         "tests/test_repair_registry.py",
         "tests/test_auto_repair_orchestrator.py",
-        "tests/test_runner_convergence_contract.py",
+        "tests/test_news_grasp_direct_runtime.py",
         "tests/test_historical_failure_scenarios.py",
-    } <= report.source_hashes.keys()
+        "tools/news_grasp_direct_runtime.py",
+        "automation/news-grasp-6-40/completion_guard.py",
+        "automation/skills/news-grasp-direct-mainline/SKILL.md",
+    } <= report.source_observations.keys()
+    assert all(
+        item["status"] == "present" and item["bytes"] > 0
+        for item in report.source_observations.values()
+    )
 
 
 def test_generation_issue_codes_are_extracted_from_validator_source() -> None:

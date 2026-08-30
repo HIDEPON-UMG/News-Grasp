@@ -104,7 +104,7 @@ def _audit_model_policy() -> list[str]:
         policy = DEFAULT_MODEL_POLICY.get(role, {})
         if policy.get("default") != "gpt-5.6-luna":
             errors.append(f"model policy retired/default drift: {role}.default={policy.get('default')!r}")
-        if policy.get("reasoning") != "high":
+        if policy.get("reasoning") != "max":
             errors.append(f"model policy effort drift: {role}.reasoning={policy.get('reasoning')!r}")
     return errors
 

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sqlite3
 import sys
@@ -65,6 +66,7 @@ PUBLIC_SURFACES = (
 )
 
 RUNTIME_SCHEMA = "NEWS_GRASP_DIRECT_RUNTIME_V1"
+MAINLINE_RECEIPT_SCHEMA = "NEWS_GRASP_DIRECT_MAINLINE_RECEIPT_V1"
 PUBLIC_SCHEMA = "NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1"
 AUTOMATION_ID = "news-grasp-6-40"
 JST = timezone(timedelta(hours=9), name="Asia/Tokyo")
@@ -289,6 +291,7 @@ def _projection_from_row(store: DirectRunStore, conn: sqlite3.Connection, row: s
     current_stage = _stage_for_index(int(row["current_stage_index"]))
     return {
         "schemaVersion": RUNTIME_SCHEMA,
+        "mainline_receipt_schema": MAINLINE_RECEIPT_SCHEMA,
         "run_id": row["run_id"],
         "automation_id": row["automation_id"],
         "cwd": row["cwd"],
@@ -301,6 +304,7 @@ def _projection_from_row(store: DirectRunStore, conn: sqlite3.Connection, row: s
         "next_stage": current_stage,
         "exact_successor": row["exact_successor"] or current_stage,
         "stage_history": history,
+        "stage_count": len(DIRECT_STAGES),
         "title_status": row["title_status"],
         "actual_title": row["actual_title"],
         "expected_title": row["expected_title"],
@@ -924,8 +928,10 @@ def validate_installed_automation_semantics(path: str | Path | None = None) -> d
         "$news-grasp-direct-mainline",
         "YY/MM/DD",
         "title_status",
+        "title_status=already_ok",
         "already_ok",
         "post_publish_issue_list",
+        "direct completion guard",
         "completion_guard.py",
         "direct_public",
         "validate_daily_quality",
@@ -934,6 +940,36 @@ def validate_installed_automation_semantics(path: str | Path | None = None) -> d
     for part in required_prompt_parts:
         if part not in prompt:
             failures.append(f"prompt_missing:{part}")
+    if "public incomplete のまま最終応答しないでください" in prompt:
+        failures.append("prompt_external_blocker_boundary_ambiguous")
+    if "最初に `python -m tools.news_grasp_direct_runtime start" in prompt:
+        failures.append("prompt_title_runtime_order_ambiguous")
+    app_db_result = None
+    snapshot_results: list[dict[str, Any]] = []
+    if path is None:
+        try:
+            from tools import sync_news_grasp_codex_automation as automation_sync
+
+            app_db_result = automation_sync.validate_app_db_semantics(
+                Path.home() / ".codex" / "sqlite" / "codex-dev.db",
+                repo_root=Path.cwd(),
+            )
+            for snapshot in automation_sync._snapshot_targets(Path.cwd(), None):  # noqa: SLF001
+                snapshot_results.append(
+                    automation_sync.validate_semantics(snapshot, repo_root=Path.cwd())
+                )
+        except Exception as exc:
+            app_db_result = {
+                "ok": False,
+                "failures": [f"app_db_validation_unavailable:{exc}"],
+            }
+        if app_db_result.get("ok") is not True:
+            for failure in app_db_result.get("failures") or ["app_db_invalid"]:
+                failures.append(f"app_db:{failure}")
+        for snapshot_result in snapshot_results:
+            if snapshot_result.get("ok") is not True:
+                for failure in snapshot_result.get("failures") or ["snapshot_invalid"]:
+                    failures.append(f"snapshot:{failure}")
     return {
         "schemaVersion": "NEWS_GRASP_DIRECT_AUTOMATION_CONFIG_V1",
         "ok": not failures,
@@ -944,7 +980,47 @@ def validate_installed_automation_semantics(path: str | Path | None = None) -> d
         "rrule": value.get("rrule"),
         "created_at": created_at,
         "updated_at": updated_at,
+        "app_db": app_db_result,
+        "snapshots": snapshot_results,
     }
+
+
+def _repair_installed_automation_config_once(*, cwd: Path) -> dict[str, Any]:
+    """live installed automation を repo template へ一度だけ同期する。
+
+    `--installed-config` で渡されたテスト用・手動検査用pathは対象にしない。
+    06:00 direct 本線の開始前に、App/UI 側で medium や旧promptへ戻った
+    live store だけを operation-local に修復するための薄い successor である。
+    """
+
+    try:
+        from tools import sync_news_grasp_codex_automation as automation_sync
+
+        canonical_repo = automation_sync._assert_trusted_repo_root(  # noqa: SLF001
+            automation_sync._default_repo_root()  # noqa: SLF001
+        )
+        requested_cwd = cwd.resolve(strict=True)
+        if requested_cwd != canonical_repo:
+            return {
+                "schemaVersion": "NEWS_GRASP_CODEX_AUTOMATION_SYNC_V1",
+                "ok": False,
+                "failures": ["automation_config_repair_cwd_not_canonical_news_grasp_repo"],
+                "cwd": str(requested_cwd),
+                "expected_cwd": str(canonical_repo),
+            }
+        return automation_sync.sync(
+            repo_root=canonical_repo,
+            write_snapshot=True,
+            write_skill=True,
+            write_app_db=True,
+            dry_run=False,
+        )
+    except Exception as exc:  # pragma: no cover - 例外型は呼出環境依存
+        return {
+            "schemaVersion": "NEWS_GRASP_CODEX_AUTOMATION_SYNC_V1",
+            "ok": False,
+            "failures": [f"automation_config_repair_unavailable:{exc}"],
+        }
 
 
 def _load_cli_mapping(*, evidence_json: str | None, evidence_file: Path | None) -> dict[str, Any]:
@@ -1024,6 +1100,12 @@ def _main() -> int:
     start.add_argument("--state-root", type=Path, required=True)
     start.add_argument("--cwd", type=Path, default=Path.cwd())
     start.add_argument(
+        "--installed-config",
+        type=Path,
+        default=None,
+        help="Codex App installed automation TOML。未指定なら実installed定義とApp DBを検査する。",
+    )
+    start.add_argument(
         "--issue-date",
         default=None,
         help="対象日 YYYY-MM-DD。未指定なら Asia/Tokyo の当日を使う。",
@@ -1063,12 +1145,66 @@ def _main() -> int:
     else:
         store = DirectRunStore(args.state_root)
         if args.cmd == "start":
+            if (
+                args.installed_config is not None
+                and os.environ.get("NEWS_GRASP_DIRECT_RUNTIME_ALLOW_TEST_INSTALLED_CONFIG") != "1"
+            ):
+                issue_date = args.issue_date or _now_jst().date().isoformat()
+                result = {
+                    "schemaVersion": RUNTIME_SCHEMA,
+                    "ok": False,
+                    "status": "installed_config_override_forbidden",
+                    "automation_id": args.automation_id,
+                    "cwd": str(Path(args.cwd).resolve()),
+                    "issue_date": issue_date,
+                    "failures": ["installed_config_override_test_only"],
+                    "exact_successor": "use live installed automation without --installed-config",
+                    "post_publish_issue_list": [
+                        "--installed-config is test-only and cannot replace live automation authority"
+                    ],
+                }
+                sys.stdout.write(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
+                return 2
+            config_result = validate_installed_automation_semantics(args.installed_config)
+            config_repair = None
+            if config_result.get("ok") is not True and args.installed_config is None:
+                config_repair = _repair_installed_automation_config_once(
+                    cwd=Path(args.cwd),
+                )
+                config_result = validate_installed_automation_semantics(None)
+            if config_result.get("ok") is not True:
+                issue_date = args.issue_date or _now_jst().date().isoformat()
+                result = {
+                    "schemaVersion": RUNTIME_SCHEMA,
+                    "ok": False,
+                    "status": "automation_config_red",
+                    "automation_id": args.automation_id,
+                    "cwd": str(Path(args.cwd).resolve()),
+                    "issue_date": issue_date,
+                    "failures": list(config_result.get("failures") or ["automation_config_red"]),
+                    "config": config_result,
+                    "config_repair": config_repair,
+                    "exact_successor": (
+                        "python -m tools.sync_news_grasp_codex_automation "
+                        "--write-snapshot --write-skill --write-app-db"
+                    ),
+                    "post_publish_issue_list": [
+                        "automation_config_red: live automation must be gpt-5.6-luna/max with direct-mainline prompt before production start"
+                    ],
+                }
+                sys.stdout.write(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
+                return 2
             result = start_run(
                 store,
                 automation_id=args.automation_id,
                 cwd=args.cwd,
                 issue_date=args.issue_date or _now_jst().date().isoformat(),
             )
+            if config_repair is not None:
+                result["config_repair"] = config_repair
+                result["post_publish_issue_list"] = list(
+                    result.get("post_publish_issue_list") or []
+                ) + ["automation_config_repaired_before_stage_start"]
         elif args.cmd == "inspect":
             result = inspect_run(store, run_id=args.run_id)
         elif args.cmd == "advance":

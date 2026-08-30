@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RUNNER = ROOT / "scripts" / "ops" / "news-grasp-runner.ps1"
+DIRECT_RUNTIME = ROOT / "tools" / "news_grasp_direct_runtime.py"
 DAILY_QUALITY = ROOT / "tools" / "validate_daily_quality.py"
 REPAIR_MATRIX = ROOT / "tools" / "repair_coverage_matrix.py"
 REPAIR_REGISTRY = ROOT / "tools" / "repair_registry.py"
@@ -15,41 +15,35 @@ AUTOMATION = ROOT / "automation" / "news-grasp-6-40" / "automation.toml.template
 
 
 def test_runner_uses_shared_quality_engine_before_completion() -> None:
-    source = RUNNER.read_text(encoding="utf-8-sig")
-    generation = source.index("materialize-issue")
-    shared_gate = source.index("tools.deepdive_quality", generation)
-    completion = source.index("tools.validate_daily_quality", shared_gate)
-    assert generation < shared_gate < completion
-    assert "audit-issue" in source[shared_gate:completion]
+    source = DIRECT_RUNTIME.read_text(encoding="utf-8-sig")
+    stages = source.split("DIRECT_STAGES = (", 1)[1].split(")", 1)[0]
+    deepdive_article = stages.index('"deepdive_article"')
+    deepdive_quality = stages.index('"deepdive_quality"')
+    daily_quality = stages.index('"daily_quality"')
+    assert deepdive_article < deepdive_quality < daily_quality
+    assert "verify_public_completion(" in source
+    assert "tools.news_grasp_direct_completion" in source
 
 
 def test_daily_full_recovery_and_resume_share_one_issue_materializer() -> None:
-    """RC-02: 3 runner routeに個別provenance/dialogue writerを持たせない。"""
+    """RC-02: direct runtimeは個別runner writerを復活させない。"""
 
-    source = RUNNER.read_text(encoding="utf-8-sig")
-    materializer = source.index("'materialize-issue'")
-    assert source.count("'materialize-issue'") == 1
-    assert source.index("ScheduledRecoveryFull") < materializer
-    assert source.index("ResumeFromStage") < materializer
-    assert source.index("ScheduledProduction") < materializer
+    source = DIRECT_RUNTIME.read_text(encoding="utf-8-sig")
+    assert '"deepdive_article"' in source
+    assert '"deepdive_quality"' in source
     assert "'capture' '--article'" not in source
     assert "tools.tts.build_deepdive_dialogue_script" not in source
+    assert not (ROOT / "scripts" / "ops" / "news-grasp-runner.ps1").exists()
 
 
 def test_runner_preserves_shared_quality_issue_code_for_repair() -> None:
-    source = RUNNER.read_text(encoding="utf-8-sig")
-    block = source.split("$deepDiveTtsPublishArgs", 1)[1].split(
-        "# ===== 2.9 digest/data commit", 1
-    )[0]
-    assert "GateId = 'deepdive-shared-quality'" in block
-    assert "FailureKind = 'content'" in block
-    assert "UseAutonomousGate = $true" in block
-    assert "Invoke-AutonomousGate -GateId 'deepdive-shared-quality'" in block
-    assert "CaptureIssueCodes" not in block
-    assert "$deepDiveQualityIssueCode" not in block
-    assert "-join ','" not in block
-    assert "-GateId 'deepdive-shared-quality'" in block
-    assert "-Reason $failureReason" in block
+    source = DIRECT_RUNTIME.read_text(encoding="utf-8-sig")
+    assert '"deepdive_quality"' in source
+    assert "surface_failures" in source
+    assert "exact_successor" in source
+    assert "CaptureIssueCodes" not in source
+    assert "$deepDiveQualityIssueCode" not in source
+    assert "-join ','" not in source
 
 
 def test_daily_quality_uses_shared_quality_engine() -> None:
@@ -61,14 +55,12 @@ def test_daily_quality_uses_shared_quality_engine() -> None:
 
 
 def test_post_generation_consumers_require_rendered_public_surface() -> None:
-    runner = RUNNER.read_text(encoding="utf-8-sig")
-    pre_generation = runner.split(
-        "@{ Name = 'deepdive shared quality gate'", 1
-    )[1].split("# ===== 2.9 digest/data commit", 1)[0]
+    direct_runtime = DIRECT_RUNTIME.read_text(encoding="utf-8-sig")
     daily_quality = DAILY_QUALITY.read_text(encoding="utf-8-sig")
     publish_complete = PUBLISH_COMPLETE.read_text(encoding="utf-8-sig")
 
-    assert "require_rendered_public=True" not in pre_generation
+    pre_public_completion = direct_runtime.split("def verify_public_completion(", 1)[0]
+    assert "require_rendered_public=True" not in pre_public_completion
     assert "require_rendered_public=True" in daily_quality
     verify_function = publish_complete.split(
         "def verify_publish_complete(", 1
@@ -105,7 +97,7 @@ def test_codex_mainline_automation_uses_same_shared_quality_cli() -> None:
     source = AUTOMATION.read_text(encoding="utf-8-sig")
     assert "tools.deepdive_quality" in source
     assert "audit-issue" in source
-    assert "audit-issue --date <issue-date> --require-rendered-public" in source
+    assert "audit-issue --date YYYY-MM-DD --require-rendered-public" in source
     assert "2026-07-02" not in source
 
 

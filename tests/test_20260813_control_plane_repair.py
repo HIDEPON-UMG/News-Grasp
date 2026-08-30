@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import tomllib
 
 import pytest
 
@@ -15,6 +16,26 @@ from tools import daily_self_heal as dsh
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RUNNER = REPO_ROOT / "scripts" / "ops" / "news-grasp-runner.ps1"
+
+
+def _source(relative: str) -> str:
+    return (REPO_ROOT / relative).read_text(encoding="utf-8-sig")
+
+
+def _automation_prompt() -> str:
+    value = tomllib.loads(
+        (REPO_ROOT / "automation/news-grasp-6-40/automation.toml.template").read_text(
+            encoding="utf-8-sig"
+        )
+    )
+    return str(value["prompt"])
+
+
+def _direct_branch() -> str:
+    guard = _source("automation/news-grasp-6-40/completion_guard.py")
+    return guard.split("if args.direct_run_id or args.direct_state_root is not None:", 1)[
+        1
+    ].split("if args.direct_receipt is not None:", 1)[0]
 
 
 def _launcher_source() -> str:
@@ -174,16 +195,15 @@ def test_ng813_canary_keeps_artifacts_in_artifact_root_and_sources_runtime_from_
 
 
 def test_ng813_smoke_inventory_probe_cannot_write_ops_bytecode() -> None:
-    """adversarial: smoke開始前のinventory importもops rootを自己汚染しない。"""
-    runner = RUNNER.read_text(encoding="utf-8-sig")
+    """adversarial: 旧runnerを復活させず、direct入口とdeadmanだけを検査する。"""
+    direct_runtime = _source("tools/news_grasp_direct_runtime.py")
 
-    assert "& $PyExe '-B' '-m' 'tools.publish_inventory'" in runner
-    assert "& $PyExe '-I' '-B' $probeScript" in runner
-    assert "& $PyExe '-I' '-B' $canonicalMaterializer" in runner
+    assert not RUNNER.exists()
+    assert "validate_installed_automation_semantics" in direct_runtime
+    assert "start_run(" in direct_runtime
+    assert "DIRECT_STAGES" in direct_runtime
 
-    deadman = (REPO_ROOT / "scripts" / "ops" / "news-grasp-deadman.ps1").read_text(
-        encoding="utf-8-sig"
-    )
+    deadman = _source("scripts/ops/news-grasp-deadman.ps1")
     assert "& $PyExe '-I' '-S' '-B' $DailySelfHealPath" in deadman
     assert "& $PyExe '-I' '-S' '-B' $AuditControlPath" in deadman
     assert "'-m' 'tools.daily_self_heal'" not in deadman
@@ -247,61 +267,47 @@ def test_ng813_publish_complete_manifest_is_typed_even_when_red(tmp_path: Path) 
 
 
 def test_ng813_runner_finalizer_consumes_only_typed_top_level_publish_commit() -> None:
-    """primary/adversarial: local/source commit を deploy commit の代用品にしない。"""
-    runner = RUNNER.read_text(encoding="utf-8-sig")
-    predicate = runner.split(
-        "function Test-NewsGraspCompletePublicGreenManifest", 1
-    )[1].split("\nfunction ", 1)[0]
-    finalizer = runner.rsplit("if ($FinalizeVerifiedPublishManifest)", 1)[1].split(
-        "# 前回 crash の WAL", 1
-    )[0]
+    """primary/adversarial: direct completion は caller receipt でGreenにしない。"""
+    guard = _source("automation/news-grasp-6-40/completion_guard.py")
+    direct_branch = _direct_branch()
 
-    assert "Test-NewsGraspCompletePublicGreenManifest -Verified $verified" in finalizer
-    assert "NEWS_GRASP_PUBLISH_COMPLETE_V2" in predicate
-    assert "$publishCommit = [string]$Verified.publish_commit" in predicate
-    assert "$publishCommit -ceq [string]$Verified.publish.deploy_head" in predicate
-    assert "[string]$Verified.source_commit -match '^[0-9a-f]{40}$'" in predicate
-    assert "[string]$Verified.artifact_commit -match '^[0-9a-f]{40}$'" in predicate
-    assert "$Verified.publish.ok -eq $true" in predicate
-    assert "@($Verified.distribution_artifacts.missing).Count -eq 0" in predicate
-    assert "$Verified.publish.local_head" not in predicate
-    assert "$publishCommit -eq [string]$Verified.publish.remote_head" not in predicate
+    assert not RUNNER.exists()
+    assert "verify_public_completion" in direct_branch
+    assert "DirectRunStore(args.direct_state_root, create=False)" in direct_branch
+    assert "direct_completion_requires_canonical_runtime_state" in guard
+    assert "direct_public_v1" in guard
+    assert "--runner-state" not in direct_branch
+    assert "publish_commit" not in direct_branch
 
 
 def test_ng813_runner_passes_real_state_file_and_ops_root() -> None:
-    """primary: producer と verifier は同じ state と明示 ops root に束縛される。"""
-    runner = RUNNER.read_text(encoding="utf-8-sig")
-    verify_block = runner.split("publish-complete manifest verification start", 1)[1].split(
-        "publish-complete manifest verification OK", 1
-    )[0]
-    lineage_block = runner.split("New-NewsGraspProducerLineage", 1)[1].split(
-        "foreach ($field", 1
-    )[0]
+    """primary: direct guard は canonical runtime state と明示 ops root を読む。"""
+    prompt = _automation_prompt()
+    direct_branch = _direct_branch()
 
-    assert "'--producer-state' $StateFile" in verify_block
-    assert "$StateFilePath" not in verify_block
-    assert "RecoveryRuntimeBinding.DailySelfHealPath" in verify_block
-    assert "& $PyExe '-I' '-S' '-B' $dailySelfHealTool" in verify_block
-    assert "'-P' '-m' 'tools.daily_self_heal'" not in verify_block
-    assert "-OpsRoot $OpsRepoRoot" in lineage_block
+    assert "--direct-state-root build/direct-mainline --direct-run-id" in prompt
+    assert "canonical runtime state" in prompt
+    assert "public verifier" in prompt
+    assert "ops_root = args.ops_root.resolve(strict=True)" in direct_branch
+    assert "sys.path.insert(0, str(ops_root))" in direct_branch
+    assert "--runner-state" not in prompt
 
 
 def test_ng813_empty_broker_path_is_typed_without_literal_path_secondary_failure() -> None:
-    """adversarial: broker path 空値を Test-Path に渡す前に短絡する。"""
-    runner = RUNNER.read_text(encoding="utf-8-sig")
-    block = runner.split("function Invoke-ScheduledFailureTerminalizer", 1)[1].split(
-        "$terminalInput = Get-Content", 1
-    )[0]
+    """adversarial: direct本線は high-cost broker 不在を入口依存にしない。"""
+    prompt = _automation_prompt()
+    direct_runtime = _source("tools/news_grasp_direct_runtime.py")
+    direct_branch = _direct_branch()
 
-    assert "(-not $broker) -or" in block
-    assert block.index("(-not $broker) -or") < block.index(
-        "Test-Path -LiteralPath $broker"
-    )
+    assert "コスト起因またはハーネス起因" in prompt
+    assert "記事品質・公開完成と無関係な停止判断をしない" in prompt
+    assert "HighCostBindingResolverPath" not in direct_runtime
+    assert "Assert-HighCostOperationAdmission" not in direct_branch
 
 
 def test_ng813_public_green_contract_allows_only_finalization_critical_path() -> None:
     """operational recovery: Green 後は広域 root-cause repair へ戻らない。"""
-    assert audit_control.PUBLIC_GREEN_FOLLOWUP_PRIORITY == "runner_finalization_only"
+    assert audit_control.PUBLIC_GREEN_FOLLOWUP_PRIORITY == "direct_public_closeout_only"
     assert audit_control.PUBLIC_GREEN_ALLOWED_OPERATIONS == (
         "finalizer_exact_args_replay",
         "receipt_reseal",
@@ -360,85 +366,48 @@ def test_ng813_recovery_preflight_runs_before_runner_spawn() -> None:
 
 
 def test_ng813_typed_finalizer_skips_global_high_cost_reentry_and_runs_guard() -> None:
-    """operational recovery: Public Green後はGlobal probeへ戻らずfinalizer/guardだけを実行。"""
-    runner = RUNNER.read_text(encoding="utf-8-sig")
-    external_block = runner.split(
-        "$externalReadiness = Get-NewsGraspExternalControlPlaneReadiness", 1
-    )[0][-120:]
-    finalizer = runner.rsplit("if ($FinalizeVerifiedPublishManifest)", 1)[1].split(
-        "# 前回 crash の WAL", 1
-    )[0]
+    """operational recovery: direct completion は global readiness/high-cost へ戻らない。"""
+    direct_branch = _direct_branch()
 
-    assert "if (-not $FinalizeVerifiedPublishManifest)" in external_block
-    assert "Invoke-NewsGraspCompletionGuard" in finalizer
-    assert "Get-NewsGraspExternalControlPlaneReadiness" not in finalizer
-    assert "Assert-HighCostOperationAdmission" not in finalizer
+    assert "verify_public_completion" in direct_branch
+    assert "Get-NewsGraspExternalControlPlaneReadiness" not in direct_branch
+    assert "Assert-HighCostOperationAdmission" not in direct_branch
+    assert "HighCostBindingResolverPath" not in direct_branch
 
 
 def test_ng813_typed_finalizer_does_not_require_high_cost_broker_availability() -> None:
-    """RC-06: modelを使わないcloseoutをglobal broker Redへ戻さない。"""
+    """RC-06: direct closeout は high-cost broker availability を要求しない。"""
 
-    runner = RUNNER.read_text(encoding="utf-8-sig")
-    binding = runner.split(
-        "$HighCostBindingResolverPath = $highCostBindingTool", 1
-    )[1].split("$env:NEWS_GRASP_HIGH_COST_BINDING_PATH", 1)[0]
-    finalizer_branch, regular_branch = binding.split("} else {", 1)
+    direct_runtime = _source("tools/news_grasp_direct_runtime.py")
+    direct_branch = _direct_branch()
 
-    assert "if ($FinalizeVerifiedPublishManifest)" in finalizer_branch
-    assert "highCostBindingTool 'resolve'" not in finalizer_branch
-    assert "$HighCostWorkspaceRoot = ''" in finalizer_branch
-    assert "highCostBindingTool 'resolve'" in regular_branch
-    assert "[string]$highCostBinding.status -cne 'available'" in regular_branch
+    assert "verify_public_completion" in direct_branch
+    assert "highCostBindingTool" not in direct_branch
+    assert "HighCostWorkspaceRoot" not in direct_runtime
 
 
 def test_ng813_typed_finalizer_requires_sealed_receipt_before_state_mutation() -> None:
-    """adversarial: manifest pathだけの直呼びはstateを書換えられない。"""
-    runner = RUNNER.read_text(encoding="utf-8-sig")
-    assert "[string] $RecoveryFinalizationReceiptPath = ''" in runner
-    validation_call = runner.index("-Command 'validate-finalization'")
-    running_call = runner.rindex("Set-RunnerState -Status 'running'")
-    assert validation_call < running_call
-    running_guard = runner[validation_call:running_call]
-    assert "RecoveryFinalizationReceiptPath" in running_guard
-    assert "if (-not $FinalizeVerifiedPublishManifest)" in running_guard
-    assert "RECOVERY_FINALIZATION_RECEIPT_INVALID" in running_guard
-    assert "-Command 'consume-finalization'" in runner
-    assert "news-grasp-recovery-consumption-v1.sqlite3" not in runner
-    manifest_hash = runner.index("FINALIZATION_MANIFEST_DRIFT", validation_call)
-    lineage_gate = runner.index(
-        "Test-NewsGraspFinalizationStateLineage -CurrentState $preConsumeState",
-        manifest_hash,
-    )
-    final_consumption = runner.index("-Command 'consume-finalization'", manifest_hash)
-    final_state = runner.index("Set-RunnerState -Status 'publish_complete'", final_consumption)
-    assert manifest_hash < lineage_gate < final_consumption < final_state
-    lineage_function = runner.split(
-        "function Test-NewsGraspFinalizationStateLineage", 1
-    )[1].split("\nfunction ", 1)[0]
-    for field in (
-        "run_intent",
-        "run_id",
-        "artifactRoot",
-        "opsRoot",
-        "dailyRootId",
-        "rootOperationId",
-        "producerOperationId",
-        "lineageReceiptSha256",
-    ):
-        assert f"'{field}'" in lineage_function
-    assert "producerStateSha256" in lineage_function
+    """adversarial: direct completion は runtime state/public verifier 後だけ完了化する。"""
+    guard = _source("automation/news-grasp-6-40/completion_guard.py")
+    runtime = _source("tools/news_grasp_direct_runtime.py")
+
+    assert "direct_completion_requires_canonical_runtime_state" in guard
+    public_gate = runtime.index('if stage_id == "public_completion" and ok:')
+    public_failures = runtime.index("_public_failures(verifier_row", public_gate)
+    completion_update = runtime.index('SET status = ?, current_stage_index = ?', public_failures)
+    assert public_gate < public_failures < completion_update
+    assert "runnerStatePath" not in _direct_branch()
+    assert "lineageReceiptSha256" not in runtime
 
 
 def test_ng813_typed_finalizer_preserves_scheduled_failure_provenance() -> None:
-    """operational recovery: recovery成功stateにも一次scheduled failureを保持する。"""
-    runner = RUNNER.read_text(encoding="utf-8-sig")
-    finalizer = runner.rsplit("if ($FinalizeVerifiedPublishManifest)", 1)[1].split(
-        "# 前回 crash の WAL", 1
-    )[0]
-    assert "scheduledFailureReceiptPath" in finalizer
-    assert "scheduledFailureReceiptSha256" in finalizer
-    assert "-PreservedScheduledFailureReceiptPath" in finalizer
-    assert "-PreservedScheduledFailureReceiptSha256" in finalizer
+    """operational recovery: direct は公開後残課題とsurface scoped失敗をstateに残す。"""
+    runtime = _source("tools/news_grasp_direct_runtime.py")
+
+    assert "post_publish_issue_list" in runtime
+    assert "surface_failures" in runtime
+    assert "scheduledFailureReceiptSha256" not in runtime
+    assert "PreservedScheduledFailureReceipt" not in runtime
 
 
 def test_ng813_control_plane_repair_requires_one_shot_sealed_authority() -> None:
@@ -456,32 +425,18 @@ def test_ng813_control_plane_repair_requires_one_shot_sealed_authority() -> None
 
 
 def test_ng813_production_recovery_uses_installed_binding_not_caller_root() -> None:
-    """adversarial: recoveryのops/Pythonはoverride/envでなくlive bindingから固定する。"""
-    bootstrap = (
-        REPO_ROOT / "scripts" / "ops" / "news-grasp-bootstrap.ps1"
-    ).read_text(encoding="utf-8-sig")
-    runner = RUNNER.read_text(encoding="utf-8-sig")
-    installer = (
-        REPO_ROOT / "scripts" / "ops" / "install-news-grasp-ops.ps1"
-    ).read_text(encoding="utf-8-sig")
+    """adversarial: direct automation は App-visible installed row も同期・検証する。"""
+    bootstrap = _source("scripts/ops/news-grasp-bootstrap.ps1")
+    installer = _source("scripts/ops/install-news-grasp-ops.ps1")
+    syncer = _source("tools/sync_news_grasp_codex_automation.py")
 
-    for source in (bootstrap, runner):
-        assert "news-grasp-recovery-runtime-binding-v1.json" in source
-        assert "RECOVERY_RUNTIME_BINDING_INVALID" in source
-        assert "pythonExeSha256" in source
-        assert "ls-remote" in source
-        assert "opsHead" in source
-        assert "trustedRemote" in source
-        assert "dailySelfHealSha256" in source
-        assert "--untracked-files=all" in source
-        assert "status --porcelain --untracked-files=all" in source
-        assert "core.fsmonitor=false" in source
-        assert "core.hooksPath=NUL" in source
-        assert "core.attributesFile=NUL" in source
-        assert "sitecustomize.py" in source
-        assert "usercustomize.py" in source
-        assert "pythonTrustAnchor" in source
-        assert "Get-AuthenticodeSignature" in source
+    assert not RUNNER.exists()
+    assert "retired News-Grasp Runner is a legacy tombstone only" in bootstrap
+    assert "_default_app_db" in syncer
+    assert "validate_app_db_semantics" in syncer
+    assert "reasoning_effort" in syncer
+    assert "gpt-5.6-luna" in syncer
+    assert "max" in syncer
     assert "NEWS_GRASP_RECOVERY_RUNTIME_BINDING_V1" in installer
     assert "opsRepoRoot" in installer
     assert "pythonExeSha256" in installer
@@ -497,22 +452,20 @@ def test_ng813_production_recovery_uses_installed_binding_not_caller_root() -> N
 
 
 def test_ng813_recovery_python_entrypoints_are_isolated_direct_scripts() -> None:
-    """adversarial: ambient PYTHONPATH/sitecustomizeはtyped recovery codeを差し替えない。"""
-    bootstrap = (
-        REPO_ROOT / "scripts" / "ops" / "news-grasp-bootstrap.ps1"
-    ).read_text(encoding="utf-8-sig")
-    runner = RUNNER.read_text(encoding="utf-8-sig")
+    """adversarial: direct completion は明示ops rootから trusted runtime を読む。"""
+    bootstrap = _source("scripts/ops/news-grasp-bootstrap.ps1")
+    direct_branch = _direct_branch()
+    prompt = _automation_prompt()
 
     assert "& $PythonExe '-I' '-S' '-B' $RecoveryReceiptTool" in bootstrap
     assert "$controlPlaneArgs = @('-I', '-S', '-B', $controlPlaneVerifier" in bootstrap
     assert "& $PythonExe @controlPlaneArgs" in bootstrap
-    assert "& $PyExe '-I' '-S' '-B' $recoveryReceiptTool" in runner
-    # completion guard は tzdata を解決できるよう -S を除外する（2f626c28）。
-    assert "& $PyExe '-I' '-B' $completionGuardTool" in runner
-    assert "& $PyExe '-I' '-S' '-B' $dailySelfHealTool" in runner
+    assert "from tools.news_grasp_direct_runtime import" in direct_branch
+    assert "DirectRunStore(args.direct_state_root, create=False)" in direct_branch
+    assert "python -m tools.news_grasp_direct_runtime start" in prompt
     assert "'-P' '-m' 'tools.news_grasp_recovery_receipts'" not in bootstrap
-    assert "'-P' '-m' 'tools.news_grasp_recovery_receipts'" not in runner
-    assert "'-P' '-m' 'tools.news_grasp_completion_guard'" not in runner
+    assert "'-P' '-m' 'tools.news_grasp_recovery_receipts'" not in direct_branch
+    assert "'-P' '-m' 'tools.news_grasp_completion_guard'" not in direct_branch
 
 
 @pytest.mark.parametrize(
@@ -556,22 +509,18 @@ def test_ng813_isolated_recovery_entrypoints_ignore_ambient_sitecustomize(
 
 
 def test_ng813_finalizer_guards_candidate_before_state_applied() -> None:
-    """Expected Red: candidate guardがrunner state適用とjournal確定より前にある。"""
-    runner = RUNNER.read_text(encoding="utf-8-sig")
-    finalizer = runner.rsplit("if ($FinalizeVerifiedPublishManifest)", 1)[1].split(
-        "# 前回 crash の WAL", 1
+    """Expected Red: direct public verifier が完了state更新より前に実行される。"""
+    runtime = _source("tools/news_grasp_direct_runtime.py")
+    verify_function = runtime.split("def verify_public_completion(", 1)[1]
+    advance_core = runtime.split("def _advance_core(", 1)[1].split(
+        "def advance_stage(", 1
     )[0]
-    consume = finalizer.index("-Command 'consume-finalization'")
-    guard = finalizer.index("Invoke-NewsGraspCompletionGuard", consume)
-    state = finalizer.index("Set-RunnerState -Status 'publish_complete'", guard)
-    mark = finalizer.index("-Command 'mark-finalization-state-applied'", state)
-    assert consume < guard < state < mark
-    predicate = runner.split(
-        "function Test-NewsGraspCompletePublicGreenManifest", 1
-    )[1].split("\nfunction ", 1)[0]
-    assert "Test-NewsGraspCompletePublicGreenManifest -Verified $verified" in finalizer
-    assert "$historicalScheduledFailureRecovered" in predicate
-    assert "scheduled_task_missed_runs" in predicate
+
+    assert "verify_direct_public_completion(" in verify_function
+    public_gate = advance_core.index('if stage_id == "public_completion" and ok:')
+    failure_gate = advance_core.index("_public_failures(verifier_row", public_gate)
+    final_state = advance_core.index('("completed", len(DIRECT_STAGES)', failure_gate)
+    assert public_gate < failure_gate < final_state
 
 
 def _load_control_plane_module():

@@ -593,12 +593,12 @@ def test_cli_green_and_cli_stale_red_use_same_freshness_predicate(tmp_path: Path
     assert MISMATCH in rendered
 
 
-def test_audit_and_runner_consume_freshness_before_recovery_child_admission() -> None:
-    """consumer contract: audit/runnerの両入口が同じpredicateをchild前に使う。"""
+def test_audit_and_direct_runtime_consume_freshness_before_recovery_child_admission() -> None:
+    """consumer contract: audit/direct入口がchild前のfreshnessを分離して扱う。"""
 
     audit = (ROOT / "tools" / "audit_recovery_control.py").read_text(encoding="utf-8")
-    runner = (ROOT / "scripts" / "ops" / "news-grasp-runner.ps1").read_text(
-        encoding="utf-8-sig"
+    direct_runtime = (ROOT / "tools" / "news_grasp_direct_runtime.py").read_text(
+        encoding="utf-8"
     )
 
     audit_gate = audit.index("news_grasp_recovery_freshness.verify_recovery_freshness")
@@ -609,8 +609,8 @@ def test_audit_and_runner_consume_freshness_before_recovery_child_admission() ->
         audit_gate:audit_receipt
     ]
 
-    runner_gate = runner.index("tools\\news_grasp_recovery_freshness.py")
-    runner_receipt = runner.index("function Invoke-RecoveryReceiptValidation")
-    runner_materializer = runner.index("current DeepDive issue bundle materialization")
-    assert runner_gate < runner_receipt < runner_materializer
-    assert "exit 78" in runner[runner_gate:runner_receipt]
+    assert not (ROOT / "scripts" / "ops" / "news-grasp-runner.ps1").exists()
+    config_gate = direct_runtime.index("validate_installed_automation_semantics(")
+    repair_gate = direct_runtime.index("_repair_installed_automation_config_once(")
+    stage_start = direct_runtime.index("result = start_run(")
+    assert config_gate < repair_gate < stage_start

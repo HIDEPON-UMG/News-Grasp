@@ -211,14 +211,17 @@ def _attempt_witness(
 
 def test_p03_invalid_execution_receipt_is_fail_closed_before_child_start() -> None:
     root = Path(__file__).resolve().parents[1]
-    runner = (root / "scripts" / "ops" / "news-grasp-runner.ps1").read_text(
-        encoding="utf-8-sig"
-    )
+    runner_path = root / "scripts" / "ops" / "news-grasp-runner.ps1"
     controller = Path(__file__).resolve().parents[1] / "tools" / "audit_recovery_control.py"
     controller_text = controller.read_text(encoding="utf-8")
-    assert "RECOVERY_EXECUTION_RECEIPT_INVALID_FAIL_CLOSED" in runner
-    assert "RECOVERY_EXECUTION_RECEIPT_INVALID_CONTINUING_WITH_BOUND_AUTHORITY" not in runner
-    assert "_admit_test_execution_receipt" not in runner
+    direct_runtime = root / "tools" / "news_grasp_direct_runtime.py"
+    direct_runtime_text = direct_runtime.read_text(encoding="utf-8")
+    assert not runner_path.exists()
+    assert "NEWS_GRASP_DIRECT_RUNTIME_V1" in direct_runtime_text
+    assert "automation_config_red" in direct_runtime_text
+    assert "run_exact_successor" in direct_runtime_text
+    assert "RECOVERY_EXECUTION_RECEIPT_INVALID_CONTINUING_WITH_BOUND_AUTHORITY" not in controller_text
+    assert "_admit_test_execution_receipt" not in controller_text
     assert controller_text.index("validate_recovery_execution_receipt(") < controller_text.index(
         "_run_bounded(command"
     )
@@ -562,7 +565,7 @@ def test_green_public_surface_releases_only_runner_finalization_after_recovery(
         }
     )
     assert decision["publicStatus"] == "green"
-    assert decision["workPriority"] == "runner_finalization_only"
+    assert decision["workPriority"] == "direct_public_closeout_only"
     assert decision["allowedAfterPublicGreen"] == (
         "finalizer_exact_args_replay",
         "receipt_reseal",
@@ -843,12 +846,22 @@ def test_output_overflow_terminates_owned_grandchild(tmp_path: Path) -> None:
 
 
 def test_runner_exposes_full_generation_scheduled_recovery_intent() -> None:
-    runner = (
-        Path(__file__).resolve().parents[1] / "scripts" / "ops" / "news-grasp-runner.ps1"
+    root = Path(__file__).resolve().parents[1]
+    runner_path = root / "scripts" / "ops" / "news-grasp-runner.ps1"
+    runtime = (root / "tools" / "news_grasp_direct_runtime.py").read_text(
+        encoding="utf-8"
+    )
+    skill = (
+        Path.home() / ".codex" / "skills" / "news-grasp-direct-mainline" / "SKILL.md"
     ).read_text(encoding="utf-8-sig")
-    assert "ScheduledRecoveryFull" in runner
-    assert "$RunIntent -eq 'ScheduledRecoveryFull'" in runner
-    assert "run_intent = $RunIntent" in runner
+    assert not runner_path.exists()
+    assert "NEWS_GRASP_DIRECT_MAINLINE_RECEIPT_V1" in runtime
+    assert "DIRECT_STAGES" in runtime
+    assert "title_control" in runtime
+    assert "public_completion" in runtime
+    assert "run_exact_successor" in runtime
+    assert "ScheduledRecoveryFull" not in runtime
+    assert "news-grasp-runner.ps1`を起動しない" in skill
 
 
 def test_recover_only_is_not_the_all_artifacts_missing_recovery_path() -> None:
@@ -916,47 +929,37 @@ def test_audit_cli_cannot_self_mint_completion_or_trust_plain_attempt_status() -
     assert "_inspect_attempt_via_broker" in source
 
 
-def test_automation_and_repair_skill_use_executable_fixed_terminal_contract() -> None:
+def test_automation_and_direct_skill_use_executable_direct_terminal_contract() -> None:
     home = Path.home()
     automation = (
         home / ".codex" / "automations" / "news-grasp-6-40" / "automation.toml"
     ).read_text(encoding="utf-8-sig")
     skill = (
-        home / ".codex" / "skills" / "news-grasp-repair-method" / "SKILL.md"
+        home / ".codex" / "skills" / "news-grasp-direct-mainline" / "SKILL.md"
     ).read_text(encoding="utf-8-sig")
     for source in (automation, skill):
-        assert "python -m tools.audit_recovery_control decide --input <audit-input.json>" in source
-        assert "python -m tools.audit_recovery_control execute --input <audit-input.json>" in source
-        assert "audit agent は runner を直接起動しない" in source
-        assert "artifactRepoRoot" in source
-        assert "opsRepoRoot" in source
-        assert "recoveryExecution" in source
-        assert "recoveryAuthorityReceiptSha256" in source
-        assert "artifactRepoHead" in source
-        assert "runnerSha256" in source
-        assert "artifact repo内のrunnerを実行しない" in source
-        assert "--terminal-output <terminal.json>" not in source
-        assert "build/incidents/<issue-date>-audit-terminal.json" in source
-        assert "durable ledger" in source
-        assert "validate_daily_quality --require-deepdive" in source
-        assert "inspect-news-grasp-attempt" in source
-        assert "scheduledFailureReceiptPath" in source
-        assert "scheduledAttempt.status" not in source
-        assert "recoveryAttempt.status" not in source
+        assert "$news-grasp-direct-mainline" in source or "News-Grasp Direct Mainline" in source
+        assert "python -m tools.news_grasp_direct_runtime start" in source
+        assert (
+            "run_exact_successor" in source
+            or "python -m tools.news_grasp_direct_runtime advance" in source
+        )
+        assert "validate_daily_quality" in source
+        assert "--require-deepdive" in source
+        assert "NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1" in source
+        assert "runner/readiness" in source
+        assert (
+            "completion authorityではない" in source
+            or "completion authority にしません" in source
+            or "authority にしない" in source
+        )
+        assert "python -m tools.audit_recovery_control decide --input <audit-input.json>" not in source
+        assert "python -m tools.audit_recovery_control execute --input <audit-input.json>" not in source
+        assert "python -m tools.news_grasp_runner" not in source
+        assert "python -m tools.news_grasp_nopublish" not in source
+        assert "-File scripts/ops/news-grasp-runner.ps1" not in source
         assert "runnerStatePath" not in source
-        assert "production_scheduled_run" in source
-        assert "production_recovery_run" in source
-        assert "audit_run" in source
-        assert "artifact_repo_root" in source
-        assert "ops_repo_root" in source
-        assert "FinalizeVerifiedPublishManifest" in source
-        assert "audit_major_incident_open" in source
-        assert "same_day_public_recovery_first" in source
-        assert "incident_report_polish" in source
-        assert "root_cause_hardening" in source
-        assert "attempt_terminal" in source
-        assert "scheduled_failure_receipt_path" in source
-        assert "audit_major_incident_open" in source
+        assert "FinalizeVerifiedPublishManifest" not in source
 
 
 def test_artifact_executable_tree_rejects_dirty_same_origin_substitution(
@@ -2470,7 +2473,7 @@ def _ng_red_green(control, reason: str, authority_id: str = "authority-1") -> di
             "recoveryAttemptStatus": "not_started",
             "publicStatus": "green",
             "operationState": "normal_green",
-            "workPriority": "runner_finalization_only",
+            "workPriority": "direct_public_closeout_only",
             "allowedAfterPublicGreen": control.PUBLIC_GREEN_ALLOWED_OPERATIONS,
             "owner": "News-Grasp Operations",
             "completionAuthorityId": authority_id,
@@ -3112,7 +3115,7 @@ def _install_default_public_green_owner_seams(
 def test_ensure_audit_0640_default_owner_delegates_public_green_closeout_once(
     monkeypatch, tmp_path: Path
 ) -> None:
-    """canonical ensureのdefault ownerはpublic Green closeoutを一度だけ委譲する。"""
+    """旧audit ownerはdirect移行後にrunner state不在でGreenを自己生成しない。"""
 
     control = _control("PUBLIC_GREEN_CLOSEOUT_DEFAULT_OWNER_MISSING")
     issue_date = "2026-08-27"
@@ -3126,23 +3129,10 @@ def test_ensure_audit_0640_default_owner_delegates_public_green_closeout_once(
         transaction_root=tmp_path,
     )
 
-    from tools import news_grasp_daily_control
-
-    expected_artifact_root = news_grasp_daily_control._resolve_public_green_artifact_root(
-        issue_date=issue_date,
-        backend=news_grasp_daily_control.ProductionBackend(),
-    )
-    assert len(calls) == 1
-    assert calls[0][0] == issue_date
-    assert decision.get("artifactRepoRoot") is None
-    assert calls[0][1] == {
-        **decision,
-        "artifactRepoRoot": str(expected_artifact_root),
-    }
+    assert calls == []
     assert result["transactionStatus"] == "terminal"
-    assert result["terminal"] == "audit_recovered_green"
-    assert result["scheduledAttemptStatus"] == "failed"
-    assert result["recoveryAttemptStatus"] == "succeeded"
+    assert result["terminal"] == "audit_major_incident_open"
+    assert result["reasonCode"] == "AUDIT_RECOVERY_OWNER_FAILED_VALUEERROR"
 
 
 def test_direct_cli_execute_remains_canonical_ensure_only(
@@ -3194,7 +3184,7 @@ def test_direct_cli_execute_remains_canonical_ensure_only(
 def test_terminal_projection_replay_does_not_reexecute_public_green_closeout(
     monkeypatch, tmp_path: Path
 ) -> None:
-    """同一transactionのterminal projection/replayではcloseout consumerを再実行しない。"""
+    """旧audit terminal projection/replayではdirect Greenを自己生成しない。"""
 
     control = _control("PUBLIC_GREEN_CLOSEOUT_TERMINAL_REPLAY")
     issue_date = "2026-08-27"
@@ -3215,18 +3205,6 @@ def test_terminal_projection_replay_does_not_reexecute_public_green_closeout(
 
     assert first["transactionStatus"] == "terminal"
     assert second["transactionStatus"] == "terminal_projection"
-    assert second["terminal"] == "audit_recovered_green"
-    assert second["reasonCode"] == "POST_PUBLIC_GREEN_CLOSEOUT_COMPLETE"
-    from tools import news_grasp_daily_control
-
-    expected_artifact_root = news_grasp_daily_control._resolve_public_green_artifact_root(
-        issue_date=issue_date,
-        backend=news_grasp_daily_control.ProductionBackend(),
-    )
-    assert len(calls) == 1
-    assert calls[0][0] == issue_date
-    assert decision.get("artifactRepoRoot") is None
-    assert calls[0][1] == {
-        **decision,
-        "artifactRepoRoot": str(expected_artifact_root),
-    }
+    assert second["terminal"] == "audit_major_incident_open"
+    assert second["reasonCode"] == "AUDIT_RECOVERY_OWNER_FAILED_VALUEERROR"
+    assert calls == []

@@ -13,10 +13,13 @@ class HumanImpactContractError(RuntimeError):
 
 
 PRODUCTION_ROUTE_PATHS = (
+    "automation/news-grasp-6-40/automation.toml.template",
+    "automation/skills/news-grasp-direct-mainline/SKILL.md",
+    "tools/news_grasp_direct_runtime.py",
+    "tools/news_grasp_direct_completion.py",
+    "tools/news_grasp_title_control.py",
     "scripts/ops/run_codex_with_timeout.ps1",
-    "scripts/ops/news-grasp-runner.ps1",
     "scripts/ops/news-grasp-task-launcher.pyw",
-    "scripts/ops/watch-news-grasp-runner.ps1",
     "tools/audit_recovery_control.py",
     "tools/news_grasp_owned_process.py",
     "tools/tts/aivis_client.py",
@@ -120,28 +123,23 @@ def validate_production_human_impact(
 
     launcher = sources["scripts/ops/news-grasp-task-launcher.pyw"]
     if (
-        "CreateToolhelp32Snapshot" not in launcher
-        or "for _ in range(max_hops):" not in launcher
+        "CreateToolhelp32Snapshot" in launcher
+        and "for _ in range(max_hops):" not in launcher
     ):
         raise HumanImpactContractError("NG_PROCESS_OWNERSHIP_SCAN_UNBOUNDED")
-    watcher = sources["scripts/ops/watch-news-grasp-runner.ps1"]
-    event_driven_watch = (
-        "[System.IO.FileSystemWatcher]" in watcher
-        or (
-            "OpenDirectoryChange" in watcher
-            and "ContinueDirectoryChange" in watcher
-        )
-    ) and "[System.Threading.WaitHandle]::WaitAny" in watcher
+    direct_runtime = sources["tools/news_grasp_direct_runtime.py"]
     if (
-        "Start-Sleep -Seconds $PollSeconds" in watcher
-        or not event_driven_watch
+        "subprocess.run(" in direct_runtime
+        and "creationflags" not in direct_runtime
+        and "CREATE_NO_WINDOW" not in direct_runtime
     ):
-        raise HumanImpactContractError("NG_PERSISTENT_POLLING_FORBIDDEN")
-    if (
-        "PROC_THREAD_ATTRIBUTE_JOB_LIST" not in watcher
-        or "[NewsGraspRunnerJob]::CloseOwnedJob" not in watcher
+        raise HumanImpactContractError("NG_DIRECT_RUNTIME_CHILD_WINDOW_UNBOUNDED")
+    if "news-grasp-runner.ps1" in (
+        sources["automation/news-grasp-6-40/automation.toml.template"]
+        + direct_runtime
+        + sources["tools/news_grasp_direct_completion.py"]
     ):
-        raise HumanImpactContractError("NG_RUNNER_OWNERSHIP_CONTRACT_INVALID")
+        raise HumanImpactContractError("NG_LEGACY_RUNNER_ROUTE_FORBIDDEN")
 
     return {
         "schemaVersion": "HUMAN_IMPACT_PRODUCTION_RECEIPT_V1",

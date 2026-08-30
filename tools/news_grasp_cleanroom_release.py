@@ -26,13 +26,14 @@ _TRUSTED_KEYS = [f"S{i}" for i in range(6)]
 _NATURAL_LINEAGES = ["Scheduled", "Audit", "Public", "Readiness"]
 _HISTORY_MISSING_LINEAGES = ["Scheduled", "Audit", "Public", "Readiness"]
 _CLOSURE_PATHS = [
-    "scripts/ops/news-grasp-runner.ps1",
     "scripts/ops/news-grasp-task-launcher.pyw",
     "scripts/ops/run_codex_with_timeout.ps1",
     "tools/audit_recovery_control.py",
     "tools/daily_self_heal.py",
     "tools/news_grasp_completion_guard.py",
     "tools/news_grasp_daily_control.py",
+    "tools/news_grasp_direct_runtime.py",
+    "tools/sync_news_grasp_codex_automation.py",
 ]
 _BINDING_PATHS = [
     "bin/news-grasp-high-cost-binding-v1.json",

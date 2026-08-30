@@ -554,7 +554,11 @@ def test_ng3_wp03_runtime_transaction_seals_active_generation(tmp_path: Path) ->
     runtime_root.mkdir()
     repo.mkdir()
     generation_paths = (
-        "scripts/ops/news-grasp-runner.ps1",
+        "tools/news_grasp_direct_runtime.py",
+        "tools/news_grasp_direct_completion.py",
+        "tools/news_grasp_title_control.py",
+        "automation/news-grasp-6-40/automation.toml.template",
+        "automation/skills/news-grasp-direct-mainline/SKILL.md",
         "scripts/ops/news-grasp-task-launcher.pyw",
         "scripts/ops/news-grasp-bootstrap.ps1",
         "tools/daily_self_heal.py",
@@ -696,12 +700,16 @@ def test_ng2_wp05_daily_lineage_does_not_reset_on_run_or_session_change() -> Non
     assert first == second
 
 
-def test_ng2_wp07_runner_defers_release_regression_until_final_nopublish() -> None:
+def test_ng2_wp07_direct_runtime_defers_release_regression_until_public_completion() -> None:
     repo = Path(__file__).resolve().parents[1]
-    runner_text = (repo / "scripts/ops/news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
-    assert "ReleaseGateProfile deferred from scheduled/recovery path" in runner_text
-    assert "if (-not $NoPublish)" in runner_text
-    assert "pytest tests/ -q -m \"not network\"" in runner_text
+    direct_runtime = (repo / "tools/news_grasp_direct_runtime.py").read_text(encoding="utf-8")
+    automation = (repo / "automation/news-grasp-6-40/automation.toml.template").read_text(
+        encoding="utf-8"
+    )
+    assert not (repo / "scripts/ops/news-grasp-runner.ps1").exists()
+    assert "public_completion" in direct_runtime
+    assert "validate_daily_quality" in direct_runtime
+    assert "NoPublish" in automation
 
 
 def test_ng2_wp08_historical_2026_08_11_closes_without_model_reexecution(tmp_path: Path) -> None:

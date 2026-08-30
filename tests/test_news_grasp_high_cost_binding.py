@@ -10,6 +10,10 @@ from tools import news_grasp_high_cost_binding as binding
 
 
 ROOT = Path(__file__).resolve().parents[1]
+RUNNER = ROOT / "scripts" / "ops" / "news-grasp-runner.ps1"
+DIRECT_RUNTIME = ROOT / "tools" / "news_grasp_direct_runtime.py"
+DIRECT_SKILL = ROOT / "automation" / "skills" / "news-grasp-direct-mainline" / "SKILL.md"
+AUTOMATION_TEMPLATE = ROOT / "automation" / "news-grasp-6-40" / "automation.toml.template"
 
 
 def _sha256(path: Path) -> str:
@@ -219,6 +223,17 @@ def test_binding_preserves_global_typed_reason_classes(message: str, expected: s
 
 def test_production_chain_propagates_binding_without_ambient_workspace_root() -> None:
     """primary: launcher→bootstrap→watcher→runnerがpath/hashを明示伝播する。"""
+    if not RUNNER.exists():
+        direct = DIRECT_RUNTIME.read_text(encoding="utf-8-sig")
+        skill = DIRECT_SKILL.read_text(encoding="utf-8-sig")
+        template = AUTOMATION_TEMPLATE.read_text(encoding="utf-8-sig")
+        assert "exact_successor" in direct
+        assert "surface_scoped" in direct
+        assert "slo_debt_continue_public" in direct
+        assert "cost/ledger/binding failureは該当model operationだけをzero-call Red" in skill
+        assert "実行可能な public-critical successor がある限り継続" in template
+        assert "NEWS_GRASP_HIGH_COST_WORKSPACE_ROOT" not in direct
+        return
 
     launcher = (ROOT / "scripts" / "ops" / "news-grasp-task-launcher.pyw").read_text(
         encoding="utf-8-sig"
@@ -229,9 +244,7 @@ def test_production_chain_propagates_binding_without_ambient_workspace_root() ->
     watcher = (ROOT / "scripts" / "ops" / "watch-news-grasp-runner.ps1").read_text(
         encoding="utf-8-sig"
     )
-    runner = (ROOT / "scripts" / "ops" / "news-grasp-runner.ps1").read_text(
-        encoding="utf-8-sig"
-    )
+    runner = RUNNER.read_text(encoding="utf-8-sig")
 
     assert "--high-cost-binding-path" in launcher
     assert "--high-cost-binding-sha256" in launcher
@@ -281,9 +294,14 @@ def test_model_consumers_resolve_binding_instead_of_ambient_workspace_root() -> 
     assert "HighCostBindingResolverSha256" in wrapper
     assert "$derivedResolver" in wrapper
     assert "& $HighCostPythonExe '-I' '-S' '-B' $derivedResolver" in wrapper
-    runner = (ROOT / "scripts" / "ops" / "news-grasp-runner.ps1").read_text(
-        encoding="utf-8-sig"
-    )
+    if not RUNNER.exists():
+        direct = DIRECT_RUNTIME.read_text(encoding="utf-8-sig")
+        assert "exact_successor" in direct
+        assert "surface_scoped" in direct
+        assert "NEWS_GRASP_HIGH_COST_WORKSPACE_ROOT" not in direct
+        assert "detail=$bindingJson" not in wrapper
+        return
+    runner = RUNNER.read_text(encoding="utf-8-sig")
     assert "detail=$bindingJson" not in wrapper
     assert "detail=$highCostBindingJson" not in runner
     assert "$bindingFailure.reason" in wrapper

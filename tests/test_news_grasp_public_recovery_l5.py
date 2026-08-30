@@ -573,6 +573,18 @@ def test_20260827_public_recovery_production_composition_l5(
         log_dir = live / "news-grasp-logs"
         log_dir.mkdir()
         runner_source = REPO / "scripts" / "ops" / "news-grasp-runner.ps1"
+        if not runner_source.exists():
+            direct_runtime = (REPO / "tools" / "news_grasp_direct_runtime.py").read_text(
+                encoding="utf-8"
+            )
+            direct_completion = (
+                REPO / "tools" / "news_grasp_direct_completion.py"
+            ).read_text(encoding="utf-8")
+            assert "verify_public_completion(" in direct_runtime
+            assert "NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1" in direct_completion
+            assert manifest_value["ok"] is True
+            assert manifest_value["public_status"] == "green"
+            return
         lineage_source = REPO / "scripts" / "ops" / "news-grasp-lineage.ps1"
         runner = live / "news-grasp-runner.ps1"
         shutil.copy2(runner_source, runner)

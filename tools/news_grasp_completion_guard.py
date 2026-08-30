@@ -95,8 +95,28 @@ def evaluate_direct_public(receipt: dict[str, Any], issue_date: str) -> dict[str
     それ以外は常に Red とする。
     """
 
+    failures: list[str] = []
+    if receipt.get("run_intent") != "ScheduledProductionDirect":
+        failures.append("direct_run_intent_invalid")
+    if not receipt.get("automation_id"):
+        failures.append("direct_automation_id_missing")
+    if not receipt.get("cwd"):
+        failures.append("direct_cwd_missing")
+
     state_root = receipt.get("state_root") or receipt.get("stateRoot")
     run_id = receipt.get("run_id") or receipt.get("runId")
+    if failures:
+        return {
+            "schemaVersion": DIRECT_SCHEMA_VERSION,
+            "ok": False,
+            "completion_mode": "direct_public_v1",
+            "issue_date": issue_date,
+            "title_status": "",
+            "actual_title": "",
+            "failures": failures,
+            "post_publish_issue_list": [],
+            "slo": {"continue_public_successors": True},
+        }
     if state_root and run_id:
         try:
             from tools.news_grasp_direct_runtime import DirectRunStore, verify_public_completion

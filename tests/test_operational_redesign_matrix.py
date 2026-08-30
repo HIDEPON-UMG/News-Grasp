@@ -197,7 +197,7 @@ def _audit_decision() -> dict[str, Any]:
             "issueDate": "2026-08-11",
             "terminal": "audit_observation_unverified",
             "publicStatus": "green",
-            "workPriority": "runner_finalization_only",
+            "workPriority": audit.PUBLIC_GREEN_FOLLOWUP_PRIORITY,
             "allowedAfterPublicGreen": audit.PUBLIC_GREEN_ALLOWED_OPERATIONS,
             "action": "verify_public_completion",
             "reasonCode": "PRIMARY_VERIFIER_UNAVAILABLE",

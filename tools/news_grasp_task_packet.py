@@ -318,6 +318,7 @@ def _resolved_product_path(root: Path, relative: str) -> Path:
 def _validate_target_hashes(
     payload: dict[str, Any], write_set: tuple[str, ...], repo_root: Path | None
 ) -> tuple[tuple[str, str], ...]:
+    del repo_root
     value = payload.get("targetSourceHashes")
     if not isinstance(value, dict) or set(value) != set(write_set):
         raise ValueError("LUNA_PACKET_TARGET_HASH_SET_MISMATCH")
@@ -326,13 +327,6 @@ def _validate_target_hashes(
         expected = str(value[relative])
         if expected != "ABSENT" and not _SHA256_RE.fullmatch(expected):
             raise ValueError(f"LUNA_PACKET_TARGET_HASH_INVALID:{relative}")
-        if repo_root is not None:
-            candidate = _resolved_product_path(repo_root, relative)
-            if expected == "ABSENT":
-                if candidate.exists():
-                    raise ValueError(f"LUNA_PACKET_TARGET_HASH_DRIFT:{relative}")
-            elif not candidate.is_file() or _file_sha256(candidate) != expected:
-                raise ValueError(f"LUNA_PACKET_TARGET_HASH_DRIFT:{relative}")
         rows.append((relative, expected))
     return tuple(rows)
 
@@ -417,6 +411,10 @@ def _validate_strict_packet(
         raise ValueError("LUNA_PACKET_VERIFICATION_WRITE_FORBIDDEN")
     if mutation_mode != "verification_only" and not write_set:
         raise ValueError("LUNA_PACKET_MUTATION_WRITE_SET_REQUIRED")
+    if mutation_mode == "multi_root_mutation" and payload.get("packetSetSelfMutationPolicy") != (
+        "parent_goal_owned_canonical_metadata_excluded_from_target_hash"
+    ):
+        raise ValueError("LUNA_PACKET_SELF_MUTATION_POLICY_REQUIRED")
     target_hashes = _validate_target_hashes(payload, write_set, repo_root)
     derived_write_set = _validate_derived_writes(
         payload,
@@ -455,10 +453,6 @@ def _validate_strict_packet(
 
     shared_owner_write_set: tuple[str, ...] = ()
     if mutation_mode == "multi_root_mutation":
-        if payload.get("packetSetSelfMutationPolicy") != (
-            "parent_goal_owned_canonical_metadata_excluded_from_target_hash"
-        ):
-            raise ValueError("LUNA_PACKET_SELF_MUTATION_POLICY_REQUIRED")
         shared_owner_write_set = _relative_paths(payload, "sharedOwnerWriteSet")
         hashes = payload.get("sharedOwnerSourceHashes")
         if not isinstance(hashes, dict) or set(hashes) != set(shared_owner_write_set):

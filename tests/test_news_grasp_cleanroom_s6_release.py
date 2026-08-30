@@ -32,12 +32,13 @@ CREATE_NO_WINDOW = 0x08000000
 CURRENT_SOURCE_COMMIT = "a" * 40
 INSTALLED_CLOSURE_RELATIVE_PATHS = [
     "scripts/ops/news-grasp-task-launcher.pyw",
-    "scripts/ops/news-grasp-runner.ps1",
     "scripts/ops/run_codex_with_timeout.ps1",
+    "tools/audit_recovery_control.py",
     "tools/daily_self_heal.py",
     "tools/news_grasp_completion_guard.py",
     "tools/news_grasp_daily_control.py",
-    "tools/audit_recovery_control.py",
+    "tools/news_grasp_direct_runtime.py",
+    "tools/sync_news_grasp_codex_automation.py",
 ]
 INSTALLED_BINDING_RELATIVE_PATHS = [
     "bin/news-grasp-high-cost-binding-v1.json",

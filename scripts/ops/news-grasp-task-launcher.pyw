@@ -3098,7 +3098,11 @@ def _seal_active_production_generation(
     source_tracked = _git_tracked_tree_manifest(source_repo, source_head)
     source_tracked_manifest_sha256 = _sha256_json(source_tracked)
     critical_paths = (
-        "scripts/ops/news-grasp-runner.ps1",
+        "automation/news-grasp-6-40/automation.toml.template",
+        "automation/skills/news-grasp-direct-mainline/SKILL.md",
+        "tools/news_grasp_direct_runtime.py",
+        "tools/news_grasp_direct_completion.py",
+        "tools/news_grasp_title_control.py",
         "tools/daily_self_heal.py",
         "tools/news_grasp_daily_control.py",
         "tools/news_grasp_operational_contract.py",

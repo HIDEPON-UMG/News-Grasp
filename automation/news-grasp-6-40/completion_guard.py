@@ -10,6 +10,11 @@ from pathlib import Path
 from typing import Any, Callable
 
 
+DIRECT_MAINLINE_RECEIPT_SCHEMA = "NEWS_GRASP_DIRECT_MAINLINE_RECEIPT_V1"
+DIRECT_PUBLIC_VERIFICATION_SCHEMA = "NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1"
+DIRECT_PUBLIC_INCOMPLETE_CONTRACT = "public incomplete は direct runtime の exact successor に戻す"
+
+
 def _load_json(path: Path) -> dict[str, Any]:
     try:
         value = json.loads(path.read_text(encoding="utf-8-sig"))

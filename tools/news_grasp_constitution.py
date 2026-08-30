@@ -2416,7 +2416,9 @@ def _perspective_oracle(
         elif perspective == "operational_recovery":
             for row in binding["skills"]:
                 if row["skillId"] in PRODUCT_OVERLAY_SKILLS:
-                    if row["overlaySha256"] != _overlay_sha256(root, row["overlayPath"]):
+                    if row["skillId"] == "news-grasp-direct-mainline":
+                        _validate_direct_mainline_skill_semantics(root, row["overlayPath"])
+                    elif row["overlaySha256"] != _overlay_sha256(root, row["overlayPath"]):
                         raise ValueError("CONSTITUTION_SKILL_OVERLAY_NOT_RECOVERABLE")
         return
     if acceptance_id in {"A07", "A11", "A16"}:
@@ -3208,9 +3210,9 @@ def _operation_integrity_oracle(
         )
 
         if perspective == "adversarial_boundary":
-            relative = ROUTES["runner"]
+            relative = ROUTES["runtime"]
             unsafe = (root / relative).read_text(encoding="utf-8-sig").replace(
-                "'claim-runner'", "'claim-runner-removed'"
+                "run_exact_successor(", "run_exact_successor_removed("
             )
             _expect_exception(
                 lambda: validate_e2e_launch_contract(
@@ -3222,12 +3224,11 @@ def _operation_integrity_oracle(
             return
         receipt = validate_e2e_launch_contract(root)
         if receipt.get("compositionOrder") != [
-            "prepare",
-            "authorize",
-            "activate",
-            "consume",
-            "claim",
-            "launch",
+            "automation_prompt",
+            "title_control",
+            "direct_runtime_start",
+            "stage_successors",
+            "public_verification",
         ]:
             raise ValueError("CONSTITUTION_E2E_COMPOSITION_ORDER_INVALID")
         if perspective == "operational_recovery" and (
@@ -3244,10 +3245,10 @@ def _operation_integrity_oracle(
         )
 
         if perspective == "adversarial_boundary":
-            relative = "scripts/ops/run_codex_with_timeout.ps1"
+            relative = "automation/news-grasp-6-40/automation.toml.template"
             unsafe = (root / relative).read_text(encoding="utf-8-sig").replace(
-                "'--execution-root'",
-                "'--execution-root-removed'",
+                'reasoning_effort = "max"',
+                'reasoning_effort = "medium"',
             )
             _expect_exception(
                 lambda: validate_e2e_launch_contract(
@@ -3262,13 +3263,12 @@ def _operation_integrity_oracle(
             receipt.get("status") != "green"
             or receipt.get("executionRootBound") is not True
             or receipt.get("executableBound") is not True
-            or receipt.get("ownerClaimBound") is not True
-            or receipt.get("timeoutBrokerOwned") is not True
+            or receipt.get("directEntryRejected") is not True
         ):
             raise ValueError("CONSTITUTION_E2E_IDENTITY_BUNDLE_INVALID")
         if perspective == "operational_recovery" and (
             receipt.get("route")
-            != "installed_launcher_to_runner_claim_to_broker_exec"
+            != "codex_automation_to_direct_runtime_to_public_completion"
             or receipt.get("directEntryRejected") is not True
         ):
             raise ValueError("CONSTITUTION_E2E_RECOVERY_ROUTE_INVALID")

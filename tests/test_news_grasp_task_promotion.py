@@ -105,9 +105,10 @@ def test_ngc_c07_installer_does_not_gate_deterministic_promotion_on_external_mod
     assert "Assert-NewsGraspSharedBrokerGeneration" not in executable
 
     daily_control = (root / "tools/news_grasp_daily_control.py").read_text(encoding="utf-8")
-    runner = (root / "scripts/ops/news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    direct_runtime = (root / "tools/news_grasp_direct_runtime.py").read_text(encoding="utf-8")
     assert "probe_external_readiness" in daily_control
-    assert "external_control_plane_unavailable" in runner
+    assert "external_failure" in direct_runtime
+    assert not (root / "scripts/ops/news-grasp-runner.ps1").exists()
 
 
 def test_installer_reuses_only_exact_valid_audit_mission_authority() -> None:

@@ -1034,6 +1034,18 @@ def _split_title_unit(unit: str) -> list[str]:
     if not unit:
         return []
 
+    parenthetical_split = re.match(r"^(.+?)([（(][^（）()]+[）)])$", unit)
+    if parenthetical_split and _title_display_width(unit) > _CATEGORY_LEAD_TITLE_HARD_WIDTH:
+        before = parenthetical_split.group(1).strip()
+        parenthetical = parenthetical_split.group(2).strip()
+        if (
+            before
+            and parenthetical
+            and _title_display_width(before) <= _CATEGORY_LEAD_TITLE_HARD_WIDTH
+            and _title_display_width(parenthetical) <= _CATEGORY_LEAD_TITLE_HARD_WIDTH
+        ):
+            return [before, parenthetical]
+
     amount_split = re.match(
         r"^(.+?(?:億円|兆円|億ドル|兆ドル|万ドル|％|%))((?:を|へ|に|で|が|は).+)$",
         unit,
@@ -1127,6 +1139,17 @@ def _pack_title_lines(units: list[str]) -> list[str]:
                         index += 1
                         continue
         index += 1
+    while len(lines) > _CATEGORY_LEAD_TITLE_MAX_LINES:
+        merge_candidates: list[tuple[float, float, int]] = []
+        for candidate_index in range(len(lines) - 1):
+            merged = lines[candidate_index] + lines[candidate_index + 1]
+            width = _title_display_width(merged)
+            if width <= _CATEGORY_LEAD_TITLE_HARD_WIDTH:
+                merge_candidates.append((abs(_CATEGORY_LEAD_TITLE_TARGET_WIDTH - width), width, candidate_index))
+        if not merge_candidates:
+            break
+        _, _, candidate_index = min(merge_candidates)
+        lines[candidate_index : candidate_index + 2] = [lines[candidate_index] + lines[candidate_index + 1]]
     return lines
 
 
@@ -1147,6 +1170,40 @@ def _category_lead_title_quality_errors(title: str, lines: list[str]) -> list[st
         if re.search(r"[、。，．・｜|／/]\s*$", line):
             errors.append(f"line {idx} ends with separator: text={line}")
     return errors
+
+
+def _truncate_title_line_to_width(line: str, max_width: float) -> str:
+    """Hero表示用の1行を、表示幅契約内へ丸める。原文は別fieldへ残す。"""
+    text = line.strip()
+    if _title_display_width(text) <= max_width:
+        return text
+
+    suffix = "…"
+    suffix_width = _title_display_width(suffix)
+    kept: list[str] = []
+    width = 0.0
+    for ch in text:
+        ch_width = _title_display_width(ch)
+        if kept and width + ch_width + suffix_width > max_width:
+            break
+        if not kept and ch_width + suffix_width > max_width:
+            return suffix
+        kept.append(ch)
+        width += ch_width
+    compact = "".join(kept).rstrip("、。，．・｜|／/ ")
+    return (compact or text[:1]) + suffix
+
+
+def _category_lead_title_display_lines(title: str) -> list[str]:
+    """原文タイトルから、hero表示に使える最大4行の安全な表示行を作る。"""
+    lines = _category_lead_title_lines(title)
+    if not _category_lead_title_quality_errors(title, lines):
+        return lines
+    if len(lines) > _CATEGORY_LEAD_TITLE_MAX_LINES:
+        kept = lines[: _CATEGORY_LEAD_TITLE_MAX_LINES - 1]
+        tail = "".join(lines[_CATEGORY_LEAD_TITLE_MAX_LINES - 1 :])
+        lines = [*kept, tail]
+    return [_truncate_title_line_to_width(line, _CATEGORY_LEAD_TITLE_HARD_WIDTH) for line in lines]
 
 
 def _category_lead_title_lines(title: str) -> list[str]:
@@ -1268,7 +1325,7 @@ def build_category_hero_context(
         )
         if part
     )
-    lead_title_lines = _category_lead_title_lines(lead_title)
+    lead_title_lines = _category_lead_title_display_lines(lead_title)
     lead_title_line_errors = _category_lead_title_quality_errors(lead_title, lead_title_lines)
     if lead_title_line_errors:
         raise ValueError(
