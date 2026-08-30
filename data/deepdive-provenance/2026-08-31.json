@@ -1,0 +1,135 @@
+{
+  "articlePath": "digest/DeepDive/2026-08-31-DeepDive.md",
+  "articleSha256": "73a2ec106dd16e7da704c1de370d31ff922d6399c904043faac92b938c422a68",
+  "claimBindings": [
+    {
+      "claimId": "ai-20260831-1",
+      "claimSha256": "c243d9e3f17ac68c8a03693db8a9ca47f22f3c2f22c9a35cdae16d0663d51345",
+      "evidenceSha256": "c25b2a826ee4680fa076afcce3794d2f0661545ae80a6493286534b001b5597e",
+      "sourceUrl": "https://www.yomiuri.co.jp/world/20260830-GYT1T00119/"
+    },
+    {
+      "claimId": "ai-20260831-2",
+      "claimSha256": "b67ff47ceb046980d8f6556d5c19888df78e010f7e332b85cb1728e0a8daac47",
+      "evidenceSha256": "d6361f297a3b915c791a64b8d33ed79679ca7653787f562233ba525361c1f730",
+      "sourceUrl": "https://news.yahoo.co.jp/articles/2a9f5bc74c107e766e4cf2a3e81f50f81628a71f"
+    },
+    {
+      "claimId": "ai-20260831-3",
+      "claimSha256": "e11965632abbbdf7167949301f7d31bfc7cba659ba29cb2af40bfcace75de311",
+      "evidenceSha256": "8b52884979acf03c10eee8a6fee0bdea7930667b5aa48cb0c6ecf7b266350b8d",
+      "sourceUrl": "https://aws.amazon.com/jp/blogs/news/nec-claude-desktop-bedrock-120k-users-2-weeks/"
+    },
+    {
+      "claimId": "ai-20260831-4",
+      "claimSha256": "319c22cb77666f41d5c1827a0076016aed5726791b23c61f757b194e709e50e2",
+      "evidenceSha256": "07a5d8f190d3b36a7c49448560e411103500157c04eabab9ee525be8bed44380",
+      "sourceUrl": "https://www.techno-edge.net/article/2026/08/30/5445.html"
+    },
+    {
+      "claimId": "ai-20260831-5",
+      "claimSha256": "a070bb0498c09bc47ac8b6c778e4fa9291c12b5720869a951cde3d668f3c6a51",
+      "evidenceSha256": "312ce50ef6933574c4af06c6065821feed3adf10489b646dc29f28e1f7f53a14",
+      "sourceUrl": "https://exawizards.com/column/ai-trend/news-08-30-2026-2/"
+    }
+  ],
+  "claimSetSha256": "6c598dc6e8342859cbfe73f06937fc578e6b8f8d071fa4ba12b962d8401f1d60",
+  "issueDate": "2026-08-31",
+  "manifestSha256": "3d283e41fc7f2caf7cc74687ab854738bfb082bdd37fdadc564e1cb67de15308",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V2",
+  "sourceSetSha256": "97eefc2abf9aede025287b3af7652a8fde0581e793b6868faae6c2bb125b9c0a",
+  "sources": [
+    {
+      "contentSha256": "665626dfd19d9fec66046d8609d161b80bb4d41e34b6270abddf62343827285c",
+      "fetchedAt": "2026-08-30T21:54:23.438585+00:00",
+      "finalUrl": "https://aws.amazon.com/jp/blogs/news/nec-claude-desktop-bedrock-120k-users-2-weeks/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://aws.amazon.com/jp/blogs/news/nec-claude-desktop-bedrock-120k-users-2-weeks/",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://aws.amazon.com/jp/blogs/news/nec-claude-desktop-bedrock-120k-users-2-weeks/"
+    },
+    {
+      "contentSha256": "70b1ad7abe6b4f57d75acb0fd8c00bcbaafe9f4963f305797f124ea6b3f332ba",
+      "fetchedAt": "2026-08-30T21:54:23.665615+00:00",
+      "finalUrl": "https://exawizards.com/column/ai-trend/news-08-30-2026-2/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://exawizards.com/column/ai-trend/news-08-30-2026-2/",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://exawizards.com/column/ai-trend/news-08-30-2026-2/"
+    },
+    {
+      "contentSha256": "7f3b1f53138ff0bd080b47f82a1a92a51048c01f1d0400441687e106dac8f505",
+      "fetchedAt": "2026-08-30T21:54:23.915960+00:00",
+      "finalUrl": "https://news.yahoo.co.jp/articles/2a9f5bc74c107e766e4cf2a3e81f50f81628a71f",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://news.yahoo.co.jp/articles/2a9f5bc74c107e766e4cf2a3e81f50f81628a71f",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://news.yahoo.co.jp/articles/2a9f5bc74c107e766e4cf2a3e81f50f81628a71f"
+    },
+    {
+      "contentSha256": "6d87fdbbe78e0094c5c0c2294cb7ce887048336e9386240bc34486b9957bfe9a",
+      "fetchedAt": "2026-08-30T21:54:24.129141+00:00",
+      "finalUrl": "https://www.techno-edge.net/article/2026/08/30/5445.html",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.techno-edge.net/article/2026/08/30/5445.html",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://www.techno-edge.net/article/2026/08/30/5445.html"
+    },
+    {
+      "contentSha256": "0536d7cc19a54f3d802e585388dd6843f315b5b2e643100e9c792c82b1c510ca",
+      "fetchedAt": "2026-08-30T21:54:24.351313+00:00",
+      "finalUrl": "https://www.yomiuri.co.jp/world/20260830-GYT1T00119/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.yomiuri.co.jp/world/20260830-GYT1T00119/",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://www.yomiuri.co.jp/world/20260830-GYT1T00119/"
+    }
+  ],
+  "status": "Green",
+  "transportEvidenceVersion": 1
+}

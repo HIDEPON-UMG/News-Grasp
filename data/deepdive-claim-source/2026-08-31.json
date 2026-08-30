@@ -1,0 +1,40 @@
+{
+  "articleContentSha256": "9d8f208763c2c7dc819216a4b7c3292515466b06b4c59a10d76bba5dddffcfb0",
+  "articlePath": "digest/DeepDive/2026-08-31-DeepDive.md",
+  "bindings": [
+    {
+      "claim": "「数万曲の歌詞を生成ＡＩが無断学習」…ソニーＧ傘下の音楽出版など３５社、アンソロピックとＣＥＯらを提訴",
+      "claimId": "ai-20260831-1",
+      "evidence": "「数万曲の歌詞を生成ＡＩが無断学習」…ソニーＧ傘下の音楽出版など３５社、アンソロピックとＣＥＯらを提訴",
+      "sourceUrl": "https://www.yomiuri.co.jp/world/20260830-GYT1T00119/"
+    },
+    {
+      "claim": "WindowsでもローカルLLMが快適に？ 開発中ビルドで見つかった「AI向けメモリ割り当て機能」の正体（ITmedia PC USER）",
+      "claimId": "ai-20260831-2",
+      "evidence": "WindowsでもローカルLLMが快適に？ 開発中ビルドで見つかった「AI向けメモリ割り当て機能」の正体（ITmedia PC USER）",
+      "sourceUrl": "https://news.yahoo.co.jp/articles/2a9f5bc74c107e766e4cf2a3e81f50f81628a71f"
+    },
+    {
+      "claim": "2 週間で 12 万人規模へ – NEC が Claude Desktop on Amazon Bedrock で実現したセキュアな全社 AI 環境",
+      "claimId": "ai-20260831-3",
+      "evidence": "2 週間で 12 万人規模へ – NEC が Claude Desktop on Amazon Bedrock で実現したセキュアな全社 AI 環境",
+      "sourceUrl": "https://aws.amazon.com/jp/blogs/news/nec-claude-desktop-bedrock-120k-users-2-weeks/"
+    },
+    {
+      "claim": "朗報：Claude Codeの週間制限が恒常25%増へ。悲報：現状比17%減、特例プロモは9月14日終了",
+      "claimId": "ai-20260831-4",
+      "evidence": "朗報：Claude Codeの週間制限が恒常25%増へ。悲報：現状比17%減、特例プロモは9月14日終了",
+      "sourceUrl": "https://www.techno-edge.net/article/2026/08/30/5445.html"
+    },
+    {
+      "claim": "OpenAIら155社が「集団防衛」を呼びかけ AIサイバー攻撃「数カ月で格段に広範に」",
+      "claimId": "ai-20260831-5",
+      "evidence": "OpenAIら155社が「集団防衛」を呼びかけ AIサイバー攻撃「数カ月で格段に広範に」",
+      "sourceUrl": "https://exawizards.com/column/ai-trend/news-08-30-2026-2/"
+    }
+  ],
+  "issueDate": "2026-08-31",
+  "schemaVersion": "DEEPDIVE_CLAIM_SOURCE_TRANSPORT_V1",
+  "status": "Green",
+  "transportSha256": "8211c35359015c66f47859c0e877cdfaec3803493a1bdba50566f6fab9bd53d2"
+}
