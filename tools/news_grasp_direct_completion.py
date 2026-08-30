@@ -514,7 +514,10 @@ def verify_direct_public_completion(
         wait_sec=wait_sec,
         poll_sec=poll_sec,
     )
-    surfaces["remote_commit"] = _up_to_date_observation(repo, remote, branch)
+    surfaces["remote_commit"] = {
+        **_up_to_date_observation(repo, remote, branch),
+        "issue_date": issue_date,
+    }
     failures: list[str] = []
     for name in PUBLIC_SURFACES:
         row = surfaces.get(name)
