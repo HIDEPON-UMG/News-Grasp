@@ -169,12 +169,28 @@ def _required_distribution(repo_root: Path, issue_date: str) -> dict[str, Any]:
     ):
         if not str(value.get(field) or "").strip():
             errors.append(f"distribution_field_missing:{field}")
+    notification = value.get("notification") if isinstance(value.get("notification"), dict) else {}
+    nested_value = value.get("value") if isinstance(value.get("value"), dict) else {}
+    playlist = value.get("playlist") if isinstance(value.get("playlist"), dict) else {}
     return {
         "ok": not missing and not errors,
         "issue_date": issue_date,
         "required": required,
         "missing": missing,
-        "state": state,
+        "state": {
+            "ok": state.get("ok") is True,
+            "path": state.get("path"),
+            "status": value.get("status"),
+            "date": value.get("date"),
+            "generated_at": value.get("generated_at"),
+            "primary_podcast_state": value.get("primary_podcast_state"),
+            "deepdive_podcast_state": value.get("deepdive_podcast_state"),
+            "latest_audio_state": value.get("latest_audio_state"),
+            "deepdive_audio_state": value.get("deepdive_audio_state"),
+            "playlist_status": playlist.get("status", nested_value.get("playlist")),
+            "notification_status": notification.get("status", nested_value.get("notification")),
+            "notification_sent_count": notification.get("sent_count"),
+        },
         "failures": errors,
         "semantic_ok": not missing and not errors,
         "status": "green" if not missing and not errors else "red",
@@ -183,15 +199,22 @@ def _required_distribution(repo_root: Path, issue_date: str) -> dict[str, Any]:
 
 def _publish_status(repo_root: Path, issue_date: str) -> dict[str, Any]:
     state = _load_json(repo_root / "docs" / "publish-status.json")
+    value = state.get("value") if isinstance(state.get("value"), dict) else {}
     if state.get("ok"):
-        value = state.get("value") if isinstance(state.get("value"), dict) else {}
         ok = value.get("date") == issue_date and value.get("result") == "published_ok"
     else:
         ok = False
     return {
         "ok": ok,
         "issue_date": issue_date,
-        "state": state,
+        "state": {
+            "ok": state.get("ok") is True,
+            "path": state.get("path"),
+            "date": value.get("date") if isinstance(value, dict) else None,
+            "result": value.get("result") if isinstance(value, dict) else None,
+            "status": value.get("status") if isinstance(value, dict) else None,
+            "updated_at": value.get("updated_at") if isinstance(value, dict) else None,
+        },
         "semantic_ok": ok,
         "status": "green" if ok else "red",
     }
@@ -214,16 +237,22 @@ def _deepdive_quality(repo_root: Path, issue_date: str) -> dict[str, Any]:
             "semantic_ok": False,
             "status": "red",
         }
-    ok = (
-        isinstance(result, dict)
-        and result.get("status") == "Green"
-        and not result.get("issueCodes")
-        and not result.get("issues")
-    )
+    result_map = result if isinstance(result, dict) else {}
+    ok = result_map.get("status") == "Green" and not result_map.get("issueCodes") and not result_map.get("issues")
+    issues = result_map.get("issues") if isinstance(result_map.get("issues"), list) else []
+    issue_codes = result_map.get("issueCodes") if isinstance(result_map.get("issueCodes"), list) else []
     return {
         "ok": ok,
         "issue_date": issue_date,
-        "result": result,
+        "result": {
+            "status": result_map.get("status"),
+            "issue_count": len(issues),
+            "issue_codes": issue_codes,
+            "articlePath": result_map.get("articlePath"),
+            "dialoguePath": result_map.get("dialoguePath"),
+            "provenancePath": result_map.get("provenancePath"),
+            "renderedPublicPath": result_map.get("renderedPublicPath"),
+        },
         "semantic_ok": ok,
         "status": "green" if ok else "red",
     }
@@ -244,7 +273,12 @@ def _deepdive_audio(repo_root: Path, issue_date: str) -> dict[str, Any]:
     return {
         "ok": ok,
         "issue_date": issue_date,
-        "state": state,
+        "state": {
+            "ok": state.get("ok") is True,
+            "path": state.get("path"),
+            "deepdive_audio_date": audio_date,
+            "deepdive_audio_url": audio_url,
+        },
         "semantic_ok": ok,
         "status": "green" if ok else "red",
     }
@@ -264,10 +298,17 @@ def _daily_quality(repo_root: Path, issue_date: str) -> dict[str, Any]:
         timeout=180,
     )
     ok = result.get("ok") is True
+    stdout = result.get("stdout") if isinstance(result.get("stdout"), dict) else {}
     return {
         "ok": ok,
         "issue_date": issue_date,
-        "result": result,
+        "result": {
+            "exit_code": result.get("exit_code"),
+            "gate_ok": stdout.get("ok"),
+            "gate_id": stdout.get("gate_id"),
+            "issues": stdout.get("issues", []),
+            "command": result.get("command"),
+        },
         "semantic_ok": ok,
         "status": "green" if ok else "red",
     }
@@ -293,25 +334,41 @@ def _podcast_rows(repo_root: Path, issue_date: str, *, wait_sec: int, poll_sec: 
     daily_ok = daily.get("ok") is True
     deepdive_ok = deepdive.get("ok") is True
     playlist_ok = daily_ok and deepdive_ok and bool(daily.get("playlistId")) and bool(deepdive.get("playlistId"))
+    daily_projection = {
+        "ok": daily.get("ok") is True,
+        "reason": daily.get("reason", ""),
+        "videoId": daily.get("videoId"),
+        "playlistId": daily.get("playlistId"),
+        "title": daily.get("title"),
+        "verification": daily.get("verification"),
+    }
+    deepdive_projection = {
+        "ok": deepdive.get("ok") is True,
+        "reason": deepdive.get("reason", ""),
+        "videoId": deepdive.get("videoId"),
+        "playlistId": deepdive.get("playlistId"),
+        "title": deepdive.get("title"),
+        "verification": deepdive.get("verification"),
+    }
     return {
         "youtube_daily": {
             "ok": daily_ok,
             "issue_date": issue_date,
-            "result": daily,
+            "result": daily_projection,
             "semantic_ok": daily_ok,
             "status": "green" if daily_ok else "red",
         },
         "youtube_deepdive": {
             "ok": deepdive_ok,
             "issue_date": issue_date,
-            "result": deepdive,
+            "result": deepdive_projection,
             "semantic_ok": deepdive_ok,
             "status": "green" if deepdive_ok else "red",
         },
         "playlist": {
             "ok": playlist_ok,
             "issue_date": issue_date,
-            "result": {"daily": daily, "deepdive": deepdive},
+            "result": {"daily": daily_projection, "deepdive": deepdive_projection},
             "semantic_ok": playlist_ok,
             "status": "green" if playlist_ok else "red",
         },
@@ -334,7 +391,17 @@ def _notification(repo_root: Path, issue_date: str) -> dict[str, Any]:
     return {
         "ok": ok,
         "issue_date": issue_date,
-        "observed": observed,
+        "observed": [
+            {
+                "ok": row.get("ok") is True,
+                "path": row.get("path"),
+                "status": (row.get("value") if isinstance(row.get("value"), dict) else {}).get("status"),
+                "sent_count": (row.get("value") if isinstance(row.get("value"), dict) else {}).get("sent_count"),
+                "subscription_count": (row.get("value") if isinstance(row.get("value"), dict) else {}).get("subscription_count"),
+                "recorded_at": (row.get("value") if isinstance(row.get("value"), dict) else {}).get("recorded_at"),
+            }
+            for row in observed
+        ],
         "semantic_ok": ok,
         "status": "green" if ok else "red",
     }
