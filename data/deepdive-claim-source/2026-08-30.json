@@ -1,0 +1,40 @@
+{
+  "articleContentSha256": "807438434b2ea2b9d52cdd48c3b6ab16ec017fc8a5547624bd8da2cb24c2694f",
+  "articlePath": "digest/DeepDive/2026-08-30-DeepDive.md",
+  "bindings": [
+    {
+      "claim": "Broadcom（AVGO）、企業向けAI対応プライベートクラウド支援で提携を拡大",
+      "claimId": "ai-20260830-cloud",
+      "evidence": "Broadcom（AVGO）、企業向けAI対応プライベートクラウド支援で提携を拡大",
+      "sourceUrl": "https://simplywall.st/ja/stocks/us/semiconductors/nasdaq-avgo/broadcom/news/5184bf89220da2c8"
+    },
+    {
+      "claim": "OpenAIがCursorへのモデル提供契約を終了へ、マスク氏のSpaceXによる買収を理由に",
+      "claimId": "ai-20260830-contract",
+      "evidence": "OpenAIがCursorへのモデル提供契約を終了へ、マスク氏のSpaceXによる買収を理由に",
+      "sourceUrl": "https://www.sbbit.jp/article/cont1/186740"
+    },
+    {
+      "claim": "OpenAIがAIサイバー脅威への「集団的防衛」の公開書簡、Anthropicなど100社以上署名（ビジネス＋IT）",
+      "claimId": "ai-20260830-defense",
+      "evidence": "OpenAIがAIサイバー脅威への「集団的防衛」の公開書簡、Anthropicなど100社以上署名（ビジネス＋IT）",
+      "sourceUrl": "https://news.yahoo.co.jp/articles/37652a8f10243cc69737036e0b9a466cedc91fcc"
+    },
+    {
+      "claim": "Anthropic初の本格フィジカルAI、エージェントが実験機器を動かす共通規格",
+      "claimId": "ai-20260830-physical",
+      "evidence": "Anthropic初の本格フィジカルAI、エージェントが実験機器を動かす共通規格",
+      "sourceUrl": "https://exawizards.com/column/ai-trend/news-08-30-2026-3"
+    },
+    {
+      "claim": "アリババのLLM「Qwen」利用数はGoogleの5倍 中国AIとどう生きるか",
+      "claimId": "ai-20260830-qwen",
+      "evidence": "アリババのLLM「Qwen」利用数はGoogleの5倍 中国AIとどう生きるか",
+      "sourceUrl": "https://www.nikkei.com/article/DGXZQOUC220930S6A820C2000000/"
+    }
+  ],
+  "issueDate": "2026-08-30",
+  "schemaVersion": "DEEPDIVE_CLAIM_SOURCE_TRANSPORT_V1",
+  "status": "Green",
+  "transportSha256": "40588d30354f62d9e88e7c820b70826b495005bb913b08b47a8583d2d91734db"
+}

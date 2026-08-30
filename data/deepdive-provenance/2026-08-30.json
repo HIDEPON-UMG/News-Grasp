@@ -1,0 +1,140 @@
+{
+  "articlePath": "digest/DeepDive/2026-08-30-DeepDive.md",
+  "articleSha256": "ad1e856e1d6d3a8288e5def4c4bd21573ccd7ea010479ed6bf2a6e8b90a646d6",
+  "claimBindings": [
+    {
+      "claimId": "ai-20260830-cloud",
+      "claimSha256": "815862fe9bfb831fb17faf7571fa7de2d875a8ed9542efcf58c896c312c3e42d",
+      "evidenceSha256": "f0361c265455b44bf9688768a4676d59dd6619b5d92feb9fffddbcc9b8f4719a",
+      "sourceUrl": "https://simplywall.st/ja/stocks/us/semiconductors/nasdaq-avgo/broadcom/news/5184bf89220da2c8"
+    },
+    {
+      "claimId": "ai-20260830-contract",
+      "claimSha256": "fe41011e51a3e211d4cf7712b3e99cca9e41384da7093a5cf4c9687b7aef8945",
+      "evidenceSha256": "b65693591952ecece7f17d71e2fc4f5d6fa7eefc9c89ff843b21d443938efe84",
+      "sourceUrl": "https://www.sbbit.jp/article/cont1/186740"
+    },
+    {
+      "claimId": "ai-20260830-defense",
+      "claimSha256": "46addb121a09e6ef65aa4770cff360be1d58ea8b661919e24d11b82ae2714909",
+      "evidenceSha256": "fdb183122de27b370a73ccacfc5e369d73399f72a826ff703115c42801694b0a",
+      "sourceUrl": "https://news.yahoo.co.jp/articles/37652a8f10243cc69737036e0b9a466cedc91fcc"
+    },
+    {
+      "claimId": "ai-20260830-physical",
+      "claimSha256": "57040bcad8115820a538f12c38f8336faa08448f8c2a5671b64e0c4c6f97ecd8",
+      "evidenceSha256": "0d7a9184a1d1d5d2e93c5dbdf58cf90c861e78b6ab0b91b2216f14a49d417581",
+      "sourceUrl": "https://exawizards.com/column/ai-trend/news-08-30-2026-3"
+    },
+    {
+      "claimId": "ai-20260830-qwen",
+      "claimSha256": "5c425342181744e456b3e7b099eb20cb0428e8f0c99357d889135891d5960e9f",
+      "evidenceSha256": "fcbe50afbc62f6f66b4ab3a123787607c94dc06686c03f5f61df60fc602a993e",
+      "sourceUrl": "https://www.nikkei.com/article/DGXZQOUC220930S6A820C2000000/"
+    }
+  ],
+  "claimSetSha256": "4fdb02db1ee646eefb69c27331984cbd2ca5423c9105e045ecae3125ccaaedaa",
+  "issueDate": "2026-08-30",
+  "manifestSha256": "f3ed50ba4ae0eba968f85b8ac193161ce252156ecce1699a623d6c2df3e570d2",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V2",
+  "sourceSetSha256": "c637fa9fa9390b44a4e32b290f2299fa180a615be5470ddcde0d951fbd3b1f70",
+  "sources": [
+    {
+      "contentSha256": "358f0de6b7d5bb5ebf512ba03f23055f70922bb760150e9e0e075a98a2f73f11",
+      "fetchedAt": "2026-08-30T06:58:21.411109+00:00",
+      "finalUrl": "https://exawizards.com/column/ai-trend/news-08-30-2026-3/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://exawizards.com/column/ai-trend/news-08-30-2026-3",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://exawizards.com/column/ai-trend/news-08-30-2026-3"
+    },
+    {
+      "contentSha256": "55e34dfd42570c8d53cfbc06c16596dab4a29673736b5ee1cfeca13c25de21a3",
+      "fetchedAt": "2026-08-30T06:58:21.727675+00:00",
+      "finalUrl": "https://news.yahoo.co.jp/articles/37652a8f10243cc69737036e0b9a466cedc91fcc",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://news.yahoo.co.jp/articles/37652a8f10243cc69737036e0b9a466cedc91fcc",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://news.yahoo.co.jp/articles/37652a8f10243cc69737036e0b9a466cedc91fcc"
+    },
+    {
+      "contentSha256": "2fc6df1ea9a4c9262699cc8766be37d8e9a04dce4718ce0f9f5b244d32c5ee73",
+      "fetchedAt": "2026-08-30T06:58:22.299734+00:00",
+      "finalUrl": "https://simplywall.st/ja/stocks/us/semiconductors/nasdaq-avgo/broadcom/news/5184bf89220da2c8",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://simplywall.st/ja/stocks/us/semiconductors/nasdaq-avgo/broadcom/news/5184bf89220da2c8",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://simplywall.st/ja/stocks/us/semiconductors/nasdaq-avgo/broadcom/news/5184bf89220da2c8"
+    },
+    {
+      "contentSha256": "3d8fd4729cc1de403f7583dad52be8531545ff722a00e9675e63610e113e19c3",
+      "fetchedAt": "2026-08-30T06:58:22.548017+00:00",
+      "finalUrl": "https://www.nikkei.com/article/DGXZQOUC220930S6A820C2000000/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.nikkei.com/article/DGXZQOUC220930S6A820C2000000/",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://www.nikkei.com/article/DGXZQOUC220930S6A820C2000000/"
+    },
+    {
+      "contentSha256": "0a8149cdc82c47b60291b7a619e14f76b9ae878f7e516c9e0057a729f8f1e5c6",
+      "fetchedAt": "2026-08-30T06:58:23.247852+00:00",
+      "finalUrl": "https://www.sbbit.jp/article/cont1/186740",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.sbbit.jp/article/cont1/186740",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://www.sbbit.jp/article/cont1/186740"
+    }
+  ],
+  "status": "Green",
+  "transportEvidenceVersion": 1
+}
