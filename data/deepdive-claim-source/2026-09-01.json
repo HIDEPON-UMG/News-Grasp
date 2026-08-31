@@ -1,0 +1,34 @@
+{
+  "articleContentSha256": "079b6d153cc69cb5ab33b5684fbc849b98305f52e2c79893860e376ac744d8f2",
+  "articlePath": "digest/DeepDive/2026-09-01-DeepDive.md",
+  "bindings": [
+    {
+      "claim": "Anthropicが科学者1万人へのClaude提供で研究支援を広げる",
+      "claimId": "ai-20260901-claude",
+      "evidence": "アンソロピック、世界の科学者1万人にClaudeを1年間無料・割引提供、研究支援拡大へ",
+      "sourceUrl": "https://www.sbbit.jp/article/cont1/186751"
+    },
+    {
+      "claim": "Gemini Liveが会話中心の利用から仕事を片付ける相棒へ広がる方向を示す",
+      "claimId": "ai-20260901-gemini",
+      "evidence": "「Gemini Live」が単なる話し相手から仕事を片付ける相棒に ～「Gemini Spark」と連携",
+      "sourceUrl": "https://forest.watch.impress.co.jp/docs/news/2136814.html"
+    },
+    {
+      "claim": "法人向け生成AIが複数モデルを追加料金なしで使い分ける構成を打ち出す",
+      "claimId": "ai-20260901-linne",
+      "evidence": "【マルチAI対応】法人特化型 生成AI「LINNE AI（リンネAI）」がGemini・Claudeを追加搭載！3大生成AIを追加料金なしで使い分け可能に！",
+      "sourceUrl": "https://prtimes.jp/main/html/rd/p/000000006.000178414.html"
+    },
+    {
+      "claim": "NTT東日本が生成AIを災害対策本部の意思決定支援へ接続する実証を始める",
+      "claimId": "ai-20260901-ntt",
+      "evidence": "生成AIによる災害対策本部の意思決定支援に向けた実証を開始",
+      "sourceUrl": "https://www.ntt-east.co.jp/release/detail/20260831_01.html"
+    }
+  ],
+  "issueDate": "2026-09-01",
+  "schemaVersion": "DEEPDIVE_CLAIM_SOURCE_TRANSPORT_V1",
+  "status": "Green",
+  "transportSha256": "1b30f4530c2bcd18dedfa0852e3af6f6719441734978f43e94f555991f4b91ad"
+}

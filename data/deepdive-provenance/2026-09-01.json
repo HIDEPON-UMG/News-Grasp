@@ -1,0 +1,111 @@
+{
+  "articlePath": "digest/DeepDive/2026-09-01-DeepDive.md",
+  "articleSha256": "8a53e2ad5fa98e6004c12968dac322f8bd1e477b3626b218eb2d116c633c7892",
+  "claimBindings": [
+    {
+      "claimId": "ai-20260901-claude",
+      "claimSha256": "6e1527afa8b502d92e1de8ab0beb196a37a6d76ddbb268115000ffd2ad154c52",
+      "evidenceSha256": "802a1e0b34aa06b1ebc478e2123a425a9d7a3115258cf7fde0ddffc16ce48882",
+      "sourceUrl": "https://www.sbbit.jp/article/cont1/186751"
+    },
+    {
+      "claimId": "ai-20260901-gemini",
+      "claimSha256": "bebe87657868fef945c5da2e23ee3586c5e0f8005395157aaaa94ffbf2dc9c29",
+      "evidenceSha256": "0c7874f2a8f697ba5f3054657efb586a10f29679e993c60fe3e981412c1d7451",
+      "sourceUrl": "https://forest.watch.impress.co.jp/docs/news/2136814.html"
+    },
+    {
+      "claimId": "ai-20260901-linne",
+      "claimSha256": "dc9935a1e5330796ece9f494d3321e6a8b49b2da5e75966f6221bd750c52569d",
+      "evidenceSha256": "aa9ff2acc047f8ae853d3b2cee82f42e21d5af0e3c90458621804650173289ef",
+      "sourceUrl": "https://prtimes.jp/main/html/rd/p/000000006.000178414.html"
+    },
+    {
+      "claimId": "ai-20260901-ntt",
+      "claimSha256": "2bc966acdbfa957d9ba83cd1c0255796d2185295f28e87ac60ec2b0759fecdf9",
+      "evidenceSha256": "61b5cae516ac9d4dddebbe255ce0e5b9bbdaf81831b9c1d54365881ee4c03a07",
+      "sourceUrl": "https://www.ntt-east.co.jp/release/detail/20260831_01.html"
+    }
+  ],
+  "claimSetSha256": "07a465d5fbede893521cd5bcb9018e6bfeeaa745cc0208651143c8332eb3dcaf",
+  "issueDate": "2026-09-01",
+  "manifestSha256": "9c40ff8333b8780acb3c25e52343b7b0aef1d063c90edd00fbdd5f939a5fac21",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V2",
+  "sourceSetSha256": "e4da5af580e48ffbd235c2d7e0e9cbf899432fb8ee2976f22ba42691e13c5811",
+  "sources": [
+    {
+      "contentSha256": "66d86344ea8ac6bc6dd24394e57c631348f1f8bf56ca09659bdb22323624fba7",
+      "fetchedAt": "2026-08-31T22:02:51.072415+00:00",
+      "finalUrl": "https://forest.watch.impress.co.jp/docs/news/2136814.html",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://forest.watch.impress.co.jp/docs/news/2136814.html",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://forest.watch.impress.co.jp/docs/news/2136814.html"
+    },
+    {
+      "contentSha256": "7b119881cb3f2bcce6e8fff955c0ddc059b17ae8721c2fb5df6b6c3b44c9704d",
+      "fetchedAt": "2026-08-31T22:02:51.254295+00:00",
+      "finalUrl": "https://prtimes.jp/main/html/rd/p/000000006.000178414.html",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://prtimes.jp/main/html/rd/p/000000006.000178414.html",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://prtimes.jp/main/html/rd/p/000000006.000178414.html"
+    },
+    {
+      "contentSha256": "4c170c33df7f03e3286e7429fbdfce777f857ff40762f64ce012064e5dcb23b9",
+      "fetchedAt": "2026-08-31T22:02:51.540545+00:00",
+      "finalUrl": "https://www.ntt-east.co.jp/release/detail/20260831_01.html",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.ntt-east.co.jp/release/detail/20260831_01.html",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://www.ntt-east.co.jp/release/detail/20260831_01.html"
+    },
+    {
+      "contentSha256": "d9b1fbb287a596c61eaf4a546b8b016c3d42f78dd0e6e1eb0b28b78b92bb4821",
+      "fetchedAt": "2026-08-31T22:02:52.687034+00:00",
+      "finalUrl": "https://www.sbbit.jp/article/cont1/186751",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.sbbit.jp/article/cont1/186751",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://www.sbbit.jp/article/cont1/186751"
+    }
+  ],
+  "status": "Green",
+  "transportEvidenceVersion": 1
+}

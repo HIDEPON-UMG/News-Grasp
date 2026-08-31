@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-09-01",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-09-01-DeepDive.md",
+      "sha256": "8a53e2ad5fa98e6004c12968dac322f8bd1e477b3626b218eb2d116c633c7892"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-09-01-DeepDive.md",
+      "sha256": "9496cfad35683642d88451d980c6b2d600f5028eab9933482901f5f42b9e6838"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-09-01-DeepDive-dialogue.md",
+      "sha256": "e7b7afcc842ec47f41f8c7a53b655d4009e11e2b76b0c7421be786c72278bf27"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 4,
+    "counterevidence": 4,
+    "decision_utility": 5,
+    "dialogue_naturalness": 4,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "会話、複数モデル、災害対応、研究支援を責任分界へ統合した。",
+    "evidence_depth": "4件の取得本文へclaim-sourceを束ね、公開事実と未確認効果を分離した。",
+    "causal_coherence": "接続先の重さから権限、ログ、撤回へ因果の順序を整理した。",
+    "counterevidence": "効果の再現性、安全性、成果向上は当日材料だけでは未確定と明記した。",
+    "decision_utility": "対象業務、確認者、ログ、停止条件を9月末の判断へ落とし込んだ。",
+    "dialogue_naturalness": "先輩の常体と若手の敬体を保ち、14根拠を会話へ分散した。",
+    "relation_map_utility": "6ノード6エッジで提供、接続、統制、撤回の流れを示した。"
+  },
+  "averageScore": 4.428571428571429,
+  "reviewRoute": "production_generation",
+  "status": "Green"
+}

@@ -1,0 +1,47 @@
+{
+  "schemaVersion": "NEWS_GRASP_DIRECT_DISTRIBUTION_V1",
+  "ok": true,
+  "status": "published_ok",
+  "reason": "",
+  "date": "2026-09-01",
+  "pre_publish_commit": "08799435d7d64d5feac608cf56fed83d63b28a9e",
+  "publish_commit": "",
+  "publish_commit_resolution": "post_push_verify",
+  "same_publish_contract": "pre_publish_commit_must_equal_verified_publish_commit",
+  "primary_podcast_state": "build/youtube-podcast/uploads.json",
+  "deepdive_podcast_state": "build/youtube-podcast-deepdive/uploads.json",
+  "latest_audio_state": "build/tts/latest_audio.json",
+  "deepdive_audio_state": "build/tts/deepdive/latest_audio.json",
+  "notification_state": "build/notification/2026-09-01.json",
+  "notification": {
+    "status": "sent",
+    "sent_count": 3,
+    "subscription_count": 3,
+    "state_path": "build/notification/2026-09-01.json",
+    "delivery_receipt_sha256": "eedba217ca499a8bc948deafc880ef436863becf7529ad7ba2db402549ae2b0f"
+  },
+  "generated_at": "2026-09-01T07:22:43+09:00",
+  "playlist": {
+    "status": "public",
+    "daily": {
+      "playlistId": "PLZgyB9WCfZhomVxnIiiKdNbnKbG4acao6",
+      "videoId": "d7F9rVL9Qqw",
+      "playlistItemId": "UExaZ3lCOVdDZlpob21WeG5JaWlLZE5ibktiRzRhY2FvNi45QzM0OUZCRDUyMTgwREVG"
+    },
+    "deepdive": {
+      "playlistId": "PLZgyB9WCfZhrw-OXyv7uG9hoEipJ17ZzV",
+      "videoId": "3CIALwtBuE0",
+      "playlistItemId": "UExaZ3lCOVdDZlpocnctT1h5djd1Rzlob0VpcEoxN1p6Vi4xNjIyNEE0MDEyRDlCMjBE"
+    }
+  },
+  "value": {
+    "date": "2026-09-01",
+    "primary_podcast_state": "build/youtube-podcast/uploads.json",
+    "deepdive_podcast_state": "build/youtube-podcast-deepdive/uploads.json",
+    "latest_audio_state": "build/tts/latest_audio.json",
+    "deepdive_audio_state": "build/tts/deepdive/latest_audio.json",
+    "generated_at": "2026-09-01T07:22:43+09:00",
+    "playlist": "public",
+    "notification": "sent"
+  }
+}
