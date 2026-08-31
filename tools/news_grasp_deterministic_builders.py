@@ -19,6 +19,13 @@ class NewsGraspBuilderError(RuntimeError):
     """builder入力の不足・不整合。"""
 
 
+DEEPDIVE_LLM_DIALOGUE_REQUIRED = "DEEPDIVE_LLM_DIALOGUE_REQUIRED"
+
+
+class DeepDiveDialogueGenerationRequired(NewsGraspBuilderError):
+    """DeepDive 対談台本を LLM 生成経路へ委譲するための fail-closed。"""
+
+
 MAX_SUMMARY_BYTES = 1024 * 1024
 REPARSE_FLAG = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
 
@@ -412,6 +419,7 @@ def materialize_summary_audio_script(
 
 
 def build_deepdive_dialogue(article: Mapping[str, Any]) -> dict[str, Any]:
+    raise DeepDiveDialogueGenerationRequired(DEEPDIVE_LLM_DIALOGUE_REQUIRED)
     _require(article, "issueDate", "title", "body", "provenanceHash")
     if not isinstance(article["body"], str) or not article["body"].strip():
         raise NewsGraspBuilderError("NG_BUILDER_INPUT_INVALID")

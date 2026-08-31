@@ -2,9 +2,69 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Callable
 
-from tools.tts import build_script, deepdive_dialogue
-from tools.tts.build_deepdive_dialogue_script import build_dialogue_markdown, build_dialogue_script
+import pytest
+
+from tools.repair_coverage_matrix import (
+    RepairClass,
+    RepairIssue,
+    classify_repair_issue,
+)
+from tools.tts.build_deepdive_dialogue_script import (
+    DEEPDIVE_LLM_DIALOGUE_REQUIRED,
+    DeepDiveDialogueGenerationRequired,
+    build_dialogue_markdown,
+    build_dialogue_script,
+)
+
+
+def _snapshot_tree(root: Path) -> dict[Path, bytes]:
+    return {
+        path: path.read_bytes()
+        for path in root.rglob("*")
+        if path.is_file()
+    }
+
+
+def _assert_llm_route(issue_code: str) -> None:
+    artifact_paths = (
+        ("digest/DeepDive/2026-06-28-DeepDive.md",)
+        if issue_code == "deepdive_research_evidence_insufficient"
+        else (
+            "digest/DeepDive/2026-06-28-DeepDive.md",
+            "digest/DeepDive/2026-06-28-DeepDive-dialogue.md",
+        )
+    )
+    decision = classify_repair_issue(
+        RepairIssue(
+            gate_id="deepdive-shared-quality",
+            issue_code=issue_code,
+            artifact_paths=artifact_paths,
+            issue_date="2026-06-28",
+            category="deepdive",
+        )
+    )
+    if issue_code == "deepdive_research_evidence_insufficient":
+        assert decision.repair_class == RepairClass.LLM_RESEARCH_AND_REWRITE
+        assert decision.handler_id == "deepdive-research-and-rewrite"
+    else:
+        assert decision.repair_class == RepairClass.LLM_REWRITE_EXISTING_ARTIFACT
+        assert decision.handler_id == "deepdive-dialogue-value-rewrite"
+
+
+def _assert_llm_required(
+    operation: Callable[[], object],
+    *,
+    tmp_path: Path,
+    issue_code: str = "deepdive_dialogue_value_invalid",
+) -> None:
+    before = _snapshot_tree(tmp_path)
+    with pytest.raises(DeepDiveDialogueGenerationRequired) as caught:
+        operation()
+    assert str(caught.value) == DEEPDIVE_LLM_DIALOGUE_REQUIRED
+    assert _snapshot_tree(tmp_path) == before
+    _assert_llm_route(issue_code)
 
 
 def _write_deepdive(path: Path, *, title: str, tags: list[str], body: str) -> None:
@@ -74,18 +134,14 @@ tags: ["deepdive", "currency", "boj", "market"]
 企業には輸入コスト、クラウド費用、海外SaaS契約、価格改定の前提として波及する。
 """
     source += "\n" + _grounded_body()
-    markdown = build_dialogue_markdown(
-        source,
-        source_name="digest/DeepDive/2026-06-23-DeepDive.md",
-        archive_dir=archive,
+    _assert_llm_required(
+        lambda: build_dialogue_markdown(
+            source,
+            source_name="digest/DeepDive/2026-06-23-DeepDive.md",
+            archive_dir=archive,
+        ),
+        tmp_path=tmp_path,
     )
-    turns = deepdive_dialogue.parse_dialogue(markdown)
-
-    assert not deepdive_dialogue.validate_dialogue(turns)
-    assert "type: \"deepdive-dialogue\"" in markdown
-    assert "若手:" in markdown
-    assert "先輩:" in markdown
-    assert "円安161円台、介入協議の再点火" in markdown
 
 
 def test_build_dialogue_markdown_uses_recent_deepdive_context(tmp_path: Path) -> None:
@@ -134,25 +190,14 @@ CodexはChatGPTの代替ではなく、作業を割り振る業務OSとして使
 """
     source += "\n" + _grounded_body()
 
-    markdown = build_dialogue_markdown(
-        source,
-        source_name="digest/DeepDive/2026-06-28-DeepDive.md",
-        archive_dir=archive,
+    _assert_llm_required(
+        lambda: build_dialogue_markdown(
+            source,
+            source_name="digest/DeepDive/2026-06-28-DeepDive.md",
+            archive_dir=archive,
+        ),
+        tmp_path=tmp_path,
     )
-    turns = deepdive_dialogue.parse_dialogue(markdown)
-
-    assert "context_sources:" in markdown
-    assert "2026-06-20" in markdown
-    assert "2026-06-21" not in markdown
-    assert "前回は" in markdown
-    assert "今回" in markdown
-    assert "source:1" in markdown
-    assert "source:13" in markdown
-    assert "背景OpenAI" not in markdown
-    assert "背景前回" not in markdown
-    assert "今回の変化点は、前回は" not in markdown
-    assert "最後に、現場で今日から確認できることはありますか" not in markdown
-    assert not deepdive_dialogue.validate_dialogue(turns)
 
 
 def test_build_dialogue_markdown_rejects_unrelated_recent_fallback(tmp_path: Path) -> None:
@@ -179,14 +224,14 @@ OpenAIがCodex利用データを公開し、業務委任と検収責任が焦点
 """
     source += "\n" + _grounded_body()
 
-    markdown = build_dialogue_markdown(
-        source,
-        source_name="digest/DeepDive/2026-06-28-DeepDive.md",
-        archive_dir=archive,
+    _assert_llm_required(
+        lambda: build_dialogue_markdown(
+            source,
+            source_name="digest/DeepDive/2026-06-28-DeepDive.md",
+            archive_dir=archive,
+        ),
+        tmp_path=tmp_path,
     )
-    assert "食品スーパー" not in markdown
-    assert "旅行需要" not in markdown
-    assert "<!-- value:change_over_time" in markdown
 
 
 def test_build_dialogue_markdown_uses_context_pack_without_related_block(tmp_path: Path) -> None:
@@ -249,17 +294,15 @@ Codexは業務を割り振る実行基盤として使われ始めた。
         encoding="utf-8",
     )
 
-    markdown = build_dialogue_markdown(
-        source,
-        source_name="digest/DeepDive/2026-06-28-DeepDive.md",
-        archive_dir=archive,
-        context_pack_path=pack,
+    _assert_llm_required(
+        lambda: build_dialogue_markdown(
+            source,
+            source_name="digest/DeepDive/2026-06-28-DeepDive.md",
+            archive_dir=archive,
+            context_pack_path=pack,
+        ),
+        tmp_path=tmp_path,
     )
-
-    assert "2026-06-20" in markdown
-    assert "2026-06-21" in markdown
-    assert "context_sources:" in markdown
-    assert not deepdive_dialogue.validate_dialogue(deepdive_dialogue.parse_dialogue(markdown))
 
 
 def test_build_dialogue_markdown_expands_when_two_context_sources_exist(tmp_path: Path) -> None:
@@ -293,20 +336,14 @@ Codexは業務を割り振る実行基盤として使われ始めた。
         body="## 背景\n前回はCodex導入と検収責任を扱った。業務設計、価格モデル、検収責任が顧客説明の中心になった。\n",
     )
 
-    markdown = build_dialogue_markdown(
-        source,
-        source_name="digest/DeepDive/2026-06-28-DeepDive.md",
-        archive_dir=archive,
+    _assert_llm_required(
+        lambda: build_dialogue_markdown(
+            source,
+            source_name="digest/DeepDive/2026-06-28-DeepDive.md",
+            archive_dir=archive,
+        ),
+        tmp_path=tmp_path,
     )
-    turns = deepdive_dialogue.parse_dialogue(markdown)
-    char_count = build_script.effective_char_count("\n".join(turn.text for turn in turns))
-
-    assert "audio_target_minutes: 6" in markdown
-    assert len(turns) == len(deepdive_dialogue.REQUIRED_VALUE_IDS) * 2
-    assert char_count >= deepdive_dialogue.MIN_DIALOGUE_CHARS
-    assert "<!-- value:decision_implication" in markdown
-    assert "最後に、現場で今日から確認できることはありますか" not in markdown
-    assert not deepdive_dialogue.validate_dialogue(turns)
 
 
 def test_build_dialogue_markdown_rejects_context_pack_candidate_without_evidence(tmp_path: Path) -> None:
@@ -350,14 +387,16 @@ OpenAIがCodex利用データを公開し、業務委任と検収責任が焦点
 """
     source += "\n" + _grounded_body()
 
-    markdown = build_dialogue_markdown(
-        source,
-        source_name="digest/DeepDive/2026-06-28-DeepDive.md",
-        archive_dir=archive,
-        context_pack_path=pack,
+    _assert_llm_required(
+        lambda: build_dialogue_markdown(
+            source,
+            source_name="digest/DeepDive/2026-06-28-DeepDive.md",
+            archive_dir=archive,
+            context_pack_path=pack,
+        ),
+        tmp_path=tmp_path,
+        issue_code="deepdive_research_evidence_insufficient",
     )
-    assert "食品スーパー" not in markdown
-    assert "<!-- value:current_signal" in markdown
 
 
 def test_build_dialogue_script_regenerates_existing_script_without_context_sources(tmp_path: Path) -> None:
@@ -392,11 +431,10 @@ def test_build_dialogue_script_regenerates_existing_script_without_context_sourc
         encoding="utf-8",
     )
 
-    build_dialogue_script(source)
-
-    regenerated = out.read_text(encoding="utf-8")
-    assert "context_sources:" in regenerated
-    assert "最後に、現場で今日から確認できることはありますか" not in regenerated
+    _assert_llm_required(
+        lambda: build_dialogue_script(source),
+        tmp_path=tmp_path,
+    )
 
 
 def test_build_dialogue_script_writes_expected_path(tmp_path: Path) -> None:
@@ -426,8 +464,7 @@ date: "2026-06-23"
         body="## 背景\n前回はAI活用と次の焦点を扱った。\n",
     )
 
-    out = build_dialogue_script(source)
-
-    assert out == source.with_name("2026-06-23-DeepDive-dialogue.md")
-    assert out.exists()
-    assert not deepdive_dialogue.validate_dialogue(deepdive_dialogue.parse_dialogue(out.read_text(encoding="utf-8")))
+    _assert_llm_required(
+        lambda: build_dialogue_script(source),
+        tmp_path=tmp_path,
+    )

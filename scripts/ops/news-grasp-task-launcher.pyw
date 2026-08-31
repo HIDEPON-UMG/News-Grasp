@@ -3103,6 +3103,8 @@ def _seal_active_production_generation(
         "tools/news_grasp_direct_runtime.py",
         "tools/news_grasp_direct_completion.py",
         "tools/news_grasp_title_control.py",
+        "tools/news_grasp_title_materializer.py",
+        "scripts/ops/news-grasp-title-materializer.pyw",
         "tools/daily_self_heal.py",
         "tools/news_grasp_daily_control.py",
         "tools/news_grasp_operational_contract.py",

@@ -286,7 +286,7 @@
       "acceptanceId": "A19",
       "requirementId": "R19",
       "productionRoute": "tools/deepdive_quality.py",
-      "consumerMarker": "NG_RC_02_DEEPDIVE_ISSUE_BUNDLE",
+      "consumerMarker": "DEEPDIVE_QUALITY_REVIEW_V2",
       "perspectives": ["primary_behavior", "adversarial_boundary", "operational_recovery"],
       "redNodeIds": ["test_a19_primary", "test_a19_boundary", "test_a19_recovery"]
     },

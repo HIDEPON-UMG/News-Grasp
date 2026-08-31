@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import re
 import ssl
@@ -20,15 +21,67 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
-from tools.tts import build_deepdive_dialogue_script, deepdive_dialogue, proc
+from tools.deepdive_content import contains_internal_metadata
+from tools.tts import deepdive_dialogue, proc
 from tools.validate_deepdive_urls import extract_urls
 
 
 LEGACY_SCHEMA = "DEEPDIVE_SOURCE_PROVENANCE_V1"
 SCHEMA = "DEEPDIVE_SOURCE_PROVENANCE_V2"
 REPORT_SCHEMA = "DEEPDIVE_SHARED_QUALITY_REPORT_V1"
+HISTORY_REPORT_SCHEMA = "DEEPDIVE_SHARED_QUALITY_HISTORY_REPORT_V1"
+HISTORY_OUTPUT_PREFIX = Path("data/deepdive-history-remediation")
 BUNDLE_SCHEMA = "DEEPDIVE_ISSUE_BUNDLE_V1"
 CLAIM_SOURCE_TRANSPORT_SCHEMA = "DEEPDIVE_CLAIM_SOURCE_TRANSPORT_V1"
+DEEPDIVE_QUALITY_REVIEW_V2 = "DEEPDIVE_QUALITY_REVIEW_V2"
+DEEPDIVE_SHARED_QUALITY_ROUTES_SCHEMA = "DEEPDIVE_SHARED_QUALITY_ROUTES_V2"
+DEEPDIVE_SHARED_QUALITY_ROUTES_PATH = (
+    Path(__file__).resolve().parent.parent
+    / "config"
+    / "deepdive_quality_routes.json"
+)
+DEEPDIVE_SHARED_QUALITY_ISSUE_CODES = frozenset(
+    {
+        "deepdive_url_provenance_invalid",
+        "deepdive_article_value_invalid",
+        "deepdive_relation_quality_invalid",
+        "deepdive_dialogue_value_invalid",
+        "deepdive_research_evidence_insufficient",
+        "deepdive_public_surface_invalid",
+    }
+)
+DEEPDIVE_QUALITY_REVIEW_AXES = (
+    "theme_specific_insight",
+    "evidence_depth",
+    "causal_coherence",
+    "counterevidence",
+    "decision_utility",
+    "dialogue_naturalness",
+    "relation_map_utility",
+)
+DEEPDIVE_QUALITY_REVIEW_ROUTES = frozenset(
+    {
+        "production_generation",
+        "repair_publish",
+        "daily_quality",
+        "codex_daily_audit",
+    }
+)
+DEEPDIVE_QUALITY_REVIEW_ARTIFACTS = ("article", "relation", "dialogue")
+DEEPDIVE_QUALITY_REVIEW_ISSUE_CODES = {
+    "article": "deepdive_article_value_invalid",
+    "relation": "deepdive_relation_quality_invalid",
+    "dialogue": "deepdive_dialogue_value_invalid",
+}
+DEEPDIVE_QUALITY_REVIEW_ARTICLE_AXES = frozenset(
+    {
+        "theme_specific_insight",
+        "evidence_depth",
+        "causal_coherence",
+        "counterevidence",
+        "decision_utility",
+    }
+)
 NG_RC_01_DEEPDIVE_SYSTEM_TRANSPORT_FALLBACK = (
     "NG_RC_01_DEEPDIVE_SYSTEM_TRANSPORT_FALLBACK"
 )
@@ -137,6 +190,94 @@ def _read_json(path: Path, code: str) -> dict[str, Any]:
     return value
 
 
+def load_shared_quality_route_registry(
+    registry_path: Path | str | None = None,
+    *,
+    repo_root: Path | str | None = None,
+) -> dict[str, Any]:
+    """共有DeepDive quality registryを読み取り専用で検証して返す。"""
+
+    if registry_path is not None:
+        candidate = Path(registry_path)
+        path = (
+            candidate.resolve() / "config" / "deepdive_quality_routes.json"
+            if candidate.is_dir()
+            else candidate
+        )
+    elif repo_root is not None:
+        path = Path(repo_root).resolve() / "config" / "deepdive_quality_routes.json"
+    else:
+        path = DEEPDIVE_SHARED_QUALITY_ROUTES_PATH
+    invalid_prefix = "DEEPDIVE_SHARED_QUALITY_ROUTES_INVALID"
+    try:
+        if not path.is_file() or path.is_symlink():
+            raise OSError("registry missing")
+        value = json.loads(path.read_text(encoding="utf-8-sig"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise DeepDiveQualityError(f"{invalid_prefix} unreadable") from error
+    if not isinstance(value, dict):
+        raise DeepDiveQualityError(f"{invalid_prefix} schema")
+
+    expected_keys = {
+        "schemaVersion",
+        "engine",
+        "issueCodes",
+        "declaredRoutes",
+        "consumerRoutes",
+        "positiveFixtureRoutes",
+        "negativeFixtureRoutes",
+        "unknownRoutePolicy",
+    }
+    if set(value) != expected_keys:
+        raise DeepDiveQualityError(f"{invalid_prefix} keys")
+    if value.get("schemaVersion") != DEEPDIVE_SHARED_QUALITY_ROUTES_SCHEMA:
+        raise DeepDiveQualityError(f"{invalid_prefix} schemaVersion")
+    if value.get("engine") != "tools.deepdive_quality":
+        raise DeepDiveQualityError(f"{invalid_prefix} engine")
+
+    issue_codes = value.get("issueCodes")
+    if (
+        not isinstance(issue_codes, list)
+        or not all(isinstance(item, str) for item in issue_codes)
+        or len(issue_codes) != len(set(issue_codes))
+        or set(issue_codes) != DEEPDIVE_SHARED_QUALITY_ISSUE_CODES
+    ):
+        raise DeepDiveQualityError(f"{invalid_prefix} issueCodes")
+
+    for field in (
+        "declaredRoutes",
+        "consumerRoutes",
+        "positiveFixtureRoutes",
+        "negativeFixtureRoutes",
+    ):
+        routes = value.get(field)
+        if (
+            not isinstance(routes, list)
+            or not all(isinstance(item, str) for item in routes)
+            or len(routes) != len(set(routes))
+            or set(routes) != DEEPDIVE_QUALITY_REVIEW_ROUTES
+        ):
+            raise DeepDiveQualityError(f"{invalid_prefix} {field}")
+    if value.get("unknownRoutePolicy") != "fail_closed":
+        raise DeepDiveQualityError(f"{invalid_prefix} unknownRoutePolicy")
+
+    return value
+
+
+# 既存の呼出し名は同一loaderへの互換aliasとし、検証ownerを一つに保つ。
+load_shared_quality_routes = load_shared_quality_route_registry
+
+
+def _validate_shared_quality_route_registry(route: str) -> None:
+    """module側の共有route registryと呼出しrouteを監査前に確定する。"""
+
+    value = load_shared_quality_route_registry()
+    if route not in value["declaredRoutes"]:
+        raise DeepDiveQualityError(
+            f"DEEPDIVE_SHARED_QUALITY_ROUTE_UNKNOWN {route}"
+        )
+
+
 def _atomic_write_json(path: Path, value: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor, temporary_name = tempfile.mkstemp(
@@ -165,6 +306,24 @@ def _atomic_write_text(path: Path, value: str) -> None:
     try:
         with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as stream:
             stream.write(value)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _atomic_write_bytes(path: Path, payload: bytes) -> None:
+    """同一directoryでbytesをflush後に置換する。"""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
+    )
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "wb") as stream:
+            stream.write(payload)
             stream.flush()
             os.fsync(stream.fileno())
         os.replace(temporary, path)
@@ -216,6 +375,112 @@ def _safe_repo_path(
     if file_required and (not candidate.is_file() or candidate.is_symlink()):
         raise DeepDiveQualityError("DEEPDIVE_MATERIALIZER_PATH_INVALID")
     return candidate
+
+
+def _snapshot_materializer_file(
+    path: Path,
+    *,
+    repo_root: Path,
+) -> bytes | None:
+    """安全な最終pathの開始時bytesを取得する。"""
+
+    candidate = _safe_repo_path(path, repo_root=repo_root)
+    if not candidate.exists():
+        return None
+    if candidate.is_symlink() or not candidate.is_file():
+        raise DeepDiveQualityError("DEEPDIVE_MATERIALIZER_PATH_INVALID")
+    try:
+        return candidate.read_bytes()
+    except OSError as error:
+        raise DeepDiveQualityError("DEEPDIVE_MATERIALIZER_PATH_INVALID") from error
+
+
+def _snapshot_rendered_files(
+    directory: Path,
+    *,
+    repo_root: Path,
+) -> dict[Path, bytes]:
+    """指定issueの公開directory内にあるregular fileだけを記録する。"""
+
+    root = _safe_repo_path(directory, repo_root=repo_root)
+    if not root.exists():
+        return {}
+    if root.is_symlink() or not root.is_dir():
+        raise DeepDiveQualityError("DEEPDIVE_MATERIALIZER_PATH_INVALID")
+    snapshots: dict[Path, bytes] = {}
+    for current, dirnames, filenames in os.walk(
+        root,
+        topdown=True,
+        followlinks=False,
+    ):
+        current_path = Path(current)
+        for dirname in dirnames:
+            child = current_path / dirname
+            _safe_repo_path(child, repo_root=repo_root)
+            if child.is_symlink() or not child.is_dir():
+                raise DeepDiveQualityError("DEEPDIVE_MATERIALIZER_PATH_INVALID")
+        for filename in filenames:
+            child = current_path / filename
+            child = _safe_repo_path(
+                child,
+                repo_root=repo_root,
+                file_required=True,
+            )
+            try:
+                snapshots[child] = child.read_bytes()
+            except OSError as error:
+                raise DeepDiveQualityError(
+                    "DEEPDIVE_MATERIALIZER_PATH_INVALID"
+                ) from error
+    return snapshots
+
+
+def _restore_materializer_file(
+    path: Path,
+    payload: bytes | None,
+    *,
+    repo_root: Path,
+) -> None:
+    """開始時snapshotへ戻す。危険なsymlink/reparseは変更しない。"""
+
+    try:
+        candidate = _safe_repo_path(path, repo_root=repo_root)
+    except DeepDiveQualityError:
+        return
+    if candidate.exists() and (
+        candidate.is_symlink() or not candidate.is_file()
+    ):
+        return
+    if payload is None:
+        if candidate.exists():
+            try:
+                candidate.unlink()
+            except OSError:
+                return
+        return
+    try:
+        _atomic_write_bytes(candidate, payload)
+    except (DeepDiveQualityError, OSError):
+        return
+
+
+def _restore_rendered_files(
+    directory: Path,
+    snapshots: dict[Path, bytes],
+    *,
+    repo_root: Path,
+) -> None:
+    """公開issue directoryだけを開始時snapshotへ戻す。"""
+
+    try:
+        current = _snapshot_rendered_files(directory, repo_root=repo_root)
+    except DeepDiveQualityError:
+        return
+    for path in sorted(current):
+        if path not in snapshots:
+            _restore_materializer_file(path, None, repo_root=repo_root)
+    for path, payload in snapshots.items():
+        _restore_materializer_file(path, payload, repo_root=repo_root)
 
 
 def _load_observation_cache(path: Path) -> dict[str, dict[str, object]]:
@@ -316,6 +581,37 @@ def _normalized_evidence_text(value: str) -> str:
     return re.sub(r"\s+", " ", without_markup).strip().casefold()
 
 
+_GENERIC_EVIDENCE_RE = re.compile(
+    r"^(?:(?:元記事|記事(?:本文)?|一次(?:資料|ソース)|出典)"
+    r"(?:の内容)?(?:を)?(?:確認|参照)(?:する|した|済み)?"
+    r"|(?:source|official source|see source|check source))"
+    r"[。.!！?？]*$",
+    re.IGNORECASE,
+)
+
+
+def _claim_article_value_issues(
+    declarations: list[dict[str, str]],
+) -> list[str]:
+    """claim本文の複製や汎用文だけのevidenceを記事価値Redに分類する。"""
+
+    issues: list[str] = []
+    for row in declarations:
+        claim = _normalized_evidence_text(row["claim"])
+        evidence = _normalized_evidence_text(row["evidence"])
+        if evidence == claim:
+            issues.append(
+                "DEEPDIVE_ARTICLE_VALUE_INVALID "
+                f"claim={row['claimId']} evidence_duplicate"
+            )
+        elif _GENERIC_EVIDENCE_RE.fullmatch(evidence):
+            issues.append(
+                "DEEPDIVE_ARTICLE_VALUE_INVALID "
+                f"claim={row['claimId']} evidence_generic"
+            )
+    return issues
+
+
 def _claim_source_declarations(article_text: str) -> list[dict[str, str]]:
     declarations: list[dict[str, str]] = []
     seen_ids: set[str] = set()
@@ -342,10 +638,13 @@ def _claim_source_declarations(article_text: str) -> list[dict[str, str]]:
             or claim_id in seen_ids
             or not row["claim"]
             or not row["sourceUrl"].startswith(("http://", "https://"))
-            or len(_normalized_evidence_text(row["evidence"])) < 12
         ):
             raise DeepDiveQualityError(
                 "DEEPDIVE_CLAIM_SOURCE_FIT_INVALID binding_value"
+            )
+        if len(_normalized_evidence_text(row["evidence"])) < 12:
+            raise DeepDiveQualityError(
+                "DEEPDIVE_RESEARCH_EVIDENCE_INSUFFICIENT evidence_short"
             )
         seen_ids.add(claim_id)
         declarations.append(row)
@@ -390,6 +689,7 @@ def _load_claim_source_transport(
     value = _read_json(path, "DEEPDIVE_CLAIM_SOURCE_TRANSPORT_INVALID json")
     unsigned = dict(value)
     observed_seal = unsigned.pop("transportSha256", None)
+    article_content_sha = value.get("articleContentSha256")
     if (
         set(value)
         != {
@@ -405,8 +705,7 @@ def _load_claim_source_transport(
         or value.get("status") != "Green"
         or value.get("issueDate") != issue_date
         or value.get("articlePath") != _portable_article_path(article_path)
-        or value.get("articleContentSha256")
-        != _claim_free_article_sha256(article_text)
+        or HEX_64_RE.fullmatch(str(article_content_sha or "")) is None
         or observed_seal != _canonical_sha256(unsigned)
         or not isinstance(value.get("bindings"), list)
     ):
@@ -418,6 +717,11 @@ def _load_claim_source_transport(
     bindings = _claim_source_declarations(serialized)
     if len(bindings) != len(value["bindings"]):
         raise DeepDiveQualityError("DEEPDIVE_CLAIM_SOURCE_TRANSPORT_INVALID bindings")
+    if article_content_sha != _claim_free_article_sha256(article_text):
+        current_bindings = _claim_source_declarations(article_text)
+        if not current_bindings:
+            raise DeepDiveQualityError("DEEPDIVE_CLAIM_SOURCE_TRANSPORT_INVALID seal")
+        return sorted(current_bindings, key=lambda row: row["claimId"])
     return bindings
 
 
@@ -462,94 +766,6 @@ def _claim_binding_fingerprint(row: dict[str, str]) -> dict[str, str]:
     }
 
 
-def _materialize_missing_claim_sources(
-    article_text: str,
-    *,
-    observed: dict[str, dict[str, object]],
-) -> str:
-    """取得済みsourceを本文claimへ決定論的にannotationする。
-
-    記事の意味内容は書き換えず、各未束縛URLより前にある最寄りの本文行へ
-    commentだけを追加する。本文claimまたは取得本文spanを決定できない場合は
-    推測せずtyped Redにする。
-    """
-
-    declarations = _claim_source_declarations(article_text)
-    bound_urls = {row["sourceUrl"] for row in declarations}
-    locations = _article_url_locations(article_text)
-    missing_urls = sorted(set(locations) - bound_urls)
-    if not missing_urls:
-        return article_text
-    lines = article_text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
-    insertions: dict[int, list[str]] = {}
-    generated_count = 0
-    for url in missing_urls:
-        record = observed.get(url)
-        observed_text = _normalized_evidence_text(
-            str((record or {}).get("observedText") or "")
-        )
-        if len(observed_text) < 12:
-            raise DeepDiveQualityError(
-                f"DEEPDIVE_CLAIM_SOURCE_GENERATION_FAILED evidence {url}"
-            )
-        url_lines = [index for index, line in enumerate(lines) if url in line]
-        if not url_lines:
-            raise DeepDiveQualityError(
-                f"DEEPDIVE_CLAIM_SOURCE_GENERATION_FAILED location {url}"
-            )
-        claim_index: int | None = None
-        claim = ""
-        for index in range(url_lines[0] - 1, -1, -1):
-            candidate = lines[index].strip()
-            if (
-                not candidate
-                or candidate == "---"
-                or candidate.startswith(("#", "<!--", "- [", "* ["))
-                or "http://" in candidate
-                or "https://" in candidate
-            ):
-                continue
-            normalized_claim = re.sub(r"[`*_>#]", "", candidate).strip()
-            if len(normalized_claim) < 12:
-                continue
-            claim_index = index
-            claim = normalized_claim
-            break
-        if claim_index is None:
-            raise DeepDiveQualityError(
-                f"DEEPDIVE_CLAIM_SOURCE_GENERATION_FAILED claim {url}"
-            )
-        normalized_claim = _normalized_evidence_text(claim)
-        if len(normalized_claim) < 12 or normalized_claim not in observed_text:
-            raise DeepDiveQualityError(
-                f"DEEPDIVE_CLAIM_SOURCE_GENERATION_FAILED claim_not_supported {url}"
-            )
-        generated_count += 1
-        claim_id = (
-            f"recovery-{len(declarations) + generated_count:02d}-"
-            f"{hashlib.sha256(url.encode('utf-8')).hexdigest()[:10]}"
-        )
-        declaration = json.dumps(
-            {
-                "claimId": claim_id,
-                "claim": claim,
-                "sourceUrl": url,
-                "evidence": claim,
-            },
-            ensure_ascii=False,
-            separators=(",", ":"),
-        )
-        insertions.setdefault(claim_index, []).append(
-            f"<!-- claim-source: {declaration} -->"
-        )
-    output: list[str] = []
-    for index, line in enumerate(lines):
-        output.append(line)
-        for annotation in insertions.get(index, []):
-            output.extend(("", annotation))
-    return "\n".join(output).rstrip() + "\n"
-
-
 def _build_claim_bindings(
     *,
     article_text: str,
@@ -559,7 +775,7 @@ def _build_claim_bindings(
     declarations = _claim_source_declarations(article_text)
     if date.fromisoformat(issue_date) >= CLAIM_SOURCE_ENFORCEMENT_DATE and not declarations:
         raise DeepDiveQualityError(
-            "DEEPDIVE_CLAIM_SOURCE_FIT_INVALID bindings_missing"
+            "DEEPDIVE_RESEARCH_EVIDENCE_INSUFFICIENT bindings_missing"
         )
     bindings: list[dict[str, str]] = []
     for row in declarations:
@@ -568,7 +784,7 @@ def _build_claim_bindings(
         evidence = _normalized_evidence_text(row["evidence"])
         if not record or not observed_text or evidence not in _normalized_evidence_text(observed_text):
             raise DeepDiveQualityError(
-                "DEEPDIVE_CLAIM_SOURCE_FIT_INVALID "
+                "DEEPDIVE_RESEARCH_EVIDENCE_INSUFFICIENT "
                 f"claim={row['claimId']} source={row['sourceUrl']}"
             )
         bindings.append(_claim_binding_fingerprint(row))
@@ -655,6 +871,7 @@ def build_provenance_manifest(
     article_path: Path,
     fetch_records: list[dict[str, object]],
     output_path: Path,
+    article_bytes_override: bytes | None = None,
 ) -> dict[str, Any]:
     """実取得記録を記事内URLの全出現位置へ束縛する。"""
 
@@ -662,7 +879,15 @@ def build_provenance_manifest(
         article = Path(article_path).resolve(strict=True)
     except OSError as error:
         raise DeepDiveQualityError("DEEPDIVE_ARTICLE_MISSING") from error
-    text = article.read_text(encoding="utf-8-sig")
+    try:
+        article_bytes = (
+            article.read_bytes()
+            if article_bytes_override is None
+            else bytes(article_bytes_override)
+        )
+        text = article_bytes.decode("utf-8-sig")
+    except (OSError, TypeError, UnicodeError) as error:
+        raise DeepDiveQualityError("DEEPDIVE_ARTICLE_MISSING") from error
     issue_date = _issue_date(article)
     locations = _article_url_locations(text)
     if not locations:
@@ -704,7 +929,7 @@ def build_provenance_manifest(
         "status": "Green",
         "issueDate": issue_date,
         "articlePath": _portable_article_path(article),
-        "articleSha256": _canonical_text_sha256(article.read_bytes()),
+        "articleSha256": _canonical_text_sha256(article_bytes),
         "sources": sources,
         "sourceSetSha256": _canonical_sha256(sources),
     }
@@ -770,10 +995,13 @@ def validate_rendered_public_surface(
         collector.close()
     except (ValueError, TypeError):
         return ["DEEPDIVE_RENDERED_PUBLIC_SURFACE_INVALID"], []
-    issues = [
+    issues: list[str] = []
+    if contains_internal_metadata(rendered_text):
+        issues.append("DEEPDIVE_PUBLIC_METADATA_EXPOSED")
+    issues.extend(
         f"DEEPDIVE_RENDERED_PUBLIC_HREF_MISSING {href}"
         for href in sorted(required_hrefs - collector.hrefs)
-    ]
+    )
     if value.get("schemaVersion") == SCHEMA:
         source_sha = str(value.get("articleSha256") or "")
         source_marker = re.search(
@@ -792,6 +1020,9 @@ def validate_rendered_public_surface(
 def validate_claim_source_fit(
     article_path: Path,
     manifest_path: Path,
+    *,
+    article_text_override: str | None = None,
+    require_v2_claim_sources: bool = False,
 ) -> list[str]:
     """生成時に実取得本文へ照合したclaim bindingを記事とmanifestへ再束縛する。"""
 
@@ -800,7 +1031,11 @@ def validate_claim_source_fit(
     if not article.is_file() or not manifest.is_file():
         return []
     try:
-        article_text = article.read_text(encoding="utf-8-sig")
+        article_text = (
+            article.read_text(encoding="utf-8-sig")
+            if article_text_override is None
+            else article_text_override
+        )
         value = json.loads(manifest.read_text(encoding="utf-8-sig"))
         issue_day = date.fromisoformat(_issue_date(article))
     except (OSError, UnicodeError, json.JSONDecodeError, ValueError):
@@ -809,24 +1044,28 @@ def validate_claim_source_fit(
         return ["DEEPDIVE_CLAIM_SOURCE_FIT_INVALID"]
     schema = value.get("schemaVersion")
     if schema == LEGACY_SCHEMA:
-        return (
-            ["DEEPDIVE_CLAIM_SOURCE_MANIFEST_LEGACY"]
-            if issue_day >= CLAIM_SOURCE_ENFORCEMENT_DATE
-            else []
-        )
+        if not (require_v2_claim_sources or issue_day >= CLAIM_SOURCE_ENFORCEMENT_DATE):
+            return []
+        issues = ["DEEPDIVE_CLAIM_SOURCE_MANIFEST_LEGACY"]
+        if require_v2_claim_sources:
+            issues.append("DEEPDIVE_CLAIM_SOURCE_BINDINGS_MISSING")
+        return issues
     if schema != SCHEMA:
         return ["DEEPDIVE_CLAIM_SOURCE_SCHEMA_INVALID"]
     try:
+        declarations = _claim_source_declarations(article_text)
         expected = sorted(
-            (_claim_binding_fingerprint(row) for row in _claim_source_declarations(article_text)),
+            (_claim_binding_fingerprint(row) for row in declarations),
             key=lambda item: item["claimId"],
         )
     except DeepDiveQualityError as error:
         return [str(error)]
-    if issue_day >= CLAIM_SOURCE_ENFORCEMENT_DATE and not expected:
+    if (
+        require_v2_claim_sources or issue_day >= CLAIM_SOURCE_ENFORCEMENT_DATE
+    ) and not expected:
         return ["DEEPDIVE_CLAIM_SOURCE_BINDINGS_MISSING"]
     actual = value.get("claimBindings")
-    issues: list[str] = []
+    issues: list[str] = _claim_article_value_issues(declarations)
     if actual != expected:
         issues.append("DEEPDIVE_CLAIM_SOURCE_BINDING_DRIFT")
     if value.get("claimSetSha256") != _canonical_sha256(actual):
@@ -1207,8 +1446,9 @@ def materialize_issue_bundle(
 ) -> dict[str, Any]:
     """article由来のclaim/provenance/dialogueを単一handlerで確定する。
 
-    article本文とnetwork observationから不足claim-sourceを機械生成し、
-    provenance/dialogueをstageしてから同一quality predicateでGreenを決める。
+    article本文に存在するclaim-sourceとnetwork observationを検証し、
+    provenanceをstageしてから同一quality predicateでGreenを決める。
+    claim-sourceの不足は本文を補完せず、追加調査へ戻すtyped Redにする。
     途中crashで一部が置き換わってもbundle receiptは作られず、
     article/provenance/dialogueのhash不一致により後続auditはRedになる。
     """
@@ -1222,6 +1462,7 @@ def materialize_issue_bundle(
     if not article.is_file() or article.is_symlink():
         raise DeepDiveQualityError(f"DEEPDIVE_ARTICLE_MISSING {article}")
     article_text = article.read_text(encoding="utf-8-sig")
+    original_article_text = article_text
     declarations = _claim_source_declarations(article_text)
 
     manifest = _safe_repo_path(
@@ -1236,24 +1477,46 @@ def materialize_issue_bundle(
         repo / "data" / "deepdive-claim-source" / f"{issue_date}.json",
         repo_root=repo,
     )
-    manifest.parent.mkdir(parents=True, exist_ok=True)
-    dialogue.parent.mkdir(parents=True, exist_ok=True)
-    claim_transport.parent.mkdir(parents=True, exist_ok=True)
-    manifest = _safe_repo_path(manifest, repo_root=repo)
-    dialogue = _safe_repo_path(dialogue, repo_root=repo)
-    claim_transport = _safe_repo_path(claim_transport, repo_root=repo)
-    staged_manifest = _exclusive_stage_file(manifest, repo_root=repo)
-    staged_dialogue = _exclusive_stage_file(dialogue, repo_root=repo)
-    staged_claim_transport = _exclusive_stage_file(
-        claim_transport, repo_root=repo
+    receipt_path = _safe_repo_path(
+        repo / "data" / "deepdive-bundles" / f"{issue_date}.json",
+        repo_root=repo,
     )
-    try:
-        locations = _article_url_locations(article_text)
-        records = [_fetch_one(url, timeout=timeout) for url in sorted(locations)]
-        observed = _normalize_fetch_records(
-            records,
-            expected_urls=set(locations),
+    rendered_directory = _safe_repo_path(
+        repo / "docs" / "deepdive" / issue_date,
+        repo_root=repo,
+    )
+    final_snapshots = {
+        path: _snapshot_materializer_file(path, repo_root=repo)
+        for path in (
+            article,
+            manifest,
+            dialogue,
+            claim_transport,
+            receipt_path,
         )
+    }
+    rendered_snapshots = (
+        _snapshot_rendered_files(rendered_directory, repo_root=repo)
+        if render_public
+        else {}
+    )
+    staged_manifest: Path | None = None
+    staged_dialogue: Path | None = None
+    staged_claim_transport: Path | None = None
+    try:
+        manifest.parent.mkdir(parents=True, exist_ok=True)
+        dialogue.parent.mkdir(parents=True, exist_ok=True)
+        claim_transport.parent.mkdir(parents=True, exist_ok=True)
+        manifest = _safe_repo_path(manifest, repo_root=repo)
+        dialogue = _safe_repo_path(dialogue, repo_root=repo)
+        claim_transport = _safe_repo_path(claim_transport, repo_root=repo)
+        staged_manifest = _exclusive_stage_file(manifest, repo_root=repo)
+        staged_dialogue = _exclusive_stage_file(dialogue, repo_root=repo)
+        staged_claim_transport = _exclusive_stage_file(
+            claim_transport, repo_root=repo
+        )
+        locations = _article_url_locations(article_text)
+        transported = None
         if issue_day >= CLAIM_SOURCE_ENFORCEMENT_DATE:
             transported = _load_claim_source_transport(
                 path=claim_transport,
@@ -1261,17 +1524,35 @@ def materialize_issue_bundle(
                 article_path=article,
                 issue_date=issue_date,
             )
+        fetch_locations = sorted(locations)
+        if (
+            issue_day >= CLAIM_SOURCE_ENFORCEMENT_DATE
+            and not declarations
+            and transported is None
+        ):
+            # binding不足時はresearchへ戻すため、canonical fetchは一度だけ許可する。
+            fetch_locations = fetch_locations[:1]
+        records = [_fetch_one(url, timeout=timeout) for url in fetch_locations]
+        observed = _normalize_fetch_records(
+            records,
+            expected_urls=set(fetch_locations),
+        )
+        if issue_day >= CLAIM_SOURCE_ENFORCEMENT_DATE:
             if transported is not None:
                 article_text = _restore_claim_sources_from_transport(
                     article_text, bindings=transported
                 )
             elif not declarations:
-                article_text = _materialize_missing_claim_sources(
-                    article_text,
-                    observed=observed,
+                # 取得本文からclaim/evidenceを推測して記事へ書き戻すと、
+                # 観測根拠のない意味を生成してしまう。research routeへ戻す。
+                raise DeepDiveQualityError(
+                    "DEEPDIVE_RESEARCH_EVIDENCE_INSUFFICIENT bindings_missing"
                 )
-            if article_text != article.read_text(encoding="utf-8-sig"):
-                _atomic_write_text(article, article_text)
+        article_bytes_override = (
+            article_text.encode("utf-8")
+            if article_text != original_article_text
+            else None
+        )
         # transportはclaimとsource本文のfitを実測した後だけ封印する。
         _build_claim_bindings(
             article_text=article_text,
@@ -1290,19 +1571,29 @@ def materialize_issue_bundle(
             article_path=article,
             fetch_records=records,
             output_path=staged_manifest,
+            article_bytes_override=article_bytes_override,
         )
-        claim_issues = validate_claim_source_fit(article, staged_manifest)
+        claim_issues = validate_claim_source_fit(
+            article,
+            staged_manifest,
+            article_text_override=article_text,
+        )
         if claim_issues:
             raise DeepDiveQualityError("; ".join(claim_issues))
-        build_deepdive_dialogue_script.build_dialogue_script(
-            article,
-            output=staged_dialogue,
-            force=True,
-            context_pack_path=context_pack_path,
-        )
+        if (
+            not dialogue.is_file()
+            or dialogue.is_symlink()
+            or dialogue.stat().st_size <= 0
+        ):
+            raise DeepDiveQualityError(
+                "DEEPDIVE_LLM_REWRITE_REQUIRED dialogue_staged_missing"
+            )
+        # LLM生成済みcanonical dialogueだけを入力として採用し、
+        # validatorを通すexclusive stageへ内容をそのまま複製する。
+        staged_dialogue.write_bytes(dialogue.read_bytes())
         dialogue_issues = deepdive_dialogue.validate_dialogue_document(
             staged_dialogue.read_text(encoding="utf-8-sig"),
-            source_markdown=article.read_text(encoding="utf-8-sig"),
+            source_markdown=article_text,
         )
         dialogue_issues.extend(
             _dialogue_source_lineage_issues(staged_dialogue, staged_manifest)
@@ -1321,70 +1612,95 @@ def materialize_issue_bundle(
         manifest = _safe_repo_path(manifest, repo_root=repo)
         dialogue = _safe_repo_path(dialogue, repo_root=repo)
         claim_transport = _safe_repo_path(claim_transport, repo_root=repo)
+        quality_review_issues, _, quality_review, _ = _validate_quality_review(
+            repo=repo,
+            issue_date=issue_date,
+            article=article,
+            dialogue=dialogue,
+            article_bytes_override=article_bytes_override,
+        )
+        if quality_review_issues or quality_review.get("status") != "Green":
+            review_failure = "; ".join(quality_review_issues)
+            raise DeepDiveQualityError(
+                review_failure or "DEEPDIVE_QUALITY_REVIEW_RED"
+            )
+        if article_bytes_override is not None:
+            _atomic_write_text(article, article_text)
         os.replace(staged_manifest, manifest)
         os.replace(staged_dialogue, dialogue)
         os.replace(staged_claim_transport, claim_transport)
-    finally:
-        staged_manifest.unlink(missing_ok=True)
-        staged_dialogue.unlink(missing_ok=True)
-        staged_claim_transport.unlink(missing_ok=True)
 
-    if render_public:
-        from tools.render_deepdive import build_deepdive_pages
+        if render_public:
+            from tools.render_deepdive import build_deepdive_pages
 
-        expected_rendered = _safe_repo_path(
-            repo / "docs" / "deepdive" / issue_date / "index.html",
+            expected_rendered = _safe_repo_path(
+                rendered_directory / "index.html",
+                repo_root=repo,
+            )
+            written = build_deepdive_pages(
+                docs_root=repo / "docs",
+                digest_dir=repo / "digest" / "DeepDive",
+                issue_date=issue_date,
+                validate_live_urls=False,
+            )
+            safe_written = {
+                _safe_repo_path(path, repo_root=repo, file_required=True).resolve()
+                for path in written
+            }
+            if expected_rendered.resolve() not in safe_written:
+                raise DeepDiveQualityError("DEEPDIVE_RENDERED_HTML_MISSING")
+
+        report = audit_issue(
             repo_root=repo,
-        )
-        written = build_deepdive_pages(
-            docs_root=repo / "docs",
-            digest_dir=repo / "digest" / "DeepDive",
             issue_date=issue_date,
-            validate_live_urls=False,
+            include_corpus=False,
+            require_rendered_public=render_public,
+            route="production_generation",
         )
-        safe_written = {
-            _safe_repo_path(path, repo_root=repo, file_required=True).resolve()
-            for path in written
+        if report["status"] != "Green":
+            raise DeepDiveQualityError("; ".join(report["issues"]))
+        receipt: dict[str, Any] = {
+            "schemaVersion": BUNDLE_SCHEMA,
+            "status": "Green",
+            "issueDate": issue_date,
+            "handler": "tools.deepdive_quality.materialize-issue",
+            "articlePath": _portable_article_path(article),
+            "articleSha256": _file_sha256(article),
+            "claimSourceTransportPath": claim_transport.relative_to(repo).as_posix(),
+            "claimSourceTransportSha256": _file_sha256(claim_transport),
+            "provenancePath": manifest.relative_to(repo).as_posix(),
+            "provenanceSha256": _file_sha256(manifest),
+            "dialoguePath": dialogue.relative_to(repo).as_posix(),
+            "dialogueSha256": _file_sha256(dialogue),
+            "renderedPublicRequired": render_public,
         }
-        if expected_rendered.resolve() not in safe_written:
-            raise DeepDiveQualityError("DEEPDIVE_RENDERED_HTML_MISSING")
-
-    report = audit_issue(
-        repo_root=repo,
-        issue_date=issue_date,
-        include_corpus=False,
-        require_rendered_public=render_public,
-    )
-    if report["status"] != "Green":
-        raise DeepDiveQualityError("; ".join(report["issues"]))
-    receipt_path = _safe_repo_path(
-        repo / "data" / "deepdive-bundles" / f"{issue_date}.json",
-        repo_root=repo,
-    )
-    receipt: dict[str, Any] = {
-        "schemaVersion": BUNDLE_SCHEMA,
-        "status": "Green",
-        "issueDate": issue_date,
-        "handler": "tools.deepdive_quality.materialize-issue",
-        "articlePath": _portable_article_path(article),
-        "articleSha256": _file_sha256(article),
-        "claimSourceTransportPath": claim_transport.relative_to(repo).as_posix(),
-        "claimSourceTransportSha256": _file_sha256(claim_transport),
-        "provenancePath": manifest.relative_to(repo).as_posix(),
-        "provenanceSha256": _file_sha256(manifest),
-        "dialoguePath": dialogue.relative_to(repo).as_posix(),
-        "dialogueSha256": _file_sha256(dialogue),
-        "renderedPublicRequired": render_public,
-    }
-    if render_public:
-        rendered = repo / "docs" / "deepdive" / issue_date / "index.html"
-        receipt["renderedPublicPath"] = rendered.relative_to(repo).as_posix()
-        receipt["renderedPublicSha256"] = _file_sha256(rendered)
-    receipt["bundleSha256"] = _canonical_sha256(receipt)
-    receipt_path.parent.mkdir(parents=True, exist_ok=True)
-    receipt_path = _safe_repo_path(receipt_path, repo_root=repo)
-    _atomic_write_json(receipt_path, receipt)
-    return {**receipt, "bundleReceiptPath": str(receipt_path)}
+        if render_public:
+            rendered = rendered_directory / "index.html"
+            receipt["renderedPublicPath"] = rendered.relative_to(repo).as_posix()
+            receipt["renderedPublicSha256"] = _file_sha256(rendered)
+        receipt["bundleSha256"] = _canonical_sha256(receipt)
+        receipt_path.parent.mkdir(parents=True, exist_ok=True)
+        receipt_path = _safe_repo_path(receipt_path, repo_root=repo)
+        _atomic_write_json(receipt_path, receipt)
+        return {**receipt, "bundleReceiptPath": str(receipt_path)}
+    except Exception:
+        for path, payload in final_snapshots.items():
+            _restore_materializer_file(path, payload, repo_root=repo)
+        if render_public:
+            _restore_rendered_files(
+                rendered_directory,
+                rendered_snapshots,
+                repo_root=repo,
+            )
+        raise
+    finally:
+        for staged in (
+            staged_manifest,
+            staged_dialogue,
+            staged_claim_transport,
+        ):
+            if staged is not None:
+                staged.unlink(missing_ok=True)
 
 
 def capture_period_provenance(
@@ -1517,6 +1833,100 @@ def _dialogue_paths_for_period(
     return paths
 
 
+def _history_regular_file(path: Path, *, repo_root: Path) -> bool:
+    """履歴列挙で外部へ追跡しないregular fileだけを許可する。"""
+
+    try:
+        if path.is_symlink() or not path.is_file():
+            return False
+        metadata = os.lstat(path)
+        if int(getattr(metadata, "st_file_attributes", 0)) & 0x400:
+            return False
+        resolved = path.resolve(strict=True)
+        resolved.relative_to(repo_root)
+    except (OSError, RuntimeError, ValueError):
+        return False
+    return True
+
+
+def _history_article_paths(
+    *,
+    repo_root: Path,
+    start: date,
+    end: date,
+) -> list[Path]:
+    """履歴範囲内のcanonical記事だけをPath.globで収集する。"""
+
+    deepdive_dir = repo_root / "digest" / "DeepDive"
+    try:
+        if not deepdive_dir.exists() or deepdive_dir.is_symlink():
+            return []
+        if not deepdive_dir.is_dir():
+            return []
+        metadata = os.lstat(deepdive_dir)
+        if int(getattr(metadata, "st_file_attributes", 0)) & 0x400:
+            return []
+        deepdive_dir.resolve(strict=True).relative_to(repo_root)
+        candidates = list(deepdive_dir.glob("*-DeepDive.md"))
+    except (OSError, RuntimeError, ValueError):
+        return []
+
+    dated_paths: list[tuple[date, Path]] = []
+    for path in candidates:
+        match = ISSUE_DATE_RE.fullmatch(path.name)
+        if match is None or not _history_regular_file(
+            path,
+            repo_root=repo_root,
+        ):
+            continue
+        try:
+            issue_day = date.fromisoformat(match.group(1))
+        except ValueError:
+            continue
+        if start <= issue_day <= end:
+            dated_paths.append((issue_day, path))
+    dated_paths.sort(key=lambda row: (row[0], row[1].name))
+    return [path for _issue_day, path in dated_paths]
+
+
+def _validate_history_output_path(
+    output: Path | str,
+    *,
+    repo_root: Path,
+) -> Path:
+    """履歴Red manifestの書込み先をrepo内の固定prefixへ限定する。"""
+
+    try:
+        relative = Path(output)
+    except (TypeError, ValueError) as error:
+        raise DeepDiveQualityError(
+            "DEEPDIVE_HISTORY_OUTPUT_INVALID"
+        ) from error
+    prefix_parts = HISTORY_OUTPUT_PREFIX.parts
+    if (
+        relative.is_absolute()
+        or len(relative.parts) <= len(prefix_parts)
+        or relative.parts[: len(prefix_parts)] != prefix_parts
+        or any(part in {"", ".", ".."} for part in relative.parts)
+        or relative.suffix != ".json"
+    ):
+        raise DeepDiveQualityError("DEEPDIVE_HISTORY_OUTPUT_INVALID")
+
+    repo = Path(repo_root).resolve()
+    candidate = repo / relative
+    try:
+        candidate = _safe_repo_path(candidate, repo_root=repo)
+    except DeepDiveQualityError as error:
+        raise DeepDiveQualityError(
+            "DEEPDIVE_HISTORY_OUTPUT_INVALID"
+        ) from error
+    if candidate.is_symlink() or (
+        candidate.exists() and not candidate.is_file()
+    ):
+        raise DeepDiveQualityError("DEEPDIVE_HISTORY_OUTPUT_INVALID")
+    return candidate
+
+
 def _dialogue_source_lineage_issues(
     dialogue_path: Path,
     manifest_path: Path,
@@ -1542,20 +1952,295 @@ def _dialogue_source_lineage_issues(
     return []
 
 
+def _quality_review_file_evidence(
+    path: Path,
+    payload: bytes,
+) -> dict[str, str]:
+    evidence = {
+        "path": str(path.resolve()),
+        "sha256": hashlib.sha256(payload).hexdigest(),
+    }
+    try:
+        evidence["canonicalTextSha256"] = _canonical_text_sha256(payload)
+    except UnicodeError:
+        pass
+    return evidence
+
+
+def _relation_review_payload(
+    article: Path,
+    *,
+    article_bytes_override: bytes | None = None,
+) -> object:
+    """記事の先頭relations blockをrendererと同じparserで取得する。"""
+
+    from tools.render_deepdive import extract_blocks
+
+    article_text = (
+        article.read_text(encoding="utf-8-sig")
+        if article_bytes_override is None
+        else article_bytes_override.decode("utf-8-sig")
+    )
+    blocks = extract_blocks(article_text)
+    relations = blocks.get("relations") or []
+    if not relations or not isinstance(relations[0], dict):
+        raise ValueError("relations block missing or malformed")
+    return relations[0]
+
+
+def _quality_review_artifact_sha256(
+    kind: str,
+    *,
+    article: Path,
+    dialogue: Path,
+    article_bytes_override: bytes | None = None,
+    dialogue_bytes_override: bytes | None = None,
+) -> str:
+    path = article if kind in {"article", "relation"} else dialogue
+    if (
+        article_bytes_override is None
+        and dialogue_bytes_override is None
+        and (not path.is_file() or path.is_symlink())
+    ):
+        raise OSError(f"{kind} artifact missing")
+    if kind == "relation":
+        relation = _relation_review_payload(
+            article,
+            article_bytes_override=article_bytes_override,
+        )
+        return _canonical_sha256(relation)
+    if kind == "article" and article_bytes_override is not None:
+        return hashlib.sha256(article_bytes_override).hexdigest()
+    if kind == "dialogue" and dialogue_bytes_override is not None:
+        return hashlib.sha256(dialogue_bytes_override).hexdigest()
+    if not path.is_file() or path.is_symlink():
+        raise OSError(f"{kind} artifact missing")
+    return _file_sha256(path)
+
+
+def _validate_quality_review(
+    *,
+    repo: Path,
+    issue_date: str,
+    article: Path,
+    dialogue: Path,
+    article_bytes_override: bytes | None = None,
+    dialogue_bytes_override: bytes | None = None,
+) -> tuple[list[str], set[str], dict[str, Any], dict[str, str] | None]:
+    """DEEPDIVE_QUALITY_REVIEW_V2をartifact identityと同時に検証する。"""
+
+    review_path = repo / "data" / "deepdive-quality-review" / f"{issue_date}.json"
+    all_codes = set(DEEPDIVE_QUALITY_REVIEW_ISSUE_CODES.values())
+    review_issues: list[str] = []
+    review_codes: set[str] = set()
+    review_evidence: dict[str, str] | None = None
+    quality_review: dict[str, Any] = {
+        "schemaVersion": DEEPDIVE_QUALITY_REVIEW_V2,
+        "issueDate": issue_date,
+        "computedAverageScore": None,
+        "status": "Red",
+    }
+
+    def add_issue(issue: str) -> None:
+        if issue not in review_issues:
+            review_issues.append(issue)
+
+    def mark_global(issue: str) -> None:
+        add_issue(issue)
+        review_codes.update(all_codes)
+
+    try:
+        if not review_path.is_file() or review_path.is_symlink():
+            add_issue("DEEPDIVE_QUALITY_REVIEW_MISSING")
+            review_codes.update(all_codes)
+            quality_review["issues"] = list(review_issues)
+            return review_issues, review_codes, quality_review, None
+        raw_review = review_path.read_bytes()
+    except (OSError, UnicodeError):
+        add_issue("DEEPDIVE_QUALITY_REVIEW_MISSING")
+        review_codes.update(all_codes)
+        quality_review["issues"] = list(review_issues)
+        return review_issues, review_codes, quality_review, None
+
+    review_evidence = _quality_review_file_evidence(review_path, raw_review)
+    try:
+        payload = json.loads(raw_review.decode("utf-8-sig"))
+    except (UnicodeError, json.JSONDecodeError):
+        mark_global("DEEPDIVE_QUALITY_REVIEW_SCHEMA_INVALID")
+        quality_review["issues"] = list(review_issues)
+        return review_issues, review_codes, quality_review, review_evidence
+    if not isinstance(payload, dict):
+        mark_global("DEEPDIVE_QUALITY_REVIEW_SCHEMA_INVALID")
+        quality_review["issues"] = list(review_issues)
+        return review_issues, review_codes, quality_review, review_evidence
+
+    quality_review = dict(payload)
+    expected_review_keys = {
+        "schemaVersion",
+        "issueDate",
+        "artifacts",
+        "scores",
+        "findings",
+        "averageScore",
+        "reviewRoute",
+        "status",
+    }
+    if set(payload) != expected_review_keys:
+        mark_global("DEEPDIVE_QUALITY_REVIEW_SCHEMA_INVALID")
+    if payload.get("schemaVersion") != DEEPDIVE_QUALITY_REVIEW_V2:
+        mark_global("DEEPDIVE_QUALITY_REVIEW_SCHEMA_INVALID")
+    if payload.get("issueDate") != issue_date:
+        mark_global("DEEPDIVE_QUALITY_REVIEW_ISSUE_DATE_MISMATCH")
+
+    expected_paths = {
+        "article": f"digest/DeepDive/{issue_date}-DeepDive.md",
+        "relation": f"digest/DeepDive/{issue_date}-DeepDive.md",
+        "dialogue": f"digest/DeepDive/{issue_date}-DeepDive-dialogue.md",
+    }
+    artifact_rows: dict[str, dict[str, Any]] = {}
+    artifacts = payload.get("artifacts")
+    if not isinstance(artifacts, dict) or set(artifacts) != set(
+        DEEPDIVE_QUALITY_REVIEW_ARTIFACTS
+    ):
+        mark_global("DEEPDIVE_QUALITY_REVIEW_ARTIFACTS_INVALID")
+    else:
+        for kind in DEEPDIVE_QUALITY_REVIEW_ARTIFACTS:
+            row = artifacts.get(kind)
+            if not isinstance(row, dict) or set(row) != {"path", "sha256"}:
+                mark_global(f"DEEPDIVE_QUALITY_REVIEW_ARTIFACT_INVALID {kind}")
+                continue
+            artifact_rows[kind] = row
+            if row.get("path") != expected_paths[kind]:
+                mark_global(f"DEEPDIVE_QUALITY_REVIEW_PATH_INVALID {kind}")
+            if not isinstance(row.get("sha256"), str) or not HEX_64_RE.fullmatch(
+                row["sha256"]
+            ):
+                mark_global(f"DEEPDIVE_QUALITY_REVIEW_SHA_INVALID {kind}")
+
+    scores_valid = False
+    scores = payload.get("scores")
+    if not isinstance(scores, dict) or set(scores) != set(
+        DEEPDIVE_QUALITY_REVIEW_AXES
+    ):
+        mark_global("DEEPDIVE_QUALITY_REVIEW_SCORES_INVALID")
+    else:
+        scores_valid = True
+        for axis in DEEPDIVE_QUALITY_REVIEW_AXES:
+            value = scores[axis]
+            if type(value) is not int or not 1 <= value <= 5:
+                scores_valid = False
+                mark_global(f"DEEPDIVE_QUALITY_REVIEW_SCORE_INVALID {axis}")
+
+    findings_valid = False
+    findings = payload.get("findings")
+    if not isinstance(findings, dict) or set(findings) != set(
+        DEEPDIVE_QUALITY_REVIEW_AXES
+    ):
+        mark_global("DEEPDIVE_QUALITY_REVIEW_FINDINGS_INVALID")
+    else:
+        findings_valid = True
+        for axis in DEEPDIVE_QUALITY_REVIEW_AXES:
+            if not isinstance(findings[axis], str) or not findings[axis].strip():
+                findings_valid = False
+                mark_global(f"DEEPDIVE_QUALITY_REVIEW_FINDING_INVALID {axis}")
+
+    review_route = payload.get("reviewRoute")
+    if not isinstance(review_route, str) or review_route not in DEEPDIVE_QUALITY_REVIEW_ROUTES:
+        mark_global(f"DEEPDIVE_QUALITY_REVIEW_ROUTE_UNKNOWN {review_route}")
+
+    computed_average: float | None = None
+    if scores_valid:
+        computed_average = sum(scores.values()) / len(DEEPDIVE_QUALITY_REVIEW_AXES)
+        quality_review["computedAverageScore"] = computed_average
+        if computed_average < 4:
+            add_issue(
+                "DEEPDIVE_QUALITY_REVIEW_AVERAGE_TOO_LOW "
+                f"{computed_average:.1f}"
+            )
+            review_codes.update(all_codes)
+        for axis in DEEPDIVE_QUALITY_REVIEW_AXES:
+            value = scores[axis]
+            if value < 3:
+                add_issue(f"DEEPDIVE_QUALITY_REVIEW_SCORE_TOO_LOW {axis}={value}")
+                if axis in DEEPDIVE_QUALITY_REVIEW_ARTICLE_AXES:
+                    review_codes.add(DEEPDIVE_QUALITY_REVIEW_ISSUE_CODES["article"])
+                elif axis == "dialogue_naturalness":
+                    review_codes.add(
+                        DEEPDIVE_QUALITY_REVIEW_ISSUE_CODES["dialogue"]
+                    )
+                elif axis == "relation_map_utility":
+                    review_codes.add(
+                        DEEPDIVE_QUALITY_REVIEW_ISSUE_CODES["relation"]
+                    )
+
+    for kind, row in artifact_rows.items():
+        if row.get("path") != expected_paths[kind]:
+            continue
+        declared_sha = row.get("sha256")
+        if not isinstance(declared_sha, str) or not HEX_64_RE.fullmatch(declared_sha):
+            continue
+        try:
+            actual_sha = _quality_review_artifact_sha256(
+                kind,
+                article=article,
+                dialogue=dialogue,
+                article_bytes_override=article_bytes_override,
+                dialogue_bytes_override=dialogue_bytes_override,
+            )
+        except (OSError, UnicodeError, ValueError, TypeError, json.JSONDecodeError):
+            actual_sha = None
+        if actual_sha is None or actual_sha.casefold() != declared_sha.casefold():
+            add_issue(f"DEEPDIVE_QUALITY_REVIEW_ARTIFACT_STALE {kind}")
+            review_codes.add(DEEPDIVE_QUALITY_REVIEW_ISSUE_CODES[kind])
+
+    structural_ok = not review_issues
+    computed_status = (
+        "Green"
+        if scores_valid
+        and findings_valid
+        and structural_ok
+        and computed_average is not None
+        and computed_average >= 4
+        and all(scores[axis] >= 3 for axis in DEEPDIVE_QUALITY_REVIEW_AXES)
+        else "Red"
+    )
+    declared_average = payload.get("averageScore")
+    declared_average_ok = (
+        isinstance(declared_average, (int, float))
+        and not isinstance(declared_average, bool)
+        and math.isfinite(float(declared_average))
+        and computed_average is not None
+        and math.isclose(float(declared_average), computed_average, rel_tol=0, abs_tol=1e-9)
+    )
+    if not declared_average_ok or payload.get("status") != computed_status:
+        mark_global("DEEPDIVE_QUALITY_REVIEW_SUMMARY_MISMATCH")
+        computed_status = "Red"
+    quality_review["computedAverageScore"] = computed_average
+    quality_review["status"] = computed_status
+    quality_review["issues"] = list(review_issues)
+    return review_issues, review_codes, quality_review, review_evidence
+
+
 def audit_issue(
     *,
     repo_root: Path,
     issue_date: str,
     include_corpus: bool = True,
     require_rendered_public: bool = False,
+    route: str = "codex_daily_audit",
+    require_v2_claim_sources: bool = False,
 ) -> dict[str, Any]:
     """production runnerと日次監査が共有する一日分の品質判定。"""
 
+    _validate_shared_quality_route_registry(route)
     issue_day = date.fromisoformat(issue_date)
     repo = Path(repo_root).resolve()
     article = repo / "digest" / "DeepDive" / f"{issue_date}-DeepDive.md"
     dialogue = repo / "digest" / "DeepDive" / f"{issue_date}-DeepDive-dialogue.md"
     manifest = repo / "data" / "deepdive-provenance" / f"{issue_date}.json"
+    quality_review_path = (
+        repo / "data" / "deepdive-quality-review" / f"{issue_date}.json"
+    )
     rendered_public = repo / "docs" / "deepdive" / issue_date / "index.html"
     issue_codes: list[str] = []
     issues: list[str] = []
@@ -1566,9 +2251,46 @@ def audit_issue(
     if provenance_issues:
         issue_codes.append("deepdive_url_provenance_invalid")
         issues.extend(provenance_issues)
-    claim_source_issues = validate_claim_source_fit(article, manifest)
+    claim_source_issues = validate_claim_source_fit(
+        article,
+        manifest,
+        require_v2_claim_sources=require_v2_claim_sources,
+    )
+    if (
+        not claim_source_issues
+        and (require_v2_claim_sources or issue_day >= CLAIM_SOURCE_ENFORCEMENT_DATE)
+        and article.is_file()
+        and not manifest.is_file()
+    ):
+        try:
+            has_bindings = bool(
+                _claim_source_declarations(article.read_text(encoding="utf-8-sig"))
+            )
+        except (OSError, UnicodeError, DeepDiveQualityError) as error:
+            claim_source_issues = [str(error)]
+        else:
+            if not has_bindings:
+                claim_source_issues = ["DEEPDIVE_CLAIM_SOURCE_BINDINGS_MISSING"]
     if claim_source_issues:
-        issue_codes.append("deepdive_claim_source_fit_invalid")
+        article_value_issues = [
+            issue
+            for issue in claim_source_issues
+            if issue.startswith("DEEPDIVE_ARTICLE_VALUE_INVALID")
+        ]
+        if article_value_issues:
+            if "deepdive_article_value_invalid" not in issue_codes:
+                issue_codes.append("deepdive_article_value_invalid")
+        elif any(
+            issue == "DEEPDIVE_CLAIM_SOURCE_BINDINGS_MISSING"
+            or "bindings_missing" in issue
+            or issue.startswith("DEEPDIVE_RESEARCH_EVIDENCE_INSUFFICIENT")
+            or issue == "DEEPDIVE_CLAIM_SOURCE_MANIFEST_LEGACY"
+            for issue in claim_source_issues
+        ):
+            if "deepdive_research_evidence_insufficient" not in issue_codes:
+                issue_codes.append("deepdive_research_evidence_insufficient")
+        elif "deepdive_url_provenance_invalid" not in issue_codes:
+            issue_codes.append("deepdive_url_provenance_invalid")
         issues.extend(claim_source_issues)
     rendered_evidence: list[dict[str, str]] = []
     if require_rendered_public:
@@ -1592,12 +2314,29 @@ def audit_issue(
     if dialogue_issues:
         issue_codes.append("deepdive_dialogue_value_invalid")
         issues.extend(dialogue_issues)
+    (
+        quality_review_issues,
+        quality_review_codes,
+        quality_review,
+        quality_review_evidence,
+    ) = _validate_quality_review(
+        repo=repo,
+        issue_date=issue_date,
+        article=article,
+        dialogue=dialogue,
+    )
+    for code in sorted(quality_review_codes):
+        if code not in issue_codes:
+            issue_codes.append(code)
+    issues.extend(quality_review_issues)
     dialogue_corpus_audit: dict[str, object] | None = None
     audited_files = {
         row["path"]: row for row in provenance_evidence
     }
     for row in rendered_evidence:
         audited_files[row["path"]] = row
+    if quality_review_evidence is not None:
+        audited_files[quality_review_evidence["path"]] = quality_review_evidence
     if include_corpus:
         dialogue_paths = _dialogue_paths_for_period(
             repo_root=repo,
@@ -1619,11 +2358,14 @@ def audit_issue(
         "schemaVersion": REPORT_SCHEMA,
         "status": "Green" if not issue_codes else "Red",
         "issueDate": issue_date,
+        "route": route,
         "issueCodes": issue_codes,
         "issues": issues,
         "articlePath": str(article),
         "dialoguePath": str(dialogue),
         "provenancePath": str(manifest),
+        "qualityReviewPath": str(quality_review_path),
+        "qualityReview": quality_review,
         "renderedPublicPath": str(rendered_public),
         "dialogueCorpusAudit": dialogue_corpus_audit,
         "auditedFiles": [audited_files[path] for path in sorted(audited_files)],
@@ -1637,7 +2379,9 @@ def audit_period(
     start_date: str,
     end_date: str,
     require_rendered_public: bool = False,
+    route: str = "codex_daily_audit",
 ) -> dict[str, Any]:
+    _validate_shared_quality_route_registry(route)
     start = date.fromisoformat(start_date)
     end = date.fromisoformat(end_date)
     if end < start:
@@ -1655,6 +2399,7 @@ def audit_period(
                 issue_date=current.isoformat(),
                 include_corpus=False,
                 require_rendered_public=require_rendered_public,
+                route=route,
             )
         )
         current += timedelta(days=1)
@@ -1676,7 +2421,84 @@ def audit_period(
         "status": "Green" if not issue_codes else "Red",
         "startDate": start_date,
         "endDate": end_date,
+        "route": route,
         "issueCodes": issue_codes,
+        "days": rows,
+        "dialogueCorpusAudit": dialogue_corpus_audit,
+    }
+
+
+def audit_history(
+    *,
+    repo_root: Path,
+    start_date: str,
+    end_date: str,
+    require_rendered_public: bool = False,
+    route: str = "codex_daily_audit",
+) -> dict[str, Any]:
+    """実在するcanonical記事だけを横断監査する（期間上限なし）。"""
+
+    _validate_shared_quality_route_registry(route)
+    try:
+        start = date.fromisoformat(start_date)
+        end = date.fromisoformat(end_date)
+    except (TypeError, ValueError) as error:
+        raise DeepDiveQualityError("DEEPDIVE_HISTORY_PERIOD_INVALID") from error
+    if end < start:
+        raise DeepDiveQualityError("DEEPDIVE_HISTORY_PERIOD_INVALID")
+
+    repo = Path(repo_root).resolve()
+    article_paths = _history_article_paths(
+        repo_root=repo,
+        start=start,
+        end=end,
+    )
+    rows: list[dict[str, Any]] = []
+    dialogue_paths: list[Path] = []
+    for article_path in article_paths:
+        match = ISSUE_DATE_RE.fullmatch(article_path.name)
+        if match is None:
+            continue
+        issue_date = match.group(1)
+        rows.append(
+            audit_issue(
+                repo_root=repo_root,
+                issue_date=issue_date,
+                include_corpus=False,
+                require_rendered_public=require_rendered_public,
+                route=route,
+                require_v2_claim_sources=True,
+            )
+        )
+        dialogue_path = article_path.with_name(
+            f"{issue_date}-DeepDive-dialogue.md"
+        )
+        if _history_regular_file(dialogue_path, repo_root=repo):
+            dialogue_paths.append(dialogue_path)
+
+    dialogue_corpus_audit = deepdive_dialogue.audit_dialogue_corpus(
+        dialogue_paths,
+        repo_root=repo,
+    )
+    issue_codes = sorted(
+        {
+            str(code)
+            for row in rows
+            for code in row.get("issueCodes", [])
+        }
+    )
+    if dialogue_corpus_audit.get("issues"):
+        issue_codes = sorted(
+            {*issue_codes, "deepdive_dialogue_value_invalid"}
+        )
+    return {
+        "schemaVersion": HISTORY_REPORT_SCHEMA,
+        "status": "Green" if not issue_codes else "Red",
+        "startDate": start_date,
+        "endDate": end_date,
+        "route": route,
+        "issueCodes": issue_codes,
+        "articleCount": len(rows),
         "days": rows,
         "dialogueCorpusAudit": dialogue_corpus_audit,
     }
@@ -1702,10 +2524,18 @@ def main(argv: list[str] | None = None) -> int:
     audit = subparsers.add_parser("audit-issue")
     audit.add_argument("--date", required=True)
     audit.add_argument("--require-rendered-public", action="store_true")
+    audit.add_argument("--route", default="codex_daily_audit")
     period = subparsers.add_parser("audit-period")
     period.add_argument("--start", required=True)
     period.add_argument("--end", required=True)
     period.add_argument("--require-rendered-public", action="store_true")
+    period.add_argument("--route", default="codex_daily_audit")
+    history = subparsers.add_parser("audit-history")
+    history.add_argument("--start", required=True)
+    history.add_argument("--end", required=True)
+    history.add_argument("--require-rendered-public", action="store_true")
+    history.add_argument("--route", default="codex_daily_audit")
+    history.add_argument("--output", type=Path)
     args = parser.parse_args(argv)
     try:
         if args.command == "capture":
@@ -1737,16 +2567,47 @@ def main(argv: list[str] | None = None) -> int:
                 repo_root=args.repo_root,
                 issue_date=args.date,
                 require_rendered_public=args.require_rendered_public,
+                route=args.route,
             )
             status = result["status"]
-        else:
+        elif args.command == "audit-period":
             result = audit_period(
                 repo_root=args.repo_root,
                 start_date=args.start,
                 end_date=args.end,
                 require_rendered_public=args.require_rendered_public,
+                route=args.route,
             )
             status = result["status"]
+        elif args.command == "audit-history":
+            history_output = None
+            if args.output is not None:
+                history_output = _validate_history_output_path(
+                    args.output,
+                    repo_root=Path(args.repo_root).resolve(),
+                )
+            result = audit_history(
+                repo_root=args.repo_root,
+                start_date=args.start,
+                end_date=args.end,
+                require_rendered_public=args.require_rendered_public,
+                route=args.route,
+            )
+            if history_output is not None:
+                history_output = _validate_history_output_path(
+                    args.output,
+                    repo_root=Path(args.repo_root).resolve(),
+                )
+                if isinstance(result, dict):
+                    json_result = json.loads(
+                        json.dumps(result, ensure_ascii=False)
+                    )
+                    result.clear()
+                    result.update(json_result)
+                _atomic_write_json(history_output, result)
+            status = result["status"]
+        else:
+            raise DeepDiveQualityError("DEEPDIVE_COMMAND_UNKNOWN")
     except (DeepDiveQualityError, ValueError, OSError) as error:
         print(str(error), file=sys.stderr)
         return 3 if "DEEPDIVE_CLAIM_SOURCE_FIT_INVALID" in str(error) else 2

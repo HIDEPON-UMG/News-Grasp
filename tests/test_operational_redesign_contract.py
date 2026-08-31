@@ -24,6 +24,11 @@ from tools import news_grasp_human_impact as human_impact
 from tools import news_grasp_gate_profiles as gates
 from tools import news_grasp_daily_control as daily_control
 from tools import news_grasp_asset_manifest as assets
+from tools.repair_coverage_matrix import (
+    RepairClass,
+    RepairIssue,
+    classify_repair_issue,
+)
 
 
 ALLOWED = [
@@ -310,6 +315,23 @@ def test_ng2_wp06_default_registry_handlers_are_registered_and_typed() -> None:
     assert result.result["mutationCount"] == 0
 
 
+def _assert_dialogue_llm_rewrite_route() -> None:
+    decision = classify_repair_issue(
+        RepairIssue(
+            gate_id="deepdive-shared-quality",
+            issue_code="deepdive_dialogue_value_invalid",
+            artifact_paths=(
+                "digest/DeepDive/2026-08-11-DeepDive.md",
+                "digest/DeepDive/2026-08-11-DeepDive-dialogue.md",
+            ),
+            issue_date="2026-08-11",
+            category="deepdive",
+        )
+    )
+    assert decision.repair_class == RepairClass.LLM_REWRITE_EXISTING_ARTIFACT
+    assert decision.handler_id == "deepdive-dialogue-value-rewrite"
+
+
 def test_ng2_wp06_all_registered_reason_codes_dispatch_once(tmp_path: Path) -> None:
     source_repo = Path(__file__).resolve().parents[1]
     repo = tmp_path / "repo"
@@ -363,6 +385,28 @@ def test_ng2_wp06_all_registered_reason_codes_dispatch_once(tmp_path: Path) -> N
             context["artifacts"] = {"summary": {"hash": "s"}, "deepdive": {"hash": "d"}, "audio": {"hash": "a"}}
         elif handler_id in {"reporter_artifact_model_route", "summary_model_route", "deepdive_article_model_route"}:
             context["routeReceipt"] = {"routeId": handler_id}
+        if handler_id in {"deepdive_dialogue_builder", "deepdive_dialogue_repair"}:
+            before = {
+                path: path.read_bytes()
+                for path in repo.rglob("*")
+                if path.is_file()
+            }
+            with pytest.raises(recovery_registry.DeepDiveDialogueGenerationRequired) as caught:
+                recovery_registry.dispatch(
+                    repo_root=repo,
+                    reason_code=reason_code,
+                    context=context,
+                    handlers=handlers,
+                )
+            assert str(caught.value) == recovery_registry.DEEPDIVE_LLM_DIALOGUE_REQUIRED
+            after = {
+                path: path.read_bytes()
+                for path in repo.rglob("*")
+                if path.is_file()
+            }
+            assert after == before
+            _assert_dialogue_llm_rewrite_route()
+            continue
         result = recovery_registry.dispatch(repo_root=repo, reason_code=reason_code, context=context, handlers=handlers)
         assert result.handler_id == handler_id
         assert isinstance(result.result, Mapping)
@@ -557,9 +601,11 @@ def test_ng3_wp03_runtime_transaction_seals_active_generation(tmp_path: Path) ->
         "tools/news_grasp_direct_runtime.py",
         "tools/news_grasp_direct_completion.py",
         "tools/news_grasp_title_control.py",
+        "tools/news_grasp_title_materializer.py",
         "automation/news-grasp-6-40/automation.toml.template",
         "automation/skills/news-grasp-direct-mainline/SKILL.md",
         "scripts/ops/news-grasp-task-launcher.pyw",
+        "scripts/ops/news-grasp-title-materializer.pyw",
         "scripts/ops/news-grasp-bootstrap.ps1",
         "tools/daily_self_heal.py",
         "tools/news_grasp_daily_control.py",

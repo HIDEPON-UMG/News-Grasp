@@ -2,12 +2,53 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Callable
+
+import pytest
 
 from tools.deepdive_context_pack import build_context_pack, write_context_pack
+from tools.repair_coverage_matrix import RepairClass, RepairIssue, classify_repair_issue
 from tools.render_deepdive import _require_blocks, extract_blocks
-from tools.tts import deepdive_dialogue
-from tools.tts.build_deepdive_dialogue_script import build_dialogue_markdown
+from tools.tts.build_deepdive_dialogue_script import (
+    DEEPDIVE_LLM_DIALOGUE_REQUIRED,
+    DeepDiveDialogueGenerationRequired,
+    build_dialogue_markdown,
+)
 from tools.validate_deepdive_urls import extract_urls
+
+
+def _snapshot_tree(root: Path) -> dict[Path, bytes]:
+    return {
+        path: path.read_bytes()
+        for path in root.rglob("*")
+        if path.is_file()
+    }
+
+
+def _assert_llm_dialogue_route() -> None:
+    decision = classify_repair_issue(
+        RepairIssue(
+            gate_id="deepdive-shared-quality",
+            issue_code="deepdive_dialogue_value_invalid",
+            artifact_paths=(
+                "digest/DeepDive/2026-06-28-DeepDive.md",
+                "digest/DeepDive/2026-06-28-DeepDive-dialogue.md",
+            ),
+            issue_date="2026-06-28",
+            category="deepdive",
+        )
+    )
+    assert decision.repair_class == RepairClass.LLM_REWRITE_EXISTING_ARTIFACT
+    assert decision.handler_id == "deepdive-dialogue-value-rewrite"
+
+
+def _assert_llm_required(operation: Callable[[], object], *, tmp_path: Path) -> None:
+    before = _snapshot_tree(tmp_path)
+    with pytest.raises(DeepDiveDialogueGenerationRequired) as caught:
+        operation()
+    assert str(caught.value) == DEEPDIVE_LLM_DIALOGUE_REQUIRED
+    assert _snapshot_tree(tmp_path) == before
+    _assert_llm_dialogue_route()
 
 
 def _write_article(repo: Path, record: dict[str, object]) -> None:
@@ -157,16 +198,15 @@ def test_context_pack_to_downstream_gates_and_tts(tmp_path: Path) -> None:
     blocks = extract_blocks(text)
     _require_blocks(current, blocks)
     urls = extract_urls(text)
-    markdown = build_dialogue_markdown(
-        text,
-        source_name=current.as_posix(),
-        archive_dir=archive,
-        context_pack_path=pack_path,
-    )
-
     assert len(pack["candidates"]) == 2
     assert all(item["evidence"] for item in pack["candidates"])
     assert {ref.location for ref in urls} >= {"refs", "timeline", "relations.source", "chart.source", "table.source"}
-    assert not deepdive_dialogue.validate_dialogue(deepdive_dialogue.parse_dialogue(markdown))
-    assert "2026-06-20" in markdown
-    assert "2026-06-21" in markdown
+    _assert_llm_required(
+        lambda: build_dialogue_markdown(
+            text,
+            source_name=current.as_posix(),
+            archive_dir=archive,
+            context_pack_path=pack_path,
+        ),
+        tmp_path=tmp_path,
+    )

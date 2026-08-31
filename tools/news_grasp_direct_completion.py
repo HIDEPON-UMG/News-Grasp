@@ -83,7 +83,7 @@ if os.name == "nt":
     ]
     _CreateFileW.restype = wintypes.HANDLE
     _GetFileInformationByHandle = ctypes.windll.kernel32.GetFileInformationByHandle
-    _GetFileInformationByHandle.argtypes = [wintypes.HANDLE, ctypes.POINTER(BY_HANDLE_FILE_INFORMATION)]
+    _GetFileInformationByHandle.argtypes = [wintypes.HANDLE, ctypes.c_void_p]
     _GetFileInformationByHandle.restype = wintypes.BOOL
     _CloseHandle = ctypes.windll.kernel32.CloseHandle
     _CloseHandle.argtypes = [wintypes.HANDLE]
@@ -404,6 +404,7 @@ def _deepdive_quality(repo_root: Path, issue_date: str) -> dict[str, Any]:
             repo_root=repo_root,
             issue_date=issue_date,
             require_rendered_public=True,
+            route="production_generation",
         )
     except Exception as exc:  # noqa: BLE001 - verifier reports a typed Red.
         return {

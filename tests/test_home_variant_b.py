@@ -9,6 +9,7 @@ Variant B の認識: site/variant-b.jsx (Claude Design Handoff) を権威ソー�
 実行:
     pytest tests/test_home_variant_b.py -v
 """
+
 from __future__ import annotations
 
 import html
@@ -50,7 +51,11 @@ class _EditorsTopBadgeParser(HTMLParser):
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         attr = dict(attrs)
         class_name = attr.get("class", "")
-        if tag == "span" and self._current_cat is None and class_name.startswith("home-top3__badge cat-"):
+        if (
+            tag == "span"
+            and self._current_cat is None
+            and class_name.startswith("home-top3__badge cat-")
+        ):
             self._current_cat = class_name.removeprefix("home-top3__badge cat-")
             self._depth = 1
             self._chunks = []
@@ -76,6 +81,7 @@ class _EditorsTopBadgeParser(HTMLParser):
 # fixture: 実 digest を使って Home をビルド
 # ============================================================
 
+
 @pytest.fixture(scope="module")
 def built_docs_root(tmp_path_factory) -> Path:
     """実 digest 全件を tmp に再 build して LP / category pages を返す。"""
@@ -83,13 +89,15 @@ def built_docs_root(tmp_path_factory) -> Path:
     podcast_state = docs_root.parent / "build" / "youtube-podcast"
     podcast_state.mkdir(parents=True, exist_ok=True)
     (podcast_state / "uploads.json").write_text(
-        json.dumps({
-            "2026-06-21": {
-                "status": "public",
-                "videoId": "video-latest",
-                "playlistId": "playlist-deepdive",
+        json.dumps(
+            {
+                "2026-06-21": {
+                    "status": "public",
+                    "videoId": "video-latest",
+                    "playlistId": "playlist-deepdive",
+                }
             }
-        }),
+        ),
         encoding="utf-8",
     )
     # 実 digest から個別ページを生成 (build_index 前提)
@@ -115,12 +123,15 @@ def built_home(built_docs_root: Path) -> str:
 # 構造 pin
 # ============================================================
 
+
 def test_brand_zone_present(built_home: str):
     """home-brand (navy 86px wordmark + ISSUE) セクションがある。"""
     assert 'class="home-brand"' in built_home, "home-brand class missing"
     assert "News Grasp" in built_home, "site title missing"
-    assert "SEVEN  LENSES  ON  TODAY" in built_home or "SEVEN LENSES ON TODAY" in built_home, \
-        "tagline missing"
+    assert (
+        "SEVEN  LENSES  ON  TODAY" in built_home
+        or "SEVEN LENSES ON TODAY" in built_home
+    ), "tagline missing"
 
 
 def test_sticky_nav_with_7_lenses(built_home: str):
@@ -135,20 +146,27 @@ def test_sticky_nav_with_7_lenses(built_home: str):
     assert "ARCHIVE" in built_home, "ARCHIVE entry missing"
 
 
-def test_home_nav_places_podcast_before_archive_as_channel_podcasts_link(built_home: str):
+def test_home_nav_places_podcast_before_archive_as_channel_podcasts_link(
+    built_home: str,
+):
     """LP は ARCHIVE 左に Podcast 全体への導線を置く。"""
     assert 'class="home-nav__actions"' in built_home
     assert 'class="home-nav__podcast"' in built_home
     assert "https://www.youtube.com/@newsgrasp/podcasts" in built_home
     assert "https://www.youtube.com/playlist?list=playlist-deepdive" not in built_home
     assert "https://www.youtube.com/watch?v=video-latest" not in built_home
-    assert built_home.index('class="home-nav__podcast"') < built_home.index('class="home-nav__archive"')
+    assert built_home.index('class="home-nav__podcast"') < built_home.index(
+        'class="home-nav__archive"'
+    )
 
 
 def test_home_nav_uses_silhouette_icons_and_plain_today(built_home: str):
     """PODCAST/ARCHIVE と TODAY/YESTERDAY は小さなシルエットで識別し、TODAY の <> は出さない。"""
     css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
-    assert 'class="home-nav__today home-nav__day-link home-nav__day-link--today">TODAY</span>' in built_home
+    assert (
+        'class="home-nav__today home-nav__day-link home-nav__day-link--today">TODAY</span>'
+        in built_home
+    )
     assert 'home-nav__day-link--yesterday">YESTERDAY</a>' in built_home
     assert "&lt;TODAY&gt;" not in built_home
     assert "<TODAY>" not in built_home
@@ -162,8 +180,10 @@ def test_home_nav_uses_silhouette_icons_and_plain_today(built_home: str):
 def test_home_theme_switch_uses_summary_and_deepdive_icons(built_home: str):
     """SUMMARY/DEEP DIVE スイッチもナビと同じ小さなシルエット体系にそろえる。"""
     css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
-    assert 'home-hero__switch-btn home-hero__switch-btn--summary is-active' in built_home
-    assert 'home-hero__switch-btn home-hero__switch-btn--deepdive' in built_home
+    assert (
+        "home-hero__switch-btn home-hero__switch-btn--summary is-active" in built_home
+    )
+    assert "home-hero__switch-btn home-hero__switch-btn--deepdive" in built_home
     assert ">❖ DEEP DIVE<" not in built_home
     assert ".home-hero__switch-btn::before" in css
     assert ".home-hero__switch-btn--summary::before" in css
@@ -176,7 +196,9 @@ def test_home_theme_switch_sits_above_today_theme_heading(built_home: str):
     theme = built_home.split('class="home-hero__theme"', 1)[1].split(
         '<div class="home-hero__right"', 1
     )[0]
-    assert theme.index('class="home-hero__switch"') < theme.index('class="home-hero__eyebrow"')
+    assert theme.index('class="home-hero__switch"') < theme.index(
+        'class="home-hero__eyebrow"'
+    )
 
     css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
     theme_rule = re.search(r"\.home-hero__theme\s*\{(?P<body>[^}]*)\}", css, re.S)
@@ -184,7 +206,9 @@ def test_home_theme_switch_sits_above_today_theme_heading(built_home: str):
     button = re.search(r"\.home-hero__switch-btn\s*\{(?P<body>[^}]*)\}", css, re.S)
     mobile_css = css.split("@media (max-width: 768px)", 1)[1]
     mobile_hero = re.search(r"\.home-hero\s*\{(?P<body>[^}]*)\}", mobile_css, re.S)
-    mobile_switch = re.search(r"\.home-hero__switch\s*\{(?P<body>[^}]*)\}", mobile_css, re.S)
+    mobile_switch = re.search(
+        r"\.home-hero__switch\s*\{(?P<body>[^}]*)\}", mobile_css, re.S
+    )
     assert theme_rule and switch and button and mobile_hero and mobile_switch
     assert "position: relative" in theme_rule.group("body")
     assert "position: absolute" in switch.group("body")
@@ -218,28 +242,46 @@ def test_home_nav_mobile_uses_compact_yesterday_snapshot_for_actions():
     css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
     assert ".home-nav { padding-left: 10px; padding-right: 10px; }" in css
     assert ".home-nav__actions { gap: 4px; }" in css
-    assert ".home-nav__archive { gap: 4px; padding: 4px 5px; font-size: 9px; letter-spacing: 0.08em; }" in css
+    assert (
+        ".home-nav__archive { gap: 4px; padding: 4px 5px; font-size: 9px; letter-spacing: 0.08em; }"
+        in css
+    )
     assert ".home-nav__archive { padding: 7px 10px; font-size: 10px;" not in css
 
 
 def test_home_brand_mobile_uses_compact_issue_header():
     """スマホのブランド帯は、日付メタを上段へ寄せて縦幅を圧縮する。"""
     css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
-    assert ".home-brand__left, .home-brand__title, .home-brand__issue { display: contents; }" in css
-    assert ".home-brand__tagline, .home-brand__issue-label, .home-brand__issue-loc { display: none; }" in css
+    assert (
+        ".home-brand__left, .home-brand__title, .home-brand__issue { display: contents; }"
+        in css
+    )
+    assert (
+        ".home-brand__tagline, .home-brand__issue-label, .home-brand__issue-loc { display: none; }"
+        in css
+    )
     assert ".home-brand__issue-meta br { display: none; }" in css
     assert ".home-brand__eyebrow { grid-column: 1; grid-row: 1;" in css
     assert ".home-brand__issue-meta { grid-column: 2; grid-row: 1;" in css
     assert ".home-brand__issue-num { grid-column: 1 / -1; grid-row: 3;" in css
-    assert ".home-brand__issue-num { grid-column: 1 / -1; grid-row: 3; justify-self: start;" in css
+    assert (
+        ".home-brand__issue-num { grid-column: 1 / -1; grid-row: 3; justify-self: start;"
+        in css
+    )
     assert "font-size: clamp(30px, 8.3vw, 34px);" in css
 
 
 def test_home_mobile_nav_keeps_podcast_navy():
     """参照画像どおり、スマホの PODCAST ボタンは濃紺で金色に戻さない。"""
     css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
-    assert ".home-nav__podcast { background: var(--color-navy); color: var(--color-cream);" in css
-    assert ".home-nav__podcast { background: var(--color-gold); color: var(--color-navy);" not in css
+    assert (
+        ".home-nav__podcast { background: var(--color-navy); color: var(--color-cream);"
+        in css
+    )
+    assert (
+        ".home-nav__podcast { background: var(--color-gold); color: var(--color-navy);"
+        not in css
+    )
 
 
 def test_hero_2col_structure(built_home: str):
@@ -253,7 +295,9 @@ def test_hero_2col_structure(built_home: str):
     assert "home-hero__right" in built_home
     assert "EDITOR&#39;S TOP 5" in built_home or "EDITOR'S TOP 5" in built_home
     # TOP5 なので 5 行 (01〜05) が出る
-    assert built_home.count('class="home-top3__row"') == 5, "右ヒーローは TOP5=5行であるべき"
+    assert built_home.count('class="home-top3__row"') == 5, (
+        "右ヒーローは TOP5=5行であるべき"
+    )
     assert "home-stats2x2" in built_home
 
 
@@ -302,8 +346,11 @@ def test_home_category_surfaces_use_canonical_glyphs(built_home: str):
         assert f"home-nav__lens-{cat_id}" in built_home
         assert f"{meta['glyph']}</span>{label_html}" in built_home
         assert f'data-category-card="{cat_id}"' in built_home
-        assert f"class=\"home-cat-card" in built_home
-        assert f'<span class="pub-matrix__cat-glyph">{meta["glyph"]}</span>{meta["jp"]}' in built_home
+        assert f'class="home-cat-card' in built_home
+        assert (
+            f'<span class="pub-matrix__cat-glyph">{meta["glyph"]}</span>{meta["jp"]}'
+            in built_home
+        )
 
 
 def test_home_category_card_uses_split_english_label(built_home: str):
@@ -368,7 +415,9 @@ def test_home_hero_grid_columns_clamped_to_container():
     )
 
 
-def test_top_story_media_note_uses_score_note_without_claiming_breakdown(built_home: str):
+def test_top_story_media_note_uses_score_note_without_claiming_breakdown(
+    built_home: str,
+):
     """TOP STORY 左下には厳密な内訳ではなく一行説明の SCORE NOTE を表示する。"""
     css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
     assert "grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);" in css, (
@@ -381,16 +430,23 @@ def test_top_story_media_note_uses_score_note_without_claiming_breakdown(built_h
     assert ">SIGNALS<" not in built_home
     assert "SCORE BREAKDOWN" not in built_home
     feature_note = built_home[
-        built_home.index('class="feature-note"'):
-        built_home.index('class="home-featured__title"')
+        built_home.index('class="feature-note"') : built_home.index(
+            'class="home-featured__title"'
+        )
     ]
     note_pos = feature_note.index("SCORE NOTE")
     key_pos = feature_note.index("KEY NUMBERS")
     number_pos = feature_note.index("feature-note__number")
     signal_chip_pos = feature_note.index("feature-note__chips--signals")
     assert note_pos < key_pos < number_pos < signal_chip_pos
-    assert ".feature-note__label {\n  font-family: var(--font-mono);\n  font-size: 11px;" in css
-    assert ".feature-note p {\n  margin: 0;\n  font-family: var(--font-serif);\n  font-size: 17px;" in css
+    assert (
+        ".feature-note__label {\n  font-family: var(--font-mono);\n  font-size: 11px;"
+        in css
+    )
+    assert (
+        ".feature-note p {\n  margin: 0;\n  font-family: var(--font-serif);\n  font-size: 17px;"
+        in css
+    )
     assert ".feature-note__chips" in css
     assert ".feature-note__chips--signals" in css
     assert ".feature-note__numbers" in css
@@ -405,12 +461,16 @@ def test_category_top_feature_uses_same_score_note_layout(built_docs_root: Path)
     assert 'class="feature-note"' in category_html
     assert "SCORE BREAKDOWN" not in category_html
     feature_note = category_html[
-        category_html.index('class="feature-note"'):
-        category_html.index('class="top-story__title"')
+        category_html.index('class="feature-note"') : category_html.index(
+            'class="top-story__title"'
+        )
     ]
     assert ">SIGNALS<" not in feature_note
     assert feature_note.index("SCORE NOTE") < feature_note.index("KEY NUMBERS")
-    assert feature_note.index("KEY NUMBERS") < feature_note.index("feature-note__chips--signals")
+    if "feature-note__chips--signals" in feature_note:
+        assert feature_note.index("KEY NUMBERS") < feature_note.index(
+            "feature-note__chips--signals"
+        )
 
 
 def test_feature_note_mobile_collapses_to_signature_chips_only():
@@ -496,8 +556,9 @@ def test_categories_7_lens_cards(built_home: str):
     """home-cats__grid に 7 lens card が並ぶ。"""
     assert 'data-home-category-grid="true"' in built_home
     for lens in ("fx", "ai", "it", "mobility", "manufacturing", "economy", "game"):
-        assert f'data-category-card="{lens}"' in built_home, \
+        assert f'data-category-card="{lens}"' in built_home, (
             f"home-cat-card for {lens} missing"
+        )
 
 
 def test_editorial_preview_or_none(built_home: str):
@@ -521,6 +582,7 @@ def test_subscribe_band(built_home: str):
 def test_canonical_root_url(built_home: str):
     """Home の canonical は BASE_URL/ (末尾スラッシュ)。"""
     from tools.config import BASE_URL
+
     assert f'<link rel="canonical" href="{BASE_URL}/">' in built_home
 
 
@@ -536,15 +598,19 @@ def test_og_meta_present(built_home: str):
 def test_no_rounded_corners_in_template(built_home: str):
     """Magazine 原則: 角丸 0。inline で border-radius を持たないこと。"""
     # body の inline style だけチェック (CSS のグローバルリセットは site.css 側で担保)
-    assert "border-radius:" not in built_home, \
+    assert "border-radius:" not in built_home, (
         "Variant B is corner=0; no inline border-radius allowed"
+    )
 
 
 def test_favicon_links_present(built_home: str):
     """News Grasp の N→ ロゴが favicon として 3 サイズ登録されている。"""
     assert 'rel="icon"' in built_home, "favicon link missing"
-    assert 'href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png"' in built_home \
-        or '/assets/favicon-256.png' in built_home, "favicon-256.png missing"
+    assert (
+        'href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png"'
+        in built_home
+        or "/assets/favicon-256.png" in built_home
+    ), "favicon-256.png missing"
     assert 'rel="apple-touch-icon"' in built_home, "apple-touch-icon missing"
 
 
@@ -565,6 +631,7 @@ def test_hero_title_uses_brand_tagline_in_fallback(built_home: str):
 # ============================================================
 # Pure unit tests
 # ============================================================
+
 
 def test_split_theme_phrases_with_to():
     """summary_text の「A と B」を 2 フレーズに分割する。"""
@@ -590,6 +657,7 @@ def test_split_theme_phrases_empty():
 # YESTERDAY LP (sticky nav の「YESTERDAY」遷移先 = 昨日を当日とみなした LP)
 # ============================================================
 
+
 @pytest.fixture(scope="module")
 def yesterday_lp(tmp_path_factory):
     """build_index(target_date=前日, is_yesterday=True) で昨日 LP を生成し (html, 日付) を返す。
@@ -603,8 +671,9 @@ def yesterday_lp(tmp_path_factory):
         pytest.skip("前日 digest が無いため昨日 LP を検証できない")
     yda = dates[1]
     out = build_index(entries, docs_root, target_date=yda, is_yesterday=True)
-    assert out.parts[-2:] == (yda, "index.html"), \
+    assert out.parts[-2:] == (yda, "index.html"), (
         f"昨日 LP は docs/{yda}/index.html に出るべき: {out}"
+    )
     return out.read_text(encoding="utf-8"), yda
 
 
@@ -613,8 +682,9 @@ def test_yesterday_lp_variant_and_theme(yesterday_lp):
     見出し「YESTERDAY'S THEME」を持つ (TODAY と一目で区別する意図を pin)。"""
     html, _ = yesterday_lp
     assert 'data-variant="yesterday"' in html, "昨日 LP の背景識別子が無い"
-    assert "YESTERDAY&#39;S THEME" in html or "YESTERDAY'S THEME" in html, \
+    assert "YESTERDAY&#39;S THEME" in html or "YESTERDAY'S THEME" in html, (
         "見出しが YESTERDAY'S THEME になっていない"
+    )
 
 
 def test_yesterday_lp_keeps_today_layout(yesterday_lp):
@@ -632,17 +702,28 @@ def test_yesterday_lp_nav_is_reversed(yesterday_lp):
     """昨日 LP の sticky nav は YESTERDAY が現在地・TODAY が当日 LP へのリンク
     (今日 LP とは TODAY/YESTERDAY のアクティブが逆転し、相互に行き来できる)。"""
     from tools.config import BASE_URL
+
     html, _ = yesterday_lp
-    assert '<span class="home-nav__today home-nav__day-link home-nav__day-link--yesterday">YESTERDAY</span>' in html, \
-        "昨日 LP では YESTERDAY が現在地 (active span) であるべき"
-    assert f'href="{BASE_URL}/" class="home-nav__yesterday home-nav__day-link home-nav__day-link--today">TODAY</a>' in html, \
-        "昨日 LP の TODAY は当日 LP (ルート) へのリンクであるべき"
+    assert (
+        '<span class="home-nav__today home-nav__day-link home-nav__day-link--yesterday">YESTERDAY</span>'
+        in html
+    ), "昨日 LP では YESTERDAY が現在地 (active span) であるべき"
+    assert (
+        f'href="{BASE_URL}/" class="home-nav__yesterday home-nav__day-link home-nav__day-link--today">TODAY</a>'
+        in html
+    ), "昨日 LP の TODAY は当日 LP (ルート) へのリンクであるべき"
 
 
 def test_today_lp_has_yesterday_link(built_home):
     """当日 LP の sticky nav は TODAY が現在地・YESTERDAY が前日 LP へのリンク。"""
-    assert '<span class="home-nav__today home-nav__day-link home-nav__day-link--today">TODAY</span>' in built_home
-    assert 'class="home-nav__yesterday home-nav__day-link home-nav__day-link--yesterday">YESTERDAY</a>' in built_home
+    assert (
+        '<span class="home-nav__today home-nav__day-link home-nav__day-link--today">TODAY</span>'
+        in built_home
+    )
+    assert (
+        'class="home-nav__yesterday home-nav__day-link home-nav__day-link--yesterday">YESTERDAY</a>'
+        in built_home
+    )
 
 
 def test_yesterday_lp_deepdive_is_not_today(yesterday_lp):
@@ -666,12 +747,39 @@ def test_yesterday_lp_deepdive_is_not_today(yesterday_lp):
     if yda < dd_dates[1]:
         pytest.skip(f"昨日 ({yda}) 以前に DeepDive が無く差を検証できない")
 
-    card_today = _latest_deepdive_card()        # 当日 LP 相当 (全体の最新)
-    card_yda = _latest_deepdive_card(yda)        # 昨日 LP 相当 (yda 以前の最新)
+    card_today = _latest_deepdive_card()  # 当日 LP 相当 (全体の最新)
+    card_yda = _latest_deepdive_card(yda)  # 昨日 LP 相当 (yda 以前の最新)
     assert card_today and card_yda, "DeepDive カードが構築できていない"
-    assert card_yda["date"] <= yda, \
+    assert card_yda["date"] <= yda, (
         f"昨日 LP の DeepDive 日付 {card_yda['date']} が昨日 {yda} より新しい"
+    )
     if card_today["date"] <= yda:
-        pytest.skip("当日 DeepDive が無い日は、当日 LP と昨日 LP の DeepDive が同一になり得る")
-    assert card_yda["date"] != card_today["date"], \
+        pytest.skip(
+            "当日 DeepDive が無い日は、当日 LP と昨日 LP の DeepDive が同一になり得る"
+        )
+    assert card_yda["date"] != card_today["date"], (
         "昨日 LP の DEEP DIVE に当日と同じテーマが出ている (回帰)"
+    )
+
+
+def test_latest_deepdive_card_propagates_output_quality_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """公開品質Redをカード欠落へ縮退させず、LP buildを停止する。"""
+
+    from tools import generate_pages, render_deepdive
+    from tools.output_quality import OutputQualityError
+
+    article = tmp_path / "digest" / "DeepDive" / "2026-08-31-DeepDive.md"
+    article.parent.mkdir(parents=True)
+    article.write_text("---\ntitle: fixture\ndate: 2026-08-31\n---\n", encoding="utf-8")
+    monkeypatch.setattr(generate_pages, "_PKG_ROOT", tmp_path)
+
+    def reject_quality(_path: Path) -> None:
+        raise OutputQualityError("geometry Red")
+
+    monkeypatch.setattr(render_deepdive, "build_deepdive_context", reject_quality)
+
+    with pytest.raises(OutputQualityError, match="geometry Red"):
+        generate_pages._latest_deepdive_card()

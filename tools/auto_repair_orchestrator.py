@@ -171,6 +171,11 @@ def _payload_from_decision(decision: RepairDecision, *, decisions: list[RepairDe
     elif decision.repair_class == RepairClass.LLM_REWRITE_EXISTING_ARTIFACT:
         handler = "targeted-repair"
         action = GateAction.REPAIRABLE
+    elif decision.repair_class == RepairClass.LLM_RESEARCH_AND_REWRITE:
+        # 追加調査を伴う書き直しはLLM work packetとして引き渡す。
+        # deterministic repair planへ混ぜず、既存artifactの再生成分類にも倒さない。
+        handler = "targeted-repair"
+        action = GateAction.REPAIRABLE
     elif decision.repair_class == RepairClass.TYPED_EXTERNAL:
         handler = "external-readiness"
         action = GateAction.FATAL

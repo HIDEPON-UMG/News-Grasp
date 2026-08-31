@@ -28,8 +28,10 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from tools.render_deepdive import (  # noqa: E402
+    EDGE_KINDS,
     INK,
     DeepDiveIncompleteError,
+    _prose_paragraphs,
     build_deepdive_context,
     build_deepdive_pages,
     build_table,
@@ -42,6 +44,16 @@ from tools.generate_pages import _get_jinja_env  # noqa: E402
 
 _FIXTURE = ROOT / "tests" / "fixtures" / "deepdive_robotaxi.md"
 _REAL = ROOT / "digest" / "DeepDive" / "2026-05-31-DeepDive.md"
+
+
+def test_prose_paragraphs_strip_internal_transport_metadata() -> None:
+    section = (
+        '<!-- claim-source: {"claim":"内部主張","sourceUrl":"https://example.com/private"} -->\n\n'
+        "<!-- value:current_signal evidence:source:0 support:source:7 -->\n\n"
+        "読者に見せる本文です。\n"
+    )
+
+    assert _prose_paragraphs(section) == ["読者に見せる本文です。"]
 
 
 def test_deepdive_template_embeds_dialogue_audio_with_rate_buttons() -> None:
@@ -168,6 +180,125 @@ def test_relations_svg_renders_nodes_and_edges() -> None:
     assert "Waymo" in svg and "NHTSA" in svg
 
 
+def test_relations_svg_canonicalizes_whitespace_around_known_kind() -> None:
+    rel = {
+        "nodes": [{"id": "a", "label": "A"}, {"id": "b", "label": "B"}],
+        "edges": [{"from": "a", "to": "b", "label": "提携関係", "kind": " 提携 "}],
+    }
+
+    svg = relations_svg(rel)
+
+    assert rel["edges"][0]["kind"] == "提携"
+    assert svg.startswith("<svg") and svg.rstrip().endswith("</svg>")
+
+
+def test_relation_kinds_are_exact_and_have_unique_styles() -> None:
+    expected = {"提携", "出資", "供給", "競合", "対立", "規制", "統制", "依存"}
+
+    assert set(EDGE_KINDS) == expected
+    styles = {
+        (str(style["color"]), bool(style["dash"]))
+        for style in EDGE_KINDS.values()
+    }
+    assert len(styles) == len(expected)
+
+
+@pytest.mark.parametrize("kind", ["波及", "協調的競合", "frenemy"])
+def test_relations_svg_rejects_unknown_kind_without_black_fallback(kind: str) -> None:
+    rel = {
+        "nodes": [{"id": "a", "label": "A"}, {"id": "b", "label": "B"}],
+        "edges": [{"from": "a", "to": "b", "label": "不明な関係", "kind": kind}],
+    }
+
+    with pytest.raises(DeepDiveIncompleteError, match="unknown.*kind|未知.*kind"):
+        relations_svg(rel)
+
+
+def test_four_single_kind_edges_require_theme_specific_rationale() -> None:
+    rel = {
+        "title": "単一kindの検証",
+        "nodes": [
+            {"id": f"n{index}", "label": f"当事者{index}"}
+            for index in range(5)
+        ],
+        "edges": [
+            {
+                "from": f"n{index}",
+                "to": f"n{index + 1}",
+                "label": f"供給条件{index}",
+                "kind": "供給",
+            }
+            for index in range(4)
+        ],
+    }
+
+    with pytest.raises(DeepDiveIncompleteError, match="singleKindRationale"):
+        relations_svg(rel)
+
+    rel["singleKindRationale"] = (
+        "半導体製造装置の同一供給網で、上流部材から完成装置までの依存方向だけを示すため"
+    )
+    assert relations_svg(rel).startswith("<svg")
+
+
+def test_relations_mobile_svg_uses_dedicated_360px_responsive_layout() -> None:
+    rel = {
+        "nodes": [
+            {"id": "supplier", "label": "供給元", "group": "上流"},
+            {"id": "maker", "label": "製造者", "group": "中流"},
+            {"id": "buyer", "label": "購入者", "group": "下流"},
+        ],
+        "edges": [
+            {"from": "supplier", "to": "maker", "label": "部材供給", "kind": "供給"},
+            {"from": "maker", "to": "buyer", "label": "製品供給", "kind": "供給"},
+        ],
+    }
+
+    svg = relations_svg(rel, layout="mobile")
+
+    assert 'data-layout="mobile"' in svg
+    assert re.search(r'viewBox="0 0 360(?:\.0+)? [0-9.]+"', svg)
+    assert 'width="100%"' in svg
+    assert "overflow-x" not in svg
+
+
+def test_2026_07_23_mobile_relations_have_no_edge_pierce_or_label_overlap(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """07-23実fixtureのmobile図はstrict object品質を満たす。"""
+    from tools import output_quality
+
+    rel = {
+        "title": "円防衛を巡る政策当局と市場の関係図",
+        "nodes": [
+            {"id": "mof", "label": "財務省", "group": "円防衛側"},
+            {"id": "boj", "label": "日本銀行", "group": "円防衛側"},
+            {"id": "fed", "label": "Federal Reserve", "group": "ドル金利側"},
+            {"id": "market", "label": "為替市場", "group": "ドル金利側"},
+        ],
+        "edges": [
+            {"from": "mof", "to": "boj", "label": "円政策を提携", "kind": "提携"},
+            {"from": "fed", "to": "market", "label": "金利を供給", "kind": "供給"},
+            {"from": "boj", "to": "market", "label": "金利を規制", "kind": "規制"},
+        ],
+    }
+
+    # 生成されたSVGをstrict checkerへ渡すため、renderer末尾のassertだけを隔離する。
+    # 本番のlayout/edge/label生成物は変更せず、同じcheck_relations_svgを直接評価する。
+    monkeypatch.setattr(output_quality, "assert_quality", lambda _checks: None)
+
+    desktop_svg = relations_svg(rel, layout="desktop")
+    assert output_quality.check_relations_svg(
+        desktop_svg, src=rel["title"], strict_objects=True
+    ) == []
+
+    mobile_svg = relations_svg(rel, layout="mobile")
+    issues = output_quality.check_relations_svg(
+        mobile_svg, src=rel["title"], strict_objects=True
+    )
+    assert issues == [], "\n".join(issues)
+
+
 def test_relations_dedups_identical_edge_labels() -> None:
     """同一 source・同文ラベルのエッジ群はラベルを 1 回だけ描く (線は両方残す)。
 
@@ -212,8 +343,8 @@ _MULTICAMP_REL = {
     "edges": [
         {"from": "waymo", "to": "tesla", "label": "規模vs量産で競合", "kind": "競合"},
         {"from": "waymo", "to": "pony", "label": "海外展開で激突", "kind": "競合"},
-        {"from": "geely", "to": "waymo", "label": "供給かつ競合", "kind": "協調的競合",
-         "coop": "車両を供給", "rival": "自陣で競合"},
+        {"from": "geely", "to": "waymo", "label": "車両を供給", "kind": "供給"},
+        {"from": "geely", "to": "waymo", "label": "自陣で競合", "kind": "競合"},
         {"from": "nhtsa", "to": "waymo", "label": "crash報告義務", "kind": "規制"},
         {"from": "nhtsa", "to": "tesla", "label": "事故を調査", "kind": "規制"},
         {"from": "chinareg", "to": "baidu", "label": "新規許可を凍結", "kind": "規制"},
@@ -223,9 +354,8 @@ _MULTICAMP_REL = {
 
 _NODE_CIRCLE_RE = re.compile(
     r'<circle cx="([-\d.]+)" cy="([-\d.]+)" r="([-\d.]+)" fill="#fff" stroke="#1A1A1A"')
-# 2026-06-04: frenemy chip は高さ 44.0 (2 行統合)、それ以外は 26.0 (1 行)。両方を取る。
 _CHIP_RECT_RE = re.compile(
-    r'<g transform="translate\(([-\d.]+),([-\d.]+)\)"><rect width="([-\d.]+)" height="(26\.0|44\.0)"')
+    r'<g transform="translate\(([-\d.]+),([-\d.]+)\)"><rect width="([-\d.]+)" height="(26\.0)"')
 
 
 def _node_circles(svg: str) -> list[tuple[float, float, float]]:
@@ -283,8 +413,7 @@ def test_relations_two_camps_split_left_right_and_no_overlap() -> None:
     circles = _node_circles(svg)
     rects = _chip_rects(svg)
     assert len(circles) == 7, f"ノード円が 7 個でない: {len(circles)}"
-    # frenemy は 1 chip 統合 (2 行) になったので、7 chip = 7 base edges
-    assert len(rects) == 7, f"ラベルチップが 7 個でない: {len(rects)}"
+    assert len(rects) == 8, f"ラベルチップが 8 個でない: {len(rects)}"
     # ラベルチップ vs ノード円: 文字が読めなくなる重なりは 0
     for r in rects:
         for c in circles:
@@ -310,7 +439,7 @@ def test_relations_two_camps_split_left_right_and_no_overlap() -> None:
 # (発注企業) を同段に並べたため (1) 供給線が同段の SI を貫通し (2) 役割の違うノードが
 # 同レイヤーに乗った。有向フロー (供給) で段層化してこの 2 症状を封じる不変条件を固定。
 _VALUE_CHAIN_REL = {
-    "title": "モデルベンダー陣営とコンサル・SI の協調的競合",
+    "title": "モデルベンダー陣営とコンサル・SI の提携と競合",
     "nodes": [
         {"id": "capital", "label": "投資家", "group": "Blackstone・Goldman"},
         {"id": "vendors", "label": "モデルベンダー", "group": "Anthropic・OpenAI"},
@@ -319,8 +448,10 @@ _VALUE_CHAIN_REL = {
     ],
     "edges": [
         {"from": "capital", "to": "vendors", "label": "JV・実装直販に巨額出資", "kind": "出資"},
-        {"from": "vendors", "to": "consultants", "kind": "協調的競合",
-         "coop": "Partner Network で提携", "rival": "人月モデルを中抜き"},
+        {"from": "vendors", "to": "consultants", "kind": "提携",
+         "label": "Partner Network で提携"},
+        {"from": "vendors", "to": "consultants", "kind": "競合",
+         "label": "人月モデルを中抜き"},
         {"from": "vendors", "to": "client", "label": "AI実装を直販で提供", "kind": "供給"},
         {"from": "consultants", "to": "client", "label": "人月で実装・運用を提供", "kind": "供給"},
     ],
@@ -352,7 +483,7 @@ def test_relations_value_chain_layers_supply_sink_below() -> None:
     """
     lay = layout_relations(_VALUE_CHAIN_REL)
     pos = {nd["id"]: (nd["x"], nd["y"]) for nd in lay["nodes"]}
-    # 供給元 2 社 (frenemy) は同レイヤー、供給先 (発注企業) はその下段
+    # 提携と競合を持つ供給元2社は同レイヤー、供給先はその下段
     assert pos["vendors"][1] == pos["consultants"][1], "供給元 2 社が同レイヤーに無い"
     assert pos["client"][1] > pos["vendors"][1], "供給先 (発注企業) が下段に落ちていない"
     # 出資元 (投資家) は供給元より上段
@@ -379,7 +510,7 @@ def test_relations_value_chain_layers_supply_sink_below() -> None:
 # レンダラ側の力学分離 (preconditioning + vb_h 拡張) では構造的に解けないと観察され、
 # 「関係図の edges は 8 本上限・超過は build が hard fail」を契約に固定した
 # (= [[feedback_check_design_principles]] 1 段「失敗を表現できない構造に変える」)。
-# 本 fixture は 8 エッジ (frenemy 1 + 提携/競合/供給 7) に絞った主要対立軸版で、
+# 本 fixture は提携/競合/供給を明示的な別edgeにした主要対立軸版で、
 # レンダラが描けば重なり 0 を保証する不変条件として locked-in する。
 _BANDS_HIGH_DENSITY_REL = {
     "title": "AIベンダー・グローバルコンサルの関係図",
@@ -391,11 +522,10 @@ _BANDS_HIGH_DENSITY_REL = {
         {"id": "bcg", "label": "BCG", "group": "グローバルコンサル"},
         {"id": "client", "label": "発注企業", "group": "クライアント"},
     ],
-    # 5 エッジ (frenemy 1 + 普通 4) = 描画 chip 数 5 (frenemy も 1 chip)。
-    # _MAX_RELATION_EDGES=8 上限内で 4 役割 8 ノードの bands モードを最小再現する版。
+    # _MAX_RELATION_EDGES=8 上限内で bands モードを最小再現する版。
     "edges": [
-        {"from": "openai", "to": "accenture", "label": "提携と競合が併存", "kind": "協調的競合",
-         "coop": "Frontier Alliances提携", "rival": "DeployCoで実装受注侵食"},
+        {"from": "openai", "to": "accenture", "label": "Frontier Alliances提携", "kind": "提携"},
+        {"from": "openai", "to": "accenture", "label": "DeployCoで実装受注侵食", "kind": "競合"},
         {"from": "openai", "to": "mckinsey", "label": "Frontier Alliances", "kind": "提携"},
         {"from": "google", "to": "accenture", "label": "DeepMind実装提携", "kind": "提携"},
         {"from": "openai", "to": "client", "label": "DeployCoで直接実装", "kind": "供給"},
@@ -570,8 +700,7 @@ def test_relations_bands_high_density_no_label_overlap() -> None:
     rects = _chip_rects(svg)
     # 6 ノード (AIベンダー 2 + コンサル 3 + クライアント 1) の 3 段 bands 構成。
     assert len(circles) == 6, f"ノード円が 6 個でない: {len(circles)}"
-    # 5 edges (frenemy 1 + 普通 4)、frenemy 1 chip 統合で chip 数 = 5
-    assert len(rects) == 5, f"ラベルチップが 5 個でない: {len(rects)}"
+    assert len(rects) == 6, f"ラベルチップが 6 個でない: {len(rects)}"
 
     # ラベル↔ノード円: 文字が読めなくなる重なりは 0
     for r in rects:
@@ -660,8 +789,8 @@ def test_relations_same_band_peer_edge_no_pierce() -> None:
                 f"エッジ線がノード円を貫通: seg={seg} circle=({ncx},{ncy},{ncr})"
 
 
-def test_relations_unknown_directed_kinds_form_flow_layers_without_piercing() -> None:
-    """生成語彙の一方向 edge も flow として層化し、同段の第三ノードを貫かない。"""
+def test_relations_unknown_directed_kinds_are_rejected() -> None:
+    """V2 allowlist外の生成語彙は既定flowへ縮退させない。"""
     from tools.render_deepdive import layout_relations
 
     rel = {
@@ -684,19 +813,8 @@ def test_relations_unknown_directed_kinds_form_flow_layers_without_piercing() ->
         ],
     }
 
-    lay = layout_relations(rel)
-    pos = {nd["id"]: (nd["x"], nd["y"]) for nd in lay["nodes"]}
-    assert pos["model"][1] < pos["eval"][1] < pos["boundary"][1]
-    assert pos["boundary"][1] < pos["targets"][1] < pos["recovery"][1]
-
-    svg = relations_svg(rel)
-    circles = _node_circles(svg)
-    segs = [(float(a), float(b), float(c), float(d))
-            for a, b, c, d, _stroke, w in _EDGE_LINE_RE.findall(svg) if float(w) >= 2.0]
-    for seg in segs:
-        for ncx, ncy, ncr in circles:
-            assert _seg_point_dist(seg, ncx, ncy) >= ncr - 1.0, \
-                f"エッジ線がノード円を貫通: seg={seg} circle=({ncx},{ncy},{ncr})"
+    with pytest.raises(DeepDiveIncompleteError, match="unknown relation kind"):
+        layout_relations(rel)
 
 
 _AI_INFRA_20260704_CROSSING_REL = {
@@ -748,7 +866,7 @@ def test_relations_too_many_edges_hard_fail(tmp_path: Path, monkeypatch: pytest.
     詰め込めない構造的限界がある。「ラベルを 8 枚以下に絞り込めない関係図」は
     本質を選別できていない記事のシグナルなので、生成段階で loud failure させて
     サイレントな破綻描画を封じる ([[feedback_check_design_principles]] 1 段)。
-    frenemy (協調的競合) は coop/rival の 2 ラベルでカウントする。
+    提携と競合の二面関係も別edgeとして各1ラベルでカウントする。
     """
     from tools.render_deepdive import build_deepdive_context, DeepDiveIncompleteError
     monkeypatch.setenv("NEWS_GRASP_SKIP_URL_CHECK", "1")   # オフラインで URL 検証スキップ (test 終了で自動 restore)
@@ -964,25 +1082,18 @@ def test_deepdive_template_has_mobile_overflow_guards() -> None:
     # 2) grid 子の min-width:0 (TIMELINE 本文 / プレイヤーカード / decision 等)
     assert ".dd-tl__body { min-width: 0" in css, \
         "deepdive-template.html: .dd-tl__body の min-width: 0 が無い (grid 1fr 子が min-content で暴走)"
-    # 3) モバイルで TABLE / RELATIONS SVG は「サイズ保持 × 横スクロール」仕様であること
-    #    (2026-06-04 PM ユーザー再指示で「全入り化」設計を撤回)。
+    # 3) TABLE は横スクロールを維持するが、RELATIONS はV2 mobile専用配置を使うこと。
     #    - .dd-table-wrap の overflow-x:auto と .dd-table の min-width:720 が保たれている
     #      = TABLE は 720px を維持し、375px 画面ではユーザーが横スワイプして閲覧する。
-    #    - .dd-relwrap の overflow-x:auto が保たれている
-    #      = 関係図 SVG は viewBox 自然幅を維持し、ユーザーが横スワイプで全体を見る。
-    #    旧契約「.dd-relwrap svg { min-width: 0 } / .dd-table { min-width: 0 }」は
-    #    CJK 1 文字折り返し + SVG ラベル不可読の UX 破綻を生んだため撤回
-    #    ([[feedback_intent_over_wording]] 違反の恒久対策: 字面 "右に隠れて見えない" を
-    #    "全入りにせよ" と取り違えた経緯を構造的に二度と再発させない)。
+    #    - relations は360px viewBox基準の別SVGを一画面幅へ収める。
     assert ".dd-table-wrap { overflow-x: auto" in css, \
         "deepdive-template.html: .dd-table-wrap の overflow-x:auto が無い (TABLE 横スクロール不能)"
     assert ".dd-table { width: 100%; min-width: 720px" in css, \
         "deepdive-template.html: .dd-table の min-width:720px が消えている (CJK 1 文字折り返しになる)"
-    assert ".dd-relwrap { overflow-x: auto" in css, \
-        "deepdive-template.html: .dd-relwrap の overflow-x:auto が無い (関係図 SVG 横スクロール不能)"
-    # 「全入り化」設計の残骸が再混入していないことを negative assert で固定
-    assert ".dd-relwrap svg { min-width: 0" not in css, \
-        "deepdive-template.html: 撤回済の .dd-relwrap svg { min-width: 0 } が再混入 (SVG ラベル不可読の再発)"
+    assert ".dd-relwrap { overflow-x: auto" not in css, \
+        "deepdive-template.html: relations が旧横スクロール前提のまま"
+    assert ".dd-relations--mobile" in css and "width: 100%" in css, \
+        "deepdive-template.html: mobile専用relations SVGの一画面幅指定が無い"
     assert ".dd-table-wrap { overflow-x: visible" not in css, \
         "deepdive-template.html: 撤回済の .dd-table-wrap { overflow-x: visible } が再混入 (TABLE 横スクロール阻害)"
     # 4) ビルド済み 1 ページにも反映されていることを確認 (テンプレ→生成パイプライン疎通)
@@ -1267,26 +1378,39 @@ def test_build_fails_on_single_chart(tmp_path: Path) -> None:
     assert "chart" in str(exc.value)
 
 
-def test_real_digest_is_complete(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """実 digest (本番公開対象) は必須ブロックを全て備え、hard fail せず render できる。"""
+def test_legacy_real_digest_with_removed_relation_kind_is_v2_red(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """旧kindを持つ実記事はNo.10の正規再生成前にV2 Greenへ見せない。"""
     if not _REAL.exists():
         return  # 実 digest が無い環境では skip
     monkeypatch.setenv("NEWS_GRASP_SKIP_URL_CHECK", "1")
-    ctx = build_deepdive_context(_REAL)        # 欠落があればここで例外 = テスト失敗
-    assert ctx["relations_svg"], "実記事に関係図 (relations) が無い"
-    assert ctx["table"], "実記事にデータ表 (table) が無い"
-    assert len(ctx["charts"]) >= 2, "深掘りの chart が 2 本未満 (図表は最低 2 本)"
-    pages = build_deepdive_pages(
-        docs_root=tmp_path, full=True, digest_dir=_REAL.parent,
-    )
-    assert pages and pages[0].exists()
+    with pytest.raises(DeepDiveIncompleteError, match="unknown relation kind"):
+        build_deepdive_context(_REAL)
 
 
-def test_timeline_items_wrapper_renders(tmp_path: Path) -> None:
+def test_timeline_items_wrapper_renders(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """timeline が {"items": [...]} 形式でも render できる。"""
     src = ROOT / "digest" / "DeepDive" / "2026-06-24-DeepDive.md"
     if not src.exists():
         return
+    # このtestはtimeline wrapperだけを所有する。旧号のmobile relation RedはNo.10で再生成する。
+    monkeypatch.setattr(
+        "tools.render_deepdive.relations_svg",
+        lambda *_args, **kwargs: (
+            '<svg data-layout="mobile" viewBox="0 0 360 240" width="100%"></svg>'
+            if kwargs.get("layout") == "mobile"
+            else '<svg viewBox="0 0 1080 720"></svg>'
+        ),
+    )
+    monkeypatch.setattr(
+        "tools.render_deepdive.layout_relations",
+        lambda *_args, **_kwargs: {"legend": []},
+    )
     ctx = build_deepdive_context(src)
     assert isinstance(ctx["timeline"], list)
     html = _get_jinja_env().get_template("deepdive-template.html").render(**ctx)

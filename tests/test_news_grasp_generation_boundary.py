@@ -13,7 +13,13 @@ from tools import news_grasp_generation as generation
 ROOT = Path(__file__).resolve().parents[1]
 LAUNCHER = ROOT / "scripts" / "ops" / "news-grasp-task-launcher.pyw"
 CRITICAL_PATHS = (
-    "scripts/ops/news-grasp-runner.ps1",
+    "automation/news-grasp-6-40/automation.toml.template",
+    "automation/skills/news-grasp-direct-mainline/SKILL.md",
+    "tools/news_grasp_direct_runtime.py",
+    "tools/news_grasp_direct_completion.py",
+    "tools/news_grasp_title_control.py",
+    "tools/news_grasp_title_materializer.py",
+    "scripts/ops/news-grasp-title-materializer.pyw",
     "tools/daily_self_heal.py",
     "tools/news_grasp_daily_control.py",
     "tools/news_grasp_operational_contract.py",
@@ -175,6 +181,30 @@ def test_generation_seal_rejects_tracked_dirty_source_before_pointer(
     with pytest.raises(
         RuntimeError,
         match="^NEWS_GRASP_PRODUCTION_GENERATION_DIRTY$",
+    ):
+        namespace["_seal_active_production_generation"](
+            source_repo=repo,
+            runtime_repo=repo,
+            runtime_root=runtime_root,
+            origin_sha="a" * 40,
+            bin_dir=bin_dir,
+        )
+    assert not (runtime_root / "active-generation-v2.json").exists()
+
+
+def test_generation_seal_rejects_missing_critical_file_before_pointer(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    namespace, repo, runtime_root, bin_dir, _rows = _generation_fixture(
+        tmp_path,
+        monkeypatch,
+    )
+    (repo / "tools" / "news_grasp_title_materializer.py").unlink()
+
+    with pytest.raises(
+        RuntimeError,
+        match="^NEWS_GRASP_PRODUCTION_GENERATION_FILE_INVALID$",
     ):
         namespace["_seal_active_production_generation"](
             source_repo=repo,

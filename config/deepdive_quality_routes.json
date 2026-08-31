@@ -1,9 +1,12 @@
 {
-  "schemaVersion": "DEEPDIVE_SHARED_QUALITY_ROUTES_V1",
+  "schemaVersion": "DEEPDIVE_SHARED_QUALITY_ROUTES_V2",
   "engine": "tools.deepdive_quality",
   "issueCodes": [
     "deepdive_url_provenance_invalid",
+    "deepdive_article_value_invalid",
+    "deepdive_relation_quality_invalid",
     "deepdive_dialogue_value_invalid",
+    "deepdive_research_evidence_insufficient",
     "deepdive_public_surface_invalid"
   ],
   "declaredRoutes": [

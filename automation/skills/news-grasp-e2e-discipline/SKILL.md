@@ -13,6 +13,23 @@ description: Run or plan News-Grasp daily-batch E2E, scheduled-equivalent NoPubl
 
 このskillはNews-Grasp Product Constitutionの「人手なしの日次運用」「壊さない運用」「物理提出」を実現する下位手段であり、E2E実行自体を目的にしない。task contractが`review_series_closed`または`no_additional_review`なら追加review seriesを開始しない。
 
+## DeepDive Publication Quality V2 preaudit
+
+DeepDiveの意味品質と公開安全性は `DEEPDIVE_QUALITY_REVIEW_V2` を共有正本とする。受理するissue codeは次の6つだけである。
+
+- `deepdive_url_provenance_invalid`
+- `deepdive_article_value_invalid`
+- `deepdive_relation_quality_invalid`
+- `deepdive_dialogue_value_invalid`
+- `deepdive_research_evidence_insufficient`
+- `deepdive_public_surface_invalid`
+
+共有routeは `production_generation`、`repair_publish`、`daily_quality`、`codex_daily_audit` の4つだけである。未知のissue codeまたはroute、V2 schema外のreviewはfail-closedにし、E2Eで補完・分類・再試行しない。semantic reviewはarticle/relation/dialogueのrepo-relative pathと実bytes identityへbindし、evidence-backed findings、7軸の各1〜5、`averageScore`、`reviewRoute`、`status`を再検証する。hashは鮮度・byte一致の検出だけに使い、semantic authorityにはしない。
+
+TTSまたは公開HTMLの生成前に、共有internal-metadata stripperでraw/escaped claim-source・value・evidence・support comment、transport JSON、Markdown制御断片を表示文と`source_evidence_sentences`から除去する。残存、除去不能、またはV2 preauditのRedは `deepdive_public_surface_invalid` として扱い、公開・TTS・E2Eへ進めない。safe rerenderはsourceのV2 reviewとmetadata preauditがGreenの場合だけ、validated sourceから一回行う。
+
+対談は記事固有の根拠を入力にLLMが生成し、7価値区間の順序を保ったままturn数を可変にする。先輩は常体、若手は敬体とし、fillerや根拠の言換えだけの反復を許可しない。最低文字数・最低再生時間・固定turn数は品質条件にせず、最大値だけを暴走安全弁として扱う。
+
 唯一のL8経路は `official wrapper→installed launcher→runner→broker` とする。official wrapperが発行する`NEWS_GRASP_INSTALLED_NOPUBLISH_LAUNCH_AUTHORITY_V1`は`externalHealthAuthorityFixturePath`と`externalHealthAuthorityFixtureSha256`を必須fieldとしてsealし、installed launcherはlaunch直前にfile bytes、repo containment、reparse不在、64KiB上限、runner arguments中の`-ExternalHealthAuthorityPathOverride`とのcanonical path一致を再検証する。claim witnessはcanonical file pathとして渡し、inline JSON、別path、別hashへ置換しない。
 
 ## 1. 目的

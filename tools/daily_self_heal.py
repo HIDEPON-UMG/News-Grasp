@@ -4866,6 +4866,7 @@ def verify_publish_complete(
         repo_root=repo_root,
         issue_date=date,
         require_rendered_public=True,
+        route="repair_publish",
     )
     base["deepdive_shared_quality"] = shared_quality
     if shared_quality.get("status") != "Green":

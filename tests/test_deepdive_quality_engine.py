@@ -89,11 +89,148 @@ def _v2_article(path: Path, *, url: str) -> Path:
     return path
 
 
-def test_materialize_issue_generates_missing_claim_source_from_observed_body(
+def _write_llm_dialogue(article: Path) -> Path:
+    """LLM生成済みのcanonical対談をmaterializer入力として用意する。"""
+
+    output = article.with_name(article.name.replace("-DeepDive.md", "-DeepDive-dialogue.md"))
+    output.write_text(
+        "---\n"
+        f'source_sha256: "{deepdive_quality._canonical_text_sha256(article.read_bytes())}"\n'
+        "---\n\n## 台本\n\n統合検証用対話\n",
+        encoding="utf-8",
+    )
+    return output
+
+
+def _patch_green_quality_review(monkeypatch: pytest.MonkeyPatch) -> None:
+    """意味review以外を所有する旧fixtureではreview境界をGreenに固定する。"""
+
+    monkeypatch.setattr(
+        deepdive_quality,
+        "_validate_quality_review",
+        lambda **_kwargs: (
+            [],
+            set(),
+            {
+                "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+                "computedAverageScore": 4.0,
+                "status": "Green",
+                "issues": [],
+            },
+            None,
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    "leaked_fragment",
+    [
+        '<!-- claim-source: {"claimId":"secret"} -->',
+        '&lt;!-- claim-source: {&quot;claimId&quot;:&quot;secret&quot;} --&gt;',
+        '{"claim":"内部主張","sourceUrl":"https://example.com/private"}',
+        '```json\n{"sourceUrl":"https://example.com/private"}\n```',
+        '[内部リンク](https://example.com/private)',
+    ],
+)
+def test_rendered_public_surface_rejects_internal_transport_metadata(
+    tmp_path: Path,
+    leaked_fragment: str,
+) -> None:
+    manifest = tmp_path / "provenance.json"
+    rendered = tmp_path / "index.html"
+    manifest.write_text(
+        json.dumps(
+            {
+                "schemaVersion": "fixture",
+                "sources": [
+                    {"publicHref": "https://example.com/source"},
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    rendered.write_text(
+        '<html><body><a href="https://example.com/source">source</a>'
+        f"{leaked_fragment}</body></html>",
+        encoding="utf-8",
+    )
+
+    issues, _evidence = deepdive_quality.validate_rendered_public_surface(
+        manifest,
+        rendered,
+    )
+
+    assert "DEEPDIVE_PUBLIC_METADATA_EXPOSED" in issues
+
+
+def test_audit_issue_maps_duplicate_claim_evidence_to_article_value_invalid(
+    tmp_path: Path,
+) -> None:
+    issue_date = "2026-08-27"
+    url = "https://example.com/source"
+    claim = "対象企業は2026年8月に限定地域で新しい運用条件を公表した"
+    article = tmp_path / "digest" / "DeepDive" / f"{issue_date}-DeepDive.md"
+    article.parent.mkdir(parents=True)
+    declaration = json.dumps(
+        {
+            "claimId": "duplicate-evidence",
+            "claim": claim,
+            "sourceUrl": url,
+            "evidence": claim,
+        },
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    article.write_text(
+        "---\ntitle: 重複根拠の検証\ndate: 2026-08-27\n---\n\n"
+        f"{claim}。\n\n<!-- claim-source: {declaration} -->\n\n"
+        f"## 参考リンク\n- [一次資料]({url})\n",
+        encoding="utf-8",
+    )
+    manifest = tmp_path / "data" / "deepdive-provenance" / f"{issue_date}.json"
+    deepdive_quality.build_provenance_manifest(
+        article_path=article,
+        fetch_records=[
+            deepdive_quality._observed_record(
+                url=url,
+                final_url=url,
+                status=200,
+                body=claim.encode("utf-8"),
+            )
+        ],
+        output_path=manifest,
+    )
+
+    result = deepdive_quality.audit_issue(
+        repo_root=tmp_path,
+        issue_date=issue_date,
+        include_corpus=False,
+    )
+
+    assert "deepdive_article_value_invalid" in result["issueCodes"]
+    assert "deepdive_claim_source_fit_invalid" not in result["issueCodes"]
+
+
+def test_generic_claim_evidence_is_article_value_invalid() -> None:
+    issues = deepdive_quality._claim_article_value_issues(
+        [
+            {
+                "claimId": "generic-evidence",
+                "claim": "対象企業が条件付き運用を開始した",
+                "sourceUrl": "https://example.com/source",
+                "evidence": "元記事を確認する。",
+            }
+        ]
+    )
+
+    assert any("DEEPDIVE_ARTICLE_VALUE_INVALID" in issue for issue in issues)
+
+
+def test_materialize_issue_routes_missing_claim_to_research_without_mutation(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """RC-02 Green: recovery本文だけでも同じhandlerがclaim/V2を生成する。"""
+    """V2 recovery: claim不足は本文複製で補わずresearch routeへ戻す。"""
 
     article = tmp_path / "digest" / "DeepDive" / "2026-08-27-DeepDive.md"
     article.parent.mkdir(parents=True)
@@ -115,42 +252,29 @@ def test_materialize_issue_generates_missing_claim_source_from_observed_body(
         ),
     )
 
-    def fake_dialogue_builder(source: Path, *, output: Path, **_kwargs: object) -> Path:
-        output.write_text(
-            "---\n"
-            f'source_sha256: "{deepdive_quality._canonical_text_sha256(source.read_bytes())}"\n'
-            "---\n\n## 台本\n\n復旧生成対話\n",
-            encoding="utf-8",
-        )
-        return output
-
-    monkeypatch.setattr(
-        deepdive_quality.build_deepdive_dialogue_script,
-        "build_dialogue_script",
-        fake_dialogue_builder,
-    )
     monkeypatch.setattr(
         deepdive_quality.deepdive_dialogue,
         "validate_dialogue_document",
         lambda *_args, **_kwargs: [],
     )
+    _patch_green_quality_review(monkeypatch)
 
-    result = deepdive_quality.materialize_issue_bundle(
-        repo_root=tmp_path,
-        issue_date="2026-08-27",
-    )
+    original_article = article.read_text(encoding="utf-8")
 
-    article_text = article.read_text(encoding="utf-8")
-    manifest = json.loads(
-        (tmp_path / "data" / "deepdive-provenance" / "2026-08-27.json").read_text(
-            encoding="utf-8"
+    with pytest.raises(
+        deepdive_quality.DeepDiveQualityError,
+        match="DEEPDIVE_RESEARCH_EVIDENCE_INSUFFICIENT",
+    ):
+        deepdive_quality.materialize_issue_bundle(
+            repo_root=tmp_path,
+            issue_date="2026-08-27",
         )
-    )
+
     assert fetched == ["https://example.com/source"]
-    assert "<!-- claim-source:" in article_text
-    assert manifest["schemaVersion"] == "DEEPDIVE_SOURCE_PROVENANCE_V2"
-    assert manifest["claimBindings"]
-    assert result["status"] == "Green"
+    assert article.read_text(encoding="utf-8") == original_article
+    assert not (tmp_path / "data" / "deepdive-bundles" / "2026-08-27.json").exists()
+    assert not (tmp_path / "data" / "deepdive-provenance" / "2026-08-27.json").exists()
+    assert not article.with_name("2026-08-27-DeepDive-dialogue.md").exists()
 
 
 def test_materialize_issue_missing_claim_fails_closed_without_observed_evidence(
@@ -176,7 +300,7 @@ def test_materialize_issue_missing_claim_fails_closed_without_observed_evidence(
 
     with pytest.raises(
         deepdive_quality.DeepDiveQualityError,
-        match="DEEPDIVE_CLAIM_SOURCE_GENERATION_FAILED evidence",
+        match="DEEPDIVE_RESEARCH_EVIDENCE_INSUFFICIENT bindings_missing",
     ):
         deepdive_quality.materialize_issue_bundle(
             repo_root=tmp_path,
@@ -207,7 +331,7 @@ def test_materialize_issue_rejects_unrelated_long_body_as_claim_evidence(
 
     with pytest.raises(
         deepdive_quality.DeepDiveQualityError,
-        match="claim_not_supported",
+        match="DEEPDIVE_RESEARCH_EVIDENCE_INSUFFICIENT bindings_missing",
     ):
         deepdive_quality.materialize_issue_bundle(
             repo_root=tmp_path,
@@ -225,6 +349,7 @@ def test_materialize_issue_writes_v2_provenance_dialogue_and_bundle_once(
     article = tmp_path / "digest" / "DeepDive" / "2026-08-27-DeepDive.md"
     article.parent.mkdir(parents=True)
     _v2_article(article, url=url)
+    _write_llm_dialogue(article)
     monkeypatch.setattr(
         deepdive_quality,
         "_fetch_one",
@@ -236,25 +361,12 @@ def test_materialize_issue_writes_v2_provenance_dialogue_and_bundle_once(
         ),
     )
 
-    def fake_dialogue_builder(source: Path, *, output: Path, **_kwargs: object) -> Path:
-        output.write_text(
-            "---\n"
-            f'source_sha256: "{deepdive_quality._canonical_text_sha256(source.read_bytes())}"\n'
-            "---\n\n## 台本\n\n統合検証用対話\n",
-            encoding="utf-8",
-        )
-        return output
-
-    monkeypatch.setattr(
-        deepdive_quality.build_deepdive_dialogue_script,
-        "build_dialogue_script",
-        fake_dialogue_builder,
-    )
     monkeypatch.setattr(
         deepdive_quality.deepdive_dialogue,
         "validate_dialogue_document",
         lambda *_args, **_kwargs: [],
     )
+    _patch_green_quality_review(monkeypatch)
 
     result = deepdive_quality.materialize_issue_bundle(
         repo_root=tmp_path,
@@ -273,11 +385,147 @@ def test_materialize_issue_writes_v2_provenance_dialogue_and_bundle_once(
     assert (tmp_path / "digest" / "DeepDive" / "2026-08-27-DeepDive-dialogue.md").is_file()
 
 
-def test_materialize_issue_crash_never_creates_partial_green_bundle(
+def test_materialize_issue_restores_previous_outputs_when_semantic_review_is_red(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """RC-02 recovery: dialogue確定前crashをpartial Greenにしない。"""
+    """RC-02 recovery: semantic Redでは最終pathを部分更新せず旧成果物を保持する。"""
+
+    issue_date = "2026-08-27"
+    url = "https://example.com/source"
+    article = tmp_path / "digest" / "DeepDive" / f"{issue_date}-DeepDive.md"
+    article.parent.mkdir(parents=True)
+    _v2_article(article, url=url)
+    _write_llm_dialogue(article)
+
+    manifest = tmp_path / "data" / "deepdive-provenance" / f"{issue_date}.json"
+    manifest.parent.mkdir(parents=True)
+    previous_manifest = b'{"schemaVersion":"PREVIOUS_GREEN"}\n'
+    manifest.write_bytes(previous_manifest)
+    claim_transport = (
+        tmp_path / "data" / "deepdive-claim-source" / f"{issue_date}.json"
+    )
+
+    monkeypatch.setattr(
+        deepdive_quality,
+        "_fetch_one",
+        lambda value, **_kwargs: deepdive_quality._observed_record(
+            url=value,
+            final_url=value,
+            status=200,
+            body=b"official protected report confirms recovery transport evidence",
+        ),
+    )
+    monkeypatch.setattr(
+        deepdive_quality.deepdive_dialogue,
+        "validate_dialogue_document",
+        lambda *_args, **_kwargs: [],
+    )
+    monkeypatch.setattr(
+        deepdive_quality,
+        "_dialogue_source_lineage_issues",
+        lambda *_args, **_kwargs: [],
+    )
+    _patch_green_quality_review(monkeypatch)
+    monkeypatch.setattr(
+        deepdive_quality,
+        "audit_issue",
+        lambda **_kwargs: {
+            "status": "Red",
+            "issues": ["deepdive_article_value_invalid:quality_review_missing"],
+        },
+    )
+
+    with pytest.raises(
+        deepdive_quality.DeepDiveQualityError,
+        match="quality_review_missing",
+    ):
+        deepdive_quality.materialize_issue_bundle(
+            repo_root=tmp_path,
+            issue_date=issue_date,
+        )
+
+    assert manifest.read_bytes() == previous_manifest
+    assert not claim_transport.exists()
+    assert not (tmp_path / "data" / "deepdive-bundles" / f"{issue_date}.json").exists()
+
+
+def test_materialize_issue_restores_rendered_directory_when_renderer_crashes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """RC-02 recovery: renderer途中失敗でも当日公開directoryとbundleを元へ戻す。"""
+
+    from tools import render_deepdive
+
+    issue_date = "2026-08-27"
+    url = "https://example.com/source"
+    article = tmp_path / "digest" / "DeepDive" / f"{issue_date}-DeepDive.md"
+    article.parent.mkdir(parents=True)
+    _v2_article(article, url=url)
+    _write_llm_dialogue(article)
+
+    manifest = tmp_path / "data" / "deepdive-provenance" / f"{issue_date}.json"
+    manifest.parent.mkdir(parents=True)
+    previous_manifest = b'{"schemaVersion":"PREVIOUS_GREEN"}\n'
+    manifest.write_bytes(previous_manifest)
+    rendered_directory = tmp_path / "docs" / "deepdive" / issue_date
+    rendered_directory.mkdir(parents=True)
+    rendered = rendered_directory / "index.html"
+    previous_rendered = b"<html>previous Green</html>\n"
+    rendered.write_bytes(previous_rendered)
+    newly_created = rendered_directory / "partial.tmp"
+
+    monkeypatch.setattr(
+        deepdive_quality,
+        "_fetch_one",
+        lambda value, **_kwargs: deepdive_quality._observed_record(
+            url=value,
+            final_url=value,
+            status=200,
+            body=b"official protected report confirms recovery transport evidence",
+        ),
+    )
+    monkeypatch.setattr(
+        deepdive_quality.deepdive_dialogue,
+        "validate_dialogue_document",
+        lambda *_args, **_kwargs: [],
+    )
+    monkeypatch.setattr(
+        deepdive_quality,
+        "_dialogue_source_lineage_issues",
+        lambda *_args, **_kwargs: [],
+    )
+    _patch_green_quality_review(monkeypatch)
+
+    def crashing_renderer(**_kwargs):
+        rendered.write_bytes(b"<html>partial replacement</html>\n")
+        newly_created.write_bytes(b"partial\n")
+        raise RuntimeError("renderer crashed after partial write")
+
+    monkeypatch.setattr(render_deepdive, "build_deepdive_pages", crashing_renderer)
+
+    with pytest.raises(RuntimeError, match="renderer crashed"):
+        deepdive_quality.materialize_issue_bundle(
+            repo_root=tmp_path,
+            issue_date=issue_date,
+            render_public=True,
+        )
+
+    assert manifest.read_bytes() == previous_manifest
+    assert rendered.read_bytes() == previous_rendered
+    assert not newly_created.exists()
+    assert not (
+        tmp_path / "data" / "deepdive-claim-source" / f"{issue_date}.json"
+    ).exists()
+    assert not (tmp_path / "data" / "deepdive-bundles" / f"{issue_date}.json").exists()
+
+
+def test_materialize_issue_without_llm_dialogue_never_creates_partial_green_bundle(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """RC-02 recovery: LLM対談欠落をdeterministic生成で埋めない。"""
 
     url = "https://example.com/source"
     article = tmp_path / "digest" / "DeepDive" / "2026-08-27-DeepDive.md"
@@ -293,13 +541,10 @@ def test_materialize_issue_crash_never_creates_partial_green_bundle(
             body=b"official protected report confirms recovery transport evidence",
         ),
     )
-    monkeypatch.setattr(
-        deepdive_quality.build_deepdive_dialogue_script,
-        "build_dialogue_script",
-        lambda *_args, **_kwargs: (_ for _ in ()).throw(OSError("fixture crash")),
-    )
-
-    with pytest.raises(OSError, match="fixture crash"):
+    with pytest.raises(
+        deepdive_quality.DeepDiveQualityError,
+        match="DEEPDIVE_LLM_REWRITE_REQUIRED dialogue_staged_missing",
+    ):
         deepdive_quality.materialize_issue_bundle(
             repo_root=tmp_path,
             issue_date="2026-08-27",
@@ -666,6 +911,7 @@ def test_issue_audit_requires_rendered_public_surface_only_when_requested(
         "validate_dialogue_document",
         lambda *_args, **_kwargs: [],
     )
+    _patch_green_quality_review(monkeypatch)
 
     pre_generation = deepdive_quality.audit_issue(
         repo_root=tmp_path,
@@ -736,6 +982,43 @@ def test_issue_audit_uses_typed_shared_issue_codes(tmp_path: Path) -> None:
     assert "deepdive_dialogue_value_invalid" in result["issueCodes"]
 
 
+def test_audit_history_routes_pre_enforcement_missing_claim_bindings_to_research(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    issue_date = "2026-08-01"
+    url = "https://example.com/source"
+    deepdive_dir = tmp_path / "digest" / "DeepDive"
+    deepdive_dir.mkdir(parents=True)
+    article = _article(deepdive_dir / f"{issue_date}-DeepDive.md", url=url)
+    (deepdive_dir / f"{issue_date}-DeepDive-dialogue.md").write_text(
+        "検証用の対談です。\n",
+        encoding="utf-8",
+    )
+    deepdive_quality.build_provenance_manifest(
+        article_path=article,
+        fetch_records=[_fetch(url)],
+        output_path=tmp_path / "data" / "deepdive-provenance" / f"{issue_date}.json",
+    )
+    monkeypatch.setattr(
+        deepdive_quality.deepdive_dialogue,
+        "validate_dialogue_document",
+        lambda *_args, **_kwargs: [],
+    )
+    _patch_green_quality_review(monkeypatch)
+
+    result = deepdive_quality.audit_history(
+        repo_root=tmp_path,
+        start_date=issue_date,
+        end_date=issue_date,
+        route="codex_daily_audit",
+    )
+
+    day = result["days"][0]
+    assert "deepdive_research_evidence_insufficient" in day["issueCodes"]
+    assert "DEEPDIVE_CLAIM_SOURCE_BINDINGS_MISSING" in day["issues"]
+
+
 def test_issue_audit_validates_date_before_any_path_read(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -794,6 +1077,7 @@ def test_issue_audit_rejects_cross_day_dialogue_loop(
         "validate_dialogue_document",
         lambda *_args, **_kwargs: [],
     )
+    _patch_green_quality_review(monkeypatch)
     observed_paths: list[Path] = []
 
     def red_corpus(paths: list[Path], **_kwargs) -> dict[str, object]:
@@ -854,6 +1138,7 @@ def test_issue_audit_binds_dialogue_sources_to_explicit_repo_root(
         "validate_dialogue_document",
         lambda *_args, **_kwargs: [],
     )
+    _patch_green_quality_review(monkeypatch)
 
     result = deepdive_quality.audit_issue(
         repo_root=artifact_repo,
@@ -953,6 +1238,154 @@ def test_period_audit_rejects_more_than_thirty_one_days() -> None:
             start_date="2026-07-01",
             end_date="2026-08-01",
         )
+
+
+def test_history_audit_enumerates_only_existing_articles_across_rest_days(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """No.10 Primary: 31日超の履歴は実在記事だけを監査し、休載日を欠落扱いしない。"""
+
+    deepdive_dir = tmp_path / "digest" / "DeepDive"
+    deepdive_dir.mkdir(parents=True)
+    existing_dates = ["2026-06-10", "2026-06-12", "2026-08-24", "2026-08-26"]
+    for issue_date in existing_dates:
+        (deepdive_dir / f"{issue_date}-DeepDive.md").write_text(
+            f"# {issue_date}\n",
+            encoding="utf-8",
+        )
+        (deepdive_dir / f"{issue_date}-DeepDive-dialogue.md").write_text(
+            "対談は記事として数えない。\n",
+            encoding="utf-8",
+        )
+
+    audited_dates: list[str] = []
+
+    def fake_audit_issue(*, issue_date: str, **_kwargs):
+        audited_dates.append(issue_date)
+        return _green_issue_row(issue_date)
+
+    monkeypatch.setattr(deepdive_quality, "audit_issue", fake_audit_issue)
+    monkeypatch.setattr(
+        deepdive_quality.deepdive_dialogue,
+        "audit_dialogue_corpus",
+        lambda _paths, **_kwargs: _corpus_result(issues=[]),
+    )
+
+    result = deepdive_quality.audit_history(
+        repo_root=tmp_path,
+        start_date="2026-06-01",
+        end_date="2026-08-31",
+    )
+
+    assert audited_dates == existing_dates
+    assert [row["issueDate"] for row in result["days"]] == existing_dates
+    assert "2026-06-11" not in audited_dates
+    assert "2026-08-25" not in audited_dates
+    assert result["articleCount"] == len(existing_dates)
+    assert result["status"] == "Green"
+
+
+def test_history_audit_cli_uses_history_enumerator(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """No.10 Adversarial: audit-history CLIを連続日audit-periodへ縮退させない。"""
+
+    calls: list[dict[str, object]] = []
+
+    def fake_audit_history(**kwargs):
+        calls.append(kwargs)
+        return {
+            "schemaVersion": "DEEPDIVE_SHARED_QUALITY_HISTORY_REPORT_V1",
+            "status": "Green",
+            "startDate": kwargs["start_date"],
+            "endDate": kwargs["end_date"],
+            "route": kwargs["route"],
+            "issueCodes": [],
+            "articleCount": 0,
+            "days": [],
+            "dialogueCorpusAudit": _corpus_result(issues=[]),
+        }
+
+    monkeypatch.setattr(deepdive_quality, "audit_history", fake_audit_history)
+
+    exit_code = deepdive_quality.main(
+        [
+            "--repo-root",
+            str(tmp_path),
+            "audit-history",
+            "--start",
+            "2026-06-01",
+            "--end",
+            "2026-08-31",
+            "--route",
+            "codex_daily_audit",
+        ]
+    )
+
+    assert exit_code == 0
+    assert calls == [
+        {
+            "repo_root": tmp_path,
+            "start_date": "2026-06-01",
+            "end_date": "2026-08-31",
+            "require_rendered_public": False,
+            "route": "codex_daily_audit",
+        }
+    ]
+    assert json.loads(capsys.readouterr().out)["articleCount"] == 0
+
+
+def test_history_audit_cli_atomically_writes_repo_local_red_manifest(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """No.10 Recovery: 初回Red監査をrepo内manifestへ固定しstdoutだけで失わない。"""
+
+    report = {
+        "schemaVersion": "DEEPDIVE_SHARED_QUALITY_HISTORY_REPORT_V1",
+        "status": "Red",
+        "startDate": "2026-05-31",
+        "endDate": "2026-08-31",
+        "route": "codex_daily_audit",
+        "issueCodes": ["deepdive_article_value_invalid"],
+        "articleCount": 1,
+        "days": [
+            {
+                "status": "Red",
+                "issueDate": "2026-05-31",
+                "issueCodes": ["deepdive_article_value_invalid"],
+            }
+        ],
+        "dialogueCorpusAudit": _corpus_result(issues=[]),
+    }
+    monkeypatch.setattr(
+        deepdive_quality,
+        "audit_history",
+        lambda **_kwargs: report,
+    )
+    output = Path("data/deepdive-history-remediation/2026-08-31-initial-audit.json")
+
+    exit_code = deepdive_quality.main(
+        [
+            "--repo-root",
+            str(tmp_path),
+            "audit-history",
+            "--start",
+            "2026-05-31",
+            "--end",
+            "2026-08-31",
+            "--output",
+            str(output),
+        ]
+    )
+
+    manifest = tmp_path / output
+    assert exit_code == 1
+    assert json.loads(manifest.read_text(encoding="utf-8")) == report
+    assert not list(manifest.parent.glob(f".{manifest.name}.*.tmp"))
 
 
 def test_period_capture_fetches_each_unique_url_once(
@@ -1383,7 +1816,7 @@ def _patch_bilingual_materializer(
     *,
     evidence: str = "official protected report confirms recovery transport evidence",
 ) -> None:
-    """sidecar fixtureで使うnetwork/dialogueの決定論的な境界を注入する。"""
+    """sidecar fixtureで使うnetwork/validator境界を注入する。"""
 
     monkeypatch.setattr(
         deepdive_quality,
@@ -1396,27 +1829,12 @@ def _patch_bilingual_materializer(
         ),
     )
 
-    def fake_dialogue_builder(
-        source: Path, *, output: Path, **_kwargs: object
-    ) -> Path:
-        output.write_text(
-            "---\n"
-            f'source_sha256: "{deepdive_quality._canonical_text_sha256(source.read_bytes())}"\n'
-            "---\n\n## 台本\n\n統合検証用対話\n",
-            encoding="utf-8",
-        )
-        return output
-
-    monkeypatch.setattr(
-        deepdive_quality.build_deepdive_dialogue_script,
-        "build_dialogue_script",
-        fake_dialogue_builder,
-    )
     monkeypatch.setattr(
         deepdive_quality.deepdive_dialogue,
         "validate_dialogue_document",
         lambda *_args, **_kwargs: [],
     )
+    _patch_green_quality_review(monkeypatch)
 
 
 def _claim_transport_path(root: Path, issue_date: str = "2026-08-27") -> Path:
@@ -1434,6 +1852,7 @@ def test_materialize_issue_seals_bilingual_claim_transport_sidecar(
     article = tmp_path / "digest" / "DeepDive" / f"{issue_date}-DeepDive.md"
     article.parent.mkdir(parents=True)
     _v2_article(article, url=url)
+    _write_llm_dialogue(article)
     original_text = article.read_text(encoding="utf-8")
     expected_bindings = deepdive_quality._claim_source_declarations(original_text)
     _patch_bilingual_materializer(monkeypatch)
@@ -1460,17 +1879,80 @@ def test_materialize_issue_seals_bilingual_claim_transport_sidecar(
     assert transport_sha == deepdive_quality._canonical_sha256(unsigned)
 
 
-def test_materialize_issue_restores_bilingual_claim_transport_after_bundle_loss(
+def test_materialize_issue_replaces_valid_but_stale_transport_after_article_rewrite(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """RC-02 recovery: sidecarからcomments/V2/dialogue/bundleを同じ内容で再生成する。"""
+    """RC-02 recovery: 記事rewrite後は現行declarationで旧transportを置換する。"""
 
     issue_date = "2026-08-27"
     url = "https://example.com/source"
     article = tmp_path / "digest" / "DeepDive" / f"{issue_date}-DeepDive.md"
     article.parent.mkdir(parents=True)
     _v2_article(article, url=url)
+    _write_llm_dialogue(article)
+    _patch_bilingual_materializer(monkeypatch)
+    deepdive_quality.materialize_issue_bundle(
+        repo_root=tmp_path,
+        issue_date=issue_date,
+    )
+
+    stale_transport = json.loads(
+        _claim_transport_path(tmp_path, issue_date).read_text(encoding="utf-8")
+    )
+    rewritten_claim = "現行の修正版claim"
+    rewritten_evidence = (
+        "official protected report confirms recovery transport evidence"
+    )
+    rewritten_declaration = json.dumps(
+        {
+            "claimId": "rewritten-claim",
+            "claim": rewritten_claim,
+            "sourceUrl": url,
+            "evidence": rewritten_evidence,
+        },
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    rewritten_text = deepdive_quality.CLAIM_SOURCE_RE.sub(
+        f"<!-- claim-source: {rewritten_declaration} -->",
+        article.read_text(encoding="utf-8"),
+    ).replace(
+        "限定system transportでも同じ本文検査を通過する",
+        rewritten_claim,
+    )
+    article.write_text(rewritten_text, encoding="utf-8")
+    _write_llm_dialogue(article)
+
+    result = deepdive_quality.materialize_issue_bundle(
+        repo_root=tmp_path,
+        issue_date=issue_date,
+    )
+
+    current_transport = json.loads(
+        _claim_transport_path(tmp_path, issue_date).read_text(encoding="utf-8")
+    )
+    assert result["status"] == "Green"
+    assert current_transport["bindings"] == (
+        deepdive_quality._claim_source_declarations(
+            article.read_text(encoding="utf-8")
+        )
+    )
+    assert current_transport["bindings"] != stale_transport["bindings"]
+
+
+def test_materialize_issue_preserves_article_when_dialogue_rewrite_is_required(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """RC-02 recovery: 後段Redではsidecar由来claimも部分反映しない。"""
+
+    issue_date = "2026-08-27"
+    url = "https://example.com/source"
+    article = tmp_path / "digest" / "DeepDive" / f"{issue_date}-DeepDive.md"
+    article.parent.mkdir(parents=True)
+    _v2_article(article, url=url)
+    _write_llm_dialogue(article)
     _patch_bilingual_materializer(monkeypatch)
     first = deepdive_quality.materialize_issue_bundle(
         repo_root=tmp_path,
@@ -1478,15 +1960,13 @@ def test_materialize_issue_restores_bilingual_claim_transport_after_bundle_loss(
     )
     sidecar = _claim_transport_path(tmp_path, issue_date)
     sidecar_before = sidecar.read_bytes()
-    original_declarations = deepdive_quality._claim_source_declarations(
-        article.read_text(encoding="utf-8")
-    )
     article.write_text(
         deepdive_quality.CLAIM_SOURCE_RE.sub(
             "", article.read_text(encoding="utf-8")
         ),
         encoding="utf-8",
     )
+    article_before_retry = article.read_bytes()
     for output in (
         tmp_path / "data" / "deepdive-provenance" / f"{issue_date}.json",
         tmp_path / "digest" / "DeepDive" / f"{issue_date}-DeepDive-dialogue.md",
@@ -1494,49 +1974,26 @@ def test_materialize_issue_restores_bilingual_claim_transport_after_bundle_loss(
     ):
         output.unlink()
 
-    second = deepdive_quality.materialize_issue_bundle(
-        repo_root=tmp_path,
-        issue_date=issue_date,
-    )
+    with pytest.raises(
+        deepdive_quality.DeepDiveQualityError,
+        match="DEEPDIVE_LLM_REWRITE_REQUIRED dialogue_staged_missing",
+    ):
+        deepdive_quality.materialize_issue_bundle(
+            repo_root=tmp_path,
+            issue_date=issue_date,
+        )
 
-    restored_text = article.read_text(encoding="utf-8")
-    manifest = json.loads(
-        (tmp_path / "data" / "deepdive-provenance" / f"{issue_date}.json").read_text(
-            encoding="utf-8"
-        )
-    )
-    bundle = json.loads(
-        (tmp_path / "data" / "deepdive-bundles" / f"{issue_date}.json").read_text(
-            encoding="utf-8"
-        )
-    )
-    assert first["status"] == second["status"] == "Green"
-    assert (
-        deepdive_quality._claim_source_declarations(restored_text)
-        == original_declarations
-    )
+    assert first["status"] == "Green"
+    assert article.read_bytes() == article_before_retry
+    assert deepdive_quality._claim_source_declarations(
+        article.read_text(encoding="utf-8")
+    ) == []
     assert sidecar.read_bytes() == sidecar_before
-    assert manifest["schemaVersion"] == "DEEPDIVE_SOURCE_PROVENANCE_V2"
-    assert manifest["claimBindings"] == [
-        {
-            "claimId": "transport-fallback",
-            "claimSha256": _sha256_text("限定system transportでも同じ本文検査を通過する"),
-            "sourceUrl": url,
-            "evidenceSha256": _sha256_text(
-                "official protected report confirms recovery transport evidence"
-            ),
-        }
-    ]
-    assert bundle["schemaVersion"] == "DEEPDIVE_ISSUE_BUNDLE_V1"
-    assert bundle["claimSourceTransportPath"] == (
-        f"data/deepdive-claim-source/{issue_date}.json"
-    )
-    assert bundle["claimSourceTransportSha256"] == _sha256_text(
-        sidecar.read_bytes().decode("utf-8")
-    )
-    assert (
+    assert not (tmp_path / "data" / "deepdive-provenance" / f"{issue_date}.json").exists()
+    assert not (tmp_path / "data" / "deepdive-bundles" / f"{issue_date}.json").exists()
+    assert not (
         tmp_path / "digest" / "DeepDive" / f"{issue_date}-DeepDive-dialogue.md"
-    ).is_file()
+    ).exists()
 
 
 @pytest.mark.parametrize("tamper", ("transport_hash", "article_content_hash", "evidence"))
@@ -1551,6 +2008,7 @@ def test_materialize_issue_rejects_tampered_claim_transport_sidecar(
     article = tmp_path / "digest" / "DeepDive" / f"{issue_date}-DeepDive.md"
     article.parent.mkdir(parents=True)
     _v2_article(article, url="https://example.com/source")
+    _write_llm_dialogue(article)
     _patch_bilingual_materializer(monkeypatch)
     deepdive_quality.materialize_issue_bundle(
         repo_root=tmp_path,
@@ -1604,7 +2062,7 @@ def test_materialize_issue_without_claim_transport_rejects_unrelated_url_200(
 
     with pytest.raises(
         deepdive_quality.DeepDiveQualityError,
-        match="DEEPDIVE_CLAIM_SOURCE_GENERATION_FAILED claim_not_supported",
+        match="DEEPDIVE_RESEARCH_EVIDENCE_INSUFFICIENT bindings_missing",
     ):
         deepdive_quality.materialize_issue_bundle(
             repo_root=tmp_path,

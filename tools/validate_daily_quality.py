@@ -980,6 +980,7 @@ def validate_daily_quality(
             repo_root=repo_root,
             issue_date=issue.isoformat(),
             require_rendered_public=True,
+            route="daily_quality",
         )
         for issue_code in shared_quality["issueCodes"]:
             matching = [
@@ -1108,8 +1109,16 @@ def daily_quality_issue_code(message: str) -> str:
     text = message.casefold()
     if "deepdive_url_provenance_invalid" in text:
         return "deepdive_url_provenance_invalid"
+    if "deepdive_article_value_invalid" in text:
+        return "deepdive_article_value_invalid"
+    if "deepdive_relation_quality_invalid" in text:
+        return "deepdive_relation_quality_invalid"
     if "deepdive_dialogue_value_invalid" in text:
         return "deepdive_dialogue_value_invalid"
+    if "deepdive_research_evidence_insufficient" in text:
+        return "deepdive_research_evidence_insufficient"
+    if "deepdive_public_surface_invalid" in text:
+        return "deepdive_public_surface_invalid"
     if "add followup_review_note" in text or "follow-up matched_with url date" in text:
         return "followup_review_required"
     if "source url date" in text and "outside the 1-day edition window" in text:

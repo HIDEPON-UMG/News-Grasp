@@ -212,7 +212,7 @@
       "stateIds": ["state-product-skill-package"],
       "evidenceIds": ["evidence-skill-package-contract"],
       "sourceEvidenceAuthority": "shared_installed_source",
-      "sourceEvidence": ["Every skill consists of a required SKILL.md file"],
+      "sourceEvidence": ["Every skill is a folder containing a required `SKILL.md` file"],
       "consumerEvidenceByRoute": {
         "automation/skills/news-grasp-e2e-discipline/SKILL.md": ["Product Constitution"]
       },

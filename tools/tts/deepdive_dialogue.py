@@ -10,6 +10,7 @@ import tempfile
 import time
 from pathlib import Path
 
+from tools.deepdive_content import contains_internal_metadata, strip_internal_metadata
 from tools.tts import aivis_client, build_script, synthesize_daily
 
 
@@ -18,12 +19,8 @@ BUILD_DIR = REPO_ROOT / "build" / "tts" / "deepdive"
 DEFAULT_BGM_PATH = REPO_ROOT / "build" / "office-daily-bgm-standalone.mp3"
 BGM_VOLUME_DB = 1.5
 BGM_EQ_FILTER = "highpass=f=110,equalizer=f=170:t=q:w=0.9:g=-4.0"
-# 字数は価値IDを満たした後の音声適性だけを見る。固定文で1600字を埋める誘因を除く。
-MIN_DIALOGUE_CHARS = 800
-# 6分想定の品質調整は短すぎる場合だけ行う。上限は長尺化を抑えるためではなく、
-# 生成暴走や貼り込み事故を止める安全弁として広めに置く。
+# 上限だけを暴走・貼り込み事故の安全弁として使う。最小字数や最小尺は品質条件にしない。
 MAX_DIALOGUE_CHARS = 3600
-MIN_SECONDS = 4 * 60
 MAX_SECONDS = 9 * 60
 MAX_SYNTHESIS_SECONDS = 18 * 60
 # 対談は朗読より聞き手の処理時間が要るため、セリフ境界に息継ぎ相当の間を置く。
@@ -85,6 +82,29 @@ _VALUE_MARKER_RE = re.compile(
 _SOURCE_FIELD_RE = re.compile(r'^source:\s*["\']?([^"\'\r\n]+)', re.MULTILINE)
 _CODE_FENCE_RE = re.compile(r"```.*?```", re.DOTALL)
 _HEADING_RE = re.compile(r"^#{1,6}\s+.*$", re.MULTILINE)
+_RAW_URL_RE = re.compile(r"https?://[^\s<>()]+", re.IGNORECASE)
+_POLITE_END_RE = re.compile(
+    r"(?:です|ます|でした|ました|ません|でしょう|ください|ございます)(?:ね|よ|か)?$"
+)
+_NEXT_ACTION_ACTOR_RE = re.compile(
+    r"(?:担当|責任者|編集者|編集部|運用者|開発者|作業者|運用チーム|開発チーム|"
+    r"チーム|部門|部署|会社|組織|政府|省庁|さん|氏|社)"
+)
+_NEXT_ACTION_ACTION_RE = re.compile(
+    r"(?:確認|更新|比較|調査|取得|作成|共有|報告|検証|測定|監視|実施|提出|判断|"
+    r"見直|修正|問い合わせ|公開|差し替え|追跡|照合|記録|収集|決定|停止|再計算|"
+    r"反映|依頼|保存|整理|評価|点検|登録|抽出|確認|する|した|して)"
+)
+_NEXT_ACTION_ARTIFACT_RE = re.compile(
+    r"(?:資料|表|一覧|ログ|レポート|記録|証跡|URL|リンク|データ|契約|台帳|"
+    r"チェックリスト|差分|成果物|ファイル|画面|結果|報告書|仕様|チケット|"
+    r"メモ|草稿|原稿|申請|証明|根拠|文書|一覧表)"
+)
+_NEXT_ACTION_TRIGGER_RE = re.compile(
+    r"(?:まで|以内|次回|翌|毎週|毎月|月末|公開前|開始時|終了時|発火|条件|"
+    r"時点|期限|タイミング|までに|日後|日前|四半期|週次|月次|年次|"
+    r"[0-9０-９]{1,4}[年/月/日時間分週])"
+)
 REQUIRED_VALUE_IDS = (
     "current_signal",
     "evidence",
@@ -167,15 +187,19 @@ def validate_dialogue(turns: list[DialogueTurn]) -> list[str]:
     for role_key, role in ROLES.items():
         if role_key not in role_keys:
             issues.append(f"役割不足: {role.label}")
-    if len(turns) < 8:
-        issues.append(f"セリフ数不足: {len(turns)}件 (必要: 8件以上)")
     char_count = build_script.effective_char_count("\n".join(turn.text for turn in turns))
-    if char_count < MIN_DIALOGUE_CHARS:
-        issues.append(f"字数不足: {char_count}字 (必要: {MIN_DIALOGUE_CHARS}〜{MAX_DIALOGUE_CHARS}字)")
-    elif char_count > MAX_DIALOGUE_CHARS:
-        issues.append(f"字数超過: {char_count}字 (必要: {MIN_DIALOGUE_CHARS}〜{MAX_DIALOGUE_CHARS}字)")
+    if char_count > MAX_DIALOGUE_CHARS:
+        issues.append(f"字数超過: {char_count}字 (上限: {MAX_DIALOGUE_CHARS}字)")
     long_keys: list[str] = []
     for turn in turns:
+        if contains_internal_metadata(turn.text) or _RAW_URL_RE.search(turn.text):
+            issues.append(f"発話内部断片: {turn.role_key}")
+        utterance = re.sub(r"[\s。！？!?…」』）)]*$", "", turn.text.strip())
+        is_polite = bool(_POLITE_END_RE.search(utterance))
+        if turn.role_key == "senior" and is_polite:
+            issues.append("先輩口調違反: 発話末は常体で記述してください")
+        elif turn.role_key == "junior" and not is_polite:
+            issues.append("若手口調違反: 発話末は敬体で記述してください")
         key = _dialogue_quality_key(turn.text)
         if len(key) >= _MIN_DUPLICATE_CHARS:
             long_keys.append(f"{turn.role_key}:{key}")
@@ -193,6 +217,23 @@ def validate_dialogue(turns: list[DialogueTurn]) -> list[str]:
     return issues
 
 
+def _validate_next_action_specificity(segment: list[DialogueTurn]) -> str | None:
+    """next_action の結合発話に実行主体・行為・成果物・条件を要求する。"""
+    combined = "".join(turn.text for turn in segment)
+    missing: list[str] = []
+    if not _NEXT_ACTION_ACTOR_RE.search(combined):
+        missing.append("主体")
+    if not _NEXT_ACTION_ACTION_RE.search(combined):
+        missing.append("行為")
+    if not _NEXT_ACTION_ARTIFACT_RE.search(combined):
+        missing.append("確認成果物")
+    if not _NEXT_ACTION_TRIGGER_RE.search(combined):
+        missing.append("期限または発火条件")
+    if missing:
+        return "next_action具体性不足: " + "/".join(missing)
+    return None
+
+
 def _char_ngrams(text: str, size: int = 3) -> set[str]:
     normalized = _dialogue_quality_key(text)
     if len(normalized) < size:
@@ -207,6 +248,7 @@ def _jaccard(left: set[str], right: set[str]) -> float:
 def source_evidence_sentences(markdown: str, *, limit: int = 20) -> list[str]:
     """記事本文から台本が参照できる根拠文を決定的に抽出する。"""
     body = _FRONTMATTER_RE.sub("", markdown)
+    body = strip_internal_metadata(body)
     body = _CODE_FENCE_RE.sub("", body)
     body = _HEADING_RE.sub("", body)
     body = re.sub(r"\[\[([^\]]+)\]\]", r"\1", body)
@@ -285,8 +327,8 @@ def validate_value_contract(turns: list[DialogueTurn]) -> list[str]:
         segment = segments.get(value_id, [])
         if not segment:
             continue
-        if len(segment) != 2:
-            issues.append(f"価値ID {value_id}: 区間重複またはセリフ数違反 ({len(segment)}件、必要2件)")
+        if len(segment) < 2:
+            issues.append(f"価値ID {value_id}: セリフ数不足 ({len(segment)}件、必要2件以上)")
         evidence_ids = {turn.evidence_id for turn in segment if turn.evidence_id}
         if len(evidence_ids) != 1:
             issues.append(f"価値ID {value_id}: 根拠参照は区間内で1件に固定してください")
@@ -327,6 +369,11 @@ def validate_dialogue_document(markdown: str, *, source_markdown: str | None = N
     turns = parse_dialogue(markdown)
     issues = validate_dialogue(turns)
     issues.extend(validate_value_contract(turns))
+    next_action = _validate_next_action_specificity(
+        [turn for turn in turns if turn.value_id == "next_action"]
+    )
+    if next_action:
+        issues.append(next_action)
     if source_markdown is not None:
         issues.extend(validate_source_grounding(turns, source_markdown))
     for phrase in LEGACY_FILLER_PHRASES:
@@ -539,8 +586,8 @@ def synthesize_dialogue(script_path: Path, *, out_name: str | None = None) -> Pa
             elapsed = convert_voice_wav_to_delivery_mp3(wav_path, mp3_path)
             print(f"[tts] DeepDive dialogue mp3 conversion: {elapsed:.2f}s")
         duration = synthesize_daily.probe_duration_seconds(mp3_path)
-        if duration is not None and not (MIN_SECONDS <= duration <= MAX_SECONDS):
-            _warn(f"DeepDive dialogue duration out of sample range: {duration:.1f}s")
+        if duration is not None and duration > MAX_SECONDS:
+            _warn(f"DeepDive dialogue duration exceeds safety limit: {duration:.1f}s")
         print(f"[tts] DeepDive dialogue mp3 built: {mp3_path}")
         return mp3_path
     except Exception as exc:

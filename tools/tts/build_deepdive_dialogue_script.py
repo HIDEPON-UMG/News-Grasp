@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 import hashlib
 import re
+import sys
 from pathlib import Path
 
 from tools.deepdive_context_pack import context_sources_for_deepdive as _shared_context_sources_for_deepdive
@@ -16,6 +17,13 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONTEXT_DAYS = 30
 MIN_CONTEXT_SOURCES = 2
 MAX_CONTEXT_SOURCES = 4
+DEEPDIVE_LLM_DIALOGUE_REQUIRED = "DEEPDIVE_LLM_DIALOGUE_REQUIRED"
+
+
+class DeepDiveDialogueGenerationRequired(RuntimeError):
+    """固定台本ではなく LLM 生成経路を要求するための fail-closed。"""
+
+
 RELATION_KINDS = ("続報", "主役共有", "波及", "対比")
 GENERIC_TAGS = {"deepdive", "daily", "weekly", "news-grasp"}
 LOW_SIGNAL_CONTEXT_TERMS = {"ai"}
@@ -290,6 +298,7 @@ def _turns(
     contexts: list[ContextSource],
 ) -> list[tuple[str, str, str, str, str]]:
     """記事固有の7価値を各1区間へ割り当てる決定的な対談を作る。"""
+    raise DeepDiveDialogueGenerationRequired(DEEPDIVE_LLM_DIALOGUE_REQUIRED)
     if not sentences:
         raise ValueError("DeepDive本文に台本根拠として使える文がありません")
     if len(sentences) < 14:
@@ -377,6 +386,7 @@ def build_dialogue_markdown(
     context_pack_path: Path | None = None,
     context_days: int = DEFAULT_CONTEXT_DAYS,
 ) -> str:
+    raise DeepDiveDialogueGenerationRequired(DEEPDIVE_LLM_DIALOGUE_REQUIRED)
     title = _frontmatter_value(source_markdown, "title", "DeepDive")
     issue_date = _frontmatter_value(source_markdown, "date", "")
     contexts = _shared_context_sources_for_deepdive(
@@ -433,6 +443,7 @@ def build_dialogue_script(
     force: bool = False,
     context_pack_path: Path | None = None,
 ) -> Path:
+    raise DeepDiveDialogueGenerationRequired(DEEPDIVE_LLM_DIALOGUE_REQUIRED)
     output = output or source.with_name(source.name.replace("-DeepDive.md", "-DeepDive-dialogue.md"))
     source_markdown = source.read_text(encoding="utf-8-sig")
     try:
@@ -464,12 +475,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--context-pack", type=Path, help="build/deepdive-context/YYYY-MM-DD.json")
     parser.add_argument("--force", action="store_true", help="既存台本があっても再生成する")
     args = parser.parse_args(argv)
-    out = build_dialogue_script(
-        args.source,
-        output=args.output,
-        force=args.force,
-        context_pack_path=args.context_pack,
-    )
+    try:
+        out = build_dialogue_script(
+            args.source,
+            output=args.output,
+            force=args.force,
+            context_pack_path=args.context_pack,
+        )
+    except DeepDiveDialogueGenerationRequired as error:
+        print(str(error), file=sys.stderr)
+        return 2
     print(f"[tts] DeepDive dialogue script ready: {out}")
     return 0
 

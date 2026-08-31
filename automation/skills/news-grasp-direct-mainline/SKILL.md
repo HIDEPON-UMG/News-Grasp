@@ -10,8 +10,9 @@ description: Run the 06:00 News-Grasp scheduled production directly with Codex, 
 ## 開始契約
 
 1. Asia/Tokyo の `issue_date` を確定し、`automation_id + canonical cwd + issue_date` の current execution だけを使用する。
-2. 正本を読む準備作業を除き、最初の実行操作は host の `set_thread_title` とする。runtime起動、scheduler確認、title status記録、記事処理を先に行ってはならない。期待値は `YY/MM/DD News-Grasp 臨時本線日次バッチ 6:00 記事作成・公開` とする。初回が timeout / unavailable / unknown の場合だけ同じexact title actionを1回だけ再試行し、合計2回を上限とする。成功時は返却された実titleのexact一致を確認する。
-3. `python -m tools.news_grasp_title_control` で `updated / title_status=already_ok / unavailable / failed / skipped` を記録する。`--attempt-count 1|2` と `title_completion=fulfilled|deferred` を必ず記録し、2回とも成功しなければ `title_completion=deferred` と `post_publish_issue_list` に残す。タイトル未達は公開作業を止めないが、最終報告でタイトル達成と混同しない。
+2. 実行スレッド生成前に専用の `News-Grasp Title Materializer` が Asia/Tokyo の対象日を計算し、Codex App automation name と App DB name を exact `YY/MM/DD News-Grasp 臨時本線日次バッチ 6:00 記事作成・公開` へ反映する。正本を読む準備作業を除き、最初の実行操作は `python -m tools.news_grasp_title_materializer --verify-only --repo-root .` による read-only 検証とする。本文から host の `set_thread_title`、正規表現、日時 placeholder を呼び出して表示名を変更してはならない。
+3. `python -m tools.news_grasp_title_control` で `updated / title_status=already_ok / unavailable / failed / skipped` を記録する。materializer receipt、installed TOML、App DB、実 thread title の exact一致を確認し、stale / unavailable / failed は `title_completion=deferred` と `post_publish_issue_list` 1行に残す。タイトル未達は公開作業を止めないが、最終報告でタイトル達成と混同しない。
+   `title_completion=fulfilled|deferred` は publication status と分離して保持する。
 4. `python -m tools.news_grasp_direct_runtime start --state-root build/direct-mainline` で run を開始する。対象日は runtime が Asia/Tokyo の当日から確定する。明示指定が必要な時だけ `--issue-date 2026-08-30` のように実日付を渡し、角括弧付きの placeholder は実行しない。
 5. 各工程の実作業を repo-local tool / Codex direct work で終えたら、`python -m tools.news_grasp_direct_runtime advance --state-root build/direct-mainline --run-id <startが返したrun_id> --writer-lease <startが返したwriter_lease> --evidence-file <実工程の検証JSON>` で現在の exact successor だけを進める。`public_completion` だけは `--repo-root . --public-base-url https://hidepon-umg.github.io/News-Grasp` を渡し、consumer-owned public verifier に実成果物と公開面を読ませる。
 6. 以後の工程は `tools.news_grasp_direct_runtime` の stage order と `advance`/`run_exact_successor` を通す。
@@ -54,6 +55,23 @@ Reporter/editor/repair/newsroom_editor は repo-local model policy の Luna/max�
 - Git commit ID は観測値としてだけ報告してよい。distribution、remote observation、Pages反映の制御 authority には content-derived ID を使わない。
 - title失敗は非阻害だが、`updated/already_ok`の不正title claimと失敗statusのissue未記録は拒否する。
 - runner state、readiness、durable goal、URL 200単独、publish-status単独、NoPublish、fallback は public completion authorityではない。
+
+## DeepDive Publication Quality V2
+
+DeepDiveの共有品質契約は `DEEPDIVE_QUALITY_REVIEW_V2` とし、次のissue codeだけを受理する。
+
+- `deepdive_url_provenance_invalid`
+- `deepdive_article_value_invalid`
+- `deepdive_relation_quality_invalid`
+- `deepdive_dialogue_value_invalid`
+- `deepdive_research_evidence_insufficient`
+- `deepdive_public_surface_invalid`
+
+共有routeは `production_generation`、`repair_publish`、`daily_quality`、`codex_daily_audit` の4つだけである。未登録のissue codeまたはrouteはfail-closedにし、自由文分類や旧handlerへフォールバックしない。意味品質レビューは記事・関係図・対談のrepo-relative pathと実bytes identityへbindし、evidence-backed findings、7軸の1〜5評価、`averageScore`、`reviewRoute`、`status`を再検証する。hashは鮮度・byte一致の検出だけに使い、semantic authorityにしない。
+
+TTSまたは公開HTMLを生成する前に、同じV2 gateでmetadata preauditを行う。共有internal-metadata stripperでraw/escaped claim-source・value・evidence・support comment、transport JSON、Markdown制御断片を除去し、除去後の表示文と`source_evidence_sentences`を検証する。残存または検証不能なら `deepdive_public_surface_invalid` として停止する。V2 source auditがGreenになるまで公開HTMLの再構築・safe rerender・TTSを開始しない。
+
+対談は記事固有の調査結果を入力にLLMが生成し、7価値区間の順序を維持しながらturn数を可変にする。先輩は常体、若手は敬体とし、fillerや根拠の言換えだけの反復を拒否する。最低文字数・最低再生時間・固定turn数を品質条件にせず、暴走防止の最大値だけを適用する。
 
 ## 速度・回復
 

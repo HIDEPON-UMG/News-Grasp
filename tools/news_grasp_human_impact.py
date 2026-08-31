@@ -15,6 +15,7 @@ class HumanImpactContractError(RuntimeError):
 PRODUCTION_ROUTE_PATHS = (
     "automation/news-grasp-6-40/automation.toml.template",
     "automation/skills/news-grasp-direct-mainline/SKILL.md",
+    "tools/news_grasp_title_materializer.py",
     "tools/news_grasp_direct_runtime.py",
     "tools/news_grasp_direct_completion.py",
     "tools/news_grasp_title_control.py",

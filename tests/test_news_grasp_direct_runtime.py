@@ -12,6 +12,7 @@ import importlib
 import json
 import re
 import sqlite3
+import subprocess
 import sys
 import tomllib
 from collections.abc import Mapping
@@ -1027,6 +1028,50 @@ def test_codex_automation_sync_renders_luna_max_and_preserves_app_target(
     assert "direct completion guard" in value["prompt"]
     assert "public incomplete のまま最終応答しないでください" not in value["prompt"]
     assert "最初に `python -m tools.news_grasp_direct_runtime start" not in value["prompt"]
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows HANDLE ABI regression")
+def test_windows_no_reparse_handle_api_is_import_order_independent() -> None:
+    """共有kernel32関数の型定義をmodule import順で破壊しない。"""
+
+    program = r"""
+import importlib
+import sys
+
+target = sys.argv[1]
+orders = (
+    ("tools.sync_news_grasp_codex_automation", "tools.news_grasp_direct_completion"),
+    ("tools.news_grasp_direct_completion", "tools.sync_news_grasp_codex_automation"),
+)
+for first_name, second_name in orders:
+    first = importlib.reload(importlib.import_module(first_name))
+    second = importlib.reload(importlib.import_module(second_name))
+    modules = {first_name: first, second_name: second}
+    syncer = modules["tools.sync_news_grasp_codex_automation"]
+    completion = modules["tools.news_grasp_direct_completion"]
+    sync_handle, _sync_size = syncer._open_windows_no_reparse(
+        syncer.Path(target),
+        directory=False,
+    )
+    syncer._CloseHandle(sync_handle)
+    completion_handle, _completion_size = completion._open_windows_file_no_reparse(
+        completion.Path(target)
+    )
+    completion._CloseHandle(completion_handle)
+"""
+    completed = subprocess.run(
+        [sys.executable, "-c", program, str((REPO / "docs" / "spec.md").resolve())],
+        cwd=REPO,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        shell=False,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stderr
 
 
 def test_codex_automation_sync_can_project_direct_skill_to_installed_copy(

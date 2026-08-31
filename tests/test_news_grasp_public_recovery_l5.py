@@ -45,7 +45,9 @@ def _git_init(root: Path) -> None:
 
 
 def _commit_all(root: Path, message: str) -> str:
-    subprocess.run(["git", "-C", str(root), "add", "-A"], check=True, capture_output=True)
+    subprocess.run(
+        ["git", "-C", str(root), "add", "-A"], check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "-C", str(root), "commit", "-q", "-m", message],
         check=True,
@@ -183,7 +185,10 @@ def _witness(authority: dict, failure: dict) -> dict:
 
 def _public_tree_sha(root: Path) -> str:
     rows = [
-        (path.relative_to(root).as_posix(), hashlib.sha256(path.read_bytes()).hexdigest())
+        (
+            path.relative_to(root).as_posix(),
+            hashlib.sha256(path.read_bytes()).hexdigest(),
+        )
         for path in sorted(root.rglob("*"))
         if path.is_file()
     ]
@@ -388,7 +393,10 @@ def test_20260827_public_recovery_production_composition_l5(
         def do_GET(self) -> None:  # noqa: N802
             user_agent = self.headers.get("User-Agent", "")
             self.__class__.requests.append((self.path, user_agent))
-            if self.path == "/bls-profile" and user_agent == deepdive_quality.USER_AGENT:
+            if (
+                self.path == "/bls-profile"
+                and user_agent == deepdive_quality.USER_AGENT
+            ):
                 self.send_response(403)
                 self.end_headers()
                 return
@@ -414,8 +422,97 @@ def test_20260827_public_recovery_production_composition_l5(
         source = (REPO / "digest" / "DeepDive" / article.name).read_text(
             encoding="utf-8"
         )
+        relation = {
+            "title": "統計・政策・企業の復旧経路",
+            "nodes": [
+                {"id": "stats", "label": "BEA・BLS", "group": "統計"},
+                {"id": "fomc", "label": "FOMC", "group": "政策"},
+                {"id": "companies", "label": "米国企業", "group": "企業"},
+            ],
+            "edges": [
+                {
+                    "from": "stats",
+                    "to": "fomc",
+                    "label": "成長・物価を報告",
+                    "kind": "供給",
+                },
+                {
+                    "from": "fomc",
+                    "to": "companies",
+                    "label": "資本コストを規律",
+                    "kind": "規制",
+                },
+            ],
+            "source": source_url,
+        }
+        source = re.sub(
+            r"```relations\s*.*?```",
+            "```relations\n"
+            + json.dumps(relation, ensure_ascii=False, indent=2)
+            + "\n```",
+            source,
+            count=1,
+            flags=re.DOTALL,
+        )
         source = re.sub(r"https://[^\s\"')\]]+", source_url, source)
         article.write_text(source, encoding="utf-8")
+        dialogue = article.with_name(f"{ISSUE_DATE}-DeepDive-dialogue.md")
+        dialogue_source = (
+            REPO / "digest" / "DeepDive" / f"{ISSUE_DATE}-DeepDive-dialogue.md"
+        ).read_text(encoding="utf-8")
+        dialogue_source = re.sub(
+            r'(?m)^source_sha256:\s*["\']?[a-f0-9]{64}["\']?\s*$',
+            'source_sha256: "'
+            + hashlib.sha256(
+                article.read_text(encoding="utf-8-sig")
+                .replace("\r\n", "\n")
+                .replace("\r", "\n")
+                .encode("utf-8")
+            ).hexdigest()
+            + '"',
+            dialogue_source,
+            count=1,
+        )
+        dialogue.write_text(dialogue_source, encoding="utf-8")
+        review_path = (
+            artifact / "data" / "deepdive-quality-review" / f"{ISSUE_DATE}.json"
+        )
+        review_path.parent.mkdir(parents=True)
+        scores = {axis: 4 for axis in deepdive_quality.DEEPDIVE_QUALITY_REVIEW_AXES}
+        review_path.write_text(
+            json.dumps(
+                {
+                    "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+                    "issueDate": ISSUE_DATE,
+                    "artifacts": {
+                        "article": {
+                            "path": article.relative_to(artifact).as_posix(),
+                            "sha256": hashlib.sha256(article.read_bytes()).hexdigest(),
+                        },
+                        "relation": {
+                            "path": article.relative_to(artifact).as_posix(),
+                            "sha256": deepdive_quality._canonical_sha256(
+                                deepdive_quality._relation_review_payload(article)
+                            ),
+                        },
+                        "dialogue": {
+                            "path": dialogue.relative_to(artifact).as_posix(),
+                            "sha256": hashlib.sha256(dialogue.read_bytes()).hexdigest(),
+                        },
+                    },
+                    "scores": scores,
+                    "findings": {
+                        axis: f"{axis}を記事固有の根拠で確認した" for axis in scores
+                    },
+                    "averageScore": 4.0,
+                    "reviewRoute": "repair_publish",
+                    "status": "Green",
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
 
         bundle = deepdive_quality.materialize_issue_bundle(
             repo_root=artifact,
@@ -574,9 +671,9 @@ def test_20260827_public_recovery_production_composition_l5(
         log_dir.mkdir()
         runner_source = REPO / "scripts" / "ops" / "news-grasp-runner.ps1"
         if not runner_source.exists():
-            direct_runtime = (REPO / "tools" / "news_grasp_direct_runtime.py").read_text(
-                encoding="utf-8"
-            )
+            direct_runtime = (
+                REPO / "tools" / "news_grasp_direct_runtime.py"
+            ).read_text(encoding="utf-8")
             direct_completion = (
                 REPO / "tools" / "news_grasp_direct_completion.py"
             ).read_text(encoding="utf-8")
@@ -620,7 +717,9 @@ def test_20260827_public_recovery_production_composition_l5(
         _write_json(failure_path, failure)
         _write_json(authority_path, authority)
         witness = _witness(authority, failure)
-        monkeypatch.setattr(receipts, "_validate_authority_via_broker", lambda **_: witness)
+        monkeypatch.setattr(
+            receipts, "_validate_authority_via_broker", lambda **_: witness
+        )
         now = datetime.now(timezone.utc)
         audit_accepted = (now - timedelta(minutes=10)).isoformat()
         execution_value = receipts.create_recovery_execution_receipt(
@@ -696,12 +795,16 @@ def test_20260827_public_recovery_production_composition_l5(
             finalization_receipt_path=finalization,
             publish_manifest_path=manifest,
         )
-        assert Path(command["argv"][0]).resolve() == closeout._system_powershell_executable()
+        assert (
+            Path(command["argv"][0]).resolve()
+            == closeout._system_powershell_executable()
+        )
         assert Path(command["argv"][0]).is_absolute()
         binding_argument = command["argv"].index("-RecoveryRuntimeBindingPath")
-        assert Path(command["argv"][binding_argument + 1]).resolve() == (
-            live / "news-grasp-recovery-runtime-binding-v1.json"
-        ).resolve()
+        assert (
+            Path(command["argv"][binding_argument + 1]).resolve()
+            == (live / "news-grasp-recovery-runtime-binding-v1.json").resolve()
+        )
         runtime_binding = _write_isolated_runtime_binding(
             integration_root=tmp_path,
             ops=ops,
@@ -773,7 +876,9 @@ def test_20260827_public_recovery_production_composition_l5(
         assert automation.returncode == 0, automation.stderr
         assert json.loads(automation.stdout)["ok"] is True
 
-        monkeypatch.setattr(verify_public_surface, "_local_head", lambda _repo: publish_commit)
+        monkeypatch.setattr(
+            verify_public_surface, "_local_head", lambda _repo: publish_commit
+        )
         monkeypatch.setattr(
             verify_public_surface, "_remote_head", lambda *_args: publish_commit
         )

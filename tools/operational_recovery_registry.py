@@ -18,6 +18,13 @@ class OperationalRecoveryRegistryError(RuntimeError):
     """registry違反を型付きで返す。"""
 
 
+DEEPDIVE_LLM_DIALOGUE_REQUIRED = "DEEPDIVE_LLM_DIALOGUE_REQUIRED"
+
+
+class DeepDiveDialogueGenerationRequired(OperationalRecoveryRegistryError):
+    """DeepDive 対談台本を LLM 生成経路へ委譲するための fail-closed。"""
+
+
 @dataclass(frozen=True)
 class RecoveryRegistration:
     handler_id: str
@@ -171,8 +178,8 @@ def default_handlers() -> dict[str, Handler]:
             ),
         )
 
-    def _dialogue(context: Mapping[str, Any]) -> Mapping[str, Any]:
-        return builders.build_deepdive_dialogue(context["article"])
+    def _dialogue_generation_required(_context: Mapping[str, Any]) -> Mapping[str, Any]:
+        raise DeepDiveDialogueGenerationRequired(DEEPDIVE_LLM_DIALOGUE_REQUIRED)
 
     def _audio(context: Mapping[str, Any]) -> Mapping[str, Any]:
         turns = context.get("turns")
@@ -205,12 +212,12 @@ def default_handlers() -> dict[str, Handler]:
         "previous_generation_restore": _typed("previous_generation_restore", mutation_count=1),
         "checkpoint_continuation": _typed("checkpoint_continuation"),
         "summary_audio_script_builder": _summary,
-        "deepdive_dialogue_builder": _dialogue,
+        "deepdive_dialogue_builder": _dialogue_generation_required,
         "deepdive_audio_builder": _audio,
         "current_issue_page_renderer": _typed("current_issue_page_renderer", mutation_count=1),
         "distribution_manifest_builder": _manifest,
         "deepdive_provenance_repair": _typed("deepdive_provenance_repair", mutation_count=1),
-        "deepdive_dialogue_repair": _typed("deepdive_dialogue_repair", mutation_count=1),
+        "deepdive_dialogue_repair": _dialogue_generation_required,
         "deepdive_public_repair": _typed("deepdive_public_repair", mutation_count=1),
         "reporter_artifact_model_route": _model_route("reporter_artifact_model_route"),
         "summary_model_route": _model_route("summary_model_route"),

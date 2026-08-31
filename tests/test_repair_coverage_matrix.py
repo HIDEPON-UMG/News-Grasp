@@ -329,6 +329,65 @@ def test_audio_script_quality_invalid_routes_to_llm_rewrite_not_append_patch() -
     assert decision.status_on_failure == "blocked_audio_script_rewrite_failed"
 
 
+@pytest.mark.parametrize(
+    ("issue_code", "artifact_paths", "handler_id"),
+    [
+        (
+            "deepdive_article_value_invalid",
+            ("digest/DeepDive/2026-08-31-DeepDive.md",),
+            "deepdive-article-value-rewrite",
+        ),
+        (
+            "deepdive_relation_quality_invalid",
+            ("digest/DeepDive/2026-08-31-DeepDive.md",),
+            "deepdive-relation-quality-rewrite",
+        ),
+        (
+            "deepdive_dialogue_value_invalid",
+            (
+                "digest/DeepDive/2026-08-31-DeepDive.md",
+                "digest/DeepDive/2026-08-31-DeepDive-dialogue.md",
+            ),
+            "deepdive-dialogue-value-rewrite",
+        ),
+    ],
+)
+def test_deepdive_semantic_failures_route_to_llm_rewrite(
+    issue_code: str,
+    artifact_paths: tuple[str, ...],
+    handler_id: str,
+) -> None:
+    decision = classify_repair_issue(
+        RepairIssue(
+            gate_id="deepdive-shared-quality",
+            issue_code=issue_code,
+            artifact_paths=artifact_paths,
+            issue_date="2026-08-31",
+            category="deepdive",
+        )
+    )
+
+    assert decision.repair_class == RepairClass.LLM_REWRITE_EXISTING_ARTIFACT
+    assert decision.handler_id == handler_id
+    assert decision.status_on_failure == "blocked_deepdive_llm_rewrite_failed"
+
+
+def test_deepdive_research_insufficient_routes_to_research_and_rewrite() -> None:
+    decision = classify_repair_issue(
+        RepairIssue(
+            gate_id="deepdive-shared-quality",
+            issue_code="deepdive_research_evidence_insufficient",
+            artifact_paths=("digest/DeepDive/2026-08-31-DeepDive.md",),
+            issue_date="2026-08-31",
+            category="deepdive",
+        )
+    )
+
+    assert decision.repair_class.value == "llm_research_and_rewrite"
+    assert decision.handler_id == "deepdive-research-and-rewrite"
+    assert decision.status_on_failure == "blocked_deepdive_research_rewrite_failed"
+
+
 def test_generation_quality_missing_artifact_json_routes_to_llm_generation() -> None:
     output = json.dumps(
         {

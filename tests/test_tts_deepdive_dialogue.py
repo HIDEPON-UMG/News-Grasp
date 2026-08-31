@@ -44,15 +44,15 @@ title: sample
     ]
 
 
-def test_validate_dialogue_requires_both_roles_and_reasonable_length():
+def test_validate_dialogue_allows_short_dialogue_when_both_roles_are_present():
     turns = [
         deepdive_dialogue.DialogueTurn("junior", "これは短い質問です。"),
-        deepdive_dialogue.DialogueTurn("senior", "短い回答です。"),
+        deepdive_dialogue.DialogueTurn("senior", "短い回答だ。"),
     ]
 
     issues = deepdive_dialogue.validate_dialogue(turns)
 
-    assert any("字数不足" in issue for issue in issues)
+    assert issues == []
 
 
 def test_validate_dialogue_keeps_long_side_as_runaway_guard_only():

@@ -58,6 +58,7 @@ OPERATION_INTEGRITY_MATRIX_RELATIVE_PATH = Path(
 )
 HTML_SPEC_RELATIVE_PATH = Path("docs/specs/2026-08-12_news-grasp-product-constitution.html")
 AUTOMATION_ASSET_MANIFEST_RELATIVE_PATH = Path("config/news_grasp_automation_assets_v2.json")
+DEEPDIVE_QUALITY_ROUTES_RELATIVE_PATH = Path("config/deepdive_quality_routes.json")
 AGENT_PROJECTION_PATHS = (Path("AGENTS.md"), Path("CLAUDE.md"))
 PROJECTION_START = "<!-- NEWS_GRASP_CONSTITUTION_PROJECTION_V1_START -->"
 PROJECTION_END = "<!-- NEWS_GRASP_CONSTITUTION_PROJECTION_V1_END -->"
@@ -1807,7 +1808,10 @@ def _asset_projection(root: Path) -> dict[str, Any]:
 
 
 def _render_agent_projection(
-    *, compiled: dict[str, Any], asset_projection: dict[str, Any]
+    *,
+    compiled: dict[str, Any],
+    asset_projection: dict[str, Any],
+    quality_routes: dict[str, Any],
 ) -> str:
     constitution = compiled["constitution"]
     acceptance_count = len(compiled["trace"]["acceptanceBindings"])
@@ -1821,6 +1825,9 @@ def _render_agent_projection(
             f"- The closed-world proof contains {acceptance_count} Acceptance items, {acceptance_count * 3} core nodes, 32 daily replays, and 5 compound replays; natural scheduled execution is not completion evidence.",
             "- Shared/global harness, broker, routing, hooks, and other product repositories are read-only boundaries for this product-local contract.",
             "- Completion keeps implementation, test, commit, push, install, runtime freshness, task parity, rollback, public authority, readiness, and one isolated NoPublish E2E as separate fields.",
+            f"- DeepDive quality review schema: `DEEPDIVE_QUALITY_REVIEW_V2`; shared route registry schema: `{quality_routes['schemaVersion']}`; engine: `{quality_routes['engine']}`.",
+            f"- DeepDive quality issue codes (exact): {', '.join(f'`{code}`' for code in quality_routes['issueCodes'])}.",
+            f"- DeepDive quality declared routes (exact): {', '.join(f'`{route}`' for route in quality_routes['declaredRoutes'])}; unknown route policy: `{quality_routes['unknownRoutePolicy']}`.",
             f"- Projection SHA-256: `{compiled['projectionSha256']}`; product asset set SHA-256: `{asset_projection['assetSetSha256']}`.",
             PROJECTION_END,
         ]
@@ -2069,10 +2076,17 @@ def _render_html_projection(
 
 def build_constitution_projection(repo_root: Path | str = ROOT) -> dict[str, Any]:
     root = _root(repo_root)
+    from tools import deepdive_quality
+
+    quality_routes = deepdive_quality.load_shared_quality_routes(root)
     compiled = compile_constitution(root)
     assets = _asset_projection(root)
     mermaid = _mermaid_sources(compiled)
-    agent_block = _render_agent_projection(compiled=compiled, asset_projection=assets)
+    agent_block = _render_agent_projection(
+        compiled=compiled,
+        asset_projection=assets,
+        quality_routes=quality_routes,
+    )
     html = _render_html_projection(
         compiled=compiled,
         asset_projection=assets,
@@ -2091,6 +2105,7 @@ def build_constitution_projection(repo_root: Path | str = ROOT) -> dict[str, Any
         "mermaidDiagramCount": len(mermaid),
         "mermaid": mermaid,
         "assetProjection": assets,
+        "deepDiveQualityRoutes": quality_routes,
         "publicRecoveryOperationalDesign": operational_design_receipt,
         "outputs": [
             {

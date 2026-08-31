@@ -46,6 +46,7 @@ if str(_PKG_ROOT) not in sys.path:
     sys.path.insert(0, str(_PKG_ROOT))
 
 from tools.config import BASE_URL, CATEGORIES, SITE_TITLE  # noqa: E402
+from tools.deepdive_content import strip_internal_metadata  # noqa: E402
 from tools.generate_pages import (  # noqa: E402
     _absolutize,
     _needs_rebuild,
@@ -70,31 +71,24 @@ BORDER = "#E2DED4"
 
 # edge kind → 意味的パレット (relations。weekly-research-system.md の kind 語彙)
 EDGE_KINDS: dict[str, dict[str, Any]] = {
-    "競合": {"color": "#8E2A19", "dash": False},
-    "規制": {"color": "#181C2A", "dash": False},
-    "出資": {"color": "#B8860B", "dash": False},
     "提携": {"color": "#2E6B52", "dash": False},
+    "出資": {"color": "#B8860B", "dash": False},
     "供給": {"color": "#2D5BB8", "dash": False},
+    "競合": {"color": "#8E2A19", "dash": False},
     "対立": {"color": "#8E2A19", "dash": True},
+    "規制": {"color": "#181C2A", "dash": False},
+    "統制": {"color": "#5E3D8C", "dash": False},
+    "依存": {"color": "#3A7B8C", "dash": True},
 }
-_DEFAULT_EDGE = {"color": INK, "dash": False}
 
 # edge kind の意味 (配置・矢印への効き方と構図規約の正典は _choose_layout_mode の docstring):
 #   競合/対立 = 勢力の対立 / 出資・提携・供給 = 協力 / 規制 = 監督 /
-#   協調的競合 (frenemy) = 協力かつ競合の二面関係 (緑=提携線 + 赤=競合線を併走。「提携で
-#   ありつつ人月モデルで競合」を 1 本に潰さず描く。coop/rival の短いラベル必須)。
+#   統制/依存 = 上流から下流へ作用する一方向の関係。
 _RIVAL_KINDS = {"競合", "対立"}
-_COOP_KINDS = {"出資", "提携", "供給", "協力"}
 _AUTH_KINDS = {"規制"}
-_FRENEMY_KINDS = {"協調的競合", "協力競合", "frenemy"}
 # 一方向 (→) のフロー・エッジ: 親→子 (出資)・供給元→先 (供給)・当局→対象 (規制)。
-# 生成側が「評価」「統制」「波及」のような新しい kind を使う場合も、競合・提携など
-# 明示的な peer 関係でない限り一方向フローとして扱う。既知語だけの allowlist にすると
-# 未知 kind が全て同段へ潰れ、長い edge が途中ノードを貫くためである。
-_FLOW_KINDS = {"出資", "供給", "規制"}
-# frenemy の二面エッジで使う色 (協力面=提携の緑 / 競合面=競合の赤)。
-_FRENEMY_COOP_COLOR = "#2E6B52"
-_FRENEMY_RIVAL_COLOR = "#8E2A19"
+# 統制・依存も上流から下流へ読むため、専用の kind として同じ層化規則を適用する。
+_FLOW_KINDS = {"出資", "供給", "規制", "統制", "依存"}
 
 # 関連レポート (related) の種類 → バッジ色。関係図 EDGE_KINDS のトーンに揃え、News-Grasp
 # 内で色の意味を一貫させる: 続報=基調 navy / 主役共有=提携の緑 / 波及=供給の青 / 対比=競合の赤。
@@ -169,7 +163,7 @@ def split_sections(body: str) -> dict[str, str]:
 
 def _prose_paragraphs(section_text: str) -> list[str]:
     """セクションから fenced を除いた散文を段落 (空行区切り) のリストにする。"""
-    plain = _strip_fenced(section_text)
+    plain = strip_internal_metadata(_strip_fenced(section_text))
     paras = [p.strip() for p in re.split(r"\r?\n\s*\r?\n", plain)]
     return [p.replace("\r", "").replace("\n", " ").strip() for p in paras if p.strip()]
 
@@ -328,8 +322,8 @@ def _choose_layout_mode(
       競合・対立           = 勢力の対立 → 左右に二分。相互関係なので既定で双方向 (⇔)。
       出資・提携・供給      = 協力       → 同じ側に縦積み (出資元/親が上)。一方向 (→)。
       規制                = 監督       → 当局を最下段に。当局→対象の一方向 (→)。
-      協調的競合 (frenemy) = 協力かつ競合の二面関係 → 緑 (提携) + 赤 (競合) の線を併走。
-                            coop/rival の短いラベル必須 (無いと既定文言が漏れる)。双方向。
+      二面関係           = 提携 edge と競合 edge を別々に置く。単一の edge に複数の意味を
+                            圧縮せず、各 edge の label と kind を個別に描画する。
 
     判定の母集団 (意図的差分):
       "camps" の判定 = 中立機関を除く group 付き事業者 (= _camp_groups の members)。
@@ -360,7 +354,7 @@ def _flow_layers(
     供給/出資/規制のような一方向エッジ (from→to) だけを使い、各ノードのランクを
     「そのノードへ入る最長フロー鎖の長さ」とする (DAG の longest-path layering)。供給先
     などバリューチェーンの下流は供給元より下段に落ち、同段ノードを貫く直販供給線が
-    消える。競合/協調的競合 (双方向の peer 関係) はランクに使わず同段に残す。フローが
+    消える。競合/対立 (双方向の peer 関係) はランクに使わず同段に残す。フローが
     無く全ノードが同ランクなら単一 band を返し、従来の競合左右二分にフォールバックする。
     """
     ops = set(operators)
@@ -369,7 +363,7 @@ def _flow_layers(
     for e in edges:
         a, b = str(e.get("from", "")), str(e.get("to", ""))
         kind = str(e.get("kind", ""))
-        is_peer = kind in (_RIVAL_KINDS | _FRENEMY_KINDS | {"提携", "協力"})
+        is_peer = kind in (_RIVAL_KINDS | {"提携"})
         is_directed_flow = kind in _FLOW_KINDS or (bool(kind) and not is_peer)
         if is_directed_flow and a in ops and b in ops and a != b:
             succ[a].append(b)
@@ -502,12 +496,12 @@ def _camp_columns(
     # 陣営に属さないノード (供給ベンダー・規制当局・単独 group 事業者) は中立 = 最下段。
     neutral = [i for i in order if i not in in_camp]
 
-    # 左右割当: 2 陣営をつなぐ最初の cross-camp 対立 (競合/対立/協調的競合) エッジの
+    # 左右割当: 2 陣営をつなぐ最初の cross-camp 対立 (競合/対立) エッジの
     # to 側を左に置く (OpenAI=左 のユーザー既定整理に一致する決定論ルール)。cross 対立が
     # 無ければ出現順で campA を左にする。
     left = campA
     for e in edges:
-        if e.get("kind") in (_RIVAL_KINDS | _FRENEMY_KINDS):
+        if e.get("kind") in _RIVAL_KINDS:
             a, b = str(e.get("from", "")), str(e.get("to", ""))
             if a in camp_of and b in camp_of and camp_of[a] != camp_of[b]:
                 left = camp_of[b]
@@ -516,7 +510,7 @@ def _camp_columns(
 
     # 各陣営の主役 = 相手陣営との対立に絡む member (複数なら最大次数)、無ければ最大次数。
     rival_pairs = [(str(e.get("from", "")), str(e.get("to", "")))
-                   for e in edges if e.get("kind") in (_RIVAL_KINDS | _FRENEMY_KINDS)]
+                   for e in edges if e.get("kind") in _RIVAL_KINDS]
 
     def _principal(g: str) -> str:
         cross = [m for m in members[g] if any(
@@ -628,15 +622,14 @@ def _band_layout(
     # 事業者/陣営 band = ANCHOR、出資元/規制 band = FLOATING (重心へ寄せる)。
     anchor_rows = [k for k, row in enumerate(rows)
                    if not (set(row) <= reg or set(row) <= parents)]
-    rival_edges = [e for e in edges
-                   if e.get("kind") in _RIVAL_KINDS or e.get("kind") in _FRENEMY_KINDS]
+    rival_edges = [e for e in edges if e.get("kind") in _RIVAL_KINDS]
     single_op_band = (not use_camps) and len(anchor_rows) == 1
     side = _rivalry_sides(rival_edges) if single_op_band else {}
 
     x: dict[str, float] = {}
 
     def _peer_aware_row(row: list[str]) -> list[str]:
-        """同段 peer エッジ (競合/対立/協調的競合) で結ばれたノードが隣接する順列に並べ替える。
+        """同段 peer エッジ (競合/対立) で結ばれたノードが隣接する順列に並べ替える。
 
         2026-06-06 BYD↔NVIDIA 競合線が同段中央の Tesla を貫通した事故の構造解決。
         bands モードで anchor row を出現順 (例: [byd, tesla, nvidia]) で `_even_slots`
@@ -827,6 +820,43 @@ def _band_layout(
     return placed, vb_w, vb_h
 
 
+def _validate_relations(rel: dict[str, Any]) -> None:
+    """関係図入力の kind / 単一 kind 根拠を公開前に確定する。
+
+    ``EDGE_KINDS`` に無い値を暗黙の既定色へ落とすと、生成側の輸送語彙が
+    見た目だけの関係線として公開される。kind は canonical な 8 種だけを
+    公開面へ通し、旧輸送表記は入力不備として停止する。
+    """
+    edges = rel.get("edges") or []
+    if not isinstance(edges, list):
+        raise DeepDiveIncompleteError("relations edges must be a list")
+
+    unknown: list[str] = []
+    kinds: set[str] = set()
+    for edge in edges:
+        if not isinstance(edge, dict):
+            unknown.append("(missing)")
+            continue
+        raw_kind = edge.get("kind")
+        kind = raw_kind.strip() if isinstance(raw_kind, str) else str(raw_kind or "").strip()
+        if kind not in EDGE_KINDS:
+            unknown.append(kind or "(missing)")
+        else:
+            edge["kind"] = kind
+            kinds.add(kind)
+    if unknown:
+        values = ", ".join(sorted(set(unknown)))
+        raise DeepDiveIncompleteError(f"unknown relation kind: {values}")
+
+    if len(edges) >= 4 and len(kinds) == 1:
+        rationale = rel.get("singleKindRationale")
+        if not isinstance(rationale, str) or len(rationale.strip()) < 16:
+            raise DeepDiveIncompleteError(
+                "singleKindRationale is required for relations with four or more edges "
+                "of one kind"
+            )
+
+
 def layout_relations(rel: dict[str, Any]) -> dict[str, Any]:
     """nodes に x/y/r を決定論的に付与する (relations は座標を持たないため)。
 
@@ -834,6 +864,7 @@ def layout_relations(rel: dict[str, Any]) -> dict[str, Any]:
     (camps = 2 陣営左右カラム / bands = 単一陣営・3 陣営以上・バリューチェーン)。
     ラベルの重なり回避は relations_svg 側の _resolve_labels が担う。
     """
+    _validate_relations(rel)
     nodes = list(rel.get("nodes", []))
     ids = [str(nd.get("id", "")) for nd in nodes]
     idset = set(ids)
@@ -882,7 +913,7 @@ def layout_relations(rel: dict[str, Any]) -> dict[str, Any]:
     layout = dict(rel)
     layout["nodes"] = placed
     layout["vb_w"], layout["vb_h"] = vb_w, vb_h
-    # 凡例 = 実際に登場した kind のみ。frenemy は協力(緑)+競合(赤)の 2 面に展開する。
+    # 凡例 = 実際に登場した canonical kind のみ。
     legend: list[dict[str, Any]] = []
     seen: set[str] = set()
 
@@ -895,12 +926,8 @@ def layout_relations(rel: dict[str, Any]) -> dict[str, Any]:
         k = e.get("kind", "")
         if not k:
             continue
-        if k in _FRENEMY_KINDS:
-            _add_legend("提携", _FRENEMY_COOP_COLOR)
-            _add_legend("競合", _FRENEMY_RIVAL_COLOR)
-        else:
-            ks = EDGE_KINDS.get(k, _DEFAULT_EDGE)
-            _add_legend(k, ks["color"])
+        ks = EDGE_KINDS[k]
+        _add_legend(k, ks["color"])
     layout["legend"] = legend
     return layout
 
@@ -942,7 +969,7 @@ def _text_w(s: str, fs: float, ascii_factor: float = 0.6) -> float:
     return sum(fs * (1.0 if _is_cjk(ch) else ascii_factor) for ch in s)
 
 
-# relations のラベル本文 (frenemy の coop/rival も同様) の全角換算上限。
+# relations のラベル本文の全角換算上限。
 # 1080px 幅の関係図 1 段に長尺ラベルが密集すると _resolve_labels が AABB 分離を
 # 収束できないため、レンダラ側の最後の砦として physical な truncate を入れる。
 # 全角換算は CJK=1.0 / ASCII=0.5 で測り、超過分は末尾を「…」に置換する。
@@ -1112,14 +1139,184 @@ def _resolve_labels(
     return specs, vb_h
 
 
-def relations_svg(rel: dict[str, Any]) -> str:
+def _layout_relations_mobile(rel: dict[str, Any]) -> dict[str, Any]:
+    """360px 幅の関係図用に group を縦レイヤーへ配置する。
+
+    desktop の陣営配置は広い viewBox を前提にしているため、その座標を単純に
+    縮小するとノード同士とラベルが重なる。mobile は group ごとに y レイヤーを
+    固定し、同一レイヤー内だけを横へ展開する専用配置として、幅を 360px に閉じる。
+    """
+    base = layout_relations(rel)
+    nodes = list(rel.get("nodes", []))
+    ids = [str(nd.get("id", "")) for nd in nodes]
+    node_ids = set(ids)
+    edges = [
+        e for e in (rel.get("edges") or [])
+        if isinstance(e, dict)
+        and str(e.get("from", "")) in node_ids
+        and str(e.get("to", "")) in node_ids
+    ]
+
+    degree: dict[str, int] = {i: 0 for i in ids}
+    adjacency: dict[str, list[str]] = {i: [] for i in ids}
+    for edge in edges:
+        a, b = str(edge.get("from", "")), str(edge.get("to", ""))
+        if a == b or a not in node_ids or b not in node_ids:
+            continue
+        degree[a] += 1
+        degree[b] += 1
+        adjacency[a].append(b)
+        adjacency[b].append(a)
+
+    grouped: dict[str, list[str]] = {}
+    base_x_by_id = {
+        str(nd.get("id", "")): float(nd.get("x", 540.0))
+        for nd in base.get("nodes", [])
+        if isinstance(nd.get("x"), (int, float))
+    }
+    for nd in nodes:
+        node_id = str(nd.get("id", ""))
+        group = str(nd.get("group", "")).strip() or "__ungrouped__"
+        grouped.setdefault(group, []).append(node_id)
+
+    def _row_order(row: list[str]) -> list[str]:
+        """同段の線が第三ノードを貫かないよう、接続ノードを近接配置する。"""
+        if len(row) <= 2:
+            return list(row)
+        members = set(row)
+        local = {i: [j for j in adjacency.get(i, []) if j in members] for i in row}
+        pair_count = sum(len(v) for v in local.values()) // 2
+        if pair_count == 0:
+            return list(row)
+        hubs = [i for i in row if len(local[i]) == pair_count and pair_count >= 2]
+        if hubs:
+            hub = hubs[0]
+            spokes = sorted(local[hub], key=lambda i: row.index(i))
+            left = [node for index, node in enumerate(spokes) if index % 2 == 0]
+            right = [node for index, node in enumerate(spokes) if index % 2 == 1]
+            ordered = list(reversed(left)) + [hub] + right
+        else:
+            start = max(row, key=lambda i: (len(local[i]), -row.index(i)))
+            ordered, seen, queue = [], {start}, [start]
+            while queue:
+                current = queue.pop(0)
+                ordered.append(current)
+                for neighbor in sorted(local[current], key=lambda i: row.index(i)):
+                    if neighbor not in seen:
+                        seen.add(neighbor)
+                        queue.append(neighbor)
+            ordered.extend(i for i in row if i not in seen)
+        return ordered
+
+    # directed edge の longest-path rank を group 層へ写像する。入力順のままでは、
+    # 供給元/投資家が対象より後ろに置かれ、長い edge が途中の group を貫通する。
+    succ: dict[str, list[str]] = {i: [] for i in ids}
+    indeg: dict[str, int] = {i: 0 for i in ids}
+    for edge in edges:
+        a, b = str(edge.get("from", "")), str(edge.get("to", ""))
+        kind = str(edge.get("kind", ""))
+        is_peer = kind in (_RIVAL_KINDS | {"提携"})
+        if a in node_ids and b in node_ids and a != b and not is_peer:
+            succ[a].append(b)
+            indeg[b] += 1
+    rank: dict[str, int] = {i: 0 for i in ids}
+    queue = [i for i in ids if indeg[i] == 0]
+    while queue:
+        current = queue.pop(0)
+        for target in succ[current]:
+            rank[target] = max(rank[target], rank[current] + 1)
+            indeg[target] -= 1
+            if indeg[target] == 0:
+                queue.append(target)
+    group_index = {group: index for index, group in enumerate(grouped)}
+    ordered_group_names = sorted(
+        grouped,
+        key=lambda group: (
+            min((rank.get(node_id, 0) for node_id in grouped[group]), default=0),
+            group_index[group],
+        ),
+    )
+    # Keep every semantic group as its own vertical row on mobile.  Coalescing
+    # groups that happen to share a rank lets a long edge cross an unrelated
+    # group, defeating the dedicated mobile geometry contract.
+    rows = [list(grouped[group]) for group in ordered_group_names]
+
+    max_row_count = max((len(row) for row in rows), default=1)
+    # 360px の左右 12px を保ち、円の間には最低 8px の空きを確保する。
+    row_radius_cap = (
+        (360.0 - 24.0 - (max_row_count - 1) * 8.0) / (2.0 * max_row_count)
+        if max_row_count > 1 else 40.0
+    )
+    row_pitch = max(116.0, min(40.0, max(12.0, row_radius_cap)) * 2 + 44.0)
+    top = 74.0
+    vb_h = max(360.0, top + max(0, len(rows) - 1) * row_pitch + 74.0)
+
+    x_by_id: dict[str, float] = {}
+    y_by_id: dict[str, float] = {}
+    r_by_id: dict[str, float] = {}
+    for layer, original_row in enumerate(rows):
+        row = _row_order(original_row)
+        count = len(row)
+        layer_cap = (
+            (360.0 - 24.0 - (count - 1) * 8.0) / (2.0 * count)
+            if count > 1 else 40.0
+        )
+        layer_radius = min(40.0, max(12.0, layer_cap))
+        left = 12.0 + layer_radius
+        right = 360.0 - left
+        step = (right - left) / (count - 1) if count > 1 else 0.0
+        y = top + layer * row_pitch
+        for index, node_id in enumerate(row):
+            nd_radius = min(layer_radius, 30.0 + degree.get(node_id, 1) * 2.0)
+            if count > 1:
+                x_by_id[node_id] = left + step * index
+            else:
+                # desktop が持つ意味的な左右関係を 360px 幅へ写像する。全ノードを
+                # 中央へ置くと、段を飛び越す edge が中間ノードを貫通するため。
+                desktop_x = base_x_by_id.get(node_id, 540.0)
+                desktop_w = float(base.get("vb_w") or 1080.0)
+                normalized = min(max(desktop_x / desktop_w, 0.0), 1.0)
+                x_by_id[node_id] = min(max(
+                    12.0 + nd_radius, 12.0 + normalized * 336.0,
+                ), 348.0 - nd_radius)
+            y_by_id[node_id] = y
+            r_by_id[node_id] = nd_radius
+
+    placed = []
+    for nd in nodes:
+        node_id = str(nd.get("id", ""))
+        placed.append({
+            **nd,
+            "x": round(x_by_id.get(node_id, 180.0), 1),
+            "y": round(y_by_id.get(node_id, top), 1),
+            "r": round(r_by_id.get(node_id, 32.0), 1),
+            "deg": degree.get(node_id, 1),
+        })
+
+    mobile = dict(base)
+    mobile["nodes"] = placed
+    mobile["vb_w"] = 360
+    mobile["vb_h"] = int(round(vb_h))
+    return mobile
+
+
+def relations_svg(rel: dict[str, Any], layout: str = "desktop") -> str:
     """relations を SVG ネットワーク図 (ノード円 + ラベル付き有向エッジ) に描く。
 
     viewBox の高さ vb_h はラベル分離 (_resolve_labels) の結果で動的に拡張される
     ことがあるため、SVG ヘッダーは末尾で最終 vb_h を反映して parts[0] に prepend する
     ([[feedback_check_design_principles]] 1 段「失敗を表現できない構造に変える」)。
     """
-    lay = layout_relations(rel)
+    if layout == "desktop":
+        lay = layout_relations(rel)
+        is_mobile = False
+    elif layout == "mobile":
+        lay = _layout_relations_mobile(rel)
+        is_mobile = True
+    else:
+        raise DeepDiveIncompleteError(
+            f"relations layout must be 'desktop' or 'mobile', got {layout!r}"
+        )
     nodes = lay["nodes"]
     by_id = {nd["id"]: nd for nd in nodes if "id" in nd}
     vb_w, vb_h = lay["vb_w"], lay["vb_h"]
@@ -1127,10 +1324,6 @@ def relations_svg(rel: dict[str, Any]) -> str:
 
     fs = 12.5
     chip_h = 26.0
-    # frenemy (協調的競合) 用の 2 行 chip 高さ。提携(緑) + 競合(赤) を 1 chip 内に
-    # 並列表示することで、coop/rival が独立 chip として近接配置され band 間 gap で
-    # 重なる構造的問題を解消する (2026-06-04 ユーザー指示で恒久化)。
-    chip_h_dual = 44.0
 
     def _label_chip(gx: float, gy: float, chip_w: float,
                     color: str, kind: str, label: str) -> str:
@@ -1142,28 +1335,6 @@ def relations_svg(rel: dict[str, Any]) -> str:
             f'<text x="24" y="{chip_h / 2 + 4:.0f}" font-family="\'JetBrains Mono\',monospace" '
             f'font-size="{fs:.0f}" font-weight="600" fill="{INK}">'
             f'<tspan font-weight="700" fill="{color}">{_esc(kind)}</tspan> {_esc(label)}'
-            f'</text></g>'
-        )
-
-    def _label_chip_dual(gx: float, gy: float, chip_w: float,
-                         coop_color: str, coop_label: str,
-                         rival_color: str, rival_label: str) -> str:
-        """frenemy (協調的競合) 用の 2 行 chip: 上=提携(緑) / 下=競合(赤)。"""
-        return (
-            f'<g transform="translate({gx:.1f},{gy:.1f})">'
-            f'<rect width="{chip_w:.1f}" height="{chip_h_dual}" fill="#fff" stroke="{INK}" '
-            f'stroke-width="1" rx="2"/>'
-            # 上段 (提携)
-            f'<circle cx="13" cy="13" r="3.5" fill="{coop_color}"/>'
-            f'<text x="24" y="17" font-family="\'JetBrains Mono\',monospace" '
-            f'font-size="{fs:.0f}" font-weight="600" fill="{INK}">'
-            f'<tspan font-weight="700" fill="{coop_color}">提携</tspan> {_esc(coop_label)}'
-            f'</text>'
-            # 下段 (競合)
-            f'<circle cx="13" cy="31" r="3.5" fill="{rival_color}"/>'
-            f'<text x="24" y="35" font-family="\'JetBrains Mono\',monospace" '
-            f'font-size="{fs:.0f}" font-weight="600" fill="{INK}">'
-            f'<tspan font-weight="700" fill="{rival_color}">競合</tspan> {_esc(rival_label)}'
             f'</text></g>'
         )
 
@@ -1188,6 +1359,11 @@ def relations_svg(rel: dict[str, Any]) -> str:
         # 外側の狭い余白へ押し込むと窮屈なので、内側の広い gap を優先する。
         if abs(y2 - y1) <= 1.0:
             mx = (x1 + x2) / 2
+            if is_mobile:
+                # 360px では水平 edge の chip 幅が端点ノードまで届きやすい。
+                # 同段の空き帯へ逃がして、ノード円との重なりを構造的に避ける。
+                bi = min(range(len(ys)), key=lambda i: abs(ys[i] - y1))
+                return mx, zone_centers[bi]
             # 中央チャネルが空く水平エッジ (2 陣営の主役対立など) は gap へ逃がさず線上
             # (対立軸の真上) に載せ、上段の他エッジのラベルと混ざらないようにする。
             if all(math.hypot(mx - nd["x"], y1 - nd["y"]) > nd["r"] + 36 for nd in nodes):
@@ -1211,43 +1387,7 @@ def relations_svg(rel: dict[str, Any]) -> str:
         a, b = by_id.get(e.get("from")), by_id.get(e.get("to"))
         if not a or not b:
             continue
-        # frenemy (協調的競合): 協力線(緑)と競合線(赤)を併走させ各々に双方向矢印を付ける。
-        # ラベルは 1 chip 内に「提携: coop / 競合: rival」の 2 行で統合表示する。
-        # 旧 (coop/rival を独立 chip 2 個に分割) は band 間 gap に必ず近接配置されて
-        # 重なる構造的問題があったため、2026-06-04 ユーザー指示で 1 chip 統合に変更。
-        if e.get("kind") in _FRENEMY_KINDS:
-            ax, ay, bx, by = a["x"], a["y"], b["x"], b["y"]
-            dx, dy = bx - ax, by - ay
-            length = math.hypot(dx, dy) or 1.0
-            ux, uy = dx / length, dy / length
-            px, py = -uy, ux
-            gap, off = 7, 14
-            # 2 本の併走線 (緑=提携 / 赤=競合)
-            for sign, color in ((-1, _FRENEMY_COOP_COLOR), (1, _FRENEMY_RIVAL_COLOR)):
-                ox, oy = px * off * sign, py * off * sign
-                x1, y1 = ax + ux * (a["r"] + gap) + ox, ay + uy * (a["r"] + gap) + oy
-                x2, y2 = bx - ux * (b["r"] + gap) + ox, by - uy * (b["r"] + gap) + oy
-                parts.append(
-                    f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" '
-                    f'stroke="{color}" stroke-width="2.4" opacity="0.9"/>'
-                )
-                parts.append(_arrow(x2, y2, ux, uy, color))   # 協力も競合も相互 = 双方向
-                parts.append(_arrow(x1, y1, -ux, -uy, color))
-            # 1 chip 統合のラベル spec (素線中央でアンカー)
-            coop_label = _truncate_label(e.get("coop") or "協力（提携）")
-            rival_label = _truncate_label(e.get("rival") or "競合")
-            sx1, sy1 = ax + ux * (a["r"] + gap), ay + uy * (a["r"] + gap)
-            sx2, sy2 = bx - ux * (b["r"] + gap), by - uy * (b["r"] + gap)
-            anx, an_y = _anchor(sx1, sy1, sx2, sy2)
-            specs.append({
-                "cx": anx, "cy": an_y, "ax": anx, "ay": an_y,
-                "w": max(_chip_w("提携", coop_label), _chip_w("競合", rival_label)),
-                "h": chip_h_dual, "dual": True,
-                "coop_color": _FRENEMY_COOP_COLOR, "coop_label": coop_label,
-                "rival_color": _FRENEMY_RIVAL_COLOR, "rival_label": rival_label,
-            })
-            continue
-        ks = EDGE_KINDS.get(e.get("kind", ""), _DEFAULT_EDGE)
+        ks = EDGE_KINDS[e.get("kind", "")]
         color, dash = ks["color"], ks["dash"]
         ax, ay, bx, by = a["x"], a["y"], b["x"], b["y"]
         dx, dy = bx - ax, by - ay
@@ -1312,15 +1452,8 @@ def relations_svg(rel: dict[str, Any]) -> str:
                 f'y2="{s["cy"]:.1f}" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/>'
             )
     for s in specs:
-        if s.get("dual"):
-            parts.append(_label_chip_dual(
-                s["cx"] - s["w"] / 2, s["cy"] - s["h"] / 2, s["w"],
-                s["coop_color"], s["coop_label"],
-                s["rival_color"], s["rival_label"],
-            ))
-        else:
-            parts.append(_label_chip(s["cx"] - s["w"] / 2, s["cy"] - s["h"] / 2,
-                                     s["w"], s["color"], s["kind"], s["label"]))
+        parts.append(_label_chip(s["cx"] - s["w"] / 2, s["cy"] - s["h"] / 2,
+                                 s["w"], s["color"], s["kind"], s["label"]))
 
     # ── nodes (テキストは円内に収まるようフォントを自動縮小) ──
     for nd in nodes:
@@ -1353,18 +1486,20 @@ def relations_svg(rel: dict[str, Any]) -> str:
                 f'fill="{DIM}">{_esc(sub)}</text>'
             )
     # SVG ヘッダーを最終 vb_h で確定 (動的拡張済み) して先頭に挿入する。
-    # width/height はピクセル固定 (vb_w × vb_h) で出す。SVG デフォルト sizing は
-    # 「width/height 属性が無いとコンテナ 100%」のためサイズ保持にならない。旧設計の
-    # width="100%" だとモバイル時にノードラベルが極小化して読めない。固定 px なら親の
-    # 幅に依らず viewBox の自然サイズで描画され、はみ出した分は親 .dd-relwrap の
-    # overflow-x:auto で横スクロール閲覧させる (2026-06-04 PM ユーザー確定、memory
-    # feedback_intent_over_wording)。デスクトップでは vb_w (1080 等) が .dd-fig 内に
-    # 収まり既存見た目を維持、はみ出す環境では親側で横スクロールで救う。
-    parts.insert(0,
-        f'<svg viewBox="0 0 {vb_w} {vb_h:.0f}" width="{vb_w}" height="{vb_h:.0f}" '
-        f'style="display:block;background:{PAPER}" role="img" '
-        f'aria-label="{_esc(rel.get("title", "当事者の関係図"))}">'
-    )
+    # mobile は専用 360px viewBox を viewport 幅へ収め、desktop の自然幅は従来どおり保つ。
+    if is_mobile:
+        svg_header = (
+            f'<svg data-layout="mobile" viewBox="0 0 360 {vb_h:.0f}" width="100%" '
+            f'height="{vb_h:.0f}" style="display:block;background:{PAPER}" role="img" '
+            f'aria-label="{_esc(rel.get("title", "当事者の関係図"))}">'
+        )
+    else:
+        svg_header = (
+            f'<svg viewBox="0 0 {vb_w} {vb_h:.0f}" width="{vb_w}" height="{vb_h:.0f}" '
+            f'style="display:block;background:{PAPER}" role="img" '
+            f'aria-label="{_esc(rel.get("title", "当事者の関係図"))}">'
+        )
+    parts.insert(0, svg_header)
     parts.append("</svg>")
     svg = "".join(parts)
     # ── 層 2 出力品質ゲート (2026-06-06 plan v2): 線がノード貫通 / ラベル衝突を
@@ -1372,7 +1507,10 @@ def relations_svg(rel: dict[str, Any]) -> str:
     # 1 段 + 2 段)。境界 1 箇所集約は tools/output_quality.py。
     from tools.output_quality import assert_quality, check_relations_svg
     title = rel.get("title", "(no title)")
-    assert_quality([(f"relations:{title}", check_relations_svg(svg, src=title))])
+    assert_quality([(
+        f"relations:{title}",
+        check_relations_svg(svg, src=title, strict_objects=is_mobile),
+    )])
     return svg
 
 
@@ -1653,17 +1791,13 @@ _MIN_CHARTS = 2
 # に対しラベル数が多すぎると物理的にラベル重なりを 0 にできない (高密度クラスタの構造的限界)。
 # 2026-06-04 ユーザー指示で「8 本以下に絞り込めない関係図は本質を選別できていない記事」
 # と定義し、生成段階で hard fail させる ([[feedback_check_design_principles]] 1 段
-# 「失敗を表現できない構造に変える」)。frenemy (協調的競合) は描画上 coop/rival の 2
-# ラベルに展開されるため、エッジ数でなく「実描画ラベル数」で数える。
+# 「失敗を表現できない構造に変える」)。canonical edge は 1 本につき 1 chip として
+# 描画するため、実描画ラベル数は edge 数で数える。
 _MAX_RELATION_EDGES = 8
 
 
 def _relation_label_count(rel: dict[str, Any]) -> int:
-    """関係図の実描画ラベル数 (frenemy は 2 行統合 chip 1 つ = 1 でカウント) を返す。
-
-    2026-06-04 改: frenemy を 1 chip 内に 2 行統合表示するため、描画 chip 数 =
-    エッジ本数。旧 (frenemy = coop/rival 2 chip) からカウント方法も更新。
-    """
+    """関係図の実描画ラベル数 (canonical edge 1 本につき 1 chip) を返す。"""
     return len([e for e in (rel or {}).get("edges", []) if e.get("from") and e.get("to")])
 
 
@@ -1688,14 +1822,14 @@ def _require_blocks(md_path: Path, blocks: dict[str, list[Any]]) -> None:
         )
     # 関係図 (relations) の実描画ラベル数は最大 _MAX_RELATION_EDGES。これを超えるとレンダラの
     # 力学分離が解けない (band 間 gap にラベルが収まらない・2026-06-04 ユーザー指摘)。
-    # frenemy は描画上 coop/rival の 2 ラベルに展開されるため実描画数でカウントする。
+    # canonical edge は描画上 1 chip となるため、edge 本数でカウントする。
     rel = (blocks.get("relations") or [None])[0]
     n_labels = _relation_label_count(rel) if isinstance(rel, dict) else 0
     if n_labels > _MAX_RELATION_EDGES:
         raise DeepDiveIncompleteError(
             f"{name}: 関係図の実描画ラベルが {n_labels} 枚 (上限 {_MAX_RELATION_EDGES} 枚)。"
             "本質を絞り込めていない関係図は読めない。主要な対立軸・出資線・供給線に"
-            "絞って描き直すこと (協調的競合 frenemy は coop/rival 2 ラベルでカウント)。"
+            "絞って描き直すこと (二面関係は提携 edge と競合 edge を別々に記述する)。"
         )
     # 関係図の孤立ノード (どの edge にも現れないノード) は hard fail。
     # 2026-06-04 ユーザー指摘: edge 8 枚上限に詰める過程で BCG ノードへの線が
@@ -1812,6 +1946,12 @@ def build_deepdive_context(
 
     read_min = max(5, round(len(body) / 900))
 
+    # 同じ relations データから desktop/mobile を独立生成する。テンプレート側は
+    # viewport の media query だけで表示を切り替え、片方の座標を縮小して再利用しない。
+    relations_svg_desktop = relations_svg(relations) if relations else ""
+    relations_svg_mobile = relations_svg(relations, layout="mobile") if relations else ""
+    relations_legend = layout_relations(relations).get("legend", []) if relations else []
+
     # アクセント = テーマのカテゴリ (lens) 色。frontmatter `lens:` を一次に、無ければ
     # tags からカテゴリ id を推定、それも不能なら near-black に退避。
     lens_id = _resolve_lens(fm, tags)
@@ -1855,8 +1995,9 @@ def build_deepdive_context(
         # blocks
         "timeline": timeline,
         "players": blocks.get("players", [None])[0] or [],
-        "relations_svg": relations_svg(relations) if relations else "",
-        "relations_legend": layout_relations(relations).get("legend", []) if relations else [],
+        "relations_svg": relations_svg_desktop,
+        "relations_svg_mobile": relations_svg_mobile,
+        "relations_legend": relations_legend,
         "relations_title": (relations or {}).get("title", "当事者の関係図"),
         "relations_source": _figure_citations((relations or {}).get("source", ""), biblio),
         "charts": [

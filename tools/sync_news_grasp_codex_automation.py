@@ -20,6 +20,8 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
+from .news_grasp_title_control import TITLE_PATTERN, TITLE_SUFFIX
+
 
 AUTOMATION_ID = "news-grasp-6-40"
 CANONICAL_NEWS_GRASP_REPO_ROOT = (
@@ -32,6 +34,7 @@ MAX_APP_GLOBAL_STATE_BYTES = 2 * 1024 * 1024
 REQUIRED_PROMPT_PARTS = (
     "$news-grasp-direct-mainline",
     "YY/MM/DD",
+    "news_grasp_title_materializer",
     "title_status",
     "title_status=already_ok",
     "already_ok",
@@ -84,7 +87,7 @@ if os.name == "nt":
     ]
     _CreateFileW.restype = wintypes.HANDLE
     _GetFileInformationByHandle = ctypes.windll.kernel32.GetFileInformationByHandle
-    _GetFileInformationByHandle.argtypes = [wintypes.HANDLE, ctypes.POINTER(BY_HANDLE_FILE_INFORMATION)]
+    _GetFileInformationByHandle.argtypes = [wintypes.HANDLE, ctypes.c_void_p]
     _GetFileInformationByHandle.restype = wintypes.BOOL
     _CloseHandle = ctypes.windll.kernel32.CloseHandle
     _CloseHandle.argtypes = [wintypes.HANDLE]
@@ -478,13 +481,20 @@ def _render_installed(
 
     prompt = str(template.get("prompt") or "").strip()
     repo_cwd = str(repo_root.resolve(strict=True))
+    template_name = str(template.get("name") or TITLE_SUFFIX)
+    installed_name = installed.get("name")
+    materialized_name = (
+        installed_name
+        if isinstance(installed_name, str) and TITLE_PATTERN.fullmatch(installed_name)
+        else template_name
+    )
 
     def build(updated_at: int) -> str:
         lines = [
             "version = 1",
             f"id = {_quote(AUTOMATION_ID)}",
             f"kind = {_quote(str(template.get('kind') or 'cron'))}",
-            f"name = {_quote(str(template.get('name') or 'News-Grasp 臨時本線日次バッチ 6:00 記事作成・公開'))}",
+            f"name = {_quote(materialized_name)}",
             f"status = {_quote(str(template.get('status') or 'ACTIVE'))}",
             f"rrule = {_quote(str(template.get('rrule') or 'RRULE:FREQ=DAILY;BYHOUR=6;BYMINUTE=0;BYSECOND=0'))}",
             f"model = {_quote('gpt-5.6-luna')}",
@@ -603,6 +613,9 @@ def _validate_loaded_automation(
 
     if value.get("id") != AUTOMATION_ID:
         failures.append("id_invalid")
+    name = value.get("name")
+    if not isinstance(name, str) or (name != TITLE_SUFFIX and not TITLE_PATTERN.fullmatch(name)):
+        failures.append("name_not_canonical_or_materialized")
     if value.get("status") != "ACTIVE":
         failures.append("status_not_active")
     if str(value.get("rrule") or "").upper() != "RRULE:FREQ=DAILY;BYHOUR=6;BYMINUTE=0;BYSECOND=0":
@@ -730,7 +743,7 @@ def validate_skill_semantics(path: Path) -> dict[str, Any]:
         return {"ok": False, "path": str(path), "failures": [f"skill_invalid:{exc}"]}
 
     required = (
-        "set_thread_title",
+        "news_grasp_title_materializer",
         "title_completion=fulfilled|deferred",
         "NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1",
         "caller作成の completion JSON は Green authority ではない",
@@ -768,9 +781,15 @@ def _desired_app_db_row(
     updated_at = existing.get("updated_at")
     if not isinstance(updated_at, int) or isinstance(updated_at, bool):
         updated_at = created_at
+    existing_name = existing.get("name")
+    materialized_name = (
+        existing_name
+        if isinstance(existing_name, str) and TITLE_PATTERN.fullmatch(existing_name)
+        else str(template.get("name") or TITLE_SUFFIX)
+    )
     return {
         "id": AUTOMATION_ID,
-        "name": str(template.get("name") or "News-Grasp 臨時本線日次バッチ 6:00 記事作成・公開"),
+        "name": materialized_name,
         "prompt": str(template.get("prompt") or ""),
         "status": str(template.get("status") or "ACTIVE"),
         "next_run_at": existing.get("next_run_at"),

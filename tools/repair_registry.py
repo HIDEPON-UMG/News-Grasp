@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 from pathlib import PurePosixPath
 import re
+import stat
 import tempfile
 from typing import Callable
 
@@ -47,6 +48,7 @@ ARTICLES_ONLY_INCOMPLETE_STATUS = "blocked_articles_only_record_incomplete"
 DIGEST_ONLY_AMBIGUOUS_STATUS = "blocked_digest_only_ambiguous"
 REPAIR_SYSTEM_INCOMPLETE_STATUS = "blocked_repair_system_incomplete"
 REPAIR_PLAN_INVALID_STATUS = "blocked_repair_plan_invalid"
+_REPARSE_FLAG = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
 
 
 class ReporterArtifactScopeError(ValueError):
@@ -1545,40 +1547,161 @@ def _repair_deepdive_provenance(ctx: RepairContext) -> RepairResult:
     )
 
 
-def _repair_deepdive_dialogue(ctx: RepairContext) -> RepairResult:
-    article = (
-        ctx.repo_root
-        / "digest"
-        / "DeepDive"
-        / f"{ctx.issue}-DeepDive.md"
-    )
-    dialogue = article.with_name(f"{ctx.issue}-DeepDive-dialogue.md")
-    before = dialogue.read_bytes() if dialogue.is_file() else b""
+class _RenderedPublicRestorePathError(ValueError):
+    """rendered public の restore/delete path が安全境界を満たさない。"""
+
+
+def _rendered_public_reparse(path: Path, info: os.stat_result | None = None) -> bool:
+    if info is None:
+        try:
+            info = os.lstat(path)
+        except OSError:
+            return False
+    return bool(int(getattr(info, "st_file_attributes", 0) or 0) & _REPARSE_FLAG)
+
+
+def _safe_rendered_public_path(
+    path: Path,
+    *,
+    repo_root: Path,
+    expect_directory: bool = False,
+) -> Path:
+    """repo内のrendered public pathを全祖先込みで直前検証する。"""
+
     try:
-        deepdive_quality.materialize_issue_bundle(
-            repo_root=ctx.repo_root,
-            issue_date=ctx.issue,
-        )
-    except (deepdive_quality.DeepDiveQualityError, ValueError, OSError) as error:
-        return RepairResult(
-            handler_id=ctx.handler_id,
-            status="blocked_deepdive_issue_bundle_failed",
-            changed=False,
-            message=str(error),
-        )
-    after = dialogue.read_bytes()
-    return RepairResult(
-        handler_id=ctx.handler_id,
-        status=REPAIRED_STATUS,
-        changed=before != after,
-        artifacts=(
-            f"data/deepdive-claim-source/{ctx.issue}.json",
-            f"data/deepdive-provenance/{ctx.issue}.json",
-            f"digest/DeepDive/{ctx.issue}-DeepDive-dialogue.md",
-            f"data/deepdive-bundles/{ctx.issue}.json",
-        ),
-        message="DeepDive claim/provenance/dialogueを共通bundle handlerで再構築しました",
+        boundary = Path(os.path.abspath(os.fspath(repo_root)))
+        candidate = Path(os.path.abspath(os.fspath(path)))
+    except (OSError, TypeError, ValueError) as error:
+        raise _RenderedPublicRestorePathError("DEEPDIVE_RENDERED_PUBLIC_PATH_INVALID") from error
+    boundary_key = os.path.normcase(str(boundary))
+    candidate_key = os.path.normcase(str(candidate))
+    if candidate_key != boundary_key and not candidate_key.startswith(
+        boundary_key.rstrip("\\/") + os.sep
+    ):
+        raise _RenderedPublicRestorePathError("DEEPDIVE_RENDERED_PUBLIC_PATH_INVALID")
+
+    cursor = candidate
+    is_leaf = True
+    while True:
+        try:
+            info = os.lstat(cursor)
+        except FileNotFoundError:
+            info = None
+        except OSError as error:
+            raise _RenderedPublicRestorePathError(
+                "DEEPDIVE_RENDERED_PUBLIC_PATH_INVALID"
+            ) from error
+        if info is not None:
+            if stat.S_ISLNK(info.st_mode) or _rendered_public_reparse(cursor, info):
+                raise _RenderedPublicRestorePathError(
+                    "DEEPDIVE_RENDERED_PUBLIC_PATH_INVALID"
+                )
+            if is_leaf:
+                if expect_directory and not stat.S_ISDIR(info.st_mode):
+                    raise _RenderedPublicRestorePathError(
+                        "DEEPDIVE_RENDERED_PUBLIC_PATH_INVALID"
+                    )
+                if not expect_directory and not stat.S_ISREG(info.st_mode):
+                    raise _RenderedPublicRestorePathError(
+                        "DEEPDIVE_RENDERED_PUBLIC_PATH_INVALID"
+                    )
+            elif not stat.S_ISDIR(info.st_mode):
+                raise _RenderedPublicRestorePathError(
+                    "DEEPDIVE_RENDERED_PUBLIC_PATH_INVALID"
+                )
+        if os.path.normcase(str(cursor)) == boundary_key:
+            break
+        parent = cursor.parent
+        if parent == cursor:
+            raise _RenderedPublicRestorePathError(
+                "DEEPDIVE_RENDERED_PUBLIC_PATH_INVALID"
+            )
+        cursor = parent
+        is_leaf = False
+    return candidate
+
+
+def _safe_rendered_public_temp_cleanup(path: Path) -> None:
+    try:
+        info = os.lstat(path)
+    except OSError:
+        return
+    if (
+        not stat.S_ISREG(info.st_mode)
+        or stat.S_ISLNK(info.st_mode)
+        or _rendered_public_reparse(path, info)
+    ):
+        return
+    try:
+        os.unlink(path)
+    except OSError:
+        pass
+
+
+def _atomic_restore_rendered_public(
+    path: Path,
+    payload: bytes,
+    *,
+    repo_root: Path,
+) -> None:
+    """安全な同一parent内stageからrendered publicをatomic restoreする。"""
+
+    candidate = _safe_rendered_public_path(path, repo_root=repo_root)
+    parent = _safe_rendered_public_path(
+        candidate.parent, repo_root=repo_root, expect_directory=True
     )
+    try:
+        descriptor, temporary_name = tempfile.mkstemp(
+            prefix=f".{candidate.name}.", suffix=".restore", dir=str(parent)
+        )
+    except OSError as error:
+        raise _RenderedPublicRestorePathError(
+            "DEEPDIVE_RENDERED_PUBLIC_RESTORE_FAILED"
+        ) from error
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "wb") as stream:
+            stream.write(payload)
+            stream.flush()
+            os.fsync(stream.fileno())
+        # stage作成後、replace直前にもleaf/parent/repo境界を再確認する。
+        _safe_rendered_public_path(candidate, repo_root=repo_root)
+        _safe_rendered_public_path(
+            parent, repo_root=repo_root, expect_directory=True
+        )
+        _safe_rendered_public_path(temporary, repo_root=repo_root)
+        os.replace(temporary, candidate)
+        _safe_rendered_public_path(candidate, repo_root=repo_root)
+    except _RenderedPublicRestorePathError:
+        raise
+    except OSError as error:
+        raise _RenderedPublicRestorePathError(
+            "DEEPDIVE_RENDERED_PUBLIC_RESTORE_FAILED"
+        ) from error
+    finally:
+        _safe_rendered_public_temp_cleanup(temporary)
+
+
+def _atomic_delete_rendered_public(path: Path, *, repo_root: Path) -> None:
+    """rendered publicを最終no-follow検証後に安全に削除する。"""
+
+    candidate = _safe_rendered_public_path(path, repo_root=repo_root)
+    try:
+        os.lstat(candidate)
+    except FileNotFoundError:
+        return
+    except OSError as error:
+        raise _RenderedPublicRestorePathError(
+            "DEEPDIVE_RENDERED_PUBLIC_PATH_INVALID"
+        ) from error
+    # unlink直前も同一境界を再検証し、reparse化したleaf/祖先は保持する。
+    _safe_rendered_public_path(candidate, repo_root=repo_root)
+    try:
+        os.unlink(candidate)
+    except OSError as error:
+        raise _RenderedPublicRestorePathError(
+            "DEEPDIVE_RENDERED_PUBLIC_RESTORE_FAILED"
+        ) from error
 
 
 def _repair_deepdive_rendered_public(ctx: RepairContext) -> RepairResult:
@@ -1594,14 +1717,32 @@ def _repair_deepdive_rendered_public(ctx: RepairContext) -> RepairResult:
         / "deepdive-provenance"
         / f"{ctx.issue}.json"
     )
-    provenance_issues = deepdive_quality.validate_provenance(article, manifest)
-    if provenance_issues:
+    try:
+        source_quality = deepdive_quality.audit_issue(
+            repo_root=ctx.repo_root,
+            issue_date=ctx.issue,
+            include_corpus=False,
+            require_rendered_public=False,
+            route="repair_publish",
+        )
+    except (deepdive_quality.DeepDiveQualityError, OSError, ValueError) as error:
         return RepairResult(
             handler_id=ctx.handler_id,
-            status="blocked_deepdive_rendered_public_provenance_invalid",
+            status="blocked_deepdive_rendered_public_source_not_v2_green",
             changed=False,
-            message="; ".join(provenance_issues),
+            message=str(error),
         )
+    if not isinstance(source_quality, dict) or source_quality.get("status") != "Green":
+        details = []
+        if isinstance(source_quality, dict):
+            details = [str(item) for item in source_quality.get("issues", []) or []]
+        return RepairResult(
+            handler_id=ctx.handler_id,
+            status="blocked_deepdive_rendered_public_source_not_v2_green",
+            changed=False,
+            message="; ".join(details) or "DeepDive source quality is not V2 Green",
+        )
+
     output = (
         ctx.repo_root
         / "docs"
@@ -1609,7 +1750,33 @@ def _repair_deepdive_rendered_public(ctx: RepairContext) -> RepairResult:
         / ctx.issue
         / "index.html"
     )
-    before = output.read_bytes() if output.is_file() else b""
+    try:
+        safe_output = _safe_rendered_public_path(output, repo_root=ctx.repo_root)
+        try:
+            output_info = os.lstat(safe_output)
+        except FileNotFoundError:
+            output_info = None
+        before_exists = output_info is not None
+        before = safe_output.read_bytes() if before_exists else None
+    except (_RenderedPublicRestorePathError, OSError) as error:
+        return RepairResult(
+            handler_id=ctx.handler_id,
+            status="blocked_deepdive_rendered_public_restore_path_invalid",
+            changed=False,
+            artifacts=(f"docs/deepdive/{ctx.issue}/index.html",),
+            message=str(error),
+        )
+
+    def restore_output() -> None:
+        if before_exists:
+            _atomic_restore_rendered_public(
+                output,
+                before or b"",
+                repo_root=ctx.repo_root,
+            )
+        else:
+            _atomic_delete_rendered_public(output, repo_root=ctx.repo_root)
+
     try:
         written = build_deepdive_pages(
             docs_root=ctx.repo_root / "docs",
@@ -1618,20 +1785,51 @@ def _repair_deepdive_rendered_public(ctx: RepairContext) -> RepairResult:
             validate_live_urls=False,
         )
     except Exception as error:  # noqa: BLE001 - repair境界でtyped failureへ正規化する
+        try:
+            restore_output()
+        except _RenderedPublicRestorePathError as restore_error:
+            return RepairResult(
+                handler_id=ctx.handler_id,
+                status="blocked_deepdive_rendered_public_restore_path_invalid",
+                changed=False,
+                artifacts=(f"docs/deepdive/{ctx.issue}/index.html",),
+                message=f"{error}; restore blocked: {restore_error}",
+            )
         return RepairResult(
             handler_id=ctx.handler_id,
             status="blocked_deepdive_rendered_public_rebuild_failed",
             changed=False,
             message=str(error),
         )
-    if output.resolve() not in {path.resolve() for path in written} or not output.is_file():
+    try:
+        safe_output = _safe_rendered_public_path(output, repo_root=ctx.repo_root)
+        written_paths = {
+            os.path.normcase(os.path.abspath(os.fspath(path)))
+            for path in (written or [])
+        }
+        output_key = os.path.normcase(os.path.abspath(os.fspath(safe_output)))
+        output_info = os.lstat(safe_output)
+        output_written = output_key in written_paths and stat.S_ISREG(output_info.st_mode)
+    except (FileNotFoundError, OSError, _RenderedPublicRestorePathError):
+        output_written = False
+    if not output_written:
+        try:
+            restore_output()
+        except _RenderedPublicRestorePathError as restore_error:
+            return RepairResult(
+                handler_id=ctx.handler_id,
+                status="blocked_deepdive_rendered_public_restore_path_invalid",
+                changed=False,
+                artifacts=(f"docs/deepdive/{ctx.issue}/index.html",),
+                message=f"指定日のDeepDive HTMLが再生成されませんでした; restore blocked: {restore_error}",
+            )
         return RepairResult(
             handler_id=ctx.handler_id,
             status="blocked_deepdive_rendered_public_rebuild_failed",
             changed=False,
             message="指定日のDeepDive HTMLが再生成されませんでした",
         )
-    after = output.read_bytes()
+    after = safe_output.read_bytes()
     postcondition_issues, _evidence = (
         deepdive_quality.validate_rendered_public_surface(
             manifest,
@@ -1639,10 +1837,20 @@ def _repair_deepdive_rendered_public(ctx: RepairContext) -> RepairResult:
         )
     )
     if postcondition_issues:
+        try:
+            restore_output()
+        except _RenderedPublicRestorePathError as restore_error:
+            return RepairResult(
+                handler_id=ctx.handler_id,
+                status="blocked_deepdive_rendered_public_restore_path_invalid",
+                changed=False,
+                artifacts=(f"docs/deepdive/{ctx.issue}/index.html",),
+                message=f"{'; '.join(postcondition_issues)}; restore blocked: {restore_error}",
+            )
         return RepairResult(
             handler_id=ctx.handler_id,
             status="blocked_deepdive_rendered_public_postcondition_failed",
-            changed=before != after,
+            changed=False,
             artifacts=(f"docs/deepdive/{ctx.issue}/index.html",),
             message="; ".join(postcondition_issues),
         )
@@ -1665,17 +1873,6 @@ REGISTRY: dict[str, RepairHandler] = {
         ),
         verify_gate="deepdive-shared-quality",
         repair=_repair_deepdive_provenance,
-        supported_verify_gates=("deepdive-shared-quality", "daily-quality"),
-    ),
-    "deepdive-dialogue-rebuild": RepairHandler(
-        handler_id="deepdive-dialogue-rebuild",
-        kind="deterministic",
-        allowed_artifacts=(
-            "digest/DeepDive/{date}-DeepDive.md",
-            "digest/DeepDive/{date}-DeepDive-dialogue.md",
-        ),
-        verify_gate="deepdive-shared-quality",
-        repair=_repair_deepdive_dialogue,
         supported_verify_gates=("deepdive-shared-quality", "daily-quality"),
     ),
     "deepdive-rendered-public-rebuild": RepairHandler(

@@ -42,7 +42,7 @@
       "sharedInstalledSha256": "896ce7022f26b32e4f330f8d62e3e3b4fb3e03ab9c3faffc67179f8422225452",
       "sharedInstalledStatus": "stale_pending_installer",
       "overlayPath": "automation/skills/news-grasp-e2e-discipline",
-      "overlaySha256": "3bec5803b947423edf18a3c6dfcf298ac0313d0bc8f91eaa26888e694e19679e",
+      "overlaySha256": "fb4d91f7a4d71e2df45c93ccfe367417c7b7cf98e3e819bb5e8457bb27eb5930",
       "installedPath": "news-grasp-assets/skills/news-grasp-e2e-discipline",
       "consumer": "Scheduled-equivalent NoPublish E2E admission",
       "reason": "News-Grasp-specific final-only E2E rules require a product-owned versioned projection."
@@ -54,7 +54,7 @@
       "sourceLocator": "shared-skill://news-grasp-direct-mainline/SKILL.md",
       "sourceSha256": "e58fc8d1c89d74086b43dfd77bbb91e10b4e3db187823fdd3ce430a27deb8e8e",
       "overlayPath": "automation/skills/news-grasp-direct-mainline",
-      "overlaySha256": "35d4a876320d22c061f8cba774cbb58d66878c97b127439c7c4514de05eebc51",
+      "overlaySha256": "10cfd38924cd87b3db542457c25c423af6b3ac916ca704400b2fa225ed091e42",
       "installedPath": "news-grasp-assets/skills/news-grasp-direct-mainline",
       "consumer": "06:00 direct article generation and public completion",
       "reason": "The product-owned direct skill binds scheduled inventory, shared quality, public surfaces, exact successor recovery, and runner-free completion."
@@ -66,7 +66,7 @@
       "sourceLocator": "shared-skill://news-grasp-repair-method/SKILL.md",
       "sourceSha256": "3633db76d91507c575b8710d14b9734c7ebdbe9ab6716595c2425d7c039ef1fc",
       "overlayPath": "automation/skills/news-grasp-repair-method",
-      "overlaySha256": "9edf7ed1a339bda9ca512fc60139463bb37aa7ed9a13dfb370694aadab06eb64",
+      "overlaySha256": "f03eee8babd2dbca35f87916c15aaf327ac4dca6522cb4970bb9495469c19bbe",
       "installedPath": "news-grasp-assets/skills/news-grasp-repair-method",
       "consumer": "Registered daily recovery classification and execution",
       "reason": "Product recovery routes and typed incident boundaries require a product-owned versioned projection."
@@ -124,7 +124,7 @@
       "role": "design_read_only",
       "classification": "shared_read_only_unchanged_with_reason",
       "sourceLocator": "shared-skill://skill-creator/SKILL.md",
-      "sourceSha256": "2940e08d49e5197453e58a4387d14cb07101b97911c992ef75c8289e0a1734c0",
+      "sourceSha256": "cccd291077ec57c6f50ca6529f0f3fb93212da09473effb2fcec808e81b21288",
       "consumer": "Product-local skill package structure validation",
       "reason": "Skill authoring guidance is needed only while generating and validating overlays."
     },

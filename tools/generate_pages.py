@@ -2002,11 +2002,14 @@ def _latest_deepdive_card(target_date: str | None = None) -> dict[str, Any] | No
     if not mds:
         return None
     # 遅延 import (循環回避)
+    from tools.output_quality import OutputQualityError
     from tools.render_deepdive import DeepDiveIncompleteError, build_deepdive_context
     try:
         dd = build_deepdive_context(mds[-1])
     except DeepDiveIncompleteError:
         raise  # 未完成 DeepDive (関係図等の欠落) は LP にも黙って載せず build を止める
+    except OutputQualityError:
+        raise  # 出力品質違反は LP からカードを黙って消さず、公開ビルドを停止する
     except Exception as exc:  # noqa: BLE001
         print(f"[warn] LP DeepDive カード構築失敗 {mds[-1].name}: {exc}", file=sys.stderr)
         return None

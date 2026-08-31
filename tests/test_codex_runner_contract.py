@@ -88,7 +88,7 @@ def test_direct_skill_documents_quality_and_recovery_boundaries() -> None:
     text = DIRECT_SKILL.read_text(encoding="utf-8-sig")
 
     for marker in [
-        "set_thread_title",
+        "news_grasp_title_materializer",
         "title_completion=fulfilled|deferred",
         "validate_daily_quality --require-deepdive",
         "NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1",

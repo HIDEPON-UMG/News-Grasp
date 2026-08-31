@@ -5,6 +5,8 @@ from pathlib import Path
 import json
 from types import SimpleNamespace
 
+import pytest
+
 import tools.repair_registry as registry_module
 from tools.repair_registry import (
     RepairContext,
@@ -2185,6 +2187,7 @@ def test_digest_only_handler_validates_all_targets_before_articles_append(
 def test_unrouted_legacy_handlers_are_not_registered() -> None:
     assert find_handler("audio-script-length-patch") is None
     assert find_handler("digest-record-sync-patch") is None
+    assert find_handler("deepdive-dialogue-rebuild") is None
 
 
 def test_deepdive_rendered_public_repair_is_issue_scoped(
@@ -2214,6 +2217,11 @@ def test_deepdive_rendered_public_repair_is_issue_scoped(
     )
     monkeypatch.setattr(
         registry_module.deepdive_quality,
+        "audit_issue",
+        lambda **_kwargs: {"status": "Green", "issueCodes": [], "issues": []},
+    )
+    monkeypatch.setattr(
+        registry_module.deepdive_quality,
         "validate_rendered_public_surface",
         lambda *_args: ([], []),
     )
@@ -2239,7 +2247,7 @@ def test_deepdive_rendered_public_repair_is_issue_scoped(
     ]
 
 
-def test_deepdive_rendered_public_repair_refuses_invalid_provenance(
+def test_deepdive_rendered_public_repair_requires_v2_green_source(
     monkeypatch,
     tmp_path: Path,
 ) -> None:
@@ -2254,7 +2262,16 @@ def test_deepdive_rendered_public_repair_refuses_invalid_provenance(
     monkeypatch.setattr(
         registry_module.deepdive_quality,
         "validate_provenance",
-        lambda *_args: ["DEEPDIVE_ARTICLE_DRIFT"],
+        lambda *_args: [],
+    )
+    monkeypatch.setattr(
+        registry_module.deepdive_quality,
+        "audit_issue",
+        lambda **_kwargs: {
+            "status": "Red",
+            "issueCodes": ["deepdive_article_value_invalid"],
+            "issues": ["DEEPDIVE_ARTICLE_VALUE_INVALID"],
+        },
     )
 
     result = repair_with_registry(
@@ -2266,9 +2283,52 @@ def test_deepdive_rendered_public_repair_refuses_invalid_provenance(
         )
     )
 
-    assert result.status == "blocked_deepdive_rendered_public_provenance_invalid"
+    assert result.status == "blocked_deepdive_rendered_public_source_not_v2_green"
     assert result.changed is False
     assert render_calls == []
+
+
+@pytest.mark.parametrize("unsafe_component", ["leaf", "parent"])
+def test_deepdive_rendered_public_repair_rejects_reparse_restore_path(
+    monkeypatch,
+    tmp_path: Path,
+    unsafe_component: str,
+) -> None:
+    issue = "2026-07-17"
+    output = tmp_path / "docs" / "deepdive" / issue / "index.html"
+    output.parent.mkdir(parents=True)
+    output.write_bytes(b"previous-green")
+    unsafe_path = output if unsafe_component == "leaf" else output.parent
+    monkeypatch.setattr(
+        registry_module,
+        "_rendered_public_reparse",
+        lambda path, *_args, **_kwargs: Path(path) == unsafe_path,
+    )
+    monkeypatch.setattr(
+        registry_module.deepdive_quality,
+        "audit_issue",
+        lambda **_kwargs: {"status": "Green", "issueCodes": [], "issues": []},
+    )
+    render_calls: list[dict[str, object]] = []
+    monkeypatch.setattr(
+        registry_module,
+        "build_deepdive_pages",
+        lambda **kwargs: render_calls.append(kwargs) or [],
+    )
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="deepdive-rendered-public-rebuild",
+            artifacts=[f"docs/deepdive/{issue}/index.html"],
+        )
+    )
+
+    assert result.status == "blocked_deepdive_rendered_public_restore_path_invalid"
+    assert result.changed is False
+    assert render_calls == []
+    assert output.read_bytes() == b"previous-green"
 
 
 def test_deepdive_rendered_public_repair_returns_typed_failure_on_renderer_error(
@@ -2281,6 +2341,14 @@ def test_deepdive_rendered_public_repair_returns_typed_failure_on_renderer_error
         "validate_provenance",
         lambda *_args: [],
     )
+    monkeypatch.setattr(
+        registry_module.deepdive_quality,
+        "audit_issue",
+        lambda **_kwargs: {"status": "Green", "issueCodes": [], "issues": []},
+    )
+    output = tmp_path / "docs" / "deepdive" / issue / "index.html"
+    output.parent.mkdir(parents=True)
+    output.write_bytes(b"previous-green")
     monkeypatch.setattr(
         registry_module,
         "build_deepdive_pages",
@@ -2299,6 +2367,7 @@ def test_deepdive_rendered_public_repair_returns_typed_failure_on_renderer_error
     assert result.status == "blocked_deepdive_rendered_public_rebuild_failed"
     assert result.changed is False
     assert "jinja2" in result.message
+    assert output.read_bytes() == b"previous-green"
 
 
 def test_deepdive_rendered_public_repair_rejects_false_success(
@@ -2307,10 +2376,17 @@ def test_deepdive_rendered_public_repair_rejects_false_success(
 ) -> None:
     issue = "2026-07-17"
     output = tmp_path / "docs" / "deepdive" / issue / "index.html"
+    output.parent.mkdir(parents=True)
+    output.write_bytes(b"previous-green")
     monkeypatch.setattr(
         registry_module.deepdive_quality,
         "validate_provenance",
         lambda *_args: [],
+    )
+    monkeypatch.setattr(
+        registry_module.deepdive_quality,
+        "audit_issue",
+        lambda **_kwargs: {"status": "Green", "issueCodes": [], "issues": []},
     )
     monkeypatch.setattr(
         registry_module.deepdive_quality,
@@ -2322,7 +2398,6 @@ def test_deepdive_rendered_public_repair_rejects_false_success(
     )
 
     def fake_build(**_kwargs):
-        output.parent.mkdir(parents=True)
         output.write_text("still invalid", encoding="utf-8")
         return [output]
 
@@ -2338,5 +2413,6 @@ def test_deepdive_rendered_public_repair_rejects_false_success(
     )
 
     assert result.status == "blocked_deepdive_rendered_public_postcondition_failed"
-    assert result.changed is True
+    assert result.changed is False
     assert "DEEPDIVE_RENDERED_PUBLIC_HREF_MISSING" in result.message
+    assert output.read_bytes() == b"previous-green"

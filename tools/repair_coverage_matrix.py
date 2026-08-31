@@ -13,6 +13,7 @@ class RepairClass(StrEnum):
     DETERMINISTIC_HANDLER = "deterministic_handler"
     LLM_GENERATE_MISSING_ARTIFACT = "llm_generate_missing_artifact"
     LLM_REWRITE_EXISTING_ARTIFACT = "llm_rewrite_existing_artifact"
+    LLM_RESEARCH_AND_REWRITE = "llm_research_and_rewrite"
     TYPED_EXTERNAL = "typed_external"
     TYPED_FATAL = "typed_fatal"
     HANDLER_UNIMPLEMENTED_RED = "handler_unimplemented_red"
@@ -469,14 +470,14 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
     CoverageRow(
         "daily-quality",
         "deepdive_dialogue_value_invalid",
-        RepairClass.DETERMINISTIC_HANDLER,
-        "deepdive-dialogue-rebuild",
+        RepairClass.LLM_REWRITE_EXISTING_ARTIFACT,
+        "deepdive-dialogue-value-rewrite",
         (
             "digest/DeepDive/{date}-DeepDive.md",
             "digest/DeepDive/{date}-DeepDive-dialogue.md",
         ),
-        "daily-quality",
-        "blocked_deepdive_dialogue_rebuild_failed",
+        "deepdive-shared-quality",
+        "blocked_deepdive_llm_rewrite_failed",
     ),
     CoverageRow(
         "deepdive-shared-quality",
@@ -493,14 +494,81 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
     CoverageRow(
         "deepdive-shared-quality",
         "deepdive_dialogue_value_invalid",
-        RepairClass.DETERMINISTIC_HANDLER,
-        "deepdive-dialogue-rebuild",
+        RepairClass.LLM_REWRITE_EXISTING_ARTIFACT,
+        "deepdive-dialogue-value-rewrite",
         (
             "digest/DeepDive/{date}-DeepDive.md",
             "digest/DeepDive/{date}-DeepDive-dialogue.md",
         ),
         "deepdive-shared-quality",
-        "blocked_deepdive_dialogue_rebuild_failed",
+        "blocked_deepdive_llm_rewrite_failed",
+    ),
+    CoverageRow(
+        "daily-quality",
+        "deepdive_article_value_invalid",
+        RepairClass.LLM_REWRITE_EXISTING_ARTIFACT,
+        "deepdive-article-value-rewrite",
+        ("digest/DeepDive/{date}-DeepDive.md",),
+        "deepdive-shared-quality",
+        "blocked_deepdive_llm_rewrite_failed",
+    ),
+    CoverageRow(
+        "daily-quality",
+        "deepdive_relation_quality_invalid",
+        RepairClass.LLM_REWRITE_EXISTING_ARTIFACT,
+        "deepdive-relation-quality-rewrite",
+        ("digest/DeepDive/{date}-DeepDive.md",),
+        "deepdive-shared-quality",
+        "blocked_deepdive_llm_rewrite_failed",
+    ),
+    CoverageRow(
+        "daily-quality",
+        "deepdive_research_evidence_insufficient",
+        RepairClass.LLM_RESEARCH_AND_REWRITE,
+        "deepdive-research-and-rewrite",
+        ("digest/DeepDive/{date}-DeepDive.md",),
+        "deepdive-shared-quality",
+        "blocked_deepdive_research_rewrite_failed",
+    ),
+    CoverageRow(
+        "deepdive-shared-quality",
+        "deepdive_article_value_invalid",
+        RepairClass.LLM_REWRITE_EXISTING_ARTIFACT,
+        "deepdive-article-value-rewrite",
+        ("digest/DeepDive/{date}-DeepDive.md",),
+        "deepdive-shared-quality",
+        "blocked_deepdive_llm_rewrite_failed",
+    ),
+    CoverageRow(
+        "deepdive-shared-quality",
+        "deepdive_relation_quality_invalid",
+        RepairClass.LLM_REWRITE_EXISTING_ARTIFACT,
+        "deepdive-relation-quality-rewrite",
+        ("digest/DeepDive/{date}-DeepDive.md",),
+        "deepdive-shared-quality",
+        "blocked_deepdive_llm_rewrite_failed",
+    ),
+    CoverageRow(
+        "deepdive-shared-quality",
+        "deepdive_research_evidence_insufficient",
+        RepairClass.LLM_RESEARCH_AND_REWRITE,
+        "deepdive-research-and-rewrite",
+        ("digest/DeepDive/{date}-DeepDive.md",),
+        "deepdive-shared-quality",
+        "blocked_deepdive_research_rewrite_failed",
+    ),
+    CoverageRow(
+        "deepdive-shared-quality",
+        "deepdive_public_surface_invalid",
+        RepairClass.DETERMINISTIC_HANDLER,
+        "deepdive-rendered-public-rebuild",
+        (
+            "digest/DeepDive/{date}-DeepDive.md",
+            "data/deepdive-provenance/{date}.json",
+            "docs/deepdive/{date}/index.html",
+        ),
+        "deepdive-required",
+        "blocked_deepdive_rendered_public_rebuild_failed",
     ),
     CoverageRow(
         "daily-quality",
@@ -1137,6 +1205,7 @@ def classify_repair_issue(issue: RepairIssue) -> RepairDecision:
             RepairClass.DETERMINISTIC_HANDLER,
             RepairClass.LLM_GENERATE_MISSING_ARTIFACT,
             RepairClass.LLM_REWRITE_EXISTING_ARTIFACT,
+            RepairClass.LLM_RESEARCH_AND_REWRITE,
         }
         and issue.artifact_paths
         and row.allowed_artifacts
@@ -1321,8 +1390,16 @@ def _issue_code_from_text(gate_id: str, output: str) -> str:
     text = output.casefold()
     if "deepdive_url_provenance_invalid" in text:
         return "deepdive_url_provenance_invalid"
+    if "deepdive_article_value_invalid" in text:
+        return "deepdive_article_value_invalid"
+    if "deepdive_relation_quality_invalid" in text:
+        return "deepdive_relation_quality_invalid"
     if "deepdive_dialogue_value_invalid" in text:
         return "deepdive_dialogue_value_invalid"
+    if "deepdive_research_evidence_insufficient" in text:
+        return "deepdive_research_evidence_insufficient"
+    if "deepdive_public_surface_invalid" in text:
+        return "deepdive_public_surface_invalid"
     if gate_id == "daily-quality":
         daily_code = daily_quality_issue_code(output)
         if daily_code != "unknown":
@@ -1550,7 +1627,11 @@ def _issue_priority(issue_code: str) -> int:
         "search_audit_metadata_missing": 25,
         "deepdive_structure_invalid": 30,
         "deepdive_url_provenance_invalid": 31,
+        "deepdive_article_value_invalid": 32,
+        "deepdive_relation_quality_invalid": 33,
         "deepdive_dialogue_value_invalid": 32,
+        "deepdive_research_evidence_insufficient": 34,
+        "deepdive_public_surface_invalid": 35,
         "thumb_invalid_or_missing": 60,
         "audio_script_quality_invalid": 90,
         "unknown": 1000,

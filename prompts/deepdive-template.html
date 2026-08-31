@@ -242,13 +242,10 @@ html { background: {{ paper }}; }
                          font-size: 10px; color: var(--ink); }
 .dd-chart-legend__sw { width: 12px; height: 12px; display: inline-block; }
 
-/* relations 図ラップ: SVG は viewBox 自然幅 (1080×870 等) を維持し、狭い画面で
-   はみ出した分は横スクロールで見せる (TABLE と同思想)。「全入り化」で SVG を viewport
-   に潰すとノードラベルが極小化して不可読になるため、サイズ保持 + 横スクロールが恒久
-   方針 (2026-06-04 PM ユーザー再指示で確定、memory feedback_intent_over_wording)。
-   relations_svg() 側で width 属性を吐かないため SVG は viewBox 幅で描画され、ここでは
-   親に overflow-x:auto を付けるだけで足りる。 */
-.dd-relwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+/* relations は desktop/mobile の SVG を media query で切り替える。
+   横スクロールは TABLE のみが担当し、mobile relations は 360px viewBox を使う。 */
+.dd-relwrap { min-width: 0; }
+.dd-relations--mobile { display: none; }
 
 /* table */
 /* min-width で各列の実寸を確保し、狭い画面では関係図と同様に横スクロールで見せる。
@@ -388,15 +385,9 @@ html { background: {{ paper }}; }
   .dd-tl__row { grid-template-columns: 64px 20px 1fr; }
   .dd-tl__line { left: 84px; }
   .dd-tl__date .d { font-size: 11px; }
-  /* 2026-06-04 (15:30) ユーザー再指示でロールバック: SVG/TABLE は「サイズ保持・横スクロール」
-     に戻す。直前の「375px 全入り」設計 (min-width:0 で潰す) は CJK が 1 文字ずつ折り返されて
-     読解不能になり、関係図 SVG も縮みすぎてノードラベルが読めない実害が出た。元の
-     .dd-table-wrap (overflow-x:auto + min-width:720) と .dd-relwrap (自然幅 SVG + overflow-x:auto)
-     を保持し、モバイルではユーザーが横スワイプして閲覧する形に統一する
-     (memory feedback_real_environment_first_verification 2026-06-04 PM 撤回)。
-     .dd-relwrap の overflow-x:auto は元 CSS (L509 周辺) で既に有効。子 svg/table の
-     min-width:0 や white-space:normal は明示しないことで自然幅 (SVG viewBox / TABLE 720px)
-     が維持される。 */
+  .dd-relations--desktop { display: none; }
+  .dd-relations--mobile { display: block; }
+  .dd-relations--mobile svg { width: 100%; height: auto; }
   .dd-decision__issue { padding: 20px 18px; }
   .dd-decision__issue p { font-size: 22px; line-height: 1.5; }
   .dd-decision__opts { grid-template-columns: 1fr; }
@@ -551,7 +542,8 @@ html { background: {{ paper }}; }
           <div class="dd-cap">EXHIBIT C — 関係図 / RELATIONS</div>
           <figure class="dd-fig">
             <figcaption class="dd-fig__cap"><span class="dd-fig__tag">RELATIONS</span><span class="dd-fig__title">{{ relations_title }}</span></figcaption>
-            <div class="dd-relwrap">{{ relations_svg|safe }}</div>
+            <div class="dd-relwrap dd-relations--desktop">{{ relations_svg|safe }}</div>
+            {% if relations_svg_mobile %}<div class="dd-relwrap dd-relations--mobile">{{ relations_svg_mobile|safe }}</div>{% endif %}
             {% if relations_legend %}
             <div class="dd-rel-legend">
               <span class="hd">EDGE KIND</span>

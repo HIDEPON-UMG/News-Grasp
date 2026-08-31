@@ -1,8 +1,8 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 2821,
-  "collectedNodeSetSha256": "aabd7e29415c8a9c9bd711d049a9e6db3bb0abfb73a3738263f104d8db383d61",
+  "collectedNodeCount": 2889,
+  "collectedNodeSetSha256": "fdacb0d486c23d6432c43ab93e2ba97a36490639866fbf29181a0b150660aa63",
   "files": [
     {
       "path": "tests/test_20260813_control_plane_repair.py",
@@ -632,7 +632,7 @@
     },
     {
       "path": "tests/test_codex_runner_contract.py",
-      "sha256": "de268cff2705ca6753239851241e50e3b29d8f4143390618790df8bf1ab37f71",
+      "sha256": "fb85156725c7356e9e1d1cc0d368dd8559e963b73f9e32fe749ffe9745ecdd75",
       "nodeCount": 5,
       "nodeIds": [
         "tests/test_codex_runner_contract.py::test_daily_automation_points_to_direct_mainline_without_runner_command",
@@ -985,7 +985,7 @@
     },
     {
       "path": "tests/test_deepdive_context_pack_integration.py",
-      "sha256": "88e14373b07efb492eabcc9f4caba35608c601435102113ba8564795d32a8271",
+      "sha256": "e55cb090b2f93062050869691b617504077f582ecffb22a363460d43e0f78fa4",
       "nodeCount": 1,
       "nodeIds": [
         "tests/test_deepdive_context_pack_integration.py::test_context_pack_to_downstream_gates_and_tts"
@@ -997,17 +997,27 @@
     },
     {
       "path": "tests/test_deepdive_dialogue_value_contract.py",
-      "sha256": "816edaf947b37c95df0a9d86c1b2231a8d103a110ba71de4fec1f7bfae8873f5",
-      "nodeCount": 13,
+      "sha256": "29d7c2d6d7a47d9d8bfc9214ef74f2dbfa05d6068dc9aae950f8e95f3bf81fd2",
+      "nodeCount": 23,
       "nodeIds": [
         "tests/test_deepdive_dialogue_value_contract.py::test_current_fixed_value_scaffold_is_fatal",
-        "tests/test_deepdive_dialogue_value_contract.py::test_generator_builds_a_valid_grounded_document_from_sufficient_source",
+        "tests/test_deepdive_dialogue_value_contract.py::test_dialogue_persona_rejects_polite_senior_and_plain_junior",
+        "tests/test_deepdive_dialogue_value_contract.py::test_dialogue_quality_has_no_minimum_character_padding_gate",
+        "tests/test_deepdive_dialogue_value_contract.py::test_dialogue_utterance_rejects_internal_url_json_markdown_fragments[<!-- claim-source: secret -->]",
+        "tests/test_deepdive_dialogue_value_contract.py::test_dialogue_utterance_rejects_internal_url_json_markdown_fragments[[/u5185/u90e8/u30ea/u30f3/u30af](https://example.com/private)]",
+        "tests/test_deepdive_dialogue_value_contract.py::test_dialogue_utterance_rejects_internal_url_json_markdown_fragments[```json]",
+        "tests/test_deepdive_dialogue_value_contract.py::test_dialogue_utterance_rejects_internal_url_json_markdown_fragments[https://example.com/private]",
+        "tests/test_deepdive_dialogue_value_contract.py::test_dialogue_utterance_rejects_internal_url_json_markdown_fragments[{\"sourceUrl\":\"https://example.com/private\"}]",
         "tests/test_deepdive_dialogue_value_contract.py::test_generator_rejects_source_with_fewer_than_fourteen_facts",
         "tests/test_deepdive_dialogue_value_contract.py::test_grounding_rejects_marker_only_without_source_text",
         "tests/test_deepdive_dialogue_value_contract.py::test_grounding_rejects_out_of_range_source_index",
+        "tests/test_deepdive_dialogue_value_contract.py::test_legacy_deterministic_generator_is_not_v2_valid",
         "tests/test_deepdive_dialogue_value_contract.py::test_legacy_fixed_filler_is_fatal_even_when_length_is_sufficient",
-        "tests/test_deepdive_dialogue_value_contract.py::test_past_month_dialogue_corpus_has_no_cross_day_template_loop",
+        "tests/test_deepdive_dialogue_value_contract.py::test_next_action_requires_actor_action_artifact_and_trigger",
+        "tests/test_deepdive_dialogue_value_contract.py::test_past_month_legacy_dialogue_corpus_is_v2_red_until_remediation",
+        "tests/test_deepdive_dialogue_value_contract.py::test_source_evidence_sentences_strip_internal_transport_metadata",
         "tests/test_deepdive_dialogue_value_contract.py::test_valid_reader_value_document_passes_contract",
+        "tests/test_deepdive_dialogue_value_contract.py::test_value_contract_allows_variable_turn_count_with_both_roles",
         "tests/test_deepdive_dialogue_value_contract.py::test_value_contract_rejects_duplicate_value_segment",
         "tests/test_deepdive_dialogue_value_contract.py::test_value_contract_rejects_reused_source_bindings",
         "tests/test_deepdive_dialogue_value_contract.py::test_value_contract_rejects_semantic_paraphrase_loop",
@@ -1036,9 +1046,11 @@
     },
     {
       "path": "tests/test_deepdive_quality_engine.py",
-      "sha256": "841007273f3e37827f13cb7e0e2abae45571331d57251678bc28acd2539d70dc",
-      "nodeCount": 51,
+      "sha256": "a132ac0a25249aef3368f021312727d0c8c20b95eea324c14a2f4ede95e2bd9b",
+      "nodeCount": 65,
       "nodeIds": [
+        "tests/test_deepdive_quality_engine.py::test_audit_history_routes_pre_enforcement_missing_claim_bindings_to_research",
+        "tests/test_deepdive_quality_engine.py::test_audit_issue_maps_duplicate_claim_evidence_to_article_value_invalid",
         "tests/test_deepdive_quality_engine.py::test_bls_profile_403_uses_actual_windows_system_transport_once",
         "tests/test_deepdive_quality_engine.py::test_fallback_transport_evidence_is_bound_into_v2_provenance",
         "tests/test_deepdive_quality_engine.py::test_fetch_never_falls_back_after_404_or_410[404]",
@@ -1049,22 +1061,29 @@
         "tests/test_deepdive_quality_engine.py::test_fetch_uses_browser_compatible_headers",
         "tests/test_deepdive_quality_engine.py::test_fetch_uses_bundled_ca_context",
         "tests/test_deepdive_quality_engine.py::test_fetch_uses_single_system_transport_fallback_for_403",
+        "tests/test_deepdive_quality_engine.py::test_generic_claim_evidence_is_article_value_invalid",
+        "tests/test_deepdive_quality_engine.py::test_history_audit_cli_atomically_writes_repo_local_red_manifest",
+        "tests/test_deepdive_quality_engine.py::test_history_audit_cli_uses_history_enumerator",
+        "tests/test_deepdive_quality_engine.py::test_history_audit_enumerates_only_existing_articles_across_rest_days",
         "tests/test_deepdive_quality_engine.py::test_issue_audit_binds_dialogue_sources_to_explicit_repo_root",
         "tests/test_deepdive_quality_engine.py::test_issue_audit_rejects_cross_day_dialogue_loop",
         "tests/test_deepdive_quality_engine.py::test_issue_audit_requires_rendered_public_surface_only_when_requested",
         "tests/test_deepdive_quality_engine.py::test_issue_audit_uses_typed_shared_issue_codes",
         "tests/test_deepdive_quality_engine.py::test_issue_audit_validates_date_before_any_path_read",
         "tests/test_deepdive_quality_engine.py::test_live_but_unobserved_url_cannot_become_provenance",
-        "tests/test_deepdive_quality_engine.py::test_materialize_issue_crash_never_creates_partial_green_bundle",
-        "tests/test_deepdive_quality_engine.py::test_materialize_issue_generates_missing_claim_source_from_observed_body",
         "tests/test_deepdive_quality_engine.py::test_materialize_issue_missing_claim_fails_closed_without_observed_evidence",
+        "tests/test_deepdive_quality_engine.py::test_materialize_issue_preserves_article_when_dialogue_rewrite_is_required",
         "tests/test_deepdive_quality_engine.py::test_materialize_issue_rejects_tampered_claim_transport_sidecar[article_content_hash]",
         "tests/test_deepdive_quality_engine.py::test_materialize_issue_rejects_tampered_claim_transport_sidecar[evidence]",
         "tests/test_deepdive_quality_engine.py::test_materialize_issue_rejects_tampered_claim_transport_sidecar[transport_hash]",
         "tests/test_deepdive_quality_engine.py::test_materialize_issue_rejects_unrelated_long_body_as_claim_evidence",
-        "tests/test_deepdive_quality_engine.py::test_materialize_issue_restores_bilingual_claim_transport_after_bundle_loss",
+        "tests/test_deepdive_quality_engine.py::test_materialize_issue_replaces_valid_but_stale_transport_after_article_rewrite",
+        "tests/test_deepdive_quality_engine.py::test_materialize_issue_restores_previous_outputs_when_semantic_review_is_red",
+        "tests/test_deepdive_quality_engine.py::test_materialize_issue_restores_rendered_directory_when_renderer_crashes",
+        "tests/test_deepdive_quality_engine.py::test_materialize_issue_routes_missing_claim_to_research_without_mutation",
         "tests/test_deepdive_quality_engine.py::test_materialize_issue_seals_bilingual_claim_transport_sidecar",
         "tests/test_deepdive_quality_engine.py::test_materialize_issue_without_claim_transport_rejects_unrelated_url_200",
+        "tests/test_deepdive_quality_engine.py::test_materialize_issue_without_llm_dialogue_never_creates_partial_green_bundle",
         "tests/test_deepdive_quality_engine.py::test_materialize_issue_writes_v2_provenance_dialogue_and_bundle_once",
         "tests/test_deepdive_quality_engine.py::test_materializer_rejects_reparse_stage_leaf",
         "tests/test_deepdive_quality_engine.py::test_materializer_rejects_untracked_reparse_output_scope",
@@ -1083,6 +1102,11 @@
         "tests/test_deepdive_quality_engine.py::test_provenance_rejects_missing_extra_and_duplicate_sources",
         "tests/test_deepdive_quality_engine.py::test_rendered_public_surface_accepts_entity_bom_and_crlf",
         "tests/test_deepdive_quality_engine.py::test_rendered_public_surface_rejects_cross_date_html_substitution",
+        "tests/test_deepdive_quality_engine.py::test_rendered_public_surface_rejects_internal_transport_metadata[&lt;!-- claim-source: {&quot;claimId&quot;:&quot;secret&quot;} --&gt;]",
+        "tests/test_deepdive_quality_engine.py::test_rendered_public_surface_rejects_internal_transport_metadata[<!-- claim-source: {\"claimId\":\"secret\"} -->]",
+        "tests/test_deepdive_quality_engine.py::test_rendered_public_surface_rejects_internal_transport_metadata[[/u5185/u90e8/u30ea/u30f3/u30af](https://example.com/private)]",
+        "tests/test_deepdive_quality_engine.py::test_rendered_public_surface_rejects_internal_transport_metadata[```json/n{\"sourceUrl\":\"https://example.com/private\"}/n```]",
+        "tests/test_deepdive_quality_engine.py::test_rendered_public_surface_rejects_internal_transport_metadata[{\"claim\":\"/u5185/u90e8/u4e3b/u5f35\",\"sourceUrl\":\"https://example.com/private\"}]",
         "tests/test_deepdive_quality_engine.py::test_rendered_public_surface_rejects_missing_anchor_href",
         "tests/test_deepdive_quality_engine.py::test_rendered_public_surface_rejects_missing_html",
         "tests/test_deepdive_quality_engine.py::test_rendered_public_surface_rejects_url_text_substitution",
@@ -1097,19 +1121,44 @@
       ]
     },
     {
+      "path": "tests/test_deepdive_quality_review_v2.py",
+      "sha256": "7fcaaf699b0d3dc2455f8b810036b6b79e7f553a792957fce09304b7c7294cd9",
+      "nodeCount": 8,
+      "nodeIds": [
+        "tests/test_deepdive_quality_review_v2.py::test_audit_accepts_bound_v2_quality_review",
+        "tests/test_deepdive_quality_review_v2.py::test_audit_maps_low_semantic_axis_to_owned_issue_code[dialogue_naturalness-deepdive_dialogue_value_invalid]",
+        "tests/test_deepdive_quality_review_v2.py::test_audit_maps_low_semantic_axis_to_owned_issue_code[relation_map_utility-deepdive_relation_quality_invalid]",
+        "tests/test_deepdive_quality_review_v2.py::test_audit_maps_low_semantic_axis_to_owned_issue_code[theme_specific_insight-deepdive_article_value_invalid]",
+        "tests/test_deepdive_quality_review_v2.py::test_audit_recomputes_average_and_status_instead_of_trusting_reviewer",
+        "tests/test_deepdive_quality_review_v2.py::test_audit_rejects_missing_v2_quality_review",
+        "tests/test_deepdive_quality_review_v2.py::test_audit_rejects_stale_relation_identity",
+        "tests/test_deepdive_quality_review_v2.py::test_audit_rejects_unknown_review_route"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
       "path": "tests/test_deepdive_quality_route_contract.py",
-      "sha256": "46c67b58341ab289748dc4ed5619ad2033a35a8cedd6562e8bae274e1fd7ad03",
-      "nodeCount": 9,
+      "sha256": "2cef7243df6a74771dc1e584c3c001c9004b817cddefcc04e1f7bc3b192702e2",
+      "nodeCount": 15,
       "nodeIds": [
         "tests/test_deepdive_quality_route_contract.py::test_codex_mainline_automation_uses_same_shared_quality_cli",
+        "tests/test_deepdive_quality_route_contract.py::test_constitution_trace_and_generated_projection_bind_v2_review",
         "tests/test_deepdive_quality_route_contract.py::test_daily_full_recovery_and_resume_share_one_issue_materializer",
         "tests/test_deepdive_quality_route_contract.py::test_daily_quality_uses_shared_quality_engine",
         "tests/test_deepdive_quality_route_contract.py::test_declared_consumer_and_fixture_routes_match_exactly",
+        "tests/test_deepdive_quality_route_contract.py::test_deepdive_prompt_uses_v2_publication_review_contract_only",
+        "tests/test_deepdive_quality_route_contract.py::test_four_consumers_pass_their_exact_route_identity",
         "tests/test_deepdive_quality_route_contract.py::test_post_generation_consumers_require_rendered_public_surface",
+        "tests/test_deepdive_quality_route_contract.py::test_product_contract_projections_name_the_same_v2_schema_routes_and_issues",
         "tests/test_deepdive_quality_route_contract.py::test_publish_complete_rechecks_shared_quality_before_public_probe",
         "tests/test_deepdive_quality_route_contract.py::test_repair_matrix_owns_shared_quality_issue_codes",
+        "tests/test_deepdive_quality_route_contract.py::test_repo_local_skills_share_v2_routes_and_remove_legacy_dialogue_rebuild",
         "tests/test_deepdive_quality_route_contract.py::test_runner_preserves_shared_quality_issue_code_for_repair",
-        "tests/test_deepdive_quality_route_contract.py::test_runner_uses_shared_quality_engine_before_completion"
+        "tests/test_deepdive_quality_route_contract.py::test_runner_uses_shared_quality_engine_before_completion",
+        "tests/test_deepdive_quality_route_contract.py::test_shared_engine_rejects_unknown_route_before_audit"
       ],
       "clauseIds": [
         "NGC-C06",
@@ -1152,10 +1201,11 @@
     },
     {
       "path": "tests/test_deepdive_render.py",
-      "sha256": "409a859c89953e2dc2796531a6335e7450b4f7be55d669fa80d6c32a0369fa01",
-      "nodeCount": 47,
+      "sha256": "80faf15d1e7e87963b8a72e37d3708b703277c86fd0b657a51fd5414b35b8735",
+      "nodeCount": 56,
       "nodeIds": [
         "tests/test_deepdive_render.py::test_2026_06_15_relations_has_no_avoidable_edge_crossing_or_overlap",
+        "tests/test_deepdive_render.py::test_2026_07_23_mobile_relations_have_no_edge_pierce_or_label_overlap",
         "tests/test_deepdive_render.py::test_archived_deepdive_keeps_dialogue_audio_after_full_render",
         "tests/test_deepdive_render.py::test_build_fails_loudly_on_missing_relations_table",
         "tests/test_deepdive_render.py::test_build_fails_on_single_chart",
@@ -1172,18 +1222,21 @@
         "tests/test_deepdive_render.py::test_deepdive_template_embeds_dialogue_audio_with_rate_buttons",
         "tests/test_deepdive_render.py::test_deepdive_template_has_mobile_overflow_guards",
         "tests/test_deepdive_render.py::test_extract_all_blocks_present",
+        "tests/test_deepdive_render.py::test_four_single_kind_edges_require_theme_specific_rationale",
         "tests/test_deepdive_render.py::test_issue_scoped_rebuild_forces_only_requested_deepdive",
+        "tests/test_deepdive_render.py::test_legacy_real_digest_with_removed_relation_kind_is_v2_red",
         "tests/test_deepdive_render.py::test_malformed_block_is_skipped_not_crash",
         "tests/test_deepdive_render.py::test_og_image_falls_back_to_real_image_not_site_root",
         "tests/test_deepdive_render.py::test_parse_sources_drops_url_less_bullets",
         "tests/test_deepdive_render.py::test_parse_sources_extracts_markdown_link_without_closing_parenthesis",
         "tests/test_deepdive_render.py::test_parse_sources_keeps_plain_trailing_url_backward_compatible",
         "tests/test_deepdive_render.py::test_parse_sources_preserves_markdown_url_query_exactly",
-        "tests/test_deepdive_render.py::test_real_digest_is_complete",
+        "tests/test_deepdive_render.py::test_prose_paragraphs_strip_internal_transport_metadata",
         "tests/test_deepdive_render.py::test_related_absent_is_empty_list_backward_compatible",
         "tests/test_deepdive_render.py::test_related_absent_renders_without_related_block",
         "tests/test_deepdive_render.py::test_related_renders_link_and_change_in_html",
         "tests/test_deepdive_render.py::test_related_url_is_derived_from_date_not_handwritten",
+        "tests/test_deepdive_render.py::test_relation_kinds_are_exact_and_have_unique_styles",
         "tests/test_deepdive_render.py::test_relations_ai_infra_20260704_competition_edge_no_pierce",
         "tests/test_deepdive_render.py::test_relations_bands_high_density_no_label_overlap",
         "tests/test_deepdive_render.py::test_relations_dedups_identical_edge_labels",
@@ -1191,13 +1244,18 @@
         "tests/test_deepdive_render.py::test_relations_layout_assigns_coordinates",
         "tests/test_deepdive_render.py::test_relations_layout_is_semantic_not_circular",
         "tests/test_deepdive_render.py::test_relations_layout_respects_explicit_coordinates",
+        "tests/test_deepdive_render.py::test_relations_mobile_svg_uses_dedicated_360px_responsive_layout",
         "tests/test_deepdive_render.py::test_relations_orphan_node_hard_fail",
         "tests/test_deepdive_render.py::test_relations_same_band_peer_edge_no_pierce",
+        "tests/test_deepdive_render.py::test_relations_svg_canonicalizes_whitespace_around_known_kind",
+        "tests/test_deepdive_render.py::test_relations_svg_rejects_unknown_kind_without_black_fallback[/u5354/u8abf/u7684/u7af6/u5408]",
+        "tests/test_deepdive_render.py::test_relations_svg_rejects_unknown_kind_without_black_fallback[/u6ce2/u53ca]",
+        "tests/test_deepdive_render.py::test_relations_svg_rejects_unknown_kind_without_black_fallback[frenemy]",
         "tests/test_deepdive_render.py::test_relations_svg_renders_nodes_and_edges",
         "tests/test_deepdive_render.py::test_relations_svg_trims_unused_vertical_space_after_label_resolution",
         "tests/test_deepdive_render.py::test_relations_too_many_edges_hard_fail",
         "tests/test_deepdive_render.py::test_relations_two_camps_split_left_right_and_no_overlap",
-        "tests/test_deepdive_render.py::test_relations_unknown_directed_kinds_form_flow_layers_without_piercing",
+        "tests/test_deepdive_render.py::test_relations_unknown_directed_kinds_are_rejected",
         "tests/test_deepdive_render.py::test_relations_value_chain_layers_supply_sink_below",
         "tests/test_deepdive_render.py::test_rivalry_edges_are_bidirectional_by_default",
         "tests/test_deepdive_render.py::test_table_flags_unconfirmed_cells",
@@ -1912,8 +1970,8 @@
     },
     {
       "path": "tests/test_home_variant_b.py",
-      "sha256": "979ad493e64146a728278d23de74681f0a0bfa709ace01f229e532ef44337be7",
-      "nodeCount": 42,
+      "sha256": "ecdd0855e71839c1d3c3962c6089a7583c5fb367c560b5f3c63c69fe531a5f55",
+      "nodeCount": 43,
       "nodeIds": [
         "tests/test_home_variant_b.py::test_brand_zone_present",
         "tests/test_home_variant_b.py::test_canonical_root_url",
@@ -1941,6 +1999,7 @@
         "tests/test_home_variant_b.py::test_home_theme_switch_sits_above_today_theme_heading",
         "tests/test_home_variant_b.py::test_home_theme_switch_uses_summary_and_deepdive_icons",
         "tests/test_home_variant_b.py::test_key_numbers_prefers_current_dataset_numbers",
+        "tests/test_home_variant_b.py::test_latest_deepdive_card_propagates_output_quality_failure",
         "tests/test_home_variant_b.py::test_mobile_category_badges_allow_two_term_line_breaks",
         "tests/test_home_variant_b.py::test_no_rounded_corners_in_template",
         "tests/test_home_variant_b.py::test_og_meta_present",
@@ -2635,7 +2694,7 @@
     },
     {
       "path": "tests/test_news_grasp_direct_mainline_integration.py",
-      "sha256": "0bb070d6a78943448a0b5c5e6fcfbb4fffa6157c2145011b05c35eb06d956f06",
+      "sha256": "6507c77d1255b1e942a5dc4648fcc32f07547aea9012ab43c20b1920e691a04a",
       "nodeCount": 18,
       "nodeIds": [
         "tests/test_news_grasp_direct_mainline_integration.py::test_automation_and_skill_bind_direct_contract",
@@ -2664,8 +2723,8 @@
     },
     {
       "path": "tests/test_news_grasp_direct_runtime.py",
-      "sha256": "74e7acd6fef0bf96e206390aa82ebdcf9d45ed2b612fbfc126666063d66df4e9",
-      "nodeCount": 38,
+      "sha256": "506fcbb92062cb116512795b58fdfc9f39a21fd5b738aad5d8c2e2d4b67691ce",
+      "nodeCount": 39,
       "nodeIds": [
         "tests/test_news_grasp_direct_runtime.py::test_active_direct_controls_have_no_content_derived_authority_fields",
         "tests/test_news_grasp_direct_runtime.py::test_advance_cli_public_completion_calls_consumer_owned_verifier",
@@ -2704,6 +2763,7 @@
         "tests/test_news_grasp_direct_runtime.py::test_title_failure_is_recorded_and_dispatcher_continues[unavailable]",
         "tests/test_news_grasp_direct_runtime.py::test_title_success_requires_exact_actual_title",
         "tests/test_news_grasp_direct_runtime.py::test_url_200_only_cannot_claim_web_semantic_completion",
+        "tests/test_news_grasp_direct_runtime.py::test_windows_no_reparse_handle_api_is_import_order_independent",
         "tests/test_news_grasp_direct_runtime.py::test_youtube_quota_failure_is_surface_scoped_and_web_successor_continues"
       ],
       "clauseIds": [
@@ -2786,10 +2846,11 @@
     },
     {
       "path": "tests/test_news_grasp_generation_boundary.py",
-      "sha256": "37864393af3123c290509b8ad327c97514fb8bda201f2c21f66629ffa77a0667",
-      "nodeCount": 6,
+      "sha256": "72fa6b98d14bc7f7c411ac0dd848970057e7dd02646a5c51d768321877fe5d37",
+      "nodeCount": 7,
       "nodeIds": [
         "tests/test_news_grasp_generation_boundary.py::test_generation_manifest_seals_complete_tracked_source_tree",
+        "tests/test_news_grasp_generation_boundary.py::test_generation_seal_rejects_missing_critical_file_before_pointer",
         "tests/test_news_grasp_generation_boundary.py::test_generation_seal_rejects_remote_owner_drift_before_pointer",
         "tests/test_news_grasp_generation_boundary.py::test_generation_seal_rejects_tracked_dirty_source_before_pointer",
         "tests/test_news_grasp_generation_boundary.py::test_installer_delivery_binds_generation_to_task_and_automation_evidence",
@@ -3010,7 +3071,7 @@
     },
     {
       "path": "tests/test_news_grasp_public_recovery_l5.py",
-      "sha256": "0790565f4f9e23c6e0a1df39eb6e9b74293c8b8c2558e8c8d788e219caa38713",
+      "sha256": "52ce48a210dbebafe13f85bc7bbd55f0a9d218e2325989ef710c2b464aeeed5a",
       "nodeCount": 1,
       "nodeIds": [
         "tests/test_news_grasp_public_recovery_l5.py::test_20260827_public_recovery_production_composition_l5"
@@ -3186,6 +3247,29 @@
       ]
     },
     {
+      "path": "tests/test_news_grasp_title_materializer.py",
+      "sha256": "c065b36113bf057352c7a9e49161380a415b98bab2c6437059b82bb294b014a5",
+      "nodeCount": 12,
+      "nodeIds": [
+        "tests/test_news_grasp_title_materializer.py::test_cli_default_receipt_is_written_under_fixed_prefix",
+        "tests/test_news_grasp_title_materializer.py::test_cli_rejects_receipt_paths_outside_fixed_prefix",
+        "tests/test_news_grasp_title_materializer.py::test_full_sync_does_not_erase_a_materialized_name",
+        "tests/test_news_grasp_title_materializer.py::test_materializer_derives_each_run_title_from_issue_date",
+        "tests/test_news_grasp_title_materializer.py::test_materializer_is_idempotent_when_both_surfaces_are_current",
+        "tests/test_news_grasp_title_materializer.py::test_materializer_rejects_a_noncanonical_template_name",
+        "tests/test_news_grasp_title_materializer.py::test_materializer_rejects_reparse_app_db_leaf_before_connect",
+        "tests/test_news_grasp_title_materializer.py::test_materializer_rejects_reparse_installed_ancestor_before_mutation",
+        "tests/test_news_grasp_title_materializer.py::test_materializer_rejects_reparse_receipt_chain[leaf]",
+        "tests/test_news_grasp_title_materializer.py::test_materializer_rejects_reparse_receipt_chain[parent]",
+        "tests/test_news_grasp_title_materializer.py::test_materializer_updates_only_names_and_binds_issue_date",
+        "tests/test_news_grasp_title_materializer.py::test_scheduled_entrypoint_is_a_hidden_title_only_preflight"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
       "path": "tests/test_news_grasp_viability_check.py",
       "sha256": "861dd23daf0d0cdd4bd817b8a623c7391cfd6517312b57589714b928c167add2",
       "nodeCount": 5,
@@ -3312,7 +3396,7 @@
     },
     {
       "path": "tests/test_operational_redesign_contract.py",
-      "sha256": "f673ad858810d3c3c54ee42c8f645eb00c0a95bbd93ec13622eaa07ce7d2fc9a",
+      "sha256": "5c0965538c2586d7a3a305510675e152e877ac969da8900d67cb155084a5c989",
       "nodeCount": 53,
       "nodeIds": [
         "tests/test_operational_redesign_contract.py::test_ng2_a01_adversarial_scope_escape",
@@ -3563,7 +3647,7 @@
     },
     {
       "path": "tests/test_product_spec_contract.py",
-      "sha256": "53f8a25399af54336fcafaf362548a4ef2c60352b3accfbd687f4c70b2c84044",
+      "sha256": "16bf60ebca29f417fec35992ddaa3a06b68262873487e041be26c2ff30548cb3",
       "nodeCount": 24,
       "nodeIds": [
         "tests/test_product_spec_contract.py::test_product_constitution_binds_directional_digest_repair_to_quality_matrix",
@@ -3947,8 +4031,8 @@
     },
     {
       "path": "tests/test_repair_coverage_matrix.py",
-      "sha256": "667f69d857605c5e857edfefd70c20dc07e7904cc19cc3edb967313ccb46a486",
-      "nodeCount": 30,
+      "sha256": "f772f6e26093645e46e4c05c24f4c4008517eb5c11943165002411f85a034f34",
+      "nodeCount": 34,
       "nodeIds": [
         "tests/test_repair_coverage_matrix.py::test_audio_script_quality_invalid_routes_to_llm_rewrite_not_append_patch",
         "tests/test_repair_coverage_matrix.py::test_daily_quality_category_digest_empty_routes_to_digest_card_insert",
@@ -3960,6 +4044,10 @@
         "tests/test_repair_coverage_matrix.py::test_daily_quality_text_fallback_splits_summary_emphasis_and_thumb_lines",
         "tests/test_repair_coverage_matrix.py::test_daily_quality_untranslated_digest_title_routes_to_bounded_rewrite",
         "tests/test_repair_coverage_matrix.py::test_deepdive_required_selected_total_mismatch_routes_to_search_audit_metadata_patch",
+        "tests/test_repair_coverage_matrix.py::test_deepdive_research_insufficient_routes_to_research_and_rewrite",
+        "tests/test_repair_coverage_matrix.py::test_deepdive_semantic_failures_route_to_llm_rewrite[deepdive_article_value_invalid-artifact_paths0-deepdive-article-value-rewrite]",
+        "tests/test_repair_coverage_matrix.py::test_deepdive_semantic_failures_route_to_llm_rewrite[deepdive_dialogue_value_invalid-artifact_paths2-deepdive-dialogue-value-rewrite]",
+        "tests/test_repair_coverage_matrix.py::test_deepdive_semantic_failures_route_to_llm_rewrite[deepdive_relation_quality_invalid-artifact_paths1-deepdive-relation-quality-rewrite]",
         "tests/test_repair_coverage_matrix.py::test_deploy_surface_unrelated_red_is_fatal_no_rollback",
         "tests/test_repair_coverage_matrix.py::test_digest_reconcile_directions_route_to_distinct_handlers_and_statuses",
         "tests/test_repair_coverage_matrix.py::test_digest_reconcile_japanese_output_routes_to_reconcile_patch",
@@ -4024,8 +4112,8 @@
     },
     {
       "path": "tests/test_repair_registry.py",
-      "sha256": "8afbbb93cefb28b0f888b152516308eed59fa2409b45e580eaad9508973e42fe",
-      "nodeCount": 52,
+      "sha256": "4a63d58a109a92d4767765bea6df570ed826791667a5c385c7c194cf15cef096",
+      "nodeCount": 54,
       "nodeIds": [
         "tests/test_repair_registry.py::test_articles_only_handler_generates_digest_card_and_reconcile_turns_green",
         "tests/test_repair_registry.py::test_articles_only_handler_rejects_manifest_path_outside_repo_before_mutation",
@@ -4037,8 +4125,10 @@
         "tests/test_repair_registry.py::test_compound_repair_plan_rejects_duplicate_handler_steps_before_mutation",
         "tests/test_repair_registry.py::test_date_evidence_patch_restores_existing_article_from_reporter_records",
         "tests/test_repair_registry.py::test_deepdive_rendered_public_repair_is_issue_scoped",
-        "tests/test_repair_registry.py::test_deepdive_rendered_public_repair_refuses_invalid_provenance",
         "tests/test_repair_registry.py::test_deepdive_rendered_public_repair_rejects_false_success",
+        "tests/test_repair_registry.py::test_deepdive_rendered_public_repair_rejects_reparse_restore_path[leaf]",
+        "tests/test_repair_registry.py::test_deepdive_rendered_public_repair_rejects_reparse_restore_path[parent]",
+        "tests/test_repair_registry.py::test_deepdive_rendered_public_repair_requires_v2_green_source",
         "tests/test_repair_registry.py::test_deepdive_rendered_public_repair_returns_typed_failure_on_renderer_error",
         "tests/test_repair_registry.py::test_digest_articles_reconcile_handler_appends_current_reporter_records",
         "tests/test_repair_registry.py::test_digest_card_insert_repairs_empty_category_digest_from_current_reporter_record",
@@ -4657,7 +4747,7 @@
     },
     {
       "path": "tests/test_tts_build_deepdive_dialogue_script.py",
-      "sha256": "2e619f06301bf794d67e6ededbae305ac656e8cab7cb8cdeb6b8c5eedd0cead1",
+      "sha256": "eaf6343414a3167cb973f98c2b606e88ff335b91280ecfc90e7a97b7b9dabbb6",
       "nodeCount": 8,
       "nodeIds": [
         "tests/test_tts_build_deepdive_dialogue_script.py::test_build_dialogue_markdown_expands_when_two_context_sources_exist",
@@ -4732,7 +4822,7 @@
     },
     {
       "path": "tests/test_tts_deepdive_dialogue.py",
-      "sha256": "4d025a481376207fe193526c13f5d3369de1c18cf4209ffec5f7159c8296cc13",
+      "sha256": "d57412ec10876937fc38e83c1959633fcbb80157127562b3514b7d670e839bf8",
       "nodeCount": 10,
       "nodeIds": [
         "tests/test_tts_deepdive_dialogue.py::test_convert_voice_wav_to_delivery_mp3_falls_back_when_bgm_missing",
@@ -4742,9 +4832,9 @@
         "tests/test_tts_deepdive_dialogue.py::test_mix_voice_wav_with_bgm_loops_and_uses_daily_bgm_fade_settings",
         "tests/test_tts_deepdive_dialogue.py::test_parse_dialogue_keeps_only_script_lines",
         "tests/test_tts_deepdive_dialogue.py::test_synthesize_dialogue_uses_role_specific_style_ids",
+        "tests/test_tts_deepdive_dialogue.py::test_validate_dialogue_allows_short_dialogue_when_both_roles_are_present",
         "tests/test_tts_deepdive_dialogue.py::test_validate_dialogue_keeps_long_side_as_runaway_guard_only",
-        "tests/test_tts_deepdive_dialogue.py::test_validate_dialogue_rejects_repeated_tail_exchange",
-        "tests/test_tts_deepdive_dialogue.py::test_validate_dialogue_requires_both_roles_and_reasonable_length"
+        "tests/test_tts_deepdive_dialogue.py::test_validate_dialogue_rejects_repeated_tail_exchange"
       ],
       "clauseIds": [
         "NGC-C06",

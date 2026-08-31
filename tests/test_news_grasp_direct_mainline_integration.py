@@ -643,8 +643,8 @@ def test_automation_and_skill_bind_direct_contract() -> None:
         "post_publish_issue_list",
         "title_status",
         "title_completion",
-        "合計2回",
-        "最初の実行操作は `set_thread_title`",
+        "materializer receipt",
+        "最初の実行操作は `python -m tools.news_grasp_title_materializer --verify-only --repo-root .`",
     ):
         assert fragment in combined
     assert "news_grasp_runner.py" not in prompt

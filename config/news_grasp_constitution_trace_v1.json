@@ -263,12 +263,12 @@
       "clauseIds": ["NGC-C02", "NGC-C03", "NGC-C04", "NGC-C05"],
       "todoId": "TODO-20260827-RC02",
       "productionRoute": "tools/deepdive_quality.py",
-      "consumerMarker": "NG_RC_02_DEEPDIVE_ISSUE_BUNDLE",
-      "stateId": "deepdive_issue_bundle_v1_bound",
-      "recoveryId": "reject_partial_bundle_before_public",
-      "evidenceId": "claim_source_transport_v2_provenance_rendered_public_hash",
+      "consumerMarker": "DEEPDIVE_QUALITY_REVIEW_V2",
+      "stateId": "deepdive_publication_quality_v2_bound",
+      "recoveryId": "route_v2_red_to_owned_repair",
+      "evidenceId": "semantic_review_binding_and_structured_issues",
       "perspectives": ["primary_behavior", "adversarial_boundary", "operational_recovery"],
-      "testNodeIds": ["test_materialize_issue_writes_v2_provenance_dialogue_and_bundle_once", "test_materialize_issue_without_claim_transport_rejects_unrelated_url_200", "test_materialize_issue_restores_bilingual_claim_transport_after_bundle_loss"]
+      "testNodeIds": ["test_audit_accepts_bound_v2_quality_review", "test_audit_rejects_stale_relation_identity", "test_audit_rejects_unknown_review_route"]
     },
     {
       "acceptanceId": "A20",

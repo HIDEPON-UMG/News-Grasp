@@ -111,13 +111,29 @@ Do not call the repair complete if any lane is uninspected. New or reclassified 
 
 ## DeepDive Shared Quality Repair
 
-DeepDive記事とPodcast対談は別々に修復しない。production runner、RecoverOnly/repair、daily-quality、Codex日次監査は全て `python -m tools.deepdive_quality --repo-root . audit-issue --date <YYYY-MM-DD>` を同じ判定境界として使う。
+DeepDive記事、関係図、Podcast対談、公開HTMLは、同じ `DEEPDIVE_QUALITY_REVIEW_V2` と共有validatorで一つの品質境界として扱う。production generation、repair/publish、daily quality、Codex日次監査は全て `python -m tools.deepdive_quality --repo-root . audit-issue --date <YYYY-MM-DD>` を使い、次のissue codeだけを受理する。
 
-- `deepdive_url_provenance_invalid` は `deepdive-provenance-recapture` へrouteする。記事内URLの全出現位置を `data/deepdive-provenance/<date>.json` の記事hash、source-set hash、公開href、最終URL、status、取得時刻、本文hashへ束縛する。403/404/soft-404/空本文/汎用top redirect/未観測URLをGreenにしない。404/410で別transportへ逃げない。
-- `deepdive_dialogue_value_invalid` は `deepdive-dialogue-rebuild` へrouteする。7価値区間ごとにprimary/supportの2根拠、合計14個の一意な記事本文根拠を使い、固定scaffold、意味言換えloop、marker-only、根拠再利用、modulo水増しを拒否する。
-- runnerはURL provenance captureをPodcast台本生成より先に行い、台本生成後の共有auditを音声合成・publishより先に行う。同じ順序をRecoverOnlyでも変えない。
-- 過去期間の明示監査だけ `audit-period --start <date> --end <date>` を使う。通常の日次修復で過去31日を毎回走査せず、期間captureの成功観測cacheを再利用して失敗URLだけを一回処理する。
-- bot/CA差によるPython transport固有の拒否は、共有engine内の限定されたsystem transportへ一回だけfallbackできる。ad hocなWebFetch証言、URL 200だけの目視、session URL推測、記事ごとの手修正をprovenanceへ代用しない。
+- `deepdive_url_provenance_invalid`
+- `deepdive_article_value_invalid`
+- `deepdive_relation_quality_invalid`
+- `deepdive_dialogue_value_invalid`
+- `deepdive_research_evidence_insufficient`
+- `deepdive_public_surface_invalid`
+
+共有routeは `production_generation`、`repair_publish`、`daily_quality`、`codex_daily_audit` の4つだけである。未登録のissue codeまたはrouteはfail-closedにし、自由文の分類や旧経路へのフォールバックを行わない。意味品質レビューはarticle/relation/dialogueのrepo-relative pathと実bytes identityへbindし、7軸を各1〜5で評価する。`averageScore`、evidence-backed findings、`reviewRoute`、`status`を同じreceiptへ束縛し、hashは鮮度・byte一致の検出だけに使ってsemantic authorityにはしない。
+
+| issue code | repair class | handler | 実行条件 |
+|---|---|---|---|
+| `deepdive_url_provenance_invalid` | deterministic | `deepdive-provenance-recapture` | URLの観測・最終URL・status・本文bytesを再取得し、同日provenanceへ再束縛する。 |
+| `deepdive_article_value_invalid` | LLM_REWRITE_EXISTING_ARTIFACT | `deepdive-article-value-rewrite` | 既存記事を入力に記事固有の意味差分をLLMで書き直し、V2 reviewを再実行する。 |
+| `deepdive_relation_quality_invalid` | LLM_REWRITE_EXISTING_ARTIFACT | `deepdive-relation-quality-rewrite` | 8-kindとsingleKindRationaleを満たす記事固有の関係図へLLMで書き直し、V2 reviewを再実行する。 |
+| `deepdive_dialogue_value_invalid` | LLM_REWRITE_EXISTING_ARTIFACT | `deepdive-dialogue-value-rewrite` | 記事固有の根拠からLLMが可変turnの対談を生成し、先輩常体・若手敬体とV2 reviewを再実行する。固定turn、最低文字数、最低再生時間、filler、根拠言換えだけの反復で補完しない。 |
+| `deepdive_research_evidence_insufficient` | LLM_RESEARCH_AND_REWRITE | `deepdive-research-and-rewrite` | 追加調査と書き直しを一回のbounded operationとして行い、根拠不足を推測で埋めない。 |
+| `deepdive_public_surface_invalid` | deterministic | `deepdive-rendered-public-rebuild` | sourceのV2 reviewがGreenの場合だけ、同じvalidated sourceからsafe rerenderする。 |
+
+TTSまたは公開HTMLの前には、共有internal-metadata stripperによるpreauditを必ず行う。raw/escaped claim-source・value・evidence・support comment、transport JSON、Markdown制御断片を表示文と`source_evidence_sentences`から除去し、残存・除去不能・再検証失敗は `deepdive_public_surface_invalid` とする。V2 source auditとmetadata preauditがGreenになるまでTTS、公開、またはsafe rerenderを開始しない。対談の意味品質レビューは記事・関係図・台本のpathとbyte identityへ束縛し、LLMが生成したvalidated staged artifactだけを採用する。
+
+runnerはURL provenance capture、記事・関係図・対談のV2 review、metadata preaudit、TTS/公開の順で進め、RecoverOnlyでも順序を変えない。過去期間の明示監査だけ `audit-period --start <date> --end <date>` を使い、通常の日次修復で過去期間を無制限に走査しない。bot/CA差によるtransport fallbackを使う場合も、共有engineの同じprovenance検査とV2再検証を通す。
 
 ## Scheduled Audit And Safe Stop Boundary
 

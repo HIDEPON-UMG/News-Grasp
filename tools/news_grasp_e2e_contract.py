@@ -68,7 +68,7 @@ def validate_e2e_launch_contract(
         "NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1",
     )
     skill_markers = (
-        "host の `set_thread_title`",
+        "news_grasp_title_materializer",
         "python -m tools.news_grasp_direct_runtime start",
         "run_exact_successor",
         "validate_daily_quality --date YYYY-MM-DD --require-deepdive",

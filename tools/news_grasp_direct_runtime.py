@@ -927,6 +927,7 @@ def validate_installed_automation_semantics(path: str | Path | None = None) -> d
     required_prompt_parts = (
         "$news-grasp-direct-mainline",
         "YY/MM/DD",
+        "news_grasp_title_materializer",
         "title_status",
         "title_status=already_ok",
         "already_ok",
