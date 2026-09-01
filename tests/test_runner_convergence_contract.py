@@ -38,7 +38,7 @@ class _Verifier:
 
 def _start(tmp_path: Path, *, verifier: Any | None = None) -> tuple[Any, Any, dict[str, Any]]:
     api = importlib.import_module("tools.news_grasp_direct_runtime")
-    store = api.DirectRunStore(tmp_path / "direct-mainline", semantic_verifier=verifier or _Verifier())
+    store = api.DirectRunStore(tmp_path / "direct-mainline", semantic_verifier=verifier or _Verifier(), test_only_allow_semantic_verifier=True)
     run = api.start_run(store, cwd=ROOT, issue_date=ISSUE_DATE)
     return api, store, run
 

@@ -12,11 +12,13 @@ from pathlib import Path
 from typing import Any, Callable
 
 from tools.tts import proc
+from tools.news_grasp_audio_projection import normalize_audio_projection, write_audio_projection
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BUILD_DIR = REPO_ROOT / "build" / "tts"
 LATEST_AUDIO_JSON = BUILD_DIR / "latest_audio.json"
+DEFAULT_LATEST_AUDIO_JSON = LATEST_AUDIO_JSON
 RELEASE_TAG = "audio-daily"
 OWNER = "HIDEPON-UMG"
 REPO = "News-Grasp"
@@ -170,31 +172,59 @@ def _url_returns_200(url: str) -> bool:
         return False
 
 
-def write_latest_audio(day: str, url: str) -> None:
-    BUILD_DIR.mkdir(parents=True, exist_ok=True)
-    LATEST_AUDIO_JSON.write_text(
-        json.dumps({"latest_audio_date": day, "latest_audio_url": url}, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-        newline="\n",
+def write_latest_audio(
+    day: str,
+    url: str,
+    *,
+    run_id: str = "",
+    run_intent: str = "scheduled_production_direct",
+) -> None:
+    """日次音声をV2 canonical pathだけへ書く。"""
+    projection = normalize_audio_projection(
+        {"latest_audio_date": day, "latest_audio_url": url, "status": "verified"},
+        audio_type="daily",
+        run_id=run_id or f"direct-{day}-unbound",
+        run_intent=run_intent,
+        source_artifact=f"build/tts/{day}.mp3",
+        public_page_href=url,
     )
+    if LATEST_AUDIO_JSON != DEFAULT_LATEST_AUDIO_JSON:
+        LATEST_AUDIO_JSON.parent.mkdir(parents=True, exist_ok=True)
+        LATEST_AUDIO_JSON.write_text(
+            json.dumps(projection, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+    else:
+        write_audio_projection(REPO_ROOT, projection)
 
 
 def latest_audio_for_pages(day: str | None = None) -> dict[str, str]:
-    if not LATEST_AUDIO_JSON.exists():
+    canonical = BUILD_DIR / "daily" / "latest_audio.json"
+    source = canonical if canonical.exists() else LATEST_AUDIO_JSON
+    if not source.exists():
         return {"latest_audio_url": "", "latest_audio_date": ""}
     try:
-        data = json.loads(LATEST_AUDIO_JSON.read_text(encoding="utf-8"))
+        data = json.loads(source.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
         return {"latest_audio_url": "", "latest_audio_date": ""}
-    if day and data.get("latest_audio_date") != day:
+    observed_day = data.get("issueDate", data.get("latest_audio_date"))
+    observed_url = data.get("publicUrl", data.get("latest_audio_url"))
+    if day and observed_day != day:
         return {"latest_audio_url": "", "latest_audio_date": ""}
     return {
-        "latest_audio_url": str(data.get("latest_audio_url") or ""),
-        "latest_audio_date": str(data.get("latest_audio_date") or ""),
+        "latest_audio_url": str(observed_url or ""),
+        "latest_audio_date": str(observed_day or ""),
     }
 
 
-def publish(day: str, mp3_path: Path | None = None, *, dry_run: bool = False) -> dict[str, str] | None:
+def publish(
+    day: str,
+    mp3_path: Path | None = None,
+    *,
+    dry_run: bool = False,
+    run_id: str = "",
+) -> dict[str, str] | None:
     global _LAST_PUBLISH_FAILURE
     _LAST_PUBLISH_FAILURE = None
     parsed_day = _parse_day(day)
@@ -205,7 +235,7 @@ def publish(day: str, mp3_path: Path | None = None, *, dry_run: bool = False) ->
     try:
         if dry_run:
             url = versioned_audio_url(day, target)
-            write_latest_audio(day, url)
+            write_latest_audio(day, url, run_id=run_id) if run_id else write_latest_audio(day, url)
             print(f"[tts] audio publish dry-run: {url}")
             return {"latest_audio_date": day, "latest_audio_url": url}
         if not ensure_release():
@@ -216,7 +246,7 @@ def publish(day: str, mp3_path: Path | None = None, *, dry_run: bool = False) ->
             _record_publish_failure(RuntimeError(f"audio URL verification failed: {url}"))
             return None
         rotate(today=parsed_day)
-        write_latest_audio(day, url)
+        write_latest_audio(day, url, run_id=run_id) if run_id else write_latest_audio(day, url)
         print(f"[tts] audio published: {url}")
         return {"latest_audio_date": day, "latest_audio_url": url}
     except Exception as exc:
@@ -230,9 +260,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("date", help="YYYY-MM-DD")
     parser.add_argument("--dry-run", action="store_true", help="GitHub Releases へ upload せず latest_audio.json だけ検証用に更新する。")
     parser.add_argument("--json", action="store_true", help="publish結果またはtyped failureをJSONで出力する。")
+    parser.add_argument("--run-id", default="", help="direct runtime run ID。")
     args = parser.parse_args(argv)
     _LAST_PUBLISH_FAILURE = None
-    result = publish(args.date, dry_run=True) if args.dry_run else publish(args.date)
+    if args.run_id:
+        result = publish(args.date, dry_run=args.dry_run, run_id=args.run_id)
+    else:
+        result = publish(args.date, dry_run=True) if args.dry_run else publish(args.date)
     if result is not None:
         if args.json:
             print(json.dumps({"ok": True, "status": "published_ok", **result}, ensure_ascii=False))

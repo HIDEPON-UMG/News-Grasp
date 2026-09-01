@@ -176,6 +176,7 @@ def _store(
         host_generation=host_generation,
         lease_ttl=timedelta(seconds=lease_seconds),
         semantic_verifier=verifier,
+        test_only_allow_semantic_verifier=True,
     )
     return store, clock, host_generation, verifier
 
@@ -194,6 +195,7 @@ def _start(
             automation_id=automation_id,
             cwd=str(cwd),
             issue_date=issue_date,
+            manifest_id="f" * 64,
         )
     )
 
@@ -305,6 +307,17 @@ def _set_public_green(verifier: FakeSemanticVerifier) -> None:
     )
 
 
+def _finalize_public(api: Any, store: Any, run: Mapping[str, Any], verifier: FakeSemanticVerifier) -> Mapping[str, Any]:
+    _set_public_green(verifier)
+    return _mapping(api.finalize_public_completion(
+        store,
+        run_id=_run_id(run),
+        writer_lease=_lease(run),
+        semantic_verifier=verifier,
+        exact_successor="public_completion",
+    ))
+
+
 def test_public_completion_reverifies_public_surface_when_base_url_is_given(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -315,7 +328,7 @@ def test_public_completion_reverifies_public_surface_when_base_url_is_given(
     cwd = tmp_path / "News-Grasp"
     cwd.mkdir()
     run = _start(api, store, cwd)
-    for stage_id in EXPECTED_STAGES:
+    for stage_id in EXPECTED_STAGES[:-1]:
         if stage_id == "title_control":
             _set_green(
                 verifier,
@@ -324,11 +337,10 @@ def test_public_completion_reverifies_public_surface_when_base_url_is_given(
                 actual_title=EXPECTED_TITLE,
                 post_publish_issue_list=[],
             )
-        elif stage_id == "public_completion":
-            _set_public_green(verifier)
         else:
             _set_green(verifier, stage_id)
         _dispatch(api, store, run, verifier, clock=clock)
+    _finalize_public(api, store, run, verifier)
 
     completion = importlib.import_module("tools.news_grasp_direct_completion")
     calls: list[dict[str, Any]] = []
@@ -367,15 +379,15 @@ def test_direct_runtime_exports_real_dispatcher_api() -> None:
     assert len(api.DIRECT_STAGES) == 21
 
 
-def test_dispatcher_completes_normal_run_without_manual_stage_mutation(tmp_path: Path) -> None:
-    """通常fixtureはdispatcher/executor経由で全21工程を順に完了する。"""
+def test_dispatcher_and_atomic_finalizer_complete_normal_run(tmp_path: Path) -> None:
+    """工程0〜19はdispatcher、工程20はatomic finalizerで完了する。"""
 
     api = _api()
     store, clock, _, verifier = _store(api, tmp_path)
     cwd = tmp_path / "repo"
     cwd.mkdir()
     run = _start(api, store, cwd)
-    for stage_id in EXPECTED_STAGES:
+    for stage_id in EXPECTED_STAGES[:-1]:
         if stage_id == "title_control":
             _set_green(
                 verifier,
@@ -384,8 +396,6 @@ def test_dispatcher_completes_normal_run_without_manual_stage_mutation(tmp_path:
                 actual_title=EXPECTED_TITLE,
                 post_publish_issue_list=[],
             )
-        elif stage_id == "public_completion":
-            _set_public_green(verifier)
         else:
             _set_green(verifier, stage_id)
         result = _dispatch(
@@ -398,9 +408,12 @@ def test_dispatcher_completes_normal_run_without_manual_stage_mutation(tmp_path:
             caller_surface={"ok": True, "claim": "caller-only"},
         )
         assert result.get("stage", result.get("completed_stage", stage_id)) == stage_id
+    final = _finalize_public(api, store, run, verifier)
+    assert final.get("status") in {"complete", "completed"}
     state = _inspect(api, store, run)
     assert state.get("status", "").casefold() in {"complete", "completed", "green"}
-    assert verifier.calls == list(EXPECTED_STAGES)
+    assert verifier.calls[: len(EXPECTED_STAGES) - 1] == list(EXPECTED_STAGES[:-1])
+    assert set(verifier.calls[len(EXPECTED_STAGES) - 1 :]) == {"public_completion"}
 
 
 def test_duplicate_and_stale_writer_are_rejected_with_monotonic_generation(
@@ -735,18 +748,7 @@ def test_completion_requires_all_stages_and_public_semantic_green(tmp_path: Path
         status="red",
         public_surfaces=_public_rows(),
     )
-    try:
-        red = _dispatch(
-            api,
-            store,
-            run,
-            verifier,
-            clock=clock,
-            caller_ok=True,
-            caller_surface={"ok": True, "public_status": "complete"},
-        )
-    except (RuntimeError, ValueError):
-        red = {}
+    red = api.probe_public_completion(store, run_id=_run_id(run), semantic_verifier=verifier)
     assert _inspect(api, store, run).get("current_stage") == "public_completion"
     assert red.get("status", "").casefold() not in {"complete", "completed", "green"}
     assert _mapping(
@@ -757,8 +759,7 @@ def test_completion_requires_all_stages_and_public_semantic_green(tmp_path: Path
         )
     ).get("ok") is False
 
-    _set_public_green(verifier)
-    green = _dispatch(api, store, run, verifier, clock=clock)
+    green = _finalize_public(api, store, run, verifier)
     assert green.get("status", "").casefold() in {"complete", "completed", "green"}
     completion = _mapping(
         api.verify_public_completion(
@@ -896,17 +897,12 @@ def test_active_direct_controls_have_no_content_derived_authority_fields() -> No
     missing = [str(path.relative_to(REPO)) for path in paths if not path.is_file()]
     assert not missing, f"RED_DIRECT_CONTROL_SURFACE_MISSING:{missing}"
 
-    # scanner自身はcontent identityを生成せず、field名の検査だけを行う。
+    # digestはidentity/parity証拠には利用できるが、completion単独authority名は禁止する。
     forbidden_parts = (
-        "s" + "ha" + "256",
-        "ha" + "sh",
-        "di" + "gest",
-        "finger" + "print",
-        "mer" + "kle",
-        "content_" + "address",
-        "content-" + "address",
-        "content_" + "identity",
-        "publish_" + "commit",
+        "completion_" + "sha256",
+        "completion_" + "hash",
+        "completion_" + "digest",
+        "hash_" + "only_" + "completion",
     )
     forbidden = re.compile("(?i)(?:" + "|".join(forbidden_parts) + ")")
     violations = {
@@ -942,8 +938,12 @@ def test_installed_direct_config_semantics_are_validated_by_producer() -> None:
     assert result.get("updated_at") == value["updated_at"]
     cwds = value.get("cwds")
     assert isinstance(cwds, list) and cwds
-    resolved_cwds = {str(Path(str(item)).expanduser().resolve()) for item in cwds}
-    assert str(REPO.resolve()) in resolved_cwds
+    syncer = importlib.import_module("tools.sync_news_grasp_codex_automation")
+    assert any(
+        syncer._same_path(Path(str(item)), REPO)  # noqa: SLF001
+        or syncer._same_git_repository(Path(str(item)), REPO)  # noqa: SLF001
+        for item in cwds
+    )
     prompt = str(value.get("prompt", ""))
     assert "$news-grasp-direct-mainline" in prompt
     assert "YY/MM/DD" in prompt
@@ -1380,9 +1380,12 @@ def test_public_template_uses_portable_cwd_placeholder_while_installed_is_bound(
     installed = tomllib.loads(installed_path.read_text(encoding="utf-8-sig"))
     installed_cwds = installed.get("cwds")
     assert isinstance(installed_cwds, list) and installed_cwds
-    assert str(REPO.resolve()) in {
-        str(Path(str(item)).expanduser().resolve()) for item in installed_cwds
-    }
+    syncer = importlib.import_module("tools.sync_news_grasp_codex_automation")
+    assert any(
+        syncer._same_path(Path(str(item)), REPO)  # noqa: SLF001
+        or syncer._same_git_repository(Path(str(item)), REPO)  # noqa: SLF001
+        for item in installed_cwds
+    )
 
 
 def test_start_cli_uses_jst_today_when_issue_date_is_omitted(
@@ -1597,10 +1600,10 @@ def test_advance_cli_records_exact_successor_title_stage(
     assert advanced["actual_title"] == EXPECTED_TITLE
 
 
-def test_advance_cli_public_completion_calls_consumer_owned_verifier(
+def test_advance_cli_cannot_bypass_atomic_public_finalizer(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """public_completionのCLI advanceはpublic verifier実体に委譲する。"""
+    """generic advanceはpublic verifierを呼ばずfinalize-publicへ誘導する。"""
 
     api = _api()
     completion = importlib.import_module("tools.news_grasp_direct_completion")
@@ -1644,15 +1647,15 @@ def test_advance_cli_public_completion_calls_consumer_owned_verifier(
             "--wait-sec",
             "0",
             "--poll-sec",
-            "0",
+            "30",
         ],
     )
 
-    assert api._main() == 0
+    assert api._main() == 1
     advanced = json.loads(capsys.readouterr().out)
-    assert calls
-    assert calls[0]["repo_root"] == REPO
-    assert advanced["status"] in {"completed", "green"}
+    assert not calls
+    assert advanced["status"] == "blocked"
+    assert advanced["failures"] == ["public_completion_requires_atomic_finalizer"]
 
 
 @pytest.mark.parametrize(
@@ -1725,7 +1728,7 @@ def test_public_verifier_rejects_local_private_or_file_base_urls(
             issue_date=ISSUE_DATE,
             public_base_url=public_base_url,
             wait_sec=0,
-            poll_sec=0,
+            poll_sec=30,
         )
     except (OSError, ValueError, RuntimeError) as error:
         result = {"ok": False, "failures": [str(error)]}

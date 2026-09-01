@@ -12,12 +12,14 @@ from typing import Any
 
 from tools.config import BASE_URL
 from tools.tts import proc
+from tools.news_grasp_audio_projection import normalize_audio_projection, write_audio_projection
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BUILD_DIR = REPO_ROOT / "build" / "tts" / "deepdive"
 DIGEST_DIR = REPO_ROOT / "digest" / "DeepDive"
 LATEST_JSON = BUILD_DIR / "latest_audio.json"
+DEFAULT_LATEST_JSON = LATEST_JSON
 RELEASE_TAG = "audio-deepdive"
 RELEASE_REPO = "HIDEPON-UMG/News-Grasp"
 GH_TIMEOUT_SEC = 120
@@ -142,11 +144,13 @@ def deepdive_audio_for_pages(
         data = json.loads(latest_json.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
         return _local_audio_for_pages(date, build_dir=build_dir)
-    if data.get("deepdive_audio_date") != date:
+    observed_date = data.get("issueDate", data.get("deepdive_audio_date"))
+    observed_url = data.get("publicUrl", data.get("deepdive_audio_url"))
+    if observed_date != date:
         return _local_audio_for_pages(date, build_dir=build_dir)
     return {
-        "deepdive_audio_url": str(data.get("deepdive_audio_url") or ""),
-        "deepdive_audio_date": str(data.get("deepdive_audio_date") or ""),
+        "deepdive_audio_url": str(observed_url or ""),
+        "deepdive_audio_date": str(observed_date or ""),
     }
 
 
@@ -192,16 +196,40 @@ def _url_returns_200(url: str) -> bool:
         return False
 
 
-def write_latest_audio(day: str, url: str) -> None:
-    BUILD_DIR.mkdir(parents=True, exist_ok=True)
-    LATEST_JSON.write_text(
-        json.dumps({"deepdive_audio_date": day, "deepdive_audio_url": url}, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-        newline="\n",
+def write_latest_audio(
+    day: str,
+    url: str,
+    *,
+    run_id: str = "",
+    run_intent: str = "scheduled_production_direct",
+) -> None:
+    """DeepDive音声をdailyと同形のV2 schemaへ書く。"""
+    projection = normalize_audio_projection(
+        {"deepdive_audio_date": day, "deepdive_audio_url": url, "status": "verified"},
+        audio_type="deepdive",
+        run_id=run_id or f"direct-{day}-unbound",
+        run_intent=run_intent,
+        source_artifact=f"build/tts/deepdive/{day}.mp3",
+        public_page_href=url,
     )
+    if LATEST_JSON != DEFAULT_LATEST_JSON:
+        LATEST_JSON.parent.mkdir(parents=True, exist_ok=True)
+        LATEST_JSON.write_text(
+            json.dumps(projection, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+    else:
+        write_audio_projection(REPO_ROOT, projection)
 
 
-def publish(day: str, mp3_path: Path | None = None, *, dry_run: bool = False) -> dict[str, str] | None:
+def publish(
+    day: str,
+    mp3_path: Path | None = None,
+    *,
+    dry_run: bool = False,
+    run_id: str = "",
+) -> dict[str, str] | None:
     global _LAST_PUBLISH_FAILURE
     _LAST_PUBLISH_FAILURE = None
     if not re.match(r"^\d{4}-\d{2}-\d{2}$", day):
@@ -213,7 +241,7 @@ def publish(day: str, mp3_path: Path | None = None, *, dry_run: bool = False) ->
     try:
         if dry_run:
             url = versioned_deepdive_audio_url(day, target)
-            write_latest_audio(day, url)
+            write_latest_audio(day, url, run_id=run_id) if run_id else write_latest_audio(day, url)
             print(f"[tts] DeepDive audio publish dry-run: {url}")
             return {"deepdive_audio_date": day, "deepdive_audio_url": url}
         if not ensure_release():
@@ -223,7 +251,7 @@ def publish(day: str, mp3_path: Path | None = None, *, dry_run: bool = False) ->
         if not _url_returns_200(url):
             _record_publish_failure(RuntimeError(f"DeepDive audio URL verification failed: {url}"))
             return None
-        write_latest_audio(day, url)
+        write_latest_audio(day, url, run_id=run_id) if run_id else write_latest_audio(day, url)
         print(f"[tts] DeepDive audio published: {url}")
         return {"deepdive_audio_date": day, "deepdive_audio_url": url}
     except Exception as exc:
@@ -238,9 +266,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--mp3", type=Path, default=None)
     parser.add_argument("--dry-run", action="store_true", help="GitHub Releases へ upload せず latest_audio.json だけ検証用に更新する。")
     parser.add_argument("--json", action="store_true", help="publish 結果または typed failure を JSON で出力する。")
+    parser.add_argument("--run-id", default="", help="direct runtime run ID。")
     args = parser.parse_args(argv)
     _LAST_PUBLISH_FAILURE = None
-    result = publish(args.date, args.mp3, dry_run=args.dry_run)
+    result = (
+        publish(args.date, args.mp3, dry_run=args.dry_run, run_id=args.run_id)
+        if args.run_id
+        else publish(args.date, args.mp3, dry_run=args.dry_run)
+    )
     if result is not None:
         if args.json:
             print(json.dumps({"ok": True, "status": "published_ok", **result}, ensure_ascii=False))

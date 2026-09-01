@@ -46,7 +46,7 @@ def test_public_stages_start_only_after_daily_quality() -> None:
 
 def test_direct_runtime_can_stop_before_publication_without_claiming_complete(tmp_path: Path) -> None:
     api = importlib.import_module("tools.news_grasp_direct_runtime")
-    store = api.DirectRunStore(tmp_path / "direct-mainline", semantic_verifier=_Verifier())
+    store = api.DirectRunStore(tmp_path / "direct-mainline", semantic_verifier=_Verifier(), test_only_allow_semantic_verifier=True)
     run = api.start_run(store, cwd=ROOT, issue_date=ISSUE_DATE)
 
     state = run

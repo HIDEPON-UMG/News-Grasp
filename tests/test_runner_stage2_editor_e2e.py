@@ -43,7 +43,7 @@ def test_reporter_and_editor_equivalent_stages_are_ordered_before_materializatio
 def test_run_exact_successor_records_reporter_to_summary_progression(tmp_path: Path) -> None:
     api = importlib.import_module("tools.news_grasp_direct_runtime")
     verifier = _Verifier()
-    store = api.DirectRunStore(tmp_path / "direct-mainline", semantic_verifier=verifier)
+    store = api.DirectRunStore(tmp_path / "direct-mainline", semantic_verifier=verifier, test_only_allow_semantic_verifier=True)
     run = api.start_run(store, cwd=ROOT, issue_date=ISSUE_DATE)
 
     state = run
@@ -69,7 +69,7 @@ def test_run_exact_successor_records_reporter_to_summary_progression(tmp_path: P
 
 def test_direct_runtime_rejects_stale_writer_before_editor_materialization(tmp_path: Path) -> None:
     api = importlib.import_module("tools.news_grasp_direct_runtime")
-    store = api.DirectRunStore(tmp_path / "direct-mainline", semantic_verifier=_Verifier())
+    store = api.DirectRunStore(tmp_path / "direct-mainline", semantic_verifier=_Verifier(), test_only_allow_semantic_verifier=True)
     run = api.start_run(store, cwd=ROOT, issue_date=ISSUE_DATE)
 
     try:
