@@ -31,9 +31,12 @@ import ctypes
 import hashlib
 import json
 import os
+import re
 import stat
+import subprocess
 import sys
 import tempfile
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -76,6 +79,76 @@ DEFAULT_TTL_SECONDS = 12 * 60 * 60
 # アクティブなので即表示される → これが「手動は届くが毎朝来ない」の非対称性）。
 # "high" は FCM 優先度 high / apns-priority 10 にマップされ Doze を貫通して即時配信する。
 DEFAULT_URGENCY = "high"
+
+
+def _trusted_sender_source_binding(producer_sha256: str) -> dict[str, str]:
+    """receipt producer bytesをimmutable Git commit blobへ束縛する。"""
+    if not re.fullmatch(r"[0-9a-f]{64}", producer_sha256):
+        return {}
+    deadline = time.monotonic() + 15.0
+
+    def run_git(args: list[str], *, text: bool = False) -> subprocess.CompletedProcess:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise subprocess.TimeoutExpired(args, 15)
+        return subprocess.run(
+            ["git", *args], cwd=str(ROOT), capture_output=True, text=text,
+            encoding="utf-8" if text else None, errors="replace" if text else None,
+            timeout=max(0.1, remaining), check=False, shell=False,
+            creationflags=int(getattr(subprocess, "CREATE_NO_WINDOW", 0)),
+        )
+
+    try:
+        remote_url = run_git(["remote", "get-url", "origin"], text=True)
+    except subprocess.TimeoutExpired:
+        return {}
+    allowed_urls = {
+        "https://github.com/HIDEPON-UMG/News-Grasp",
+        "https://github.com/HIDEPON-UMG/News-Grasp.git",
+        "git@github.com:HIDEPON-UMG/News-Grasp.git",
+    }
+    if remote_url.returncode != 0 or remote_url.stdout.strip() not in allowed_urls:
+        return {}
+    try:
+        history = run_git(
+            ["rev-list", "--max-count=256", "--first-parent", "origin/main", "--", "tools/send_push.py"],
+            text=True,
+        )
+    except subprocess.TimeoutExpired:
+        return {}
+    if history.returncode != 0:
+        return {}
+    commits = [line for line in history.stdout.splitlines() if re.fullmatch(r"[0-9a-f]{40}", line)][:256]
+    seen_blobs: set[str] = set()
+    for commit in commits:
+        try:
+            blob_id_proc = run_git(["rev-parse", "--verify", f"{commit}:tools/send_push.py"], text=True)
+        except subprocess.TimeoutExpired:
+            return {}
+        blob_id = blob_id_proc.stdout.strip()
+        if blob_id_proc.returncode != 0 or not re.fullmatch(r"[0-9a-f]{40,64}", blob_id) or blob_id in seen_blobs:
+            continue
+        seen_blobs.add(blob_id)
+        try:
+            kind = run_git(["cat-file", "-t", blob_id], text=True)
+            size = run_git(["cat-file", "-s", blob_id], text=True)
+        except subprocess.TimeoutExpired:
+            return {}
+        if kind.returncode != 0 or kind.stdout.strip() != "blob" or size.returncode != 0:
+            continue
+        try:
+            byte_count = int(size.stdout.strip())
+        except ValueError:
+            continue
+        if not 0 <= byte_count <= 2 * 1024 * 1024:
+            continue
+        try:
+            blob = run_git(["cat-file", "blob", blob_id])
+        except subprocess.TimeoutExpired:
+            return {}
+        if blob.returncode == 0 and len(blob.stdout) == byte_count and hashlib.sha256(blob.stdout).hexdigest() == producer_sha256:
+            return {"senderSourceCommit": commit, "senderSourcePath": "tools/send_push.py", "senderSourceBlobId": blob_id, "senderSourceBlobSha256": producer_sha256}
+    return {}
 
 
 def _opened_path(descriptor: int, fallback: Path) -> Path:
@@ -188,6 +261,9 @@ def parse_args() -> argparse.Namespace:
                    help="送信せず、取得元・対象数・payload だけ表示")
     p.add_argument("--record-state", default=None,
                    help="通知結果を publish-complete 用 JSON として保存するパス")
+    p.add_argument("--run-id", default="", help="direct runtime run ID")
+    p.add_argument("--run-intent", default="scheduled_production_direct", help="実行意図")
+    p.add_argument("--retry-count", type=int, default=0, help="cause-bound retry回数")
     return p.parse_args()
 
 
@@ -201,14 +277,28 @@ def _write_notification_state(path: str | None, payload: dict) -> None:
     if status in {"sent", "already_sent"}:
         ledger_path = out.with_name(f"{state['date']}.delivery.json")
         if status == "sent" and isinstance(state.get("deliveryReceipt"), dict):
-            _write_atomic_json(ledger_path, state["deliveryReceipt"])
+            _write_exclusive_json(ledger_path, state["deliveryReceipt"])
         ledger_raw = _safe_regular_bytes(ledger_path, max_bytes=65536)
         ledger = json.loads(ledger_raw.decode("utf-8-sig"))
-        state["evidenceLedgerPath"] = os.path.abspath(ledger_path)
+        state["evidenceLedgerPath"] = ledger_path.name
         state["evidenceLedgerFileSha256"] = hashlib.sha256(ledger_raw).hexdigest()
         state["evidenceLedgerReceiptSha256"] = str(
             ledger.get("receiptSha256") or ""
         )
+        v2 = state.get("deliveryReceiptV2")
+        if isinstance(v2, dict):
+            v2_path = out.with_name(f"{state['date']}.delivery-v2.json")
+            if status == "sent":
+                _write_exclusive_json(v2_path, v2)
+            elif status == "already_sent":
+                verification_path = out.with_name(f"{state['date']}.already-sent-verifications.jsonl")
+                descriptor = os.open(verification_path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+                try:
+                    os.write(descriptor, (json.dumps(v2, ensure_ascii=False, sort_keys=True) + "\n").encode("utf-8"))
+                    os.fsync(descriptor)
+                finally:
+                    os.close(descriptor)
+            state["deliveryReceiptV2Path"] = v2_path.name
     elif status == "no_subscribers" and isinstance(
         state.get("audienceResolutionReceipt"), dict
     ):
@@ -216,7 +306,7 @@ def _write_notification_state(path: str | None, payload: dict) -> None:
         _write_atomic_json(ledger_path, state["audienceResolutionReceipt"])
         ledger_raw = _safe_regular_bytes(ledger_path, max_bytes=65536)
         ledger = json.loads(ledger_raw.decode("utf-8-sig"))
-        state["evidenceLedgerPath"] = os.path.abspath(ledger_path)
+        state["evidenceLedgerPath"] = ledger_path.name
         state["evidenceLedgerFileSha256"] = hashlib.sha256(ledger_raw).hexdigest()
         state["evidenceLedgerReceiptSha256"] = str(
             ledger.get("receiptSha256") or ""
@@ -240,6 +330,17 @@ def _write_atomic_json(path: Path, payload: dict) -> None:
         temporary.unlink(missing_ok=True)
 
 
+def _write_exclusive_json(path: Path, payload: dict) -> None:
+    """immutable sender receiptをsingle-writer exclusive-createで保存する。"""
+    encoded = (json.dumps(payload, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    try:
+        os.write(descriptor, encoded)
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
 def _notification_state(
     *,
     status: str,
@@ -253,6 +354,13 @@ def _notification_state(
     prior_delivery_receipt_sha256: str = "",
     prior_delivery_receipt_file_sha256: str = "",
     prior_delivery_receipt_path: str = "",
+    run_id: str = "",
+    run_intent: str = "scheduled_production_direct",
+    retry_count: int = 0,
+    recipient_results: list[dict] | None = None,
+    original_sent_at: str = "",
+    sender_event_id: str = "",
+    prior_sender_producer_sha256: str = "",
 ) -> dict:
     producer_sha256 = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     if not payload_sha256:
@@ -274,6 +382,9 @@ def _notification_state(
         "producer": "tools.send_push",
         "producer_sha256": producer_sha256,
         "producer_run_id": producer_run_id,
+        "run_id": run_id,
+        "run_intent": run_intent,
+        "retry_count": retry_count,
     }
     if status == "no_subscribers":
         receipt = {
@@ -319,6 +430,29 @@ def _notification_state(
         ).hexdigest()
         state["deliveryReceipt"] = receipt
         state["deliveryReceiptSha256"] = receipt["receiptSha256"]
+        receipt_v2 = {
+            "schemaVersion": "NEWS_GRASP_NOTIFICATION_DELIVERY_RECEIPT_V2",
+            "issueDate": state["date"],
+            "runId": run_id,
+            "runIntent": run_intent,
+            "status": status,
+            "originalSentAt": original_sent_at or receipt.get("deliveredAt") or state["recorded_at"],
+            "verifiedAt": state["recorded_at"],
+            "retryCount": int(retry_count),
+            "payloadIdentity": payload_sha256,
+            "audienceIdentity": audience_set_sha256,
+            "subscriptionCount": subscription_count,
+            "sentCount": sent_count,
+            "recipientResults": list(recipient_results or []),
+            "priorDeliveryReceiptSha256": prior_delivery_receipt_sha256 or receipt["receiptSha256"],
+            "senderEventId": sender_event_id or producer_run_id,
+            **_trusted_sender_source_binding(prior_sender_producer_sha256 or producer_sha256),
+        }
+        receipt_v2["receiptSha256"] = hashlib.sha256(
+            json.dumps(receipt_v2, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+        state["deliveryReceiptV2"] = receipt_v2
+        state["deliveryReceiptV2Sha256"] = receipt_v2["receiptSha256"]
     return state
 
 
@@ -413,6 +547,12 @@ def _audience_set_sha256(subscriptions: list[dict]) -> str:
         separators=(",", ":"),
     ).encode("utf-8")
     return hashlib.sha256(canonical).hexdigest()
+
+
+def _recipient_key(subscription: dict, audience_set_sha256: str) -> str:
+    """endpointを保存せず、receipt内で安定した匿名化keyへ変換する。"""
+    endpoint = str(subscription.get("endpoint") or "")
+    return hashlib.sha256(f"{audience_set_sha256}:{endpoint}".encode("utf-8")).hexdigest()
 
 
 def _load_prior_delivery_receipt(path: Path) -> tuple[dict, str] | None:
@@ -587,7 +727,17 @@ def main() -> int:
                         audience_set_sha256=audience_set_sha256,
                         prior_delivery_receipt_sha256=str(prior_receipt["receiptSha256"]),
                         prior_delivery_receipt_file_sha256=prior_file_sha,
-                        prior_delivery_receipt_path=os.path.abspath(delivery_path),
+                        prior_delivery_receipt_path=delivery_path.name,
+                        run_id=args.run_id,
+                        run_intent=args.run_intent,
+                        retry_count=args.retry_count,
+                        original_sent_at=str(prior_receipt.get("deliveredAt") or ""),
+                        sender_event_id=str(prior_receipt.get("producerRunId") or ""),
+                        prior_sender_producer_sha256=str(prior_receipt.get("producerSha256") or ""),
+                        recipient_results=[
+                            {"recipientKey": _recipient_key(item, audience_set_sha256), "status": "already_sent"}
+                            for item in subs
+                        ],
                     ),
                 )
                 return 0
@@ -680,8 +830,15 @@ def main() -> int:
 
     ok = 0
     stale_endpoints: list[str] = []
+    recipient_results: list[dict] = []
     for sub in subs:
         sent, gone, detail = send_one(sub, payload, str(key_file), VAPID_CLAIMS_SUB)
+        recipient_results.append(
+            {
+                "recipientKey": _recipient_key(sub, audience_set_sha256),
+                "status": "sent" if sent else ("gone" if gone else "failed"),
+            }
+        )
         if sent:
             ok += 1
         else:
@@ -700,6 +857,10 @@ def main() -> int:
             sent_count=ok,
             payload_sha256=payload_sha256,
             audience_set_sha256=audience_set_sha256,
+            run_id=args.run_id,
+            run_intent=args.run_intent,
+            retry_count=args.retry_count,
+            recipient_results=recipient_results,
         ),
     )
 

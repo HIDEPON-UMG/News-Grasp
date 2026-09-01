@@ -15,12 +15,19 @@ from tools.historical_failure_scenarios import (
     unregistered_incident_reports,
     validate_historical_evidence,
     weekly_failure_regression_cases,
+    PUBLIC_INTEGRITY_FAILURE_CLASSES_V1,
 )
 from tools.repair_coverage_matrix import RepairClass, RepairIssue, classify_repair_issue
 
 
 ROOT = Path(__file__).resolve().parent.parent
 REQUIRED_HORIZONTAL_LANES = {"runner", "repair", "state", "report"}
+
+
+def test_2026_09_01_public_integrity_registers_nine_failure_classes() -> None:
+    assert len(PUBLIC_INTEGRITY_FAILURE_CLASSES_V1) == 9
+    scenarios = [row for row in historical_failure_scenarios() if row.issue_date == "2026-09-01"]
+    assert {row.direct_cause for row in scenarios} == {row[0] for row in PUBLIC_INTEGRITY_FAILURE_CLASSES_V1}
 
 
 def test_historical_failure_matrix_covers_lifecycle_incident_corpus() -> None:

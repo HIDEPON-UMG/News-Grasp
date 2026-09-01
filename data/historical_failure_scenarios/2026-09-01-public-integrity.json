@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "NEWS_GRASP_PUBLIC_INTEGRITY_FAILURE_CORPUS_V1",
+  "issueDate": "2026-09-01",
+  "runIntent": "scheduled_production_direct",
+  "failureClasses": [
+    "manifest_home_omission",
+    "daily_audio_href_missing",
+    "deepdive_href_missing",
+    "summary_semantic_reflection_missing",
+    "audio_projection_shape_drift",
+    "claim_context_binding_mismatch",
+    "dialogue_value_unspecific",
+    "claim_evidence_normalized_duplicate",
+    "dirty_checkout_remote_false_green"
+  ],
+  "requiredLanes": ["runner", "repair", "state", "report"],
+  "redReceipt": "build/task-ledger/news-grasp-public-integrity-20260901/red-suite-receipt.json",
+  "recoveryAuthority": "NEWS_GRASP_PUBLISH_MANIFEST_V2"
+}
