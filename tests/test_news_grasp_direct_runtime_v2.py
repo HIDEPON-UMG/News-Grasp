@@ -217,7 +217,7 @@ def test_v1_to_v2_migration_preserves_run_id_and_stage_history(tmp_path, monkeyp
     bound_manifest = {"manifestId": "f" * 64, "runId": run["run_id"], "runIntent": api.RUN_INTENT, "exactWriteSet": ["docs/index.html"]}
     monkeypatch.setattr(publish, "load_manifest", lambda *_args, **_kwargs: bound_manifest)
     monkeypatch.setattr(publish, "verify_manifest", lambda *_args, **_kwargs: {"ok": True})
-    observation = {"schemaVersion": "NEWS_GRASP_RUN_OBSERVATION_V1", "runId": run["run_id"], "issueDate": "2026-09-01", "runIntent": api.RUN_INTENT, "cwd": str(repo.resolve()), "sourceHead": "a" * 40, "exactWriteSet": ["docs/index.html"], "manifestId": "f" * 64, "runtimeState": {"root": str(store.state_root.resolve()), "dbExists": True}}
+    observation = {"schemaVersion": "NEWS_GRASP_RUN_OBSERVATION_V1", "runId": run["run_id"], "issueDate": "2026-09-01", "runIntent": api.RUN_INTENT, "cwd": str(repo.resolve()), "dirty": False, "sourceHead": "a" * 40, "exactWriteSet": ["docs/index.html"], "manifestId": "f" * 64, "runtimeState": {"root": str(store.state_root.resolve()), "dbExists": True}}
     migrated = api.migrate_run_v1_to_v2(
         store,
         run_id=run["run_id"],
@@ -242,6 +242,71 @@ def test_v1_to_v2_migration_preserves_run_id_and_stage_history(tmp_path, monkeyp
         writer_lease=run["writer_lease"],
     )
     assert repeated["migration_receipt"] == migrated["migration_receipt"]
+
+
+def test_v1_to_v2_migration_rebinds_only_target_copy_to_clean_observation_cwd(
+    tmp_path, monkeypatch
+) -> None:
+    """relocated V1の旧cwdを保存しつつ、V2 targetだけclean worktreeへ束縛する。"""
+
+    api = importlib.import_module("tools.news_grasp_direct_runtime")
+    store = api.DirectRunStore(
+        tmp_path / "state",
+        semantic_verifier=_Verifier(),
+        test_only_allow_semantic_verifier=True,
+    )
+    source_repo = tmp_path / "dirty-source"
+    clean_repo = tmp_path / "clean-production"
+    source_repo.mkdir()
+    clean_repo.mkdir()
+    run = api.start_run(store, cwd=source_repo, issue_date="2026-09-01")
+    publish = importlib.import_module("tools.news_grasp_publish_contract")
+    bound_manifest = {
+        "manifestId": "f" * 64,
+        "runId": run["run_id"],
+        "runIntent": api.RUN_INTENT,
+        "exactWriteSet": ["docs/index.html"],
+    }
+    loaded_from: list[Path] = []
+
+    def load_manifest(repo_root, _issue_date):
+        loaded_from.append(Path(repo_root).resolve())
+        return bound_manifest
+
+    monkeypatch.setattr(publish, "load_manifest", load_manifest)
+    monkeypatch.setattr(publish, "verify_manifest", lambda *_args, **_kwargs: {"ok": True})
+    observation = {
+        "schemaVersion": "NEWS_GRASP_RUN_OBSERVATION_V1",
+        "runId": run["run_id"],
+        "issueDate": "2026-09-01",
+        "runIntent": api.RUN_INTENT,
+        "cwd": str(clean_repo.resolve()),
+        "dirty": False,
+        "sourceHead": "a" * 40,
+        "exactWriteSet": ["docs/index.html"],
+        "manifestId": "f" * 64,
+        "runtimeState": {"root": str(store.state_root.resolve()), "dbExists": True},
+    }
+
+    migrated = api.migrate_run_v1_to_v2(
+        store,
+        run_id=run["run_id"],
+        manifest_id="f" * 64,
+        observation_receipt=observation,
+        writer_lease=run["writer_lease"],
+    )
+
+    assert loaded_from == [clean_repo.resolve()]
+    assert Path(migrated["cwd"]) == clean_repo.resolve()
+    assert migrated["migration_receipt"]["sourceCwd"] == str(source_repo.resolve())
+    assert migrated["migration_receipt"]["targetCwd"] == str(clean_repo.resolve())
+    backup = Path(migrated["migration_receipt"]["backupPath"])
+    with sqlite3.connect(backup) as backup_db:
+        assert Path(
+            backup_db.execute(
+                "SELECT cwd FROM runs WHERE run_id=?", (run["run_id"],)
+            ).fetchone()[0]
+        ) == source_repo.resolve()
 
 
 def test_migration_rejects_cross_run_observation_and_invalid_manifest_id(tmp_path) -> None:
@@ -549,7 +614,7 @@ def test_migrate_cli_opens_legacy_store_without_pre_backup_schema_mutation(tmp_p
     monkeypatch.setattr(publish, "load_manifest", lambda *_args, **_kwargs: bound_manifest)
     monkeypatch.setattr(publish, "verify_manifest", lambda *_args, **_kwargs: {"ok": True})
     observation_path.write_text(
-        __import__("json").dumps({"schemaVersion": "NEWS_GRASP_RUN_OBSERVATION_V1", "runId": run["run_id"], "issueDate": "2026-09-01", "runIntent": api.RUN_INTENT, "cwd": str(repo.resolve()), "sourceHead": "a" * 40, "exactWriteSet": ["docs/index.html"], "manifestId": "f" * 64, "runtimeState": {"root": str(state.resolve()), "dbExists": True}}),
+        __import__("json").dumps({"schemaVersion": "NEWS_GRASP_RUN_OBSERVATION_V1", "runId": run["run_id"], "issueDate": "2026-09-01", "runIntent": api.RUN_INTENT, "cwd": str(repo.resolve()), "dirty": False, "sourceHead": "a" * 40, "exactWriteSet": ["docs/index.html"], "manifestId": "f" * 64, "runtimeState": {"root": str(state.resolve()), "dbExists": True}}),
         encoding="utf-8",
     )
     seen: list[bool] = []

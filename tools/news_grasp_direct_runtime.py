@@ -1192,10 +1192,18 @@ def migrate_run_v1_to_v2(
             "runId": run_id,
             "issueDate": str(raw[1]),
             "runIntent": run_intent,
-            "cwd": str(Path(str(raw[2])).resolve()),
         }
         if any(str(observation_receipt.get(key) or "") != value for key, value in required_binding.items()):
             raise ValueError("observation_receipt_binding_invalid")
+        source_cwd = Path(str(raw[2])).resolve(strict=False)
+        observed_cwd_value = str(observation_receipt.get("cwd") or "")
+        if not observed_cwd_value or observation_receipt.get("dirty") is not False:
+            raise ValueError("observation_clean_cwd_required")
+        observed_cwd_raw = Path(os.path.abspath(observed_cwd_value))
+        _reject_reparse_chain(observed_cwd_raw, reason="observation_cwd_reparse_forbidden")
+        target_cwd = observed_cwd_raw.resolve(strict=True)
+        if os.path.normcase(str(observed_cwd_raw)) != os.path.normcase(observed_cwd_value):
+            raise ValueError("observation_cwd_not_canonical")
         if str(observation_receipt.get("manifestId") or "") != manifest_id:
             raise ValueError("observation_manifest_id_mismatch")
         runtime_state = observation_receipt.get("runtimeState")
@@ -1208,13 +1216,13 @@ def migrate_run_v1_to_v2(
             raise ValueError("observation_runtime_state_binding_invalid")
         from tools.news_grasp_publish_contract import load_manifest, verify_manifest
 
-        canonical_manifest = load_manifest(required_binding["cwd"], required_binding["issueDate"])
+        canonical_manifest = load_manifest(target_cwd, required_binding["issueDate"])
         if (
             canonical_manifest.get("manifestId") != manifest_id
             or canonical_manifest.get("runId") != run_id
             or canonical_manifest.get("runIntent") != run_intent
             or list(observation_receipt.get("exactWriteSet") or []) != list(canonical_manifest.get("exactWriteSet") or [])
-            or verify_manifest(canonical_manifest, repo_root=required_binding["cwd"], require_files=True).get("ok") is not True
+            or verify_manifest(canonical_manifest, repo_root=target_cwd, require_files=True).get("ok") is not True
         ):
             raise ValueError("observation_manifest_binding_invalid")
         if "runtime_schema" in columns:
@@ -1225,6 +1233,7 @@ def migrate_run_v1_to_v2(
             if (
                 str(existing["run_intent"] or "") == run_intent
                 and str(existing["manifest_id"] or "") == manifest_id
+                and Path(str(existing["cwd"])).resolve(strict=False) == target_cwd
                 and _json_load(existing["observation_receipt_json"], {})
                 == dict(observation_receipt)
             ):
@@ -1259,6 +1268,8 @@ def migrate_run_v1_to_v2(
             "runIntent": run_intent,
             "manifestId": manifest_id,
             "stageHistoryPreserved": True,
+            "sourceCwd": str(source_cwd),
+            "targetCwd": str(target_cwd),
             "backupPath": str(backup),
             "migratedAt": _iso(now),
         }
@@ -1274,7 +1285,7 @@ def migrate_run_v1_to_v2(
         conn.execute(
             """
             UPDATE runs
-            SET runtime_schema = ?, run_intent = ?, manifest_id = ?,
+            SET runtime_schema = ?, run_intent = ?, manifest_id = ?, cwd = ?,
                 migration_receipt_json = ?, observation_receipt_json = ?,
                 typed_issues_json = ?, status = ?, exact_successor = ?, updated_at = ?
             WHERE run_id = ?
@@ -1283,6 +1294,7 @@ def migrate_run_v1_to_v2(
                 RUNTIME_SCHEMA_V2,
                 run_intent,
                 manifest_id,
+                str(target_cwd),
                 _json_dump(receipt),
                 _json_dump(dict(observation_receipt)),
                 _json_dump(typed_issues),
