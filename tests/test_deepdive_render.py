@@ -41,6 +41,7 @@ from tools.render_deepdive import (  # noqa: E402
     relations_svg,
 )
 from tools.generate_pages import _get_jinja_env  # noqa: E402
+from tools.deepdive_content import contains_internal_metadata  # noqa: E402
 
 _FIXTURE = ROOT / "tests" / "fixtures" / "deepdive_robotaxi.md"
 _REAL = ROOT / "digest" / "DeepDive" / "2026-05-31-DeepDive.md"
@@ -54,6 +55,22 @@ def test_prose_paragraphs_strip_internal_transport_metadata() -> None:
     )
 
     assert _prose_paragraphs(section) == ["読者に見せる本文です。"]
+
+
+def test_prose_paragraphs_strip_markdown_heading_syntax() -> None:
+    section = (
+        "### §02 企業利用 — 複数モデルを選べることの条件\n\n"
+        "公開本文は見出し記号なしで表示する。\n"
+    )
+
+    assert _prose_paragraphs(section) == [
+        "§02 企業利用 — 複数モデルを選べることの条件",
+        "公開本文は見出し記号なしで表示する。",
+    ]
+
+
+def test_public_content_flags_raw_markdown_heading() -> None:
+    assert contains_internal_metadata("<p>### §02 企業利用</p>") is True
 
 
 def test_deepdive_template_embeds_dialogue_audio_with_rate_buttons() -> None:

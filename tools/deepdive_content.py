@@ -33,6 +33,9 @@ _MARKDOWN_LINK_RE = re.compile(
 _BARE_URL_RE = re.compile(r"https?://[^\s<>()]+", re.IGNORECASE)
 _CODE_FENCE_RE = re.compile(r"^```[^\r\n]*\r?\n.*?^```\s*$", re.DOTALL | re.MULTILINE)
 _RAW_FENCE_RE = re.compile(r"```")
+# Markdown見出しがHTML本文へそのまま渡った場合の検出・除去境界。
+# raw Markdownでは行頭、HTML化後は<p>などの直後に現れるため、両方を扱う。
+_RAW_MARKDOWN_HEADING_RE = re.compile(r"(?m)(?:^|>)[ \t]*#{1,6}[ \t]+")
 
 
 def _decoded(value: str) -> str:
@@ -82,6 +85,7 @@ def contains_internal_metadata(value: str) -> bool:
         or _contains_transport_json(text)
         or _CODE_FENCE_RE.search(text)
         or _RAW_FENCE_RE.search(text)
+        or _RAW_MARKDOWN_HEADING_RE.search(text)
         or _MARKDOWN_LINK_RE.search(text)
     )
 
@@ -96,6 +100,10 @@ def strip_internal_metadata(value: str) -> str:
     text = _decoded(value)
     text = _CODE_FENCE_RE.sub("", text)
     text = _RAW_FENCE_RE.sub("", text)
+    text = _RAW_MARKDOWN_HEADING_RE.sub(
+        lambda match: ">" if match.group(0).startswith(">") else "",
+        text,
+    )
     text = _INTERNAL_COMMENT_RE.sub("", text)
     text = _strip_transport_json(text)
     text = _INTERNAL_MARKER_RE.sub("", text)

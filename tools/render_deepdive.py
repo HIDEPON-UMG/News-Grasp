@@ -162,7 +162,11 @@ def split_sections(body: str) -> dict[str, str]:
 
 
 def _prose_paragraphs(section_text: str) -> list[str]:
-    """セクションから fenced を除いた散文を段落 (空行区切り) のリストにする。"""
+    """セクションから公開可能な散文を段落 (空行区切り) のリストにする。
+
+    `### §NN` はMarkdown側の構造化見出しであり、テンプレートへそのまま渡すと
+    公開HTMLに記号が露出するため、共通の公開本文境界で除去する。
+    """
     plain = strip_internal_metadata(_strip_fenced(section_text))
     paras = [p.strip() for p in re.split(r"\r?\n\s*\r?\n", plain)]
     return [p.replace("\r", "").replace("\n", " ").strip() for p in paras if p.strip()]
