@@ -47,6 +47,7 @@ exit 0 = 全 URL 健全 / exit 1 = 1 件以上 fatal (= 捏造または恒久 40
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
 import ssl
@@ -54,6 +55,7 @@ import sys
 import urllib.error
 import urllib.request
 
+from tools.safe_public_fetch import resolve_public_http_endpoint, safe_urlopen
 from tools.tts import proc
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -111,6 +113,14 @@ class UrlVerdict:
     status: int | None       # HTTP code, または None (network error)
     ok: bool                 # True = 生存確認, False = fatal
     detail: str              # 人間向け説明 (404 / network err / 403→GETで200 等)
+
+    @property
+    def verification_status(self) -> str:
+        if self.ok:
+            return "verified"
+        if "ambiguous" in self.detail or "anti-bot" in self.detail:
+            return "ambiguous"
+        return "fatal"
 
 
 class DeepDiveUrlError(Exception):
@@ -222,7 +232,7 @@ def _probe(
             context = ssl.create_default_context()
         else:
             context = ssl.create_default_context(cafile=certifi.where())
-        with urllib.request.urlopen(req, timeout=timeout, context=context) as resp:
+        with safe_urlopen(req, timeout=timeout, context=context) as resp:
             return int(resp.status), f"{method}[{ua_tag}] {resp.status}"
     except urllib.error.HTTPError as e:
         return int(e.code), f"{method}[{ua_tag}] {e.code}"
@@ -236,19 +246,26 @@ def _probe(
 
 def _probe_system_tls(url: str, *, timeout: float) -> tuple[int | None, str]:
     """Python CAで失敗したURLだけをOSのTLS境界で再検証する。"""
-    result = proc.quiet_run(
-        ["curl.exe", "-I", "-L", "--max-time", str(max(1, int(timeout))),
-         "--silent", "--show-error", "--output", os.devnull,
-         "--write-out", "%{http_code}", url],
-        timeout=timeout + 2,
-        check=False,
-    )
-    raw = (result.stdout or "").strip()
-    match = re.search(r"(\d{3})$", raw)
-    if match:
-        status = int(match.group(1))
-        return status, f"curl[SystemTLS] {status}"
-    detail = (result.stderr or raw or f"exit={result.returncode}").strip()
+    try:
+        validated_url, host, port, addresses = resolve_public_http_endpoint(url)
+    except ValueError as exc:
+        return None, f"curl[SystemTLS] {exc}"
+    detail = "no_public_address"
+    for address in addresses:
+        pinned = f"{host}:{port}:{f'[{address}]' if ':' in address else address}"
+        result = proc.quiet_run(
+            ["curl.exe", "-I", "--noproxy", "*", "--resolve", pinned, "--max-redirs", "0", "--max-time", str(max(1, int(timeout))),
+             "--silent", "--show-error", "--output", os.devnull,
+             "--write-out", "%{http_code}", validated_url],
+            timeout=timeout + 2,
+            check=False,
+        )
+        raw = (result.stdout or "").strip()
+        match = re.search(r"(\d{3})$", raw)
+        if match:
+            status = int(match.group(1))
+            return status, f"curl[SystemTLS] {status}"
+        detail = (result.stderr or raw or f"exit={result.returncode}").strip()
     return None, f"curl[SystemTLS] {detail}"
 
 
@@ -302,7 +319,7 @@ def _verify_one(ref: UrlRef, *, timeout: float) -> UrlVerdict:
         if system_status is not None and 200 <= system_status < 400:
             return UrlVerdict(ref, system_status, True, " → ".join(details))
         if system_status in (403, 405, 429, 501):
-            return UrlVerdict(ref, system_status, True, f"{' → '.join(details)} (anti-bot・生存応答)")
+            return UrlVerdict(ref, system_status, False, f"{' → '.join(details)} (anti-bot・ambiguous)")
         if system_status is not None:
             return UrlVerdict(ref, system_status, False, " → ".join(details))
 
@@ -314,8 +331,8 @@ def _verify_one(ref: UrlRef, *, timeout: float) -> UrlVerdict:
         # 429 は永続死リンクではなく一時的レート制限なので、404/410 が観測されない限り
         # 偽陽性 fatal を出さない (techxplore.com で実機 WebFetch で生存確認済の URL を
         # 死リンク扱いしないため・2026-06-05)。
-        if all(s in (403, 405, 429, 501) for s in valid_codes):
-            return UrlVerdict(ref, valid_codes[-1], True,
+        if all(s in (401, 403, 405, 406, 429, 501) for s in valid_codes):
+            return UrlVerdict(ref, valid_codes[-1], False,
                               f"{' → '.join(details)} (anti-bot 全段継続・ambiguous)")
         # それ以外 (4xx の別 / 5xx) は fatal 寄せ
         return UrlVerdict(ref, valid_codes[-1], False, " → ".join(details))
@@ -342,7 +359,15 @@ def verify_urls(
     max_workers: int = 8,
 ) -> list[UrlVerdict]:
     """URL を並列に検証する。順序は入力順を保持。"""
-    refs_list = list(refs)
+    if isinstance(max_workers, bool) or not isinstance(max_workers, int) or not 1 <= max_workers <= 16:
+        raise ValueError("url_probe_workers_out_of_policy")
+    if isinstance(timeout, bool) or not isinstance(timeout, (int, float)) or not math.isfinite(float(timeout)) or not 1.0 <= float(timeout) <= 30.0:
+        raise ValueError("url_probe_timeout_out_of_policy")
+    refs_list: list[UrlRef] = []
+    for ref in refs:
+        if len(refs_list) >= 1024:
+            raise ValueError("url_probe_reference_budget_exceeded")
+        refs_list.append(ref)
     if not refs_list:
         return []
 
@@ -353,6 +378,8 @@ def verify_urls(
             continue
         seen_urls.add(ref.url)
         unique_refs.append(ref)
+        if len(unique_refs) > 256:
+            raise ValueError("url_probe_unique_budget_exceeded")
 
     results: dict[int, UrlVerdict] = {}
     with ThreadPoolExecutor(max_workers=max_workers) as ex:

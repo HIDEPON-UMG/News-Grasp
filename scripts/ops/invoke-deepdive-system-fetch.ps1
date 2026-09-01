@@ -59,8 +59,8 @@ try {
 
     Add-Type -AssemblyName System.Net.Http
     $handler = [Net.Http.HttpClientHandler]::new()
-    $handler.AllowAutoRedirect = $true
-    $handler.MaxAutomaticRedirections = 10
+    # redirect先をPython側で再検証できないtransportでは追跡しない。
+    $handler.AllowAutoRedirect = $false
     $client = [Net.Http.HttpClient]::new($handler, $true)
     $client.DefaultRequestHeaders.Accept.ParseAdd(
         'text/html, application/xhtml+xml, application/pdf;q=0.9, */*;q=0.8'

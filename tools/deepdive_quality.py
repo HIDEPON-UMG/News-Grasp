@@ -19,7 +19,9 @@ from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
-from urllib.request import Request, urlopen
+from urllib.request import Request
+
+from tools.safe_public_fetch import resolve_public_http_endpoint, safe_urlopen as urlopen
 
 from tools.deepdive_content import contains_internal_metadata
 from tools.tts import deepdive_dialogue, proc
@@ -107,6 +109,22 @@ SOFT_404_PATTERNS = (
     re.compile(rb"<title[^>]*>[^<]*(?:404|not[ -]?found|page not found)[^<]*</title>", re.I),
     re.compile(rb"(?:the page|page) you requested (?:could not be found|was not found)", re.I),
 )
+HTML_META_CHARSET_RE = re.compile(
+    rb"<meta\b[^>]*\bcharset\s*=\s*[\"']?\s*([A-Za-z0-9._-]+)",
+    re.IGNORECASE,
+)
+HTML_CHARSET_ALIASES = {
+    "utf-8": "utf-8",
+    "utf8": "utf-8",
+    "shift_jis": "cp932",
+    "shift-jis": "cp932",
+    "sjis": "cp932",
+    "windows-31j": "cp932",
+    "cp932": "cp932",
+    "euc-jp": "euc_jp",
+    "euc_jp": "euc_jp",
+    "iso-2022-jp": "iso2022_jp",
+}
 
 
 class DeepDiveQualityError(RuntimeError):
@@ -1228,6 +1246,21 @@ def _is_generic_home_redirect(original_url: str, final_url: str) -> bool:
     return bool(original_path) and final_path in {"", "/index.html", "/index.htm"}
 
 
+def _decode_observed_text(body: bytes) -> str:
+    """HTML宣言charsetを限定allowlistで解決し、evidence本文を復元する。"""
+
+    observed = body[:MAX_CLAIM_EVIDENCE_BYTES]
+    if observed.startswith(b"\xef\xbb\xbf"):
+        return observed.decode("utf-8-sig", errors="replace")
+    charset_match = HTML_META_CHARSET_RE.search(observed[:65536])
+    if charset_match is not None:
+        declared = charset_match.group(1).decode("ascii", errors="ignore").casefold()
+        codec = HTML_CHARSET_ALIASES.get(declared)
+        if codec is not None:
+            return observed.decode(codec, errors="replace")
+    return observed.decode("utf-8", errors="replace")
+
+
 def _observed_record(
     *,
     url: str,
@@ -1254,9 +1287,7 @@ def _observed_record(
         "httpStatus": status,
         "fetchedAt": datetime.now(timezone.utc).isoformat(),
         "contentSha256": hashlib.sha256(observed).hexdigest(),
-        "observedText": observed[:MAX_CLAIM_EVIDENCE_BYTES].decode(
-            "utf-8", errors="replace"
-        ),
+        "observedText": _decode_observed_text(observed),
         **(
             {"transportEvidence": transport_evidence}
             if transport_evidence is not None
@@ -1272,6 +1303,7 @@ def _run_system_transport(
 ) -> tuple[int, str, bytes]:
     """Python transportが限定的に拒否された時だけWindows HttpClientで一回取得する。"""
 
+    validated_url, host, port, addresses = resolve_public_http_endpoint(url)
     descriptor, temporary_name = tempfile.mkstemp(
         prefix="news-grasp-provenance-",
         suffix=".body",
@@ -1279,57 +1311,31 @@ def _run_system_transport(
     os.close(descriptor)
     temporary = Path(temporary_name)
     try:
-        helper = (
-            Path(__file__).resolve().parents[1]
-            / "scripts"
-            / "ops"
-            / "invoke-deepdive-system-fetch.ps1"
-        )
-        if not helper.is_file() or helper.is_symlink():
-            raise DeepDiveQualityError("DEEPDIVE_SYSTEM_FETCH_HELPER_INVALID")
-        result = proc.quiet_run(
-            [
-                "powershell.exe",
-                "-NoProfile",
-                "-NonInteractive",
-                "-ExecutionPolicy",
-                "Bypass",
-                "-File",
-                str(helper),
-                "-Url",
-                url,
-                "-BodyPath",
-                str(temporary),
-                "-MaxBytes",
-                str(MAX_OBSERVED_BYTES),
-                "-TimeoutSec",
-                str(max(1, int(timeout))),
-            ],
-            timeout=timeout + 3,
-            check=False,
-        )
-        try:
-            metadata = json.loads((result.stdout or "").strip())
-        except json.JSONDecodeError:
-            metadata = None
-        if (
-            result.returncode != 0
-            or not isinstance(metadata, dict)
-            or metadata.get("schemaVersion") != "DEEPDIVE_SYSTEM_FETCH_RESULT_V1"
-            or metadata.get("transport") != "windows_system_http"
-            or not isinstance(metadata.get("httpStatus"), int)
-            or not str(metadata.get("finalUrl") or "").startswith(("http://", "https://"))
-        ):
-            detail = (result.stderr or result.stdout or "").strip()
-            raise DeepDiveQualityError(
-                f"DEEPDIVE_SYSTEM_FETCH_FAILED {url} exit={result.returncode} {detail}"
+        result = None
+        metadata: dict[str, object] | None = None
+        for address in addresses:
+            pinned = f"{host}:{port}:{f'[{address}]' if ':' in address else address}"
+            candidate = proc.quiet_run(
+                ["curl.exe", "--silent", "--show-error", "--noproxy", "*", "--max-redirs", "0", "--resolve", pinned, "--max-time", str(max(1, int(timeout))), "--max-filesize", str(MAX_OBSERVED_BYTES), "--output", str(temporary), "--write-out", "%{http_code}\n%{url_effective}\n%{size_download}", validated_url],
+                timeout=timeout + 3,
+                check=False,
             )
+            lines = (candidate.stdout or "").splitlines()
+            if candidate.returncode == 0 and len(lines) >= 3 and lines[-3].isdigit():
+                result = candidate
+                metadata = {"httpStatus": int(lines[-3]), "finalUrl": lines[-2], "bytes": int(float(lines[-1]))}
+                break
+            result = candidate
+        if result is None or metadata is None:
+            detail = ((result.stderr or result.stdout) if result is not None else "no_public_address").strip()
+            raise DeepDiveQualityError(f"DEEPDIVE_SYSTEM_FETCH_FAILED {url} {detail}")
         body = temporary.read_bytes()
         if metadata.get("bytes") != len(body):
             raise DeepDiveQualityError(
                 f"DEEPDIVE_SYSTEM_FETCH_FAILED {url} body_length_drift"
             )
-        return int(metadata["httpStatus"]), str(metadata["finalUrl"]), body
+        final_url, _, _, _ = resolve_public_http_endpoint(str(metadata["finalUrl"]))
+        return int(metadata["httpStatus"]), final_url, body
     finally:
         temporary.unlink(missing_ok=True)
 
@@ -2566,6 +2572,7 @@ def main(argv: list[str] | None = None) -> int:
             result = audit_issue(
                 repo_root=args.repo_root,
                 issue_date=args.date,
+                include_corpus=args.route not in {"daily_quality", "production_generation"},
                 require_rendered_public=args.require_rendered_public,
                 route=args.route,
             )

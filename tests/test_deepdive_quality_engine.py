@@ -211,6 +211,25 @@ def test_audit_issue_maps_duplicate_claim_evidence_to_article_value_invalid(
     assert "deepdive_claim_source_fit_invalid" not in result["issueCodes"]
 
 
+def test_observed_record_decodes_declared_shift_jis_evidence() -> None:
+    """一次資料の宣言charsetを使い、日本語evidenceをmojibakeさせない。"""
+
+    evidence = "生成AIによる災害対策本部の意思決定支援に向けた実証を開始"
+    body = (
+        '<!doctype html><html><head><meta charset="Shift_JIS"></head>'
+        f"<body>{evidence}</body></html>"
+    ).encode("cp932")
+
+    record = deepdive_quality._observed_record(
+        url="https://example.com/shift-jis",
+        final_url="https://example.com/shift-jis",
+        status=200,
+        body=body,
+    )
+
+    assert evidence in record["observedText"]
+
+
 def test_generic_claim_evidence_is_article_value_invalid() -> None:
     issues = deepdive_quality._claim_article_value_issues(
         [
@@ -1592,8 +1611,8 @@ def test_fetch_uses_single_system_transport_fallback_for_403(
     assert calls == [url]
 
 
-def test_bls_profile_403_uses_actual_windows_system_transport_once() -> None:
-    """RC-01 primary: primaryだけ403となる事故形状を実PowerShell childで閉じる。"""
+def test_public_fetch_boundary_rejects_loopback_before_transport() -> None:
+    """security boundary: test serverを含むloopback/任意portへtransportを開かない。"""
 
     class Handler(BaseHTTPRequestHandler):
         requests: list[str] = []
@@ -1620,21 +1639,14 @@ def test_bls_profile_403_uses_actual_windows_system_transport_once() -> None:
     thread.start()
     try:
         url = f"http://127.0.0.1:{server.server_port}/bls-profile"
-        record = deepdive_quality._fetch_one(url, timeout=5.0)
+        with pytest.raises(ValueError, match="public_fetch_(port|address)_forbidden"):
+            deepdive_quality._fetch_one(url, timeout=5.0)
     finally:
         server.shutdown()
         thread.join(timeout=5)
         server.server_close()
 
-    assert record["httpStatus"] == 200
-    assert record["finalUrl"] == url
-    assert record["transportEvidence"] == {
-        "selectedTransport": "windows_system_http",
-        "primaryTransport": "python_urllib",
-        "primaryFailure": "HTTP_403",
-        "fallbackAttemptCount": 1,
-    }
-    assert len(Handler.requests) == 2
+    assert Handler.requests == []
 
 
 def test_windows_system_transport_stops_stream_before_body_limit(
