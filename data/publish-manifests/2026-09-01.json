@@ -185,7 +185,7 @@
     {
       "artifactKind": "distribution_binding",
       "commitRole": "publication",
-      "digest": "9ab80e6fb2eb6c3662332fc7a002c63e6de0f9d8c64cf3d828c1e2482534ab1c",
+      "digest": "8455f6e044d4ba2a3e04c9d19b6ca9a5979cd67c3a845c7369ecc8a6372f4607",
       "digestAuthority": "artifact_bytes",
       "exists": true,
       "linkFrom": "",
@@ -196,7 +196,7 @@
     {
       "artifactKind": "notification_v2",
       "commitRole": "publication",
-      "digest": "d4065039f6a6b9f63cff1d3571b97e9288f48d94655002ed35df204f74a9bafa",
+      "digest": "0e965d769f7cd7e73638464b8f29d6f099968a8d3a9ddd82d497306341e6d397",
       "digestAuthority": "artifact_bytes",
       "exists": true,
       "linkFrom": "",
@@ -415,7 +415,7 @@
     "docs/sw.js"
   ],
   "issueDate": "2026-09-01",
-  "manifestId": "78c8fcb681f43b5e302b510966d6a580db53f8fc6ee7940a96caba68dcbdd26d",
+  "manifestId": "be9d9041346a044937366943b5d2df37ee078ead24337a3cd7bb431d37abf471",
   "runId": "direct-2026-09-01-1-3f4fda64605e42d9a88bab7086903aa7",
   "runIntent": "scheduled_production_direct",
   "scheduledCategoryIds": [
