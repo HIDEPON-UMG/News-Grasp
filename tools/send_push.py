@@ -298,6 +298,7 @@ def _write_notification_state(path: str | None, payload: dict) -> None:
                     os.fsync(descriptor)
                 finally:
                     os.close(descriptor)
+                v2_path = verification_path
             state["deliveryReceiptV2Path"] = v2_path.name
     elif status == "no_subscribers" and isinstance(
         state.get("audienceResolutionReceipt"), dict

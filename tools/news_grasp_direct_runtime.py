@@ -332,6 +332,19 @@ class DirectRunStore:
                 """
             )
             conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS runtime_manifest_rebindings (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    run_id TEXT NOT NULL,
+                    previous_manifest_id TEXT NOT NULL,
+                    manifest_id TEXT NOT NULL,
+                    observation_receipt_json TEXT NOT NULL,
+                    receipt_json TEXT NOT NULL,
+                    rebound_at TEXT NOT NULL
+                )
+                """
+            )
+            conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_runs_identity "
                 "ON runs (automation_id, cwd, issue_date, generation)"
             )
@@ -596,6 +609,10 @@ def _projection_from_row(store: DirectRunStore, conn: sqlite3.Connection, row: s
         "SELECT checkpoint_minute,elapsed_minutes,recorded_at FROM runtime_checkpoints WHERE run_id=? ORDER BY checkpoint_minute",
         (row["run_id"],),
     ).fetchall()
+    rebind_rows = conn.execute(
+        "SELECT previous_manifest_id,manifest_id,receipt_json,rebound_at FROM runtime_manifest_rebindings WHERE run_id=? ORDER BY id",
+        (row["run_id"],),
+    ).fetchall()
     return {
         "schemaVersion": row["runtime_schema"] or RUNTIME_SCHEMA,
         "legacySchemaVersion": RUNTIME_SCHEMA,
@@ -608,6 +625,15 @@ def _projection_from_row(store: DirectRunStore, conn: sqlite3.Connection, row: s
         "manifest_id": row["manifest_id"],
         "migration_receipt": _json_load(row["migration_receipt_json"], {}),
         "observation_receipt": _json_load(row["observation_receipt_json"], {}),
+        "manifest_rebindings": [
+            {
+                "previousManifestId": item["previous_manifest_id"],
+                "manifestId": item["manifest_id"],
+                "receipt": _json_load(item["receipt_json"], {}),
+                "reboundAt": item["rebound_at"],
+            }
+            for item in rebind_rows
+        ],
         "typed_issues": _json_load(row["typed_issues_json"], []),
         "generation": int(row["generation"]),
         "writer_lease": row["writer_lease"],
@@ -1307,6 +1333,120 @@ def migrate_run_v1_to_v2(
         conn.execute(
             "INSERT INTO runtime_migrations (run_id,from_schema,to_schema,receipt_json,migrated_at) VALUES (?,?,?,?,?)",
             (run_id, prior_schema, RUNTIME_SCHEMA_V2, _json_dump(receipt), _iso(now)),
+        )
+        conn.commit()
+    return inspect_run(store, run_id=run_id)
+
+
+def rebind_runtime_manifest(
+    store: DirectRunStore,
+    *,
+    run_id: str,
+    previous_manifest_id: str,
+    manifest_id: str,
+    repo_root: str | Path,
+    writer_lease: str,
+) -> dict[str, Any]:
+    """V2 runのmanifestをcleanな再観測へCASでappend-only再束縛する。"""
+    if not re.fullmatch(r"[0-9a-f]{64}", previous_manifest_id):
+        raise ValueError("previous_manifest_id_invalid")
+    if not re.fullmatch(r"[0-9a-f]{64}", manifest_id):
+        raise ValueError("manifest_id_invalid")
+    if previous_manifest_id == manifest_id:
+        raise ValueError("manifest_rebinding_identity_unchanged")
+    now = store.now()
+    with closing(store.connect()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        row = store._run_row(conn, run_id)
+        _verify_writer(row, writer_lease, now)
+        if str(row["runtime_schema"] or "") != RUNTIME_SCHEMA_V2:
+            raise ValueError("runtime_v2_required")
+        if str(row["manifest_id"] or "") != previous_manifest_id:
+            raise ValueError("runtime_previous_manifest_binding_mismatch")
+        if int(row["current_stage_index"]) != len(DIRECT_STAGES) - 1 or str(row["exact_successor"] or "") != "public_completion":
+            raise ValueError("runtime_public_completion_successor_required")
+        required_binding = {
+            "runId": run_id,
+            "issueDate": str(row["issue_date"]),
+            "runIntent": str(row["run_intent"]),
+        }
+        observed_cwd_raw = Path(os.path.abspath(repo_root))
+        _reject_reparse_chain(observed_cwd_raw, reason="observation_cwd_reparse_forbidden")
+        observed_cwd = observed_cwd_raw.resolve(strict=True)
+        bound_cwd = Path(str(row["cwd"])).resolve(strict=True)
+        if os.path.normcase(str(observed_cwd)) != os.path.normcase(str(bound_cwd)):
+            raise ValueError("observation_cwd_binding_mismatch")
+        from tools.news_grasp_execution_receipt import capture_observation
+        from tools.news_grasp_direct_completion import _up_to_date_observation
+        from tools.news_grasp_publish_contract import load_manifest, manifest_path, verify_manifest
+
+        canonical_manifest = load_manifest(observed_cwd, required_binding["issueDate"])
+        if (
+            canonical_manifest.get("manifestId") != manifest_id
+            or canonical_manifest.get("runId") != run_id
+            or canonical_manifest.get("runIntent") != required_binding["runIntent"]
+            or verify_manifest(canonical_manifest, repo_root=observed_cwd, require_files=True).get("ok") is not True
+        ):
+            raise ValueError("observation_manifest_binding_invalid")
+        observation_receipt = capture_observation(
+            repo_root=observed_cwd,
+            purpose="runtime-manifest-rebinding",
+            run_id=run_id,
+            run_intent=required_binding["runIntent"],
+            issue_date=required_binding["issueDate"],
+            manifest_path=manifest_path(observed_cwd, required_binding["issueDate"]),
+            runtime_state_root=store.state_root,
+        )
+        remote_observation = _up_to_date_observation(observed_cwd, "origin", "main")
+        if (
+            observation_receipt.get("schemaVersion") != "NEWS_GRASP_RUN_OBSERVATION_V1"
+            or observation_receipt.get("dirty") is not False
+            or observation_receipt.get("manifestId") != manifest_id
+            or list(observation_receipt.get("exactWriteSet") or []) != list(canonical_manifest.get("exactWriteSet") or [])
+            or remote_observation.get("ok") is not True
+            or observation_receipt.get("sourceHead") != remote_observation.get("head")
+            or remote_observation.get("head") != remote_observation.get("remoteHead")
+        ):
+            raise ValueError("consumer_owned_manifest_observation_red")
+        now_text = _iso(now)
+        receipt = {
+            "schemaVersion": "NEWS_GRASP_DIRECT_RUNTIME_MANIFEST_REBINDING_RECEIPT_V1",
+            "runId": run_id,
+            "issueDate": required_binding["issueDate"],
+            "runIntent": required_binding["runIntent"],
+            "previousManifestId": previous_manifest_id,
+            "manifestId": manifest_id,
+            "sourceHead": str(observation_receipt.get("sourceHead") or ""),
+            "remoteHead": str(remote_observation.get("remoteHead") or ""),
+            "stageHistoryPreserved": True,
+            "minimalSuccessor": "public_completion",
+            "reboundAt": now_text,
+        }
+        updated = conn.execute(
+            """UPDATE runs
+               SET manifest_id=?, observation_receipt_json=?, lease_until=?, updated_at=?
+               WHERE run_id=? AND writer_lease=? AND status IN ('active','executing')
+                 AND current_stage_index=? AND exact_successor='public_completion'
+                 AND manifest_id=? AND updated_at=?""",
+            (
+                manifest_id,
+                _json_dump(dict(observation_receipt)),
+                _iso(now + store.lease_ttl),
+                now_text,
+                run_id,
+                writer_lease,
+                len(DIRECT_STAGES) - 1,
+                previous_manifest_id,
+                row["updated_at"],
+            ),
+        ).rowcount
+        if updated != 1:
+            raise PermissionError("manifest_rebinding_cas_conflict")
+        conn.execute(
+            """INSERT INTO runtime_manifest_rebindings
+               (run_id,previous_manifest_id,manifest_id,observation_receipt_json,receipt_json,rebound_at)
+               VALUES (?,?,?,?,?,?)""",
+            (run_id, previous_manifest_id, manifest_id, _json_dump(dict(observation_receipt)), _json_dump(receipt), now_text),
         )
         conn.commit()
     return inspect_run(store, run_id=run_id)
@@ -2189,6 +2329,14 @@ def _main() -> int:
     migrate.add_argument("--run-intent", default=RUN_INTENT)
     migrate.add_argument("--writer-lease", required=True)
 
+    rebind = sub.add_parser("rebind-manifest")
+    rebind.add_argument("--state-root", type=Path, required=True)
+    rebind.add_argument("--run-id", required=True)
+    rebind.add_argument("--previous-manifest-id", required=True)
+    rebind.add_argument("--manifest-id", required=True)
+    rebind.add_argument("--repo-root", type=Path, required=True)
+    rebind.add_argument("--writer-lease", required=True)
+
     advance = sub.add_parser("advance")
     advance.add_argument("--state-root", type=Path, required=True)
     advance.add_argument("--run-id", required=True)
@@ -2328,6 +2476,15 @@ def _main() -> int:
                 run_intent=args.run_intent,
                 manifest_id=args.manifest_id,
                 observation_receipt=observation,
+                writer_lease=args.writer_lease,
+            )
+        elif args.cmd == "rebind-manifest":
+            result = rebind_runtime_manifest(
+                store,
+                run_id=args.run_id,
+                previous_manifest_id=args.previous_manifest_id,
+                manifest_id=args.manifest_id,
+                repo_root=args.repo_root,
                 writer_lease=args.writer_lease,
             )
         elif args.cmd == "advance":

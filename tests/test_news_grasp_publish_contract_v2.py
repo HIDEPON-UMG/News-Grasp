@@ -172,6 +172,32 @@ def _semantic_fixture(manifest: dict) -> dict[str, str]:
     return pages
 
 
+def test_semantic_pages_accepts_canonical_published_ok_status(tmp_path: Path) -> None:
+    api = _api()
+    manifest = _manifest(tmp_path)
+    pages = _semantic_fixture(manifest)
+    pages["publish_status"] = pages["publish_status"].replace('"success"', '"published_ok"')
+    assert api.verify_semantic_pages(manifest, pages)["ok"] is True
+
+
+def test_local_required_docs_loads_every_scheduled_category(tmp_path: Path, monkeypatch) -> None:
+    completion = importlib.import_module("tools.news_grasp_direct_completion")
+    manifest = _manifest(tmp_path)
+    captured: dict[str, str] = {}
+
+    contract = _api()
+    original = contract.verify_semantic_pages
+
+    def capture(value, pages):
+        captured.update(pages)
+        return original(value, _semantic_fixture(value))
+
+    monkeypatch.setattr(contract, "verify_semantic_pages", capture)
+    result = completion._required_docs(tmp_path, ISSUE_DATE, manifest=manifest)
+    assert result["ok"] is True
+    assert {f"category:{item}" for item in manifest["scheduledCategoryIds"]} <= set(captured)
+
+
 def test_r02_daily_audio_href_is_semantic_required(tmp_path: Path) -> None:
     """R02: HTTP成功だけではなくdaily audio href一致を要求する。"""
     api = _api()

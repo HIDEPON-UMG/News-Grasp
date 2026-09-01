@@ -79,6 +79,67 @@ def test_generic_advance_cannot_close_public_completion(tmp_path: Path) -> None:
     assert api.inspect_run(store, run_id=run["run_id"])["current_stage"] == "public_completion"
 
 
+def test_v2_manifest_rebinding_is_append_only_and_preserves_stage_history(tmp_path: Path, monkeypatch) -> None:
+    api = importlib.import_module("tools.news_grasp_direct_runtime")
+    publish = importlib.import_module("tools.news_grasp_publish_contract")
+    execution = importlib.import_module("tools.news_grasp_execution_receipt")
+    completion = importlib.import_module("tools.news_grasp_direct_completion")
+    verifier = _Verifier()
+    store = api.DirectRunStore(tmp_path / "state", semantic_verifier=verifier, test_only_allow_semantic_verifier=True)
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    previous_id = "f" * 64
+    manifest_id = "e" * 64
+    run = api.start_run(store, cwd=repo, issue_date="2026-09-01", run_intent=api.RUN_INTENT, manifest_id=previous_id)
+    for stage_id in api.DIRECT_STAGES[:-1]:
+        api.advance_stage(store, run_id=run["run_id"], stage_id=stage_id, writer_lease=run["writer_lease"], semantic_verifier=verifier)
+    before = api.inspect_run(store, run_id=run["run_id"])
+    bound_manifest = {"manifestId": manifest_id, "runId": run["run_id"], "runIntent": api.RUN_INTENT, "exactWriteSet": ["docs/index.html"]}
+    monkeypatch.setattr(publish, "load_manifest", lambda *_args, **_kwargs: bound_manifest)
+    monkeypatch.setattr(publish, "verify_manifest", lambda *_args, **_kwargs: {"ok": True})
+    observation = {
+        "schemaVersion": "NEWS_GRASP_RUN_OBSERVATION_V1",
+        "runId": run["run_id"],
+        "issueDate": "2026-09-01",
+        "runIntent": api.RUN_INTENT,
+        "cwd": str(repo.resolve()),
+        "dirty": False,
+        "sourceHead": "a" * 40,
+        "exactWriteSet": ["docs/index.html"],
+        "manifestId": manifest_id,
+        "runtimeState": {"root": str(store.state_root.resolve()), "dbExists": True},
+    }
+    monkeypatch.setattr(execution, "capture_observation", lambda **_kwargs: observation)
+    monkeypatch.setattr(completion, "_up_to_date_observation", lambda *_args: {"ok": False, "head": "a" * 40, "remoteHead": "b" * 40})
+    with pytest.raises(ValueError, match="consumer_owned_manifest_observation_red"):
+        api.rebind_runtime_manifest(
+            store,
+            run_id=run["run_id"],
+            previous_manifest_id=previous_id,
+            manifest_id=manifest_id,
+            repo_root=repo,
+            writer_lease=run["writer_lease"],
+        )
+    rejected = api.inspect_run(store, run_id=run["run_id"])
+    assert rejected["manifest_id"] == previous_id
+    assert rejected["manifest_rebindings"] == []
+    monkeypatch.setattr(completion, "_up_to_date_observation", lambda *_args: {"ok": True, "head": "a" * 40, "remoteHead": "a" * 40})
+    rebound = api.rebind_runtime_manifest(
+        store,
+        run_id=run["run_id"],
+        previous_manifest_id=previous_id,
+        manifest_id=manifest_id,
+        repo_root=repo,
+        writer_lease=run["writer_lease"],
+    )
+    assert rebound["manifest_id"] == manifest_id
+    assert rebound["stage_history"] == before["stage_history"]
+    assert rebound["manifest_rebindings"][0]["previousManifestId"] == previous_id
+    assert rebound["manifest_rebindings"][0]["manifestId"] == manifest_id
+    with sqlite3.connect(store.db_path) as conn:
+        assert conn.execute("SELECT COUNT(*) FROM runtime_manifest_rebindings WHERE run_id=?", (run["run_id"],)).fetchone()[0] == 1
+
+
 def test_production_runtime_store_rejects_database_inode_replacement(tmp_path: Path, monkeypatch) -> None:
     """final public consumerはbind後に同bytes DBへ差し替えられてもfile identityで拒否する。"""
     api = importlib.import_module("tools.news_grasp_direct_runtime")
@@ -143,7 +204,7 @@ def test_pages_workflow_redirect_is_not_followed(tmp_path: Path, monkeypatch) ->
 
 def test_pages_workflow_body_is_bounded(monkeypatch) -> None:
     completion = importlib.import_module("tools.news_grasp_direct_completion")
-    expected_url = "https://api.github.com/repos/HIDEPON-UMG/News-Grasp/actions/workflows/deploy-pages.yml/runs?branch=main&event=push&per_page=20"
+    expected_url = "https://api.github.com/repos/HIDEPON-UMG/News-Grasp/actions/workflows/deploy-pages.yml/runs?branch=main&per_page=20"
 
     class OversizeResponse:
         status = 200
@@ -175,6 +236,21 @@ def test_pages_workflow_body_is_bounded(monkeypatch) -> None:
     result = completion._pages_workflow_observation(remote_head="a" * 40, manifest_id="b" * 64, issue_date="2026-09-01")
     assert result["ok"] is False
     assert "pages_workflow_response_too_large" in result["detail"]
+
+
+def test_deepdive_completion_audits_current_issue_without_history_corpus(monkeypatch) -> None:
+    completion = importlib.import_module("tools.news_grasp_direct_completion")
+    deepdive_quality = importlib.import_module("tools.deepdive_quality")
+    captured: dict[str, object] = {}
+
+    def audit_issue(**kwargs):
+        captured.update(kwargs)
+        return {"status": "Green", "issueCodes": [], "issues": []}
+
+    monkeypatch.setattr(deepdive_quality, "audit_issue", audit_issue)
+    result = completion._deepdive_quality(Path.cwd(), "2026-09-01")
+    assert result["ok"] is True
+    assert captured["include_corpus"] is False
 
 
 def test_finalizer_persists_verified_optional_warning(tmp_path) -> None:

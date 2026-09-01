@@ -462,6 +462,10 @@ def test_delivery_ledger_prevents_duplicate_send_and_seals_prior_chain(
     assert not Path(state["deliveryReceipt"]["priorDeliveryReceiptPath"]).is_absolute()
     assert not Path(state["evidenceLedgerPath"]).is_absolute()
     assert not Path(state["deliveryReceiptV2Path"]).is_absolute()
+    assert state["deliveryReceiptV2Path"] == f"{sp._today_jst_str()}.already-sent-verifications.jsonl"
+    verification_path = state_path.with_name(state["deliveryReceiptV2Path"])
+    assert verification_path.is_file()
+    assert state["deliveryReceiptV2"] in [json.loads(line) for line in verification_path.read_text(encoding="utf-8").splitlines()]
     assert str(tmp_path) not in json.dumps(state, ensure_ascii=False)
     assert verified["reason"] == ""
 

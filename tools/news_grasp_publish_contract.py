@@ -716,7 +716,7 @@ def verify_semantic_pages(manifest: Mapping[str, Any], pages: Mapping[str, str])
             reasons.append("publish_status_date_mismatch")
         if status.get("manifestId") != marker:
             reasons.append("publish_status_manifest_mismatch")
-        if str(status.get("result") or "").casefold() not in {"success", "verified", "green"}:
+        if str(status.get("result") or "").casefold() not in {"success", "verified", "green", "published_ok"}:
             reasons.append("publish_status_result_red")
     return {"ok": not reasons, "status": "verified" if not reasons else "blocked", "reasonCodes": sorted(set(reasons))}
 

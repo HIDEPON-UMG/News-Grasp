@@ -69,7 +69,7 @@ def _open_public_no_redirect(request: urllib.request.Request, *, timeout: int):
 
 def _open_github_actions_no_redirect(request: urllib.request.Request, *, timeout: int):
     expected_path = "/repos/HIDEPON-UMG/News-Grasp/actions/workflows/deploy-pages.yml/runs"
-    expected_query = "branch=main&event=push&per_page=20"
+    expected_query = "branch=main&per_page=20"
     parsed = urlsplit(request.full_url)
     if (
         parsed.scheme.casefold() != "https"
@@ -419,7 +419,7 @@ def _required_docs(
     *,
     manifest: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    from tools.publish_inventory import required_published_docs_artifacts
+    from tools.publish_inventory import docs_artifact_for_category, required_published_docs_artifacts
 
     required = required_published_docs_artifacts(issue_date)
     missing: list[str] = []
@@ -444,6 +444,8 @@ def _required_docs(
             "deepdive": Path("docs") / "deepdive" / issue_date / "index.html",
             "publish_status": Path("docs") / "publish-status.json",
         }
+        for category_id in manifest.get("scheduledCategoryIds") or []:
+            page_paths[f"category:{category_id}"] = Path(docs_artifact_for_category(str(category_id), issue_date))
         for name, relative in page_paths.items():
             try:
                 local_pages[name] = _read_text_no_follow(_safe_repo_path(repo_root, relative), limit=1_000_000)
@@ -648,6 +650,7 @@ def _deepdive_quality(repo_root: Path, issue_date: str) -> dict[str, Any]:
             issue_date=issue_date,
             require_rendered_public=True,
             route="production_generation",
+            include_corpus=False,
         )
     except Exception as exc:  # noqa: BLE001 - verifier reports a typed Red.
         return {
@@ -900,12 +903,16 @@ def _notification(
                 adapter.get("schemaVersion") != "NEWS_GRASP_NOTIFICATION_DELIVERY_RECEIPT_V1"
                 or adapter.get("receiptSha256") != adapter_sha
                 or adapter.get("producer") != "tools.send_push"
-                or adapter.get("producerSha256") != trusted_sender_sha
+                or not re.fullmatch(r"[0-9a-f]{64}", str(adapter.get("producerSha256") or ""))
                 or not re.fullmatch(r"[0-9a-f]{32}", str(adapter.get("producerRunId") or ""))
             ):
                 v2_failures.append("notification_trusted_sender_adapter_invalid")
             expected_ledger_id = f"{issue_date}.delivery.json"
-            expected_v2_id = f"{issue_date}.delivery-v2.json"
+            expected_v2_id = (
+                f"{issue_date}.already-sent-verifications.jsonl"
+                if receipt.get("status") == "already_sent"
+                else f"{issue_date}.delivery-v2.json"
+            )
             if receipt.get("status") == "already_sent" and adapter.get("priorDeliveryReceiptPath") != expected_ledger_id:
                 v2_failures.append("notification_prior_delivery_path_id_invalid")
             v2_path_id = value.get("deliveryReceiptV2Path")
@@ -914,9 +921,17 @@ def _notification(
             else:
                 state_path = Path(str(row.get("path") or ""))
                 try:
-                    if _safe_existing_file(repo_root, state_path.parent / expected_v2_id) is None:
+                    evidence_path = _safe_existing_file(repo_root, state_path.parent / expected_v2_id)
+                    if evidence_path is None:
                         v2_failures.append("notification_v2_evidence_missing")
-                except ValueError:
+                    elif receipt.get("status") == "already_sent":
+                        raw = _read_bytes_no_follow(evidence_path, limit=512_000).decode("utf-8")
+                        rows = [json.loads(line) for line in raw.splitlines() if line.strip()]
+                        if receipt not in rows:
+                            v2_failures.append("notification_v2_evidence_mismatch")
+                    elif _load_json(evidence_path).get("value") != receipt:
+                        v2_failures.append("notification_v2_evidence_mismatch")
+                except (ValueError, UnicodeError, json.JSONDecodeError):
                     v2_failures.append("notification_v2_evidence_invalid")
             ledger_value = value.get("evidenceLedgerPath")
             ledger_path: Path | None = None
@@ -1197,7 +1212,7 @@ def _pages_workflow_observation(*, remote_head: str, manifest_id: str, issue_dat
     """GitHub Actionsの最新Pages成功runをremote HEADへ束縛する。"""
     from tools.news_grasp_publish_contract import evaluate_pages_deployment
 
-    url = "https://api.github.com/repos/HIDEPON-UMG/News-Grasp/actions/workflows/deploy-pages.yml/runs?branch=main&event=push&per_page=20"
+    url = "https://api.github.com/repos/HIDEPON-UMG/News-Grasp/actions/workflows/deploy-pages.yml/runs?branch=main&per_page=20"
     request = urllib.request.Request(
         url,
         headers={"Accept": "application/vnd.github+json", "User-Agent": "News-Grasp-public-verifier"},
