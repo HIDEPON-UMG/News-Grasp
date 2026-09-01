@@ -605,7 +605,7 @@ class _SurfaceHTMLParser(HTMLParser):
         reflection_here = False
         if hidden_here and push:
             self._hidden_depth += 1
-        if visible and lowered == "meta" and values.get("name").casefold() == "news-grasp-manifest-id":
+        if visible and lowered == "meta" and values.get("name", "").casefold() == "news-grasp-manifest-id":
             self.manifest_markers.append(values.get("content", ""))
         if visible and lowered == "a" and values.get("href"):
             self.anchor_hrefs.append(values["href"])

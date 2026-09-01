@@ -182,6 +182,17 @@ def test_r02_daily_audio_href_is_semantic_required(tmp_path: Path) -> None:
     assert api.verify_semantic_pages(manifest, _semantic_fixture(manifest))["ok"] is True
 
 
+def test_semantic_parser_accepts_standard_meta_without_name(tmp_path: Path) -> None:
+    """meta charsetなどname属性を持たない正規head要素でconsumerを落とさない。"""
+
+    api = _api()
+    manifest = _manifest(tmp_path)
+    pages = _semantic_fixture(manifest)
+    pages["home"] = '<meta charset="utf-8">' + pages["home"]
+
+    assert api.verify_semantic_pages(manifest, pages)["ok"] is True
+
+
 def test_r03_deepdive_link_is_semantic_required(tmp_path: Path) -> None:
     """R03: 当日DeepDiveが存在してもトップから未リンクならRedにする。"""
     api = _api()
