@@ -11,13 +11,13 @@
     {
       "claimId": "ai-20260901-gemini",
       "claimSha256": "bebe87657868fef945c5da2e23ee3586c5e0f8005395157aaaa94ffbf2dc9c29",
-      "evidenceSha256": "0c7874f2a8f697ba5f3054657efb586a10f29679e993c60fe3e981412c1d7451",
+      "evidenceSha256": "19d075aa665631e804e5b9a4b53adf1473c37fd4835dcde0c12fe2475935bf3d",
       "sourceUrl": "https://forest.watch.impress.co.jp/docs/news/2136814.html"
     },
     {
       "claimId": "ai-20260901-linne",
       "claimSha256": "dc9935a1e5330796ece9f494d3321e6a8b49b2da5e75966f6221bd750c52569d",
-      "evidenceSha256": "aa9ff2acc047f8ae853d3b2cee82f42e21d5af0e3c90458621804650173289ef",
+      "evidenceSha256": "ec95e5d67d5945fe7602d83bcc56d1831c15f442f63ec17a43405869c47f3e62",
       "sourceUrl": "https://prtimes.jp/main/html/rd/p/000000006.000178414.html"
     },
     {
@@ -27,15 +27,15 @@
       "sourceUrl": "https://www.ntt-east.co.jp/release/detail/20260831_01.html"
     }
   ],
-  "claimSetSha256": "07a465d5fbede893521cd5bcb9018e6bfeeaa745cc0208651143c8332eb3dcaf",
+  "claimSetSha256": "812cb9e243d0a37c3ca60de8361d164a0221550a9ad56b55a18824572a3c0a1d",
   "issueDate": "2026-09-01",
-  "manifestSha256": "9c40ff8333b8780acb3c25e52343b7b0aef1d063c90edd00fbdd5f939a5fac21",
+  "manifestSha256": "62fb964394529c4a553644dbfd4d1ad7c407cbe4a116a468da407e0e9eb3292f",
   "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V2",
-  "sourceSetSha256": "e4da5af580e48ffbd235c2d7e0e9cbf899432fb8ee2976f22ba42691e13c5811",
+  "sourceSetSha256": "ffb069cc7b445900f6bd4744f80778955fcf941cb56b371e23f45367b273e2d5",
   "sources": [
     {
-      "contentSha256": "66d86344ea8ac6bc6dd24394e57c631348f1f8bf56ca09659bdb22323624fba7",
-      "fetchedAt": "2026-08-31T22:02:51.072415+00:00",
+      "contentSha256": "2d3e03ee67d2962e9a7eb9af6ec33d4b34b429d0f946c886f5bbc4801e605d98",
+      "fetchedAt": "2026-09-01T02:50:21.124084+00:00",
       "finalUrl": "https://forest.watch.impress.co.jp/docs/news/2136814.html",
       "httpStatus": 200,
       "locations": [
@@ -52,8 +52,8 @@
       "url": "https://forest.watch.impress.co.jp/docs/news/2136814.html"
     },
     {
-      "contentSha256": "7b119881cb3f2bcce6e8fff955c0ddc059b17ae8721c2fb5df6b6c3b44c9704d",
-      "fetchedAt": "2026-08-31T22:02:51.254295+00:00",
+      "contentSha256": "ae7cae25f213c33c6a6726850dc5186c7f91747b37bcef0695ff5565f8cbb223",
+      "fetchedAt": "2026-09-01T02:50:21.363014+00:00",
       "finalUrl": "https://prtimes.jp/main/html/rd/p/000000006.000178414.html",
       "httpStatus": 200,
       "locations": [
@@ -71,7 +71,7 @@
     },
     {
       "contentSha256": "4c170c33df7f03e3286e7429fbdfce777f857ff40762f64ce012064e5dcb23b9",
-      "fetchedAt": "2026-08-31T22:02:51.540545+00:00",
+      "fetchedAt": "2026-09-01T02:50:21.618294+00:00",
       "finalUrl": "https://www.ntt-east.co.jp/release/detail/20260831_01.html",
       "httpStatus": 200,
       "locations": [
@@ -88,8 +88,8 @@
       "url": "https://www.ntt-east.co.jp/release/detail/20260831_01.html"
     },
     {
-      "contentSha256": "d9b1fbb287a596c61eaf4a546b8b016c3d42f78dd0e6e1eb0b28b78b92bb4821",
-      "fetchedAt": "2026-08-31T22:02:52.687034+00:00",
+      "contentSha256": "4c78b2eaf5327dd7ed526f7effde8a095ae3a8f73ee825214df34b12b97a9fc0",
+      "fetchedAt": "2026-09-01T02:50:22.585986+00:00",
       "finalUrl": "https://www.sbbit.jp/article/cont1/186751",
       "httpStatus": 200,
       "locations": [
