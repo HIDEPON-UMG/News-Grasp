@@ -1,16 +1,19 @@
 {
-  "ok": true,
-  "status": "published_ok",
-  "value": {
+  "2026-09-01": {
     "date": "2026-09-01",
     "result": "published_ok",
     "status": "published_ok",
     "updated_at": "2026-09-01T07:23:36+09:00"
   },
   "date": "2026-09-01",
+  "manifestId": "78c8fcb681f43b5e302b510966d6a580db53f8fc6ee7940a96caba68dcbdd26d",
+  "ok": true,
   "result": "published_ok",
+  "runId": "direct-2026-09-01-1-3f4fda64605e42d9a88bab7086903aa7",
+  "runIntent": "scheduled_production_direct",
+  "status": "published_ok",
   "updated_at": "2026-09-01T07:23:36+09:00",
-  "2026-09-01": {
+  "value": {
     "date": "2026-09-01",
     "result": "published_ok",
     "status": "published_ok",
