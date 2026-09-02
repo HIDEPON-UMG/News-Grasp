@@ -644,12 +644,13 @@ class _SurfaceHTMLParser(HTMLParser):
                 self.reflection_text.append(data)
 
 
-def _normalized_url(value: str, *, base: str) -> str:
+def _normalized_url(value: str, *, base: str, include_query: bool = True) -> str:
     parsed = urlsplit(urljoin(base, value))
     host = (parsed.hostname or "").casefold()
     port = parsed.port
     netloc = host if port is None or (parsed.scheme == "https" and port == 443) else f"{host}:{port}"
-    return urlunsplit((parsed.scheme.casefold(), netloc, parsed.path or "/", parsed.query, ""))
+    query = parsed.query if include_query else ""
+    return urlunsplit((parsed.scheme.casefold(), netloc, parsed.path or "/", query, ""))
 
 
 def verify_semantic_pages(manifest: Mapping[str, Any], pages: Mapping[str, str]) -> dict[str, Any]:
@@ -678,8 +679,10 @@ def verify_semantic_pages(manifest: Mapping[str, Any], pages: Mapping[str, str])
     daily_url = str(daily.get("publicUrl") or "") if isinstance(daily, Mapping) else ""
     home_parser = parsed_pages.get("home", _SurfaceHTMLParser())
     public_base = "https://hidepon-umg.github.io/News-Grasp/"
-    expected_daily = _normalized_url(daily_url, base=public_base) if daily_url else ""
-    media = {_normalized_url(value, base=public_base) for value in home_parser.media_sources}
+    # GitHub Releases の同一音声資産には、配信キャッシュ回避用の ?v= が付く。
+    # 音声の同一性は host/path で判定し、href や別の外部URLの query は従来どおり保持する。
+    expected_daily = _normalized_url(daily_url, base=public_base, include_query=False) if daily_url else ""
+    media = {_normalized_url(value, base=public_base, include_query=False) for value in home_parser.media_sources}
     if not expected_daily or expected_daily not in media:
         reasons.append("daily_audio_href_missing")
     deepdive_href = _normalized_url(f"deepdive/{issue_date}/", base=public_base)

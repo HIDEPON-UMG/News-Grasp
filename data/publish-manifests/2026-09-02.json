@@ -64,7 +64,7 @@
     {
       "artifactKind": "service_worker",
       "commitRole": "publication",
-      "digest": "9c88beffe6a947a75a165215af7e2a98646b15937fe6f9def2aed20f6f28940d",
+      "digest": "51fa714f9358f6ae8d57db9fae06228773ed74c936f33557c50a3711110cc585",
       "digestAuthority": "artifact_bytes",
       "exists": true,
       "linkFrom": "docs/index.html",
@@ -391,7 +391,7 @@
     "docs/sw.js"
   ],
   "issueDate": "2026-09-02",
-  "manifestId": "f11f163878ada579d7ac643475138702199739bad495b1528c9d8b4ca66197c1",
+  "manifestId": "1313c8899c6acaa61f28577fdb9e9a2e27137de031aad701ccea2887fe7d64aa",
   "runId": "direct-2026-09-02-1-9d516936281b41bbac6a6dc1f2d9b0f0",
   "runIntent": "scheduled_production_direct",
   "scheduledCategoryIds": [
@@ -403,5 +403,5 @@
     "economy"
   ],
   "schemaVersion": "NEWS_GRASP_PUBLISH_MANIFEST_V2",
-  "sourceBaseline": "1dea65c9b37f9f8eb8d9ca1a7d6b117b555fe49f"
+  "sourceBaseline": "7c463dbbe9fdc6814c776a796d6ec84181b3d33c"
 }

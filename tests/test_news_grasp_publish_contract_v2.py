@@ -180,6 +180,19 @@ def test_semantic_pages_accepts_canonical_published_ok_status(tmp_path: Path) ->
     assert api.verify_semantic_pages(manifest, pages)["ok"] is True
 
 
+def test_semantic_pages_accepts_audio_release_cache_busting_query(tmp_path: Path) -> None:
+    api = _api()
+    manifest = _manifest(tmp_path)
+    pages = _semantic_fixture(manifest)
+    daily_url = manifest["audio"]["daily"]["publicUrl"]
+    pages["home"] = pages["home"].replace(
+        f'src="{daily_url}"',
+        f'src="{daily_url}?v=cachebust"',
+    )
+
+    assert api.verify_semantic_pages(manifest, pages)["ok"] is True
+
+
 def test_local_required_docs_loads_every_scheduled_category(tmp_path: Path, monkeypatch) -> None:
     completion = importlib.import_module("tools.news_grasp_direct_completion")
     manifest = _manifest(tmp_path)
