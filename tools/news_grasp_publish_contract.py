@@ -1065,6 +1065,16 @@ def bind_existing_distribution_receipts(
                 raise ValueError(f"youtube_{kind}_{field}_missing")
         bound[kind] = dict(row)
         source_receipts[kind] = source_sha
+    deepdive_playlist = {
+        key: bound["deepdive"][key]
+        for key in ("videoId", "playlistId", "playlistItemId")
+    }
+    # DeepDiveはprimary playlistへの同時掲載情報を持つ場合がある。
+    # 再束縛時にこの2項目を落とすと、data/distributionの正本と
+    # playlist bindingが同じ動画でも構造不一致になる。
+    for key in ("primaryPodcastPlaylistId", "primaryPodcastPlaylistItemId"):
+        if str(bound["deepdive"].get(key) or ""):
+            deepdive_playlist[key] = bound["deepdive"][key]
     playlist = {
         "schemaVersion": "NEWS_GRASP_PLAYLIST_BINDING_V2",
         "issueDate": issue_date,
@@ -1075,10 +1085,7 @@ def bind_existing_distribution_receipts(
             key: bound["daily"][key]
             for key in ("videoId", "playlistId", "playlistItemId")
         },
-        "deepdive": {
-            key: bound["deepdive"][key]
-            for key in ("videoId", "playlistId", "playlistItemId")
-        },
+        "deepdive": deepdive_playlist,
         "sourceReceipts": {
             "dailySha256": source_receipts["daily"],
             "deepdiveSha256": source_receipts["deepdive"],

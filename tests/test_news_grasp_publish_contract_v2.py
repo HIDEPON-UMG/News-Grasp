@@ -547,7 +547,14 @@ def test_distribution_binding_exactly_binds_run_and_component_receipts(tmp_path:
     api = _api()
     completion = importlib.import_module("tools.news_grasp_direct_completion")
     daily = {"status": "public", "videoId": "daily-video", "playlistId": "daily-list", "playlistItemId": "daily-item"}
-    deepdive = {"status": "public", "videoId": "deep-video", "playlistId": "deep-list", "playlistItemId": "deep-item"}
+    deepdive = {
+        "status": "public",
+        "videoId": "deep-video",
+        "playlistId": "deep-list",
+        "playlistItemId": "deep-item",
+        "primaryPodcastPlaylistId": "primary-list",
+        "primaryPodcastPlaylistItemId": "primary-item",
+    }
     daily_source = tmp_path / "source-daily.json"
     deep_source = tmp_path / "source-deep.json"
     daily_source.write_text(json.dumps({ISSUE_DATE: daily}), encoding="utf-8")
@@ -562,7 +569,19 @@ def test_distribution_binding_exactly_binds_run_and_component_receipts(tmp_path:
         "latest_audio_state": "build/tts/daily/latest_audio.json",
         "deepdive_audio_state": "build/tts/deepdive/latest_audio.json",
         "generated_at": "2026-09-01T06:00:00+09:00",
-        "playlist": {"daily": {key: daily[key] for key in ("videoId", "playlistId", "playlistItemId")}, "deepdive": {key: deepdive[key] for key in ("videoId", "playlistId", "playlistItemId")}},
+        "playlist": {
+            "daily": {key: daily[key] for key in ("videoId", "playlistId", "playlistItemId")},
+            "deepdive": {
+                key: deepdive[key]
+                for key in (
+                    "videoId",
+                    "playlistId",
+                    "playlistItemId",
+                    "primaryPodcastPlaylistId",
+                    "primaryPodcastPlaylistItemId",
+                )
+            },
+        },
         "notification": {"status": "sent", "sent_count": 1},
     }
     distribution_path.write_text(json.dumps(distribution), encoding="utf-8")

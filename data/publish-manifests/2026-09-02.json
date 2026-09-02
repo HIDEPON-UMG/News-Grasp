@@ -174,7 +174,7 @@
     {
       "artifactKind": "playlist_state",
       "commitRole": "publication",
-      "digest": "c6f0a7f7d5223369192d456430f8be67c009fb6c01a4afa7697e0eb5f2bf89aa",
+      "digest": "3cafbe6d18f321430800172c0ee24d6a355b34d1ec0560970feeabe8aaed62c1",
       "digestAuthority": "artifact_bytes",
       "exists": true,
       "linkFrom": "",
@@ -185,7 +185,7 @@
     {
       "artifactKind": "distribution_binding",
       "commitRole": "publication",
-      "digest": "5fa260604b027ae4980e88b99e943f0a2632bd0091e3c586f2a9f02148fcfd9a",
+      "digest": "1801a6b853dc07ef30df3084b02c7a64a6508207e8add517a22bdda04166fa10",
       "digestAuthority": "artifact_bytes",
       "exists": true,
       "linkFrom": "",
@@ -391,7 +391,7 @@
     "docs/sw.js"
   ],
   "issueDate": "2026-09-02",
-  "manifestId": "27c081d864834faeaf9cabdfb1367947ee50c36d6f3d215a0d560e6bdbbd0eed",
+  "manifestId": "f11f163878ada579d7ac643475138702199739bad495b1528c9d8b4ca66197c1",
   "runId": "direct-2026-09-02-1-9d516936281b41bbac6a6dc1f2d9b0f0",
   "runIntent": "scheduled_production_direct",
   "scheduledCategoryIds": [
