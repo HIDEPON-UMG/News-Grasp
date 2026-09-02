@@ -182,6 +182,54 @@ def test_registered_consumer_rejects_git_and_timing_inputs_before_transport(
         )
 
 
+def test_registered_summary_consumer_reads_frontmatter_source_not_rendered_html(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Summary stageはfrontmatter正本を品質consumerへ渡す。"""
+    api = importlib.import_module("tools.news_grasp_direct_runtime")
+    root = tmp_path / "repo"
+    source = root / "digest" / "Summary" / "2026-09-01.md"
+    rendered = root / "docs" / "2026-09-01" / "summary" / "index.html"
+    source.parent.mkdir(parents=True)
+    rendered.parent.mkdir(parents=True)
+    source.write_text(
+        "---\n"
+        "hero_headline: '日米が円買い協調介入、ドル円は一時155円台前半へ'\n"
+        "---\n\n"
+        "## § 本日のテーマ考察\n\n"
+        "> [[為替]] の変化を **政策** と __市場__ から読む。\n",
+        encoding="utf-8",
+    )
+    rendered.write_text("<html>generated public summary</html>\n", encoding="utf-8")
+
+    daily_quality = importlib.import_module("tools.validate_daily_quality")
+    completion = importlib.import_module("tools.news_grasp_direct_completion")
+    monkeypatch.setattr(completion, "resolve_trusted_repo_root", lambda _path: root)
+    seen: list[Path] = []
+
+    def _hero(path: Path) -> list[str]:
+        seen.append(path)
+        return []
+
+    monkeypatch.setattr(daily_quality, "validate_summary_hero", _hero)
+    monkeypatch.setattr(daily_quality, "validate_summary_emphasis", lambda _path: [])
+
+    result = api._registered_stage_verifier(
+        "summary",
+        run={"run_id": "run", "issue_date": "2026-09-01", "run_intent": api.RUN_INTENT},
+        evidence={},
+        repo_root=root,
+        public_base_url="https://hidepon-umg.github.io/News-Grasp/",
+        remote="origin",
+        branch="main",
+        wait_sec=0,
+        poll_sec=30,
+    )
+
+    assert result["ok"] is True, result
+    assert seen == [source]
+
+
 def test_pages_workflow_redirect_is_not_followed(tmp_path: Path, monkeypatch) -> None:
     del tmp_path
     import urllib.error

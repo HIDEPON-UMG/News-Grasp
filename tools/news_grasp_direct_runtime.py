@@ -2185,7 +2185,10 @@ def _registered_stage_verifier(
             failures.extend(item.code for item in generated.errors)
             observation = {"exitCode": generated.exit_code, "warningCount": len(generated.warnings)}
         elif stage_id == "summary":
-            summary = root / "docs" / issue_date / "summary" / "index.html"
+            # hero / reflection の正本は frontmatter を持つ digest Markdown。
+            # docs 側は生成済み公開HTMLであり、validate_daily_quality の
+            # frontmatter 検証へ渡すと常に欠落扱いになる。
+            summary = root / "digest" / "Summary" / f"{issue_date}.md"
             failures.extend(validate_daily_quality.validate_summary_hero(summary))
             failures.extend(validate_daily_quality.validate_summary_emphasis(summary))
         elif stage_id == "daily_audio":
