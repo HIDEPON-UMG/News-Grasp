@@ -1,5 +1,7 @@
 name: Deploy Pages
 
+# Direct mainline completion binds reader-visible Pages evidence to the exact
+# remote release ref, including source-only verifier repairs.
 on:
   push:
     branches: [main]
