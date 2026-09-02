@@ -230,6 +230,43 @@ def test_registered_summary_consumer_reads_frontmatter_source_not_rendered_html(
     assert seen == [source]
 
 
+def test_registered_deepdive_consumers_scope_audit_to_current_issue(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """direct本線は過去30日 corpus を各stageで重複監査しない。"""
+    api = importlib.import_module("tools.news_grasp_direct_runtime")
+    deepdive_quality = importlib.import_module("tools.deepdive_quality")
+    completion = importlib.import_module("tools.news_grasp_direct_completion")
+    root = tmp_path / "repo"
+    root.mkdir()
+    monkeypatch.setattr(completion, "resolve_trusted_repo_root", lambda _path: root)
+    captured: list[dict[str, object]] = []
+
+    def _audit_issue(**kwargs):
+        captured.append(dict(kwargs))
+        return {"status": "Green", "issueCodes": [], "issues": []}
+
+    monkeypatch.setattr(deepdive_quality, "audit_issue", _audit_issue)
+
+    for stage_id in ("deepdive_article", "deepdive_quality"):
+        result = api._registered_stage_verifier(
+            stage_id,
+            run={"run_id": "run", "issue_date": "2026-09-01", "run_intent": api.RUN_INTENT},
+            evidence={},
+            repo_root=root,
+            public_base_url="https://hidepon-umg.github.io/News-Grasp/",
+            remote="origin",
+            branch="main",
+            wait_sec=0,
+            poll_sec=30,
+        )
+        assert result["ok"] is True, result
+
+    assert len(captured) == 2
+    assert all(row["include_corpus"] is False for row in captured)
+    assert {row["route"] for row in captured} == {"production_generation"}
+
+
 def test_pages_workflow_redirect_is_not_followed(tmp_path: Path, monkeypatch) -> None:
     del tmp_path
     import urllib.error

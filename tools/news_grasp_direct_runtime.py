@@ -2196,7 +2196,13 @@ def _registered_stage_verifier(
             if observation.get("ok") is not True:
                 failures.extend(observation.get("reasonCodes") or ["daily_audio_projection_red"])
         elif stage_id in {"deepdive_article", "deepdive_quality"}:
-            observation = deepdive_quality.audit_issue(repo_root=root, issue_date=issue_date, require_rendered_public=stage_id == "deepdive_quality", route="production_generation")
+            observation = deepdive_quality.audit_issue(
+                repo_root=root,
+                issue_date=issue_date,
+                include_corpus=False,
+                require_rendered_public=stage_id == "deepdive_quality",
+                route="production_generation",
+            )
             if observation.get("status") != "Green" or observation.get("issueCodes") or observation.get("issues"):
                 failures.extend(observation.get("issueCodes") or observation.get("issues") or ["deepdive_quality_red"])
         elif stage_id == "html_docs":
