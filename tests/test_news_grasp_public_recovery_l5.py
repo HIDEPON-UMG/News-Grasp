@@ -514,6 +514,28 @@ def test_20260827_public_recovery_production_composition_l5(
             encoding="utf-8",
         )
 
+        # 本番のsafe_public_fetchはloopbackと任意portを拒否する。L5 fixtureだけは
+        # process内の一時HTTP serverをtransport doubleとして使い、production境界を
+        # 緩めずに403→fallbackのcompositionを検証する。
+        monkeypatch.setattr(deepdive_quality, "urlopen", urlopen)
+
+        def local_system_transport(
+            target_url: str, *, timeout: float
+        ) -> tuple[int, str, bytes]:
+            request = deepdive_quality.Request(
+                target_url,
+                headers={"User-Agent": "News-Grasp-L5-System-Transport"},
+            )
+            with urlopen(request, timeout=timeout) as response:
+                return (
+                    int(response.getcode() or 0),
+                    str(response.geturl()),
+                    response.read(),
+                )
+
+        monkeypatch.setattr(
+            deepdive_quality, "_run_system_transport", local_system_transport
+        )
         bundle = deepdive_quality.materialize_issue_bundle(
             repo_root=artifact,
             issue_date=ISSUE_DATE,
@@ -530,6 +552,8 @@ def test_20260827_public_recovery_production_composition_l5(
                 "audit-issue",
                 "--date",
                 ISSUE_DATE,
+                "--route",
+                "daily_quality",
                 "--require-rendered-public",
             ],
             cwd=REPO,

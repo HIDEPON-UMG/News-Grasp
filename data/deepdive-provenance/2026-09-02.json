@@ -5,13 +5,13 @@
     {
       "claimId": "ai-20260902-local-llm",
       "claimSha256": "e471fbce1c83f5c27307c8b941e48504a9df1efa67a881fe2d973bed31e9dee2",
-      "evidenceSha256": "514ee406580854b25ce3e5aa024a605708e444b78d606eb49fa8a46888b3eb9d",
+      "evidenceSha256": "15d014cf131958077d6b1fe8ce79bc71381b29a0e2259b55c8dc0461a914fca4",
       "sourceUrl": "https://gihyo.jp/article/2026/09/home-local-llm-guide"
     },
     {
       "claimId": "fx-20260902-outlook",
       "claimSha256": "6445fd3ee09b97d82c9f7c92cde240dbbd865a06f514889be05386e3fd4b21a6",
-      "evidenceSha256": "ba350593cbe52150e0ef18e9f196c94b7008bba2ff3a38bcac01fcb382b7d964",
+      "evidenceSha256": "b6c4f66e24b3a6b96e0b17fdad60a54006e25b4d620a0b21556ac347e627134f",
       "sourceUrl": "https://www.gaitame.com/media/entry/2026/09/01/152019"
     },
     {
@@ -27,15 +27,15 @@
       "sourceUrl": "https://www.city.fukuyama.hiroshima.jp/soshiki/toshikotsu/410081.html"
     }
   ],
-  "claimSetSha256": "465e3b8635693862e5b1b6e3611fc9b09347475f184189d047e08af3c7e8faca",
+  "claimSetSha256": "ebd791fd322c663dafdfc55b021af26b8be08635d6c4eafe37016a683a8153cf",
   "issueDate": "2026-09-02",
-  "manifestSha256": "8a2545e529e793f83db4fcf50dd24951b6962326866e4c0cb29815236baf65dc",
+  "manifestSha256": "0b80fdb41320100e11dd0196895fef2d829aea11d86f4b711d2ec5069f9b5c00",
   "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V2",
-  "sourceSetSha256": "d8f6a463dc7705f1c25923aeb2778245f527d0ecb957b6b62bb513e83b423377",
+  "sourceSetSha256": "060667678b59e987df7634fd5798c4dc677cb372c6ec8f696577fece72baee3b",
   "sources": [
     {
       "contentSha256": "d8d3138c1b67fddd3b13fc17533655915092104d96192913159423a2bbb4848d",
-      "fetchedAt": "2026-09-01T21:50:56.551552+00:00",
+      "fetchedAt": "2026-09-02T02:10:50.211047+00:00",
       "finalUrl": "https://gihyo.jp/article/2026/09/home-local-llm-guide",
       "httpStatus": 200,
       "locations": [
@@ -53,7 +53,7 @@
     },
     {
       "contentSha256": "6d46ec120770f702bf1aae9fde4167ae54869705c95c8de119e9031b5bc9f8aa",
-      "fetchedAt": "2026-09-01T21:50:56.803630+00:00",
+      "fetchedAt": "2026-09-02T02:10:50.493735+00:00",
       "finalUrl": "https://www.city.fukuyama.hiroshima.jp/soshiki/toshikotsu/410081.html",
       "httpStatus": 200,
       "locations": [
@@ -71,7 +71,7 @@
     },
     {
       "contentSha256": "e87fbe62298803418cf47a54944ee08da46a3496db346f2c9eda70b617e5f356",
-      "fetchedAt": "2026-09-01T21:50:57.151677+00:00",
+      "fetchedAt": "2026-09-02T02:10:50.783630+00:00",
       "finalUrl": "https://www.city.seki.lg.jp/0000023478.html",
       "httpStatus": 200,
       "locations": [
@@ -88,8 +88,8 @@
       "url": "https://www.city.seki.lg.jp/0000023478.html"
     },
     {
-      "contentSha256": "2d55d809968be38054770037dd578e06d718230c4de428bcd5b89f18a0d6869f",
-      "fetchedAt": "2026-09-01T21:50:57.422986+00:00",
+      "contentSha256": "9dfcf5fffd5c2b717dea3af542aa2447c72686632dda896dee0d0a986500045e",
+      "fetchedAt": "2026-09-02T02:10:51.238078+00:00",
       "finalUrl": "https://www.gaitame.com/media/entry/2026/09/01/152019",
       "httpStatus": 200,
       "locations": [

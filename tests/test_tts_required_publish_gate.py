@@ -82,6 +82,45 @@ def test_tts_audio_presence_allows_complete_fixture(tmp_path: Path) -> None:
     ) == []
 
 
+def test_tts_audio_presence_prefers_canonical_v2_without_v1_writer(
+    tmp_path: Path,
+) -> None:
+    """V2へ一本化した後はV1 stateを再生成せず日次gateを閉じる。"""
+
+    _write_complete_fixture(tmp_path)
+    (tmp_path / "build" / "tts" / "latest_audio.json").unlink()
+    v2_path = tmp_path / "build" / "tts" / "daily" / "latest_audio.json"
+    v2_path.parent.mkdir(parents=True)
+    v2_audio_url = AUDIO_URL.split("?", 1)[0]
+    v2_path.write_text(
+        json.dumps(
+            {
+                "schemaVersion": "NEWS_GRASP_AUDIO_PROJECTION_V2",
+                "audioType": "daily",
+                "sourceArtifact": "digest/Summary/2026-06-17-audio-script.md",
+                "runtimeState": "release-existing",
+                "provider": {"name": "github-release", "jobIdentity": "existing"},
+                "publicUrl": v2_audio_url,
+                "publicPageHref": v2_audio_url,
+                "issueDate": "2026-06-17",
+                "runId": "direct-test",
+                "runIntent": "scheduled_production_direct",
+                "completionState": "verified",
+                "adapterSourceSchema": "NEWS_GRASP_AUDIO_PROJECTION_V2",
+                "ok": True,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert validate_tts_audio_presence(
+        repo_root=tmp_path,
+        digest_root=tmp_path / "digest",
+        docs_root=tmp_path / "docs",
+        issue=ISSUE,
+    ) == []
+
+
 def test_tts_audio_presence_uses_date_summary_for_historical_audit(tmp_path: Path) -> None:
     """過去日監査は現在日のlatest/homeを過去成果物へ誤適用しない。"""
     _write_complete_fixture(tmp_path)

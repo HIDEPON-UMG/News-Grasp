@@ -159,6 +159,9 @@ LOCAL_ONLY_EVIDENCE_SHA256: dict[str, str] = {
     "build/incidents/2026-08-13-daily-batch-and-recovery-delay-report.html": (
         "50ee3e4427ce6d6acf82c649c7a0288f0a751bb42e65ad3dcc3debe84bd72286"
     ),
+    "plans/2026-08-27-news-grasp-public-recovery-closeout/operational-design.md": (
+        "5a8aeabf89fb5e355710b3ab7b824da8457b9a3475af6558b1611aac2b9fd142"
+    ),
 }
 
 
@@ -803,6 +806,33 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "plans/2026-08-27-news-grasp-public-recovery-closeout/operational-design.md",
         "fixture_required",
     ),
+)
+
+
+PUBLIC_INTEGRITY_FAILURE_CLASSES_V1: tuple[tuple[str, str, str], ...] = (
+    ("manifest_home_omission", "publish manifest / home", "canonical manifest must include docs/index.html and exact write set"),
+    ("daily_audio_href_missing", "public semantic / daily audio", "home href must equal same-run daily audio V2 public URL"),
+    ("deepdive_href_missing", "public semantic / DeepDive", "home must reach same-issue DeepDive"),
+    ("summary_semantic_reflection_missing", "public semantic / Summary", "HTTP 200 cannot replace reflection/date/manifest semantic evidence"),
+    ("audio_projection_shape_drift", "audio state / producer", "daily and DeepDive producers must write one V2 shape while V1 remains read-only"),
+    ("claim_context_binding_mismatch", "DeepDive provenance / run context", "claim-source, sourceUrl, issue date and run intent must agree"),
+    ("dialogue_value_unspecific", "DeepDive dialogue / article value", "dialogue value must be concrete and article-specific"),
+    ("claim_evidence_normalized_duplicate", "DeepDive evidence / independence", "normalized claim and evidence equality is Red"),
+    ("dirty_checkout_remote_false_green", "git publication / authority", "dirty or unbound checkout cannot prove remote publication"),
+)
+
+SCENARIOS = SCENARIOS + tuple(
+    HistoricalFailureScenario(
+        "2026-09-01",
+        stage,
+        failure_class,
+        failure_class,
+        invariant,
+        f"tests/test_news_grasp_publish_contract_v2.py fixture for {failure_class}",
+        "data/historical_failure_scenarios/2026-09-01-public-integrity.json",
+        "fixture_required",
+    )
+    for failure_class, stage, invariant in PUBLIC_INTEGRITY_FAILURE_CLASSES_V1
 )
 
 

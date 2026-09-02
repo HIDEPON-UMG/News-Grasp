@@ -151,6 +151,17 @@ def test_verify_urls_probes_duplicate_url_once(monkeypatch: pytest.MonkeyPatch):
     assert [v.ref.location for v in verdicts] == ["refs", "chart.source"]
 
 
+def test_verify_urls_rejects_unbounded_resource_parameters() -> None:
+    """生成物やcaller入力でthread/timeout/unique URLを無制限化できない。"""
+    with pytest.raises(ValueError, match="workers_out_of_policy"):
+        verify_urls([], max_workers=10_000)
+    with pytest.raises(ValueError, match="timeout_out_of_policy"):
+        verify_urls([], timeout=600)
+    refs = [UrlRef(url=f"https://example.com/{index}", location="refs") for index in range(257)]
+    with pytest.raises(ValueError, match="unique_budget_exceeded"):
+        verify_urls(refs)
+
+
 def test_system_tls_fallback_recovers_python_certificate_chain_failure(
     monkeypatch: pytest.MonkeyPatch,
 ):
@@ -195,6 +206,19 @@ def test_network_unreachable_is_fatal_without_explicit_skip(
     )
     assert verdict.ok is False
     assert "検証不能" in verdict.detail
+
+
+@pytest.mark.parametrize("url", ["http://127.0.0.1/", "http://169.254.169.254/latest/meta-data/", "http://[::1]/"])
+def test_url_probe_rejects_internal_network_before_transport(monkeypatch, url):
+    calls: list[object] = []
+    monkeypatch.setattr(deepdive_urls.proc, "quiet_run", lambda *args, **kwargs: calls.append(args))
+    status, detail = deepdive_urls._probe(url, method="GET", timeout=0.1, range_header=True)
+    assert status is None
+    assert "public_fetch" in detail
+    system_status, system_detail = deepdive_urls._probe_system_tls(url, timeout=0.1)
+    assert system_status is None
+    assert "public_fetch" in system_detail
+    assert calls == []
 
 
 # ── ネットワーク必要テスト (本番検証) ────────────────────────────────────────
@@ -256,6 +280,19 @@ date: "2026-06-03"
     assert all(v.ok for v in verdicts)
 
 
+@pytest.mark.parametrize("status", [401, 406])
+def test_access_control_only_response_is_ambiguous_alive(monkeypatch, status):
+    """認証・content negotiation拒否だけでは404/410の死リンクへ分類しない。"""
+
+    from tools import validate_deepdive_urls as mod
+
+    monkeypatch.setattr(mod, "_probe", lambda *args, **kwargs: (status, f"probe {status}"))
+    verdict = mod._verify_one(mod.UrlRef("https://example.com/protected", "refs"), timeout=1)
+    assert verdict.ok is False
+    assert verdict.status == status
+    assert verdict.verification_status == "ambiguous"
+
+
 @pytest.mark.network
 @needs_network
 def test_all_published_deepdives_have_live_urls():
@@ -267,16 +304,21 @@ def test_all_published_deepdives_have_live_urls():
     src_dir = ROOT / "digest" / "DeepDive"
     if not src_dir.exists():
         pytest.skip("digest/DeepDive がまだ存在しない")
-    failures: list[str] = []
+    occurrences: dict[str, list[tuple[Path, UrlRef]]] = {}
     for md_path in sorted(src_dir.glob("*.md")):
         text = md_path.read_text(encoding="utf-8")
-        refs = extract_urls(text)
-        if not refs:
+        for ref in extract_urls(text):
+            occurrences.setdefault(ref.url, []).append((md_path, ref))
+    representatives = [rows[0][1] for rows in occurrences.values()]
+    verdicts = []
+    for offset in range(0, len(representatives), 256):
+        verdicts.extend(verify_urls(representatives[offset:offset + 256], max_workers=16))
+    failures: list[str] = []
+    for v in verdicts:
+        if v.verification_status != "fatal":
             continue
-        verdicts = verify_urls(refs)
-        for v in verdicts:
-            if not v.ok:
-                failures.append(f"{md_path.name}: [{v.ref.location}] {v.detail}  {v.ref.url}")
+        for md_path, ref in occurrences[v.ref.url]:
+            failures.append(f"{md_path.name}: [{ref.location}] {v.detail}  {v.ref.url}")
     assert not failures, (
         "公開 DeepDive に死リンクあり (捏造または恒久 404):\n  " + "\n  ".join(failures)
     )

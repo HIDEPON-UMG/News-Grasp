@@ -5458,9 +5458,10 @@ def _load_notification_state(
         expected_prior_path = Path(
             os.path.abspath(path.with_name(f"{date}.delivery.json"))
         )
-        observed_prior_path = Path(
-            str(receipt.get("priorDeliveryReceiptPath") or "")
-        )
+        prior_path_id = str(receipt.get("priorDeliveryReceiptPath") or "")
+        observed_prior_path = Path(prior_path_id)
+        if not observed_prior_path.is_absolute():
+            observed_prior_path = Path(path).parent / observed_prior_path
         try:
             prior_raw = _canonical_file_bytes(
                 observed_prior_path,
@@ -5532,7 +5533,10 @@ def _load_notification_state(
     expected_ledger_path = Path(
         os.path.abspath(Path(path).with_name(f"{date}.{ledger_suffix}.json"))
     )
-    observed_ledger_path = Path(str(payload.get("evidenceLedgerPath") or ""))
+    ledger_path_id = str(payload.get("evidenceLedgerPath") or "")
+    observed_ledger_path = Path(ledger_path_id)
+    if not observed_ledger_path.is_absolute():
+        observed_ledger_path = Path(path).parent / observed_ledger_path
     try:
         ledger_raw = _canonical_file_bytes(
             observed_ledger_path,

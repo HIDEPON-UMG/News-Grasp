@@ -203,13 +203,22 @@ def claimed_publication_date(published_date: object) -> str | None:
 def should_skip_date_evidence(url: str, date_evidence_source: object) -> bool:
     """htmldate 再検証が不適切な URL/source の日付証拠検証を skip する。
 
+    `canonical-page-date-text` と `html-meta` は収集時に canonical page 本文から
+    取得済みの独立証拠である。これらへ汎用 htmldate を重ねると、ページ内の月初日や
+    年初日を publication date と誤推定し、より強い証拠を弱い推定で上書きする。
+
     Google News RSS の encoded URL は canonical 記事本文ではなく中継ページであり、
     harvest_candidates.py の `when:1d` + RSS pubDate が鮮度境界になる。中継ページへ
     htmldate をかけると Google 側ページの日付を拾い、正当な RSS pubDate と衝突する。
     """
-    if "://news.google.com/rss/articles/" not in url:
+    if not isinstance(date_evidence_source, str):
         return False
-    return isinstance(date_evidence_source, str) and date_evidence_source == "rss-pubdate"
+    if date_evidence_source in {"canonical-page-date-text", "html-meta"}:
+        return True
+    return (
+        "://news.google.com/rss/articles/" in url
+        and date_evidence_source == "rss-pubdate"
+    )
 
 
 def _drop_cards_from_markdown(text: str, urls: set[str]) -> tuple[str, int]:

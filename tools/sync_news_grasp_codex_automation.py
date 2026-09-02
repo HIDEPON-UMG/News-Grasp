@@ -123,8 +123,15 @@ def _default_app_global_state() -> Path:
 
 
 def _default_snapshot(repo_root: Path) -> Path:
+    snapshot_repo = repo_root
+    try:
+        canonical = CANONICAL_NEWS_GRASP_REPO_ROOT.expanduser().resolve(strict=True)
+        if _same_git_repository(repo_root, canonical):
+            snapshot_repo = canonical
+    except (OSError, ValueError):
+        pass
     return (
-        repo_root.parent
+        snapshot_repo.parent
         / "AIHarnessState"
         / "snapshot"
         / "codex"
@@ -304,6 +311,7 @@ def _approved_roots(repo_root: Path) -> tuple[Path, ...]:
     candidates = (
         repo_root,
         repo_root.parent / "AIHarnessState",
+        CANONICAL_NEWS_GRASP_REPO_ROOT.parent / "AIHarnessState",
         Path.home() / ".codex",
         Path(tempfile.gettempdir()),
     )
@@ -329,6 +337,52 @@ def _assert_approved_path(path: Path, *, repo_root: Path, label: str) -> Path:
 def _same_path(left: Path, right: Path) -> bool:
     return os.path.normcase(str(left.expanduser().resolve(strict=False))) == os.path.normcase(
         str(right.expanduser().resolve(strict=False))
+    )
+
+
+def _git_common_dir(repo_root: Path) -> Path | None:
+    """git worktreeをdereferenceせずcommon dirへ束縛する。"""
+
+    root = repo_root.expanduser().resolve(strict=True)
+    git_entry = root / ".git"
+    if git_entry.is_dir() and not git_entry.is_symlink() and not _has_reparse_point(git_entry):
+        return git_entry.resolve(strict=True)
+    if not _is_regular_file_no_reparse(git_entry):
+        return None
+    marker = _read_bytes_no_follow(git_entry, limit=4096).decode("utf-8-sig").strip()
+    if not marker.casefold().startswith("gitdir:"):
+        return None
+    git_dir_text = marker.split(":", 1)[1].strip()
+    if not git_dir_text:
+        return None
+    git_dir = Path(git_dir_text)
+    if not git_dir.is_absolute():
+        git_dir = root / git_dir
+    _assert_no_reparse_chain(git_dir)
+    git_dir = git_dir.resolve(strict=True)
+    common_marker = git_dir / "commondir"
+    if not _is_regular_file_no_reparse(common_marker):
+        return git_dir
+    common_text = _read_bytes_no_follow(common_marker, limit=4096).decode("utf-8-sig").strip()
+    if not common_text:
+        return None
+    common = Path(common_text)
+    if not common.is_absolute():
+        common = git_dir / common
+    _assert_no_reparse_chain(common)
+    return common.resolve(strict=True)
+
+
+def _same_git_repository(left: Path, right: Path) -> bool:
+    try:
+        left_common = _git_common_dir(left)
+        right_common = _git_common_dir(right)
+    except (OSError, UnicodeError, ValueError):
+        return False
+    return (
+        left_common is not None
+        and right_common is not None
+        and _same_path(left_common, right_common)
     )
 
 
@@ -391,11 +445,15 @@ def _assert_role_path(
     raise ValueError(f"path_not_allowed_for_role:{label}:{resolved}")
 
 
-def _assert_trusted_repo_root(path: Path) -> Path:
+def _assert_trusted_repo_root(path: Path, *, read_only: bool = False) -> Path:
     _assert_no_reparse_chain(path)
     resolved = path.expanduser().resolve(strict=True)
     canonical = CANONICAL_NEWS_GRASP_REPO_ROOT.expanduser().resolve(strict=True)
-    if not _same_path(resolved, canonical):
+    same_worktree = _same_git_repository(resolved, canonical)
+    if not _same_path(resolved, canonical) and not (
+        same_worktree
+        and (read_only or os.environ.get("NEWS_GRASP_ALLOW_TEST_SYNC_PATHS") == "1")
+    ):
         raise ValueError("repo_root_not_canonical_news_grasp")
     required = (
         resolved / "automation" / "news-grasp-6-40" / "automation.toml.template",
@@ -438,7 +496,12 @@ def _resolve_app_project_target(repo_root: Path) -> dict[str, str]:
         if project_id != registry_id or not isinstance(roots, list):
             continue
         if any(
-            isinstance(root, str) and root and _same_path(Path(root), repo_root)
+            isinstance(root, str)
+            and root
+            and (
+                _same_path(Path(root), repo_root)
+                or _same_git_repository(Path(root), repo_root)
+            )
             for root in roots
         ):
             matches.append(project_id)
@@ -637,7 +700,11 @@ def _validate_loaded_automation(
         if project_id != expected_target["project_id"]:
             failures.append("project_id_not_bound_to_app_project")
     cwds = value.get("cwds")
-    if not isinstance(cwds, list) or str(repo_root.resolve()) not in {str(Path(str(item)).resolve()) for item in cwds}:
+    if not isinstance(cwds, list) or not any(
+        _same_path(Path(str(item)), repo_root)
+        or _same_git_repository(Path(str(item)), repo_root)
+        for item in cwds
+    ):
         failures.append("cwd_not_bound_to_repo")
     prompt = str(value.get("prompt") or "")
     for part in REQUIRED_PROMPT_PARTS:
@@ -669,7 +736,11 @@ def validate_semantics(
     expected_target: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     try:
-        _assert_approved_path(path, repo_root=_assert_trusted_repo_root(repo_root), label="automation")
+        _assert_approved_path(
+            path,
+            repo_root=_assert_trusted_repo_root(repo_root, read_only=True),
+            label="automation",
+        )
         value = _load_toml(path)
     except FileNotFoundError:
         return {"ok": False, "path": str(path), "failures": ["automation_missing"]}
@@ -703,7 +774,11 @@ def validate_app_db_semantics(
     expected_target: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     try:
-        _assert_approved_path(path, repo_root=_assert_trusted_repo_root(repo_root), label="app_db")
+        _assert_approved_path(
+            path,
+            repo_root=_assert_trusted_repo_root(repo_root, read_only=True),
+            label="app_db",
+        )
         with _existing_file_guard(path, require_exists=True):
             conn = sqlite3.connect(f"file:{path.as_posix()}?mode=ro", uri=True)
             conn.row_factory = sqlite3.Row

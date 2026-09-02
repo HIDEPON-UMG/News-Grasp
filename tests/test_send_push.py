@@ -43,6 +43,50 @@ SAMPLE_SUB = {
 }
 
 
+def test_sender_source_binding_uses_bounded_origin_main_history_and_blob_size(monkeypatch) -> None:
+    calls: list[list[str]] = []
+    commit = "a" * 40
+    blob_id = "b" * 40
+
+    def fake_run(argv, **kwargs):
+        del kwargs
+        calls.append(list(argv))
+        args = argv[1:]
+        if args == ["remote", "get-url", "origin"]:
+            return sp.subprocess.CompletedProcess(argv, 0, stdout="https://github.com/HIDEPON-UMG/News-Grasp.git\n", stderr="")
+        if args[:2] == ["rev-list", "--max-count=256"]:
+            return sp.subprocess.CompletedProcess(argv, 0, stdout=commit + "\n", stderr="")
+        if args[:2] == ["rev-parse", "--verify"]:
+            return sp.subprocess.CompletedProcess(argv, 0, stdout=blob_id + "\n", stderr="")
+        if args == ["cat-file", "-t", blob_id]:
+            return sp.subprocess.CompletedProcess(argv, 0, stdout="blob\n", stderr="")
+        if args == ["cat-file", "-s", blob_id]:
+            return sp.subprocess.CompletedProcess(argv, 0, stdout=str(2 * 1024 * 1024 + 1) + "\n", stderr="")
+        raise AssertionError(f"unbounded blob read attempted: {args}")
+
+    monkeypatch.setattr(sp.subprocess, "run", fake_run)
+    assert sp._trusted_sender_source_binding("c" * 64) == {}
+    flattened = [item for call in calls for item in call]
+    assert "--all" not in flattened
+    assert "origin/main" in flattened
+    assert not any(call[1:3] == ["cat-file", "blob"] for call in calls)
+
+
+def test_sender_source_binding_has_one_whole_operation_deadline(monkeypatch) -> None:
+    calls: list[list[str]] = []
+    ticks = iter([0.0, 0.0, 16.0])
+
+    def fake_run(argv, **kwargs):
+        del kwargs
+        calls.append(list(argv))
+        return sp.subprocess.CompletedProcess(argv, 0, stdout="https://github.com/HIDEPON-UMG/News-Grasp.git\n", stderr="")
+
+    monkeypatch.setattr(sp.time, "monotonic", lambda: next(ticks))
+    monkeypatch.setattr(sp.subprocess, "run", fake_run)
+    assert sp._trusted_sender_source_binding("d" * 64) == {}
+    assert len(calls) == 1
+
+
 def test_load_subscriptions_missing_file_returns_empty(tmp_path):
     missing = tmp_path / "nope.json"
     assert load_subscriptions(missing) == []
@@ -415,7 +459,111 @@ def test_delivery_ledger_prevents_duplicate_send_and_seals_prior_chain(
 
     assert calls["count"] == 1
     assert state["status"] == "already_sent"
+    assert not Path(state["deliveryReceipt"]["priorDeliveryReceiptPath"]).is_absolute()
+    assert not Path(state["evidenceLedgerPath"]).is_absolute()
+    assert not Path(state["deliveryReceiptV2Path"]).is_absolute()
+    assert state["deliveryReceiptV2Path"] == f"{sp._today_jst_str()}.already-sent-verifications.jsonl"
+    verification_path = state_path.with_name(state["deliveryReceiptV2Path"])
+    assert verification_path.is_file()
+    assert state["deliveryReceiptV2"] in [json.loads(line) for line in verification_path.read_text(encoding="utf-8").splitlines()]
+    assert str(tmp_path) not in json.dumps(state, ensure_ascii=False)
     assert verified["reason"] == ""
+
+
+def test_notification_v2_binds_run_and_anonymized_recipient_without_raw_endpoint() -> None:
+    """V2 receiptはrun-intentと匿名recipient結果を保持し、生endpointを保存しない。"""
+    audience = sp._audience_set_sha256([SAMPLE_SUB])
+    state = sp._notification_state(
+        status="sent",
+        ok=True,
+        source="file",
+        subscription_count=1,
+        sent_count=1,
+        payload_sha256="a" * 64,
+        audience_set_sha256=audience,
+        run_id="direct-2026-09-01-test",
+        run_intent="scheduled_production_direct",
+        recipient_results=[{"recipientKey": sp._recipient_key(SAMPLE_SUB, audience), "status": "sent"}],
+    )
+    receipt = state["deliveryReceiptV2"]
+    assert receipt["schemaVersion"] == "NEWS_GRASP_NOTIFICATION_DELIVERY_RECEIPT_V2"
+    assert receipt["runId"] == "direct-2026-09-01-test"
+    assert SAMPLE_SUB["endpoint"] not in json.dumps(receipt, ensure_ascii=False)
+
+
+def test_public_completion_rejects_self_hashed_notification_without_sender_ledger(tmp_path) -> None:
+    """security Red: 派生V2 JSONの自己SHAだけでは送達authorityにしない。"""
+    from tools.news_grasp_direct_completion import _notification
+
+    issue_date = sp._today_jst_str()
+    state = sp._notification_state(
+        status="sent",
+        ok=True,
+        source="file",
+        subscription_count=1,
+        sent_count=1,
+        payload_sha256="a" * 64,
+        audience_set_sha256="b" * 64,
+        run_id="direct-test",
+        recipient_results=[{"recipientKey": "c" * 64, "status": "sent"}],
+    )
+    path = tmp_path / "build" / "notification" / f"{issue_date}.json"
+    path.parent.mkdir(parents=True)
+    sp._write_atomic_json(path, state)
+    result = _notification(tmp_path, issue_date, run_id="direct-test")
+    assert result["ok"] is False
+    assert "notification_sender_ledger_missing" in result["failures"]
+
+
+def test_public_completion_rejects_sender_ledger_without_immutable_git_blob_binding(tmp_path) -> None:
+    """local self-hashだけでなくpre-send Git blob bindingを要求する。"""
+    from tools.news_grasp_direct_completion import _notification
+
+    issue_date = sp._today_jst_str()
+    state_path = tmp_path / "build" / "notification" / f"{issue_date}.json"
+    state = sp._notification_state(
+        status="sent",
+        ok=True,
+        source="file",
+        subscription_count=1,
+        sent_count=1,
+        payload_sha256="a" * 64,
+        audience_set_sha256="b" * 64,
+        run_id="direct-test",
+        recipient_results=[{"recipientKey": "c" * 64, "status": "sent"}],
+    )
+    sp._write_notification_state(str(state_path), state)
+    result = _notification(tmp_path, issue_date, run_id="direct-test")
+    assert result["ok"] is False
+    assert "notification_sender_git_blob_binding_invalid" in result["failures"] or "notification_trusted_sender_source_missing" in result["failures"]
+
+
+def test_public_completion_rejects_notification_receipt_path_alias(tmp_path) -> None:
+    """state sibling exact ID以外のrepo内ledger/V2/prior aliasを拒否する。"""
+    from tools.news_grasp_direct_completion import _notification
+
+    issue_date = sp._today_jst_str()
+    state_path = tmp_path / "build" / "notification" / f"{issue_date}.json"
+    state_path.parent.mkdir(parents=True)
+    state = sp._notification_state(
+        status="sent",
+        ok=True,
+        source="file",
+        subscription_count=1,
+        sent_count=1,
+        payload_sha256="a" * 64,
+        audience_set_sha256="b" * 64,
+        run_id="direct-test",
+        recipient_results=[{"recipientKey": "c" * 64, "status": "sent"}],
+    )
+    sp._write_notification_state(str(state_path), state)
+    mutated = json.loads(state_path.read_text(encoding="utf-8"))
+    mutated["evidenceLedgerPath"] = "other.json"
+    mutated["deliveryReceiptV2Path"] = "other-v2.json"
+    sp._write_atomic_json(state_path, mutated)
+    result = _notification(tmp_path, issue_date, run_id="direct-test")
+    assert "notification_sender_ledger_path_id_invalid" in result["failures"]
+    assert "notification_v2_path_id_invalid" in result["failures"]
 
 
 def test_sent_state_without_canonical_delivery_ledger_is_rejected(tmp_path):
@@ -491,7 +639,8 @@ def test_notification_evidence_ledger_rejects_leaf_symlink(
                 prior_delivery_receipt_path=str(ledger_path.absolute()),
                 **common,
             )
-    sp._write_notification_state(str(state_path), state)
+    if status != "sent":
+        sp._write_notification_state(str(state_path), state)
     ledger_path = tmp_path / f"{issue_date}.{ledger_suffix}.json"
     external = tmp_path / f"external-{status}.json"
     external.write_bytes(ledger_path.read_bytes())

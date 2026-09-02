@@ -11,31 +11,31 @@
     {
       "claimId": "fx-20260903-yen-surge",
       "claimSha256": "19833872a5fbe05f08fc55346736db5cbb11c3c82a5b09c8f902c48e058fb379",
-      "evidenceSha256": "677e4e081c2a5ec428f9eb7a6e98d6280d5729ba8c6321bf1897a5cb29f85b8e",
+      "evidenceSha256": "d5a90846e3f2200bbfe9dda02823debb5455f41894a4b5dd2b8bc75f31593181",
       "sourceUrl": "https://www.nikkei.com/article/DGXZQOGN02BMM0S6A900C2000000/"
     },
     {
       "claimId": "manufacturing-20260903-drone-factory",
       "claimSha256": "2b340c96b950de8e4d2e6918a4685f251babb1c8f303c0efe7bc5efa2306caf8",
-      "evidenceSha256": "be73b9acf5535130a0e4d628c0eebf7223ad6c60ae868d218aadc0c2cd6ae0de",
+      "evidenceSha256": "5da7c5c86c0f82260aef4c39adbca5b7e15b51f228020beda47c30b769e12015",
       "sourceUrl": "https://www.chukei-news.co.jp/news/2026/09/03/OK0002609030301_01/"
     },
     {
       "claimId": "mobility-20260903-autonomous-truck",
       "claimSha256": "cd5fe5dbe8811d8cebf675d59e373d6c49edd86ae92ebb78b61c93d9001fb752",
-      "evidenceSha256": "98be3f9e763802a253b1a3fcfea420b534ad50189d94006b557e5ebbed332291",
+      "evidenceSha256": "d9a4ecf44cc6e4203afbce325e5010580603b902a6dd255e5dba7a14d78d8199",
       "sourceUrl": "https://cargo-news.online/news/detail.php?id=11928"
     }
   ],
-  "claimSetSha256": "ac9c4551724436bd7fcfebece796fb7f27512e2d2e97e85a20058b371e1daf81",
+  "claimSetSha256": "ebdb7bbe90604bdb0c09c4ee14a6b6cd0ed8396626b36016884d0eff23ce5559",
   "issueDate": "2026-09-03",
-  "manifestSha256": "67e36aae5daede0c18a5e58b2924c2a59178470423be67eee5ad7284502bc0c5",
+  "manifestSha256": "885aa7a1e32421a7c01f4863763966c169aaa04c65a3c5763757f43de35e504b",
   "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V2",
-  "sourceSetSha256": "0607a3b61b72f73f6a0a2df76ca28423a36fec90360ac6cf31d5cc80f0dd6043",
+  "sourceSetSha256": "61730d36cf9421529cddccc1b6400d891c0baf748b192c89ae978a6ec3977640",
   "sources": [
     {
-      "contentSha256": "bc477ee24d1e958bc03188104be7010958c8f1db1eab6c067e03802202c01df5",
-      "fetchedAt": "2026-09-02T21:30:22.578463+00:00",
+      "contentSha256": "7c242e0d6d7357d0add33a1f0a2519331d74c336fdf6e17906ec1c0abbc9141d",
+      "fetchedAt": "2026-09-02T22:40:25.105285+00:00",
       "finalUrl": "https://cargo-news.online/news/detail.php?id=11928",
       "httpStatus": 200,
       "locations": [
@@ -52,8 +52,8 @@
       "url": "https://cargo-news.online/news/detail.php?id=11928"
     },
     {
-      "contentSha256": "811507535b5894d5efe5790c3a174d10891fc8388b9bc07ddeae1de3fa5d1477",
-      "fetchedAt": "2026-09-02T21:30:22.851597+00:00",
+      "contentSha256": "72ae6276a60535fb3561cce1dc1d90e9c4de2baab30ffc85825da3376b2fc781",
+      "fetchedAt": "2026-09-02T22:40:25.368302+00:00",
       "finalUrl": "https://exawizards.com/column/article/ai-article/japanese-domestic-llm/",
       "httpStatus": 200,
       "locations": [
@@ -70,8 +70,8 @@
       "url": "https://exawizards.com/column/article/ai-article/japanese-domestic-llm/"
     },
     {
-      "contentSha256": "54ba209251b2671860793fe737afaaff980709b021bcffa54a8f91fb3c81fcc2",
-      "fetchedAt": "2026-09-02T21:30:23.087690+00:00",
+      "contentSha256": "e5fdcb22ee1d00b43b1fea1ca38c656070f77d161e178f55ccc84a0f38fb3462",
+      "fetchedAt": "2026-09-02T22:40:25.609489+00:00",
       "finalUrl": "https://www.chukei-news.co.jp/news/2026/09/03/OK0002609030301_01/",
       "httpStatus": 200,
       "locations": [
@@ -88,8 +88,8 @@
       "url": "https://www.chukei-news.co.jp/news/2026/09/03/OK0002609030301_01/"
     },
     {
-      "contentSha256": "69b9f2c5eabdf348f32973776fa10d9377dbab05198edd66ab75280b052b575b",
-      "fetchedAt": "2026-09-02T21:30:23.329973+00:00",
+      "contentSha256": "8e85b20f648d08352a559a38bcbaca31c9f7e593536fcd00858c3496995bf841",
+      "fetchedAt": "2026-09-02T22:40:25.861501+00:00",
       "finalUrl": "https://www.nikkei.com/article/DGXZQOGN02BMM0S6A900C2000000/",
       "httpStatus": 200,
       "locations": [

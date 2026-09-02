@@ -10,7 +10,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from tools import deepdive_quality
+from tools import deepdive_quality, news_grasp_audio_projection
 from tools.dedup import extract_source_date_from_url
 from tools.generate_pages import (
     CATEGORIES,
@@ -765,10 +765,14 @@ def validate_tts_audio_presence(
             "digest/Summary/<date>-audio-script.md を生成してから公開してください。"
         )
 
-    latest_path = repo_root / "build" / "tts" / "latest_audio.json"
+    canonical_path = (
+        repo_root / news_grasp_audio_projection.canonical_audio_path("daily")
+    )
+    legacy_path = repo_root / "build" / "tts" / "latest_audio.json"
+    latest_path = canonical_path if canonical_path.exists() else legacy_path
     if not latest_path.exists():
         errs.append(
-            f"TTS latest_audio.json が存在しません: {latest_path}。"
+            f"TTS latest_audio.json が存在しません: {canonical_path} / {legacy_path}。"
             "tools.tts.publish_audio で Release URL を確定してから公開してください。"
         )
         return errs
@@ -779,7 +783,22 @@ def validate_tts_audio_presence(
         errs.append(f"TTS latest_audio.json を読めません: {latest_path}: {exc}")
         return errs
 
-    latest_date_raw = str(latest.get("latest_audio_date") or "")
+    is_v2 = latest.get("schemaVersion") == news_grasp_audio_projection.AUDIO_SCHEMA
+    if is_v2:
+        validation = news_grasp_audio_projection.validate_audio_projection(
+            latest,
+            issue_date=issue_str,
+            run_intent=news_grasp_audio_projection.RUN_INTENT,
+        )
+        if validation["ok"] is not True:
+            errs.append(
+                "TTS audio projection V2 が不正です: "
+                + ",".join(validation["reasonCodes"])
+            )
+            return errs
+    latest_date_raw = str(
+        latest.get("issueDate") if is_v2 else latest.get("latest_audio_date") or ""
+    )
     try:
         latest_date = date.fromisoformat(latest_date_raw)
     except ValueError:
@@ -800,12 +819,15 @@ def validate_tts_audio_presence(
             )
         return errs
 
-    if latest.get("latest_audio_date") != issue_str:
+    observed_date = latest.get("issueDate") if is_v2 else latest.get("latest_audio_date")
+    if observed_date != issue_str:
         errs.append(
             f"TTS latest_audio.json の日付が対象日ではありません: "
-            f"{latest.get('latest_audio_date')!r} != {issue_str}"
+            f"{observed_date!r} != {issue_str}"
         )
-    audio_url = str(latest.get("latest_audio_url") or "").strip()
+    audio_url = str(
+        latest.get("publicUrl") if is_v2 else latest.get("latest_audio_url") or ""
+    ).strip()
     if not audio_url:
         errs.append("TTS latest_audio.json に latest_audio_url がありません。")
         return errs

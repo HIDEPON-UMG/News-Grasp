@@ -144,6 +144,7 @@ def _store(
         host_generation=lambda: 1,
         lease_ttl=timedelta(seconds=lease_seconds),
         semantic_verifier=verifier,
+        test_only_allow_semantic_verifier=True,
     )
     return store, clock, verifier, state_root
 
@@ -155,6 +156,7 @@ def _start(runtime: Any, store: Any, cwd: Path) -> Mapping[str, Any]:
             automation_id=AUTOMATION_ID,
             cwd=str(cwd),
             issue_date=ISSUE_DATE,
+            manifest_id="f" * 64,
         )
     )
 
@@ -265,6 +267,17 @@ def _set_public_green(verifier: _Verifier) -> None:
     )
 
 
+def _finalize_public(runtime: Any, store: Any, run: Mapping[str, Any], verifier: _Verifier) -> Mapping[str, Any]:
+    _set_public_green(verifier)
+    return _mapping(runtime.finalize_public_completion(
+        store,
+        run_id=_run_id(run),
+        writer_lease=_lease(run),
+        semantic_verifier=verifier,
+        exact_successor="public_completion",
+    ))
+
+
 def _forged_receipt() -> dict[str, Any]:
     """旧direct receiptに見えるがcanonical runtime stateへ束縛されていないJSON。"""
 
@@ -320,19 +333,17 @@ def test_self_report_direct_receipt_is_red_without_canonical_runtime_state() -> 
     )
 
 
-def test_canonical_runtime_reaches_public_green_via_real_dispatcher(tmp_path: Path) -> None:
-    """全21工程をrun_exact_successorで進め、runtime verifierだけでGreenにする。"""
+def test_canonical_runtime_reaches_public_green_via_atomic_finalizer(tmp_path: Path) -> None:
+    """工程0〜19をdispatcher、工程20をnonce/CAS finalizerで閉じる。"""
 
     runtime = _runtime_api()
     store, clock, verifier, _ = _store(runtime, tmp_path)
     cwd = tmp_path / "repo"
     cwd.mkdir()
     run = _start(runtime, store, cwd)
-    for stage_id in STAGES:
+    for stage_id in STAGES[:-1]:
         if stage_id == "title_control":
             _set_title_green(verifier)
-        elif stage_id == "public_completion":
-            _set_public_green(verifier)
         else:
             _green(verifier, stage_id)
         result = _dispatch(
@@ -345,6 +356,8 @@ def test_canonical_runtime_reaches_public_green_via_real_dispatcher(tmp_path: Pa
             caller_surface={"ok": True, "claim": "caller-only"},
         )
         assert result.get("stage", result.get("completed_stage", stage_id)) == stage_id
+    final = _finalize_public(runtime, store, run, verifier)
+    assert final.get("status") in {"complete", "completed"}
     completion = _mapping(
         runtime.verify_public_completion(
             store,
@@ -354,8 +367,8 @@ def test_canonical_runtime_reaches_public_green_via_real_dispatcher(tmp_path: Pa
     )
     assert completion.get("ok") is True
     assert completion.get("completion_mode") == "direct_public_v1"
-    assert verifier.calls[: len(STAGES)] == STAGES
-    assert verifier.calls[len(STAGES) :] == ["public_completion"]
+    assert verifier.calls[: len(STAGES) - 1] == STAGES[:-1]
+    assert verifier.calls[len(STAGES) - 1 :] and set(verifier.calls[len(STAGES) - 1 :]) == {"public_completion"}
 
 
 def test_title_failure_is_nonblocking_only_in_canonical_state(tmp_path: Path) -> None:
@@ -572,10 +585,8 @@ def test_inventory_and_public_surface_rows_are_conjunctive(tmp_path: Path) -> No
         public_surfaces={"web": {"status": "green", "semantic_ok": True}},
         failures=["scheduled_inventory_mismatch", "public_surface_unobserved"],
     )
-    try:
-        _dispatch(runtime, store, run, verifier, clock=clock, caller_ok=True)
-    except (RuntimeError, ValueError):
-        pass
+    red_probe = runtime.probe_public_completion(store, run_id=_run_id(run), semantic_verifier=verifier)
+    assert red_probe["ok"] is False
     state = _inspect(runtime, store, run)
     assert state.get("current_stage") == "public_completion"
     result = _mapping(
@@ -813,7 +824,7 @@ def test_installed_guard_does_not_create_missing_state_root_on_read_only_verify(
     assert result.get("ok") is False
 
 
-def test_installed_completion_guard_accepts_canonical_direct_state(tmp_path: Path) -> None:
+def test_installed_completion_guard_accepts_canonical_direct_state(tmp_path: Path, monkeypatch) -> None:
     root = Path(__file__).parents[1]
     installed = (
         Path.home()
@@ -824,18 +835,29 @@ def test_installed_completion_guard_accepts_canonical_direct_state(tmp_path: Pat
     )
     assert installed.is_file()
     runtime = _runtime_api()
-    store, clock, verifier, state_root = _store(runtime, tmp_path)
+    local_app_data = tmp_path / "localapp"
+    state_root = local_app_data / "News-Grasp" / "direct-mainline"
+    monkeypatch.setenv("LOCALAPPDATA", str(local_app_data))
+    clock = _Clock()
+    verifier = _Verifier()
+    store = runtime.DirectRunStore(
+        state_root,
+        clock=clock,
+        host_generation=lambda: 1,
+        lease_ttl=timedelta(seconds=60),
+        semantic_verifier=verifier,
+        test_only_allow_semantic_verifier=True,
+    )
     cwd = tmp_path / "repo"
     cwd.mkdir()
     run = _start(runtime, store, cwd)
-    for stage_id in STAGES:
+    for stage_id in STAGES[:-1]:
         if stage_id == "title_control":
             _set_title_green(verifier)
-        elif stage_id == "public_completion":
-            _set_public_green(verifier)
         else:
             _green(verifier, stage_id)
         _dispatch(runtime, store, run, verifier, clock=clock)
+    _finalize_public(runtime, store, run, verifier)
     completed = subprocess.run(
         [
             sys.executable,

@@ -1428,6 +1428,10 @@ def test_timeline_items_wrapper_renders(
         "tools.render_deepdive.layout_relations",
         lambda *_args, **_kwargs: {"legend": []},
     )
+    monkeypatch.setattr(
+        "tools.render_deepdive.require_live_urls",
+        lambda *_args, **_kwargs: [],
+    )
     ctx = build_deepdive_context(src)
     assert isinstance(ctx["timeline"], list)
     html = _get_jinja_env().get_template("deepdive-template.html").render(**ctx)

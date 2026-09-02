@@ -207,6 +207,16 @@ def test_date_evidence_skips_google_news_rss_pubdate(monkeypatch, tmp_path):
     assert captured == []
 
 
+@pytest.mark.parametrize("source", ["canonical-page-date-text", "html-meta"])
+def test_date_evidence_does_not_override_stronger_canonical_observation(source):
+    """canonical page由来の公開日を汎用htmldate推定で上書きしない。"""
+
+    from tools import audit_all_article_urls as mod
+
+    assert mod.should_skip_date_evidence("https://example.com/article", source) is True
+    assert mod.should_skip_date_evidence("https://example.com/article", "unknown") is False
+
+
 def test_quarantine_uses_issue_date_not_execution_date(monkeypatch, tmp_path):
     """resume / 翌日検証でも対象号日の digest と ledger を更新する。"""
     import json as _json
