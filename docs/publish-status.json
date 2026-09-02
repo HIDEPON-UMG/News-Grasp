@@ -2,18 +2,18 @@
   "ok": true,
   "status": "published_ok",
   "value": {
-    "date": "2026-09-01",
+    "date": "2026-09-02",
     "result": "published_ok",
     "status": "published_ok",
-    "updated_at": "2026-09-01T07:23:36+09:00"
+    "updated_at": "2026-09-02T07:18:32+09:00"
   },
-  "date": "2026-09-01",
+  "date": "2026-09-02",
   "result": "published_ok",
-  "updated_at": "2026-09-01T07:23:36+09:00",
-  "2026-09-01": {
-    "date": "2026-09-01",
+  "updated_at": "2026-09-02T07:18:32+09:00",
+  "2026-09-02": {
+    "date": "2026-09-02",
     "result": "published_ok",
     "status": "published_ok",
-    "updated_at": "2026-09-01T07:23:36+09:00"
+    "updated_at": "2026-09-02T07:18:32+09:00"
   }
 }

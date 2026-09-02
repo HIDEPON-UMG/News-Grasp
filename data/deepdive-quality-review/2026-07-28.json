@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-28",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-28-DeepDive.md",
+      "sha256": "11b0315205d5c28059a3dd52ca761a3fa55c14b373e917ab2f8048419797672f"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-28-DeepDive.md",
+      "sha256": "f2cb0f16550fb324a2d27f448703f4e5bdb67f839708ea3dc98af7e430fa9261"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-28-DeepDive-dialogue.md",
+      "sha256": "6ee20e665869713a4cf90672e905f39027bd5f8419ddcff0d94e8d3f77e0005d"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "Samsung・Broadcomの2030年まで5年・2000億ドル超見積もりMOUを、HBM単品の供給契約ではなく2nm製造と2.3D／2.5D実装まで含む設計・量産の責任線として読んでいる。",
+    "evidence_depth": "Samsungの2月HBM4量産、3月AMD MOU、7月Broadcom MOU、HBM4の11.7Gbps定常・13Gbps上限・3.3TB/sを公式発表から整理している。2000億ドルは確定発注額でなく、Broadcom向け数量・歩留まり・電力効率は未確認である。",
+    "causal_coherence": "メモリー・ロジック・実装を同一供給者で調整すると設計変更の工程間コストを下げられる一方、歩留まり不良が全体日程へ伝播するため、統合便益と集中リスクが同時に増す因果が明瞭である。",
+    "counterevidence": "契約見積額と確定注文を分け、Samsung発表の性能値を顧客製品の量産成果と同一視せず、歩留まり・電力・個別認定・実装能力の未確認点を明示している。",
+    "decision_utility": "一体採用、工程分離、限定製品での段階認定を比較し、歩留まり・電力効率・納期、個別認定・量産開始・実装能力を同じゲートで確認する実行条件を提示している。",
+    "dialogue_naturalness": "MOUの対象、AMDとの先行協業、統合供給の利点、歩留まり確認の順で追えるが、SamsungElectronicsやBroadcom協業などの連結語と定型記録句が音声の自然さを下げる。",
+    "relation_map_utility": "SamsungからBroadcom・AMDへの提携／供給とBroadcom・AMDの競合を3本のcanonical edgeで示し、競合設計陣営が同じHBM供給へ接続する構図を簡潔に再利用できる。"
+  },
+  "averageScore": 4.571428571428571,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

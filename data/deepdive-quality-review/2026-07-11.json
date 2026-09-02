@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-11",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-11-DeepDive.md",
+      "sha256": "164b5c734676a38690cf5e6c4a26162010df24469dbe35dde2529712d9dc5781"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-11-DeepDive.md",
+      "sha256": "626f4a7946f4784fc57a8ebb8ccbd9096a14c1891850208b8135b910e5595d28"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-11-DeepDive-dialogue.md",
+      "sha256": "24b78a30afc34e7b9b7318e07715e7c90a9448c6310ea17b305c656e66853312"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "Waymoの4都市での従業員向け無人運行と10都市超の既存ネットワークを、全国一律の自家用完全自動運転ではなく、地理・天候・運行体制を閉じた都市単位で量産する戦略として具体化している。",
+    "evidence_depth": "Waymoの対象都市とネットワーク、NHTSAの無人車向けFMVSS見直し、IONIQ 5供給、無人走行距離と重大事故率、McKinseyのコスト論を重ねている。運行地域ごとの介入件数、事故定義、費用実績は揃わず、性能値の比較可能性には限界がある。",
+    "causal_coherence": "限定区域なら地図・遠隔支援・保守を標準化しやすく、車両をフリートで稼働させるほど学習と稼働率を回収できる一方、自家用車では規制と責任の組合せが複雑になるという分岐が一貫している。",
+    "counterevidence": "4都市の従業員運行は一般顧客への安全性を証明しないこと、NHTSA提案は最終規則ではないこと、天候・道路条件、遠隔介入、事故指標の母数を明示し、都市展開の加速を全国普及と同一視していない。",
+    "decision_utility": "フリート先行、自家用車先行、両者の限定展開を比べ、都市別の無人時間、介入・事故、車両稼働率、規制承認をゲートに置いている。都市を追加するたび検証条件を再利用できる。",
+    "dialogue_naturalness": "Waymoの都市展開、Hyundaiの車両供給、NHTSAの基準、自家用の責任を段階的に掘る構成だが、数値の読み上げと主体・日付を整理する定型句が続き、自然な掛け合いより確認台帳に近い。",
+    "relation_map_utility": "HyundaiからWaymoへの供給、Waymoと自家用車メーカーの競合、NHTSAから二陣営への規制という4本のcanonical edgeで、フリートと個人所有の分岐点を補助している。"
+  },
+  "averageScore": 4.428571428571429,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

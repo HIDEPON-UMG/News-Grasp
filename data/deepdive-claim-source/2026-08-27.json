@@ -1,0 +1,34 @@
+{
+  "articleContentSha256": "ff05d87aed15ef72009762cc884cb7f6cc471cd787e4dfcb520c4231c574e5a6",
+  "articlePath": "digest/DeepDive/2026-08-27-DeepDive.md",
+  "bindings": [
+    {
+      "claim": "実質GDPが年率1.5%へ減速した",
+      "claimId": "claim-001",
+      "evidence": "Real gross domestic product (GDP) increased at an annual rate of 1.5 percent in the second quarter of 2026",
+      "sourceUrl": "https://www.bea.gov/news/2026/gdp-second-estimate-and-corporate-profits-2nd-quarter-2026"
+    },
+    {
+      "claim": "民間最終需要は4.2%増えた",
+      "claimId": "claim-002",
+      "evidence": "consumer spending and gross private fixed investment, increased 4.2 percent in the second quarter",
+      "sourceUrl": "https://www.bea.gov/news/2026/gdp-second-estimate-and-corporate-profits-2nd-quarter-2026"
+    },
+    {
+      "claim": "7月PCE物価は前年比3.7%だった",
+      "claimId": "claim-003",
+      "evidence": "the PCE price index for July increased 3.7 percent",
+      "sourceUrl": "https://www.bea.gov/news/2026/personal-income-and-outlays-july-2026"
+    },
+    {
+      "claim": "FOMCは3.50〜3.75%を据え置き、3委員が利上げを主張した",
+      "claimId": "claim-004",
+      "evidence": "maintain the target range for the federal funds rate at 3-1/2 to 3-3/4 percent",
+      "sourceUrl": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260729a.htm"
+    }
+  ],
+  "issueDate": "2026-08-27",
+  "schemaVersion": "DEEPDIVE_CLAIM_SOURCE_TRANSPORT_V1",
+  "status": "Green",
+  "transportSha256": "6b348426b12373206d5048c009865bbf2a78ccbbcc06241a685bdcbfe67b9b4f"
+}

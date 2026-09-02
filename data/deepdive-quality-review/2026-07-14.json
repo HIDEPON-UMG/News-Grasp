@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-14",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-14-DeepDive.md",
+      "sha256": "363c26bfddadde207f5c734be44ef3afdcf4f73d40a243af425daa0d9e426c4f"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-14-DeepDive.md",
+      "sha256": "99ef62bafd8f1d0ccd03264e4f46a4e1570b749a1647fdb7047c7680a4e26996"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-14-DeepDive-dialogue.md",
+      "sha256": "3f457a0faa6eff629aab77173aed92601ccfb4d75f05b6d44a9893454ae48abc"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "中国NEVの上期販売744.6万台・BEV比率67%と輸出急増を、BYD RACCOの軽規格投入だけでなく、ヤナセの販売・整備網と日産サクラの需要低下を含む日本の流通・残価競争へ具体化している。",
+    "evidence_depth": "中国の販売・輸出統計、BYDのRACCO仕様目標、ヤナセEVスクエアの契約、日産サクラの月次販売を並べ、量産圧力から日本の顧客接点までを追っている。最終価格、認証後の航続、整備費・残価、販売台数の定義差は未確定で、投入前の計画値を実績と混同していない。",
+    "causal_coherence": "中国での量産と輸出余力がBYDの日本投入を可能にし、正規販売・整備パートナーが参入障壁を下げ、軽EVの価格・航続競争が既存の日産需要へ圧力をかけるという経路を示している。",
+    "counterevidence": "RACCOの価格・認証・発売時期が計画段階であること、日本の軽規格・充電網・整備品質・中古車価値が別の勝敗条件であること、サクラの月次減少を中国車だけの因果と断定できないことを残している。",
+    "decision_utility": "RACCO導入、既存車の値下げ・改良、販売と整備を含む提携強化を比較し、実売価格、航続実績、納期、整備拠点、残価、月次登録を確認する判断表へ落とせる。",
+    "dialogue_naturalness": "中国の数量、RACCOの電池、ヤナセの整備、日産の販売を順に照合するが、引用数値と定型の「主体・数値・日付」整理が連続し、自然な質問の揺らぎや短い応答は乏しい。",
+    "relation_map_utility": "中国NEVからBYD、BYDからヤナセ、BYDから日産を供給・提携・競合のcanonical edgeで結び、輸出量が販売・整備網を経て既存車へ届く構図を再利用できる。"
+  },
+  "averageScore": 4.428571428571429,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-08-24",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-24-DeepDive.md",
+      "sha256": "d4e3929a7150ce3ed2d3c73a5d3e9ff083c20ff1174a1b02fe44d33f2e053d74"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-24-DeepDive.md",
+      "sha256": "0c7c547a12d2c5963b99d458de87ef176d5e9ecab0033adf4a284799f3578542"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-24-DeepDive-dialogue.md",
+      "sha256": "f444b5f90c9b4acd182e0d9913554f943e9793832481e5e17e2b9cedc7e0e5ec"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 4,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "Pony.ai・Uber・Verneの技術・配車・日常運行の分業をWaymoの垂直統合と対置し、2,000台超という計画台数ではなく、都市ごとに安全・停止・採算責任を複製できるかへ競争軸を移している。",
+    "evidence_depth": "Waymoの2.206億マイルと地域別距離、Pony.aiの約1,210万ドル・前年比691%、Uberの5都市・2,000台超計画、Verneの運行条件を一次発表とValueAdd資料で分けている。実走行、保有台数、契約台数、事故定義、遠隔支援の違いも明示する。",
+    "causal_coherence": "Pony.aiが技術、Verneが車両・日常運行、Uberが予約・決済を担えば都市展開と資本配分を速められる一方、事故対応・遠隔支援・補償の停止点が分散するという因果が一貫している。",
+    "counterevidence": "開始時には監視員が乗車すること、Waymoの事故比較に地域・定義・未報告の差があること、契約台数と実績を同列にできないこと、急伸率が小さな母数に依存することを具体的に限定している。",
+    "decision_utility": "技術主幹、三社共同台帳、地域運行者主幹を比較し、共通データ仕様と地域運行者の独立緊急停止を推奨する。都市別有料乗車、遠隔支援頻度、1台当たり損益を次の判定指標にする。",
+    "dialogue_naturalness": "米国の垂直統合との差、三社の役割、監視員、売上、台数の意味、安全データ、停止責任を質問で順に掘る。21turnの7価値区間が実本文へ束縛され、契約台数を実走行と混同しない会話へ着地する。",
+    "relation_map_utility": "WaymoとUber・Verneの競合、Pony.aiから分業側への供給、都市当局の規制をcanonical edgeで配置する。Uber・Verneと都市当局を運行・認可の縦レイヤーへ置き、第三node貫通を解消している。"
+  },
+  "averageScore": 4.714285714285714,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-06-22",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-06-22-DeepDive.md",
+      "sha256": "43e999a70441fac7773cd8cfb2810636411df66ef60db1a2e577d8a3107e93c5"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-06-22-DeepDive.md",
+      "sha256": "08435424e8813b8cc62a8989c9d19007103f8fb52054cde8afb2b767eab076f9"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-06-22-DeepDive-dialogue.md",
+      "sha256": "9a04e124408e84e3a142cbfcdcce9a1349301f9ef16d11eb3d738de93d93c06e"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 5,
+    "relation_map_utility": 2
+  },
+  "findings": {
+    "theme_specific_insight": "日銀の1.0%利上げ後もFedの3.5〜3.75%と介入警戒が残るため、円安圧力が消えるかではなく、追加利上げ・介入・Fed待ちの順番を問う局面へ移ったと明確に焦点化している。",
+    "evidence_depth": "日銀の7対1決定、Fedの初FOMCと金利・PCE中央値、Trading Economicsの金利推移、財務省の介入実績制度を、公式資料と市場データに分けて配置している。",
+    "causal_coherence": "日銀利上げは金利差へ直接効くが景気・国債市場の副作用を伴い、財務省介入は急変動の速度だけを抑え、Fed高金利はドル買いの燃料を残すという手段別の因果が一貫している。",
+    "counterevidence": "中東・原油による物価とリスク回避の揺れ、追加利上げの副作用、介入が金利差を消せない限界を示し、1%を万能薬とも、米利下げを既定路線とも扱っていない。",
+    "decision_utility": "追加利上げの地ならし、介入警戒、Fedの物価鈍化待ちを比較し、7月の日銀会合・FOMC・次回介入実績を確認期限としている。企業の輸入・クラウド・海外SaaSコストへ翻訳する示唆もある。",
+    "dialogue_naturalness": "金融政策に不慣れな若手が1%・金利差・介入の違いを段階的に尋ね、先輩が速度・構造・市場心理の三つへ分けて説明する。企業予算やヘッジ方針へ自然に広がり、終盤の観測項目も会話として締まっている。",
+    "relation_map_utility": "Fed・日銀・財務省・為替市場・中東原油を、金利差、介入、供給、外部ショックの作用点として配置している。ただし日銀と財務省のedgeのkind『協調的競合』がcanonical registry外で、協調と副作用の二面性を標準地図として扱えない。"
+  },
+  "averageScore": 4.571428571428571,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Red"
+}

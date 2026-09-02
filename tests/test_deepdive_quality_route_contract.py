@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from tools import deepdive_quality
+from tools import news_grasp_direct_completion
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -187,6 +188,25 @@ def test_four_consumers_pass_their_exact_route_identity() -> None:
     assert 'route="repair_publish"' in repair
     assert 'route="daily_quality"' in daily
     assert "--route codex_daily_audit" in automation
+
+
+def test_direct_completion_quality_gate_excludes_historical_corpus(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    calls: dict[str, object] = {}
+
+    def fake_audit_issue(**kwargs: object) -> dict[str, object]:
+        calls.update(kwargs)
+        return {"status": "Green", "issueCodes": [], "issues": []}
+
+    monkeypatch.setattr(deepdive_quality, "audit_issue", fake_audit_issue)
+
+    result = news_grasp_direct_completion._deepdive_quality(
+        tmp_path, "2026-09-02"
+    )
+
+    assert result["ok"] is True
+    assert calls["include_corpus"] is False
 
 
 def test_shared_engine_rejects_unknown_route_before_audit(tmp_path: Path) -> None:

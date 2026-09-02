@@ -1,0 +1,39 @@
+{
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-30-DeepDive.md",
+      "sha256": "9f182607ec01022bf17cff743b9dbe74cfbb57751a87c8723eb15ece59a5e765"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-30-DeepDive-dialogue.md",
+      "sha256": "b02a3e6e7768dd4911f4a88f376d918845883af596c4f43ba6d451feffde8da3"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-30-DeepDive.md",
+      "sha256": "240e074c4841afd28c0c3bec01da487dd9cb3766dce6ab52c2ca5771dbb3f27e"
+    }
+  },
+  "averageScore": 4.142857142857143,
+  "findings": {
+    "causal_coherence": "外部機器への接続が権限・停止テストを要求し、契約変更が代替モデル・データ移行・品質比較を要求し、クラウド提携がデータ所在・障害切替・費用分担を要求するという運用上の因果を、§03と§06で接続している。",
+    "counterevidence": "署名118組織や2026年2月時点の月間3億user超を性能・収益へ換算せず、フィジカルAIの認証・人的監督、契約終了の確度、クラウド地域・障害切替が未確認なら保留する。取得可能な報道と一次資料を分け、採用効果を断定しない境界がある。",
+    "decision_utility": "低リスクの調査・下書き、機密データ・コード、外部機器・公開操作を分け、9月末までに代替・権限・ログ・停止を決める段階導入を提示している。見出し単位の閾値までは定めないが、確認先と未確認時の扱いは実務へ落ちる。",
+    "dialogue_naturalness": "前号の教育・権限から共同防衛、機器操作、契約切替、Qwenの月間利用規模、クラウド条件へ順に進み、若手の質問が次の判断項目を引き出す。ITmediaの118組織表現へ記事と対談を同期し、生URL・JSON・metadataを発話しない。",
+    "evidence_depth": "ITmediaの取得本文でOpenAI公開書簡とAnthropicを含む118組織を確認し、Alibaba公式四半期更新で2026年2月のconsumer-facing Qwen月間3億user超を一次資料へ束縛した。物理AI、契約終了、クラウド提携も各取得本文へ分け、旧見出し複製を根拠にしていない。",
+    "relation_map_utility": "OpenAI・署名組織・Anthropic・実験機器、Cursor・SpaceX、Alibaba・Qwen利用者、Broadcom・企業利用者を提携・供給・対立で整理する。全kindがcanonicalで、desktop/mobileとも貫通・label重複がない。",
+    "theme_specific_insight": "OpenAIの共同サイバー防衛、Anthropicの物理機器規格、Cursorの提供契約、Qwenの月間利用規模、Broadcomのプライベートクラウド提携を、能力比較ではなく導入後の責任分界・契約・撤回条件へ変換している。"
+  },
+  "issueDate": "2026-08-30",
+  "reviewRoute": "codex_daily_audit",
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "scores": {
+    "causal_coherence": 4,
+    "counterevidence": 5,
+    "decision_utility": 4,
+    "dialogue_naturalness": 4,
+    "evidence_depth": 4,
+    "relation_map_utility": 4,
+    "theme_specific_insight": 4
+  },
+  "status": "Green"
+}

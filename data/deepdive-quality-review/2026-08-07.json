@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-08-07",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-07-DeepDive.md",
+      "sha256": "43aafb9a823c29d673fd24a44f34004be30287f66b5f3af0d9519747b656f020"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-07-DeepDive.md",
+      "sha256": "c8d7bf14f3ade3fa38ac1eb8127a50a92b61033164cb4abd2f6dfdc477a49e9b"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-07-DeepDive-dialogue.md",
+      "sha256": "b84f66b5080ae9d0109855ca5efd63e651b498a8bce6794a4ccba6b7be25e8a5"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 5,
+    "counterevidence": 4,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "Disco、研修医の診療検索、AI設計ファージを実世界接続の異なる入口として置き、モデルの「頭脳」と実行基盤の「手」を分離しながら能力・権限・証拠・復旧を運用へ戻している。",
+    "evidence_depth": "東京科学大学の39.4%・13.0%と利用者／非利用者の意識差、16種の増殖、GENIACの4課題、Cloudflareの実行基盤要素を時系列・表で結んでいる。ただしCloudflareと生命科学の詳細は二次報道に依存し、実行事故の比較値までは示していない。",
+    "causal_coherence": "モデルが計画を出し、実行基盤がサンドボックス・認証情報・接続・ログを制限し、組織と専門家が承認・例外・復旧を担うという責任分離が、医療・研究・企業の三場面を横断して一貫している。",
+    "counterevidence": "生成AI利用者のリテラシーが相対的に高くても公平性47.3%・透明性49.8%に留まること、完全自動化の影響範囲、生命科学の境界管理を挙げ、安全を利用経験や禁止だけに還元していない。",
+    "decision_utility": "読み取り専用、人間承認付き低リスク操作、復旧可能な定型業務の自動化を段階案として比較し、責任者・受入試験・停止と復旧の記録を本番接続条件にしている。",
+    "dialogue_naturalness": "現行台本は7価値区間で実世界接続から権限設計、利用者教育、停止判断まで順に進み、旧い比較定型より自然になった。一方で「CloudflareClaudeManagedAgents」の空白欠落と各区間の確認文の反復が残る。",
+    "relation_map_utility": "モデル→実行基盤の提携、導入組織→実行基盤の統制、実行基盤→業務・人間への供給をcanonical kindと明示座標で表し、ノード5・エッジ4の図に交差や重なりはない。"
+  },
+  "averageScore": 4.285714285714286,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

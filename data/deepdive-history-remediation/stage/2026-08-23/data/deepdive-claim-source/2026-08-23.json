@@ -1,0 +1,16 @@
+{
+  "articleContentSha256": "d9370b914fab343a5a650ba262effeeca5ebff63c61e3723b0577dd44a69bb68",
+  "articlePath": "digest/DeepDive/2026-08-23-DeepDive.md",
+  "bindings": [
+    {
+      "claim": "Waymoは5nmの専用ASICを公開した。",
+      "claimId": "waymo-5nm-asic-release",
+      "evidence": "Waymo’s purpose-built 5nm ASIC.",
+      "sourceUrl": "https://waymo.com/blog/2026/08/look-under-our-trunk/"
+    }
+  ],
+  "issueDate": "2026-08-23",
+  "schemaVersion": "DEEPDIVE_CLAIM_SOURCE_TRANSPORT_V1",
+  "status": "Green",
+  "transportSha256": "d4b830ceb10e36cc543becc5fa6b2f8b07b66854f4e9040511fff4b1970ca96e"
+}

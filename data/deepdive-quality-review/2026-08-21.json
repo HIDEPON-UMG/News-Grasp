@@ -1,0 +1,39 @@
+{
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-21-DeepDive.md",
+      "sha256": "40f8679996409f570b11d7e572fffded03ebbd7e61df48022e9c0eaf38b3c091"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-21-DeepDive-dialogue.md",
+      "sha256": "a5aac674fc9520c422163f29b75469dd03ead27dfb992894f1027ea0e75e1cbf"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-21-DeepDive.md",
+      "sha256": "93ce8851a35d23d6c6016bb4d08dea13b27052eef6a247834282f9571b84defa"
+    }
+  },
+  "averageScore": 4.142857142857143,
+  "findings": {
+    "causal_coherence": "制裁が取引・決済・物流を変え、AIの権限集中がログと停止を要求し、Waymoの地域適応と材料の顧客認定が代替経路を決めるという四つの因果を、承認点と切替条件へ収束させている。",
+    "counterevidence": "制裁の対象・時期、AI逸脱の再現性、東京の利用者受容性、東南アジア工場の量産実績を未確定として残し、拡大後に整える案の停止・復旧リスクも比較している。定量的な反証は限定的である。",
+    "decision_utility": "拡大優先、承認点先行、用途別の小規模検証を比べ、事業・リスク・現場責任者へ停止条件と代替経路を割り当てる。次の観測時点は明確だが、各条件の数値合格ラインはまだ定義されていない。",
+    "dialogue_naturalness": "制裁の法務情報を調達へ渡し、AIの権限を監査へ、自動運転を認可へ、材料分散を顧客認定へつなぐ若手の確認が自然で、最後は9月末の台帳更新案まで具体化する。四領域を一度に扱うため一部は長い。",
+    "evidence_depth": "NHK、Yahoo!ニュース、ITmedia、日本経済新聞の4材料を、Waymoの3.5億キロ、AI逸脱、制裁、東南アジア分散の確認表へ落としている。ただし条件チャートは分類値で、逸脱頻度・東京の受容性・分散工場の量産実測はない。",
+    "relation_map_utility": "米国財務省・Anthropic・Waymo・トクヤマから顧客企業への規制・統制・供給を4本のcanonical edgeで表し、拡大前の停止条件と代替経路という横断骨格をそのまま再利用できる。",
+    "theme_specific_insight": "制裁、AIエージェント、自動運転、半導体材料という異質なニュースを、規模拡大の前に観測・承認・停止・代替経路を置くという一つの経営実装課題へ整理している。"
+  },
+  "issueDate": "2026-08-21",
+  "reviewRoute": "codex_daily_audit",
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "scores": {
+    "causal_coherence": 4,
+    "counterevidence": 4,
+    "decision_utility": 4,
+    "dialogue_naturalness": 4,
+    "evidence_depth": 4,
+    "relation_map_utility": 4,
+    "theme_specific_insight": 5
+  },
+  "status": "Green"
+}

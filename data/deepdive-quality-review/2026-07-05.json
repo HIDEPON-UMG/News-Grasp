@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-05",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-05-DeepDive.md",
+      "sha256": "adeb78a7918599535ab090277d0ca72d65116da2cbe0fa0b367c8c7dee3c75d2"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-05-DeepDive.md",
+      "sha256": "92db95b1bb6e5f8f6130c58a52024e510191c0e0617d8e931a902644b4d8f8b4"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-05-DeepDive-dialogue.md",
+      "sha256": "4557a24d7e2a123b8914738b63f93aa3e51ad127901a85183ca4c8db7cee1ad7"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "CaliforniaのAB 1777に基づく2026年7月1日以降のAV違反通知を、実証許可の有無ではなく、警察・DMV・CPUC・事故データ基盤がメーカーの例外処理と是正速度を評価する制度転換として読んでいる。",
+    "evidence_depth": "California DMVの900万マイル超の試験走行とAB 1777、CPUCの四半期報告、Waymoのrider-only 2.206億マイル、Berkeley TIMS／NHTSA SGOの事故可視化を重ねている。disengagementとdeploymentの報告対象差、メーカー発表に依存する比較限界も確認している。",
+    "causal_coherence": "無人車の違反を運転者でなくメーカーへ通知し、DMVの是正、CPUCの旅客報告、外部事故データへ接続することで、走行距離の拡大が安全率だけでなく例外処理の説明責任を増やす経路が明快である。",
+    "counterevidence": "Waymoの安全データが同社の比較手法に依存すること、DMVの指標が企業間比較用でないこと、deploymentと試験走行の報告範囲が異なることを明示し、通知制度を直ちに安全改善とみなしていない。",
+    "decision_utility": "通知ごとの個別是正、通知・停止・事故の統合ガバナンス、都市拡大を抑えた警察消防との事前計画を比べ、違反通知・初動対応・都市別制限を同じダッシュボードで追う判断線を置いている。",
+    "dialogue_naturalness": "違反通知、走行実績、DMV・CPUC・TIMSの役割、外部比較、次の報告期限を順に問う構成だが、定型の「主体・数値・日付」応答とnoticeofAVnoncompliance等の連結表記が多く、自然な音声対談には届かない。",
+    "relation_map_utility": "警察・DMV・CPUCからWaymoへの規制とWaymoからTIMSへの事故データ供給をcanonical edgeで示し、現場執行から外部検証までの責任連鎖を再利用できる。"
+  },
+  "averageScore": 4.571428571428571,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

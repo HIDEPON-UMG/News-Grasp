@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-02",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-02-DeepDive.md",
+      "sha256": "97a48cb9b25b1f440a2e410732bad96854f68853223554c1699348f6fadb9ab5"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-02-DeepDive.md",
+      "sha256": "8473f0f19f912256f2ae55ca0c64a9e75203813f921392b8d2a9aa12d816893e"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-02-DeepDive-dialogue.md",
+      "sha256": "bc56ad02f74fad5114705e727b87795aba23400c24fc32098aa8325f9c491919"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 2
+  },
+  "findings": {
+    "theme_specific_insight": "SIEの2028年1月以降の新作ディスク生産終了とPS3・PS Vita Storeの新規購入終了を、物理メディアの消滅だけでなく、販売後のアクセス権・再取得・価格発見をPlayStation Storeへ集約する設計転換として捉えている。",
+    "evidence_depth": "SonyのFY23〜FY25フルゲームDL比率70%・76%・78%、FY25 Q4の85%、Physical・Digital・Network Services売上と、TechCrunchの2028年方針を組み合わせている。旧世代の保存保証、手数料、価格・再販影響は企業の将来運用として未確定で、比率だけから全面移行の便益を断定していない。",
+    "causal_coherence": "DL比率の上昇とディスク生産終了がStoreの販売・購入履歴・再取得管理を強め、パブリッシャーの在庫リスクを下げる一方で、手数料・露出・保存条件への依存と中古流通の交渉力低下を招く流れが明快である。",
+    "counterevidence": "旧世代では新規購入を止めても再ダウンロードを維持すること、限定版や保存価値の高いタイトルに物理例外を残し得ること、デジタル移行後の所有・保存・小売の不安を未解決として示している。",
+    "decision_utility": "デジタル専売、限定物理版の例外、旧世代の再取得保証・移行手段の明文化を比較し、2028年1月までにSony、パブリッシャー、小売が確認すべき条件をdecisionへ落としている。",
+    "dialogue_naturalness": "前号との差分、Storeの権利管理、パブリッシャーと中古市場、DL比率、保存条件を7区間で追えるが、SonyInteractiveEntertainmentやNetworkServicesの詰まった表記と、主体・数値・日付を分ける定型句が反復し、音声では機械的である。",
+    "relation_map_utility": "SIE・Store・パブリッシャー・小売・旧世代利用者を供給・対立のedgeで結び、販売集約と利用者の保存問題を追える。ただしSIEから小売へのkind「協調的競合」はcanonical registry外で、図の全体監査を阻害する。"
+  },
+  "averageScore": 4.285714285714286,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Red"
+}

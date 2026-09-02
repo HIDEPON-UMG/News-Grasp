@@ -1,0 +1,94 @@
+{
+  "actualIssueDates": [
+    "2026-08-18",
+    "2026-08-19",
+    "2026-08-20",
+    "2026-08-21",
+    "2026-08-22",
+    "2026-08-23",
+    "2026-08-24",
+    "2026-08-26",
+    "2026-08-30",
+    "2026-08-31"
+  ],
+  "claimUrlCount": 25,
+  "freshClaimObservationCount": 25,
+  "generatedAt": "2026-08-31T22:22:37.024462+00:00",
+  "periodEnd": "2026-08-31",
+  "periodStart": "2026-08-18",
+  "results": {
+    "2026-08-18": {
+      "bundleReceiptPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-history-remediation\\stage\\2026-08-18\\data\\deepdive-bundles\\2026-08-18.json",
+      "issueCodes": [],
+      "issues": [],
+      "renderedPublicPath": "docs/deepdive/2026-08-18/index.html",
+      "status": "Green"
+    },
+    "2026-08-19": {
+      "bundleReceiptPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-history-remediation\\stage\\2026-08-19\\data\\deepdive-bundles\\2026-08-19.json",
+      "issueCodes": [],
+      "issues": [],
+      "renderedPublicPath": "docs/deepdive/2026-08-19/index.html",
+      "status": "Green"
+    },
+    "2026-08-20": {
+      "bundleReceiptPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-history-remediation\\stage\\2026-08-20\\data\\deepdive-bundles\\2026-08-20.json",
+      "issueCodes": [],
+      "issues": [],
+      "renderedPublicPath": "docs/deepdive/2026-08-20/index.html",
+      "status": "Green"
+    },
+    "2026-08-21": {
+      "bundleReceiptPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-history-remediation\\stage\\2026-08-21\\data\\deepdive-bundles\\2026-08-21.json",
+      "issueCodes": [],
+      "issues": [],
+      "renderedPublicPath": "docs/deepdive/2026-08-21/index.html",
+      "status": "Green"
+    },
+    "2026-08-22": {
+      "bundleReceiptPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-history-remediation\\stage\\2026-08-22\\data\\deepdive-bundles\\2026-08-22.json",
+      "issueCodes": [],
+      "issues": [],
+      "renderedPublicPath": "docs/deepdive/2026-08-22/index.html",
+      "status": "Green"
+    },
+    "2026-08-23": {
+      "bundleReceiptPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-history-remediation\\stage\\2026-08-23\\data\\deepdive-bundles\\2026-08-23.json",
+      "issueCodes": [],
+      "issues": [],
+      "renderedPublicPath": "docs/deepdive/2026-08-23/index.html",
+      "status": "Green"
+    },
+    "2026-08-24": {
+      "bundleReceiptPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-history-remediation\\stage\\2026-08-24\\data\\deepdive-bundles\\2026-08-24.json",
+      "issueCodes": [],
+      "issues": [],
+      "renderedPublicPath": "docs/deepdive/2026-08-24/index.html",
+      "status": "Green"
+    },
+    "2026-08-26": {
+      "bundleReceiptPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-history-remediation\\stage\\2026-08-26\\data\\deepdive-bundles\\2026-08-26.json",
+      "issueCodes": [],
+      "issues": [],
+      "renderedPublicPath": "docs/deepdive/2026-08-26/index.html",
+      "status": "Green"
+    },
+    "2026-08-30": {
+      "bundleReceiptPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-history-remediation\\stage\\2026-08-30\\data\\deepdive-bundles\\2026-08-30.json",
+      "issueCodes": [],
+      "issues": [],
+      "renderedPublicPath": "docs/deepdive/2026-08-30/index.html",
+      "status": "Green"
+    },
+    "2026-08-31": {
+      "bundleReceiptPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-history-remediation\\stage\\2026-08-31\\data\\deepdive-bundles\\2026-08-31.json",
+      "issueCodes": [],
+      "issues": [],
+      "renderedPublicPath": "docs/deepdive/2026-08-31/index.html",
+      "status": "Green"
+    }
+  },
+  "schemaVersion": "DEEPDIVE_HISTORY_STAGE_MATERIALIZATION_V1",
+  "sealedNonclaimObservationCount": 25,
+  "status": "Green"
+}

@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-17",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-17-DeepDive.md",
+      "sha256": "09a0ba264de0056d919a5b2cb729c5bfdb5be5e3ddd9904a492c28913190ffd4"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-17-DeepDive.md",
+      "sha256": "b951f7643715d55175823c4af266b922574a7d683c86db7897fa414c57048a74"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-17-DeepDive-dialogue.md",
+      "sha256": "c955c1f8257826ea6d9741ac996f87f1478ae101ac6ca09b2ebf8b7a96fa4425"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "韓国銀行の3年半ぶり25bp利上げを、AI半導体輸出の好況を止める政策ではなく、利益・賃金・住宅信用への還流速度を測る調整へ位置付けている。",
+    "evidence_depth": "政策金利2.50%から2.75%、6月CPI3.2%、コア2.5%、家計ローン月8〜9兆ウォン、SamsungとSK hynixの株価下落を、韓国銀行・聯合ニュース資料で重ねている。成長率の改定値やローン増加の詳細定義は未公表・限定的である。",
+    "causal_coherence": "HBM需要が企業利益・投資・賃金・税収を経て内需を押し上げ、住宅信用と物価を刺激するため、利上げや住宅規制で流量を絞るという輸出から金融安定への因果が一貫している。",
+    "counterevidence": "AI半導体株の9〜15%下落、供給増による採算懸念、利上げが投資と家計消費を二重に冷やす副作用を示し、AIスーパーサイクル継続を前提にしていない。",
+    "decision_utility": "追加利上げ、2.75%で停止、住宅ローン規制の三案を比較し、CPI、家計ローン8〜9兆ウォンの減速、半導体利益の内需波及を同時に見る実務KPIを置いている。",
+    "dialogue_naturalness": "利上げ、AI需要、住宅ローン、CPI、株価変動を順に掘れるが、SamsungElectronicsやSKhynixの連結表記と「主体・数値・日付を分けて記録」の反復が対談を定型化している。",
+    "relation_map_utility": "Samsung・SK hynixと世界AI需要、家計、韓国銀行を競合・供給・規制の6本のcanonical edgeでつなぎ、半導体の利益が内需へ流れる経路と利上げの作用点を補助している。"
+  },
+  "averageScore": 4.428571428571429,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

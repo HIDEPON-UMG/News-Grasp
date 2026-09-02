@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-08-27",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-27-DeepDive.md",
+      "sha256": "decf5920bbcbcc36eca4f2e3cab991e7df0d6b00d62c702155603db9352912cc"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-27-DeepDive.md",
+      "sha256": "6b6676c5a7bb67818b704f88e045aba1f59153c72251bf43632437afd7498d23"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-27-DeepDive-dialogue.md",
+      "sha256": "ee9941565b0fd707df2b946d539f32465f012d09b326b99b97f7d8e67dfb239b"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 4,
+    "evidence_depth": 4,
+    "causal_coherence": 5,
+    "counterevidence": 4,
+    "decision_utility": 5,
+    "dialogue_naturalness": 5,
+    "relation_map_utility": 3
+  },
+  "findings": {
+    "theme_specific_insight": "GDP1.5%の減速と民間最終需要4.2%の乖離を中心に、PCE3.7%とFOMCの3票を「狭い通路」として結び付けており、米国の金融判断という当日テーマに固有の見方がある。",
+    "evidence_depth": "BEAのGDP・PCE、Fed、BLSのタイムラインに加え、PCE推移、GDPと内需の比較、8指標の表を置いている。ただし企業利益や貯蓄率の根拠は本文内の参照整理に依存する。",
+    "causal_coherence": "輸入増がGDPを押し下げる一方で内需を残す構図、金利が家計と企業を制約する経路、消費鈍化がサービス物価へ波及する観測点が段落と図で連続している。",
+    "counterevidence": "低いGDPだけでは需要失速といえない点、所得増と貯蓄率3.0%の併存、追加利上げと販売機会の両面を示し、単一指標で決めない境界を置いている。",
+    "decision_utility": "CFO向けに据え置き、25bp利上げ、高金利長期化・需要減速の3シナリオを提示し、9月30日までに借換依存度と需要感応度を分けて点検する行動へ落としている。",
+    "dialogue_naturalness": "GDPとPCEの相反、輸入の寄与、FOMC投票、企業の三つの金利シナリオを、若手の確認と先輩の具体的な応答で段階的に掘り下げている。内部claim-sourceやURLの発話漏れはなく、最後にCFOが更新する表と撤回条件まで往復で合意できているため、7価値区間が実際の会話として機能する。",
+    "relation_map_utility": "BEA・BLSからFOMC、家計・企業へ至る主要な緊張関係は示せるが、家計から企業と企業から家計をともに供給kindで表し、需要と価格の向きが粗くなるため精度は限定的である。"
+  },
+  "averageScore": 4.285714285714286,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

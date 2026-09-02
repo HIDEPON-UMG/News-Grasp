@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-31",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-31-DeepDive.md",
+      "sha256": "05fa63a9da555a0cd97345fd6447d0775c5626776fe36258d505bec424b73be0"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-31-DeepDive.md",
+      "sha256": "e06a1d98fd52ae2cb738a6bd2403f81332e6a7b91a7476d8b453ca9d923026f7"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-31-DeepDive-dialogue.md",
+      "sha256": "4c0806fdbeeef49ef28eccc3b6b2db31eede2dfa70e659c2fd2e132ae2ffa2f2"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 4,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "Azureの成長率競争を、Microsoft Cloudの規模、Oracle IaaSの急伸、GeminiのOCI利用へつなげ、企業の論点を成長率から調達ポートフォリオへ移している。",
+    "evidence_depth": "Azureの39%から40%、43%への推移、Microsoft Cloudの515億ドルから593億ドル、Oracle IaaSの93%成長を並べ、319億ドルの設備投資と158億ドルのFCFも併記している。各社の会計期間と分母が異なる点は比較上の注意を要する。",
+    "causal_coherence": "AIワークロードの増加がクラウド需要を押し上げ、設備投資とキャッシュフローの制約を生み、複数クラウド・長期契約・移行余地のある調達判断へ至る筋道が明瞭である。",
+    "counterevidence": "高成長率だけで一社集中を正当化せず、Oracleの基礎規模、契約拘束、リージョンやデータ移転の制約を示している。ただし各社の利益率や実際のワークロード移行費用までは同じ粒度で揃っていない。",
+    "decision_utility": "価格だけでなく推論単価、データ所在地、退出コスト、予備リージョンを入れた入札比較を促し、Azure中心・Oracle併用・複数クラウド分散の選択軸を実務に使える形で示す。",
+    "dialogue_naturalness": "現行台本は、成長率からモデル・データ選択、設備制約、資本負担、48時間の比較表へ自然に進み、旧テンプレートの一文再掲を除いた。一方、MicrosoftCloud・FY26Q4・GoogleCloudの連結表記と各区間の「〜のですね」確認が続き、音声では記事要約の読み上げ感が残るため自然さは3相当。",
+    "relation_map_utility": "Microsoft、Oracle、Google、企業利用者間の競合と供給を4本のcanonical edgeで示し、クラウド事業者の成長指標と調達関係を短く対応付けている。"
+  },
+  "averageScore": 4.428571428571429,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-08",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-08-DeepDive.md",
+      "sha256": "58694f205bdb58af814acc23179c8eed41636fe63c737a8bc377d527e8923de8"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-08-DeepDive.md",
+      "sha256": "79f4a5b309555675c4cac4902998a6d05e04135825459cb9cbb357675a41192c"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-08-DeepDive-dialogue.md",
+      "sha256": "100b608fb71c21e546f6ac2189c8d0381f032f58fd7c0fda34e9b70dd6f93ece"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "SquareのChatGPT・Claude注文連携とKAISTの70Bエージェント計測を、AIの配布先拡大と電力・待ち時間・手数料の従量採算を同じ設計問題として結び、モデルの賢さから1件を何回走らせるかへ焦点を移している。",
+    "evidence_depth": "Squareの追加設定なし注文導線、KAISTの348.41Wh・通常推論比136.5倍、待ち時間153.7倍・GPU待機54.5%、arXivの動的推論、IEAの415TWhから950TWh級の見通しを組み合わせている。研究条件、将来トラフィック仮定、企業の実際の原価配賦は未確認として分けている。",
+    "causal_coherence": "POS・注文へAIを接続すると高頻度の照会・在庫確認・注文確定がエージェント実行へ移り、計画・ツール呼び出し・再試行の電力と待ち時間が増えるため、モデル単価ではなくワークロード設計と電力網が採算を決める経路が明瞭である。",
+    "counterevidence": "単発推論とReflexionの電力差が全業務の実績を意味しないこと、Squareの手数料ゼロが推論原価ゼロではないこと、IEA見通しが企業別の電力制約を確定しないことを残している。",
+    "decision_utility": "高価値処理だけに限定、全接点へ開放、軽量モデル・キャッシュ・人間確認で段階導入を比べ、注文・調査一件当たりの呼出回数、電力、待ち時間、単価をCFOの判定指標にしている。",
+    "dialogue_naturalness": "Squareの商流、KAISTの電力、IEAの系統制約、全件開放と限定運用を順に掘るが、長いchange_over_time回答、定型の確認句、SquareOnlineOrdering等の連結表記が目立ち、音声対談は機械的である。",
+    "relation_map_utility": "OpenAI・AnthropicからSquareへの提携、Squareから店舗への供給、両AI入口の競合、データセンターからAI入口・電力網からデータセンターへの供給をcanonical edgeで示し、商流と電力制約を同じ図で追える。"
+  },
+  "averageScore": 4.571428571428571,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

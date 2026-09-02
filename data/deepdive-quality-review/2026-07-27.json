@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-27",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-27-DeepDive.md",
+      "sha256": "ca29a4828311216ee3cfff90804fe046f18c3011b5fb7d59d65d725b8200e10d"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-27-DeepDive.md",
+      "sha256": "eb14fdfdb9d19476a69d7fce42d63499c465a9b9580edc53391852cfb760204f"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-27-DeepDive-dialogue.md",
+      "sha256": "6d8a09ada41c8a365ffad44e5352f8e05710c4b90a0fd2e60255f310c68efc72"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "25主体のオープンウェイト書簡、Mistral Medium 3.5の三配備形態、AnthropicのAzure・NVIDIA依存を、公開性の思想ではなくモデル保有・復旧・責任分界を選ぶ調達条件として整理している。",
+    "evidence_depth": "Microsoft・NVIDIAの25主体書簡、Mistralのクラウド／接続型／完全切断型、Anthropic関連のAzure300億ドル・最大1GW、EU透明性義務を複数の公式資料でつないでいる。主体数チャートは市場規模ではなく発表参加数である。",
+    "causal_coherence": "重みの取得と配備形態の選択がパッチ・監視・事故対応の責任を導入企業へ戻し、EUの表示義務が提供者と利用者の説明責任を重ねるため、モデル方式から責任分界表へ調達軸が移る因果が通る。",
+    "counterevidence": "Anthropicが署名しなかった理由を未確認とし、オープン支持が専有モデルの衰退を意味しないこと、主体数の増加が市場シェアではないことを明示して単純な公開優位論を抑えている。",
+    "decision_utility": "専有API標準、オープンウェイト内製、機密度・遅延・復旧時間によるポートフォリオを比較し、重みの持ち出し、ログ、退出テスト、透明性実装を8月2日までに共同承認する条件を示す。",
+    "dialogue_naturalness": "政策書簡、Anthropicの未確認理由、Mistralの三環境、EU表示義務を順番に照合できるが、MistralMedium3.5やMicrosoftNVIDIAなど連結語と同型の記録応答が会話を硬くする。",
+    "relation_map_utility": "Microsoft・NVIDIA・Mistral・Anthropic・EU・導入企業の提携、出資、供給、競合、規制を8本のcanonical edgeで表し、公開・専有両陣営を同じ基盤が支える構図を再利用できる。"
+  },
+  "averageScore": 4.428571428571429,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

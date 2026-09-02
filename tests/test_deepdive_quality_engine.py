@@ -130,6 +130,7 @@ def _patch_green_quality_review(monkeypatch: pytest.MonkeyPatch) -> None:
         '{"claim":"内部主張","sourceUrl":"https://example.com/private"}',
         '```json\n{"sourceUrl":"https://example.com/private"}\n```',
         '[内部リンク](https://example.com/private)',
+        '<p>### §02 企業利用 — 複数モデルを選べることの条件</p>',
     ],
 )
 def test_rendered_public_surface_rejects_internal_transport_metadata(
@@ -2069,3 +2070,108 @@ def test_materialize_issue_without_claim_transport_rejects_unrelated_url_200(
             issue_date=issue_date,
         )
     assert not sidecar.exists()
+
+
+@pytest.mark.parametrize(
+    ("declared_charset", "encoding", "head_markup"),
+    (
+        (
+            "Shift_JIS",
+            "cp932",
+            '<meta charset="Shift_JIS">',
+        ),
+        (
+            "Windows-31J",
+            "cp932",
+            '<meta http-equiv="Content-Type" '
+            'content="text/html; charset=Windows-31J">',
+        ),
+        (
+            "UTF-8",
+            "utf-8",
+            '<meta charset="UTF-8">',
+        ),
+    ),
+)
+def test_observed_record_decodes_declared_html_charset_without_replacement(
+    declared_charset: str,
+    encoding: str,
+    head_markup: str,
+) -> None:
+    """V2 provenance: charset宣言に従い日本語根拠を壊さず観測する。"""
+
+    evidence = "日本語の根拠文：東京市場で新条件を公表した。"
+    url = "https://example.com/charset"
+    body = (
+        f"<html><head>{head_markup}</head>"
+        f"<body><p>{evidence}</p></body></html>"
+    ).encode(encoding)
+
+    record = deepdive_quality._observed_record(
+        url=url,
+        final_url=url,
+        status=200,
+        body=body,
+    )
+
+    observed_text = str(record["observedText"])
+    assert evidence in observed_text, declared_charset
+    assert "\ufffd" not in observed_text, declared_charset
+
+
+def test_normalized_evidence_text_joins_japanese_html_tag_boundaries() -> None:
+    """HTML tag境界に挿入された空白を日本語evidenceの比較から除外する。"""
+
+    evidence = "市場拡大を促す新条件が導入された。"
+    observed = "<p>市場拡大を促す</p><span>新条件が導入された。</span>"
+
+    assert deepdive_quality._normalized_evidence_text(observed) == (
+        deepdive_quality._normalized_evidence_text(evidence)
+    )
+
+
+def test_normalized_evidence_text_removes_nextjs_literal_escaped_tags() -> None:
+    """Next.js本文のliteral \\u003c...\\u003eタグを可視本文として比較する。"""
+
+    evidence = "日本語の根拠文は公開資料で確認できる。"
+    observed = (
+        r"\u003cp\u003e"
+        + evidence
+        + r"\u003c/p\u003e"
+    )
+
+    assert deepdive_quality._normalized_evidence_text(observed) == (
+        deepdive_quality._normalized_evidence_text(evidence)
+    )
+
+
+def test_provenance_manifest_self_validates_with_mixed_transport_records(
+    tmp_path: Path,
+) -> None:
+    """履歴再生成でsealed/new transportが混在してもmanifestを自己検証できる。"""
+
+    first_url = "https://example.com/sealed-source"
+    second_url = "https://example.com/fresh-source"
+    article = _article(tmp_path / "2026-08-01-DeepDive.md", url=first_url)
+    article.write_text(
+        article.read_text(encoding="utf-8")
+        + f"- [新規取得資料]({second_url})\n",
+        encoding="utf-8",
+    )
+    sealed = _fetch(first_url)
+    sealed["transportEvidence"] = {
+        "selectedTransport": "windows_system_http",
+        "primaryTransport": "python_urllib",
+        "primaryFailure": "HTTP_403",
+        "fallbackAttemptCount": 1,
+    }
+    fresh = _fetch(second_url)
+
+    manifest_path = tmp_path / "provenance.json"
+    deepdive_quality.build_provenance_manifest(
+        article_path=article,
+        fetch_records=[sealed, fresh],
+        output_path=manifest_path,
+    )
+
+    assert deepdive_quality.validate_provenance(article, manifest_path) == []

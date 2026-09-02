@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-13",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-13-DeepDive.md",
+      "sha256": "448a8d0c4bf5a0d191b37f0f9ff870d9cb35e87967a17d85d8a0c063c4c154aa"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-13-DeepDive.md",
+      "sha256": "c32edd63589c5e906c19f1f8786bfb2d461d32d50c5d565779b810efdc7f9ba7"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-13-DeepDive-dialogue.md",
+      "sha256": "e358800cf9a628a8b2e4ec672764001ff20f20ed82d4b0f6dcf32dcdf61aead5"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "GPT-5.6の三層価格とClaude Sonnet 5の導入価格を単純な最安値競争にせず、タスク別ルーティング、キャッシュ、品質・遅延、契約期間を含む配布設計の競争へ置き換えている。",
+    "evidence_depth": "OpenAIとAnthropicの価格・キャッシュ条件、公正取引委員会の生成AI競争環境資料を組み合わせ、LunaからSolまでの単価差とClaudeの8月末までの導入価格を具体化している。トークン化、文脈長、性能、遅延を揃えた実測総コストはなく、単価比較の限界を残している。",
+    "causal_coherence": "モデル単価の差がタスク振り分けとキャッシュ利用を促し、完了単位のコスト・品質・待ち時間を通じて企業の配布設計を変え、期間限定価格と競争監視が再選択を迫るという線が明確である。",
+    "counterevidence": "Claudeの導入価格が期間限定であること、入力・出力比率やキャッシュの有無で総額が変わること、品質・遅延・契約条件を単価から推定できないことを明示し、値下げだけを優位とみなしていない。",
+    "decision_utility": "高品質タスクをSol、定型処理をLuna、代替確認をClaudeへ振り分ける案を、成功率、再試行、キャッシュ率、月次単価、契約更新時点で評価できる形にしている。",
+    "dialogue_naturalness": "価格表、キャッシュ、ルーティング、JFTCの監視を問いでつなぐ構成は判断材料を拾いやすいが、段階ごとに同じ確認句が戻り、価格・URLの読み上げも多いため、対談としては機械的である。",
+    "relation_map_utility": "OpenAIとAnthropicの競合、両社から企業への供給、JFTCの両社への規制をcanonical edgeで表し、価格差が需要側の配布設計へ伝わる構造を保っている。"
+  },
+  "averageScore": 4.428571428571429,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

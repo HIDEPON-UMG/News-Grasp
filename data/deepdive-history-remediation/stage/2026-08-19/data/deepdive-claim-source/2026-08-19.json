@@ -1,0 +1,34 @@
+{
+  "articleContentSha256": "f20fe1ac0da1e054a96163fec79832a94f5dd327f5bf08abaf6416497f53d998",
+  "articlePath": "digest/DeepDive/2026-08-19-DeepDive.md",
+  "bindings": [
+    {
+      "claim": "IntelはSpaceX、xAI、TeslaとともにTerafabプロジェクトへ加わった",
+      "claimId": "dd-20260819-intel-terafab",
+      "evidence": "Intel is proud to join the Terafab project with @SpaceX, @xAI, and @Tesla to help refactor silicon fab technology.",
+      "sourceUrl": "https://terafabinfo.com/documents/intel-terafab-partnership-release/"
+    },
+    {
+      "claim": "SamsungとBroadcomはメモリーとファウンドリー技術で戦略協業を拡大した",
+      "claimId": "dd-20260819-samsung-broadcom",
+      "evidence": "Samsung Electronics and Broadcom today announced the signing of a memorandum of understanding (MOU) to expand their strategic collaboration across memory and foundry technologies",
+      "sourceUrl": "https://news.samsung.com/global/samsung-electronics-and-broadcom-expand-strategic-collaboration-across-memory-and-foundry-technologies"
+    },
+    {
+      "claim": "TeslaはTerafabでIntelの14A processを使う計画を示した",
+      "claimId": "dd-20260819-tesla-inhouse",
+      "evidence": "Elon Musk says his TeraFab facilities will use Intel's 14A process technology to make AI chips",
+      "sourceUrl": "https://www.tomshardware.com/tech-industry/semiconductors/elon-musk-says-terafab-will-use-intels-14a-process-technology-to-make-ai-chips-spacex-will-be-responsible-for-high-volume-chip-manufacturing-in-liekly-intel-tech-licensing-deal"
+    },
+    {
+      "claim": "TSMCの先端技術は2026年Q2のウエハー売上の77%を占めた",
+      "claimId": "dd-20260819-tsmc-advanced-share",
+      "evidence": "Advanced process technologies remained the main growth driver, accounting for 77% of total wafer revenue during the quarter",
+      "sourceUrl": "https://www.taiwannews.com.tw/news/6402356"
+    }
+  ],
+  "issueDate": "2026-08-19",
+  "schemaVersion": "DEEPDIVE_CLAIM_SOURCE_TRANSPORT_V1",
+  "status": "Green",
+  "transportSha256": "e86f8b7c4e6d0f9cd40bf0af171240342a6d2cd15a05fce8ae7bb577ffd8f5f6"
+}

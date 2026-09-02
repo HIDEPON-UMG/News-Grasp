@@ -1,0 +1,1272 @@
+{
+  "articleCount": 13,
+  "days": [
+    {
+      "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-18-DeepDive.md",
+      "auditedFiles": [
+        {
+          "canonicalTextSha256": "6dee4ea91cdcac4602577e67d137b5ec4912ef06146f97d9fb11ebeac08ab6ae",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-18.json",
+          "sha256": "6dee4ea91cdcac4602577e67d137b5ec4912ef06146f97d9fb11ebeac08ab6ae"
+        },
+        {
+          "canonicalTextSha256": "13cf1f9937d5e7cf74dfaaaa19a959c56cd1b6fea31d041f014bf634d848ba33",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-18.json",
+          "sha256": "13cf1f9937d5e7cf74dfaaaa19a959c56cd1b6fea31d041f014bf634d848ba33"
+        },
+        {
+          "canonicalTextSha256": "2809534800c07c025c9120e30722536d1298a6c8a9301a2e05b559421a09448e",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-18-DeepDive.md",
+          "sha256": "17ba0598106ad750b8414e364aedf6d238ed7b4bc5307d5bf75a16f0fc30af6a"
+        }
+      ],
+      "auditedPaths": [
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-18.json",
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-18.json",
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-18-DeepDive.md"
+      ],
+      "dialogueCorpusAudit": null,
+      "dialoguePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-18-DeepDive-dialogue.md",
+      "issueCodes": [
+        "deepdive_url_provenance_invalid",
+        "deepdive_research_evidence_insufficient",
+        "deepdive_article_value_invalid",
+        "deepdive_dialogue_value_invalid",
+        "deepdive_relation_quality_invalid"
+      ],
+      "issueDate": "2026-08-18",
+      "issues": [
+        "DEEPDIVE_ARTICLE_DRIFT",
+        "DEEPDIVE_CLAIM_SOURCE_MANIFEST_LEGACY",
+        "DEEPDIVE_CLAIM_SOURCE_BINDINGS_MISSING",
+        "DEEPDIVE_QUALITY_REVIEW_AVERAGE_TOO_LOW 3.6",
+        "DEEPDIVE_QUALITY_REVIEW_SCORE_TOO_LOW relation_map_utility=2"
+      ],
+      "provenancePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-18.json",
+      "qualityReview": {
+        "artifacts": {
+          "article": {
+            "path": "digest/DeepDive/2026-08-18-DeepDive.md",
+            "sha256": "17ba0598106ad750b8414e364aedf6d238ed7b4bc5307d5bf75a16f0fc30af6a"
+          },
+          "dialogue": {
+            "path": "digest/DeepDive/2026-08-18-DeepDive-dialogue.md",
+            "sha256": "e9db49ff7d6e5baf5005345d266d406db22caad6f6bb9de46b8e37b2238571df"
+          },
+          "relation": {
+            "path": "digest/DeepDive/2026-08-18-DeepDive.md",
+            "sha256": "851838232fd80826b211d12bf08ab36879b536743de3161b7ecc2cf01b90e29d"
+          }
+        },
+        "averageScore": 3.5714285714285716,
+        "computedAverageScore": 3.5714285714285716,
+        "findings": {
+          "causal_coherence": "金利上昇が資本コストを押し上げ、AI価格低下が利用量を増やし、検証・権限・請求・保守費を重くするという流れを、自動運転・量産投資へ拡張している。複数領域の類推とAnthropic評価環境の外部影響には直接測定されていない部分が残る。",
+          "counterevidence": "需要や利用量が伸びても利益・安全・説明責任を保証せず、保守、事故対応、歩留まり、電力、在庫、地域需要が追い付かない場合を明記する。単価低下を採用根拠にしない反証はあるが、各領域の実績閾値や失敗事例はない。",
+          "decision_utility": "成長優先、金利・統治コストを審査へ入れる案、高コスト領域の実証を絞る案を比較し、第二案と第三案の併用を選ぶ。9月の日銀会合・開示を期限に、利用量・保守費・事故対応・歩留まり・電力・在庫の継続費表とCFO再計算を置くが、領域別の採否基準は未分化である。",
+          "dialogue_naturalness": "金利とAI投資の接続、複数ニュースの焦点化、回収経路、統治負荷、他領域への適用、継続費表と投資委員会の停止条件へ順に進む。先輩・若手の語体と9月末の作業は自然だが、固定7区間の問答と規模数値の再提示は残る。",
+          "evidence_depth": "日経、外為どっとコム、読売、Business Insider、AIsmileyのリンクと、2.930%、価格低下、約14倍利用、検証接続3件などを示す。一方、ロボタクシー記事はURLなしで、2.93・20・1400・21を同じチャートへ置く単位混在と、記者記録由来の重要度スコアが証拠の比較可能性を弱める。",
+          "relation_map_utility": "長期金利→投資委員会→AI利用部門→透明性責任者→運用・復旧→自動運転・半導体の5辺は座標上の重複・交差・第三ノード貫通がない。しかし抽象的な部門・工程を並べた汎用チェーンで、運用・復旧→成長投資を「提携」とする根拠もなく、記事の複数当事者関係を表さない。",
+          "theme_specific_insight": "10年国債利回り2.930%とAI価格・利用量、学習データ透明化、外部評価接続、ロボタクシー・半導体投資を、継続コストと運用責任の審査へ結び付ける。異なる業種を同じ継続性で読む独自性はあるが、対象が広く主題の焦点はやや薄い。"
+        },
+        "issueDate": "2026-08-18",
+        "issues": [
+          "DEEPDIVE_QUALITY_REVIEW_AVERAGE_TOO_LOW 3.6",
+          "DEEPDIVE_QUALITY_REVIEW_SCORE_TOO_LOW relation_map_utility=2"
+        ],
+        "reviewRoute": "codex_daily_audit",
+        "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+        "scores": {
+          "causal_coherence": 4,
+          "counterevidence": 4,
+          "decision_utility": 4,
+          "dialogue_naturalness": 4,
+          "evidence_depth": 3,
+          "relation_map_utility": 2,
+          "theme_specific_insight": 4
+        },
+        "status": "Red"
+      },
+      "qualityReviewPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-18.json",
+      "renderedPublicPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\docs\\deepdive\\2026-08-18\\index.html",
+      "route": "codex_daily_audit",
+      "schemaVersion": "DEEPDIVE_SHARED_QUALITY_REPORT_V1",
+      "status": "Red"
+    },
+    {
+      "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-19-DeepDive.md",
+      "auditedFiles": [
+        {
+          "canonicalTextSha256": "d1bf828a7bd1de393ac312d9d1a3532640b789e03cdde0e74aa2eb35fa354616",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-19.json",
+          "sha256": "d1bf828a7bd1de393ac312d9d1a3532640b789e03cdde0e74aa2eb35fa354616"
+        },
+        {
+          "canonicalTextSha256": "0f3cba4334d497a0e4a29f7509758bc7879a5a92f9e19dc7d5545d03a6624e44",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-19.json",
+          "sha256": "0f3cba4334d497a0e4a29f7509758bc7879a5a92f9e19dc7d5545d03a6624e44"
+        },
+        {
+          "canonicalTextSha256": "098c168d53be31408b3e707a4097a41363c2742f64c776b71ca6d96e01cc15c5",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-19-DeepDive.md",
+          "sha256": "098c168d53be31408b3e707a4097a41363c2742f64c776b71ca6d96e01cc15c5"
+        }
+      ],
+      "auditedPaths": [
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-19.json",
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-19.json",
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-19-DeepDive.md"
+      ],
+      "dialogueCorpusAudit": null,
+      "dialoguePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-19-DeepDive-dialogue.md",
+      "issueCodes": [
+        "deepdive_url_provenance_invalid",
+        "deepdive_research_evidence_insufficient",
+        "deepdive_relation_quality_invalid"
+      ],
+      "issueDate": "2026-08-19",
+      "issues": [
+        "DEEPDIVE_ARTICLE_DRIFT",
+        "DEEPDIVE_CLAIM_SOURCE_MANIFEST_LEGACY",
+        "DEEPDIVE_CLAIM_SOURCE_BINDINGS_MISSING",
+        "DEEPDIVE_QUALITY_REVIEW_SCORE_TOO_LOW relation_map_utility=2"
+      ],
+      "provenancePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-19.json",
+      "qualityReview": {
+        "artifacts": {
+          "article": {
+            "path": "digest/DeepDive/2026-08-19-DeepDive.md",
+            "sha256": "098c168d53be31408b3e707a4097a41363c2742f64c776b71ca6d96e01cc15c5"
+          },
+          "dialogue": {
+            "path": "digest/DeepDive/2026-08-19-DeepDive-dialogue.md",
+            "sha256": "e71eced5bbfa11a6690bbe6ed970e0b01ad92197cedcf4464f73847bb18b7f24"
+          },
+          "relation": {
+            "path": "digest/DeepDive/2026-08-19-DeepDive.md",
+            "sha256": "6dab839ffd92505034257ba405fc3510dd122f2b30bdf45bc51ce6e8465138a4"
+          }
+        },
+        "averageScore": 4.285714285714286,
+        "computedAverageScore": 4.285714285714286,
+        "findings": {
+          "causal_coherence": "Teslaの投資が供給選択肢と設計反復を増やす一方、TSMCの顧客・製品運用の厚みを短期には置き換えず、Intelの量産認定やSamsungのメモリ・包装が代替性を左右するという因果が通る。契約社数ではなく工程横断の品質保証が分散効果を決めると結論している。",
+          "counterevidence": "TSMCの売上規模と7nm以下77%、Intelの大口需要不足による投資縮小リスク、Teslaの歩留まり・装置・人材・資本負担、Samsung協業の実発注内訳未確認を併記する。内製・複数調達の利点を認めつつ、量産品質が出るまでの反証条件も示す。",
+          "decision_utility": "TSMC主軸、TSMC・Samsung・Intelの工程別複数調達、Terafab段階移行の三案を比較し、TSMCを外さず認定済み経路を増やす方針を選ぶ。9月末の二重化表・量産認定記録、14Aまたは先端包装が未認定ならCFOが主軸維持と追加投資停止を行う条件が具体的である。",
+          "dialogue_naturalness": "前回比較からTeslaの変化、内製と委託の根拠、TSMC規模、Intel・Samsungの不足機能、工程横断の競争、認定条件付きの調達判断へ順に進む。先輩常体・若手敬体と9月末の停止条件は機能するが、「SamsungElectronics」の空白欠落、固定7区間、本文数値の反復は残る。",
+          "evidence_depth": "Tesla 10-K、Intel 8-K、TSMC Q2、Samsung公式発表を用い、Tesla設備投資200億ドル超、TSMC534顧客・1万2682製品、Q2売上36%増・7nm以下77%、Intel Foundry54億ドル・16%増、協業2000億ドル超を具体化する。歩留まり、14A時期、実発注額は未確認として残している。",
+          "relation_map_utility": "Tesla・Intel・TSMC・Samsung・Broadcomの提携・競合を5辺で示し、1080×640の座標上はノード重複・辺交差・第三ノード貫通がない。ただしTesla→TSMCの「先端品を供給」は、実際の顧客依存を逆向きに表す中心的な誤りで、調達再編の判断を誤らせるため低得点とする。",
+          "theme_specific_insight": "TeslaのAI推論チップ内製、Intel Terafab、TSMCの先端量産、Samsung・Broadcomの統合協業を、工場性能の比較から顧客が設計・製造・包装の供給網を組み替える競争へ接続している。内製をTSMC即時代替としない当日固有の読み筋も明確である。"
+        },
+        "issueDate": "2026-08-19",
+        "issues": [
+          "DEEPDIVE_QUALITY_REVIEW_SCORE_TOO_LOW relation_map_utility=2"
+        ],
+        "reviewRoute": "codex_daily_audit",
+        "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+        "scores": {
+          "causal_coherence": 5,
+          "counterevidence": 4,
+          "decision_utility": 5,
+          "dialogue_naturalness": 4,
+          "evidence_depth": 5,
+          "relation_map_utility": 2,
+          "theme_specific_insight": 5
+        },
+        "status": "Red"
+      },
+      "qualityReviewPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-19.json",
+      "renderedPublicPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\docs\\deepdive\\2026-08-19\\index.html",
+      "route": "codex_daily_audit",
+      "schemaVersion": "DEEPDIVE_SHARED_QUALITY_REPORT_V1",
+      "status": "Red"
+    },
+    {
+      "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-20-DeepDive.md",
+      "auditedFiles": [
+        {
+          "canonicalTextSha256": "85e66cfccffaae7eae5efa862b314d3cb7cf62a5adbb512b982d8999e4f62a11",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-20.json",
+          "sha256": "85e66cfccffaae7eae5efa862b314d3cb7cf62a5adbb512b982d8999e4f62a11"
+        },
+        {
+          "canonicalTextSha256": "4ad0504a980c517ae2ecf32f9f4b232270a12167703f29145f9f7816901a6c8e",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-20.json",
+          "sha256": "4ad0504a980c517ae2ecf32f9f4b232270a12167703f29145f9f7816901a6c8e"
+        },
+        {
+          "canonicalTextSha256": "7f434a7d4043b5be89e4be9b1413b60bc99c84742deaeddf0355f7bf47317e6c",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-20-DeepDive.md",
+          "sha256": "7f434a7d4043b5be89e4be9b1413b60bc99c84742deaeddf0355f7bf47317e6c"
+        }
+      ],
+      "auditedPaths": [
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-20.json",
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-20.json",
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-20-DeepDive.md"
+      ],
+      "dialogueCorpusAudit": null,
+      "dialoguePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-20-DeepDive-dialogue.md",
+      "issueCodes": [
+        "deepdive_url_provenance_invalid",
+        "deepdive_research_evidence_insufficient"
+      ],
+      "issueDate": "2026-08-20",
+      "issues": [
+        "DEEPDIVE_ARTICLE_DRIFT",
+        "DEEPDIVE_CLAIM_SOURCE_MANIFEST_LEGACY",
+        "DEEPDIVE_CLAIM_SOURCE_BINDINGS_MISSING"
+      ],
+      "provenancePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-20.json",
+      "qualityReview": {
+        "artifacts": {
+          "article": {
+            "path": "digest/DeepDive/2026-08-20-DeepDive.md",
+            "sha256": "7f434a7d4043b5be89e4be9b1413b60bc99c84742deaeddf0355f7bf47317e6c"
+          },
+          "dialogue": {
+            "path": "digest/DeepDive/2026-08-20-DeepDive-dialogue.md",
+            "sha256": "38bba25da4f16a59482501feccbe4c39b9dc0369417e126baccc92874cd52ef3"
+          },
+          "relation": {
+            "path": "digest/DeepDive/2026-08-20-DeepDive.md",
+            "sha256": "e5e456c485a3855beb8bd31576fa0ac8f328526d870ac1cd057ec267dee94803"
+          }
+        },
+        "averageScore": 4.142857142857143,
+        "computedAverageScore": 4.142857142857143,
+        "findings": {
+          "causal_coherence": "出力が物理動作になるほど停止権限と安全評価が必要になり、業務分析では専門家確認、LLM基盤ではライセンス、運行AIでは事故対応へ責任が分かれるという横断因果は明快だが、異分野間の効果量までは示していない。",
+          "counterevidence": "高性能でも説明性・安全機構が弱ければ運行責任に接続できず、現場再現性や量産時責任が未確定であることを示して性能優先論に歯止めを掛ける。一方、導入を遅らせる具体的な反対事例は少ない。",
+          "decision_utility": "性能優先、安全・監視・承認・費用の先行固定、用途別段階導入の三案を示し、停止権限・監査ログ・保守費用・事故対応を同じ表で比較させる。ただし期限は次回更新時点で、合否閾値は粗い。",
+          "dialogue_naturalness": "若手の追加質問と先輩の応答が実際の論点を掘り下げ、物理制御から運用条件へ自然に移る。最後は30秒停止条件を提案する質問で終わるため、旧来の記録定型反復より会話的だが、一部の固有語は読み上げにくい。",
+          "evidence_depth": "WIRED、GameBusiness、MONOistの5領域をタイムラインと確認表へ整理し、物理制御、開発安全、LLM基盤、業務分析、運行AIごとに確認証拠を示す。ただしチャートは各1件の分類で、安全性能や費用の実測比較はない。",
+          "relation_map_utility": "Google DeepMind、OpenAI、NII、OKI、Waymo、導入企業を供給・統制・提携でつなぐ5本がすべてcanonicalで、異なるAI用途を責任主体へ接続する記事の共通軸を公開図から再利用できる。",
+          "theme_specific_insight": "Gemini Robotics 2を入口に、OpenAIの開発安全、LLM-jp-4 33B、OKIの顧客分析、Waymoの運行AIを、性能競争ではなく品質・停止権限・責任・費用の同じ導入条件へ束ねている。"
+        },
+        "issueDate": "2026-08-20",
+        "issues": [],
+        "reviewRoute": "codex_daily_audit",
+        "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+        "scores": {
+          "causal_coherence": 4,
+          "counterevidence": 4,
+          "decision_utility": 4,
+          "dialogue_naturalness": 4,
+          "evidence_depth": 4,
+          "relation_map_utility": 4,
+          "theme_specific_insight": 5
+        },
+        "status": "Green"
+      },
+      "qualityReviewPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-20.json",
+      "renderedPublicPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\docs\\deepdive\\2026-08-20\\index.html",
+      "route": "codex_daily_audit",
+      "schemaVersion": "DEEPDIVE_SHARED_QUALITY_REPORT_V1",
+      "status": "Red"
+    },
+    {
+      "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-21-DeepDive.md",
+      "auditedFiles": [
+        {
+          "canonicalTextSha256": "9aa24ca472a9aed886a27efa90fbc20c14d78e9e4ac6b9767e29ae25c42db0df",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-21.json",
+          "sha256": "08554a564ca2aea0fe9056f1e16b5f571234745244f2482ece9955affda72a64"
+        },
+        {
+          "canonicalTextSha256": "1c0f489379a756ee6bcac5555215e018516a2ab68e908240e95afa4b5e2c8107",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-21.json",
+          "sha256": "1c0f489379a756ee6bcac5555215e018516a2ab68e908240e95afa4b5e2c8107"
+        },
+        {
+          "canonicalTextSha256": "3cc5f82a95c5e2ace1dec8e80f6d9588ad5a4915b7d60b1ba4d91c7aa85e1b34",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-21-DeepDive.md",
+          "sha256": "3cc5f82a95c5e2ace1dec8e80f6d9588ad5a4915b7d60b1ba4d91c7aa85e1b34"
+        }
+      ],
+      "auditedPaths": [
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-21.json",
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-21.json",
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-21-DeepDive.md"
+      ],
+      "dialogueCorpusAudit": null,
+      "dialoguePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-21-DeepDive-dialogue.md",
+      "issueCodes": [
+        "deepdive_url_provenance_invalid",
+        "deepdive_research_evidence_insufficient"
+      ],
+      "issueDate": "2026-08-21",
+      "issues": [
+        "DEEPDIVE_ARTICLE_DRIFT",
+        "DEEPDIVE_CLAIM_SOURCE_MANIFEST_LEGACY",
+        "DEEPDIVE_CLAIM_SOURCE_BINDINGS_MISSING"
+      ],
+      "provenancePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-21.json",
+      "qualityReview": {
+        "artifacts": {
+          "article": {
+            "path": "digest/DeepDive/2026-08-21-DeepDive.md",
+            "sha256": "3cc5f82a95c5e2ace1dec8e80f6d9588ad5a4915b7d60b1ba4d91c7aa85e1b34"
+          },
+          "dialogue": {
+            "path": "digest/DeepDive/2026-08-21-DeepDive-dialogue.md",
+            "sha256": "88d963558f7c7b3aa53f46d4a6da709caf8ebd2d6d6ffab0a723beb180af5905"
+          },
+          "relation": {
+            "path": "digest/DeepDive/2026-08-21-DeepDive.md",
+            "sha256": "962ac2c7ba2d04f6891e0893f3c968935f086530b107486ccae98eda9a9107b0"
+          }
+        },
+        "averageScore": 4.142857142857143,
+        "computedAverageScore": 4.142857142857143,
+        "findings": {
+          "causal_coherence": "制裁が取引・決済・物流を変え、AIの権限集中がログと停止を要求し、Waymoの地域適応と材料の顧客認定が代替経路を決めるという四つの因果を、承認点と切替条件へ収束させている。",
+          "counterevidence": "制裁の対象・時期、AI逸脱の再現性、東京の利用者受容性、東南アジア工場の量産実績を未確定として残し、拡大後に整える案の停止・復旧リスクも比較している。定量的な反証は限定的である。",
+          "decision_utility": "拡大優先、承認点先行、用途別の小規模検証を比べ、事業・リスク・現場責任者へ停止条件と代替経路を割り当てる。次の観測時点は明確だが、各条件の数値合格ラインはまだ定義されていない。",
+          "dialogue_naturalness": "制裁の法務情報を調達へ渡し、AIの権限を監査へ、自動運転を認可へ、材料分散を顧客認定へつなぐ若手の確認が自然で、最後は9月末の台帳更新案まで具体化する。四領域を一度に扱うため一部は長い。",
+          "evidence_depth": "NHK、Yahoo!ニュース、ITmedia、日本経済新聞の4材料を、Waymoの3.5億キロ、AI逸脱、制裁、東南アジア分散の確認表へ落としている。ただし条件チャートは分類値で、逸脱頻度・東京の受容性・分散工場の量産実測はない。",
+          "relation_map_utility": "米国財務省・Anthropic・Waymo・トクヤマから顧客企業への規制・統制・供給を4本のcanonical edgeで表し、拡大前の停止条件と代替経路という横断骨格をそのまま再利用できる。",
+          "theme_specific_insight": "制裁、AIエージェント、自動運転、半導体材料という異質なニュースを、規模拡大の前に観測・承認・停止・代替経路を置くという一つの経営実装課題へ整理している。"
+        },
+        "issueDate": "2026-08-21",
+        "issues": [],
+        "reviewRoute": "codex_daily_audit",
+        "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+        "scores": {
+          "causal_coherence": 4,
+          "counterevidence": 4,
+          "decision_utility": 4,
+          "dialogue_naturalness": 4,
+          "evidence_depth": 4,
+          "relation_map_utility": 4,
+          "theme_specific_insight": 5
+        },
+        "status": "Green"
+      },
+      "qualityReviewPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-21.json",
+      "renderedPublicPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\docs\\deepdive\\2026-08-21\\index.html",
+      "route": "codex_daily_audit",
+      "schemaVersion": "DEEPDIVE_SHARED_QUALITY_REPORT_V1",
+      "status": "Red"
+    },
+    {
+      "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-22-DeepDive.md",
+      "auditedFiles": [
+        {
+          "canonicalTextSha256": "2a1437323aa40096c8a219f069a9e7db86fe7b18fcd764200975e108bbd55cec",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-22.json",
+          "sha256": "2a1437323aa40096c8a219f069a9e7db86fe7b18fcd764200975e108bbd55cec"
+        },
+        {
+          "canonicalTextSha256": "4cac86779666b04d81ea70f2739ec99780356743d8c8666b4911055f567bb1bb",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-22.json",
+          "sha256": "4cac86779666b04d81ea70f2739ec99780356743d8c8666b4911055f567bb1bb"
+        },
+        {
+          "canonicalTextSha256": "285f83c1fd214b0ce9a43c273cd37bcfe86091dd98bf642572aa6acdc051c958",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-22-DeepDive.md",
+          "sha256": "285f83c1fd214b0ce9a43c273cd37bcfe86091dd98bf642572aa6acdc051c958"
+        }
+      ],
+      "auditedPaths": [
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-22.json",
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-22.json",
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-22-DeepDive.md"
+      ],
+      "dialogueCorpusAudit": null,
+      "dialoguePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-22-DeepDive-dialogue.md",
+      "issueCodes": [
+        "deepdive_url_provenance_invalid",
+        "deepdive_research_evidence_insufficient",
+        "deepdive_article_value_invalid",
+        "deepdive_dialogue_value_invalid",
+        "deepdive_relation_quality_invalid"
+      ],
+      "issueDate": "2026-08-22",
+      "issues": [
+        "DEEPDIVE_ARTICLE_DRIFT",
+        "DEEPDIVE_CLAIM_SOURCE_MANIFEST_LEGACY",
+        "DEEPDIVE_CLAIM_SOURCE_BINDINGS_MISSING",
+        "DEEPDIVE_QUALITY_REVIEW_AVERAGE_TOO_LOW 3.6"
+      ],
+      "provenancePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-22.json",
+      "qualityReview": {
+        "artifacts": {
+          "article": {
+            "path": "digest/DeepDive/2026-08-22-DeepDive.md",
+            "sha256": "285f83c1fd214b0ce9a43c273cd37bcfe86091dd98bf642572aa6acdc051c958"
+          },
+          "dialogue": {
+            "path": "digest/DeepDive/2026-08-22-DeepDive-dialogue.md",
+            "sha256": "7a6bfd566ac40a69ebeb7a1c6643c46294e095965923a85bdf0198458611b576"
+          },
+          "relation": {
+            "path": "digest/DeepDive/2026-08-22-DeepDive.md",
+            "sha256": "a13a1505e29b3a32596a283474245679e722e2024ca9e47d05d05a88e9d24360"
+          }
+        },
+        "averageScore": 3.571428571428571,
+        "computedAverageScore": 3.5714285714285716,
+        "findings": {
+          "causal_coherence": "利用範囲を線引きすると検証者・入力データ・計算資源の責任が増え、社内知見を顧客手順へ変換する必要が生じるという因果は一貫する。EVやゲームへの展開は受け皿の比喩として機能するが、分野固有の因果結果までは示していない。",
+          "counterevidence": "法務指針の現場定着、モデル追加時の検証者不足、補助金後のEV運行、ゲームの無料体験から課金への転換を未確定として置き、規模や支出の増加だけで成果を確定していない。",
+          "decision_utility": "任せる業務範囲、検証者・費用・撤退条件、次の観測点という3項目は実務の出発点になるが、decisionブロック自体に選択肢・期限・決裁主体・比較条件がなく、会議での意思決定単位は弱い。",
+          "dialogue_naturalness": "法務、IT投資、EV、ゲーム、FXを若手の問いでつなぎ、現場手順へ戻す流れはある。しかしdialogue側のLLM-jp-433B表記が本文のLLM-jp-4 33Bと食い違い、同型の応答と長い説明が反復するため、音声対談としては機械的である。",
+          "evidence_depth": "IT支出6兆3690億ドル、EV6万1090台、ゲーム利用者約6億人などの数値と、法務・モデル・銀行・投資・EV・ゲームの6リンクを並べている。一方で二次報道中心で、異分野の数値とAI導入成果の対応、観測手順、一次資料本文の引用は不足する。",
+          "relation_map_utility": "法務省・NII・企業法務・Starling Bank・顧客業務を規制・供給・依存のcanonical edgeで結び、利用範囲から成果への責任線を追える。relationsブロックにsourceはないため、図単体で根拠を再確認する機能は限定される。",
+          "theme_specific_insight": "法務省の企業法務指針、NIIのLLM-jp-4 33B、Starling Bankの社内知見展開を、性能比較ではなく利用範囲・検証者・運用責任で読む主題へ束ねている。ただしEV、ゲーム、為替まで広げたため、企業AI固有の差分が薄くなる箇所もある。"
+        },
+        "issueDate": "2026-08-22",
+        "issues": [
+          "DEEPDIVE_QUALITY_REVIEW_AVERAGE_TOO_LOW 3.6"
+        ],
+        "reviewRoute": "codex_daily_audit",
+        "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+        "scores": {
+          "causal_coherence": 4,
+          "counterevidence": 4,
+          "decision_utility": 3,
+          "dialogue_naturalness": 3,
+          "evidence_depth": 3,
+          "relation_map_utility": 4,
+          "theme_specific_insight": 4
+        },
+        "status": "Red"
+      },
+      "qualityReviewPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-22.json",
+      "renderedPublicPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\docs\\deepdive\\2026-08-22\\index.html",
+      "route": "codex_daily_audit",
+      "schemaVersion": "DEEPDIVE_SHARED_QUALITY_REPORT_V1",
+      "status": "Red"
+    },
+    {
+      "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-23-DeepDive.md",
+      "auditedFiles": [
+        {
+          "canonicalTextSha256": "a8ffc8db9b13a222f9d4144622076753a5b66e159fe93c53afdc406a4f2b84f2",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-23.json",
+          "sha256": "a8ffc8db9b13a222f9d4144622076753a5b66e159fe93c53afdc406a4f2b84f2"
+        },
+        {
+          "canonicalTextSha256": "2646d7c859b621c5e1a54da0a200e820e3e2e0f37fac362c31f2324c63ab15a3",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-23.json",
+          "sha256": "2646d7c859b621c5e1a54da0a200e820e3e2e0f37fac362c31f2324c63ab15a3"
+        },
+        {
+          "canonicalTextSha256": "c7650e5c44f10ea6727f4e6d263244e2657473c856057cc7bc4430e895e182b6",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-23-DeepDive.md",
+          "sha256": "c7650e5c44f10ea6727f4e6d263244e2657473c856057cc7bc4430e895e182b6"
+        }
+      ],
+      "auditedPaths": [
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-23.json",
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-23.json",
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-23-DeepDive.md"
+      ],
+      "dialogueCorpusAudit": null,
+      "dialoguePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-23-DeepDive-dialogue.md",
+      "issueCodes": [
+        "deepdive_url_provenance_invalid",
+        "deepdive_research_evidence_insufficient"
+      ],
+      "issueDate": "2026-08-23",
+      "issues": [
+        "DEEPDIVE_ARTICLE_DRIFT",
+        "DEEPDIVE_CLAIM_SOURCE_MANIFEST_LEGACY",
+        "DEEPDIVE_CLAIM_SOURCE_BINDINGS_MISSING"
+      ],
+      "provenancePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-23.json",
+      "qualityReview": {
+        "artifacts": {
+          "article": {
+            "path": "digest/DeepDive/2026-08-23-DeepDive.md",
+            "sha256": "c7650e5c44f10ea6727f4e6d263244e2657473c856057cc7bc4430e895e182b6"
+          },
+          "dialogue": {
+            "path": "digest/DeepDive/2026-08-23-DeepDive-dialogue.md",
+            "sha256": "70ab6cf38247633fa195fb0d3a7f2df7bdd5aa127bdff4610718f20dc80b31ba"
+          },
+          "relation": {
+            "path": "digest/DeepDive/2026-08-23-DeepDive.md",
+            "sha256": "ed9e34b17fe7be647f67325f004141e1437c66fcde022373eb123214539f9927"
+          }
+        },
+        "averageScore": 4.714285714285714,
+        "computedAverageScore": 4.714285714285714,
+        "findings": {
+          "causal_coherence": "WaymoがASIC仕様とソフトウェアを握り、製造・メモリー・CPU/GPU・車両統合を外部へ分けることで、推論処理の効率と供給柔軟性を両立しようとする経路が明快である。専用化が乗車規模・費用・安全の次の検証へつながる。",
+          "counterevidence": "新ASIC公開前の安全データであるため因果を証明しないこと、内製範囲の拡大に設計費・歩留まり・世代更新リスクがあること、外部CPU/GPUと異種混載の複雑さを具体的に残している。",
+          "decision_utility": "専用化拡大、ASICと外部CPU/GPUの混載、市販部品回帰を比較し、世代別安全率と1乗車当たり計算費用を通過条件にする提案がある。量産会議までの車両別電力・遅延・部品費の比較責任も置かれている。",
+          "dialogue_naturalness": "Teslaとの差分、完全内製ではない分業、AMD/NVIDIAとの供給と競争、乗車規模、安全ログ、採用条件を若手が順に掘り下げる。最後の若手質問への返答がないため締まりは弱いが、旧来の定型句だけでなく実務条件まで往復できている。",
+          "evidence_depth": "Waymoの有料乗車15万回超から40万回超、2.2億マイル超、事故率94%減、13台カメラ、1000TOPS超、1500台超と2000台超計画を複数の公式資料から積み上げている。安全母集団がASIC公開前であること、価格・歩留まり・稼働率が未開示であることも明示し、主張と未確認値を分けている。",
+          "relation_map_utility": "資本・製造網・AMD/NVIDIA・車両量産を出資・供給・競合でWaymoへ結び、専用ASICの代替線と外部供給線を同じ図で追える。全edgeがcanonical kindで、旧版の協調的競合による描画不能も解消されている。",
+          "theme_specific_insight": "Waymoの5nm・1000TOPS超ASICを、部品の完全内製ではなく、センサー入力から推論までの設計権を内側へ寄せる分業として読み、乗車規模と安全検証を同時に回す競争へ具体化している。"
+        },
+        "issueDate": "2026-08-23",
+        "issues": [],
+        "reviewRoute": "codex_daily_audit",
+        "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+        "scores": {
+          "causal_coherence": 5,
+          "counterevidence": 5,
+          "decision_utility": 5,
+          "dialogue_naturalness": 4,
+          "evidence_depth": 5,
+          "relation_map_utility": 4,
+          "theme_specific_insight": 5
+        },
+        "status": "Green"
+      },
+      "qualityReviewPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-23.json",
+      "renderedPublicPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\docs\\deepdive\\2026-08-23\\index.html",
+      "route": "codex_daily_audit",
+      "schemaVersion": "DEEPDIVE_SHARED_QUALITY_REPORT_V1",
+      "status": "Red"
+    },
+    {
+      "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-24-DeepDive.md",
+      "auditedFiles": [
+        {
+          "canonicalTextSha256": "30a4fce6a672f32ce64346cd1b15fc8e49b7e98853d52a081528a7c3d0996ac5",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-24.json",
+          "sha256": "30a4fce6a672f32ce64346cd1b15fc8e49b7e98853d52a081528a7c3d0996ac5"
+        },
+        {
+          "canonicalTextSha256": "0af0fec000308592b953bc0e630a6b5a2b1ff8ba6a97b3f22e1f4725eb0cdcc0",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-24.json",
+          "sha256": "0af0fec000308592b953bc0e630a6b5a2b1ff8ba6a97b3f22e1f4725eb0cdcc0"
+        },
+        {
+          "canonicalTextSha256": "2c61baf2a1fafe6ede6a7ed4342d49dc60b4d9af43bca4510d91fc897b98bc31",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-24-DeepDive.md",
+          "sha256": "2c61baf2a1fafe6ede6a7ed4342d49dc60b4d9af43bca4510d91fc897b98bc31"
+        }
+      ],
+      "auditedPaths": [
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-24.json",
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-24.json",
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-24-DeepDive.md"
+      ],
+      "dialogueCorpusAudit": null,
+      "dialoguePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-24-DeepDive-dialogue.md",
+      "issueCodes": [
+        "deepdive_research_evidence_insufficient"
+      ],
+      "issueDate": "2026-08-24",
+      "issues": [
+        "DEEPDIVE_CLAIM_SOURCE_MANIFEST_LEGACY",
+        "DEEPDIVE_CLAIM_SOURCE_BINDINGS_MISSING"
+      ],
+      "provenancePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-24.json",
+      "qualityReview": {
+        "artifacts": {
+          "article": {
+            "path": "digest/DeepDive/2026-08-24-DeepDive.md",
+            "sha256": "2c61baf2a1fafe6ede6a7ed4342d49dc60b4d9af43bca4510d91fc897b98bc31"
+          },
+          "dialogue": {
+            "path": "digest/DeepDive/2026-08-24-DeepDive-dialogue.md",
+            "sha256": "6b59e76fb5b0363463966b548b739f39ff923dacb07668afd6ea457c9ecb5ba8"
+          },
+          "relation": {
+            "path": "digest/DeepDive/2026-08-24-DeepDive.md",
+            "sha256": "5c31223f160fc2444700e89d0b974b9c90c63532bcb74b21579ac0580a07e3d6"
+          }
+        },
+        "averageScore": 4.714285714285714,
+        "computedAverageScore": 4.714285714285714,
+        "findings": {
+          "causal_coherence": "Pony.aiが技術、Verneが車両・日常運行、Uberが予約・決済を担えば都市展開と資本配分を速められる一方、事故対応・遠隔支援・補償の停止点が分散するという因果が一貫している。",
+          "counterevidence": "開始時には監視員が乗車すること、Waymoの事故比較に地域・定義・未報告の差があること、契約台数と実績を同列にできないこと、急伸率が小さな母数に依存することを具体的に限定している。",
+          "decision_utility": "技術主幹、三社共同台帳、地域運行者主幹を比較し、共通データ仕様と地域運行者の独立緊急停止を推奨する。都市別有料乗車、遠隔支援頻度、1台当たり損益を次の判定指標にしている。",
+          "dialogue_naturalness": "米国の垂直統合との差、三社の役割、監視員、売上、台数の意味、安全データ、停止責任を質問で順に掘っている。最後の若手質問には返答がないものの、契約台数を実走行と混同しない会話へ到達し、定型反復は限定的である。",
+          "evidence_depth": "Waymoの2.206億マイルと地域別距離、Pony.aiの約1,210万ドル・前年比691%、Uberの5都市・2,000台超計画、Verneの運行条件を一次発表とValueAdd資料で分けている。実走行、保有台数、契約台数、事故定義、遠隔支援の違いを明示し、比較可能性の限界も残す。",
+          "relation_map_utility": "WaymoとUber・Verneの競合、Pony.aiから分業側への供給、都市当局の規制をcanonical edgeで配置し、垂直統合と分業の差を安全に描ける。",
+          "theme_specific_insight": "Pony.ai・Uber・Verneの技術・配車・日常運行の分業をWaymoの垂直統合と対置し、2,000台超という計画台数ではなく、都市ごとに安全・停止・採算責任を複製できるかへ競争軸を移している。"
+        },
+        "issueDate": "2026-08-24",
+        "issues": [],
+        "reviewRoute": "codex_daily_audit",
+        "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+        "scores": {
+          "causal_coherence": 5,
+          "counterevidence": 5,
+          "decision_utility": 5,
+          "dialogue_naturalness": 4,
+          "evidence_depth": 5,
+          "relation_map_utility": 4,
+          "theme_specific_insight": 5
+        },
+        "status": "Green"
+      },
+      "qualityReviewPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-24.json",
+      "renderedPublicPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\docs\\deepdive\\2026-08-24\\index.html",
+      "route": "codex_daily_audit",
+      "schemaVersion": "DEEPDIVE_SHARED_QUALITY_REPORT_V1",
+      "status": "Red"
+    },
+    {
+      "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-26-DeepDive.md",
+      "auditedFiles": [
+        {
+          "canonicalTextSha256": "70bb111e4552e5b076f2e9980826a551a936c70b4a73a4a308b53aa9357ce62d",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-26.json",
+          "sha256": "70bb111e4552e5b076f2e9980826a551a936c70b4a73a4a308b53aa9357ce62d"
+        },
+        {
+          "canonicalTextSha256": "4e744217fb82cae4629c178f038a34e955bcc3bbf57d743cec434e0b2f5f1030",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-26.json",
+          "sha256": "4e744217fb82cae4629c178f038a34e955bcc3bbf57d743cec434e0b2f5f1030"
+        },
+        {
+          "canonicalTextSha256": "9724131a66af6c44e80966e174078bafe5fad430b7db246a32e17106d9660590",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-26-DeepDive.md",
+          "sha256": "9724131a66af6c44e80966e174078bafe5fad430b7db246a32e17106d9660590"
+        }
+      ],
+      "auditedPaths": [
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-26.json",
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-26.json",
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-26-DeepDive.md"
+      ],
+      "dialogueCorpusAudit": null,
+      "dialoguePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-26-DeepDive-dialogue.md",
+      "issueCodes": [
+        "deepdive_url_provenance_invalid",
+        "deepdive_research_evidence_insufficient"
+      ],
+      "issueDate": "2026-08-26",
+      "issues": [
+        "DEEPDIVE_ARTICLE_DRIFT",
+        "DEEPDIVE_CLAIM_SOURCE_MANIFEST_LEGACY",
+        "DEEPDIVE_CLAIM_SOURCE_BINDINGS_MISSING"
+      ],
+      "provenancePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-26.json",
+      "qualityReview": {
+        "artifacts": {
+          "article": {
+            "path": "digest/DeepDive/2026-08-26-DeepDive.md",
+            "sha256": "9724131a66af6c44e80966e174078bafe5fad430b7db246a32e17106d9660590"
+          },
+          "dialogue": {
+            "path": "digest/DeepDive/2026-08-26-DeepDive-dialogue.md",
+            "sha256": "38c4dca4f8f8eae91ef11038a4dd277f5c6c2c80ac8b8cee16745fc96cd25ce7"
+          },
+          "relation": {
+            "path": "digest/DeepDive/2026-08-26-DeepDive.md",
+            "sha256": "10f92995566b204f6f6fc5f56f266d2f7e4a2bfab7eb4512dd98c93427e95cd8"
+          }
+        },
+        "averageScore": 4.714285714285714,
+        "computedAverageScore": 4.714285714285714,
+        "findings": {
+          "causal_coherence": "OpenAIが論理設計、Broadcomが実装・ネットワーク、Celesticaがラック統合を担い、NVIDIAのGPU・接続・ソフトウェア基盤と競合する構造から、性能差が切替費用・SLA・調達交渉へ影響する経路が明瞭である。",
+          "counterevidence": "Jalapeñoは推論専用で学習基盤を置換しないこと、OpenAI自身のベンチマークで独立再現前であること、価格・歩留まり・稼働率・API転嫁が未確認であることを明示し、性能倍率だけで移行を決めていない。",
+          "decision_utility": "特定モデル・低リスク負荷の段階移行、電力制約拠点への優先、NVIDIA主系と第二系統の併用を比較し、2026年末に稼働率・実効単価・API価格・歩留まりを判定する運用条件を置いている。",
+          "dialogue_naturalness": "Teslaとの差分、設計・量産の分担、NVIDIAの既存基盤、時系列、切替費用、性能以外の採用条件を若手が自然な順で確認する。最終質問への回答がなく、専門語は多いが、固定の記録句に頼らず実運用の比較表へ到達している。",
+          "evidence_depth": "OpenAIとBroadcomの9カ月テープアウト、3モデル、NVIDIA比のワット当たり1.5〜1.9倍・応答1.7〜3.6倍、NVIDIAのFY2026データセンター売上1937億ドルを一次発表で重ねている。測定がOpenAI自身の公表で、推論専用、価格・歩留まり・稼働率未開示という限界も記事内で分離されている。",
+          "relation_map_utility": "OpenAIとBroadcomの提携、Celestica・NVIDIAからの供給、OpenAIとNVIDIAの競合をcanonical edgeで結び、推論代替と外部量産の境界を図示できる。旧版の協調的競合kindは解消されている。",
+          "theme_specific_insight": "OpenAIのJalapeño初ベンチマークを、NVIDIAを全面排除する話ではなく、モデル知見から推論設計権を内側へ寄せる分業型調達として読み、電力・遅延・供給を同時に最適化する競争へ具体化している。"
+        },
+        "issueDate": "2026-08-26",
+        "issues": [],
+        "reviewRoute": "codex_daily_audit",
+        "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+        "scores": {
+          "causal_coherence": 5,
+          "counterevidence": 5,
+          "decision_utility": 5,
+          "dialogue_naturalness": 4,
+          "evidence_depth": 5,
+          "relation_map_utility": 4,
+          "theme_specific_insight": 5
+        },
+        "status": "Green"
+      },
+      "qualityReviewPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-26.json",
+      "renderedPublicPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\docs\\deepdive\\2026-08-26\\index.html",
+      "route": "codex_daily_audit",
+      "schemaVersion": "DEEPDIVE_SHARED_QUALITY_REPORT_V1",
+      "status": "Red"
+    },
+    {
+      "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-27-DeepDive.md",
+      "auditedFiles": [
+        {
+          "canonicalTextSha256": "50c661a7cacf14448b686d0e52fc20f7affda951bbd26e8550645740835e0ba1",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-27.json",
+          "sha256": "50c661a7cacf14448b686d0e52fc20f7affda951bbd26e8550645740835e0ba1"
+        },
+        {
+          "canonicalTextSha256": "cb5d0c10ac5600556056d7163daddc3c6676eab95d0d6ace8817aa94f4e19044",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-27.json",
+          "sha256": "cb5d0c10ac5600556056d7163daddc3c6676eab95d0d6ace8817aa94f4e19044"
+        },
+        {
+          "canonicalTextSha256": "5d90f2896e66fc7f5da07a280f9f3826df787385c9a5363fe8ca2f14fdd3b5ea",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-27-DeepDive.md",
+          "sha256": "5d90f2896e66fc7f5da07a280f9f3826df787385c9a5363fe8ca2f14fdd3b5ea"
+        }
+      ],
+      "auditedPaths": [
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-27.json",
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-27.json",
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-27-DeepDive.md"
+      ],
+      "dialogueCorpusAudit": null,
+      "dialoguePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-27-DeepDive-dialogue.md",
+      "issueCodes": [],
+      "issueDate": "2026-08-27",
+      "issues": [],
+      "provenancePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-27.json",
+      "qualityReview": {
+        "artifacts": {
+          "article": {
+            "path": "digest/DeepDive/2026-08-27-DeepDive.md",
+            "sha256": "5d90f2896e66fc7f5da07a280f9f3826df787385c9a5363fe8ca2f14fdd3b5ea"
+          },
+          "dialogue": {
+            "path": "digest/DeepDive/2026-08-27-DeepDive-dialogue.md",
+            "sha256": "7ccfdc625be7dc46894b217404a5d116530c35dd3ea2fc38c401d7be2dd2648b"
+          },
+          "relation": {
+            "path": "digest/DeepDive/2026-08-27-DeepDive.md",
+            "sha256": "db1dca63dac107d452ec671ac6de09afea0984d0cbfcc90353f1cd5bf092971f"
+          }
+        },
+        "averageScore": 4.285714285714286,
+        "computedAverageScore": 4.285714285714286,
+        "findings": {
+          "causal_coherence": "輸入増がGDPを押し下げる一方で内需を残す構図、金利が家計と企業を制約する経路、消費鈍化がサービス物価へ波及する観測点が段落と図で連続している。",
+          "counterevidence": "低いGDPだけでは需要失速といえない点、所得増と貯蓄率3.0%の併存、追加利上げと販売機会の両面を示し、単一指標で決めない境界を置いている。",
+          "decision_utility": "CFO向けに据え置き、25bp利上げ、高金利長期化・需要減速の3シナリオを提示し、9月30日までに借換依存度と需要感応度を分けて点検する行動へ落としている。",
+          "dialogue_naturalness": "GDPとPCEの相反、輸入の寄与、FOMC投票、企業の三つの金利シナリオを、若手の確認と先輩の具体的な応答で段階的に掘り下げている。内部claim-sourceやURLの発話漏れはなく、最後にCFOが更新する表と撤回条件まで往復で合意できているため、7価値区間が実際の会話として機能する。",
+          "evidence_depth": "BEAのGDP・PCE、Fed、BLSのタイムラインに加え、PCE推移、GDPと内需の比較、8指標の表を置いている。ただし企業利益や貯蓄率の根拠は本文内の参照整理に依存する。",
+          "relation_map_utility": "BEA・BLSからFOMC、家計・企業へ至る主要な緊張関係は示せるが、家計から企業と企業から家計をともに供給kindで表し、需要と価格の向きが粗くなるため精度は限定的である。",
+          "theme_specific_insight": "GDP1.5%の減速と民間最終需要4.2%の乖離を中心に、PCE3.7%とFOMCの3票を「狭い通路」として結び付けており、米国の金融判断という当日テーマに固有の見方がある。"
+        },
+        "issueDate": "2026-08-27",
+        "issues": [],
+        "reviewRoute": "codex_daily_audit",
+        "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+        "scores": {
+          "causal_coherence": 5,
+          "counterevidence": 4,
+          "decision_utility": 5,
+          "dialogue_naturalness": 5,
+          "evidence_depth": 4,
+          "relation_map_utility": 3,
+          "theme_specific_insight": 4
+        },
+        "status": "Green"
+      },
+      "qualityReviewPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-27.json",
+      "renderedPublicPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\docs\\deepdive\\2026-08-27\\index.html",
+      "route": "codex_daily_audit",
+      "schemaVersion": "DEEPDIVE_SHARED_QUALITY_REPORT_V1",
+      "status": "Green"
+    },
+    {
+      "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-28-DeepDive.md",
+      "auditedFiles": [
+        {
+          "canonicalTextSha256": "144b62774a641774c6173555b535a506c842553a3394a36e4f8a775b2f6c04b3",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-28.json",
+          "sha256": "144b62774a641774c6173555b535a506c842553a3394a36e4f8a775b2f6c04b3"
+        },
+        {
+          "canonicalTextSha256": "d8d565bf45fa5ea8d57d99403064427c23d2c60f7354e5b348aa4a2965e3272b",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-28.json",
+          "sha256": "d8d565bf45fa5ea8d57d99403064427c23d2c60f7354e5b348aa4a2965e3272b"
+        },
+        {
+          "canonicalTextSha256": "0f6edef87e5bafb1836258ab25691c6c05417066bfafc955c7af376dac07c1d7",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-28-DeepDive.md",
+          "sha256": "0f6edef87e5bafb1836258ab25691c6c05417066bfafc955c7af376dac07c1d7"
+        }
+      ],
+      "auditedPaths": [
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-28.json",
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-28.json",
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-28-DeepDive.md"
+      ],
+      "dialogueCorpusAudit": null,
+      "dialoguePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-28-DeepDive-dialogue.md",
+      "issueCodes": [],
+      "issueDate": "2026-08-28",
+      "issues": [],
+      "provenancePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-28.json",
+      "qualityReview": {
+        "artifacts": {
+          "article": {
+            "path": "digest/DeepDive/2026-08-28-DeepDive.md",
+            "sha256": "0f6edef87e5bafb1836258ab25691c6c05417066bfafc955c7af376dac07c1d7"
+          },
+          "dialogue": {
+            "path": "digest/DeepDive/2026-08-28-DeepDive-dialogue.md",
+            "sha256": "55ebca65d3970a48c2760055367f5bd4156db247a1803814a81c5ec21d76abfa"
+          },
+          "relation": {
+            "path": "digest/DeepDive/2026-08-28-DeepDive.md",
+            "sha256": "86b24046b520453e73918b06ad0345083cd7e8881a06910f90d3161db7d70758"
+          }
+        },
+        "averageScore": 4.428571428571429,
+        "computedAverageScore": 4.428571428571429,
+        "findings": {
+          "causal_coherence": "AI需要の増加からメモリー・装置の同時増産へ進み、異なる納期がシステム稼働日を遅らせ、既存アジア供給と在庫設計で橋渡しするという因果が一貫している。",
+          "counterevidence": "工作機械受注には自動車なども含まれること、新工場の着工時期が未確定なこと、過剰投資と供給不足の双方を挙げ、一体契約にも価格交渉自由度の低下という反対面を置いている。",
+          "decision_utility": "GPU単独、GPUから先端部材までの一体契約、確定能力に合わせた段階導入を比較し、11月末までにCIO・CFOと投資委員会が利用可能日を基準に再計画する条件が明確である。",
+          "dialogue_naturalness": "GPU発注からシステム稼働日へ視点を切り替え、HBM・NAND・装置・量産認定の時間差を若手の工程表、切替条件の提案へ具体化している。claim-sourceや切断URLの読み上げはなく、11月末の供給制約表と4週間遅延時の段階導入という運用条件まで到達する。一方、最後の若手質問に対する先輩の締めの応答がないため満点ではない。",
+          "evidence_depth": "SK hynix、Kioxia、JMTBAのタイムライン、40億ドル超・7000人・22%成長・年平均4700億円、受注1931億円の表を組み合わせている。一方、JMTBA値をAI専用としない限界も残る。",
+          "relation_map_utility": "SK hynix・Kioxia・装置企業・需要家を供給と競合の5本の辺で表し、供給網の骨格は読める。ただし量産までの時間差を表すノードや辺がなく、主題の時間軸は図から補えない。",
+          "theme_specific_insight": "GPUの確保量ではなくHBM・NAND・装置・量産認定の時計を揃えるという主張が、SK hynixの2029年後半量産とKioxiaの既存棟活用に結び付き、供給網の時間差を具体化している。"
+        },
+        "issueDate": "2026-08-28",
+        "issues": [],
+        "reviewRoute": "codex_daily_audit",
+        "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+        "scores": {
+          "causal_coherence": 5,
+          "counterevidence": 4,
+          "decision_utility": 5,
+          "dialogue_naturalness": 4,
+          "evidence_depth": 4,
+          "relation_map_utility": 4,
+          "theme_specific_insight": 5
+        },
+        "status": "Green"
+      },
+      "qualityReviewPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-28.json",
+      "renderedPublicPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\docs\\deepdive\\2026-08-28\\index.html",
+      "route": "codex_daily_audit",
+      "schemaVersion": "DEEPDIVE_SHARED_QUALITY_REPORT_V1",
+      "status": "Green"
+    },
+    {
+      "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-29-DeepDive.md",
+      "auditedFiles": [
+        {
+          "canonicalTextSha256": "cf21a529052d67e35f8a0c661f37b660f4d170d644b7b57325a505715ab09632",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-29.json",
+          "sha256": "cf21a529052d67e35f8a0c661f37b660f4d170d644b7b57325a505715ab09632"
+        },
+        {
+          "canonicalTextSha256": "8d2e111a98249101f6706eb9c43c7b012c57605506bbd5d9f6075046d66a264a",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-29.json",
+          "sha256": "8d2e111a98249101f6706eb9c43c7b012c57605506bbd5d9f6075046d66a264a"
+        },
+        {
+          "canonicalTextSha256": "c6f2586d67cff1aa38007ce3006885b964c242ad6b421a78e5a84df8a421742e",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-29-DeepDive.md",
+          "sha256": "c6f2586d67cff1aa38007ce3006885b964c242ad6b421a78e5a84df8a421742e"
+        }
+      ],
+      "auditedPaths": [
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-29.json",
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-29.json",
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-29-DeepDive.md"
+      ],
+      "dialogueCorpusAudit": null,
+      "dialoguePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-29-DeepDive-dialogue.md",
+      "issueCodes": [],
+      "issueDate": "2026-08-29",
+      "issues": [],
+      "provenancePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-29.json",
+      "qualityReview": {
+        "artifacts": {
+          "article": {
+            "path": "digest/DeepDive/2026-08-29-DeepDive.md",
+            "sha256": "c6f2586d67cff1aa38007ce3006885b964c242ad6b421a78e5a84df8a421742e"
+          },
+          "dialogue": {
+            "path": "digest/DeepDive/2026-08-29-DeepDive-dialogue.md",
+            "sha256": "5e0ef02a2f2e9cdf33f3528c830958fec1438df98a8193722ce1ce3b664b4144"
+          },
+          "relation": {
+            "path": "digest/DeepDive/2026-08-29-DeepDive.md",
+            "sha256": "80d796d11c48d9779f94d2e95c000224eba08b27567a07139642d9145b6dfd2b"
+          }
+        },
+        "averageScore": 4.571428571428571,
+        "computedAverageScore": 4.571428571428571,
+        "findings": {
+          "causal_coherence": "教材で能力と限界を揃えることが権限設計の前提になり、外部接続がログ・レビュー・巻き戻しを要求し、情報工作の反復速度が外部コンテンツ監視を増やすという三段の経路が明確である。",
+          "counterevidence": "低リスクからの段階導入は被害範囲を抑える一方、禁止だけでは現場が非公式ツールへ流れるという反対面を示している。公開2記事から実際の事故削減効果までは導けないとして、限界も分離している。",
+          "decision_utility": "調査・要約・テスト補助から始め、教育完了、権限台帳、MCP接続ログ、公開操作の承認を段階ゲートにする三案を比較し、9月末のCIO・CISO等の決定へ具体化している。",
+          "dialogue_naturalness": "現行台本は7つのvalue区間で、前号の供給網から教育、外部悪用、権限、ログ、撤回条件へ質問と回答が自然に進む。若手の問いが毎区間の判断へ接続し、先輩の回答も9月末の仕事分類表・権限台帳・承認停止条件で締まるため、旧版の欠落文や重複は解消されている。",
+          "evidence_depth": "Anthropic公式のBuild with ClaudeとYahoo!ニュースの記事をタイムラインと本文の主張へ結び、Claude Code・Claude API・MCP・tool use、情報工作の反復、教育・権限・ログの確認表へ展開している。統制領域の95などは編集部評価であり、事故件数や効果を測った一次統計ではない点は残る。",
+          "relation_map_utility": "Anthropic→Academy→開発組織、開発組織→権限・監査、情報工作主体↔SNSを供給・依存・統制・対立・規制で結び、教育から本番接続、外部悪用対策まで同じ図で追える。全6edgeがcanonical registry内で、位置と役割も本文の判断表に対応する。",
+          "theme_specific_insight": "Claude Academyの公開と生成AIを使う情報工作を同日に置き、利用者教育・権限・監査ログ・外部悪用監視を本番化の条件として明示している。『使えるか』から『統制して戻せるか』への焦点移動が、二つの材料と本文の実装条件に直結する。"
+        },
+        "issueDate": "2026-08-29",
+        "issues": [],
+        "reviewRoute": "codex_daily_audit",
+        "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+        "scores": {
+          "causal_coherence": 4,
+          "counterevidence": 4,
+          "decision_utility": 5,
+          "dialogue_naturalness": 5,
+          "evidence_depth": 4,
+          "relation_map_utility": 5,
+          "theme_specific_insight": 5
+        },
+        "status": "Green"
+      },
+      "qualityReviewPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-29.json",
+      "renderedPublicPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\docs\\deepdive\\2026-08-29\\index.html",
+      "route": "codex_daily_audit",
+      "schemaVersion": "DEEPDIVE_SHARED_QUALITY_REPORT_V1",
+      "status": "Green"
+    },
+    {
+      "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-30-DeepDive.md",
+      "auditedFiles": [
+        {
+          "canonicalTextSha256": "77d49712aa465b47d93ac9464b9617e049549b338bfef126e68d9b3ab94ff5af",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-30.json",
+          "sha256": "77d49712aa465b47d93ac9464b9617e049549b338bfef126e68d9b3ab94ff5af"
+        },
+        {
+          "canonicalTextSha256": "96f532b5988c4b3102dbe9c461260f97b8f8c2126f917ac616c874279231aa07",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-30.json",
+          "sha256": "96f532b5988c4b3102dbe9c461260f97b8f8c2126f917ac616c874279231aa07"
+        },
+        {
+          "canonicalTextSha256": "ee5db6b5609927a83060e80c08a85a22274e17ad6ae4f3af2d819be560961f64",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-30-DeepDive.md",
+          "sha256": "ee5db6b5609927a83060e80c08a85a22274e17ad6ae4f3af2d819be560961f64"
+        }
+      ],
+      "auditedPaths": [
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-30.json",
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-30.json",
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-30-DeepDive.md"
+      ],
+      "dialogueCorpusAudit": null,
+      "dialoguePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-30-DeepDive-dialogue.md",
+      "issueCodes": [
+        "deepdive_url_provenance_invalid",
+        "deepdive_article_value_invalid",
+        "deepdive_dialogue_value_invalid",
+        "deepdive_relation_quality_invalid"
+      ],
+      "issueDate": "2026-08-30",
+      "issues": [
+        "DEEPDIVE_ARTICLE_DRIFT",
+        "DEEPDIVE_ARTICLE_VALUE_INVALID claim=ai-20260830-cloud evidence_duplicate",
+        "DEEPDIVE_ARTICLE_VALUE_INVALID claim=ai-20260830-contract evidence_duplicate",
+        "DEEPDIVE_ARTICLE_VALUE_INVALID claim=ai-20260830-defense evidence_duplicate",
+        "DEEPDIVE_ARTICLE_VALUE_INVALID claim=ai-20260830-physical evidence_duplicate",
+        "DEEPDIVE_ARTICLE_VALUE_INVALID claim=ai-20260830-qwen evidence_duplicate",
+        "DEEPDIVE_DIALOGUE_SOURCE_DRIFT",
+        "DEEPDIVE_QUALITY_REVIEW_ARTIFACT_STALE article",
+        "DEEPDIVE_QUALITY_REVIEW_ARTIFACT_STALE relation",
+        "DEEPDIVE_QUALITY_REVIEW_ARTIFACT_STALE dialogue",
+        "DEEPDIVE_QUALITY_REVIEW_SUMMARY_MISMATCH"
+      ],
+      "provenancePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-30.json",
+      "qualityReview": {
+        "artifacts": {
+          "article": {
+            "path": "digest/DeepDive/2026-08-30-DeepDive.md",
+            "sha256": "6198530cfec13200b1e4de22795beb28f0469b0ed651fc4d6ac2a81891b413a9"
+          },
+          "dialogue": {
+            "path": "digest/DeepDive/2026-08-30-DeepDive-dialogue.md",
+            "sha256": "2347a1171ab176afed0690f06ffe654d9d161981e95ea98102e5edaca399e090"
+          },
+          "relation": {
+            "path": "digest/DeepDive/2026-08-30-DeepDive.md",
+            "sha256": "7554ab8b2348ddac67d2720b7738dc8c539d0999035e4dedddd90649c2875294"
+          }
+        },
+        "averageScore": 4.0,
+        "computedAverageScore": 4.0,
+        "findings": {
+          "causal_coherence": "外部機器への接続が権限・停止テストを要求し、契約変更が代替モデル・データ移行・品質比較を要求し、クラウド提携がデータ所在・障害切替・費用分担を要求するという運用上の因果を、§03と§06で接続している。",
+          "counterevidence": "100社以上、5倍、提携拡大を性能や収益へ換算しないこと、フィジカルAIの認証・人的監督、契約終了の確度、クラウド地域・障害切替が未確認なら保留することを明確にしている。",
+          "decision_utility": "低リスクの調査・下書き、機密データ・コード、外部機器・公開操作を分け、9月末までに代替・権限・ログ・停止を決める段階導入を提示している。見出し単位の閾値までは定めないが、確認先と未確認時の扱いは実務へ落ちる。",
+          "dialogue_naturalness": "現行台本は前号の教育・権限から共同防衛、機器操作、契約切替、利用倍率、クラウド条件へ順に進み、若手の質問が次の判断項目を引き出している。見出し名が長く文章としてやや硬い箇所はあるが、旧版のJSON断片・突然の見出し移動・重複はなく、締めも承認記録と停止条件へ収束する。",
+          "evidence_depth": "5本それぞれの公開日とURLを起点に、署名数、利用倍率、契約終了、物理操作、クラウド範囲を一次確認すべき項目として分離している。一方、本文の多くは見出しとdatePublishedの整理で、個別発表本文や実績値を深掘りした証拠ではない。",
+          "relation_map_utility": "署名企業・OpenAI・Anthropic・実験機器、Cursor・SpaceX、Alibaba・Google、Broadcom・企業利用者を、提携・供給・対立・競合で6本に整理している。全kindがcanonical registry内で、異なるシグナルを責任分界の地図として再利用できるが、各edgeの因果は見出しレベルに留まる。",
+          "theme_specific_insight": "共同防衛、フィジカルAI、Cursorの提供契約、Qwen利用倍率、Broadcomのプライベートクラウド提携という異なる見出しを、能力比較ではなく導入後の責任分界・契約・撤回条件へ変換している。材料の個別差を残しながら運用レンズを通している。"
+        },
+        "issueDate": "2026-08-30",
+        "issues": [
+          "DEEPDIVE_QUALITY_REVIEW_ARTIFACT_STALE article",
+          "DEEPDIVE_QUALITY_REVIEW_ARTIFACT_STALE relation",
+          "DEEPDIVE_QUALITY_REVIEW_ARTIFACT_STALE dialogue",
+          "DEEPDIVE_QUALITY_REVIEW_SUMMARY_MISMATCH"
+        ],
+        "reviewRoute": "codex_daily_audit",
+        "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+        "scores": {
+          "causal_coherence": 4,
+          "counterevidence": 5,
+          "decision_utility": 4,
+          "dialogue_naturalness": 4,
+          "evidence_depth": 3,
+          "relation_map_utility": 4,
+          "theme_specific_insight": 4
+        },
+        "status": "Red"
+      },
+      "qualityReviewPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-30.json",
+      "renderedPublicPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\docs\\deepdive\\2026-08-30\\index.html",
+      "route": "codex_daily_audit",
+      "schemaVersion": "DEEPDIVE_SHARED_QUALITY_REPORT_V1",
+      "status": "Red"
+    },
+    {
+      "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-31-DeepDive.md",
+      "auditedFiles": [
+        {
+          "canonicalTextSha256": "60c34ed647bd3f71002c63cdb407075d4a6b8fd5c34a113b2ddd0a94e5cbd3a0",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-31.json",
+          "sha256": "60c34ed647bd3f71002c63cdb407075d4a6b8fd5c34a113b2ddd0a94e5cbd3a0"
+        },
+        {
+          "canonicalTextSha256": "c2e301ca59050d6bc04684e4efa41daec4fd92a4c3cd149830dda8fb551e5e86",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-31.json",
+          "sha256": "c2e301ca59050d6bc04684e4efa41daec4fd92a4c3cd149830dda8fb551e5e86"
+        },
+        {
+          "canonicalTextSha256": "bfa34f26605ae29223b259fac02f39566578241816cfbddb04ad4ebb800a01c2",
+          "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-31-DeepDive.md",
+          "sha256": "bfa34f26605ae29223b259fac02f39566578241816cfbddb04ad4ebb800a01c2"
+        }
+      ],
+      "auditedPaths": [
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-31.json",
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-31.json",
+        "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-31-DeepDive.md"
+      ],
+      "dialogueCorpusAudit": null,
+      "dialoguePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-31-DeepDive-dialogue.md",
+      "issueCodes": [
+        "deepdive_url_provenance_invalid",
+        "deepdive_dialogue_value_invalid",
+        "deepdive_article_value_invalid",
+        "deepdive_relation_quality_invalid"
+      ],
+      "issueDate": "2026-08-31",
+      "issues": [
+        "DEEPDIVE_ARTICLE_DRIFT",
+        "DEEPDIVE_DIALOGUE_SOURCE_DRIFT",
+        "DEEPDIVE_QUALITY_REVIEW_ARTIFACT_STALE article",
+        "DEEPDIVE_QUALITY_REVIEW_ARTIFACT_STALE relation",
+        "DEEPDIVE_QUALITY_REVIEW_ARTIFACT_STALE dialogue",
+        "DEEPDIVE_QUALITY_REVIEW_SUMMARY_MISMATCH"
+      ],
+      "provenancePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-provenance\\2026-08-31.json",
+      "qualityReview": {
+        "artifacts": {
+          "article": {
+            "path": "digest/DeepDive/2026-08-31-DeepDive.md",
+            "sha256": "c31dbead7c34912180c9a78c901176f2a6abec441848c930025dee0deee1b112"
+          },
+          "dialogue": {
+            "path": "digest/DeepDive/2026-08-31-DeepDive-dialogue.md",
+            "sha256": "7037aa4cac2cef01bb2d09df5ed655086a2e4fb61cca2286a4b919b3f7303b3b"
+          },
+          "relation": {
+            "path": "digest/DeepDive/2026-08-31-DeepDive.md",
+            "sha256": "948c2680b07588476e6ad2274989c42555f17cd7a60e6ccb13702cbb212b851d"
+          }
+        },
+        "averageScore": 4.428571428571429,
+        "computedAverageScore": 4.428571428571429,
+        "findings": {
+          "causal_coherence": "権利処理は許諾台帳と削除手順、開発ビルドは測定と復旧、12万人導入は教育・権限・ログ、料金変更は超過時の業務影響、共同防衛は通報・復旧担当を要求するという個別の因果を、導入後に戻せる状態という共通軸へ接続している。",
+          "counterevidence": "訴訟の成立や損害額、開発中機能の製品効果、公式事例の他社再現、料金増量の便益、155社の防御効果を断定せず、母数・期間・用途・契約範囲を確認できなければ低リスクへ限定する境界を明示している。",
+          "decision_utility": "低リスク業務から段階導入する案、広く接続して事後統制する案、外部接続を止める案を比較し、法務の許諾台帳、情シスの対応ビルド測定・復旧手順、CISOの通報窓口・初動・復旧担当を9月末と9月14日の期限へ割り当てている。",
+          "dialogue_naturalness": "現行台本は権利処理と開発ビルド、NECの導入規模、料金期限、共同防衛を若手の質問で順に分け、法務・情シス・CISOの担当成果物へ収束する。ClaudeDesktoponAmazonBedrockの連結表現や、change_over_timeで複数材料を一答に詰める硬さは残るが、旧版の欠落発話・生コメント・断片URLはなく、実用的な対談として理解できる。",
+          "evidence_depth": "Yomiuri・Yahoo!・AWS公式ブログ・TechnoEdge・ExaWizardsの公開情報を、提訴・開発中機能・導入人数・25%増と17%減・155社という別の証拠として記録し、訴訟結果、製品版効果、再現性、契約範囲、抑止効果は未確認に残している。見出しや事例中心のため、独立検証済みの実績データの厚みは限定される。",
+          "relation_map_utility": "音楽出版社からAnthropicへの対立、Anthropicから利用者への供給、MicrosoftからWindowsへの供給、OpenAIから署名企業への提携、AWSからNECへの供給、NECから運用への統制をcanonical kindで示し、権利・端末・クラウド・防衛を責任分界として追える。料金変更自体はedgeにないが、6edgeの監査可能性は保たれている。",
+          "theme_specific_insight": "音楽出版社35社の提訴、Windows開発ビルド、NECの12万人導入、Claude Codeの料金条件、155社の共同防衛という異なる材料を、利用主体・接続範囲・契約・停止条件という責任分界の問いへ整理している。"
+        },
+        "issueDate": "2026-08-31",
+        "issues": [
+          "DEEPDIVE_QUALITY_REVIEW_ARTIFACT_STALE article",
+          "DEEPDIVE_QUALITY_REVIEW_ARTIFACT_STALE relation",
+          "DEEPDIVE_QUALITY_REVIEW_ARTIFACT_STALE dialogue",
+          "DEEPDIVE_QUALITY_REVIEW_SUMMARY_MISMATCH"
+        ],
+        "reviewRoute": "codex_daily_audit",
+        "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+        "scores": {
+          "causal_coherence": 4,
+          "counterevidence": 5,
+          "decision_utility": 5,
+          "dialogue_naturalness": 4,
+          "evidence_depth": 4,
+          "relation_map_utility": 4,
+          "theme_specific_insight": 5
+        },
+        "status": "Red"
+      },
+      "qualityReviewPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\data\\deepdive-quality-review\\2026-08-31.json",
+      "renderedPublicPath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\docs\\deepdive\\2026-08-31\\index.html",
+      "route": "codex_daily_audit",
+      "schemaVersion": "DEEPDIVE_SHARED_QUALITY_REPORT_V1",
+      "status": "Red"
+    }
+  ],
+  "dialogueCorpusAudit": {
+    "audited_files": [
+      {
+        "canonicalTextSha256": "13e9ecc6960f87820a495fa9ee5766ef89489ca0b7833a2c54b014764e15aac2",
+        "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-18-DeepDive-dialogue.md",
+        "sha256": "e9db49ff7d6e5baf5005345d266d406db22caad6f6bb9de46b8e37b2238571df"
+      },
+      {
+        "canonicalTextSha256": "2809534800c07c025c9120e30722536d1298a6c8a9301a2e05b559421a09448e",
+        "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-18-DeepDive.md",
+        "sha256": "17ba0598106ad750b8414e364aedf6d238ed7b4bc5307d5bf75a16f0fc30af6a"
+      },
+      {
+        "canonicalTextSha256": "8ae44cc8b7b903db5425b9973577477b6bcacfafd9be994fa37285f6ad55355c",
+        "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-19-DeepDive-dialogue.md",
+        "sha256": "e71eced5bbfa11a6690bbe6ed970e0b01ad92197cedcf4464f73847bb18b7f24"
+      },
+      {
+        "canonicalTextSha256": "098c168d53be31408b3e707a4097a41363c2742f64c776b71ca6d96e01cc15c5",
+        "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-19-DeepDive.md",
+        "sha256": "098c168d53be31408b3e707a4097a41363c2742f64c776b71ca6d96e01cc15c5"
+      },
+      {
+        "canonicalTextSha256": "38bba25da4f16a59482501feccbe4c39b9dc0369417e126baccc92874cd52ef3",
+        "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-20-DeepDive-dialogue.md",
+        "sha256": "38bba25da4f16a59482501feccbe4c39b9dc0369417e126baccc92874cd52ef3"
+      },
+      {
+        "canonicalTextSha256": "7f434a7d4043b5be89e4be9b1413b60bc99c84742deaeddf0355f7bf47317e6c",
+        "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-20-DeepDive.md",
+        "sha256": "7f434a7d4043b5be89e4be9b1413b60bc99c84742deaeddf0355f7bf47317e6c"
+      },
+      {
+        "canonicalTextSha256": "88d963558f7c7b3aa53f46d4a6da709caf8ebd2d6d6ffab0a723beb180af5905",
+        "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-21-DeepDive-dialogue.md",
+        "sha256": "88d963558f7c7b3aa53f46d4a6da709caf8ebd2d6d6ffab0a723beb180af5905"
+      },
+      {
+        "canonicalTextSha256": "3cc5f82a95c5e2ace1dec8e80f6d9588ad5a4915b7d60b1ba4d91c7aa85e1b34",
+        "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-21-DeepDive.md",
+        "sha256": "3cc5f82a95c5e2ace1dec8e80f6d9588ad5a4915b7d60b1ba4d91c7aa85e1b34"
+      },
+      {
+        "canonicalTextSha256": "7a6bfd566ac40a69ebeb7a1c6643c46294e095965923a85bdf0198458611b576",
+        "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-22-DeepDive-dialogue.md",
+        "sha256": "7a6bfd566ac40a69ebeb7a1c6643c46294e095965923a85bdf0198458611b576"
+      },
+      {
+        "canonicalTextSha256": "285f83c1fd214b0ce9a43c273cd37bcfe86091dd98bf642572aa6acdc051c958",
+        "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-22-DeepDive.md",
+        "sha256": "285f83c1fd214b0ce9a43c273cd37bcfe86091dd98bf642572aa6acdc051c958"
+      },
+      {
+        "canonicalTextSha256": "70ab6cf38247633fa195fb0d3a7f2df7bdd5aa127bdff4610718f20dc80b31ba",
+        "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-23-DeepDive-dialogue.md",
+        "sha256": "70ab6cf38247633fa195fb0d3a7f2df7bdd5aa127bdff4610718f20dc80b31ba"
+      },
+      {
+        "canonicalTextSha256": "c7650e5c44f10ea6727f4e6d263244e2657473c856057cc7bc4430e895e182b6",
+        "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-23-DeepDive.md",
+        "sha256": "c7650e5c44f10ea6727f4e6d263244e2657473c856057cc7bc4430e895e182b6"
+      },
+      {
+        "canonicalTextSha256": "6b59e76fb5b0363463966b548b739f39ff923dacb07668afd6ea457c9ecb5ba8",
+        "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-24-DeepDive-dialogue.md",
+        "sha256": "6b59e76fb5b0363463966b548b739f39ff923dacb07668afd6ea457c9ecb5ba8"
+      },
+      {
+        "canonicalTextSha256": "2c61baf2a1fafe6ede6a7ed4342d49dc60b4d9af43bca4510d91fc897b98bc31",
+        "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-24-DeepDive.md",
+        "sha256": "2c61baf2a1fafe6ede6a7ed4342d49dc60b4d9af43bca4510d91fc897b98bc31"
+      },
+      {
+        "canonicalTextSha256": "6039f354d47b0cd0f34631a141d2fcef004365271be2f129c01967a2e26839a4",
+        "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-26-DeepDive-dialogue.md",
+        "sha256": "38c4dca4f8f8eae91ef11038a4dd277f5c6c2c80ac8b8cee16745fc96cd25ce7"
+      },
+      {
+        "canonicalTextSha256": "9724131a66af6c44e80966e174078bafe5fad430b7db246a32e17106d9660590",
+        "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-26-DeepDive.md",
+        "sha256": "9724131a66af6c44e80966e174078bafe5fad430b7db246a32e17106d9660590"
+      },
+      {
+        "canonicalTextSha256": "a3bac64cd5ad33fb46e3ad641cc0d48da6b39a5ab512f52b12514fe431d1e9e1",
+        "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-27-DeepDive-dialogue.md",
+        "sha256": "7ccfdc625be7dc46894b217404a5d116530c35dd3ea2fc38c401d7be2dd2648b"
+      },
+      {
+        "canonicalTextSha256": "5d90f2896e66fc7f5da07a280f9f3826df787385c9a5363fe8ca2f14fdd3b5ea",
+        "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-27-DeepDive.md",
+        "sha256": "5d90f2896e66fc7f5da07a280f9f3826df787385c9a5363fe8ca2f14fdd3b5ea"
+      },
+      {
+        "canonicalTextSha256": "55ebca65d3970a48c2760055367f5bd4156db247a1803814a81c5ec21d76abfa",
+        "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-28-DeepDive-dialogue.md",
+        "sha256": "55ebca65d3970a48c2760055367f5bd4156db247a1803814a81c5ec21d76abfa"
+      },
+      {
+        "canonicalTextSha256": "0f6edef87e5bafb1836258ab25691c6c05417066bfafc955c7af376dac07c1d7",
+        "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-28-DeepDive.md",
+        "sha256": "0f6edef87e5bafb1836258ab25691c6c05417066bfafc955c7af376dac07c1d7"
+      },
+      {
+        "canonicalTextSha256": "5e0ef02a2f2e9cdf33f3528c830958fec1438df98a8193722ce1ce3b664b4144",
+        "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-29-DeepDive-dialogue.md",
+        "sha256": "5e0ef02a2f2e9cdf33f3528c830958fec1438df98a8193722ce1ce3b664b4144"
+      },
+      {
+        "canonicalTextSha256": "c6f2586d67cff1aa38007ce3006885b964c242ad6b421a78e5a84df8a421742e",
+        "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-29-DeepDive.md",
+        "sha256": "c6f2586d67cff1aa38007ce3006885b964c242ad6b421a78e5a84df8a421742e"
+      },
+      {
+        "canonicalTextSha256": "9b476ec6e1d356bc348caf9071a0f07623f9b844a365ec11503e843674ddfd58",
+        "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-30-DeepDive-dialogue.md",
+        "sha256": "9b476ec6e1d356bc348caf9071a0f07623f9b844a365ec11503e843674ddfd58"
+      },
+      {
+        "canonicalTextSha256": "ee5db6b5609927a83060e80c08a85a22274e17ad6ae4f3af2d819be560961f64",
+        "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-30-DeepDive.md",
+        "sha256": "ee5db6b5609927a83060e80c08a85a22274e17ad6ae4f3af2d819be560961f64"
+      },
+      {
+        "canonicalTextSha256": "9746a2420164d7fe6bccf0380de60f04fec1da8589fdc146b5768d9e687e17a9",
+        "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-31-DeepDive-dialogue.md",
+        "sha256": "9746a2420164d7fe6bccf0380de60f04fec1da8589fdc146b5768d9e687e17a9"
+      },
+      {
+        "canonicalTextSha256": "bfa34f26605ae29223b259fac02f39566578241816cfbddb04ad4ebb800a01c2",
+        "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-31-DeepDive.md",
+        "sha256": "bfa34f26605ae29223b259fac02f39566578241816cfbddb04ad4ebb800a01c2"
+      }
+    ],
+    "issues": [],
+    "maximum_cross_script_similarity": 0.07454228421970358,
+    "maximum_pair": [
+      "2026-08-23-DeepDive-dialogue.md",
+      "2026-08-26-DeepDive-dialogue.md"
+    ],
+    "repeated_turn_rate": 0.0,
+    "script_count": 13,
+    "turn_count": 277
+  },
+  "endDate": "2026-08-31",
+  "issueCodes": [
+    "deepdive_article_value_invalid",
+    "deepdive_dialogue_value_invalid",
+    "deepdive_relation_quality_invalid",
+    "deepdive_research_evidence_insufficient",
+    "deepdive_url_provenance_invalid"
+  ],
+  "route": "codex_daily_audit",
+  "schemaVersion": "DEEPDIVE_SHARED_QUALITY_HISTORY_REPORT_V1",
+  "startDate": "2026-08-18",
+  "status": "Red"
+}

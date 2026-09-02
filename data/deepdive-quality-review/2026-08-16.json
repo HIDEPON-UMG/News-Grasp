@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-08-16",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-16-DeepDive.md",
+      "sha256": "8a524c26ceeee17b37ede9cca0ed49ab02f0218232318dcc503bc670a4500256"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-16-DeepDive.md",
+      "sha256": "f1c00e0e2268c58df02059657f059a53a6a322119cef3ba6cfecc8ec4755e634"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-16-DeepDive-dialogue.md",
+      "sha256": "94f3d1644a2580ed36d0b505fd4dd98b0dbdabe1771a4310dca8f3e0b5a94885"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 4,
+    "relation_map_utility": 3
+  },
+  "findings": {
+    "theme_specific_insight": "Gemini・Flowの可視透かし切替とAnthropicの文章透かし報道を、印の有無から流通後の検証インフラへ移る転換として捉え、SynthID・C2PA・AI Act・企業運用を一つの判断問題にした。一次発表未確認の報道と公式資料の範囲も区別している。",
+    "evidence_depth": "Googleの2025年5月・11月・2026年5月の公式発表と欧州委員会ガイドラインを根拠に、SynthIDの100億件超→200億件超→1000億件超、検証利用5000万回を時系列化している。当日報道は一次資料未確認で、真陽性率・偽陽性率・再圧縮後の性能は比較できない。",
+    "causal_coherence": "可視表示は切り抜き・再編集で失われ得るため、不可視透かし、C2PA、検出導線を重ね、配信・受領・保存の監査へつなぐ流れが一貫している。モデル提供者から検索・配信・公開主体まで責任が連鎖する理由も、各層の役割として説明できている。",
+    "counterevidence": "1000億件はGoogleが付与した画像・動画の規模であってウェブ全体の検出率ではないこと、真陽性率・偽陽性率・編集耐性が未確認であること、C2PA削除や多層化コストを明記する。可視・不可視・標準の各方式の弱点を相互に補う前提も示している。",
+    "decision_utility": "可視ラベル中心、モデル固有透かし・API中心、多層化の三案を比較し、多層化を高リスク公開経路から始める方針を選ぶ。受領時検証・公開時表示・証拠保存を同じログIDで結び、一次性能データがなければ拡大せずCISOが再承認する条件まで置いている。",
+    "dialogue_naturalness": "7区間が未確認の報道、公式に確認できる層、検証の因果、制度限界、責任の拡張、件数と精度の分離、9月末のログ仕様・比較表へ進む。先輩常体・若手敬体と具体的な停止条件は自然だが、固定された7問答と「CloudAPI」「AIAct」の詰まり、本文数値の再提示が残る。",
+    "relation_map_utility": "Google・Anthropic・C2PA・配信基盤・欧州委員会の競合、標準接続、検証供給、規制という7辺は主体と作用が対応するが、自動配置の1080×755ではGoogle→C2PAとAnthropic→usersなど3組の辺が交差する。ノード重複や第三ノード貫通はなく意味は追えるものの、交差線が一読性を下げる。"
+  },
+  "averageScore": 4.428571428571429,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

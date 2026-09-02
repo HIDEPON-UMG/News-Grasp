@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-06-23",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-06-23-DeepDive.md",
+      "sha256": "9932bf6545328edc7dcb1778f38631af889758b1acc20ef24176e5d446cf5b5c"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-06-23-DeepDive.md",
+      "sha256": "94ac02f2a47d9f0b16644814d5096777adb60a550a121ff00abec38786a8f497"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-06-23-DeepDive-dialogue.md",
+      "sha256": "9d75f1f788f9655e4c704289a2a33cdd274f226a561a434b8f688a293857dfcc"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 5,
+    "relation_map_utility": 5
+  },
+  "findings": {
+    "theme_specific_insight": "ドル円161円90銭台、5月の介入実績、片山財務相とベッセント財務長官の協議を、日銀1%後の円防衛が実弾介入と国際協議の順序設計へ戻った変化として捉えている。",
+    "evidence_depth": "財務省の1兆1734.9億円実績、日銀1.0%決定、TBS with Bloombergの161円台・オンライン協議報道、Fedの高金利材料を、金額・価格・政策の別証拠として組み合わせている。",
+    "causal_coherence": "介入は急変動の速度、日銀は金利差、米財務省との協議は市場心理へ効くという役割分担を示し、Fed高金利が残る限り円売りが戻る理由を政策順序へつないでいる。",
+    "counterevidence": "1兆円規模の実績があっても金利差は消えないこと、協議に具体策がなければ牽制効果が短いこと、追加利上げの景気・国債市場負担を示し、介入だけの解決を退けている。",
+    "decision_utility": "単独介入、追加利上げの地ならし、日米協議による協調期待を比較し、6月末の介入実績と7月の日銀会合を次の観測点に固定している。企業のドル建て費用・調達計画へ落とす行動も具体的である。",
+    "dialogue_naturalness": "若手が161円台、介入額、金利差を一つずつ問い、先輩が財務省・日銀・米財務省の効く相手を比喩と実務例で説明する。相場から契約通貨・ヘッジへ移る流れも自然で、結論が政策順序と観測項目に収束している。",
+    "relation_map_utility": "財務省と米財務省の提携、財務省の規制、日銀・Fedの供給、Fedと日銀の対立を市場へ集約し、介入・金利・協議の作用点を監査可能に示している。全6edgeがcanonical kindで、本文の三択と対応する。"
+  },
+  "averageScore": 5.0,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

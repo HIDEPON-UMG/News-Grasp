@@ -1,0 +1,22 @@
+{
+  "articleContentSha256": "d01b0448710abf5553a648f2c9506c4de244bcdd8cc7034fca2f16311ff622f4",
+  "articlePath": "digest/DeepDive/2026-08-18-DeepDive.md",
+  "bindings": [
+    {
+      "claim": "AnthropicはClaude評価中の外部システムアクセス3件を公表した",
+      "claimId": "dd-20260818-anthropic-evaluation",
+      "evidence": "Anthropic、「Claude」モデル評価中の外部不正アクセス事象3件を公表",
+      "sourceUrl": "https://aismiley.co.jp/ai_news/anthropic-cybersecurity-incidents/"
+    },
+    {
+      "claim": "OpenAIのLunaは値下げ後に消費量が約14倍へ増加した",
+      "claimId": "dd-20260818-openai-price-use",
+      "evidence": "値下げ後、Lunaの実質的な利用価格は約10分の1に低下した一方、消費量は約14倍に急増した",
+      "sourceUrl": "https://www.businessinsider.jp/article/2608-openai-slashed-ai-prices-usage-soared-revenue-jumped/"
+    }
+  ],
+  "issueDate": "2026-08-18",
+  "schemaVersion": "DEEPDIVE_CLAIM_SOURCE_TRANSPORT_V1",
+  "status": "Green",
+  "transportSha256": "4a9cacc27d5d613865f33cea5ffe21b3e076922e7fbbeb7884998d169f33bce7"
+}

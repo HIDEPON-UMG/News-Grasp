@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-08-26",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-26-DeepDive.md",
+      "sha256": "942ca05d471f1bf9e08c498bb6737852925485531868bc51f498e19c361d8602"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-26-DeepDive.md",
+      "sha256": "275bc678a5d93e15b3e922c9ef7a696f54e1ccfab6a695b657ce0e45a8424715"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-26-DeepDive-dialogue.md",
+      "sha256": "825c0d16eb19457ef30b9db6392eab9d20e9148b966049cf8dcbf4ac173b2e6e"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 4,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "OpenAIのJalapeño初ベンチマークを、NVIDIAを全面排除する話ではなく、モデル知見から推論設計権を内側へ寄せる分業型調達として読み、電力・遅延・供給を同時に最適化する競争へ具体化している。",
+    "evidence_depth": "OpenAIとBroadcomの9カ月テープアウト、3モデル、NVIDIA比のワット当たり1.5〜1.9倍・応答1.7〜3.6倍、NVIDIAのFY2026データセンター売上1937億ドルを一次発表で重ねている。測定主体と未開示値も分離している。",
+    "causal_coherence": "OpenAIが論理設計、Broadcomが実装・ネットワーク、Celesticaがラック統合を担い、NVIDIAのGPU・接続・ソフトウェア基盤と競合する構造から、性能差が切替費用・SLA・調達交渉へ影響する経路が明瞭である。",
+    "counterevidence": "Jalapeñoは推論専用で学習基盤を置換しないこと、OpenAI自身のベンチマークで独立再現前であること、価格・歩留まり・稼働率・API転嫁が未確認であることを明示している。",
+    "decision_utility": "特定モデル・低リスク負荷の段階移行、電力制約拠点への優先、NVIDIA主系と第二系統の併用を比較し、2026年末に稼働率・実効単価・API価格・歩留まりを判定する運用条件を置いている。",
+    "dialogue_naturalness": "Teslaとの差分、設計・量産の分担、NVIDIAの既存基盤、時系列、切替費用、性能以外の採用条件を若手が自然な順で確認する。21turnの7価値区間は実本文sentenceへ再束縛され、固定scaffoldに依存しない。",
+    "relation_map_utility": "OpenAIとBroadcomの提携、Celestica・NVIDIAからの供給、OpenAIとNVIDIAの競合をcanonical edgeで結ぶ。OpenAI/NVIDIAを推論基盤へ寄せた配置と短いlabelで重複を解消している。"
+  },
+  "averageScore": 4.714285714285714,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

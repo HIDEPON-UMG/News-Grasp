@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-08-23",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-23-DeepDive.md",
+      "sha256": "b7fc26eb61435fecd0dd5085c5867c325acc462c2637bef73262364a64760396"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-23-DeepDive.md",
+      "sha256": "ce140037f9efc8d0f5d23ea2b0f00b7a2ae2e58f8a0b5e63b42890790b5a3046"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-23-DeepDive-dialogue.md",
+      "sha256": "ed150a5b72bf11b50e37f2225c31b39efa916c0b26c0768e726d439a5bba1bff"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 4,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "Waymoの5nm・1000TOPS超ASICを、部品の完全内製ではなく、センサー入力から推論までの設計権を内側へ寄せる分業として読み、乗車規模と安全検証を同時に回す競争へ具体化している。",
+    "evidence_depth": "Waymoの有料乗車15万回超から40万回超、2.2億マイル超、事故率94%減、13台カメラ、1000TOPS超、1500台超と2000台超計画を複数の公式資料から積み上げている。安全母集団がASIC公開前であること、価格・歩留まり・稼働率が未開示であることも明示する。",
+    "causal_coherence": "WaymoがASIC仕様とソフトウェアを握り、製造・メモリー・CPU/GPU・車両統合を外部へ分けることで、推論処理の効率と供給柔軟性を両立しようとする経路が明快である。",
+    "counterevidence": "新ASIC公開前の安全データであるため因果を証明しないこと、内製範囲の拡大に設計費・歩留まり・世代更新リスクがあること、外部CPU/GPUと異種混載の複雑さを具体的に残している。",
+    "decision_utility": "専用化拡大、ASICと外部CPU/GPUの混載、市販部品回帰を比較し、世代別安全率と1乗車当たり計算費用を通過条件にする提案がある。量産会議までの車両別電力・遅延・部品費の比較責任も置かれている。",
+    "dialogue_naturalness": "Teslaとの差分、完全内製ではない分業、AMD/NVIDIAとの供給と競争、乗車規模、安全ログ、採用条件を若手が順に掘り下げる。21turnの7価値区間が対応する実本文へ再束縛され、問いと返答の接続が保たれている。",
+    "relation_map_utility": "資本・製造網・AMD/NVIDIA・車両量産を出資・供給・競合でWaymoへ結び、専用ASICの代替線と外部供給線を同じ図で追える。capital/factoryを事業化基盤へ寄せた配置で第三node貫通とlabel重複を解消している。"
+  },
+  "averageScore": 4.714285714285714,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

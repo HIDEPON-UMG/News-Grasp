@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-08-17",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-17-DeepDive.md",
+      "sha256": "ca63ca4faa49eba27f0fd79e923f9f6bc0ceb764b33e14303c1bf4b64bc77cb5"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-17-DeepDive.md",
+      "sha256": "60d5c9bef72816df8047ed51a43324e7112d68ec04cea9d3c5d3947628f85012"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-17-DeepDive-dialogue.md",
+      "sha256": "92b525c19de0bf391cf65506466959644dfc7093a7194bd777307ce52c45e92d"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 3,
+    "causal_coherence": 4,
+    "counterevidence": 4,
+    "decision_utility": 4,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 2
+  },
+  "findings": {
+    "theme_specific_insight": "日本政府の高機密ソブリンクラウドを、国内配置の是非ではなく鍵・権限・ログ・運用要員・法域の実効支配として捉え、米国JWCCと英国防クラウドを比較材料にした。AI・機密データ基盤という当日固有の意思決定へ落としている。",
+    "evidence_depth": "JWCCと英国防省のCloud Strategic Roadmapにはリンクがあるが、日本成長戦略、DoD Task Force Lima、Gartner、当日Rocket Boysの記事はURL未掲載である。4大クラウド、90億ドル、180超ユースケース、地域支出の数値を示すものの、主要な日本側根拠や一部の一次資料へ追跡できない。",
+    "causal_coherence": "データ所在地だけでは主権を確保できず、鍵・ID・特権・監査ログ・AI利用・移行性を案件別に統制する必要があるという因果は、マルチベンダーの限界と調達仕様へ連続している。閉域網から統制クラウドへの移行も、機密区分ごとの運用証跡という条件付きで説明している。",
+    "counterevidence": "複数ベンダーを選んでも権限・監査・鍵管理が曖昧ならリスクは残り、国内データセンターでも国外法や単一運用者の問題が残ると明記する。実際の障害・制裁・切替コストや運用事故の比較値まではなく、反証は制度上の限界に留まる。",
+    "decision_utility": "国内所在地優先、米英型の複数調達、所在地・鍵・ID・監査・AI利用・移行性を束ねる統制仕様の三案を提示し、第三案を推奨する。内閣官房や調達・監査担当をdeciderに置き、統制表と切替試験を2026年中の結論へ結び付けるが、コスト・成熟度の閾値は未提示である。",
+    "dialogue_naturalness": "7区間は日本の構想、JWCC、複数ベンダーの限界、英国の分類運用、市場支出、国内案の条件、9月末の統制表・切替試験へ進む。質問と停止条件は本文に即している一方、「DigitalBackbone」「hyperscalecloud」の空白欠落、固定問答のリズム、同じ統制語の反復が自然さを下げる。",
+    "relation_map_utility": "日本政府・米国防総省・英国防省・4大クラウド・重要インフラを6辺で結び、JWCCと英国の供給関係は読み取れる。自動配置は1080×870で一辺の交差があり、日本→DoD/UKの「先行事例を参照」を提携、重要インフラ→クラウドの需要増を供給として表すため、実関係の方向とkindを誤読させる。"
+  },
+  "averageScore": 3.5714285714285716,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Red"
+}

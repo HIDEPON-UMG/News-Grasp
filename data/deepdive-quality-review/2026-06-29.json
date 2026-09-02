@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-06-29",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-06-29-DeepDive.md",
+      "sha256": "c59edc154b1593d921d4b1b44d80406ca531843db9ee3f62e6e23fac8efb7c06"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-06-29-DeepDive.md",
+      "sha256": "042cea212022eea24d55640785a7fe7fd78ae4466f117074aa7c1fe9e23a4a06"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-06-29-DeepDive-dialogue.md",
+      "sha256": "3387aba834ae6febbce5329696bebc1536f579e27d4a578d413bb80409359c37"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 2
+  },
+  "findings": {
+    "theme_specific_insight": "GoogleによるMeta向けGemini利用制限を、モデルの賢さ比べではなく、API枠・計算資源・自社CapExを誰に配分するかという供給権の競争として据え、顧客であり競合でもあるMetaの位置を主題の中心に置いている。",
+    "evidence_depth": "AlphabetとMetaの2025年実績・2026年CapEx見通し、Gemini APIのRPM・TPM・RPD・支出制限、FT報道を重ね、Meta向け個別制限の契約条件は未確認としている。公式IRと報道の役割分担が明記されている。",
+    "causal_coherence": "大口外部APIへの依存が供給側の配分判断に結び付き、不足を自社投資で補うほどAI競争が資本集約化し、クラウド契約が容量保証・代替経路の調達問題へ変わる流れを説明している。",
+    "counterevidence": "API制限には公平性・容量保護の一般目的があること、Meta向けの具体的措置や代替モデル移行範囲は確認できないことを残し、CapExの大きさだけで競争優位や契約差別を断定していない。",
+    "decision_utility": "優先枠・容量保証を交渉する外部依存、自社モデル・設備への投資、用途別の外部・自社併用と停止時の代替を比較し、次回決算と大口契約更新を再評価期限にしている。Google側の配分責任も判断対象に含む。",
+    "dialogue_naturalness": "Gemini制限、CapEx、API枠を過去回とつなぐ構成は成立し、記事の数字も拾っているが、過去の円安回を補助線にする箇所や『導入・検収・止める』の汎用句が本題へ戻るたびに反復するため、編集済みの自然な対談には届かない。",
+    "relation_map_utility": "GoogleからGemini、GeminiからMeta・開発者への供給・規制を示し、大口顧客と競合の二重関係を表現している。しかしGoogleからMetaのkind『協調的競合』はcanonical registry外で、coop・rival属性があっても標準監査で利用できない。"
+  },
+  "averageScore": 4.285714285714286,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Red"
+}

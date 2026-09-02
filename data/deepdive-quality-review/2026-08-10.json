@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-08-10",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-10-DeepDive.md",
+      "sha256": "5273c3617d98dcdb08edd01761ea524bb5c1c60527406e7c7b6efa1ba60ed6f0"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-10-DeepDive.md",
+      "sha256": "a6a7c6c8c26c186d50895cb9e6153d2b36f7c8fb6737a9950dca117132909b62"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-10-DeepDive-dialogue.md",
+      "sha256": "c539d598f8c6c8d94139c1eb11391b3ecd7af39b448c40a609d1267e174b13fc"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 4,
+    "counterevidence": 4,
+    "decision_utility": 5,
+    "dialogue_naturalness": 4,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "Rapidusの2027年量産を終点にせず、北海道の工場・企業・大学・高専、インフラ、人材が残る供給網へ転換できるかを中心に据え、地域集積という固有の問いを外していない。",
+    "evidence_depth": "Rapidus支援上限700億円→5900億円、関連企業117件→173件、雇用1万2607人、道外就職率をビジョン資料と知事コメントから時系列・表にした。核心資料のURLがなく、支援額から量産能力・顧客契約への転換実績は未確認として残る。",
+    "causal_coherence": "経産省の資金、自治体の用水・道路、Rapidusの量産、道内企業・教育機関の商流と人材を、海外顧客競争と地域内の採用競争を含む一つの工程表へつなげている。実績ではなく設計上の因果である点は明示が必要だが流れは整合する。",
+    "counterevidence": "設備集中なら地域商流が遅れ、地域投資なら量産立ち上げが遅れるトレードオフを置き、企業数だけでは取引・共同開発・雇用を証明しないと指摘しているため、支援増額を成功と同一視していない。",
+    "decision_utility": "量産設備、サプライヤー・インフラ、産学・採用・定着の三案を、2027年量産前の予算判断と認証数・道内調達・共同研究・定着率の四半期KPIへ落としている。未達時の配分再審査まで現場で使える。",
+    "dialogue_naturalness": "改稿台本は工場の成果定義、供給網、支援額、企業数、取引、人材定着へ質問を段階化し、若手の受けも本文の単純再掲から具体的な判断確認へ変わった。各区間の確認語尾は残るが、担当間の会話として追いやすい。",
+    "relation_map_utility": "Rapidusと海外ファウンドリーの競合、経産省からRapidusへの出資、自治体の供給、Rapidus↔地域企業の提携・人材競合をcanonical kindへ分解し、明示座標のノード5・エッジ6に交差や重なりはない。出資が補助を含むかは表現上の注意点である。"
+  },
+  "averageScore": 4.285714285714286,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-08-22",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-22-DeepDive.md",
+      "sha256": "84b3e4a43c42190ae2a09fa01aa88c54cb887d1987a69e35f57bbc714e5736b9"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-22-DeepDive.md",
+      "sha256": "5d3f6ad38609b29d94571f53f251688b938b597a2a08dc5d84bfa793b82da964"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-22-DeepDive-dialogue.md",
+      "sha256": "10ebb048d0edf806d3bd572de02cdfe8eeb49ed59cf6ea26b53cc2d4082d88d8"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 4,
+    "evidence_depth": 4,
+    "causal_coherence": 4,
+    "counterevidence": 4,
+    "decision_utility": 4,
+    "dialogue_naturalness": 4,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "法務省の企業法務指針、NIIのLLM-jp-4 33B、Starling Bankの社内知見展開を、性能比較ではなく利用範囲・検証者・運用責任で読む主題へ束ねている。EV、ゲーム、為替は受け皿設計という補助線として扱われ、中心命題と区別されている。",
+    "evidence_depth": "NIIの約332億パラメータ公開をclaim-sourceへ束縛し、IT支出、EV、ゲームの規模値も出典と分離している。異分野の数値が企業AI導入の成果を直接証明しないことを明示しており、一次主張と背景観測の境界が保たれている。",
+    "causal_coherence": "利用範囲の線引きから入力データ、検証者、計算資源、教育の責任分界へ進み、再現可能な手順と人の確認時間を採算判断へ接続する因果が一貫している。",
+    "counterevidence": "公開モデルの追加が成果や安全性を直接示さないこと、検証者不足、補助金後のEV運行、ゲームの課金転換を未確定として置き、規模の増加だけで成功を確定していない。",
+    "decision_utility": "30日間の試行範囲、企業法務・情報セキュリティ・業務部門の決裁主体、差し戻し分類と情報持ち出し確認を通過・停止条件にしたdecisionと表があり、会議で選択できる単位へ具体化されている。",
+    "dialogue_naturalness": "若手が利用境界、根拠、費用、限界、観測、選択肢、次行動の順に掘り、先輩が常体で具体条件を返す。7価値区間は実本文sentenceへ束縛され、最後も三者の記録と30日後の見直しへ自然に着地している。",
+    "relation_map_utility": "法務省・NII・企業法務・Starling Bank・顧客業務を規制・供給・依存で結び、公開モデルと運用責任、顧客成果の境界を追える。短い方向labelでdesktop/mobileの読解を阻害しない。"
+  },
+  "averageScore": 4.0,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

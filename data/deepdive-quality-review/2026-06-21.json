@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-06-21",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-06-21-DeepDive.md",
+      "sha256": "7f5f40848395aeb646c79acb5d345e87345fa14fc2191e810fc14ac37fc7c548"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-06-21-DeepDive.md",
+      "sha256": "22411b6ceb1e59f51e862b7a62c3c7bfefb6dc683f67e4de113814c8589a4d9e"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-06-21-DeepDive-dialogue.md",
+      "sha256": "7a13acf836f6ee1625d83b79692e73a9774383f31dbcb71e8f29cff28a9e0e3d"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 5,
+    "relation_map_utility": 2
+  },
+  "findings": {
+    "theme_specific_insight": "AccentureのFY2026 Q3を、売上やEPSの表面的な堅さと新規予約・Managed Services予約の縮小に分け、AI導入支援の需要と従来型人月サービスの評価低下が同じ決算に現れる時間差として捉えている。",
+    "evidence_depth": "FY2024〜FY2026 Q3の売上・新規予約、ConsultingとManaged Servicesの内訳、通期成長見通し、FY2025の生成AI予約をAccenture公式リリースで追い、株価反応とCEO説明にはBusiness Insider・Financial Timesを補助的に置いている。",
+    "causal_coherence": "AI本番展開にはデータ整備・業務設計・統制が必要で上流コンサル需要を生む一方、運用・保守や人月作業を自動化してManaged Servicesの予約を圧迫するという経路を、売上と将来予約の差へ接続している。",
+    "counterevidence": "AI導入の効果は時間がかかること、生成AI予約の非開示だけで悪化とは断定できないこと、売上は過去案件の実行で増え得ることを残し、予約減を直ちに事業崩壊とは読んでいない。",
+    "decision_utility": "高単価のAI再発明案件、AI運用込みのManaged Services、サイバー・データ基盤M&Aの三案を比べ、FY2026 Q4で予約・book-to-bill・本番移行率を確認する投資家・経営陣向けの判定軸にしている。",
+    "dialogue_naturalness": "若手の穏やかなペルソナがFY、予約、人月、Managed Servicesを順に問い、先輩が数字を企業顧客と投資家の実務へ翻訳している。用語の言い換え、反対面、次の決算で見る指標まで自然な往復でまとまり、重複や異分野への脱線もない。",
+    "relation_map_utility": "Accentureと企業顧客・AIネイティブ企業、投資家の供給・代替・評価関係を一枚にし、協業相手が同時に作業代替の競争相手になる構造を示す。ただしAccentureとAIネイティブ企業のkind『協調的競合』はcanonical registry外で、地図を標準監査へ渡せない。"
+  },
+  "averageScore": 4.571428571428571,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Red"
+}

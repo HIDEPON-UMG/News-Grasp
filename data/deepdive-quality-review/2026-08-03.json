@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-08-03",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-03-DeepDive.md",
+      "sha256": "e6e6ff304203ebfb91a0a494e33bb2a506c33bce3cc923637114da8289068262"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-03-DeepDive.md",
+      "sha256": "7f0fa8ba2ff0dd1bea52241c1cf0a0b41bd78650449077ab2e530134e172678d"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-03-DeepDive-dialogue.md",
+      "sha256": "1332799b7497836031558a870a434780619849e004adb54a876a6aa0f6b01478"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 5,
+    "counterevidence": 4,
+    "decision_utility": 5,
+    "dialogue_naturalness": 4,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "OpenAI APIの入力1ドルから0.20ドル、出力6ドルから1.20ドルへの値下げを、導入社数の競争ではなく成果単価・再試行・人手確認・安全運用を含む企業の総費用設計として捉えている。",
+    "evidence_depth": "新旧API単価に加え、学習効率6.2倍の研究、KDDI・AVITAの実演、児童の性的ディープフェイク123件を複数リンクと表に置き、経済性と安全性の両面を示す。ただし導入例の効果指標や各数値の母数は揃っていない。",
+    "causal_coherence": "トークン単価低下が試行を増やす一方、失敗再試行・ツール呼び出し・監視・人の承認が実運用単価を押し上げるため、料金表から業務単位の成果原価と安全制御へ評価軸を移す流れが一貫している。",
+    "counterevidence": "安価なモデルへの置換だけでは品質を保てず、誤用・被害対応の追加負担も生じることを示し、価格低下をそのまま導入成功とみなしていない。",
+    "decision_utility": "1タスク当たりの入力・出力・再試行・ツール呼び出し・確認工数を測り、料金差分を監査・停止・通報へ回す二段階案と48時間の運用表へ落としている。",
+    "dialogue_naturalness": "現行台本は価格、成果単価、再試行、権限、停止・通報の順に質問を進め、旧テンプレートの一文再掲を除いた。若手の確認文は「〜のですね」で反復するが、各区間の要約は内容に対応し、連結語による読みづらさもないため自然さは4相当。",
+    "relation_map_utility": "競合→OpenAI→企業と、安全→ワークフロー→成果単価の2経路を競合・供給・統制のcanonical kindで表し、料金低下と安全運用を別の因果鎖として読める。経路間の接続エッジは少なく、総合構図の補助に留まる。"
+  },
+  "averageScore": 4.428571428571429,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

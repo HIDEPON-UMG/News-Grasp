@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-06-28",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-06-28-DeepDive.md",
+      "sha256": "345660c488c61b1b22199ae8ce59c2ccf1fc7a65538005a5a7ccd84d36310f59"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-06-28-DeepDive.md",
+      "sha256": "4e4a3c13920deda47f669be7525ef86dbf9d21fa5725b7809728fa6d72a3c9ac"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-06-28-DeepDive-dialogue.md",
+      "sha256": "8c4e4b9f16241721560f7788e56702a38fa613030bc1534be2d07009b6f4c565"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 4,
+    "relation_map_utility": 2
+  },
+  "findings": {
+    "theme_specific_insight": "個人0.7%、組織17.3%、OpenAI社内97.9%の利用率と、長時間タスク・skills利用の伸びを、Codexが開発補助から権限・レビューを伴う全社の委任基盤へ移る兆候として具体化している。",
+    "evidence_depth": "OpenAIの論文と公開記事から利用率、出力トークン比率、1時間以上・8時間以上のタスク比率、skills利用率、上位利用者の稼働量を引用し、The Register等の自己申告・特殊な社内環境という限界も分けている。",
+    "causal_coherence": "権限、ファイルアクセス、監査、成果物レビュー、再利用手順が揃う社内と、組織・個人市場の利用率差を生むと説明し、ツール導入から業務設計・統制設計へ論点が移る経路が一貫している。",
+    "counterevidence": "OpenAI自身の調査で外部監査済み市場統計ではないこと、社内97.9%を市場標準と読めないこと、全社展開には権限過多や検収不足があることを明記し、利用率だけで成功を断定していない。",
+    "decision_utility": "開発部門限定、非開発部門への小規模展開、権限・監査・skills標準を整えた全社化を比較し、委任量、再利用率、差し戻し率を経営指標へ置いている。CIO、法務、財務など実際のdeciderも示されている。",
+    "dialogue_naturalness": "社内利用率や自己調査の限界、権限・レビュー設計を順に掘り、記事の主題には沿っている。ただし過去回の参照が長く、固有名詞の詰まりと定型の確認句が続くため、情報対談としては整うものの自然な音声会話には一段の編集が要る。",
+    "relation_map_utility": "OpenAIからCodex・社内従業員・外部ユーザー、CIOから権限統制への供給・規制を配置し、先行利用と企業展開の差を追える。しかしworkersからexternalへのkind『対比』がcanonical registryにないため、意味を正しく保ったまま関係監査を完了できない。"
+  },
+  "averageScore": 4.428571428571429,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Red"
+}

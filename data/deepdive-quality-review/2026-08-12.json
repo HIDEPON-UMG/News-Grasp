@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-08-12",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-12-DeepDive.md",
+      "sha256": "b74cee67faf218f890921c70381c9bb2b73d1ab01f16dc3f62b629cac7b10647"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-12-DeepDive.md",
+      "sha256": "b0ce2f1a0a5e958a2a29354967a2f79e1043d87ee11a78ec4ef1774c69d824c2"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-12-DeepDive-dialogue.md",
+      "sha256": "2eba4209b3aca57b12759135f01304d2091a9438cf9380d91a7c8d95d0eb2808"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 4,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "Uberの100億ドル・12万台報道を未確認の入口に留め、公式に開示された利用者・FCFと複数AV接続を土台に、配車仲介者が車両・運行資産をどこまで持つかへ論点を絞っている。",
+    "evidence_depth": "Uber FY2025、Uber Japan、NHTSAの材料から利用者2億人超、FCF97.63億ドル、取扱高・売上・FCFの伸び、事故報告制度の改定を時系列・表で追う。Uber Newsroomの取得URLは不掲載で、AV各社の稼働率や実出荷は未確認として残す。",
+    "causal_coherence": "需要・決済の基盤がWaymo、Motional、既存タクシーを束ねる強みから、資産保有なら減価償却・稼働率、非保有なら供給価格・品質依存となり、複数社の事故報告を共通データ基盤へ揃える必要まで一続きにしている。",
+    "counterevidence": "報道の投資額・台数を確定値にせず、資産非保有・重点都市の共同投資・垂直統合の柔軟性と固定費を並べ、WaymoとUberの配車協力／顧客接点競合、規制と供給者責任も残している。",
+    "decision_utility": "AV接続に徹する、重点都市で共同投資する、車両・充電・遠隔支援を保有する三案を比較し、資産計上者・稼働率・事故報告・運行品質を下期試験の決裁条件へ落とし、共同投資案を検証可能な次手にしている。",
+    "dialogue_naturalness": "改稿台本は未確認報道の扱い、公式財務、供給網、規制更新、共通安全表の担当へ質問を進め、旧い長い過去記事比較を除いた。確認文の反復と次アクション回答の長さは残るが、実務対談としては追いやすい。",
+    "relation_map_utility": "Waymo→Uberの配車提携とUber→Waymoの顧客接点競合を別canonical edgeに分け、Motional・既存タクシーの供給、NHTSAからAV事業者への規制を明示座標で結ぶ。ノード5・エッジ6に交差や重なりはない。"
+  },
+  "averageScore": 4.571428571428571,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

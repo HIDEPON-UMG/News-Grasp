@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-06",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-06-DeepDive.md",
+      "sha256": "7886207c40b9054f4e46bc0ccabce4ed6e207076d95e8fa6f9d94d6d889f03dc"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-06-DeepDive.md",
+      "sha256": "84143a3641e8153ec488371aac415f509877d621686ce5c8858ecfb044f3bc39"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-06-DeepDive-dialogue.md",
+      "sha256": "fd531fd785cf102e8180e70366370db1a72b36760d61912e433228d2c7a133db"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "Micron広島の新棟起工とInfineon Dresden Fabの開場を、AI半導体の不足を読む記事ではなく、メモリー帯域と電源効率の量産設備、公的支援、立ち上がり時期を先に固定する競争として具体化している。",
+    "evidence_depth": "Micronの1.5兆円・HBM/DRAM計画と2028年後半の装置搬入、Infineonの50億ユーロ超・約10億ユーロ支援、SIAの1105億ドル月次売上、WSTSの1.51兆ドル市場見通しを企業・政府・業界資料で組み合わせている。報道ベースのMicron支援額と市場予測を確定実績から分けている。",
+    "causal_coherence": "AI需要と半導体売上の加速がMicronのメモリーとInfineonの電源半導体への投資を前倒しし、補助金が国内・域内の供給節点を残す一方、稼働時期のずれがデータセンター調達を制約するという因果が通っている。",
+    "counterevidence": "単月売上だけでは投資を正当化できないこと、Micronの量産は数年先であること、支援額が報道ベースを含むこと、AI需要・市場予測が外れた場合の過剰能力を未確定として残している。",
+    "decision_utility": "HBM/DRAM長期契約、Infineon型の電源半導体先行、メモリー・電源・光接続の同時調達を比較し、2026年生産開始と2028年装置搬入を調達計画へ結びつける条件を示している。",
+    "dialogue_naturalness": "不足から量産投資への移動、MicronとInfineonの役割、SIA/WSTSの市場数字、公的支援比率を追えるが、長いchange_over_time回答と固定の記録句、InfineonDresden等の連結表記が続き、音声は機械的である。",
+    "relation_map_utility": "WSTS/SIAとAI需要、需要からMicron・Infineon、METI・EUから各社への供給・出資をcanonical edgeで示し、メモリーと電源の政策支援線を追える。"
+  },
+  "averageScore": 4.571428571428571,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

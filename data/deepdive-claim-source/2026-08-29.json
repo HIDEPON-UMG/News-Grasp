@@ -1,5 +1,5 @@
 {
-  "articleContentSha256": "727d28670b05583baa1db4f07a44ee37e3a8eff8549bf7639fe4ec256fe0d50e",
+  "articleContentSha256": "8ac2c3e1f1b3a6870dad93f37631a4f1c826ddde9b688e84af402c1802970d83",
   "articlePath": "digest/DeepDive/2026-08-29-DeepDive.md",
   "bindings": [
     {
@@ -9,14 +9,14 @@
       "sourceUrl": "https://news.yahoo.co.jp/expert/articles/d50a58a4ba4c59fb106055d566bbce33c234e1f8"
     },
     {
-      "claim": "Anthropic、無料学習サイト「Claude Academy」公開　Claude CodeやMCP、AIの能力と限界まで学べる",
+      "claim": "Build with Claudeは開発者向けにClaude Code、Claude API、MCP、skills、tool useを扱う学習資源をまとめている",
       "claimId": "academy-title-01",
-      "evidence": "Anthropic、無料学習サイト「Claude Academy」公開　Claude CodeやMCP、AIの能力と限界まで学べる",
-      "sourceUrl": "https://ledge.ai/articles/anthropic_claude_academy"
+      "evidence": "Courses and tutorials from Anthropic for developers. Learn Claude Code and the Claude API, then build agents with MCP, skills, and tool use.",
+      "sourceUrl": "https://www.anthropic.com/learn/build-with-claude"
     }
   ],
   "issueDate": "2026-08-29",
   "schemaVersion": "DEEPDIVE_CLAIM_SOURCE_TRANSPORT_V1",
   "status": "Green",
-  "transportSha256": "29f8d8c891279936e07aa4a517e694388fca18e5a1fd3aed8c63a1ee757b7c52"
+  "transportSha256": "1f1ea92abc7e03985dda17a30f8898fefea2bfdb57a31fac5d6833596dddbc7c"
 }

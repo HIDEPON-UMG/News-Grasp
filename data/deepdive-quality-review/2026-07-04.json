@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-04",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-04-DeepDive.md",
+      "sha256": "ca5b40fcee613a91a70f37b06e8d7c0491352183e4d24e7bfb05a23f85d056be"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-04-DeepDive.md",
+      "sha256": "2bf4312cc2d7860fdc29f4337f5cd3022649174f1bc34fb979d556647ac41275"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-04-DeepDive-dialogue.md",
+      "sha256": "cd40dda1f9ac610f1396deba98e2520548218038a1dffcd1797104757d305d53"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "OpenAIの米政府5%持分案、AnthropicのSamsung専用チップ協議、MetaのAI計算資源外販構想を、モデル性能競争から資本・半導体・クラウド・公的統治の保有権競争へ移る同一週の変化として束ねている。",
+    "evidence_depth": "OpenAI・Anthropic・Metaの報道に、SoftBankの最大400億ドル投資、AWSの合計80億ドル規模、Metaの設備投資392.3億ドルと2025年見通し600〜650億ドルを重ねている。5%案、Samsung協議、余剰能力の外販は報道・概念段階で、議会承認、仕様、SLA、実顧客は未確認である。",
+    "causal_coherence": "AI半導体の供給制約が、公的持分による統治、専用チップによる調達分散、外販クラウドによる設備回収へ波及し、誰が基盤を所有・配分・監督するかへ収れんする因果が通っている。",
+    "counterevidence": "公的持分案の法制化、Samsung協議の採用確度、Metaの外販可能な余剰、専用チップの固定費と歩留まり、AWS依存の継続条件を未確定として残し、報道を実装済みと扱っていない。",
+    "decision_utility": "公的持分で制度化、専用チップと複数クラウドで分散、自社基盤の外販という3案を、上場準備・協議・クラウド外販の具体化と、余剰能力・価格・SLA・電力制約で追う設計になっている。",
+    "dialogue_naturalness": "供給網から資本統治への変化、5%案、Samsung協議、Meta投資、AWS依存、次の観測点を7区間でつなぐが、長いchange_over_time回答と同型の記録句、固有名詞の連結表記が続き、音声会話としては機械的である。",
+    "relation_map_utility": "SoftBankからOpenAI、米政府からOpenAI、Anthropic・AWSからSamsung／Anthropic、MetaからOpenAI／AWSを出資・規制・供給・競合で結び、資本・クラウド・チップの交錯を追える。canonical kindのみである。"
+  },
+  "averageScore": 4.428571428571429,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

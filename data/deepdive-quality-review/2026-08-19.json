@@ -1,0 +1,39 @@
+{
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-19-DeepDive.md",
+      "sha256": "5274ba00f3e4fe91eeebd74e520ae1ba4ee4a79d7e2c2655050898ee16cecff6"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-19-DeepDive-dialogue.md",
+      "sha256": "fc71768a3908b7417b784f4097d787923d4c7e745848436f0f778aca283baf02"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-19-DeepDive.md",
+      "sha256": "26561d88aab1dd03e858c78305d6cb0a88985a4bada64383ed2855f19b7f85fa"
+    }
+  },
+  "averageScore": 4.428571428571429,
+  "findings": {
+    "causal_coherence": "Teslaの投資が供給選択肢と設計反復を増やす一方、TSMCの顧客・製品運用の厚みを短期には置き換えず、Intelの量産認定やSamsungのメモリ・包装が代替性を左右するという因果が通る。契約社数ではなく工程横断の品質保証が分散効果を決めると結論している。",
+    "counterevidence": "TSMCの売上規模と7nm以下77%、Intelの大口需要不足による投資縮小リスク、Teslaの歩留まり・装置・人材・資本負担、Samsung協業の実発注内訳未確認を併記する。内製・複数調達の利点を認めつつ、量産品質が出るまでの反証条件も示す。",
+    "decision_utility": "TSMC主軸、TSMC・Samsung・Intelの工程別複数調達、Terafab段階移行の三案を比較し、TSMCを外さず認定済み経路を増やす方針を選ぶ。9月末の二重化表・量産認定記録、14Aまたは先端包装が未認定ならCFOが主軸維持と追加投資停止を行う条件が具体的である。",
+    "dialogue_naturalness": "前回比較からTeslaの変化、内製と委託の根拠、TSMC規模、Intel・Samsungの不足機能、工程横断の競争、認定条件付きの調達判断へ順に進む。先輩常体・若手敬体と9月末の停止条件は機能するが、「SamsungElectronics」の空白欠落、固定7区間、本文数値の反復は残る。",
+    "evidence_depth": "Tom's HardwareのTesla決算発言、Intel声明の公開アーカイブ、Samsung公式発表に加え、Taiwan NewsのTSMC Q2報道を用い、Terafabの14A計画、先端工程77%、Intel参画、Samsung・Broadcom協業を個別の取得本文へ束縛する。TeslaとTSMC部分は二次報道であるため、一次資料と同等には扱っていない。",
+    "relation_map_utility": "Tesla・Intel・TSMC・Samsung・Broadcomを提携・供給・競合で結び、Intel→TeslaとTSMC→Teslaの供給方向を実際の調達関係に合わせた。desktop/mobileの貫通・label重複もなく、専用化と外部供給の選択肢を誤方向なく比較できる。",
+    "theme_specific_insight": "TeslaのAI推論チップ内製、Intel Terafab、TSMCの先端量産、Samsung・Broadcomの統合協業を、工場性能の比較から顧客が設計・製造・包装の供給網を組み替える競争へ接続している。内製をTSMC即時代替としない当日固有の読み筋も明確である。"
+  },
+  "issueDate": "2026-08-19",
+  "reviewRoute": "codex_daily_audit",
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "scores": {
+    "causal_coherence": 5,
+    "counterevidence": 4,
+    "decision_utility": 5,
+    "dialogue_naturalness": 4,
+    "evidence_depth": 4,
+    "relation_map_utility": 4,
+    "theme_specific_insight": 5
+  },
+  "status": "Green"
+}

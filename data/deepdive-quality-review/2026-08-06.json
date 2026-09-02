@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-08-06",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-06-DeepDive.md",
+      "sha256": "ac26a7709a3854cb77f94967df0a0e3ebdf534d00dfb003913c276512a30396f"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-06-DeepDive.md",
+      "sha256": "b6fe0426af82f3d97199e897ad9cd0678877d0712fded3bc96e36d44e3a38862"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-06-DeepDive-dialogue.md",
+      "sha256": "5628cdc060c6d9e27974200f6bfbe48fd647fb5642ab8abc3c77cfe9ec70df73"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 4,
+    "counterevidence": 4,
+    "decision_utility": 4,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "ダラスの招待制解除を、Zooxの専用車両更新と対置し、都市追加の件数ではなく一般利用を支える保守・稼働・停止復旧の再現性へ競争軸を具体化している。",
+    "evidence_depth": "Waymoの5・6・10商用メトロ推移、ダラスの限定公開から全面開放、Zooxの35万人から50万人の乗車経験を公式リンク付きで並べている。Waymo Helpの開放告知はURLがなく、Waymoの有料乗車回数とZooxの乗車者数は定義が異なるため、追跡可能性に限界が残る。",
+    "causal_coherence": "WaymoがAvisへ車両準備・保守・車庫を分けることで共通技術へ集中できる一方、稼働率・清掃・復旧の品質を協業網で再現する責任が増すという因果を、Zooxの垂直改善との対比へ接続している。",
+    "counterevidence": "都市数の増加と一般開放を別指標にし、両社の公開値を単純比較できないこと、Avis依存時の品質接続、年末の週100万回目標が未確認であることを明示して結論を抑制している。",
+    "decision_utility": "パートナー分業、車両・ソフト一体化、中心都市直営と追加都市提携の三案を、待ち時間・稼働率・清掃・停止復旧と年末目標の確認へ結び付けており、運行会議の比較軸として使える。",
+    "dialogue_naturalness": "現行台本は7価値区間で開放、分業、Zoox、指標、次の運用確認を順に掘るが、若手の確認文が各区間で似通い、change_over_timeの過去推移説明も音声では長く感じられる。",
+    "relation_map_utility": "WaymoとZooxの競合、WaymoとAvisの提携、Waymo・Zooxから市場への供給をcanonical kindで整理し役割分担を示す。ただし自動配置ではWaymoからダラスとZooxからラスベガスの線が交差し、視線追跡に小さな負荷がある。"
+  },
+  "averageScore": 4.0,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

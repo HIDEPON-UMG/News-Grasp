@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-06-26",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-06-26-DeepDive.md",
+      "sha256": "2a182d117266b81030d24910e726fb831e190b7fdf39667fd2804c2250ad3817"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-06-26-DeepDive.md",
+      "sha256": "715db7911bac24b6c4fa9eea78a9af5a10f092cc1378aad28286d036719ee69c"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-06-26-DeepDive-dialogue.md",
+      "sha256": "d50db608b9449d3dce775a98370e11c3b61c0fb65de45c10e22156d62b482b12"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 1,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "Five Eyesの共同警告を『AIが危険』という一般論にせず、脆弱性発見から悪用までの時間短縮が事業継続と市場信頼を経営の時間競争へ変える転換として具体化している。",
+    "evidence_depth": "Five Eyes・NCSCの声明と年次レビュー、FBI IC3の2023〜2025年被害額、89件から204件への重大インシデント増加、ESETのPromptSpyを組み合わせ、警告・統計・具体的挙動を別の証拠層として示している。",
+    "causal_coherence": "AIが画面に応じた操作手順を生成して攻撃摩擦を下げる経路を、攻撃面削減・パッチ・ID統制・訓練という既存統制の高速化へ結び、CISOの実行と取締役会の責任分界まで一貫している。",
+    "counterevidence": "PromptSpyの用途が永続化の一部に限られること、AIが既存防御を完全に上回る時期や成功率は公開情報から確定できないことを明記し、被害額の増加を全てAI起因とはしていない。",
+    "decision_utility": "90日で攻撃面・パッチ・IDを棚卸しする案、AI防御をSOCへ先行導入する案、従来計画を維持する案を、予算・権限・次回取締役会の期限と結び付けている。経営と現場が次に確認する対象が具体的である。",
+    "dialogue_naturalness": "記事のサイバー論点を追う途中で為替、海外SaaS、契約通貨の話へ逸れ、冒頭の『背景FiveEyes』のような接続崩れもある。終盤の現場確認問答が3回反復され、専門的な対談の流れを壊している。",
+    "relation_map_utility": "当局から経営層・ベンダー、取締役会からCISO、攻撃者から防御側への圧力を、規制・供給・提携・対立で整理している。顧客から取締役会を規制とした表現はやや粗いが、全edgeがcanonical kindで監査可能である。"
+  },
+  "averageScore": 4.285714285714286,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Red"
+}

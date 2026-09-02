@@ -1,0 +1,16 @@
+{
+  "articleContentSha256": "c6463c483a758516506519f562ecea5161ce2b1e826760b914e67993e74ddc41",
+  "articlePath": "digest/DeepDive/2026-08-21-DeepDive.md",
+  "bindings": [
+    {
+      "claim": "Waymoは3.5億キロ超の完全自動運転経験を基に東京の走行データでモデルを調整している",
+      "claimId": "dd-20260821-waymo-tokyo",
+      "evidence": "米国で作ったAIをそのまま持ってくるのではなく、都内の公道から得られた走行データをもとに、自動運転モデルを調整しているという。",
+      "sourceUrl": "https://www.itmedia.co.jp/business/articles/2608/21/news050.html"
+    }
+  ],
+  "issueDate": "2026-08-21",
+  "schemaVersion": "DEEPDIVE_CLAIM_SOURCE_TRANSPORT_V1",
+  "status": "Green",
+  "transportSha256": "e38a5b5ed67fa46bb94f5db9ec9d0b5cea6a0a2ece190e50882fa2a561902f45"
+}

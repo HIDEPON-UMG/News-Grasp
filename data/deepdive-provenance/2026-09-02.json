@@ -1,0 +1,111 @@
+{
+  "articlePath": "digest/DeepDive/2026-09-02-DeepDive.md",
+  "articleSha256": "8ca672f78cb4c67a0c6d199b9faeb45c3d17eec0152976427ac45a3d35bc897f",
+  "claimBindings": [
+    {
+      "claimId": "ai-20260902-local-llm",
+      "claimSha256": "e471fbce1c83f5c27307c8b941e48504a9df1efa67a881fe2d973bed31e9dee2",
+      "evidenceSha256": "514ee406580854b25ce3e5aa024a605708e444b78d606eb49fa8a46888b3eb9d",
+      "sourceUrl": "https://gihyo.jp/article/2026/09/home-local-llm-guide"
+    },
+    {
+      "claimId": "fx-20260902-outlook",
+      "claimSha256": "6445fd3ee09b97d82c9f7c92cde240dbbd865a06f514889be05386e3fd4b21a6",
+      "evidenceSha256": "ba350593cbe52150e0ef18e9f196c94b7008bba2ff3a38bcac01fcb382b7d964",
+      "sourceUrl": "https://www.gaitame.com/media/entry/2026/09/01/152019"
+    },
+    {
+      "claimId": "manufacturing-20260902-factory",
+      "claimSha256": "2a6a6fe15cb2b6207efb2933b6df5af2a45e9b8c317dbd095c15c5bfd9f04e6e",
+      "evidenceSha256": "2dc067555d5b0a02ce949b3d3e0d338ea33345f4930d4b2b1264bc10c0f90d56",
+      "sourceUrl": "https://www.city.seki.lg.jp/0000023478.html"
+    },
+    {
+      "claimId": "mobility-20260902-bus",
+      "claimSha256": "5aca7d72d89df1b0aa0d905f517ff3c4359c1d4b8a8a9255dbe824e76d1a5bc3",
+      "evidenceSha256": "f5f31fc541281786991a5f0af93482dd36735cd8382fc7ee2a7e80abafc66b0f",
+      "sourceUrl": "https://www.city.fukuyama.hiroshima.jp/soshiki/toshikotsu/410081.html"
+    }
+  ],
+  "claimSetSha256": "465e3b8635693862e5b1b6e3611fc9b09347475f184189d047e08af3c7e8faca",
+  "issueDate": "2026-09-02",
+  "manifestSha256": "8a2545e529e793f83db4fcf50dd24951b6962326866e4c0cb29815236baf65dc",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V2",
+  "sourceSetSha256": "d8f6a463dc7705f1c25923aeb2778245f527d0ecb957b6b62bb513e83b423377",
+  "sources": [
+    {
+      "contentSha256": "d8d3138c1b67fddd3b13fc17533655915092104d96192913159423a2bbb4848d",
+      "fetchedAt": "2026-09-01T21:50:56.551552+00:00",
+      "finalUrl": "https://gihyo.jp/article/2026/09/home-local-llm-guide",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://gihyo.jp/article/2026/09/home-local-llm-guide",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://gihyo.jp/article/2026/09/home-local-llm-guide"
+    },
+    {
+      "contentSha256": "6d46ec120770f702bf1aae9fde4167ae54869705c95c8de119e9031b5bc9f8aa",
+      "fetchedAt": "2026-09-01T21:50:56.803630+00:00",
+      "finalUrl": "https://www.city.fukuyama.hiroshima.jp/soshiki/toshikotsu/410081.html",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.city.fukuyama.hiroshima.jp/soshiki/toshikotsu/410081.html",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://www.city.fukuyama.hiroshima.jp/soshiki/toshikotsu/410081.html"
+    },
+    {
+      "contentSha256": "e87fbe62298803418cf47a54944ee08da46a3496db346f2c9eda70b617e5f356",
+      "fetchedAt": "2026-09-01T21:50:57.151677+00:00",
+      "finalUrl": "https://www.city.seki.lg.jp/0000023478.html",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.city.seki.lg.jp/0000023478.html",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://www.city.seki.lg.jp/0000023478.html"
+    },
+    {
+      "contentSha256": "2d55d809968be38054770037dd578e06d718230c4de428bcd5b89f18a0d6869f",
+      "fetchedAt": "2026-09-01T21:50:57.422986+00:00",
+      "finalUrl": "https://www.gaitame.com/media/entry/2026/09/01/152019",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.gaitame.com/media/entry/2026/09/01/152019",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://www.gaitame.com/media/entry/2026/09/01/152019"
+    }
+  ],
+  "status": "Green",
+  "transportEvidenceVersion": 1
+}

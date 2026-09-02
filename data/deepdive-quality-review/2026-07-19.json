@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-19",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-19-DeepDive.md",
+      "sha256": "d57633d07efcef5d82d0e024269c30717f753adeb9fd85e683c492d1d55776fa"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-19-DeepDive.md",
+      "sha256": "416bb2723b9ac87bd6cc72fba053721985452a0f9139767acce821a4b97be7aa"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-19-DeepDive-dialogue.md",
+      "sha256": "f053e4eedc06581feaffc87f0c65529a66035c7296c1e657819bd79c4da66e51"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "Waymoの週10万回超から40万回超への拡大とZooxの濃煙下火災現場事案を、都市数や通常走行の安全率ではなく、希少な緊急事象を再現試験し一般開放の条件にする課題へ絞っている。",
+    "evidence_depth": "Waymoの1.27億マイル・重傷事故90%減・新規4都市、Zooxの105台更新、NHTSAの煙・炎・点滅灯・コーンへの問題提起を、Waymo公式とReuters報道で時系列化している。Zooxの公開週間乗車数やWaymoの当該事案更新範囲は未確認である。",
+    "causal_coherence": "有料乗車の増加が希少な例外事象への遭遇機会を増やし、車両の平均安全率だけでは不足するため、遠隔支援・現場通知・更新証明をNHTSAと緊急対応機関の運用へ組み込むという因果が一貫している。",
+    "counterevidence": "走行距離の大きな安全実績と低頻度の例外事象を別軸にし、Zooxのリコールは修復可能性である一方更新前後の識別が難しいこと、共通試験は拡大を遅らせ得ることも示している。",
+    "decision_utility": "自己認証で拡大、社員向け・限定地域で検証、NHTSAと緊急機関の共通試験を比較し、煙・炎・退避・遠隔切替・更新通知を一般開放前の達成指標にしている。",
+    "dialogue_naturalness": "Waymoの規模、Zooxの事案、平均安全と例外対応の差、NHTSA協議を順に掘れるが、固有名詞と「前提として」「観測された結果は」の定型が反復し、音声の自然さは低い。",
+    "relation_map_utility": "Waymo・Zoox・NHTSA・消防等を競合、規制、提携の5本のcanonical edgeで表し、規模競争と緊急現場の共同標準化を同じ図から追跡できる。"
+  },
+  "averageScore": 4.571428571428571,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

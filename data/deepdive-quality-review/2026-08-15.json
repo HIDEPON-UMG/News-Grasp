@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-08-15",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-15-DeepDive.md",
+      "sha256": "f9f93069828cfabf6c508234a7816aeab060be41bb4a493d62484028df04383a"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-15-DeepDive.md",
+      "sha256": "c035a7ced9346b162a6bf25f599dd77e0b426cbf2257e929d5a9dd551c935790"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-15-DeepDive-dialogue.md",
+      "sha256": "431ec8bb7f63bac43fe1972c75086a8c8cb961bea5fd1c18bb0a03b061679cc9"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 5,
+    "counterevidence": 4,
+    "decision_utility": 4,
+    "dialogue_naturalness": 4,
+    "relation_map_utility": 3
+  },
+  "findings": {
+    "theme_specific_insight": "日銀の政策金利1.0%、中立金利約2%、企業物価7.1%を起点に、利上げを一回の予想ではなく固定・変動、借換、投資採算を組み替える財務課題として具体化している。政府・銀行・企業・家計の負担配分まで当日テーマに接続する。",
+    "evidence_depth": "日銀の1.0%・基本貸付1.25%・コアCPI約1.5%、企業物価6.3%→6.6%→7.1%、輸入物価29.1%を時系列と表で示し、日銀と野村證券のリンクを置く。9月利上げ見通しの当日記事はURL未取得で、価格転嫁の速さや家計への波及の実測は不足する。",
+    "causal_coherence": "政策金利から銀行の貸出条件、企業の調達・価格転嫁、家計需要へ至る時差を明示し、固定・変動、借換、投資採算へ落としている。コアCPI低下だけで停止を決めない一方、需要・雇用への下押しは反対可能性として扱い、因果と仮説を分けている。",
+    "counterevidence": "コアCPI約1.5%と中立金利約2%の差、利上げによる投資・生産・雇用下押しを併記し、全面固定・分散・様子見のトレードオフを示す。個別企業の価格転嫁耐性や雇用影響の反証データまではない。",
+    "decision_utility": "全面固定、固定・変動の分散、実測待ちの三案と9月17〜18日会合、CFO等のdeciderを置き、分散を基本に案件別の採算線を置く方針を示す。固定・変動残高、借換日、1.0%・1.5%・2.0%試算まで具体化するが、記事側の閾値は限定的である。",
+    "dialogue_naturalness": "7区間が利上げ観測、物価・転嫁、伝達経路、反対意見、時系列、財務選択、具体的な台帳・試算へ進み、先輩の常体と若手の敬体、9月末のCFO再承認条件まで自然に接続する。固定7区間の問答と本文数値の再提示は残るが、旧定型句は見られない。",
+    "relation_map_utility": "日本銀行→銀行→企業→家計の伝達と政府→企業の支援を5辺で示し、座標レイアウトは1080×640でノード重複・辺交差・第三ノード貫通がない。ただし政策伝達を「規制」、価格転嫁を「供給」、政府との関係を「提携」とするkindは作用条件を粗くし、relation sourceが日銀・野村證券中心で家計・政府辺の直接根拠を欠くため中程度に留まる。"
+  },
+  "averageScore": 4.142857142857143,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

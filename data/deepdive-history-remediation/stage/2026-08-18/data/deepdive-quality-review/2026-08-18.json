@@ -1,0 +1,39 @@
+{
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-18-DeepDive.md",
+      "sha256": "8714be7bf62082127709821a7edf230808665e5e914a01a4ee63dca48618f10f"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-18-DeepDive-dialogue.md",
+      "sha256": "9df76b7a1447455599298c4d53414dab149cabe1735ffa7ca74b0faacd94f916"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-18-DeepDive.md",
+      "sha256": "3e82ec0fda4ddb6c6d90408c1648aee846248f21f1bfd868400d78487d069598"
+    }
+  },
+  "averageScore": 4.0,
+  "findings": {
+    "causal_coherence": "金利上昇が資本コストを押し上げ、AI価格低下が利用量を増やし、検証・権限・請求・保守費を重くするという流れを、自動運転・量産投資へ拡張している。複数領域の類推とAnthropic評価環境の外部影響には直接測定されていない部分が残る。",
+    "counterevidence": "需要や利用量が伸びても利益・安全・説明責任を保証せず、保守、事故対応、歩留まり、電力、在庫、地域需要が追い付かない場合を明記する。単価低下を採用根拠にしない反証はあるが、各領域の実績閾値や失敗事例はない。",
+    "decision_utility": "成長優先、金利・統治コストを審査へ入れる案、高コスト領域の実証を絞る案を比較し、第二案と第三案の併用を選ぶ。9月の日銀会合・開示を期限に、利用量・保守費・事故対応・歩留まり・電力・在庫の継続費表とCFO再計算を置くが、領域別の採否基準は未分化である。",
+    "dialogue_naturalness": "金利とAI投資の接続、複数ニュースの焦点化、回収経路、統治負荷、他領域への適用、継続費表と投資委員会の停止条件へ順に進む。先輩・若手の語体と9月末の作業は自然だが、固定7区間の問答と規模数値の再提示は残る。",
+    "evidence_depth": "日経・読売等の市場材料に加え、OpenRouterの価格・利用量、Anthropicと評価パートナーの接続をclaim-sourceで具体的根拠へ束縛した。複数領域を同一チャートへ置く比較限界は残るが、主要主張の出典と根拠spanを分離して確認できる。",
+    "relation_map_utility": "日本銀行・国債市場・OpenAI・OpenRouter・Anthropic・評価パートナーという実在主体を規制・供給・提携で接続し、金利、利用拡大、評価責任の関係を追える。desktop/mobileとも第三node貫通・label重複がなく、旧版の抽象部門チェーンを解消した。",
+    "theme_specific_insight": "10年国債利回り2.930%とAI価格・利用量、学習データ透明化、外部評価接続、ロボタクシー・半導体投資を、継続コストと運用責任の審査へ結び付ける。異なる業種を同じ継続性で読む独自性はあるが、対象が広く主題の焦点はやや薄い。"
+  },
+  "issueDate": "2026-08-18",
+  "reviewRoute": "codex_daily_audit",
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "scores": {
+    "causal_coherence": 4,
+    "counterevidence": 4,
+    "decision_utility": 4,
+    "dialogue_naturalness": 4,
+    "evidence_depth": 4,
+    "relation_map_utility": 4,
+    "theme_specific_insight": 4
+  },
+  "status": "Green"
+}

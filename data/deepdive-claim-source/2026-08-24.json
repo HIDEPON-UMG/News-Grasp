@@ -1,0 +1,16 @@
+{
+  "articleContentSha256": "634424fe47b196a2f41dd62de079ee7bf9e73cbbef59dfb548adb4dc6a1373e2",
+  "articlePath": "digest/DeepDive/2026-08-24-DeepDive.md",
+  "bindings": [
+    {
+      "claim": "ザグレブではUberアプリから自動運転車を予約できる。",
+      "claimId": "zagreb-uber-av-booking",
+      "evidence": "Riders in Zagreb become the first in Europe to book an AV through Uber, powered by Pony.ai and operated by Verne.",
+      "sourceUrl": "https://investor.uber.com/news-events/news/press-release-details/2026/Uber-Launches-Autonomous-Rides-in-Europe/default.aspx"
+    }
+  ],
+  "issueDate": "2026-08-24",
+  "schemaVersion": "DEEPDIVE_CLAIM_SOURCE_TRANSPORT_V1",
+  "status": "Green",
+  "transportSha256": "500818ba18802430fd645b7ff1dd53baf444d3e212a3b8010ef72f98e884b9c0"
+}

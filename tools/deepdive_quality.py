@@ -98,6 +98,27 @@ CLAIM_SOURCE_RE = re.compile(
 CLAIM_ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
 MAX_OBSERVED_BYTES = 4 * 1024 * 1024
 MAX_CLAIM_EVIDENCE_BYTES = 512 * 1024
+_HTML_META_CHARSET_RE = re.compile(
+    rb"<meta\b[^>]*?\bcharset\s*=\s*(?:[\"']\s*)?"
+    rb"([A-Za-z0-9][A-Za-z0-9._:-]*)",
+    re.IGNORECASE,
+)
+_CP932_CHARSET_ALIASES = frozenset(
+    {
+        "cp932",
+        "ms932",
+        "ms-kanji",
+        "ms_kanji",
+        "shift-jis",
+        "shiftjis",
+        "shift_jis",
+        "sjis",
+        "windows-31j",
+        "windows31j",
+        "x-sjis",
+        "x_sjis",
+    }
+)
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
     "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -577,8 +598,23 @@ def _article_url_locations(article_text: str) -> dict[str, list[str]]:
 def _normalized_evidence_text(value: str) -> str:
     """取得本文と短い根拠spanをmarkup差に左右されず照合する。"""
 
-    without_markup = re.sub(r"<[^>]+>", " ", unescape(value))
-    return re.sub(r"\s+", " ", without_markup).strip().casefold()
+    def replace_literal_escape(match: re.Match[str]) -> str:
+        return {
+            "0022": '"',
+            "0026": "&",
+            "0027": "'",
+            "003c": "<",
+            "003e": ">",
+        }[match.group(1).casefold()]
+
+    visible_markup = re.sub(
+        r"\\u(0022|0026|0027|003[cCeE])",
+        replace_literal_escape,
+        value,
+        flags=re.IGNORECASE,
+    )
+    without_markup = re.sub(r"<[^>]+>", "", unescape(visible_markup))
+    return "".join(char for char in without_markup if not char.isspace()).casefold()
 
 
 _GENERIC_EVIDENCE_RE = re.compile(
@@ -896,6 +932,9 @@ def build_provenance_manifest(
         fetch_records,
         expected_urls=set(locations),
     )
+    include_transport_evidence = all(
+        "transportEvidence" in observed[url] for url in locations
+    )
     sources = [
         {
             "url": url,
@@ -906,7 +945,7 @@ def build_provenance_manifest(
             "contentSha256": observed[url]["contentSha256"],
             **(
                 {"transportEvidence": observed[url]["transportEvidence"]}
-                if "transportEvidence" in observed[url]
+                if include_transport_evidence
                 else {}
             ),
             "locations": locations[url],
@@ -940,7 +979,7 @@ def build_provenance_manifest(
                 "claimSetSha256": _canonical_sha256(claim_bindings),
             }
         )
-    if all("transportEvidence" in observed[url] for url in locations):
+    if include_transport_evidence:
         value["transportEvidenceVersion"] = 1
     value["manifestSha256"] = canonical_manifest_sha256(value)
     _atomic_write_json(Path(output_path).resolve(), value)
@@ -1228,6 +1267,38 @@ def _is_generic_home_redirect(original_url: str, final_url: str) -> bool:
     return bool(original_path) and final_path in {"", "/index.html", "/index.htm"}
 
 
+def _decode_observed_text(body: bytes) -> str:
+    """証拠本文を宣言charsetを尊重してboundedにテキスト化する。"""
+
+    evidence = body[:MAX_CLAIM_EVIDENCE_BYTES]
+    declared_match = _HTML_META_CHARSET_RE.search(evidence)
+    declared = declared_match.group(1).decode("ascii") if declared_match else ""
+    normalized = declared.strip().lower() if declared else ""
+    normalized = normalized.replace(" ", "")
+    if normalized in _CP932_CHARSET_ALIASES:
+        normalized = "cp932"
+
+    # UTF-8 BOMは優先度の高いバイト標識として、矛盾したmeta宣言があっても
+    # 返却テキスト上で壊さない。
+    if evidence.startswith(b"\xef\xbb\xbf"):
+        try:
+            return evidence.decode("utf-8", errors="strict")
+        except UnicodeDecodeError:
+            pass
+
+    if normalized:
+        try:
+            return evidence.decode(normalized, errors="strict")
+        except (LookupError, UnicodeDecodeError):
+            pass
+    for encoding in ("utf-8", "cp932"):
+        try:
+            return evidence.decode(encoding, errors="strict")
+        except UnicodeDecodeError:
+            continue
+    return evidence.decode("utf-8", errors="replace")
+
+
 def _observed_record(
     *,
     url: str,
@@ -1254,9 +1325,7 @@ def _observed_record(
         "httpStatus": status,
         "fetchedAt": datetime.now(timezone.utc).isoformat(),
         "contentSha256": hashlib.sha256(observed).hexdigest(),
-        "observedText": observed[:MAX_CLAIM_EVIDENCE_BYTES].decode(
-            "utf-8", errors="replace"
-        ),
+        "observedText": _decode_observed_text(observed),
         **(
             {"transportEvidence": transport_evidence}
             if transport_evidence is not None

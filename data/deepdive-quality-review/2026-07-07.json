@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-07",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-07-DeepDive.md",
+      "sha256": "a0b67270bf72ffbbba0292026aaa7c313020aa2300f8079d5728676ec6665fd5"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-07-DeepDive.md",
+      "sha256": "3ac84878c7ad6bd3f0f8eeba7739473436563c7fc71f0cdff56be9bedfe7b9fd"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-07-DeepDive-dialogue.md",
+      "sha256": "c6ce2ae37a68888b2ec736ea6a9efac137998eb9f654248659037194d867cc79"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "T2の21社商用ユーザー・3つのトランスゲートと、豊田通商／Robotruckの11社連合を、車両性能の競争ではなく、荷主・拠点・情報連携を束ねて幹線物流を運行網へ移す実装競争として捉えている。",
+    "evidence_depth": "国土交通省の車両・拠点・システム・初年度運行への補助、T2の約50社・21社・7社・3拠点、Robotruck連合の11社、豊田通商の公道実証、輸送能力不足の旧試算34.1%と再検証の平均約7%〜最大約25%を重ねている。実証と商用、旧試算と再検証を区別している。",
+    "causal_coherence": "物流の2024年問題と2030年不足が自動運転投資を促し、補助対象が車両から拠点・運行システム・初年度費用へ広がることで、T2の標準網と横断連合の実貨物検証が必要になる流れが明快である。",
+    "counterevidence": "商用ユーザー21社と実証7社は大規模商用化の入口に過ぎないこと、荷主ごとの例外条件、横断連合の運用コスト、2030年不足の再検証幅を示し、採択をレベル4成功とみなしていない。",
+    "decision_utility": "T2主導のトランスゲート標準化、豊田通商型の横断連合、実証を絞る選択肢を比較し、2027年度以降の開始、21社・11社の標準サービス化、荷主接続を判断軸に置いている。",
+    "dialogue_naturalness": "補助対象、トランスゲート、7社・11社の実証、輸送力不足、標準化を順に確認するが、記事引用と主体・数値・日付を分ける定型句が連続し、質問への応答も確認票調で音声の自然さは低い。",
+    "relation_map_utility": "国土交通省からT2・豊田通商連合への出資、豊田通商からRobotruckへの提携、両ルートから荷主への供給・提携、T2と連合の競合をcanonical edgeで示し、実装方式の並走を比較できる。"
+  },
+  "averageScore": 4.571428571428571,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

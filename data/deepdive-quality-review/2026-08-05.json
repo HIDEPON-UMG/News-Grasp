@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-08-05",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-05-DeepDive.md",
+      "sha256": "ff85cf4d7894589b4fbc555e68e7cad68ad9df46a89bad5973cb6456d4023d77"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-05-DeepDive.md",
+      "sha256": "44c2e1e81a9e978bb76af35182c15b4de3eb76ac13aab507171d05ccd9a273a6"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-05-DeepDive-dialogue.md",
+      "sha256": "4de4f31b54f6913f4dce4c70a0c27a138df75b6278a678de941b600c29dbddb6"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 4,
+    "counterevidence": 4,
+    "decision_utility": 4,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "OpenAIとAppleの機密情報を巡る訴訟、JAPAN AIと大塚商会の提携、出版社の51%ライセンス、クラウド支出1434億ドルを、人材・データ・契約・費用・本人確認の統制設計へ束ねている。",
+    "evidence_depth": "メールとiMessageを巡る主張、1300人超の自己開発制御要請、提携、ライセンス比率、クラウド費用を5本の参照リンクと表に置いている。ただし法的主張、契約条件、費用集計の定義が異なるため、横断比較の証拠強度は一段落ちる。",
+    "causal_coherence": "機密データの扱いが訴訟・契約へ波及し、自己開発の速度、ライセンス、クラウド費用が利用許諾・予算・アクセス制御を必要にするという連鎖は読める。ただし各ニュース間の直接因果ではなく統制設計上の類推が中心である。",
+    "counterevidence": "法的係争の主張と確定事実を分け、提携やライセンスが安全性を自動保証しないこと、クラウド支出がそのままAI投資成果ではないことを示している。",
+    "decision_utility": "機密分類、アクセスとログ、自己開発停止、契約上の利用範囲、API監視、クラウド費用を一つの統制表に戻し、限定導入と一週間以内の監査表作成へ落としている。",
+    "dialogue_naturalness": "現行台本は訴訟、自己開発制御、提携・費用、監査表へ論点を段階化し、旧テンプレートの長い前日比較を除いた。一方、JAPANAIの連結表記、記事由来の長い説明、各区間の「〜のですね」確認が残るため自然さは3相当。",
+    "relation_map_utility": "人材移籍→機密情報→導入判断、自己開発→停止条件、クラウド費用→本人確認→導入判断を統制・規制・依存・対立のcanonical kindで表し、複数ニュースを統制層へ対応付けている。"
+  },
+  "averageScore": 4.0,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

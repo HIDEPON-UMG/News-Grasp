@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-01",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-01-DeepDive.md",
+      "sha256": "c6b769522542af8309ecb219cfaa3c3130830aa224913fb6ddcb595eadf3bd42"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-01-DeepDive.md",
+      "sha256": "c35346826f33306115491ef31210ebf5e88cbf80f6170ee27e7d5a0ac36974ad"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-01-DeepDive-dialogue.md",
+      "sha256": "cc848fe78f5dfe63bf6194197a8864c2ec1da01c70932580e8d7b974841ababb"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "Joby・ToyotaのJTAMPC設立を、eVTOLの試験飛行からToyota51%・Joby49%の製造責任、認証後の量産能力へ移る節目として捉え、認証と供給スケールの並走を主題にしている。",
+    "evidence_depth": "SECの持分・初期拠出、Toyotaの累計8.94億ドル、Jobyの現金・資金使用、年24機・月4機・年500機の生産計画、FAAのeIPPと適合機試験を公式資料に束ねている。計画能力と商用運航を混同せず、TIA後の不確実性も残している。",
+    "causal_coherence": "Toyotaの量産ノウハウとJV支配、Jobyの認証・運航、FAAの安全データ要求、都市・運航網の需要を接続し、機体を作れても認証・路線が追い付かなければ商用化しないというボトルネックを示している。",
+    "counterevidence": "認証前に製造標準を固定する手戻り、資金消費、年24機から年500機への段差、都市路線と機体供給の不一致を明示し、51%の支配や大きな投資だけで量産成功を結論づけていない。",
+    "decision_utility": "Toyota主導で標準を先に固める、FAAのTIAを待って段階投資する、都市・運航パートナーで需要を先に証明する三案を、2026年後半の試験と2027年計画へ結んでいる。Joby、Toyota、FAAというdeciderも具体的である。",
+    "dialogue_naturalness": "持分、投資、年産能力、FAA試験を拾っているものの、円安やAIの過去回を『主役共有』として長く引き込み、空飛ぶモビリティとの接点が弱いまま汎用の委任・検収話へ戻る。固有の結論を述べた後も定型的な締めが続き、自然さは限定的である。",
+    "relation_map_utility": "FAAからJoby、Joby・ToyotaからJTAMPC、JTAMPCから都市・運航網まで、認証・出資・供給・提携の責任分界をcanonical kindで表す。5ノードの位置情報も含め、量産と需要の橋を追える再利用可能な地図である。"
+  },
+  "averageScore": 4.571428571428571,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

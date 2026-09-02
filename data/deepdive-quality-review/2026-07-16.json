@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-16",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-16-DeepDive.md",
+      "sha256": "0bc7d205144fceea36d1781ea6863b6c75951ba6d500bdbb5c7e2c7bdc4dbede"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-16-DeepDive.md",
+      "sha256": "e53bdf1b6ca6881026438061612a12f1af9245702ccef7dd3232866d303fd9d1"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-16-DeepDive-dialogue.md",
+      "sha256": "932cf38df6e25d44004bf3b7fdcf759c2548f02cd5485cba735fd926f511c3d4"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "Intel 18Aの一部層で高NA EUVが量産適用された事実を、装置を確保したかではなく、歩留まりを保ちながら適用層を広げる速度と運用能力の競争へ具体化している。",
+    "evidence_depth": "ASML・Intelの共同量産発表、ASMLのQ2売上93.26億ユーロ、新規装置86台、設置済み基盤管理売上27.62億ユーロ、2027年能力30%増を積み上げている。共同発表のURLはなく、同水準歩留まりや他社の採算は独立確認できない。",
+    "causal_coherence": "高NAを一部層でNXEと二重認定することで量産データを得て、装置販売から稼働・更新・工程ノウハウへ競争軸が移り、輸出許可と能力配分が顧客の導入余地を制約する流れが明瞭である。",
+    "counterevidence": "ASMLの能力増強が全顧客への供給保証ではないこと、高NAの適用がPanther Lakeの一部層に限られること、歩留まり・採算・許可制度の未確定点を示し、装置出荷だけの成功判定を避けている。",
+    "decision_utility": "高NA早期導入、Low-NA延命、High-NAとNXEの二重認定を比べ、Q3決算とCapital Markets Dayで個別歩留まり、設置済み基盤売上、顧客拡大を確認する判断条件を置く。",
+    "dialogue_naturalness": "高NAの量産移行、ASMLと競合ファウンドリーの関係、能力計画、設置後運用を順に確認できるが、ASML・IntelFoundryや定型的な記録句が続き、音声では機械的に聞こえる。",
+    "relation_map_utility": "ASML・Intel・競合ファウンドリー・米国／オランダ当局を提携、供給、競合、規制の4本のcanonical edgeで表し、共同量産と顧客間競争、輸出管理の役割分担を再利用できる。"
+  },
+  "averageScore": 4.428571428571429,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

@@ -979,6 +979,7 @@ def validate_daily_quality(
         shared_quality = deepdive_quality.audit_issue(
             repo_root=repo_root,
             issue_date=issue.isoformat(),
+            include_corpus=False,
             require_rendered_public=True,
             route="daily_quality",
         )

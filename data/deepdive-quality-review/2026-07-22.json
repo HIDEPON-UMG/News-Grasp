@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-22",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-22-DeepDive.md",
+      "sha256": "fe0aa6fb436bb463af7be8098375235787a9760e20c5730f5858ab0ed7c7987d"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-22-DeepDive.md",
+      "sha256": "93d6c6a4f07d4e08b7bfdc75409d441e0b40af74aa364fd06769422baa9ab457"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-22-DeepDive-dialogue.md",
+      "sha256": "34a64d7293ef1b523b42fc52c92d08f70b65b211a1caedac1c7848f6101c6796"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 2
+  },
+  "findings": {
+    "theme_specific_insight": "Gemini 3.6 Flash、3.5 Flash-Lite、3.5 Flash Cyberを、最強モデルの一本化ではなく、品質・大量処理・脆弱性対応を分ける企業ルーターと権限境界の選定軸へ具体化している。",
+    "evidence_depth": "Google公表のGDPval-AAv2 1421対1349、DeepSWE37%対49%、Liteの350 tokens/s、入力0.30ドル・出力2.50ドル、Cyberの限定パイロットを、Vertex AIとClaudeの配布関係も含めて整理している。ベンチマークの第三者再現、Cyberの単価・速度は未確認である。",
+    "causal_coherence": "高品質な司令塔と低単価の大量実行役を分けると完了単価・失敗率を測りやすくなる一方、Cyberは資格・ログ・人間承認を別レーンに要するため、製品階層からrouterと統制面へ進む因果が一貫している。",
+    "counterevidence": "Google自身のベンチマークであること、Liteと通常Flashの製品階層が異なること、Cyberの提供範囲・速度・単価が未確認であることを明示し、数値順位だけで全面採用を勧めていない。",
+    "decision_utility": "3.6への集約、3.6とLiteの役割分担、Cyberの限定防御レーンを比較し、タスク別の完了単価・失敗率・待ち時間、資格・ログ・承認をQ3レビューで確認する実務条件を示す。",
+    "dialogue_naturalness": "新3モデルの役割、Claudeとの基盤競争、ベンチマーク、料金、routerを順に追えるが、Gemini3.6Flashや定型的な記録応答が連続し、対話の自然さは低い。",
+    "relation_map_utility": "Google・Anthropic・企業・政府等の供給関係は読めるが、GoogleとAnthropicの配布と選定競争を表す「協調的競合」がcanonical外で、関係図を安定表示できない。"
+  },
+  "averageScore": 4.142857142857143,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Red"
+}

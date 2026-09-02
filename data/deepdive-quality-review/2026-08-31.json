@@ -1,0 +1,39 @@
+{
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-31-DeepDive.md",
+      "sha256": "09a624ba6858ff6988c64442baec1ffddb1eb1e885507057d661d48b07f228e7"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-31-DeepDive-dialogue.md",
+      "sha256": "41b0494b0b858806586967a2c1113854cd1845886822b2255f7e7be3ba1619cc"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-31-DeepDive.md",
+      "sha256": "4227aeb8e549fdf2a2f0243d194da6521e384c419b3dbf9a0a7a0528f017a2d3"
+    }
+  },
+  "averageScore": 4.428571428571429,
+  "findings": {
+    "causal_coherence": "権利処理は許諾台帳と削除手順、開発ビルドは測定と復旧、12万人導入は教育・権限・ログ、料金変更は超過時の業務影響、共同防衛は通報・復旧担当を要求するという個別の因果を、導入後に戻せる状態という共通軸へ接続している。",
+    "counterevidence": "訴訟の成立や損害額、開発中機能の製品効果、公式事例の他社再現、料金増量の便益、155社の防御効果を断定せず、母数・期間・用途・契約範囲を確認できなければ低リスクへ限定する境界を明示している。",
+    "decision_utility": "低リスク業務から段階導入する案、広く接続して事後統制する案、外部接続を止める案を比較し、法務の許諾台帳、情シスの対応ビルド測定・復旧手順、CISOの通報窓口・初動・復旧担当を9月末と9月14日の期限へ割り当てている。",
+    "dialogue_naturalness": "現行台本は権利処理と開発ビルド、NECの導入規模、料金期限、共同防衛を若手の質問で順に分け、法務・情シス・CISOの担当成果物へ収束する。ClaudeDesktoponAmazonBedrockの連結表現や、change_over_timeで複数材料を一答に詰める硬さは残るが、旧版の欠落発話・生コメント・断片URLはなく、実用的な対談として理解できる。",
+    "evidence_depth": "Yomiuri・Yahoo!・AWS公式ブログ・TechnoEdge・ExaWizardsの公開情報を、提訴・開発中機能・導入人数・25%増と17%減・155社という別の証拠として記録し、訴訟結果、製品版効果、再現性、契約範囲、抑止効果は未確認に残している。見出しや事例中心のため、独立検証済みの実績データの厚みは限定される。",
+    "relation_map_utility": "音楽出版社からAnthropicへの対立、Anthropicから利用者への供給、MicrosoftからWindowsへの供給、OpenAIから署名企業への提携、AWSからNECへの供給、NECから運用への統制をcanonical kindで示し、権利・端末・クラウド・防衛を責任分界として追える。料金変更自体はedgeにないが、6edgeの監査可能性は保たれている。",
+    "theme_specific_insight": "音楽出版社35社の提訴、Windows開発ビルド、NECの12万人導入、Claude Codeの料金条件、155社の共同防衛という異なる材料を、利用主体・接続範囲・契約・停止条件という責任分界の問いへ整理している。"
+  },
+  "issueDate": "2026-08-31",
+  "reviewRoute": "codex_daily_audit",
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "scores": {
+    "causal_coherence": 4,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 4,
+    "evidence_depth": 4,
+    "relation_map_utility": 4,
+    "theme_specific_insight": 5
+  },
+  "status": "Green"
+}

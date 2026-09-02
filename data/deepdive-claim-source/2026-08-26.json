@@ -1,0 +1,16 @@
+{
+  "articleContentSha256": "8c2655b6b3dfe4ffdb60ac9b7cc1771fb30e01621e2d6133e057f4db4a387ba6",
+  "articlePath": "digest/DeepDive/2026-08-26-DeepDive.md",
+  "bindings": [
+    {
+      "claim": "OpenAIは3つの公開モデルでJalapeñoの測定結果を公表した。",
+      "claimId": "jalapeno-three-public-models",
+      "evidence": "Jalapeño’s performance extends across GPT‑OSS 120B, DeepSeek R1, and Kimi K2.5 1T, showing that the architecture works across models developed both inside and outside OpenAI.",
+      "sourceUrl": "https://openai.com/index/jalapeno-first-results/"
+    }
+  ],
+  "issueDate": "2026-08-26",
+  "schemaVersion": "DEEPDIVE_CLAIM_SOURCE_TRANSPORT_V1",
+  "status": "Green",
+  "transportSha256": "3decc8725493dcbea8f243e4cc9485c1081d0c5f6081f0393d4064944a1b642c"
+}

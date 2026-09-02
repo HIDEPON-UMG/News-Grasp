@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-23",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-23-DeepDive.md",
+      "sha256": "1437e6a3cd34be8e14741081b9af6802e75138d75db45c267099a439ded075ba"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-23-DeepDive.md",
+      "sha256": "646c25e648263e8ba3681f477227067624dd264b32fb4db9f23ad2ac953a9846"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-23-DeepDive-dialogue.md",
+      "sha256": "c7d5c73a8574111c531439cccf0d3ddaa946af861354ca1fb4e206319141003a"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "ドル円163円台、4〜5月の11兆7,349億円介入、日銀1.0%とFed3.50〜3.75%を単なる水準比較で終わらせず、介入と追加利上げの順序・役割分担という二正面の判断へ絞っている。",
+    "evidence_depth": "財務省・日本銀行・Federal Reserveの公表値で介入額、政策金利、物価・GDP見通しを積み上げ、163円台の当日値も配置している。一方、163円台のTBS報道はURL取得失敗として明示され、現況値の一次確認には穴が残る。",
+    "causal_coherence": "大規模介入は変動速度を抑えても金利差と原油高が作る円売り基調を反転しにくく、追加利上げは円を支える反面で所得・成長を圧迫するため、介入は時間、金融政策は持続条件を担うという因果が一貫している。",
+    "counterevidence": "介入後に円安が戻った事実、Fedとの2.50〜2.75ポイント差、GDP減速、原油高による所得・投資への副作用を併記し、介入単独・利上げ単独の成功を前提にしていない。未確認の市場報道も確定事項から外している。",
+    "decision_utility": "介入先行、利上げ先行、両者を連続させる三案を財務省・日銀へ割り当て、円相場・原油・基調物価・実質所得を次回会合まで同じ判断表で追う実務軸と、所得悪化時の追加支援条件を示している。",
+    "dialogue_naturalness": "163円台への更新、介入の限界、GDP下押し、次回会合の確認項目を7価値区間で順にたどれるが、若手の確認文が毎回似た『〜のですね』で終わり、先輩のUSD/JPY・長い比較説明も音声の会話感を弱める。",
+    "relation_map_utility": "財務省・日銀・Fed・為替市場の4ノードを、提携・供給・規制のcanonical 3 edgeで役割分担として投影できる。日銀とFedの金利差や原油・物価への経路は図に直接ないため、二正面の全体像を表すには補足説明が必要である。"
+  },
+  "averageScore": 4.428571428571429,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

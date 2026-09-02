@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-03",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-03-DeepDive.md",
+      "sha256": "a5dd519f27327c65a3689faad302f3225a7f70042721da8813bf7be2546503a4"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-03-DeepDive.md",
+      "sha256": "cc0029c85418dcb3c1e75d5e712bef908f72ac0afa21dc293714d5bedd1b5559"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-03-DeepDive-dialogue.md",
+      "sha256": "8922a6722887f2ecdf6042cd9ab4a0c6f49a4168944a543b6c75e75da7f58348"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "AI需要の詰まりをHBM・DRAMだけに閉じず、SK hynixのNAND／パッケージ、Infineonの電力半導体、ガラスコア、光通信、製造装置へ横展開し、性能競争から量産供給網の同時成立へ焦点を移している。",
+    "evidence_depth": "SK hynixの100兆ウォン計画、Infineonの50億ユーロ規模Fab、SEAJの2026年度5兆5,004億円予測、SEMIのWFE・後工程見通し、Samsung Electro-Mechanics／住友化学と住友電工の材料説明を重ねている。Reuters／企業・業界団体資料の違い、量産時期と過剰能力リスクも分けて記録している。",
+    "causal_coherence": "ハイパースケーラー需要がメモリ価格と設備投資を押し、装置・後工程・電力変換・光通信を順に必要にするため、どこか一つが遅れるとGPU増設だけでは出荷できないという供給連鎖が明確である。",
+    "counterevidence": "AI投資が冷えた場合のSK hynix過剰能力、ガラスコアの量産が2027年以降で足元の不足を埋めないこと、単月売上や業界予測だけでは需要持続を確定できないことを示している。",
+    "decision_utility": "メモリ・HBMの短期確保、後工程素材の前倒し契約、電力半導体と光通信を含む全体制約点検を比較し、補助付き拠点の立ち上がり時期と在庫リスクを調達判断へ結びつけている。",
+    "dialogue_naturalness": "前号のHBM制約から周辺供給網、SK hynix、Infineon、ガラスコア、装置予測へ順に掘り下げるが、主体・数値・日付を整理する定型応答とSamsungElectro-Mechanics等の連結表記が続き、会話より確認台帳に近い。",
+    "relation_map_utility": "AI需要を中心にメモリ、電力半導体、後工程素材、光通信、装置をすべて供給edgeで結び、どの節点が量産を止め得るかを再利用できる。canonical kindのみで構成されている。"
+  },
+  "averageScore": 4.571428571428571,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

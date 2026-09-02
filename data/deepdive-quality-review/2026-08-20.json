@@ -1,0 +1,39 @@
+{
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-20-DeepDive.md",
+      "sha256": "9b91e4aa2122dea3663badd2c3827374662d8ba8c477a3956d35b50ec768235a"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-20-DeepDive-dialogue.md",
+      "sha256": "161c05d4b11d16934f404695605dc643fbd3f279a84da14b1b36494a21cd1bcc"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-20-DeepDive.md",
+      "sha256": "65ea5357b6e6891f25a4eee324129f720c727a0c999a06c9cbd59b74ee53f3a1"
+    }
+  },
+  "averageScore": 4.142857142857143,
+  "findings": {
+    "causal_coherence": "出力が物理動作になるほど停止権限と安全評価が必要になり、業務分析では専門家確認、LLM基盤ではライセンス、運行AIでは事故対応へ責任が分かれるという横断因果は明快だが、異分野間の効果量までは示していない。",
+    "counterevidence": "高性能でも説明性・安全機構が弱ければ運行責任に接続できず、現場再現性や量産時責任が未確定であることを示して性能優先論に歯止めを掛ける。一方、導入を遅らせる具体的な反対事例は少ない。",
+    "decision_utility": "性能優先、安全・監視・承認・費用の先行固定、用途別段階導入の三案を示し、停止権限・監査ログ・保守費用・事故対応を同じ表で比較させる。ただし期限は次回更新時点で、合否閾値は粗い。",
+    "dialogue_naturalness": "若手の追加質問と先輩の応答が実際の論点を掘り下げ、物理制御から運用条件へ自然に移る。最後は30秒停止条件を提案する質問で終わるため、旧来の記録定型反復より会話的だが、一部の固有語は読み上げにくい。",
+    "evidence_depth": "WIRED、GameBusiness、MONOistの5領域をタイムラインと確認表へ整理し、物理制御、開発安全、LLM基盤、業務分析、運行AIごとに確認証拠を示す。ただしチャートは各1件の分類で、安全性能や費用の実測比較はない。",
+    "relation_map_utility": "Google DeepMind、OpenAI、NII、OKI、Waymo、導入企業を供給・統制・提携でつなぐ5本がすべてcanonicalで、異なるAI用途を責任主体へ接続する記事の共通軸を公開図から再利用できる。",
+    "theme_specific_insight": "Gemini Robotics 2を入口に、OpenAIの開発安全、LLM-jp-4 33B、OKIの顧客分析、Waymoの運行AIを、性能競争ではなく品質・停止権限・責任・費用の同じ導入条件へ束ねている。"
+  },
+  "issueDate": "2026-08-20",
+  "reviewRoute": "codex_daily_audit",
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "scores": {
+    "causal_coherence": 4,
+    "counterevidence": 4,
+    "decision_utility": 4,
+    "dialogue_naturalness": 4,
+    "evidence_depth": 4,
+    "relation_map_utility": 4,
+    "theme_specific_insight": 5
+  },
+  "status": "Green"
+}

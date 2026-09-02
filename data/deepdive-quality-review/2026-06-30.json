@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-06-30",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-06-30-DeepDive.md",
+      "sha256": "aab7cd7b344185b096d88f5dc55870d96bb54f87ce911a1389abfbd26dc5956e"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-06-30-DeepDive.md",
+      "sha256": "11d66ed623c8d8813785ea43e373b6a2ff669c4fb2eca823a0b5460d89885ffc"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-06-30-DeepDive-dialogue.md",
+      "sha256": "fd8306f64b8a7b18e02b84396dc66dad1e53abd2ceb7d55f3f34959bde085de1"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "USD/JPYの161円90銭付近、日銀1.0%とFed3.50〜3.75%の差、7月2日の雇用統計を、介入の有無ではなく統計前後の政策タイミングを選ぶ再試験として焦点化している。",
+    "evidence_depth": "Barron's・Trading Economicsの為替水準、日銀・Fedの公式金利、BLSの発表予定、財務省の月次実績制度を組み合わせ、6月末の実弾介入額がまだ確認できない点も明示している。",
+    "causal_coherence": "金利差がドル買いを支え、雇用統計がFed期待を動かし、財務省の先制介入・反応介入の効果と持続性を左右するという経路が、価格・政策・次の観測点へつながっている。",
+    "counterevidence": "161円台後半の粘着性を急伸と決めつけず、雇用統計が弱ければドル高の根拠が崩れる可能性、介入額未確認、追加利上げが景気・物価の信頼を損なうリスクを残している。",
+    "decision_utility": "雇用統計前の先制介入、統計後の反応介入、日銀の追加利上げ示唆を比較し、7月2日と7月末会合を判断期限に置く。介入後に金利差の物語が変わるかという評価軸も実務で追跡できる。",
+    "dialogue_naturalness": "161円90銭、金利差、雇用統計前後の介入という記事の骨格を会話で再現しているが、途中でAI導入・業務OS・委任検収の定型的な話へ脱線し、契約通貨を確認する締めが4回反復するため、聞き手にとっては機械的である。",
+    "relation_map_utility": "Fed・日銀・財務省から為替市場への規制、BLSから市場への供給を置き、政策金利・介入・統計の作用点を一枚にしている。全edgeがcanonical kindで、relation構造自体は監査・再利用しやすい。"
+  },
+  "averageScore": 4.571428571428571,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

@@ -1,6 +1,6 @@
 {
   "articlePath": "digest/DeepDive/2026-08-29-DeepDive.md",
-  "articleSha256": "18e7d6d88d2feda903afa935259a9265b80a681f45f590b5d8ceecc67e96a7e8",
+  "articleSha256": "a135742598a67539d9b40454bf6dfc1a0add5a445c469da8ed17ad2a20643ece",
   "claimBindings": [
     {
       "claimId": "abuse-title-02",
@@ -10,24 +10,23 @@
     },
     {
       "claimId": "academy-title-01",
-      "claimSha256": "e0e67be65efe7833d0668b7c50f5ec77c2eab943f1678bfcd993edf75762d9a5",
-      "evidenceSha256": "4f4cf494757970236290f23988ac37be82db8274f70c979cc5d4fce8d1dcf0a7",
-      "sourceUrl": "https://ledge.ai/articles/anthropic_claude_academy"
+      "claimSha256": "a7f8d8f82538628425020c7e2d2fb6a252eeed5bf576954adcbb5ade938c246f",
+      "evidenceSha256": "41046cb4e4a310078a1af951e0065ca5fefffde14139126ec10d754fdd316b4f",
+      "sourceUrl": "https://www.anthropic.com/learn/build-with-claude"
     }
   ],
-  "claimSetSha256": "f61d8bf99cf5e2f72441aae11dcf8f2f2bf560d21e845eec2991b2c1cf8c5e41",
+  "claimSetSha256": "375da3a9bef13abfdc6443262d0291262a4ebf2b57e7fc9fb58f6846e36283b4",
   "issueDate": "2026-08-29",
-  "manifestSha256": "5952638da8c9721c5c4a41b37cb07e4929fe3ad2e0c3912b76ad2eca6da6d2b1",
+  "manifestSha256": "8b20816be7460cad61134e4e4b6f62555c1aed1b26bc18cf0987c9c1dcf2b77e",
   "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V2",
-  "sourceSetSha256": "ec8ce5ee4949b8b22580262637a0186843d42cecfd22094450e61fc467eba1e8",
+  "sourceSetSha256": "aa65aeaa5f10b51a1241590ef2d99cc87414bd08cad599156736a2a73a4b0713",
   "sources": [
     {
-      "contentSha256": "47e0b25b6cfb53383fee6ba768eb994211438f4ab2aba5cbe8bf3af8a6a01b03",
-      "fetchedAt": "2026-08-29T03:52:56.748177+00:00",
+      "contentSha256": "32c6cb3732678e45cdb32b0d1ff765513213a337a726cf29f8c0a4e39c6acf2f",
+      "fetchedAt": "2026-08-31T23:44:55.321443+00:00",
       "finalUrl": "https://ledge.ai/articles/anthropic_claude_academy",
       "httpStatus": 200,
       "locations": [
-        "refs",
         "relations.source",
         "timeline"
       ],
@@ -41,8 +40,8 @@
       "url": "https://ledge.ai/articles/anthropic_claude_academy"
     },
     {
-      "contentSha256": "0662b67dd9b9a6080a9288770021ca1053a776d4350be608079388400f1a2724",
-      "fetchedAt": "2026-08-29T03:52:56.994899+00:00",
+      "contentSha256": "0da214e7c175b585894cab2a00c2aee55882b63f5ea94f50f492b6d8d6c27838",
+      "fetchedAt": "2026-08-31T23:44:55.672782+00:00",
       "finalUrl": "https://news.yahoo.co.jp/expert/articles/d50a58a4ba4c59fb106055d566bbce33c234e1f8",
       "httpStatus": 200,
       "locations": [
@@ -58,6 +57,23 @@
         "selectedTransport": "python_urllib"
       },
       "url": "https://news.yahoo.co.jp/expert/articles/d50a58a4ba4c59fb106055d566bbce33c234e1f8"
+    },
+    {
+      "contentSha256": "305674bb69cb4a1dbe19134a6dff21b1835b04f72e222ef70976c1024d9f4a57",
+      "fetchedAt": "2026-08-31T23:44:56.159026+00:00",
+      "finalUrl": "https://academy.claude.com/collections/build-with-claude",
+      "httpStatus": 200,
+      "locations": [
+        "refs"
+      ],
+      "publicHref": "https://www.anthropic.com/learn/build-with-claude",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://www.anthropic.com/learn/build-with-claude"
     }
   ],
   "status": "Green",

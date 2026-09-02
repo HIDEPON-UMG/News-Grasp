@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-25",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-25-DeepDive.md",
+      "sha256": "26debc4f92998142aa33aacabfd57f3bcbd8149ba2b46a40c015ef3423506355"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-25-DeepDive.md",
+      "sha256": "bd2bdd86aab9d178e4cee56e982bc17023e36a9e23f7e0f3f075eed0b3e8638f"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-25-DeepDive-dialogue.md",
+      "sha256": "3770b48d8e70575425dbc747a945db6e690a67a511547b98ad0e8f0c85039f24"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 2
+  },
+  "findings": {
+    "theme_specific_insight": "Waymoの週次有料乗車10万回から50万回超、提供地域3から11への拡大を踏まえ、次の競争軸を自動運転性能ではなく配車需要・運行責任・顧客接点の所有へ移している。",
+    "evidence_depth": "Waymo公式の乗車回数・都市数とTesla資料の前四半期比ほぼ倍増を並べ、Waymo・Uber提携見直しとTesla慎重化の報道は当事者未確認として分離している。Teslaの絶対走行距離や提携変更の中身は未確認である。",
+    "causal_coherence": "走行規模が広がると車両清掃・充電・遠隔支援・顧客対応が制約になり、配車基盤は需要を面で広げる一方で価格・会員・データの主導権を競合させるという運行から顧客接点への因果が一貫している。",
+    "counterevidence": "Teslaの走行距離とWaymoの乗車回数を同じ尺度で比較せず、報道を未確認のまま扱い、垂直統合の粗利・データ利点と提携の立ち上げ速度・依存リスクを両面提示している。",
+    "decision_utility": "成熟都市の直販、新規都市のUber提携、段階的ハイブリッドを比較し、アプリ・車両管理・顧客サポートの担当変更を都市別に確認する実務条件まで落としている。",
+    "dialogue_naturalness": "未確認報道、Waymoの公式規模、Teslaの比較不能な指標、成熟都市と新規都市の使い分けを追えるが、質問形式と記録定型句が反復し、長いchange_over_time区間が音声で重い。",
+    "relation_map_utility": "Waymo・Uber・Tesla・利用者の競合と供給は大半がcanonicalだが、Waymo―Uberの主導権争いを表す「協調的競合」がcanonical外で、提携の二面性を正確に描けない。"
+  },
+  "averageScore": 4.142857142857143,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Red"
+}

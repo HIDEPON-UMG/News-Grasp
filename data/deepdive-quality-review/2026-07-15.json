@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-15",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-15-DeepDive.md",
+      "sha256": "f3a0ea300a0885763ee97cce5fe367a0fbd54b6ce84d27132fd35b15d85d59f7"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-15-DeepDive.md",
+      "sha256": "bfc32fb3f2078cfc43cc46d89c0a270cba570518db85c4f878e266f2a49e7d2f"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-15-DeepDive-dialogue.md",
+      "sha256": "f1b2dd00515a1fea32fcf9a68c5adffd3b8a24efa86ab2ba89298f389ae078b7"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "WIPOの生成AI特許ファミリー急増とSoftBankの約3,000件首位を、知財ランキングで止めず、OpenAI技術を使う脆弱性診断・パッチ適用を3,000社へ広げる運用責任と成果測定へ転換している。",
+    "evidence_depth": "WIPOの2023年約1.4万件から2025年3.78万件超への増加、SoftBankの約3,000件、中国発明者数、ソフトバンクの3,000社提供、1,000万行当たり潜在脆弱性と高リスク比率を、WIPOと企業発表で積み上げている。WIPOのSoftBank集計と個別特許・サービス機能の対応、誤検知率、修復完了率は確認できず、研究投資を製品優位と断定していない。",
+    "causal_coherence": "特許の量が研究投資と防御線を示しても顧客価値には直結せず、顧客接点、OpenAIの技術、SB OAI Japanの診断からパッチまでの工程をKPIで閉じる必要があるという因果が通っている。検出から安全な修復までの学習が次の知財・運用へ戻る構図も示す。",
+    "counterevidence": "特許帰属と機能対応の未確認、潜在脆弱性の誤検知・再現・修復率の欠落、顧客データとモデル改善の境界、件数だけでは停止時間を減らせない点を具体的に示し、首位を成果の証明にしていない。",
+    "decision_utility": "知財防御、顧客成果KPI、重要インフラに絞った同時検証を比較し、検出からパッチ適用までの時間、受入率、障害、再発率、契約・データ境界を四半期レビューの判断条件に置いている。",
+    "dialogue_naturalness": "特許件数、事業主体、脆弱性指標、診断からパッチへの変化、KPIを順に尋ねる設計は論点を拾うが、引用の長さと「主体・数値・日付を分けて記録」の反復が目立ち、音声では台帳的に聞こえる。",
+    "relation_map_utility": "SoftBankと中国大手の競合、OpenAIからSB OAI Japanへの供給、ソフトバンクとの提携、顧客への供給をcanonical edgeで示し、知財競争と国内実装網を一枚で追える。"
+  },
+  "averageScore": 4.428571428571429,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

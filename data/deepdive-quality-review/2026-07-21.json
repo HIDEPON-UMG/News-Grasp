@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-21",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-21-DeepDive.md",
+      "sha256": "2c53d92183f0d09efa148c9364bf8466baa1e363912d1d49ee5078157718bb3e"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-21-DeepDive.md",
+      "sha256": "6cc3e47db7e7f3b11d1aecafef426fa354c183a4b6b51eacee4196b071a9e580"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-21-DeepDive-dialogue.md",
+      "sha256": "2657f2fa3459b93892eb049d3a4270569c5b7d205497687f991404c70d9e33e4"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "MOIAのハンブルク試乗とApollo Goの320万回・27都市という規模差を、技術性能の優劣ではなく、公共交通・遠隔支援・配車・責任分界を束ねる都市導入モデルの競争へ整理している。",
+    "evidence_depth": "MOIAの有人280台・270平方キロ・毎月数十万人、Apollo Goの完全無人320万回、累計2,200万回超、16都市から27都市への拡大をMOIA・Baidu公表資料で並べている。MOIAの自動運転台数や両方式の同定義KPIは未確認である。",
+    "causal_coherence": "Apollo Goの規模が学習データ・遠隔支援・需要を循環させる一方、MOIAは既存都市交通と制度接続を持つため、車両数ではなく配車・清掃・充電・事故対応を誰が束ねるかが導入成否を決める因果が明確である。",
+    "counterevidence": "試験段階と商用運行、有人台数と自動運転台数、累計乗車の下限値と計画値を同列比較せず、Apollo Goの規模優位を認めながらMOIAの運行実務基盤を別の強みとしている。",
+    "decision_utility": "都市統合型、配車拡大型、限定区域での共通KPI併走を比較し、無人走行率、1台当たり有償乗車、遠隔介入、運休、公共交通からの移行を2026年末まで測る条件を示す。",
+    "dialogue_naturalness": "MOIAの試乗、Apollo Goの規模、都市制度、運行KPIを段階的に確認できるが、ApolloGoや「主体・数値・日付を分けて記録」の反復で、音声は定型台本に聞こえる。",
+    "relation_map_utility": "MOIA・ハンブルク・Apollo Go・Uber・Lyftを提携、規制、競合の5本のcanonical edgeで結び、都市統合型と配車拡大型の違いを図から比較できる。"
+  },
+  "averageScore": 4.428571428571429,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

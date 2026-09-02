@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-08-14",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-14-DeepDive.md",
+      "sha256": "de01f4ecc4f663a5daa144ca504b07c8a8c7607b1a134817e89313f6f4a176cc"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-14-DeepDive.md",
+      "sha256": "79e14ef079f41b45ca9c5fdaff3f3bae6c6148c1fcf4d0f2b0c254ec075fd4d7"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-14-DeepDive-dialogue.md",
+      "sha256": "7f2705914b55ddedcd3efe85e59e4bf8c1f6187be459b0c04cf077de3bdc2303"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 4,
+    "counterevidence": 4,
+    "decision_utility": 4,
+    "dialogue_naturalness": 4,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "SMICの4〜6月期利益3.6倍と中国売上比率90%を起点に、成熟ノードの内需成長と先端ノードの到達度を分けるという問いを、TSMCとBIS規制との比較で具体化している。",
+    "evidence_depth": "HKEXのSMIC決算、TSMC決算、BIS資料を中心に売上、稼働率、中国比率、産業・車載比率を時系列化している。ただし当日の日経記事はURL未取得で、2026年2Qの一部値を一次資料で再確認できない。",
+    "causal_coherence": "中国国産化需要が高稼働を支え、規制が先端装置を制約し、結果として成熟用途と先端AI用途の調達を分けるという因果が、数値推移から調達案へ連続している。",
+    "counterevidence": "TSMCの402億ドル売上・67.7%粗利率を対置し、SMICの当四半期粗利率と稼働率が未確認であること、BIS規制が継続することを明確な反証・限界として残している。",
+    "decision_utility": "SMICへの成熟用途集中、TSMC等との用途別二重調達、追加確認まで変更を待つ三案を並べ、次回四半期に粗利率・稼働率・産業車載比率を見る判断軸を与えている。",
+    "dialogue_naturalness": "7区間はTSMCとの比較からSMICの利益・生産能力・稼働率、中国比率、用途別調達、次回確認期限へ順に進み、先輩は常体、若手は敬体で質問と判断の役割が自然に分かれている。各回答は数字を単に復唱せず、成熟ノードと先端ノードを分ける条件や二重調達へ接続する一方、固定された7区間の問答リズムと記事数値の再提示は残る。",
+    "relation_map_utility": "SMICから中国の設計会社・需要家への供給、SMICとTSMCの競合、BISからSMICへの規制という3辺が、記事の主体・作用方向・条件をそのままcanonical kindで表す。rendererの自動配置でも4ノードに重複・辺交差・第三ノード貫通はなく、短い図で内需・競争・規制の三角関係を確認できるが、用途別の顧客構成や代替工程までは表現しない。"
+  },
+  "averageScore": 4.142857142857143,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

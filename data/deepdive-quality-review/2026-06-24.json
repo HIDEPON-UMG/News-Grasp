@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-06-24",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-06-24-DeepDive.md",
+      "sha256": "2c4e2bf7875731a64ce1b4841504e3783ab448c37a1a7f6240ad9ce892ec0c16"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-06-24-DeepDive.md",
+      "sha256": "4e45a2198200abf4bb7490142f7cb09a923f25e3c8001f71006b052b9b23ff72"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-06-24-DeepDive-dialogue.md",
+      "sha256": "681d60b391040fa30ffdb2a77668971856938a5d85a5b4607c9a5de6a00f509a"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 1,
+    "relation_map_utility": 2
+  },
+  "findings": {
+    "theme_specific_insight": "AnthropicのSeries HとIPO準備を、MicronによるHBM・DRAM・SSDの共同設計・供給・投資へ接続し、モデル価格競争の裏側でメモリが調達品から戦略的な交渉力へ変わる局面として描いている。",
+    "evidence_depth": "MicronのFY2025 Q3からFY2026 Q2の売上、Cloud MemoryとCore Data Center、Anthropicの650億ドル調達・評価額・ランレート売上、S-1提出、戦略契約の範囲を公式発表で積み上げている。供給量・投資額・契約期間は未確認としている。",
+    "causal_coherence": "Anthropicの急拡大がクラウド容量とメモリ帯域の確保を要求し、Micronの共同設計がトークン効率・コスト構造へ入り、複数調達か単一最適化かの交渉力を生むという供給網の経路が明快である。",
+    "counterevidence": "公開情報からAnthropic向け数量や契約期間を補えないこと、単一供給元へ寄せると依存が強まり、複数調達では共同設計効果が薄れることを示している。契約発表を売上効果と同一視していない。",
+    "decision_utility": "Micronへの深い共同設計、Samsung・SK hynixを含む複数調達、クラウド経由の容量契約を比較し、IPO判断とMicron FY2026 Q3決算で供給制約が数字へ出るかを確認する。Compute責任者やクラウドもdeciderに含めている。",
+    "dialogue_naturalness": "冒頭から『背景前回』と本文が壊れ、メモリ供給の説明途中に為替・海外SaaS・契約通貨の助言が挿入される。Cloud Memoryの文も途中で切れ、同一の現場確認問答が2回反復されるため、音声対談として成立しにくい。",
+    "relation_map_utility": "MicronからAnthropicへの供給・出資、メモリ競合との供給、クラウド容量、投資家、SECの関係を配置している。しかしMicronとSamsung・SK hynixのkind『協調的競合』がcanonical registry外で、供給競争の核心を標準監査へ渡せない。"
+  },
+  "averageScore": 4.0,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Red"
+}

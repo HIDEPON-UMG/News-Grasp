@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-18",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-18-DeepDive.md",
+      "sha256": "2cbc9a5c769639a0d4aefeb76879051b63c7fc27da8713084df52f90eb9ebb07"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-18-DeepDive.md",
+      "sha256": "58abd84feba5718aa190e49b2ae37a7c72463e46118d6822449ff3d822353a25"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-18-DeepDive-dialogue.md",
+      "sha256": "dc2b737274c17cdc123efe04bf2d6412346ea5165d008c00475b15dc8e467218"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 2
+  },
+  "findings": {
+    "theme_specific_insight": "大阪メトロのEVバス190台断念をEVの是非ではなく、実証・本番・転用を分離し、検収・保守・撤退基準を契約へ埋め込む公共調達の統治課題として扱っている。",
+    "evidence_depth": "大型115台・小型35台・超小型40台、全車停止、約67億円の特別損失、148台対象の96億円請求、7月17日の段階導入・外部有識者・撤退基準を公式資料と報道で照合している。請求の法的帰結と供給者側の主張は未確定である。",
+    "causal_coherence": "用途の異なる190台を一括で本番化したため事故・検査時に全車停止と損失が同期し、現場の安全懸念が経営判断へ届かなかった統治不全から、段階導入と検収ログ・停止権限が必要になる因果が明快である。",
+    "counterevidence": "供給者は契約解除を認めず運行停止を大阪メトロの判断と主張し、万博期間中は輸送に使われたこと、補助金返還を含む損失であることも示して、発注者の一方的な不具合確定を避けている。",
+    "decision_utility": "少数実証からの段階増車、一括導入、性能連動リースを比べ、安全・稼働率・保守部品・故障ログ・現場停止権を次回稟議へ入れる具体的な撤退条件を示す。",
+    "dialogue_naturalness": "190台の一括調達、調査結果、契約紛争、用途別の合格判定を順に追えるが、EVモーターズ・ジャパンや定型的な記録句が多く、自然な会話より説明台本に近い。",
+    "relation_map_utility": "大阪市の出資と国交省の規制はcanonicalだが、供給者と大阪メトロの納入後紛争を表す「協調的競合」がcanonical外で、契約協力と解除対立の二面性を公開図へ投影できない。"
+  },
+  "averageScore": 4.285714285714286,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Red"
+}

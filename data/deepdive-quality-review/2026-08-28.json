@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-08-28",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-28-DeepDive.md",
+      "sha256": "0dcb12fce130e881ead85115434485c07435ce76c1111b41fe0f067c940b1eac"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-28-DeepDive.md",
+      "sha256": "32c91f341611d01e66c42a09148330bb43a725c844038567eda2af7f0b12967f"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-28-DeepDive-dialogue.md",
+      "sha256": "0639153be1eacba9e5852a6496c9b806507be3eac1ca29517bc175deb386995f"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 5,
+    "counterevidence": 4,
+    "decision_utility": 5,
+    "dialogue_naturalness": 4,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "GPUの確保量ではなくHBM・NAND・装置・量産認定の時計を揃えるという主張が、SK hynixの2029年後半量産とKioxiaの既存棟活用に結び付き、供給網の時間差を具体化している。",
+    "evidence_depth": "SK hynix、Kioxia、JMTBAのタイムライン、40億ドル超・7000人・22%成長・年平均4700億円、受注1931億円の表を組み合わせている。一方、JMTBA値をAI専用としない限界も残る。",
+    "causal_coherence": "AI需要の増加からメモリー・装置の同時増産へ進み、異なる納期がシステム稼働日を遅らせ、既存アジア供給と在庫設計で橋渡しするという因果が一貫している。",
+    "counterevidence": "工作機械受注には自動車なども含まれること、新工場の着工時期が未確定なこと、過剰投資と供給不足の双方を挙げ、一体契約にも価格交渉自由度の低下という反対面を置いている。",
+    "decision_utility": "GPU単独、GPUから先端部材までの一体契約、確定能力に合わせた段階導入を比較し、11月末までにCIO・CFOと投資委員会が利用可能日を基準に再計画する条件が明確である。",
+    "dialogue_naturalness": "GPU発注からシステム稼働日へ視点を切り替え、HBM・NAND・装置・量産認定の時間差を若手の工程表、切替条件の提案へ具体化している。claim-sourceや切断URLの読み上げはなく、11月末の供給制約表と4週間遅延時の段階導入という運用条件まで到達する。一方、最後の若手質問に対する先輩の締めの応答がないため満点ではない。",
+    "relation_map_utility": "SK hynix・Kioxia・装置企業・需要家を供給と競合の5本の辺で表し、供給網の骨格は読める。ただし量産までの時間差を表すノードや辺がなく、主題の時間軸は図から補えない。"
+  },
+  "averageScore": 4.428571428571429,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

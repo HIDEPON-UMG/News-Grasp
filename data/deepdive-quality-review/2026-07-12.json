@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-12",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-12-DeepDive.md",
+      "sha256": "08fbe39d64030e8f0fc896be362ca9c79850f7cb2c252086c306124f29a4a95a"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-12-DeepDive.md",
+      "sha256": "7011416de78c4a0623226de5c376af908a910ef574247cb6e8b5a6ccc4360169"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-12-DeepDive-dialogue.md",
+      "sha256": "8aa799b426b90a5b421686fa19205d6eeaf7acc186cc04153a647520fd61c4fc"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "GPT-5.6のSol・Terra・Lunaという能力階層を、ベンチマークの優劣ではなく、Trusted Access、監視、権限、知財・来歴を含む企業運用の選択単位へ変換している。",
+    "evidence_depth": "OpenAIの三階層の価格・能力、Agents' Last Examのスコア、Trusted Accessとコンテンツ来歴の説明を一つの導入判断へ接続している。ベンチマークの独立再現、企業の実運用データ、権限ポリシーの継続条件は確認できず、公式発表中心の厚みに留まる。",
+    "causal_coherence": "高能力モデルほど高リスク権限と監視を要し、低価格・低能力層は定型業務へ配布しやすいという階層化から、モデル選択、ログ、来歴、撤回責任を一体で設計する因果が通っている。",
+    "counterevidence": "ベンチマーク点差を実務品質へ直結させないこと、Trusted Accessの承認や監視コスト、モデル出力の来歴確認が未確定であることを残し、性能階層だけで導入可否を決めていない。",
+    "decision_utility": "業務リスクに応じて三階層を割り当て、権限・監視・知財確認を導入条件にする設計案を示す。モデル価格、評価値、アクセス制御、監査ログを同じ見直し会議へ持ち込める。",
+    "dialogue_naturalness": "モデル階層、価格、権限、監視、来歴を若手の問いで確認する順序は機能するが、引用を長く読み上げ、同型の確認応答と定型的な記録句が続くため、音声台本の自然さは中程度に留まる。",
+    "relation_map_utility": "OpenAIと競合の競合、各社から企業への供給、Trusted Accessから企業への規制をcanonical edgeで示し、性能選択と高リスク利用制限の接点を再利用できる。"
+  },
+  "averageScore": 4.428571428571429,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

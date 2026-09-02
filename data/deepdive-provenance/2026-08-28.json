@@ -1,41 +1,41 @@
 {
   "articlePath": "digest/DeepDive/2026-08-28-DeepDive.md",
-  "articleSha256": "0f6edef87e5bafb1836258ab25691c6c05417066bfafc955c7af376dac07c1d7",
+  "articleSha256": "0dcb12fce130e881ead85115434485c07435ce76c1111b41fe0f067c940b1eac",
   "claimBindings": [
     {
       "claimId": "jmtba-july-11",
       "claimSha256": "7bac6c84c32820bbbcef213b8ac5b98dd089a6e2296a0fdd5d60a82958c84c97",
-      "evidenceSha256": "4f873a32251e6029e7ff736ca6ef9bfb8158d9f2d74c1c0f27f8e2b1d9196b29",
+      "evidenceSha256": "0e4225e582640232e8debcc1f9302b4b0373d4d28dd1d70e23b8f7c8d50d174b",
       "sourceUrl": "https://www.jmtba.or.jp/statistics/"
     },
     {
       "claimId": "sk-ecosystem-03",
       "claimSha256": "d0ef78fc931b2ae38f734bb1dd484f23a6558416d130450e702181ba427db695",
-      "evidenceSha256": "6c55c2ca4046ed743599808a4bc0ea3d7a4e6097083d5d7334e2cf6f6ae58710",
+      "evidenceSha256": "f25561d56541f9315ab5dd8cb119f26f1f03caad8b90fb49e267c51335168bc8",
       "sourceUrl": "https://news.skhynix.com/en/groundbreaking-ceremony-in-indiana/"
     },
     {
       "claimId": "sk-investment-02",
       "claimSha256": "479c5f7d0a6aa87eab729d95fa0918e72ba5a1ed764dd479c31dd00b230e3985",
-      "evidenceSha256": "33b6bcddca43c595c2d8cad80bf9c8720ca6f2d99eb12f7b04b7543dda561ebb",
+      "evidenceSha256": "b89303a4289f3e22f6bff7090c7883193a7a52238b19672555b86ef05b8c8ca9",
       "sourceUrl": "https://news.skhynix.com/en/groundbreaking-ceremony-in-indiana/"
     },
     {
       "claimId": "sk-production-08",
       "claimSha256": "6a99e6e3c798013e9b36893fc24f18ab44ecdbaeec9e4ed1d6210c42f9800acb",
-      "evidenceSha256": "b76986fba16f22636deda49b9681675449dbc79b6bae0a5bb1b3f127bf333150",
+      "evidenceSha256": "86a63d302dcbe86b9d3379b50482190fbe9ab82edda30888469e8f2d43917b90",
       "sourceUrl": "https://news.skhynix.com/en/groundbreaking-ceremony-in-indiana/"
     }
   ],
-  "claimSetSha256": "a61bcd7521cd9a366126e2b1c1b09b530a867134f4acfbc2adf5713eab4ff2bb",
+  "claimSetSha256": "b71fe4009d1f189087cbd5d4b9f6ef5331baf2522e26cca1e6e5410aca76854c",
   "issueDate": "2026-08-28",
-  "manifestSha256": "e46257d9ecc7057c168ae879df409157ca4431bd244f28ac0efdd7f8b7860a44",
+  "manifestSha256": "092cf83e03124b0fad386d2501548fdcbed8dfa53ddf013ea7e87445f35bf00e",
   "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V2",
-  "sourceSetSha256": "bd9ed70e82da1bb1207ac5168f12e71bacfb489fe1fcbd013793b5d07b037d32",
+  "sourceSetSha256": "3f20f3774bf92a0bab5ba3fd6ad3ee8d748efae2cfd49b9cfc9cbecebf2dcfe6",
   "sources": [
     {
-      "contentSha256": "6fb6b88e411349fd0c4a5a389012ac4c74d9c95b892c76926601e0650199d43c",
-      "fetchedAt": "2026-08-28T02:02:23.615109+00:00",
+      "contentSha256": "ffbd14d2ae0785da5e11c0c57d361381b4b1e74cab1975b18007cbda471c3cf1",
+      "fetchedAt": "2026-08-31T23:41:35.338911+00:00",
       "finalUrl": "https://news.skhynix.com/en/groundbreaking-ceremony-in-indiana/",
       "httpStatus": 200,
       "locations": [
@@ -55,7 +55,7 @@
     },
     {
       "contentSha256": "c6b374d2550e6d63a227bd306432ce9c73af2422f77cc7aa8d1ef97cc7091bcb",
-      "fetchedAt": "2026-08-28T02:02:24.010274+00:00",
+      "fetchedAt": "2026-08-31T23:41:35.755703+00:00",
       "finalUrl": "https://www.jmtba.or.jp/statistics/",
       "httpStatus": 200,
       "locations": [
@@ -74,7 +74,7 @@
     },
     {
       "contentSha256": "fa21c4ef28bae9d4d97eac55b055f1a7855440921f00c1409c7411d5a894e928",
-      "fetchedAt": "2026-08-28T02:02:24.209507+00:00",
+      "fetchedAt": "2026-08-31T23:41:35.975644+00:00",
       "finalUrl": "https://www.jmtba.or.jp/wjmtbap/wp-content/uploads/2026/08/sokuhou2608.pdf",
       "httpStatus": 200,
       "locations": [
@@ -93,7 +93,7 @@
     },
     {
       "contentSha256": "563d98c12053d1784ec2c93baa91facbf315c59511fbc1f85a994835db732227",
-      "fetchedAt": "2026-08-28T02:02:24.433440+00:00",
+      "fetchedAt": "2026-08-31T23:41:36.228808+00:00",
       "finalUrl": "https://www.jmtba.or.jp/wjmtbap/wp-content/uploads/2026/08/syuyoutoukei2606.pdf",
       "httpStatus": 200,
       "locations": [
@@ -111,7 +111,7 @@
     },
     {
       "contentSha256": "22fa8d125012c3e430e5462d1fc61998a11e851df9de6a196d2c0db06324d42b",
-      "fetchedAt": "2026-08-28T02:02:24.673493+00:00",
+      "fetchedAt": "2026-08-31T23:41:36.551300+00:00",
       "finalUrl": "https://www.kioxia-holdings.com/content/dam/kioxia-hd/en-jp/ir/library/event/asset/Investor-Day-2026-Eng-QA.pdf",
       "httpStatus": 200,
       "locations": [

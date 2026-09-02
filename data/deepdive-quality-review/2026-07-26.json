@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-26",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-26-DeepDive.md",
+      "sha256": "9e1c40fdbe95908c1695d98517bf23e91923cee2f8f68e6039c6dd7a1ad77ae3"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-26-DeepDive.md",
+      "sha256": "6613c4927c94c6c3a4828c8b829114fcd91d1cfb7e077cb72705ae8cebab110d"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-26-DeepDive-dialogue.md",
+      "sha256": "fe866b6c76afaef799eba21ae996e9c72950303fa9157b8d59d1ec8d68117e18"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 2
+  },
+  "findings": {
+    "theme_specific_insight": "ドル円163.988円、FOMCと日銀会合の同週開催、11兆7,349億円介入を重ね、164円の水準予想ではなく米金利・日銀判断・介入余地の同時評価へ論点を絞っている。",
+    "evidence_depth": "Fed議事要旨の3.50〜3.75%とPCE3.8%から4.1%、財務省介入額、外為どっとコムの163.988円を組み合わせている。日銀の現行金利は当日記事由来で一次未確認、外為データも相場全体の代表値とは限らない。",
+    "causal_coherence": "米インフレと原油高が利下げを遠ざけ金利差を残し、大規模介入後も高値更新が続くため、短期の速度抑制と中期の物価・金利対応を会合の順序として分ける流れが明快である。",
+    "counterevidence": "上昇幅の鈍化と164円手前での未定着、介入の即効性と持続性の差、PCE推計値、会合が据え置きでも声明で反応が変わる可能性を示し、水準突破を既定路線にしていない。",
+    "decision_utility": "財務省の先行介入、日銀の見通し提示、両者の連続運用を比較し、7月29日FOMCと7月31日日銀会合で金利差縮小の説明を確認する具体的な期限を置いている。",
+    "dialogue_naturalness": "163.23円から163.988円への推移、PCE、介入の限界、会合の確認点を順番に追えるが、七区間の説明テンプレートと「主体・数値・日付」の反復が自然な対談を抑える。",
+    "relation_map_utility": "Fed・日銀・財務省・市場・家計の向きは主題に対応するが、金融政策、介入、波及の4 edgeがすべて現行canonical外で、政策から実体経済への流れを公開図へ投影できない。"
+  },
+  "averageScore": 4.142857142857143,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Red"
+}

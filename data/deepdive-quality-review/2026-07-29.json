@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-29",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-29-DeepDive.md",
+      "sha256": "28d41b8539250d2e9300471f2de972724ee9d885b4400b8fe17244616b78b5fb"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-29-DeepDive.md",
+      "sha256": "78099bdb712ce3c92f3f311f6b116ffa55c3a3fe5eeae069af7f2b5fb2ada0e6"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-29-DeepDive-dialogue.md",
+      "sha256": "9ac5d135b3f2efc0c50e7bde0fcfe88ddee808a05f23d92b5d8947864220ff90"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "Aishengnaの国産液浸DUV製造開始報道を、納入台数の国産化ニュースで止めず、重ね合わせ精度・歩留まり・稼働率・保守という量産適格性の分岐点へ焦点化している。",
+    "evidence_depth": "Reuters報道の年内納入・2026年約5台目標と、ASMLのDUV販売396台から279台、研究開発費40億から47億ユーロ、オランダ・BISの規制を組み合わせている。Aishengnaの事業内容、各顧客の納入・性能は当事者未確認である。",
+    "causal_coherence": "輸出許可・装置規制が調達と保守の予見性を下げて代替需要を生み、国産機の採用は成熟工程から始まり、顧客工場での精度・歩留まり・保守実績が供給網転換を決めるという因果が通っている。",
+    "counterevidence": "ASMLの販売台数減を中国代替の証拠とせず、国産機の製造開始と量産適格性を分け、追加試験・当事者未回答・既存ASMLの保守ノウハウを明記している。",
+    "decision_utility": "成熟工程の限定導入、ASML主軸の評価ライン、二重化を比較し、初号機の稼働率、重ね合わせ精度、保守時間を工程別に測ってから2027年の台数目標を評価する手順を示している。",
+    "dialogue_naturalness": "未確認報道、規制、追加試験、ASMLの台数と研究開発費、工程別認定を追跡できるが、AishengnaやASMLの英語表記と定型句、長い差分説明が会話の自然さを損ねる。",
+    "relation_map_utility": "Aishengna・ASML・中国半導体3社・オランダ政府・BISの供給・競合・規制を5本のcanonical edgeで整理し、国産代替と既存保守の二重運用を考える土台を提供している。"
+  },
+  "averageScore": 4.428571428571429,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

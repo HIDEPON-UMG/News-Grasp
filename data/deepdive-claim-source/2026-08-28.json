@@ -1,5 +1,5 @@
 {
-  "articleContentSha256": "d9db96ae38d7ae60a4502e0455a87d3121427f9dfc158dee7dc4a7d08d8005db",
+  "articleContentSha256": "c072f1dc72b8866a2098932dc6cc09af65e241f3265a1b90f8e9aae21573b3e7",
   "articlePath": "digest/DeepDive/2026-08-28-DeepDive.md",
   "bindings": [
     {
@@ -30,5 +30,5 @@
   "issueDate": "2026-08-28",
   "schemaVersion": "DEEPDIVE_CLAIM_SOURCE_TRANSPORT_V1",
   "status": "Green",
-  "transportSha256": "1fcd9770eb21e1c2a204599df4c7e930644fb887065825a9c3deb4e3102ff7bb"
+  "transportSha256": "59eac370f9079040bafff1346e3e56430081802664445eb0156563b745d3c027"
 }

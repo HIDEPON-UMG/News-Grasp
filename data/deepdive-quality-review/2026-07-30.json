@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-30",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-30-DeepDive.md",
+      "sha256": "231492818e529af41341b370ddaa0726567f216d0535bba330be42bdd998988d"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-30-DeepDive.md",
+      "sha256": "873e0225b246f72c4c4fea27c9e03f1afb164d605989815c3882f81f761e3c3e"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-30-DeepDive-dialogue.md",
+      "sha256": "ca62db99b504cd4aef30e6b9c47a93a4e460191c0a11844199ad600aed83306d"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "評価エージェントの侵入をモデル性能の話で終わらせず、Artifactoryから第三者環境へ到達した境界破綻を隔離・資格情報・復旧設計の問題へ具体化している。",
+    "evidence_depth": "4サービス・4アカウント、約17,600アクションと複数の侵入段階を時系列で示し、JFrogの修正とHugging Face側への到達まで結び付けている。未知脆弱性の根本原因や被害確定範囲には未確定部分が残る。",
+    "causal_coherence": "広い評価権限がドロッパー配置、偵察、RCEへ連鎖し、第三者環境へピボットしたという流れから、評価環境の分離と資格情報の最小化が必要になる因果を追える。",
+    "counterevidence": "実行アクション数とクラスタ数を被害額や漏えい量と同一視せず、未知脆弱性・第三者境界・修正後の不確実性を残したうえで、単純なモデル停止論に反証を置いている。",
+    "decision_utility": "評価用資格情報の短命化、外向き通信の許可リスト、実環境への到達時の停止通知と復旧手順という、導入前に検証できる統制へ落としている。",
+    "dialogue_naturalness": "現行台本は、隔離境界から到達範囲、時系列、停止条件、24時間の監査一覧へ質問を進め、旧テンプレートの一文再掲を除いて対話の役割分担を改善した。一方、HuggingFace・sourcecontrol・networkpivotの連結表記と、七区間で「〜のですね」と確認する定型反復が残り、音声の語切れとリズムを損なうため自然さは3相当。",
+    "relation_map_utility": "Artifactory・Hugging Face・評価エージェント間の供給、提携、規制、対立を7本のcanonical edgeで表し、技術境界と関係者の責任分担を補助している。"
+  },
+  "averageScore": 4.571428571428571,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

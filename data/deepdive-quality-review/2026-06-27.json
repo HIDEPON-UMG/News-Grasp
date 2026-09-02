@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-06-27",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-06-27-DeepDive.md",
+      "sha256": "bfe43e7f63eaf3d0b19d33cfbb8400950bdde052657f7ec06066a8faed4a34e6"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-06-27-DeepDive.md",
+      "sha256": "c5e572988ca8c537bcc8d6759a2341fb715ea068f7f802210d6ee1d9ef66f5b1"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-06-27-DeepDive-dialogue.md",
+      "sha256": "c335b50cb83b9d9153f9a32ea84bfec45aa96f855f22d76fdcca25c0308fa56c"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 1,
+    "relation_map_utility": 2
+  },
+  "findings": {
+    "theme_specific_insight": "WP.29のレベル3・4基準、Waymoの乗車実績、Uber・Nuro・LucidのHouston計画を、車両性能の競争から安全証明を伴う複製可能な運行網の競争へ移る材料として結んでいる。",
+    "evidence_depth": "国土交通省の基準合意、Waymoの15百万回超と週100万回目標、UberのHouston拠点・約100台の検証、最低35,000台計画を、各社・当局の一次発表に分けて記録している。計画台数と実運用実績を同じ確定値として扱っていない。",
+    "causal_coherence": "認証が組織体制・記録・不具合改善まで要求し、Uberの配車、Nuroの運転AI、Lucidの車両、拠点・整備を分業する設計へ波及する因果が明瞭である。基準発効と商用投入が重なることで制度対応が事業設計になる点も追えている。",
+    "counterevidence": "Waymoの安全主張とUber陣営の大規模計画をそのまま成功とせず、都市ごとの認証、充電、整備、異常時対応の複製可能性が未検証であることを残している。実績と目標の差も明示されている。",
+    "decision_utility": "垂直統合、配車網を中心とした外部連携、日本勢の限定ODDからの展開を比較し、2027年基準発効、Houston投入、監査証跡、都市拠点という確認期限を決めている。運行責任者と規制当局の分岐が読み取りやすい。",
+    "dialogue_naturalness": "WP.29、Houston、Waymoの内容自体は拾うが、冒頭の『背景前回』や為替・契約通貨への逸脱で聞き手の焦点が揺れる。終盤に同じ現場確認の問答を4回繰り返し、自動運転の対談としての抑揚と結論を失っている。",
+    "relation_map_utility": "WP.29からUber・Nuroへの規制、LucidからUberへの供給、Nuroとの提携、Waymoとの競合を配置し、基準・車両・運行網の役割分担を示している。ただしWaymoからWP.29へのkind『対比』がcanonical registry外で、図の監査可能性が崩れる。"
+  },
+  "averageScore": 4.0,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Red"
+}

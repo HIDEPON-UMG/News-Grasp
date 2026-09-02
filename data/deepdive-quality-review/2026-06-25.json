@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-06-25",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-06-25-DeepDive.md",
+      "sha256": "5e75e2ace394d31c102468f24807c30fc674cc686065c7efe2bb964c1157333d"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-06-25-DeepDive.md",
+      "sha256": "ee0d614df68edcb0dc60f96943ecf416f66a4a83ed8a83a6adf899743106492f"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-06-25-DeepDive-dialogue.md",
+      "sha256": "6851b362716da81147334596019f415debadbd0749a4e976159d65ec1a6faa42"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 4,
+    "counterevidence": 4,
+    "decision_utility": 4,
+    "dialogue_naturalness": 1,
+    "relation_map_utility": 2
+  },
+  "findings": {
+    "theme_specific_insight": "OpenAIの推論チップ、ASEの後工程、自動運転規則、政府投資、PSN・Steamの配信面を、製品性能ではなく公開ルールと供給線が収益化の順番を決めるという一つの主題へ束ねている。",
+    "evidence_depth": "Jalapeñoの展開、ASEの15工場計画、タングステン制約、WP29とWaymoの安全情報、370兆円の投資工程表を複数カテゴリの資料で支えている。一方、ImpressやFNNなど二次報道も混じり、GW・マイル・兆円・工場数を並べた規模感は比較値ではないと明記しているため、全件を同じ確度の一次証拠とは扱えない。",
+    "causal_coherence": "推論チップから後工程・材料へ、規則から検証可能性へ、配信面から課金へという複数の経路を、商品発売前のボトルネックとして説明している。ただしAI、モビリティ、製造、経済、ゲームを横断するため、個別産業の因果は方向性の提示にとどまる部分がある。",
+    "counterevidence": "単位の異なる指標を直接比較しないこと、量産計画が材料制約で止まり得ること、認証・配信ルールが実装段階で変わることを残している。発表から実行速度や各社の収益効果を断定せず、次に検証すべき点を分離している。",
+    "decision_utility": "自社シリコン、後工程・代替調達、規制・補助・配信ルールという三つの選択肢を、量産進捗、認証実装、材料在庫、課金・審査の次回確認点へ接続している。領域が広いため、単一企業が全選択肢を同時に実行する優先順位までは絞り切っていない。",
+    "dialogue_naturalness": "冒頭で『背景今日は』と本文を接続し、AI・製造・自動運転の話の途中に為替や海外SaaS費用の助言を挿入している。最後の契約通貨の問答が4回そのまま反復され、日付固有の論点を聞き手へ自然に運ぶ対談になっていない。",
+    "relation_map_utility": "AIチップから後工程・材料・政策・規則・配信面までの経路を可視化し、横断テーマの意図は伝わる。しかしedgeのkindが『制約』『政策』『制度』『収益化』で、canonical registryの供給・規制・提携等に収まらず、関係の監査と下流利用を阻害する。"
+  },
+  "averageScore": 3.4285714285714284,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Red"
+}

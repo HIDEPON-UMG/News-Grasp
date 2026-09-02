@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-09-02",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-09-02-DeepDive.md",
+      "sha256": "8ca672f78cb4c67a0c6d199b9faeb45c3d17eec0152976427ac45a3d35bc897f"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-09-02-DeepDive.md",
+      "sha256": "85bd0df8caa57ccee06dda9372e17fe51cdafd98ccaca88aed445ae8ab71056e"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-09-02-DeepDive-dialogue.md",
+      "sha256": "61effdda61f3387f2e38eccf1c86e23e73bdfd28a22798580e6787fd153b171b"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 5,
+    "relation_map_utility": 5
+  },
+  "findings": {
+    "theme_specific_insight": "ローカルLLM、為替、移動サービス、製造現場を確認条件という共通軸で結び、分野ごとの差も残した。",
+    "evidence_depth": "4件の当日URLをclaim-sourceと本文根拠へ束ね、実取得provenanceで再確認する構成にした。",
+    "causal_coherence": "公開日・本文・影響・条件・停止という順序で、見出しから判断までの段差を整理した。",
+    "counterevidence": "将来の普及、収益、性能、価格、運行実績、経済効果は当日材料だけでは断定できないと明記した。",
+    "decision_utility": "9月3日までのURL・更新主体・確認担当・停止条件の一覧化へ、記事の読後行動を落とし込んだ。",
+    "dialogue_naturalness": "先輩の常体と若手の敬体を保ち、7価値区間へ14件の異なるsource根拠を割り当てた。",
+    "relation_map_utility": "公開情報、本文照合、現場運用、利用者・地域、判断責任の5ノードを6本の意味付き線で結んだ。"
+  },
+  "averageScore": 5.0,
+  "reviewRoute": "production_generation",
+  "status": "Green"
+}

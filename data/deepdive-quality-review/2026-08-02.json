@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-08-02",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-02-DeepDive.md",
+      "sha256": "137b3d21f9212a93150007fb53d6d217d491af9f50b47af9dddd13051d8f7144"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-02-DeepDive.md",
+      "sha256": "069f7193a6cc12705705f4640ef4c10a600cc19f756f5594dfdb0010a67dcb72"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-02-DeepDive-dialogue.md",
+      "sha256": "1a34f407de4665bdb346297132d0c843ce2a3a273c6fcdd852b7a5cf3490d5c6"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 4,
+    "dialogue_naturalness": 4,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "ドイツの7月HICP再加速を一律のインフレ再燃と扱わず、エネルギー主導のヘッドラインと粘着的なサービス価格を分け、政策配分の再点検へ焦点を絞っている。",
+    "evidence_depth": "HICP2.8%対2.4%、エネルギー7.3%、食品1.3%、サービス3.3%、ECB預金金利2.25%、Bundesbankの2026年2.9%・2027年2.7%・2028年1.9%予測を一つの論証に配置している。速報値と予測値の性格の差は残る。",
+    "causal_coherence": "エネルギー価格の押し上げが総合指数を動かし、サービスの粘着性が利下げ余地を狭めるため、広範な需要刺激ではなく家計・企業を対象にした支援へ配分を変えるという因果が明確である。",
+    "counterevidence": "HICPのウェイト、エネルギー要因の一時性、ECBと国内予測の時間差を示し、単月の2.8%だけで政策転換を決めない慎重さを保っている。",
+    "decision_utility": "低所得層へのエネルギー支援、企業の省エネ投資、賃金・サービス価格の監視を分け、利下げ期待と財政支援を同時に判断する材料を提供している。",
+    "dialogue_naturalness": "現行台本は、HICP内訳、ECB、Bundesbank見通し、連鎖指数の限界、波及指標、8月19日確報の発火条件へ会話を段階化し、数字と留保を応答内でつないでいる。固有語の連結や旧テンプレートの一文再掲はなく、若手の確認文は同型の語尾が続くものの会話として追いやすいため自然さは4相当。",
+    "relation_map_utility": "エネルギー供給、企業・家計、ECB、ドイツ政府の供給・対立・提携・規制を7本のcanonical edgeで示し、物価から政策への伝播を補助している。"
+  },
+  "averageScore": 4.571428571428571,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

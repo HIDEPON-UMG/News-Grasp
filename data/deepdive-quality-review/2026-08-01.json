@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-08-01",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-01-DeepDive.md",
+      "sha256": "c0c376d45294fb2fac4ef7986f14943fe462872b7454f11cb9b45f9c94d9380a"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-01-DeepDive.md",
+      "sha256": "14a5ff5f2859cd55bd4ca38510a818c264f3afa1c490f773d56d438acb457e29"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-01-DeepDive-dialogue.md",
+      "sha256": "7472d0fab0b9262c7bc4d33d0bd53a11c1a7b70b88d698456b055c7026e9bc27"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 5,
+    "counterevidence": 4,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "RACCOの199.5万円という入口価格を単なる値下げニュースにせず、補助金後の実負担、航続距離、販売台数、購入後のサービス信頼が競争を分ける論点へ展開している。",
+    "evidence_depth": "2026年7月28日の発売、210km・320kmの航続距離、2025年登録3,742台・前年比68%増と月次42台から322台、156台への変動を使っている。補助金の適用条件と登録台数の定義は読者が別途確認すべきである。",
+    "causal_coherence": "補助金込みの低価格が試乗・購入の入口を広げる一方、充電網と販売後の保守対応が継続利用とブランド信頼を左右するという価格から定着までの因果がつながっている。",
+    "counterevidence": "航続距離の二仕様、補助金依存、月次登録の小さな母数、国内メーカーとのサービス網の差を併記し、単価だけでEV普及が決まるという見方を抑えている。",
+    "decision_utility": "都市内短距離か長距離かで仕様を分け、補助金後価格だけでなく充電時間、保証、部品供給、残価を比較する購入・法人導入のチェック項目を示している。",
+    "dialogue_naturalness": "現行台本は、発売価格、登録基盤、保守、航続距離、月次変動、30日運用表へ質問を段階化し、旧テンプレートの比較文を除いた。一方、BYDAutoJapanの連結表記と各区間の確認定型句が残り、販売判断の具体性は増したものの音声の自然さは3相当。",
+    "relation_map_utility": "BYD Auto Japan、国内メーカー、購入者、充電・サービス網を投資、競合、供給の4本で結び、価格競争が販売後の供給能力へ波及する構図を補助している。"
+  },
+  "averageScore": 4.285714285714286,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

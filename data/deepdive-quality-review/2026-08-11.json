@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-08-11",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-11-DeepDive.md",
+      "sha256": "db6fbe2866723b4337680e45a0e97401320c4e564f87344c271a151de275855e"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-11-DeepDive.md",
+      "sha256": "396cbfb88a7f283d390afd608cc091e60ce494f59c4fcaac2e1f4826ec16da69"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-11-DeepDive-dialogue.md",
+      "sha256": "638292827ce773da035370c7fef1d13141d6f7e228b4c912dfbda051feafa4da"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 4,
+    "decision_utility": 4,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "TSMCの7月最高売上を出発点に、Samsung・BroadcomのHBM／2nm／先端実装契約とNVIDIAの工場AIを並べ、プロセス単体ではなく量産エコシステムの競争へ焦点を移している。",
+    "evidence_depth": "TSMC公式月次売上、Samsung発表、NVIDIA資料を使い、7月4675.8億台湾ドル、累計37.0%増、協業見込み2000億ドル超、cuLitho20〜50%改善、cuEST平均50倍を表と推移で追える。協業見込みと実出荷・歩留まりを区別している。",
+    "causal_coherence": "AI需要が月次売上へ現れ、NVIDIAの計算資産が露光・工程制御・検査へ戻り、SamsungはBroadcomとメモリーから実装までを束ねるという異なる統合経路を、供給能力の差へ連続して説明している。",
+    "counterevidence": "TSMC売上の2月低下と6月前年比急伸、Samsung・Broadcomの将来協業、量産時期・歩留まり・実出荷の未確認を分離し、契約額やノード名だけで供給力を決めない境界を置いている。",
+    "decision_utility": "TSMC集中、Samsung一体契約、製品世代別分散の三案を年内契約更新へ結び、歩留まり・納期・工程変更時間・設計移植費を同じ比較表で見る判断軸を示す。実数の閾値までは未設定である。",
+    "dialogue_naturalness": "現行対談は売上、契約、工程改善、2nm比較、推移、調達条件へ順に掘り下げ、最後に担当と停止条件を確認する。説明末尾の定型的な受け答えと「SamsungElectronics」の空白欠落が残り、自然さは中程度である。",
+    "relation_map_utility": "TSMC↔Samsungの競合、NVIDIA→TSMCの工場AI提携、Samsung→Broadcomの一体供給提携をcanonical kindで分け、ノード4・エッジ3を交差なく配置している。線は少ないが本文の三者構図を過不足なく示す。"
+  },
+  "averageScore": 4.285714285714286,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

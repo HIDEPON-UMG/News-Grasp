@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-10",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-10-DeepDive.md",
+      "sha256": "4120a6cd3068e5f37d9944c00ff50813013aba6d661bfaead6dd95e10c658bf4"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-10-DeepDive.md",
+      "sha256": "bcb10b8b940b480a4c26a64f9844fc51b4a0c4f6d564b8eddb6369e5be97525b"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-10-DeepDive-dialogue.md",
+      "sha256": "145d7386e816ff77210ef4a39e737ec8fa48a35a5ccca8466c61d0fa44d38dc6"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 2
+  },
+  "findings": {
+    "theme_specific_insight": "ECBの25bp再利上げと3.0%の2026年インフレ見通しを、欧州固有の物価対応に閉じず、Fedの次回判断、円安、JGB、日銀・財務省の防衛余地を同時に狭める外圧として読んでいる。",
+    "evidence_depth": "ECBの政策判断とインフレ見通し、Fedの会合日程、日銀の為替資料、財務省のJGB情報を組み合わせ、欧州金利から日本市場へ伝わる材料を日付付きで置いている。直近の為替水準、介入額、エネルギー価格の寄与分解は不足し、外圧の大きさは定量化し切れていない。",
+    "causal_coherence": "エネルギー起点の物価圧力がECBの利上げを通じて海外金利を押し上げ、円安・債券安が日銀の正常化と財務省の円防衛を同時に迫るという経路を保っている。Fedが未決定であることも連鎖の不確実性として扱う。",
+    "counterevidence": "ECBのショックが一時的な可能性、Fedの政策差、日銀の独立性、為替介入の持続性とJGB需給を別々の制約として示し、欧州利上げが機械的に円防衛を決めるとはしていない。",
+    "decision_utility": "日銀利上げ、財務省の介入、政策協調を比べ、ECB・Fedの金利差、USD/JPY、JGB入札、輸入物価を観測する条件を置いている。円防衛の選択肢を海外の決定日と国内の市場指標へ結びつけられる。",
+    "dialogue_naturalness": "ECB、Fed、日銀、財務省、JGBの順に主体と制約を問い直す構成は追いやすいが、引用文の反復と「主体・数値・日付を分けて記録」の定型応答が多く、音声対談としては機械的である。",
+    "relation_map_utility": "ECB・Fedから市場、さらに日銀・財務省へ圧力を示す骨格は有用だが、財務省と日銀のedge kind「協調的競合」は共有canonical registry外であり、関係図をそのまま機械描画・監査へ渡せない。"
+  },
+  "averageScore": 4.142857142857143,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Red"
+}

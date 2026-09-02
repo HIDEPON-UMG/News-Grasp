@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-08-08",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-08-DeepDive.md",
+      "sha256": "c6db050559218305ea54de6416a0961aca87483e3748aeccc5787e550075f412"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-08-DeepDive.md",
+      "sha256": "4c1ac4565af2878f754336b9c5743a4b4b33aa3d6654af03494cb29cc7b3fa22"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-08-DeepDive-dialogue.md",
+      "sha256": "f517b25e24c81c6bbfef4790654bfdb499ff2edde7582fe4ead1f91cc538851a"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 4,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "中国国内の販売減速とEV輸出120%超増を起点に、完成車の安さを電池・垂直統合・関税・工場・雇用の現地化競争へ展開し、日本勢の三つの対応を市場条件へ割り当てている。",
+    "evidence_depth": "IEAとジェトロのリンク付き材料から、中国でICE以下となるBEV比率、4新興国の中国輸入比率・価格差、タイとインドネシアの国産化条件を時系列・表へ落としている。概数や取得資料で未確認の条件も明示し、数字の追跡範囲を限定している。",
+    "causal_coherence": "中国の垂直統合と車種競争が低価格を生み輸出を押し上げ、受入国の免税が国内生産義務へ接続し、現地調達・充電網の条件が日本勢のBEV・HV・協業選択を分ける流れが途切れない。",
+    "counterevidence": "低価格だけでは充電網・現地調達・雇用に届かず、HVは既存保守網を活かせる一方でEV誘導市場を逃し、現地協業ではソフトウェア・電池・顧客データの主導権を分ける必要があると具体的に示している。",
+    "decision_utility": "低価格BEV、HVと保守網、現地企業との共同開発・生産を三案として比較し、充電網・政策期限・供給網を単位に市場を三分するため、下期の商品計画と投資審査へ直接使える。",
+    "dialogue_naturalness": "現行台本は輸出、現地政策、日本勢の相手、価格推移、事業構造、担当別の確認を7区間で自然な順序に置くが、先輩の説明と若手の「〜のですね」確認が反復し、音声の間合いは均質である。",
+    "relation_map_utility": "中国勢と日本・韓国勢の競合、中国勢と現地供給網の提携、既存勢の供給、政府から両陣営への規制をcanonical kindで結び、ノード4・エッジ5の作用方向を交差なく読める。"
+  },
+  "averageScore": 4.428571428571429,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

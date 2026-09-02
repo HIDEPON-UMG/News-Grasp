@@ -1,41 +1,59 @@
 {
   "articlePath": "digest/DeepDive/2026-08-27-DeepDive.md",
-  "articleSha256": "5d90f2896e66fc7f5da07a280f9f3826df787385c9a5363fe8ca2f14fdd3b5ea",
+  "articleSha256": "decf5920bbcbcc36eca4f2e3cab991e7df0d6b00d62c702155603db9352912cc",
   "claimBindings": [
     {
       "claimId": "claim-001",
       "claimSha256": "1ad23e1e6b7463bc10af05121e4d39e5902a2cd7667c64e4e65c2e2949ba26a8",
-      "evidenceSha256": "332cbef69a27fa0bad4c058c1e17de86123e3f9194444d8a507c8cac9b114b9b",
+      "evidenceSha256": "350a3da16ff7516226da35d7a68894ee4b8a018106437000b11eda5fafa94d1e",
       "sourceUrl": "https://www.bea.gov/news/2026/gdp-second-estimate-and-corporate-profits-2nd-quarter-2026"
     },
     {
       "claimId": "claim-002",
       "claimSha256": "8a83a814e8b424f2cef85a3ecf35ed785cdfcf3df05b4c09dc91b0840873e736",
-      "evidenceSha256": "1c0b51b6ddb6097a684c53f949109bf61ea99eb9daa9894baa1eeffd25847727",
+      "evidenceSha256": "dd2e4ab8c504d015445b000ed7fca060062ded344b5938872ac6b119f8130dcb",
       "sourceUrl": "https://www.bea.gov/news/2026/gdp-second-estimate-and-corporate-profits-2nd-quarter-2026"
     },
     {
       "claimId": "claim-003",
       "claimSha256": "cfe8e53e1d7e08763c8c749293935356afe65737b92ed82c97dcdaa5b96bab7d",
-      "evidenceSha256": "421e4019578344c6c3255aeb8e3aed52087dbe04a81e66364090fa5d56308b1e",
+      "evidenceSha256": "fe1b41ffc6b1c328659b7742c15a784cbdf3c63b91932d5db8646396b6e52bf0",
       "sourceUrl": "https://www.bea.gov/news/2026/personal-income-and-outlays-july-2026"
     },
     {
       "claimId": "claim-004",
       "claimSha256": "ae5fa47166a83146c25ccdac8ef14c314556436908049b4a91b18a09e83b095e",
-      "evidenceSha256": "db8108f628a918e352483ad747bfb0f3fab4e126768bf1846fd6dc4cc6630714",
+      "evidenceSha256": "0495b984852ca4de2c0bbc6cff24b4c3581782e036e789790b33a3486fd14e81",
       "sourceUrl": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260729a.htm"
     }
   ],
-  "claimSetSha256": "1943ae1e60787786453fdda4dcc75cccfe9aa1421153db51d2219efa5a992deb",
+  "claimSetSha256": "fa8cd2d9ab798eb151361d37d13420d7d09b9ce066a41094cf208a606855fda3",
   "issueDate": "2026-08-27",
-  "manifestSha256": "1ea0635d83fb26a4a104c06af616a2267a7ba8fa56216e49d1f7ad00f23071d7",
+  "manifestSha256": "7a325a5d6f153a60775d41c0fa3453db12e2fae11de6175201f513a94bdcd1d0",
   "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V2",
-  "sourceSetSha256": "14c6265aeb68ea0b383235792a471f5f5adabce6819cab44ecf0be210a34f4e2",
+  "sourceSetSha256": "eb770eba40d20f4b350b5a7efcc5bb54620a92b5f7dde52a300a56e52035cca6",
   "sources": [
     {
+      "contentSha256": "c103af66e28acc9945d4fbd0803fc6b08ac2c48420a169362aa9562ef3e653ba",
+      "fetchedAt": "2026-08-31T23:47:50.367427+00:00",
+      "finalUrl": "https://api.bls.gov/publicAPI/v2/timeseries/data/CUSR0000SA0?startyear=2026&endyear=2026",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://api.bls.gov/publicAPI/v2/timeseries/data/CUSR0000SA0?startyear=2026&endyear=2026",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://api.bls.gov/publicAPI/v2/timeseries/data/CUSR0000SA0?startyear=2026&endyear=2026"
+    },
+    {
       "contentSha256": "2a0afce2c96c4ba383d382de93747e5b5da7d49f8fff923cda089285184b185e",
-      "fetchedAt": "2026-08-27T02:49:37.536184+00:00",
+      "fetchedAt": "2026-08-31T23:47:51.536224+00:00",
       "finalUrl": "https://www.bea.gov/news/2026/gdp-second-estimate-and-corporate-profits-2nd-quarter-2026",
       "httpStatus": 200,
       "locations": [
@@ -46,11 +64,17 @@
         "timeline"
       ],
       "publicHref": "https://www.bea.gov/news/2026/gdp-second-estimate-and-corporate-profits-2nd-quarter-2026",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
       "url": "https://www.bea.gov/news/2026/gdp-second-estimate-and-corporate-profits-2nd-quarter-2026"
     },
     {
       "contentSha256": "131a34937193d5631ac80c606ab233febeb7cbbb267ac6ccdaf9a091a9fee9f7",
-      "fetchedAt": "2026-08-27T02:49:38.999570+00:00",
+      "fetchedAt": "2026-08-31T23:47:52.645321+00:00",
       "finalUrl": "https://www.bea.gov/news/2026/personal-income-and-outlays-july-2026",
       "httpStatus": 200,
       "locations": [
@@ -60,23 +84,17 @@
         "timeline"
       ],
       "publicHref": "https://www.bea.gov/news/2026/personal-income-and-outlays-july-2026",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
       "url": "https://www.bea.gov/news/2026/personal-income-and-outlays-july-2026"
     },
     {
-      "contentSha256": "2ccdac91250738a0f7c92a3684bc5b66f76857acb95492bfa25998e86a4c1c67",
-      "fetchedAt": "2026-08-26T23:09:24.045800+00:00",
-      "finalUrl": "https://www.bls.gov/news.release/archives/cpi_08122026.htm",
-      "httpStatus": 200,
-      "locations": [
-        "refs",
-        "timeline"
-      ],
-      "publicHref": "https://www.bls.gov/news.release/archives/cpi_08122026.htm",
-      "url": "https://www.bls.gov/news.release/archives/cpi_08122026.htm"
-    },
-    {
-      "contentSha256": "6214922fc90e38f2f9e63b0b6a9f046b970a435d0bf0c3f29bb239acd8f1b288",
-      "fetchedAt": "2026-08-26T23:09:24.449355+00:00",
+      "contentSha256": "82d5d60b870a8e0e7d1519f33712e3d2de63cb05bbe89ef9b8afc38601dab440",
+      "fetchedAt": "2026-08-31T23:47:53.072442+00:00",
       "finalUrl": "https://www.federalreserve.gov/monetarypolicy/fomcprojtabl20260617.htm",
       "httpStatus": 200,
       "locations": [
@@ -85,11 +103,17 @@
         "timeline"
       ],
       "publicHref": "https://www.federalreserve.gov/monetarypolicy/fomcprojtabl20260617.htm",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
       "url": "https://www.federalreserve.gov/monetarypolicy/fomcprojtabl20260617.htm"
     },
     {
-      "contentSha256": "dc8bddcaac352b6f98e8d305e8995175931a21085436c35f892c0bfc94ec82f4",
-      "fetchedAt": "2026-08-27T02:49:39.263618+00:00",
+      "contentSha256": "9a24979efc74fd53291471b4f6683bd8c612d2deaff1935bc41e37bb353e8c1d",
+      "fetchedAt": "2026-08-31T23:47:53.551539+00:00",
       "finalUrl": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260729a.htm",
       "httpStatus": 200,
       "locations": [
@@ -99,8 +123,15 @@
         "timeline"
       ],
       "publicHref": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260729a.htm",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
       "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260729a.htm"
     }
   ],
-  "status": "Green"
+  "status": "Green",
+  "transportEvidenceVersion": 1
 }

@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-08-13",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-13-DeepDive.md",
+      "sha256": "8ae4e82c816c35dc886300beee72c8e3fb2c6895a9a30ce38c38031c67db8466"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-13-DeepDive.md",
+      "sha256": "3f32fa5a2674278575891b31566ed7a8ebbf63b0ed55306f04ff12bfa481a40c"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-13-DeepDive-dialogue.md",
+      "sha256": "1e3b3a7c1b2bd2c7c79d8a146019fab2bea10d1296c579eb96352a1485b218db"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 4,
+    "counterevidence": 4,
+    "decision_utility": 4,
+    "dialogue_naturalness": 4,
+    "relation_map_utility": 2
+  },
+  "findings": {
+    "theme_specific_insight": "Geminiの月間利用者10億人とClaudeの機械可読透かしを、普及後の生成物来歴・編集履歴・承認者の分離という当日固有の課題へ結び付け、教育・企業の運用まで落としている。",
+    "evidence_depth": "ITmedia、GIGAZINE、ReseEdのタイムラインに加え、利用規模、透かしの役割、教育現場の確認項目を表とチャートで分解している。一方、透かしの改変後検出率や相互運用性の実測値は提示されていない。",
+    "causal_coherence": "既存サービスへの接続で利用が広がるほど、生成・編集・承認・公開の証跡が必要になるという流れが一貫し、透かし単独では真偽や承認を保証しないという帰結にもつながっている。",
+    "counterevidence": "透かしが最終文書の真偽・承認を保証しないこと、改変後に残るかや検出方法の公開が未確定であることを明示している。ただし、誤検出や反対事例を数値で比較する材料は薄い。",
+    "decision_utility": "透かしを参考保存する案、編集・承認履歴と束ねる案、高リスク文書を原本から分離保管する案を示し、企業・学校の責任部門をdeciderとして指定している。",
+    "dialogue_naturalness": "7区間はGeminiの普及規模から透かしの限界、リスク別運用、企業監査・学校点検の期限へ段階的に進み、先輩は常体、若手は敬体で役割も保たれている。各応答が前の問いに具体的な台帳・承認・公開条件を足している一方、全区間が同じ問い・回答・確認のリズムで続くため、自然な対談としては一段の余地がある。",
+    "relation_map_utility": "5ノード5辺は供給・提携・統制のcanonical kindで描画でき、実測レイアウトではノード重複・辺交差・第三ノード貫通がない。ただしAnthropicから企業管理部門への検出情報連携、企業管理部門から学校への統制、利用者から管理部門への承認記録供給は記事の出典が直接示す当事者関係ではなく、企業と学校を一つの管理主体へ潰した汎用工程図に近い。"
+  },
+  "averageScore": 3.857142857142857,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Red"
+}

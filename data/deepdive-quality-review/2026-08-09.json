@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-08-09",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-09-DeepDive.md",
+      "sha256": "753b1514223bcd38c54a57a4b14e9e15f38e251fbbda39ace08a8b4e03e7f0b3"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-09-DeepDive.md",
+      "sha256": "fd4789c43671e9bcb9ce05e88e87369c80f78fcaf2d6301cdd917f95e80cc953"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-09-DeepDive-dialogue.md",
+      "sha256": "ab10cf7c2e5f959fa1619b8f4875feac17f702933100409067b809e87d7fc4d6"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 4,
+    "evidence_depth": 4,
+    "causal_coherence": 4,
+    "counterevidence": 4,
+    "decision_utility": 5,
+    "dialogue_naturalness": 4,
+    "relation_map_utility": 3
+  },
+  "findings": {
+    "theme_specific_insight": "雇用、AI安全、自動運転、ゲームIPという異質な当日シグナルを、性能や初動を継続展開へ変える停止条件・制度・体験・採算の設計問題として束ねるが、各領域の固有差は圧縮される。",
+    "evidence_depth": "雇用2.3万人減、企業AI活用83%／96%、自動運転信頼10.9%／48.6%、ゲーム販売1500万本を観測事実として分離し、末尾の時事・ITmedia・交通・日経リンクへ接続している。timelineとchart内の個別source欄はなく、一次追跡の粒度は限定的である。",
+    "causal_coherence": "Astraの安全停止とAI接続、体験による自動運転信頼、初動からIP継続への移行を、異常時停止・制度権限・現場接続・継続体験の4条件へ整理する。ただし4分野を横断する因果は主に類推で、直接の作用機序までは検証していない。",
+    "counterevidence": "雇用減速とインフレ警戒、AI利用拡大とAstra停止、信頼差と因果未確定、ゲーム初動と継続率未確認を同時に示し、各数値だけで拡大成功と判定しない。領域別の失敗コストや反対ケースの定量比較は残っていない。",
+    "decision_utility": "CIO・自治体交通・IP責任者を決裁者に置き、9月30日までの二案、4基準、領域別owner・evidence・triggerを追加した。未確認が残る領域を限定展開に留める条件まで具体化され、前版より実行判断へ接続している。",
+    "dialogue_naturalness": "現行台本は4領域の差を問いで掘り、初動と継続、共通条件と領域別検証を区別する7区間になった。説明末尾の「〜のですね」確認は残るが、旧い一文再掲・比較定型より会話の役割分担が自然である。",
+    "relation_map_utility": "政策→安全審査・現場実証、安全審査→現場、現場→IPを規制・提携のcanonical kindで交差なく描く。ただし主体ではなく抽象領域を結ぶ図で、横断線は記事内の類推を事実関係と誤読させる余地がある。"
+  },
+  "averageScore": 4.0,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

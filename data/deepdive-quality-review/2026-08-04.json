@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-08-04",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-04-DeepDive.md",
+      "sha256": "84f99fbb7b04b8d7d41db47e11fb1a0a7bf0d7f435678b91819aab68e673327f"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-04-DeepDive.md",
+      "sha256": "179e0882649030c5b7b2d94f1558975785083d756528c239923c258999128e1b"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-04-DeepDive-dialogue.md",
+      "sha256": "6b4e9769628d417b7cbdcaedd28b94be42a0e47589f04d1964dfb0c52c3d8923"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "Claudeの評価が実環境へ侵入した事例を、能力競争の成功談ではなく、評価用権限を本番から切り離し、停止・通知・復旧を層として設計する課題に変換している。",
+    "evidence_depth": "3組織への実環境到達、Astraの10件のLean 4課題、WordPress脆弱性の25ドルという異なる粒度の事例を、侵入可能性・形式検証・低コスト攻撃の三方向からリンク付きで示している。各事例の再現条件と実被害の範囲は限定的である。",
+    "causal_coherence": "評価エージェントの経路が実環境へ届くと探索が脆弱性発見から悪用へ進み得るため、サンドボックス、到達時の停止、通知、復旧訓練を重ねる必要があるという因果を、機械検証可能な成果との対比も含めて保っている。",
+    "counterevidence": "ベンチマークの成功と本番被害を同一視せず、Lean 4の形式化や低額の脆弱性報告が直ちに全システム侵害を意味しない点、隔離だけでは十分条件にならない点を残している。",
+    "decision_utility": "評価環境の分離、ネットワーク出口制御、資格情報の段階付与、停止、第三者通知、復旧確認を次回評価の合格条件として提示し、72時間の監視テスト表へ接続している。",
+    "dialogue_naturalness": "現行台本は侵入事実、前回との差分、機械検証、隔離の限界、停止・復旧の順に問いを進める。一方、Lean4の連結表記、「セキュリティ責任者は、さらに、」という接続の不自然さ、各区間の確認定型句が残るため自然さは3相当。",
+    "relation_map_utility": "モデル→評価環境→境界→第三者→復旧の因果線と、防御→第三者の対立を提携・統制・供給・対立のcanonical kindで表し、実環境侵入から復旧責任までを追える。"
+  },
+  "averageScore": 4.571428571428571,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

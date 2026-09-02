@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-08-29",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-08-29-DeepDive.md",
+      "sha256": "a135742598a67539d9b40454bf6dfc1a0add5a445c469da8ed17ad2a20643ece"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-08-29-DeepDive.md",
+      "sha256": "07154b6b3706ab24c0c830fca37a0e8ae7dc99d757fd8c1ffd9c9da491781ff1"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-08-29-DeepDive-dialogue.md",
+      "sha256": "3fdc83b6fad1e950e0dbcfe7e4a7d3295fc566e36cd3de8d91db5818ecf4107b"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 4,
+    "causal_coherence": 4,
+    "counterevidence": 4,
+    "decision_utility": 5,
+    "dialogue_naturalness": 5,
+    "relation_map_utility": 5
+  },
+  "findings": {
+    "theme_specific_insight": "Claude Academyの公開と生成AIを使う情報工作を同日に置き、利用者教育・権限・監査ログ・外部悪用監視を本番化の条件として明示している。『使えるか』から『統制して戻せるか』への焦点移動が、二つの材料と本文の実装条件に直結する。",
+    "evidence_depth": "Anthropic公式のBuild with ClaudeとYahoo!ニュースの記事をタイムラインと本文の主張へ結び、Claude Code・Claude API・MCP・tool use、情報工作の反復、教育・権限・ログの確認表へ展開している。統制領域の95などは編集部評価であり、事故件数や効果を測った一次統計ではない点は残る。",
+    "causal_coherence": "教材で能力と限界を揃えることが権限設計の前提になり、外部接続がログ・レビュー・巻き戻しを要求し、情報工作の反復速度が外部コンテンツ監視を増やすという三段の経路が明確である。",
+    "counterevidence": "低リスクからの段階導入は被害範囲を抑える一方、禁止だけでは現場が非公式ツールへ流れるという反対面を示している。公開2記事から実際の事故削減効果までは導けないとして、限界も分離している。",
+    "decision_utility": "調査・要約・テスト補助から始め、教育完了、権限台帳、MCP接続ログ、公開操作の承認を段階ゲートにする三案を比較し、9月末のCIO・CISO等の決定へ具体化している。",
+    "dialogue_naturalness": "現行台本は7つのvalue区間で、前号の供給網から教育、外部悪用、権限、ログ、撤回条件へ質問と回答が自然に進む。若手の問いが毎区間の判断へ接続し、先輩の回答も9月末の仕事分類表・権限台帳・承認停止条件で締まるため、旧版の欠落文や重複は解消されている。",
+    "relation_map_utility": "Anthropic→Academy→開発組織、開発組織→権限・監査、情報工作主体↔SNSを供給・依存・統制・対立・規制で結び、教育から本番接続、外部悪用対策まで同じ図で追える。全6edgeがcanonical registry内で、位置と役割も本文の判断表に対応する。"
+  },
+  "averageScore": 4.571428571428571,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

@@ -1,0 +1,16 @@
+{
+  "articleContentSha256": "5cea1a43103e4bd413f0b846bcfb2991280d6cac1c1c64d0d74b306e1640608c",
+  "articlePath": "digest/DeepDive/2026-08-22-DeepDive.md",
+  "bindings": [
+    {
+      "claim": "NIIが「LLM-jp-4 33B」を公開した。",
+      "claimId": "nii-llm-jp-4-33b-release",
+      "evidence": "2026年8月18日、国立情報学研究所（NII）の大規模言語モデル研究開発センター（LLMC）が、新たに約332億パラメータのDense型大規模言語モデル（LLM）「LLM-jp-4 33B」を公開したことを発表しました。",
+      "sourceUrl": "https://current.ndl.go.jp/car/283665"
+    }
+  ],
+  "issueDate": "2026-08-22",
+  "schemaVersion": "DEEPDIVE_CLAIM_SOURCE_TRANSPORT_V1",
+  "status": "Green",
+  "transportSha256": "d0dd15dfdc7eae9db4397820a7a43ac3ed838323bbdc2b33173daf1b6de5c33d"
+}

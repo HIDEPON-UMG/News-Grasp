@@ -403,6 +403,7 @@ def _deepdive_quality(repo_root: Path, issue_date: str) -> dict[str, Any]:
         result = deepdive_quality.audit_issue(
             repo_root=repo_root,
             issue_date=issue_date,
+            include_corpus=False,
             require_rendered_public=True,
             route="production_generation",
         )

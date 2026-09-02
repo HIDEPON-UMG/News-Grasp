@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-24",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-24-DeepDive.md",
+      "sha256": "27de9e8da55ad8a5624c4b4da40f1995c126b834550d20234e492bfd8bd37845"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-24-DeepDive.md",
+      "sha256": "6c01d2deea30232753ab7b36403f68992685fbc0e8b8dd4f04b6ed49476dcbca"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-24-DeepDive-dialogue.md",
+      "sha256": "d2eb42f15b2c732b94f9ca112337a60402ded4fc42de9779f2f34fe302f65b0c"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 2
+  },
+  "findings": {
+    "theme_specific_insight": "EUのBEV比率20.7%への上昇とGeely・FordのValencia JVを、関税率のニュースから域内工場・開発費・雇用を巡る現地生産競争への転換として具体化している。",
+    "evidence_depth": "ACEAの登録5.7%増、BEV15.6%から20.7%、HEV37.3%、JVのFord66%・Geely34%、約50万台、Geely海外販売47万4,228台を公式発表で照合している。関税の将来効果や補助金問題はまだ評価できない。",
+    "causal_coherence": "内燃機関から電動系へ需要が移ることで港から工場へ競争軸が移り、現地生産JVが固定費・開発費を分担し、関税政策が投資・雇用条件へ接続されるという市場から制度への流れが明瞭である。",
+    "counterevidence": "BEVだけでなくHEV37.3%が最大区分であること、関税率が企業別であること、現地組立だけでは補助金問題を解消しないことを示し、BEV成長やJVを無条件の成功と扱っていない。",
+    "decision_utility": "現行関税維持、最低価格と域内投資・雇用条件、補助金・技術依存まで広げる厳格審査を比較し、2027年運営開始前に付加価値・雇用・能力移転を開示させる判定軸を置く。",
+    "dialogue_naturalness": "BEV構成、JVの持分、関税、域内投資条件の順で論点は追えるが、GeelyAutoやFord66%など連結語と「主体・数値・日付を分けて記録」の反復が読み上げ調である。",
+    "relation_map_utility": "Ford・Geelyの協調的競合と欧州委員会の規制は関係を表すが、協調的競合がcanonical外であり、提携と競争が同居する核心を公開図へ安全に投影できない。"
+  },
+  "averageScore": 4.285714285714286,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Red"
+}

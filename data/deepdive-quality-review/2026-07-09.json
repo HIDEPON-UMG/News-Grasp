@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-07-09",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-07-09-DeepDive.md",
+      "sha256": "fe8b99a732043cc0096355fadb44337c13f528264c1858ac5be9208fcb923629"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-07-09-DeepDive.md",
+      "sha256": "83af37724988838c646e623e5c043b98e374179b78b213ddba9fb97f02ec18cd"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-07-09-DeepDive-dialogue.md",
+      "sha256": "030ac0418090c5f59573060fc140683809aab8915381fc4e794d831049377e21"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 3,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "ToyotaのSan Antonio拡張とTacomaのメキシコからの移管を、単純な米国回帰ではなく、USMCA再交渉、Tundra・Sequoiaとの能力配分、現地サプライヤー集積を束ねる北米生産の再配線として捉えている。",
+    "evidence_depth": "Toyotaの36億ドル投資、約4年の移管、San Antonioの累計投資・雇用・サプライヤー数、北米販売とTacoma販売の指標を、Toyota公式発表にUSTRとFederal RegisterのUSMCA材料を重ねている。Baja側の余力、関税シナリオ、移管後の単位コストは確認できず、数字だけで最適配置を断定していない。",
+    "causal_coherence": "USMCAの制度不確実性が調達・原産地判断を揺らし、Texasの増産とTacoma移管が既存車種・労働力・部品網の再配分を促すという流れが明快である。集積による応答性と、米国側への固定費集中という両面を選択肢へ接続している。",
+    "counterevidence": "Mexicoの生産拠点を残す案、USMCA再交渉の結論未定、需要と関税の変動、米国工場へ集約した場合の柔軟性低下を示し、36億ドル投資を直ちに勝利とみなしていない。",
+    "decision_utility": "Texas集中、Mexico維持、段階的な二重配分を比較し、稼働率、部品原産地、関税、納期、雇用を追う判断枠を置いている。San Antonio拡張の進捗とUSMCAレビューを同じ時系列で再評価できる。",
+    "dialogue_naturalness": "Tacoma移管、USMCA、工場能力、供給網、二重配分を順に確認する7区間の台本だが、記事の引用と主体・数値・日付を分ける定型句、固有名詞・URL列挙が続き、会話としての自然さは限定的である。",
+    "relation_map_utility": "Toyota、Texas工場、Baja工場、USTR、州・San Antonioを出資・供給・規制・提携のcanonical edgeで結び、投資と移管、制度圧力、誘致支援の作用点を追える。"
+  },
+  "averageScore": 4.571428571428571,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}
