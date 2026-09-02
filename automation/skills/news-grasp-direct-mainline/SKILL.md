@@ -9,40 +9,45 @@ description: Run the 06:00 News-Grasp scheduled production directly with Codex, 
 
 ## 開始契約
 
-1. Asia/Tokyo の `issue_date` を確定し、`automation_id + canonical cwd + issue_date` の current execution だけを使用する。
-2. 実行スレッド生成前に専用の `News-Grasp Title Materializer` が Asia/Tokyo の対象日を計算し、Codex App automation name と App DB name を exact `YY/MM/DD News-Grasp 臨時本線日次バッチ 6:00 記事作成・公開` へ反映する。正本を読む準備作業を除き、最初の実行操作は `python -m tools.news_grasp_title_materializer --verify-only --repo-root .` による read-only 検証とする。本文から host の `set_thread_title`、正規表現、日時 placeholder を呼び出して表示名を変更してはならない。
-3. `python -m tools.news_grasp_title_control` で `updated / title_status=already_ok / unavailable / failed / skipped` を記録する。materializer receipt、installed TOML、App DB、実 thread title の exact一致を確認し、stale / unavailable / failed は `title_completion=deferred` と `post_publish_issue_list` 1行に残す。タイトル未達は公開作業を止めないが、最終報告でタイトル達成と混同しない。
-   `title_completion=fulfilled|deferred` は publication status と分離して保持する。
-4. `python -m tools.news_grasp_direct_runtime start --state-root build/direct-mainline` で run を開始する。対象日は runtime が Asia/Tokyo の当日から確定する。明示指定が必要な時だけ `--issue-date 2026-08-30` のように実日付を渡し、角括弧付きの placeholder は実行しない。
-5. 各工程の実作業を repo-local tool / Codex direct work で終えたら、`python -m tools.news_grasp_direct_runtime advance --state-root build/direct-mainline --run-id <startが返したrun_id> --writer-lease <startが返したwriter_lease> --evidence-file <実工程の検証JSON>` で現在の exact successor だけを進める。`public_completion` だけは `--repo-root . --public-base-url https://hidepon-umg.github.io/News-Grasp` を渡し、consumer-owned public verifier に実成果物と公開面を読ませる。
-6. 以後の工程は `tools.news_grasp_direct_runtime` の stage order と `advance`/`run_exact_successor` を通す。
-7. `tools.publish_inventory.scheduled_category_ids(issue_date)` を対象カテゴリ正本にする。固定7カテゴリへ戻さない。
+1. 固定runtime `C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe` だけを使う。WindowsApps alias、裸の `python`、別interpreterへfallbackしない。
+2. `static_check` がscheduler triggerをT0として、Asia/Tokyoの `issue_date`、`run_intent`、DB発行のactual run ID、writer lease/fencing token、source baseline、runtime generation、remote base SHA、許可外部副作用をstart sealへ固定する。`final`等のrun aliasを作らない。
+3. single-flight identityは `automation_id + issue_date + run_intent` である。既存active writerへattachしたcallerはobserverであり、writer leaseを再利用してmutationしない。inflight/unknown deliveryがあれば新runを作らず照合へ進む。
+4. V1 runtime stateとnotification ledgerは、run作成より前にV2へ正規migrationする。migration receiptが無い状態でstageを開始しない。
+5. 実行可能なentryは下記六operationだけである。各commandのUTF-8一行JSON receiptを読み、`ok=true`、前receipt hash、同一seal identity、exact successorを確認してから次へ進む。raw Python、旧runtimeの`start/advance`、Release gate、NoPublish、historical、Playwright、full pytest、未登録commandは使わない。
+6. `tools.publish_inventory.scheduled_category_ids(issue_date)` を当日の対象カテゴリ正本にする。7カテゴリはpublic verifierのuniverse coverageであり、毎日の固定生成対象へ読み替えない。
 
-## Direct 本線工程
+## Daily 六phase
 
-次の順序を変えず、title control と下記1〜20を direct receipt の21要素 `stage_history` に記録する。21の最終報告は public Green 後に行い、completion gateへの循環依存を作らない。
+次の順序を変えず、同じoperationを二回実行しない。各phase内部ではbrokerが固定したproducer/consumerだけを使い、同じacceptance predicateを別phaseで再評価しない。
 
-1. 対象日・scheduled category inventoryを確定する。
-2. カテゴリ別ニュースを収集する。
-3. dedup、freshness、URL evidenceを検証する。
-4. カテゴリdigestを生成する。
-5. reporter outputをrecord単位で検証する。
-6. `data/articles.jsonl`へ対象日recordを追記する。
-7. Summaryを生成する。
-8. Daily audio script、TTS、audio publishを行う。
-9. DeepDive記事を生成する。
-10. shared DeepDive qualityでprovenance、dialogue、rendered HTMLを検証する。実コマンドは `python -m tools.deepdive_quality audit-issue --date YYYY-MM-DD --require-rendered-public` とする。
-11. 日付HTML docsを生成する。
-12. `python -m tools.validate_daily_quality --date YYYY-MM-DD --require-deepdive --json` を対象日の実日付で実行してGreenにする。短縮表記では `validate_daily_quality --require-deepdive` を必須gate名とする。
-13. Daily/DeepDive YouTube Podcastを作成・uploadする。
-14. playlistへ登録する。
-15. notificationを送信する。
-16. distribution manifestを作成する。
-17. `docs/publish-status.json`を対象日の`published_ok`へ更新する。
-18. commitし、`origin/main`へpushする。
-19. Pagesの対象日semantic contentを確認する。
-20. runner/readinessを含まないdirect public completionを検証する。
-21. title status、actual title、public evidence、SLO debt、post-publish issuesを報告する。
+```text
+C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_daily_gate static_check
+C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_daily_gate scoped_contract_unit
+C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_daily_gate current_issue_integration
+C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_daily_gate external_publication
+C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_daily_gate consumer_public_verification
+C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_daily_gate atomic_completion
+```
+
+1. `static_check`
+   - source、installed、loaded runtime、snapshot、remoteを別観測として検証する。
+   - 固定Pythonのresolved pathとbinary hash、automation prompt四surface parity、route registry、V2 migration、single-flightを確認する。
+2. `scoped_contract_unit`
+   - source変更が無ければ同じsource SHAへ署名されたpromotion receiptを読む。
+   - source変更がある場合は変更file→登録test node mappingのexact nodeだけを一回実行する。full collectionや任意selectorを使わない。
+3. `current_issue_integration`
+   - 当日source snapshotから、scheduledカテゴリ記事、Summary Markdown、DeepDive Markdown、HTML、Daily/DeepDive音声、distribution/publish manifestを各canonical producerで一回だけ生成・検証する。
+   - Summaryはfrontmatter付きMarkdown、DeepDiveはcurrent issueだけを意味品質正本にする。HTML、音声、distributionは同じsource snapshotの派生物とする。
+   - 外部公開直前にrelease commit、`docs/index.html`を含むexact write set、全file hash、manifest ID、bundle ID、external operation ID一覧をpublish sealへ固定する。
+4. `external_publication`
+   - publish seal済みtransactional outboxだけを順にclaimし、commit/push、Pages、Release audio、YouTube、playlist、notification、distributionをprovider idempotency key付きで一回だけ実行する。
+   - 送信後にstdoutが失われた場合はimmutable receiptを照会し、再upload・再送しない。provider ACKだけが得られない通知は`unknown_unobtainable`を保持する。
+5. `consumer_public_verification`
+   - verifier自身が新しいnonce、時刻、content hashを発行してnetworkからHome、当日カテゴリ、Summary/DeepDive HTML、Daily/DeepDive音声、YouTube、playlist、publish-status、Pagesを観測する。
+   - canonical Markdown、notification immutable ledger、distribution manifestを同一issue date/run intent/run ID/bundle/manifestへ照合し、remote SHA、release SHA、Pages deployment SHAを一致させる。
+6. `atomic_completion`
+   - 上記fresh observationと全required surfaceの論理積を唯一のfinalizerへ渡す。URL 200、commit、push、publish-status、保存済みJSON、callerの`ok=true`だけではrunをcompletedにしない。
+   - completion時のelapsedをscheduler T0から固定し、以後のinspectで増加させない。
 
 Reporter/editor/repair/newsroom_editor は repo-local model policy の Luna/max、DeepDive は Sol/high の独立routeを維持する。単一親モデルへ統合しない。
 
@@ -80,7 +85,7 @@ TTSまたは公開HTMLを生成する前に、同じV2 gateでmetadata preaudit�
 - 90分超過はSLO debtとして記録し、実行可能なexact public successorを継続する。
 - cost/ledger/binding failureは該当model operationだけをzero-call Redにする。fresh artifact、deterministic tool、公開可能なlocal successorがあれば同じrunで進む。
 - OAuth、2FA、quota、外部障害は具体的証拠があるsurfaceだけをdeferする。他surfaceを継続し、全体Greenを偽らない。
-- quality Redは該当artifactだけを修復し、同じquality gateを再実行する。旧 runner、NoPublish、fallbackへ切り替えない。
+- quality Redは該当artifactだけを修復し、原因入力が変わったcausal remediation receiptを伴う新generationでowner predicateを一回だけ評価する。成功済みpredicateの再実行や、旧 runner、NoPublish、fallbackへの切替えは行わない。
 
 ## 禁止
 

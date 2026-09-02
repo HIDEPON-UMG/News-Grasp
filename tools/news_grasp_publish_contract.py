@@ -9,6 +9,7 @@ import os
 import re
 import sqlite3
 import stat
+import subprocess
 import sys
 import tempfile
 from contextlib import closing
@@ -529,6 +530,40 @@ def verify_manifest(
         reasons.append("manifest_entry_policy_mismatch")
     if not re.fullmatch(r"[0-9a-f]{40}", str(manifest.get("sourceBaseline") or "")):
         reasons.append("manifest_source_baseline_invalid")
+    else:
+        # 実Git repositoryでは、formatだけでなく release candidate HEAD の
+        # 実祖先であることを検証する。tmp_path等の非Git fixtureは、既存の
+        # unit互換性のため40桁形式チェックに留める。
+        root = Path(repo_root).resolve()
+        git_head = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=30,
+            check=False,
+            shell=False,
+            creationflags=int(getattr(subprocess, "CREATE_NO_WINDOW", 0)),
+        )
+        if git_head.returncode == 0 and re.fullmatch(r"[0-9a-f]{40}", git_head.stdout.strip()):
+            baseline_check = subprocess.run(
+                ["git", "merge-base", "--is-ancestor", str(manifest.get("sourceBaseline")), git_head.stdout.strip()],
+                cwd=str(root),
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=30,
+                check=False,
+                shell=False,
+                creationflags=int(getattr(subprocess, "CREATE_NO_WINDOW", 0)),
+            )
+            if baseline_check.returncode != 0:
+                reasons.append("manifest_source_baseline_not_ancestor")
+        elif (root / ".git").exists() or (root / ".git").is_symlink():
+            reasons.append("manifest_source_baseline_not_ancestor")
     if manifest.get("audio") != canonical.get("audio"):
         reasons.append("manifest_audio_projection_mismatch")
     if require_files:
@@ -653,6 +688,27 @@ def _normalized_url(value: str, *, base: str, include_query: bool = True) -> str
     return urlunsplit((parsed.scheme.casefold(), netloc, parsed.path or "/", query, ""))
 
 
+def _audio_identity_url(value: str, *, base: str) -> str:
+    """音声identityを正規化する。
+
+    Release cache-bustingの単独 ``v`` queryだけを同一性から除外し、
+    その他のqueryとfragmentは通常のidentityとして保持する。
+    """
+
+    parsed = urlsplit(urljoin(base, value))
+    host = (parsed.hostname or "").casefold()
+    port = parsed.port
+    netloc = host if port is None or (parsed.scheme == "https" and port == 443) else f"{host}:{port}"
+    query = parsed.query
+    if query:
+        parts = query.split("&")
+        if len(parts) == 1:
+            key, separator, _value = parts[0].partition("=")
+            if key == "v" and separator and _value:
+                query = ""
+    return urlunsplit((parsed.scheme.casefold(), netloc, parsed.path or "/", query, parsed.fragment))
+
+
 def verify_semantic_pages(manifest: Mapping[str, Any], pages: Mapping[str, str]) -> dict[str, Any]:
     """local/public HTMLへ同じsemantic predicateを適用する。"""
     reasons: list[str] = []
@@ -679,10 +735,10 @@ def verify_semantic_pages(manifest: Mapping[str, Any], pages: Mapping[str, str])
     daily_url = str(daily.get("publicUrl") or "") if isinstance(daily, Mapping) else ""
     home_parser = parsed_pages.get("home", _SurfaceHTMLParser())
     public_base = "https://hidepon-umg.github.io/News-Grasp/"
-    # GitHub Releases の同一音声資産には、配信キャッシュ回避用の ?v= が付く。
-    # 音声の同一性は host/path で判定し、href や別の外部URLの query は従来どおり保持する。
-    expected_daily = _normalized_url(daily_url, base=public_base, include_query=False) if daily_url else ""
-    media = {_normalized_url(value, base=public_base, include_query=False) for value in home_parser.media_sources}
+    # GitHub Releases の同一音声資産には、配信キャッシュ回避用の単独 ?v= が付く。
+    # 他のqueryやfragmentは音声identityへ残し、別資産の誤束縛を許可しない。
+    expected_daily = _audio_identity_url(daily_url, base=public_base) if daily_url else ""
+    media = {_audio_identity_url(value, base=public_base) for value in home_parser.media_sources}
     if not expected_daily or expected_daily not in media:
         reasons.append("daily_audio_href_missing")
     deepdive_href = _normalized_url(f"deepdive/{issue_date}/", base=public_base)
@@ -708,6 +764,9 @@ def verify_semantic_pages(manifest: Mapping[str, Any], pages: Mapping[str, str])
     summary_parser = parsed_pages.get("summary", _SurfaceHTMLParser())
     if issue_date not in " ".join(summary_parser.visible_text):
         reasons.append("summary_issue_date_missing")
+    deepdive_parser = parsed_pages.get("deepdive", _SurfaceHTMLParser())
+    if issue_date not in " ".join(deepdive_parser.visible_text):
+        reasons.append("deepdive_current_issue_required")
     if len(" ".join(summary_parser.reflection_text).strip()) < 20:
         reasons.append("summary_reflection_missing")
     try:
@@ -769,6 +828,18 @@ def evaluate_checkout_observation(value: Mapping[str, Any]) -> dict[str, Any]:
         reasons.append("detached_baseline_unbound")
     if not value.get("head") or value.get("head") != value.get("remoteHead"):
         reasons.append("remote_head_mismatch")
+    if value.get("externalStarted") is True:
+        for field in ("sourceDigest", "manifestId"):
+            before = value.get(f"{field}Before")
+            after = value.get(f"{field}After")
+            if before is not None and after is not None and before != after:
+                reasons.append("post_external_drift_superseded")
+        # snake_case観測値は外部adapterの互換入力として受け付ける。
+        for field in ("source_digest", "manifest_id"):
+            before = value.get(f"{field}_before")
+            after = value.get(f"{field}_after")
+            if before is not None and after is not None and before != after:
+                reasons.append("post_external_drift_superseded")
     return {"ok": not reasons, "status": "verified" if not reasons else "blocked", "reasonCodes": reasons}
 
 
@@ -796,8 +867,16 @@ def evaluate_pages_deployment(
     workflow_runs: Iterable[Mapping[str, Any]],
     manifest_id: str,
     issue_date: str,
+    release_kind: str = "public",
+    changed_paths: Iterable[str] | None = None,
 ) -> dict[str, Any]:
     """workflow conclusionだけでなくremote HEADとpublication contextを照合する。"""
+    normalized_release_kind = str(release_kind or "").casefold()
+    normalized_paths = (
+        [str(path).replace("\\", "/") for path in changed_paths]
+        if changed_paths is not None
+        else None
+    )
     matched: dict[str, Any] | None = None
     for raw in workflow_runs:
         row = dict(raw)
@@ -812,15 +891,37 @@ def evaluate_pages_deployment(
             matched = row
             break
     reasons: list[str] = []
+    if normalized_release_kind not in {"public", "source_only"}:
+        reasons.append("pages_release_kind_invalid")
     if not remote_head:
         reasons.append("pages_remote_head_unverified")
-    if matched is None:
+    elif not re.fullmatch(r"[0-9a-f]{40}", str(remote_head)):
+        reasons.append("pages_remote_head_invalid")
+    if normalized_release_kind == "source_only":
+        # digest/source-only変更は公開Pagesを再デプロイする経路ではない。
+        # ただし明示されたchanged_pathsにdocs差分が混在する場合は、
+        # source-onlyという宣言と実体が矛盾するためfail-closedにする。
+        if normalized_paths is not None and any(path == "docs/index.html" or path.startswith("docs/") for path in normalized_paths):
+            reasons.append("pages_source_only_docs_change_invalid")
+    elif matched is None:
         reasons.append("pages_successful_head_missing")
+    if normalized_release_kind == "public" and normalized_paths is not None and "docs/index.html" not in normalized_paths:
+        reasons.append("pages_public_release_docs_diff_missing")
     if not re.fullmatch(r"[0-9a-f]{64}", manifest_id):
         reasons.append("pages_manifest_id_invalid")
     if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", issue_date):
         reasons.append("pages_issue_date_invalid")
-    return {"ok": not reasons, "status": "verified" if not reasons else "blocked", "reasonCodes": reasons, "workflowRun": matched, "remoteHead": remote_head, "manifestId": manifest_id, "issueDate": issue_date}
+    return {
+        "ok": not reasons,
+        "status": "verified" if not reasons else "blocked",
+        "reasonCodes": sorted(set(reasons)),
+        "workflowRun": matched,
+        "remoteHead": remote_head,
+        "manifestId": manifest_id,
+        "issueDate": issue_date,
+        "releaseKind": normalized_release_kind,
+        "changedPaths": normalized_paths,
+    }
 
 
 def evaluate_history_promotion(*, daily_manifest_ok: bool, history_candidates: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
@@ -1068,27 +1169,47 @@ def bind_existing_distribution_receipts(
                 raise ValueError(f"youtube_{kind}_{field}_missing")
         bound[kind] = dict(row)
         source_receipts[kind] = source_sha
-    deepdive_playlist = {
-        key: bound["deepdive"][key]
-        for key in ("videoId", "playlistId", "playlistItemId")
+    def existing_value(relative: str) -> dict[str, Any]:
+        target = _safe_repo_relative_path(root, relative)[1]
+        if not target.exists() and not target.is_symlink():
+            return {}
+        try:
+            value, _ = _read_external_json_receipt(target)
+        except (OSError, ValueError) as exc:
+            raise ValueError(f"distribution_existing_state_invalid:{relative}") from exc
+        nested = value.get("value")
+        return dict(nested) if isinstance(nested, Mapping) else dict(value)
+
+    previous_playlist = existing_value(f"build/distribution/{issue_date}/playlist.json")
+    previous_binding = existing_value(f"build/distribution/{issue_date}/binding.json")
+    playlist_entry_owned = {
+        "videoId",
+        "playlistId",
+        "playlistItemId",
+        "primaryPodcastPlaylistId",
+        "primaryPodcastPlaylistItemId",
     }
-    # DeepDiveはprimary playlistへの同時掲載情報を持つ場合がある。
-    # 再束縛時にこの2項目を落とすと、data/distributionの正本と
-    # playlist bindingが同じ動画でも構造不一致になる。
-    for key in ("primaryPodcastPlaylistId", "primaryPodcastPlaylistItemId"):
-        if str(bound["deepdive"].get(key) or ""):
-            deepdive_playlist[key] = bound["deepdive"][key]
+
+    def playlist_entry(kind: str) -> dict[str, Any]:
+        # 既存の未知optional fieldを保持する。owned identityだけは今回の
+        # receiptで更新し、source receiptの内部状態（status等）をplaylist
+        # projectionへ混入させない。
+        previous = previous_playlist.get(kind)
+        result = dict(previous) if isinstance(previous, Mapping) else {}
+        for key, value in bound[kind].items():
+            if key in playlist_entry_owned:
+                result[key] = value
+        return result
+
     playlist = {
+        **previous_playlist,
         "schemaVersion": "NEWS_GRASP_PLAYLIST_BINDING_V2",
         "issueDate": issue_date,
         "runId": run_id,
         "runIntent": run_intent,
         "status": "verified",
-        "daily": {
-            key: bound["daily"][key]
-            for key in ("videoId", "playlistId", "playlistItemId")
-        },
-        "deepdive": deepdive_playlist,
+        "daily": playlist_entry("daily"),
+        "deepdive": playlist_entry("deepdive"),
         "sourceReceipts": {
             "dailySha256": source_receipts["daily"],
             "deepdiveSha256": source_receipts["deepdive"],
@@ -1110,6 +1231,7 @@ def bind_existing_distribution_receipts(
             _read_regular_no_follow(source_path, max_bytes=1_048_576)
         ).hexdigest()
     distribution_binding = {
+        **previous_binding,
         "schemaVersion": "NEWS_GRASP_DISTRIBUTION_BINDING_V2",
         "issueDate": issue_date,
         "runId": run_id,
@@ -1336,7 +1458,9 @@ def _main() -> int:
             lease_store=PublishLeaseStore(args.state_root),
             writer_lease=args.writer_lease,
         )
-    sys.stdout.write(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
+    sys.stdout.buffer.write(
+        json.dumps(result, ensure_ascii=False, separators=(",", ":")).encode("utf-8") + b"\n"
+    )
     return 0 if result.get("ok") is True else 1
 
 

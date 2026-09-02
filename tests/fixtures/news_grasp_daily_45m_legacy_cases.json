@@ -1,0 +1,199 @@
+{
+  "schemaVersion": "NEWS_GRASP_DAILY_45M_LEGACY_CASES_V1",
+  "issueDate": "2026-09-03",
+  "runIntent": "scheduled_production_direct",
+  "cases": [
+    {
+      "fixtureId": "F01",
+      "kind": "daily_route",
+      "attempts": [
+        {
+          "operationId": "pytest",
+          "command": ["python", "-m", "pytest", "-q"],
+          "reasonCode": "daily_release_only_operation"
+        },
+        {
+          "operationId": "release_gate",
+          "command": ["python", "-m", "tools.news_grasp_release_gate"],
+          "reasonCode": "daily_release_only_operation"
+        }
+      ]
+    },
+    {
+      "fixtureId": "F02",
+      "kind": "unknown_or_historical_route",
+      "attempts": [
+        {
+          "operationId": "historical_period",
+          "command": ["python", "-m", "tools.historical_failure_scenarios"],
+          "reasonCode": "daily_route_unknown_or_historical"
+        },
+        {
+          "operationId": "unknown_route",
+          "command": ["python", "-c", "print('raw')"],
+          "reasonCode": "daily_route_unknown_or_historical"
+        }
+      ]
+    },
+    {
+      "fixtureId": "F03",
+      "kind": "current_issue_source",
+      "summarySourcePath": "docs/2026-09-03/summary/index.html",
+      "deepdiveIssueDate": "2026-09-02",
+      "reasonCode": "deepdive_current_issue_required"
+    },
+    {
+      "fixtureId": "F04",
+      "kind": "optional_playlist_projection",
+      "dailyReceipt": {
+        "status": "public",
+        "videoId": "daily-video-f04",
+        "playlistId": "daily-playlist-f04",
+        "playlistItemId": "daily-item-f04"
+      },
+      "deepdiveReceipt": {
+        "status": "public",
+        "videoId": "deep-video-f04",
+        "playlistId": "deep-playlist-f04",
+        "playlistItemId": "deep-item-f04",
+        "primaryPodcastPlaylistId": "primary-playlist-f04",
+        "primaryPodcastPlaylistItemId": "primary-item-f04"
+      }
+    },
+    {
+      "fixtureId": "F05",
+      "kind": "audio_url_identity",
+      "nonCacheQuery": "legacy=1",
+      "cacheQuery": "v=0123456789ab",
+      "reasonCode": "daily_audio_href_missing"
+    },
+    {
+      "fixtureId": "F06",
+      "kind": "source_baseline_ancestry",
+      "sourceBaseline": "0000000000000000000000000000000000000000",
+      "reasonCode": "manifest_source_baseline_not_ancestor"
+    },
+    {
+      "fixtureId": "F07",
+      "kind": "single_flight_identity",
+      "automationId": "news-grasp-6-40",
+      "issueDate": "2026-09-03",
+      "runIntents": ["scheduled_production_direct", "scheduled_production_direct"],
+      "reasonCode": "single_flight_attach_or_block"
+    },
+    {
+      "fixtureId": "F08",
+      "kind": "child_result_parse",
+      "raw": "{\"schemaVersion\":\"NEWS_GRASP_CHILD_RESULT_V1\",\"inputHash\":\"wrong\"",
+      "expectedSchema": "NEWS_GRASP_CHILD_RESULT_V1",
+      "expectedInputHash": "f04-invalid-input-hash",
+      "reasonCode": "child_result_parse_before_mutation"
+    },
+    {
+      "fixtureId": "F09",
+      "kind": "canonical_projection",
+      "childResult": {
+        "schemaVersion": "NEWS_GRASP_CHILD_RESULT_V1",
+        "inputHash": "wrong",
+        "status": "green",
+        "stageId": "issue_inventory"
+      },
+      "expectedInputHash": "f09-expected-input-hash",
+      "reasonCode": "input_identity_mismatch_before_mutation"
+    },
+    {
+      "fixtureId": "F10",
+      "kind": "completion_elapsed_and_slo",
+      "elapsedSeconds": 2640,
+      "laterElapsedSeconds": 3300,
+      "branches": [
+        {"elapsedSeconds": 2640, "expectedBand": "target"},
+        {"elapsedSeconds": 4500, "expectedBand": "high_cost_frozen"},
+        {"elapsedSeconds": 5401, "expectedBand": "slo_debt"}
+      ],
+      "reasonCode": "completion_elapsed_freeze_and_slo_dispatch"
+    },
+    {
+      "fixtureId": "F11",
+      "kind": "pages_trigger_boundary",
+      "publicReleaseWorkflow": {
+        "head_sha": "a000000000000000000000000000000000000000",
+        "path": ".github/workflows/deploy-pages.yml",
+        "event": "workflow_dispatch",
+        "head_branch": "main",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      "sourceOnlyChangedPaths": ["digest/Summary/2026-09-03.md"],
+      "reasonCode": "pages_not_required_for_source_only"
+    },
+    {
+      "fixtureId": "F12",
+      "kind": "automation_prompt_integrity",
+      "bundle": {
+        "templatePrompt": "最優先事項: 完全な公開確認",
+        "installedPrompt": "最優先事項: 完全な公開確認",
+        "appDbPrompt": "最優先事項: 完全な公開確認",
+        "snapshotPrompts": ["最優先事項: 完全な公開確認"],
+        "requiredPhrase": "最優先事項: 完全な公開確認",
+        "tomlBody": "[automation]\nprompt = '置換された本文'\n",
+        "startAutoRepair": true
+      },
+      "reasonCode": "automation_prompt_drift_fail_closed"
+    },
+    {
+      "fixtureId": "F13",
+      "kind": "scheduler_trigger_inheritance",
+      "schedulerTriggerAt": "2026-09-03T06:00:00+09:00",
+      "reasonCode": "scheduler_trigger_at_required"
+    },
+    {
+      "fixtureId": "F14",
+      "kind": "atomic_receipt_idempotency",
+      "stageId": "title_control",
+      "operationId": "ng-f14-operation",
+      "inputHash": "f14-input-hash",
+      "reasonCode": "atomic_state_receipt_commit_and_lookup"
+    },
+    {
+      "fixtureId": "F15",
+      "kind": "post_external_drift",
+      "observation": {
+        "clean": true,
+        "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "remoteHead": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "externalStarted": true,
+        "sourceDigestBefore": "before-source",
+        "sourceDigestAfter": "after-source",
+        "manifestIdBefore": "before-manifest",
+        "manifestIdAfter": "after-manifest"
+      },
+      "reasonCode": "post_external_drift_superseded"
+    },
+    {
+      "fixtureId": "F16",
+      "kind": "predicate_owner_and_replay",
+      "generationId": "generation-f16",
+      "predicateId": "predicate-f16",
+      "owner": "tools.news_grasp_gate_profiles",
+      "otherOwner": "caller-override",
+      "sourceIdentity": "source-f16",
+      "evidence": {"status": "verified", "evidenceRef": "fixture:F16"},
+      "reasonCode": "predicate_owner_or_duplicate_rejected"
+    },
+    {
+      "fixtureId": "F17",
+      "kind": "fresh_observation_and_duplicate_side_effect",
+      "externalOperationId": "youtube-upload-f17",
+      "observationToken": "fixture-f17",
+      "observedAt": "2026-09-03T06:10:00+09:00",
+      "reasonCode": "fresh_observation_and_duplicate_side_effect_rejected"
+    },
+    {
+      "fixtureId": "F18",
+      "kind": "arbitrary_completion_json",
+      "callerResult": {"ok": true, "status": "green"},
+      "reasonCode": "caller_json_not_completion_authority"
+    }
+  ]
+}

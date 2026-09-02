@@ -31,7 +31,16 @@ def test_daily_automation_points_to_direct_mainline_without_runner_command() -> 
     text = AUTOMATION_TEMPLATE.read_text(encoding="utf-8-sig")
 
     assert "$news-grasp-direct-mainline" in text
-    assert "python -m tools.news_grasp_direct_runtime start" in text
+    for operation in (
+        "static_check",
+        "scoped_contract_unit",
+        "current_issue_integration",
+        "external_publication",
+        "consumer_public_verification",
+        "atomic_completion",
+    ):
+        assert f"Python312\\\\python.exe -m tools.news_grasp_daily_gate {operation}" in text
+    assert "python -m tools.news_grasp_direct_runtime start" not in text
     assert "direct completion guard" in text
     assert "news-grasp-runner.ps1" not in text
     assert "news_grasp_runner.py" not in text
@@ -88,11 +97,15 @@ def test_direct_skill_documents_quality_and_recovery_boundaries() -> None:
     text = DIRECT_SKILL.read_text(encoding="utf-8-sig")
 
     for marker in [
-        "news_grasp_title_materializer",
-        "title_completion=fulfilled|deferred",
-        "validate_daily_quality --require-deepdive",
-        "NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1",
-        "caller作成の completion JSON は Green authority ではない",
+        "Daily 六phase",
+        "static_check",
+        "current_issue_integration",
+        "consumer_public_verification",
+        "atomic_completion",
+        "frontmatter付きMarkdown",
+        "current issue",
+        "unknown_unobtainable",
+        "callerの`ok=true`だけではrunをcompletedにしない",
         "public incompleteかつexact successorがある状態で終了しない",
     ]:
         assert marker in text

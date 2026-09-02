@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import re
 import shutil
@@ -20,7 +21,7 @@ import sys
 import tomllib
 import uuid
 from contextlib import closing
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -73,6 +74,10 @@ RUNTIME_SCHEMA_V2 = "NEWS_GRASP_DIRECT_RUNTIME_V2"
 MAINLINE_RECEIPT_SCHEMA = "NEWS_GRASP_DIRECT_MAINLINE_RECEIPT_V1"
 PUBLIC_SCHEMA = "NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1"
 PUBLIC_SCHEMA_V2 = "NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V2"
+CHILD_RESULT_SCHEMA = "NEWS_GRASP_CHILD_RESULT_V1"
+APPLIED_RECEIPT_SCHEMA = "NEWS_GRASP_APPLIED_STAGE_RECEIPT_V1"
+PREDICATE_CLAIM_SCHEMA = "NEWS_GRASP_PREDICATE_CLAIM_V1"
+CONSUMER_PUBLIC_VERIFICATION_RECEIPT_SCHEMA = "NEWS_GRASP_CONSUMER_PUBLIC_VERIFICATION_RECEIPT_V1"
 RUN_INTENT = "scheduled_production_direct"
 AUTOMATION_ID = "news-grasp-6-40"
 JST = timezone(timedelta(hours=9), name="Asia/Tokyo")
@@ -80,6 +85,275 @@ TITLE_SUCCESS = {"updated", "already_ok"}
 TITLE_NONBLOCKING = {"unavailable", "failed", "skipped"}
 MAX_CLI_EVIDENCE_BYTES = 1024 * 1024
 _REGISTERED_CONSUMER_CAPABILITY = object()
+TIMING_EVENT_KINDS = (
+    "internal_processing",
+    "queue",
+    "external_wait",
+    "retry",
+    "handoff",
+    "user_wait",
+    "failure",
+    "unmeasured",
+)
+DAILY_OPERATION_ORDER = (
+    "static_check",
+    "scoped_contract_unit",
+    "current_issue_integration",
+    "external_publication",
+    "consumer_public_verification",
+    "atomic_completion",
+)
+
+
+def _strict_json_object_pairs(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    """重複keyを受け入れないJSON object decoder。"""
+
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("child_result_duplicate_key")
+        result[key] = value
+    return result
+
+
+def _snake_key(key: Any) -> str:
+    value = str(key)
+    explicit = {
+        "schemaVersion": "schema_version",
+        "inputHash": "input_hash",
+        "stageId": "stage_id",
+        "operationId": "operation_id",
+        "writerLease": "writer_lease",
+        "runId": "run_id",
+        "createdAt": "created_at",
+        "completedAt": "completed_at",
+        "sourceIdentity": "source_identity",
+        "generationId": "generation_id",
+        "predicateId": "predicate_id",
+    }
+    if value in explicit:
+        return explicit[value]
+    value = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", value)
+    return value.replace("-", "_").casefold()
+
+
+def _canonicalize_child_value(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        result: dict[str, Any] = {}
+        for key, item in value.items():
+            canonical_key = _snake_key(key)
+            if canonical_key in result:
+                raise ValueError("child_result_canonical_key_collision")
+            result[canonical_key] = _canonicalize_child_value(item)
+        return result
+    if isinstance(value, list):
+        return [_canonicalize_child_value(item) for item in value]
+    return value
+
+
+def _invalid_child_result(reason: str, *, raw: Any = None) -> dict[str, Any]:
+    result: dict[str, Any] = {
+        "schemaVersion": CHILD_RESULT_SCHEMA,
+        "ok": False,
+        "status": "invalid_child_result",
+        "reason_code": reason,
+        "reasonCode": reason,
+    }
+    if raw is not None:
+        result["raw_type"] = type(raw).__name__
+    return result
+
+
+def parse_child_result(
+    raw: bytes | str,
+    *,
+    expected_schema: str = CHILD_RESULT_SCHEMA,
+    expected_input_hash: str,
+) -> dict[str, Any]:
+    """childのUTF-8一行JSONをmutation前に正規化・検証する。
+
+    不正入力は例外でDBへ到達させず、``ok=False`` の観測結果として返す。
+    有効な結果はcamelCase互換入力をcanonical snake_caseへ変換する。
+    """
+
+    try:
+        if isinstance(raw, bytes):
+            text = raw.decode("utf-8", errors="strict")
+        elif isinstance(raw, str):
+            text = raw
+        else:
+            return _invalid_child_result("child_result_transport_type", raw=raw)
+        if text.startswith("\ufeff"):
+            return _invalid_child_result("child_result_bom_forbidden", raw=raw)
+        if "\r" in text or "\n" in text:
+            return _invalid_child_result("child_result_not_one_line", raw=raw)
+        # JSON transportは一行に限定するが、JSON文法上の先頭/末尾空白は
+        # payloadの一部ではないためcanonical decode前に除去する。
+        text = text.strip()
+        if not text:
+            return _invalid_child_result("child_result_json_invalid", raw=raw)
+        decoder = json.JSONDecoder(object_pairs_hook=_strict_json_object_pairs)
+        value, end = decoder.raw_decode(text)
+        if text[end:].strip():
+            return _invalid_child_result("child_result_trailing_data", raw=raw)
+        canonical = _canonicalize_child_value(value)
+        if not isinstance(canonical, Mapping):
+            return _invalid_child_result("child_result_object_required", raw=raw)
+        schema = canonical.get("schema_version")
+        input_hash = canonical.get("input_hash")
+        if schema != expected_schema:
+            return _invalid_child_result("child_result_schema_mismatch", raw=raw)
+        if input_hash != expected_input_hash:
+            return _invalid_child_result("child_result_input_hash_mismatch", raw=raw)
+        if "ok" in canonical and canonical.get("ok") is not True:
+            return _invalid_child_result("child_result_ok_false", raw=raw)
+        status = str(canonical.get("status") or "").casefold()
+        if status in {"", "red", "failed", "blocked", "error", "invalid", "not_executed"}:
+            return _invalid_child_result("child_result_status_red", raw=raw)
+        output_hash = str(canonical.get("output_hash") or "").strip()
+        if output_hash:
+            without_hash = dict(canonical)
+            without_hash.pop("output_hash", None)
+            actual_hash = hashlib.sha256(
+                _json_dump(without_hash).encode("utf-8")
+            ).hexdigest()
+            if output_hash != actual_hash:
+                return _invalid_child_result("child_result_output_hash_mismatch", raw=raw)
+        return {
+            "schemaVersion": CHILD_RESULT_SCHEMA,
+            "ok": True,
+            "status": "verified",
+            "schema_version": str(schema),
+            "input_hash": str(input_hash),
+            "child_result": dict(canonical),
+        }
+    except ValueError as exc:
+        reason = str(exc) or "child_result_json_invalid"
+        if reason.startswith("child_result_"):
+            return _invalid_child_result(reason, raw=raw)
+        return _invalid_child_result("child_result_json_invalid", raw=raw)
+    except (UnicodeDecodeError, json.JSONDecodeError, TypeError):
+        return _invalid_child_result("child_result_json_invalid", raw=raw)
+
+
+def slo_dispatch(*, elapsed_seconds: int | float) -> dict[str, Any]:
+    """45/75/90分境界の次動作を一意に投影する。"""
+
+    if isinstance(elapsed_seconds, bool):
+        raise ValueError("elapsed_seconds_invalid")
+    try:
+        seconds = float(elapsed_seconds)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("elapsed_seconds_invalid") from exc
+    if not math.isfinite(seconds) or seconds < 0:
+        raise ValueError("elapsed_seconds_invalid")
+    # 45分を越えてからではなく、45分到達時点でmethod_changeへ切り替える。
+    # 75分・90分も同様に境界時刻を含めてdispatcherへ渡す。ただし既存の
+    # ``time_band`` は運用レポートの互換性のためhigh_cost_frozenを維持する。
+    if seconds < 45 * 60:
+        band = "target"
+        dispatch = "target"
+    elif seconds < 75 * 60:
+        band = "method_change"
+        dispatch = "method_change"
+    elif seconds < 90 * 60:
+        band = "high_cost_frozen"
+        dispatch = "scope_reduce"
+    else:
+        band = "slo_debt"
+        dispatch = "deadline_revision"
+    return {
+        "schemaVersion": "NEWS_GRASP_SLO_DISPATCH_V1",
+        "ok": True,
+        "elapsed_seconds": seconds,
+        "elapsed_minutes": seconds / 60.0,
+        "time_band": band,
+        "dispatch": dispatch,
+        "required_inventory_preserved": True,
+        "consumer_verifier_preserved": True,
+    }
+
+
+def _close_open_timing_event(
+    conn: sqlite3.Connection,
+    *,
+    run_id: str,
+    ended_at: str,
+    evidence: Mapping[str, Any] | None = None,
+) -> int | None:
+    """同一runの最後の未完了区間を指定時刻で閉じる。"""
+
+    row = conn.execute(
+        """
+        SELECT event_id,started_at,evidence_json
+        FROM timing_events
+        WHERE run_id=? AND ended_at=''
+        ORDER BY event_id DESC LIMIT 1
+        """,
+        (run_id,),
+    ).fetchone()
+    if row is None:
+        return None
+    started = _parse_time(str(row[1]))
+    ended = _parse_time(ended_at)
+    if started is None or ended is None or ended < started:
+        raise ValueError("timing_interval_invalid")
+    original = _json_load(str(row[2]), {})
+    merged = dict(original) if isinstance(original, Mapping) else {}
+    if evidence:
+        merged.update(dict(evidence))
+    conn.execute(
+        """
+        UPDATE timing_events
+        SET ended_at=?,elapsed_seconds=?,evidence_json=?
+        WHERE event_id=? AND run_id=? AND ended_at=''
+        """,
+        (
+            ended_at,
+            max(0.0, (ended - started).total_seconds()),
+            _json_dump(merged),
+            int(row[0]),
+            run_id,
+        ),
+    )
+    return int(row[0])
+
+
+def _append_timing_event_in_tx(
+    conn: sqlite3.Connection,
+    *,
+    run_id: str,
+    event_kind: str,
+    started_at: str,
+    ended_at: str = "",
+    evidence: Mapping[str, Any] | None = None,
+) -> int:
+    """前区間を閉じてから次区間を一つだけ開始する。"""
+
+    if event_kind not in TIMING_EVENT_KINDS:
+        raise ValueError("timing_event_kind_invalid")
+    started = _parse_time(started_at)
+    ended = _parse_time(ended_at) if ended_at else None
+    if started is None or (ended is not None and ended < started):
+        raise ValueError("timing_interval_invalid")
+    _close_open_timing_event(conn, run_id=run_id, ended_at=started_at)
+    elapsed = (ended - started).total_seconds() if ended is not None else None
+    cursor = conn.execute(
+        """
+        INSERT INTO timing_events(
+            run_id,event_kind,started_at,ended_at,elapsed_seconds,evidence_json
+        ) VALUES(?,?,?,?,?,?)
+        """,
+        (
+            run_id,
+            event_kind,
+            started_at,
+            ended_at,
+            elapsed,
+            _json_dump(dict(evidence or {})),
+        ),
+    )
+    return int(cursor.lastrowid)
 
 
 def _reject_reparse_chain(path: str | Path, *, reason: str) -> None:
@@ -170,6 +444,31 @@ def _as_mapping(value: Any) -> dict[str, Any]:
     return {"ok": False, "status": "invalid_verifier_result", "value": repr(value)}
 
 
+def _row_value(row: sqlite3.Row, key: str, default: Any = None) -> Any:
+    """旧V1 DBの未移行列をread-only projectionで安全に扱う。"""
+
+    try:
+        return row[key]
+    except (IndexError, KeyError):
+        return default
+
+
+def _require_fencing_token(store: "DirectRunStore", fencing_token: int | None) -> int | None:
+    """production mutationではleaseとfencing tokenを常に同時提示させる。"""
+
+    if store.test_only_allow_semantic_verifier:
+        return fencing_token
+    if fencing_token is None:
+        raise PermissionError("fencing_token_required")
+    try:
+        value = int(fencing_token)
+    except (TypeError, ValueError) as exc:
+        raise PermissionError("fencing_token_invalid") from exc
+    if value <= 0:
+        raise PermissionError("fencing_token_invalid")
+    return value
+
+
 class DirectRunStore:
     """SQLite backed state store for one direct News-Grasp issue run."""
 
@@ -194,14 +493,19 @@ class DirectRunStore:
         self.semantic_verifier = semantic_verifier
         self.test_only_allow_semantic_verifier = test_only_allow_semantic_verifier is True
         self._production_db_identity: tuple[int, int] | None = None
+        self._schema_ready = False
+        self._schema_migration_receipt: dict[str, Any] = {}
         if create:
             self.state_root.mkdir(parents=True, exist_ok=True)
-            self._init_db()
+            # 既存DBはconstructorでALTER/terminalizeしない。新規DBだけをここで
+            # 初期化し、既存V1はstart_runの明示migration境界へ送る。
+            self._init_db(allow_migration=not self.db_path.exists())
         else:
             if not self.state_root.is_dir():
                 raise FileNotFoundError("direct_state_root_missing")
             if not self.db_path.is_file():
                 raise FileNotFoundError("direct_state_db_missing")
+            self._schema_ready = self._schema_complete()
 
     def now(self) -> datetime:
         value = self.clock()
@@ -247,7 +551,280 @@ class DirectRunStore:
             raise PermissionError("production_runtime_db_identity_changed")
         self._production_db_identity = identity
 
-    def _init_db(self) -> None:
+    def _schema_complete(self) -> bool:
+        required_columns = {
+            "runtime_schema",
+            "run_intent",
+            "scheduler_trigger_at",
+            "manifest_reservation_id",
+            "fencing_token",
+            "completion_elapsed_seconds",
+            "completion_elapsed_at",
+            "start_seal_json",
+            "publish_seal_json",
+            "external_started_at",
+        }
+        required_tables = {
+            "stages",
+            "runtime_migrations",
+            "runtime_checkpoints",
+            "runtime_manifest_rebindings",
+            "timing_events",
+            "applied_receipts",
+            "predicate_claims",
+            "daily_operation_receipts",
+            "daily_operation_claims",
+            "external_outbox",
+            "notification_ledger",
+            "runtime_migration_journal",
+        }
+        try:
+            with closing(sqlite3.connect(str(self.db_path))) as conn:
+                columns = {
+                    str(row[1])
+                    for row in conn.execute("PRAGMA table_info(runs)").fetchall()
+                }
+                tables = {
+                    str(row[0])
+                    for row in conn.execute(
+                        "SELECT name FROM sqlite_master WHERE type='table'"
+                    ).fetchall()
+                }
+                index_sql = conn.execute(
+                    "SELECT sql FROM sqlite_master WHERE type='index' AND name='runs_active_identity_uq'"
+                ).fetchone()
+                sql = str(index_sql[0] if index_sql else "")
+                outbox_columns = {
+                    str(row[1])
+                    for row in conn.execute("PRAGMA table_info(external_outbox)").fetchall()
+                }
+                outbox_index = conn.execute(
+                    "SELECT sql FROM sqlite_master WHERE type='index' AND name='external_outbox_run_logical_uq'"
+                ).fetchone()
+                outbox_index_sql = str(outbox_index[0] if outbox_index else "")
+                return (
+                    required_columns <= columns
+                    and required_tables <= tables
+                    and "run_intent" in sql
+                    and "cwd" not in sql
+                    and "logical_operation_id" in outbox_columns
+                    and "run_id" in outbox_index_sql
+                    and "logical_operation_id" in outbox_index_sql
+                )
+        except sqlite3.DatabaseError:
+            return False
+
+    def ensure_runtime_schema(self) -> dict[str, Any]:
+        """read-only検査→SQLite backup→明示migrationの順でV2 schemaを準備する。"""
+
+        if self._schema_ready and self._schema_complete():
+            with closing(self.connect()) as conn:
+                # DDL/receiptの間でプロセスが停止した場合、schema自体が
+                # 完成していてもmigration journalはstartedのまま残る。
+                # その状態をalready_migratedへ丸めると、次のrunが未完了
+                # migrationをGreenとして進めてしまうため、receiptを追加する
+                # 前に必ずfail-closedする。
+                pending = conn.execute(
+                    "SELECT 1 FROM runtime_migration_journal WHERE status='started' LIMIT 1"
+                ).fetchone()
+                if pending is not None:
+                    raise RuntimeError("runtime_schema_migration_incomplete")
+                latest = conn.execute(
+                    """
+                    SELECT receipt_json FROM runtime_migrations
+                    WHERE run_id='__runtime_schema__'
+                    ORDER BY id DESC LIMIT 1
+                    """
+                ).fetchone()
+            if latest is not None:
+                loaded = _json_load(str(latest[0]), {})
+                if isinstance(loaded, dict):
+                    self._schema_migration_receipt = loaded
+            notification_evidence = (
+                self._schema_migration_receipt.get("notificationLedgerMigration")
+                if isinstance(self._schema_migration_receipt, Mapping)
+                else None
+            )
+            if (
+                not self._schema_migration_receipt
+                or not isinstance(notification_evidence, Mapping)
+                or notification_evidence.get("table") != "notification_ledger"
+                or notification_evidence.get("schemaVersion")
+                != "NEWS_GRASP_NOTIFICATION_LEDGER_V2"
+            ):
+                self._schema_migration_receipt = self._persist_schema_migration_receipt(
+                    from_schema="",
+                    status="already_initialized",
+                    backup_path="",
+                )
+            return {
+                "schemaVersion": "NEWS_GRASP_RUNTIME_SCHEMA_MIGRATION_V1",
+                "ok": True,
+                "status": "already_migrated",
+                "migrated": False,
+                "migration_receipt": dict(self._schema_migration_receipt),
+            }
+        if not self.db_path.exists():
+            self._init_db(allow_migration=True)
+            self._schema_ready = True
+            result = {
+                "schemaVersion": "NEWS_GRASP_RUNTIME_SCHEMA_MIGRATION_V1",
+                "ok": True,
+                "status": "initialized",
+                "migrated": True,
+                "backup_path": "",
+            }
+            self._schema_migration_receipt = self._persist_schema_migration_receipt(
+                from_schema="",
+                status="initialized",
+                backup_path="",
+            )
+            result["migration_receipt"] = dict(self._schema_migration_receipt)
+            return result
+        # 変更前はquery-onlyでintegrityとbytesを確認する。
+        with closing(sqlite3.connect(f"file:{self.db_path.as_posix()}?mode=ro", uri=True)) as source:
+            source.execute("PRAGMA query_only=ON")
+            integrity = str(source.execute("PRAGMA integrity_check").fetchone()[0])
+            if integrity.casefold() != "ok":
+                raise RuntimeError("runtime_schema_preflight_integrity_red")
+            try:
+                pending = source.execute(
+                    "SELECT 1 FROM runtime_migration_journal WHERE status='started' LIMIT 1"
+                ).fetchone()
+            except sqlite3.OperationalError:
+                pending = None
+            if pending is not None:
+                raise RuntimeError("runtime_schema_migration_incomplete")
+        backup_path = self.db_path.with_name(
+            f"{self.db_path.name}.pre-daily-v2-{self.now().strftime('%Y%m%dT%H%M%S%f%z')}-{uuid.uuid4().hex}.bak"
+        )
+        journal_id = f"schema-journal-{uuid.uuid4().hex}"
+        journal_started = _iso(self.now())
+        # DDL前にrecoverable journalを記録する。途中終了したjournalは次回の
+        # preflightで未完了migrationとして観測でき、暗黙Greenにはならない。
+        with closing(sqlite3.connect(str(self.db_path))) as journal_conn:
+            journal_conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS runtime_migration_journal (
+                    journal_id TEXT PRIMARY KEY,
+                    db_path TEXT NOT NULL,
+                    from_schema TEXT NOT NULL,
+                    to_schema TEXT NOT NULL,
+                    backup_path TEXT NOT NULL DEFAULT '',
+                    status TEXT NOT NULL,
+                    receipt_json TEXT NOT NULL DEFAULT '{}',
+                    started_at TEXT NOT NULL,
+                    completed_at TEXT NOT NULL DEFAULT ''
+                )
+                """
+            )
+            journal_conn.execute(
+                """
+                INSERT INTO runtime_migration_journal(
+                    journal_id,db_path,from_schema,to_schema,backup_path,status,started_at
+                ) VALUES(?,?,?,?,?,?,?)
+                """,
+                (
+                    journal_id,
+                    str(self.db_path),
+                    "NEWS_GRASP_DIRECT_RUNTIME_V1",
+                    RUNTIME_SCHEMA_V2,
+                    str(backup_path),
+                    "started",
+                    journal_started,
+                ),
+            )
+            journal_conn.commit()
+        with closing(sqlite3.connect(str(self.db_path))) as source, closing(sqlite3.connect(str(backup_path))) as backup:
+            source.backup(backup)
+            if str(backup.execute("PRAGMA integrity_check").fetchone()[0]).casefold() != "ok":
+                backup_path.unlink(missing_ok=True)
+                raise RuntimeError("runtime_schema_backup_integrity_red")
+        self._init_db(allow_migration=True)
+        self._schema_ready = True
+        self._schema_migration_receipt = self._persist_schema_migration_receipt(
+            from_schema="NEWS_GRASP_DIRECT_RUNTIME_V1",
+            status="migrated",
+            backup_path=str(backup_path),
+        )
+        with closing(self.connect()) as journal_conn:
+            journal_conn.execute(
+                """
+                UPDATE runtime_migration_journal
+                SET status='completed',receipt_json=?,completed_at=?
+                WHERE journal_id=? AND status='started'
+                """,
+                (_json_dump(self._schema_migration_receipt), _iso(self.now()), journal_id),
+            )
+            journal_conn.commit()
+        result = {
+            "schemaVersion": "NEWS_GRASP_RUNTIME_SCHEMA_MIGRATION_V1",
+            "ok": True,
+            "status": "migrated",
+            "migrated": True,
+            "backup_path": str(backup_path),
+            "migration_receipt": dict(self._schema_migration_receipt),
+        }
+        return result
+
+    def _persist_schema_migration_receipt(
+        self,
+        *,
+        from_schema: str,
+        status: str,
+        backup_path: str,
+    ) -> dict[str, Any]:
+        """schema migrationをappend-only台帳へ記録し、ID/hashを返す。"""
+
+        now_text = _iso(self.now())
+        notification_status = (
+            "migrated" if status == "migrated" else "initialized"
+        )
+        body = {
+            "schemaVersion": "NEWS_GRASP_RUNTIME_SCHEMA_MIGRATION_V1",
+            "status": status,
+            "fromSchema": from_schema,
+            "toSchema": RUNTIME_SCHEMA_V2,
+            "backupPath": backup_path,
+            "migratedAt": now_text,
+            "notificationLedgerMigration": {
+                "schemaVersion": "NEWS_GRASP_NOTIFICATION_LEDGER_V2",
+                "status": notification_status,
+                "table": "notification_ledger",
+            },
+        }
+        migration_id = f"schema-{uuid.uuid4().hex}"
+        migration_hash = hashlib.sha256(
+            _json_dump({**body, "migrationId": migration_id}).encode("utf-8")
+        ).hexdigest()
+        receipt = {
+            **body,
+            "migrationId": migration_id,
+            "migrationHash": migration_hash,
+        }
+        with closing(self.connect()) as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute(
+                """
+                INSERT INTO runtime_migrations(
+                    run_id,from_schema,to_schema,receipt_json,migrated_at
+                ) VALUES(?,?,?,?,?)
+                """,
+                (
+                    "__runtime_schema__",
+                    from_schema,
+                    RUNTIME_SCHEMA_V2,
+                    _json_dump(receipt),
+                    now_text,
+                ),
+            )
+            conn.commit()
+        return receipt
+
+    def _init_db(self, *, allow_migration: bool = True) -> None:
+        if self.db_path.exists() and not allow_migration:
+            self._schema_ready = self._schema_complete()
+            return
         with closing(self.connect()) as conn:
             conn.execute(
                 """
@@ -281,17 +858,128 @@ class DirectRunStore:
                 "runtime_schema": "TEXT NOT NULL DEFAULT 'NEWS_GRASP_DIRECT_RUNTIME_V1'",
                 "run_intent": "TEXT NOT NULL DEFAULT ''",
                 "manifest_id": "TEXT NOT NULL DEFAULT ''",
+                "manifest_reservation_id": "TEXT NOT NULL DEFAULT ''",
                 "migration_receipt_json": "TEXT NOT NULL DEFAULT '{}'",
                 "observation_receipt_json": "TEXT NOT NULL DEFAULT '{}'",
                 "typed_issues_json": "TEXT NOT NULL DEFAULT '[]'",
                 "finalization_nonce": "TEXT NOT NULL DEFAULT ''",
+                "scheduler_trigger_at": "TEXT NOT NULL DEFAULT ''",
+                "fencing_token": "INTEGER NOT NULL DEFAULT 0",
+                "completion_elapsed_seconds": "REAL",
+                "completion_elapsed_at": "TEXT NOT NULL DEFAULT ''",
+                "start_seal_json": "TEXT NOT NULL DEFAULT '{}'",
+                "publish_seal_json": "TEXT NOT NULL DEFAULT '{}'",
+                "external_started_at": "TEXT NOT NULL DEFAULT ''",
             }
             for name, declaration in additions.items():
                 if name not in existing_columns:
                     conn.execute(f"ALTER TABLE runs ADD COLUMN {name} {declaration}")
             conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS external_outbox (
+                    operation_id TEXT PRIMARY KEY,
+                    run_id TEXT NOT NULL,
+                    logical_operation_id TEXT NOT NULL DEFAULT '',
+                    side_effect_id TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    payload_json TEXT NOT NULL DEFAULT '{}',
+                    started_at TEXT NOT NULL DEFAULT '',
+                    completed_at TEXT NOT NULL DEFAULT '',
+                    idempotency_key TEXT NOT NULL DEFAULT '',
+                    fencing_token INTEGER NOT NULL DEFAULT 0,
+                    updated_at TEXT NOT NULL DEFAULT '',
+                    provider_ack_status TEXT NOT NULL DEFAULT '',
+                    output_hash TEXT NOT NULL DEFAULT ''
+                )
+                """
+            )
+            existing_outbox_columns = {
+                str(row[1])
+                for row in conn.execute("PRAGMA table_info(external_outbox)").fetchall()
+            }
+            outbox_additions = {
+                "logical_operation_id": "TEXT NOT NULL DEFAULT ''",
+                "idempotency_key": "TEXT NOT NULL DEFAULT ''",
+                "fencing_token": "INTEGER NOT NULL DEFAULT 0",
+                "updated_at": "TEXT NOT NULL DEFAULT ''",
+                "provider_ack_status": "TEXT NOT NULL DEFAULT ''",
+                "output_hash": "TEXT NOT NULL DEFAULT ''",
+            }
+            for name, declaration in outbox_additions.items():
+                if name not in existing_outbox_columns:
+                    conn.execute(f"ALTER TABLE external_outbox ADD COLUMN {name} {declaration}")
+            # 旧schemaのoperation_idは物理PKとして保持し、logical IDを
+            # run scopeへ分離する。table rebuildなしのadditive migration。
+            conn.execute(
+                "UPDATE external_outbox SET logical_operation_id=operation_id "
+                "WHERE logical_operation_id=''"
+            )
+            conn.execute(
+                "CREATE UNIQUE INDEX IF NOT EXISTS external_outbox_run_logical_uq "
+                "ON external_outbox(run_id,logical_operation_id)"
+            )
+            # 45分本線のsingle-flight identityはcwdに依存しない。既存indexを
+            # 明示的に再生成し、古いruntimeのcwd単位制約を残さない。
+            conn.execute("DROP INDEX IF EXISTS runs_active_identity_uq")
+            active_duplicates = conn.execute(
+                """
+                SELECT automation_id, issue_date, COALESCE(run_intent, '') AS run_intent
+                FROM runs
+                WHERE status IN ('active','executing','finalizing')
+                GROUP BY automation_id, issue_date, COALESCE(run_intent, '')
+                HAVING COUNT(*) > 1
+                """
+            ).fetchall()
+            for duplicate in active_duplicates:
+                duplicate_rows = conn.execute(
+                    """
+                    SELECT run_id, external_started_at
+                    FROM runs
+                    WHERE automation_id = ? AND issue_date = ?
+                      AND COALESCE(run_intent, '') = ?
+                      AND status IN ('active','executing','finalizing')
+                    ORDER BY generation DESC, run_id DESC
+                    """,
+                    (duplicate[0], duplicate[1], duplicate[2]),
+                ).fetchall()
+                for stale in duplicate_rows[1:]:
+                    side_effect_rows = conn.execute(
+                        """
+                        SELECT status FROM external_outbox
+                        WHERE run_id=?
+                        """,
+                        (stale[0],),
+                    ).fetchall()
+                    side_effect_statuses = {str(item[0]).casefold() for item in side_effect_rows}
+                    has_unknown_delivery = bool(
+                        side_effect_statuses & {
+                            "unknown_delivery",
+                            "unknown_unobtainable",
+                            "unobtainable",
+                        }
+                    )
+                    has_started_effect = bool(str(stale[1] or "")) or bool(
+                        side_effect_statuses & {
+                            "started",
+                            "sent",
+                            "acknowledged",
+                            "completed",
+                        }
+                    )
+                    terminal_status = (
+                        "blocked_external_delivery_unknown"
+                        if has_unknown_delivery
+                        else "superseded_after_external_start"
+                        if has_started_effect
+                        else "stale_writer_rejected"
+                    )
+                    conn.execute(
+                        "UPDATE runs SET status=?, updated_at=? WHERE run_id=?",
+                        (terminal_status, _iso(self.now()), stale[0]),
+                    )
+            conn.execute(
                 """CREATE UNIQUE INDEX IF NOT EXISTS runs_active_identity_uq
-                   ON runs(automation_id,cwd,issue_date)
+                   ON runs(automation_id,issue_date,run_intent)
                    WHERE status IN ('active','executing','finalizing')"""
             )
             conn.execute(
@@ -345,10 +1033,126 @@ class DirectRunStore:
                 """
             )
             conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS timing_events (
+                    event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    run_id TEXT NOT NULL,
+                    event_kind TEXT NOT NULL,
+                    started_at TEXT NOT NULL,
+                    ended_at TEXT NOT NULL DEFAULT '',
+                    elapsed_seconds REAL,
+                    evidence_json TEXT NOT NULL DEFAULT '{}'
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS applied_receipts (
+                    operation_id TEXT PRIMARY KEY,
+                    run_id TEXT NOT NULL,
+                    stage_id TEXT NOT NULL,
+                    input_hash TEXT NOT NULL,
+                    payload_json TEXT NOT NULL,
+                    receipt_json TEXT NOT NULL,
+                    applied_at TEXT NOT NULL
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS predicate_claims (
+                    generation_id TEXT NOT NULL,
+                    predicate_id TEXT NOT NULL,
+                    owner TEXT NOT NULL,
+                    source_identity TEXT NOT NULL,
+                    evidence_json TEXT NOT NULL,
+                    claimed_at TEXT NOT NULL,
+                    PRIMARY KEY (generation_id, predicate_id)
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS daily_operation_receipts (
+                    run_id TEXT NOT NULL,
+                    operation_id TEXT NOT NULL,
+                    operation_index INTEGER NOT NULL,
+                    input_hash TEXT NOT NULL,
+                    handler_id TEXT NOT NULL,
+                    payload_json TEXT NOT NULL,
+                    receipt_json TEXT NOT NULL,
+                    applied_at TEXT NOT NULL,
+                    PRIMARY KEY (run_id, operation_id),
+                    UNIQUE (run_id, operation_index)
+                )
+                """
+            )
+            existing_daily_columns = {
+                str(row[1])
+                for row in conn.execute("PRAGMA table_info(daily_operation_receipts)").fetchall()
+            }
+            daily_additions = {
+                "fencing_token": "INTEGER NOT NULL DEFAULT 0",
+                "receipt_hash": "TEXT NOT NULL DEFAULT ''",
+            }
+            for name, declaration in daily_additions.items():
+                if name not in existing_daily_columns:
+                    conn.execute(f"ALTER TABLE daily_operation_receipts ADD COLUMN {name} {declaration}")
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS daily_operation_claims (
+                    run_id TEXT NOT NULL,
+                    operation_id TEXT NOT NULL,
+                    operation_index INTEGER NOT NULL,
+                    input_hash TEXT NOT NULL,
+                    handler_id TEXT NOT NULL,
+                    fencing_token INTEGER NOT NULL,
+                    status TEXT NOT NULL,
+                    claimed_at TEXT NOT NULL,
+                    completed_at TEXT NOT NULL DEFAULT '',
+                    PRIMARY KEY (run_id, operation_id),
+                    UNIQUE (run_id, operation_index)
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS notification_ledger (
+                    idempotency_key TEXT PRIMARY KEY,
+                    run_id TEXT NOT NULL,
+                    issue_date TEXT NOT NULL,
+                    payload_hash TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    provider_ack_status TEXT NOT NULL DEFAULT '',
+                    sent_at TEXT NOT NULL DEFAULT '',
+                    updated_at TEXT NOT NULL
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS runtime_migration_journal (
+                    journal_id TEXT PRIMARY KEY,
+                    db_path TEXT NOT NULL,
+                    from_schema TEXT NOT NULL,
+                    to_schema TEXT NOT NULL,
+                    backup_path TEXT NOT NULL DEFAULT '',
+                    status TEXT NOT NULL,
+                    receipt_json TEXT NOT NULL DEFAULT '{}',
+                    started_at TEXT NOT NULL,
+                    completed_at TEXT NOT NULL DEFAULT ''
+                )
+                """
+            )
+            conn.execute(
+                "DROP INDEX IF EXISTS idx_runs_identity"
+            )
+            conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_runs_identity "
-                "ON runs (automation_id, cwd, issue_date, generation)"
+                "ON runs (automation_id, issue_date, run_intent, generation)"
             )
             conn.commit()
+        self._schema_ready = True
 
 
     def _latest_for_identity(
@@ -356,17 +1160,21 @@ class DirectRunStore:
         conn: sqlite3.Connection,
         *,
         automation_id: str,
-        cwd: str,
+        cwd: str | None = None,
         issue_date: str,
+        run_intent: str | None = None,
     ) -> sqlite3.Row | None:
+        del cwd  # identityにcwdを含めない。保存値は監査表示用に保持する。
+        intent = str(run_intent or "")
         return conn.execute(
             """
             SELECT * FROM runs
-            WHERE automation_id = ? AND cwd = ? AND issue_date = ?
+            WHERE automation_id = ? AND issue_date = ?
+              AND COALESCE(run_intent, '') = ?
             ORDER BY generation DESC
             LIMIT 1
             """,
-            (automation_id, cwd, issue_date),
+            (automation_id, issue_date, intent),
         ).fetchone()
 
     def _run_row(self, conn: sqlite3.Connection, run_id: str) -> sqlite3.Row:
@@ -374,6 +1182,1155 @@ class DirectRunStore:
         if row is None:
             raise ValueError("run_not_found")
         return row
+
+    @staticmethod
+    def _external_side_effect_state(conn: sqlite3.Connection, run_id: str) -> str:
+        """outbox/送信receiptを含む外部副作用の現在分類を返す。"""
+
+        try:
+            rows = conn.execute(
+                "SELECT status FROM external_outbox WHERE run_id=?",
+                (run_id,),
+            ).fetchall()
+        except sqlite3.OperationalError:
+            rows = []
+        statuses = {str(item[0]).casefold() for item in rows}
+        if statuses & {"unknown_delivery", "unknown_unobtainable", "unobtainable", "unknown"}:
+            return "unknown_delivery"
+        if statuses & {"started", "sent", "acknowledged", "completed", "success"}:
+            return "started"
+        return "none"
+
+
+class PredicateLedger:
+    """SQLite版のgeneration+predicate単一消費台帳。"""
+
+    def __init__(self, store: DirectRunStore) -> None:
+        if not isinstance(store, DirectRunStore):
+            raise TypeError("predicate_ledger_store_invalid")
+        self.store = store
+
+    def claim_once(
+        self,
+        *,
+        generation_id: str,
+        predicate_id: str,
+        owner: str,
+        source_identity: str,
+        evidence: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        values = (generation_id, predicate_id, owner, source_identity)
+        if any(not isinstance(item, str) or not item.strip() for item in values):
+            raise ValueError("predicate_claim_binding_invalid")
+        if not isinstance(evidence, Mapping):
+            raise ValueError("predicate_claim_evidence_invalid")
+        self.store.ensure_runtime_schema()
+        now_text = _iso(self.store.now())
+        with closing(self.store.connect()) as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            existing = conn.execute(
+                """
+                SELECT owner FROM predicate_claims
+                WHERE generation_id=? AND predicate_id=?
+                """,
+                (generation_id, predicate_id),
+            ).fetchone()
+            if existing is not None:
+                conn.rollback()
+                if str(existing[0]) != owner:
+                    raise PermissionError("predicate_owner_mismatch")
+                raise RuntimeError("predicate_already_consumed")
+            conn.execute(
+                """
+                INSERT INTO predicate_claims(
+                    generation_id,predicate_id,owner,source_identity,evidence_json,claimed_at
+                ) VALUES(?,?,?,?,?,?)
+                """,
+                (
+                    generation_id,
+                    predicate_id,
+                    owner,
+                    source_identity,
+                    _json_dump(dict(evidence)),
+                    now_text,
+                ),
+            )
+            receipt = {
+                "schemaVersion": PREDICATE_CLAIM_SCHEMA,
+                "ok": True,
+                "status": "claimed",
+                "generation_id": generation_id,
+                "predicate_id": predicate_id,
+                "owner": owner,
+                "source_identity": source_identity,
+                "evidence": dict(evidence),
+                "claimed_at": now_text,
+            }
+            conn.commit()
+            return receipt
+
+
+def record_timing_event(
+    store: DirectRunStore,
+    *,
+    run_id: str,
+    writer_lease: str,
+    event_kind: str,
+    started_at: str | datetime,
+    ended_at: str | datetime | None = None,
+    elapsed_seconds: int | float | None = None,
+    evidence: Mapping[str, Any] | None = None,
+    fencing_token: int | None = None,
+) -> dict[str, Any]:
+    """分類済みの実行時間イベントをappendする。"""
+
+    if event_kind not in TIMING_EVENT_KINDS:
+        raise ValueError("timing_event_kind_invalid")
+    _require_fencing_token(store, fencing_token)
+    start_value = _iso(started_at if isinstance(started_at, datetime) else (_parse_time(started_at) or datetime.fromisoformat(started_at)))
+    end_value = ""
+    if ended_at is not None:
+        end_value = _iso(ended_at if isinstance(ended_at, datetime) else (_parse_time(ended_at) or datetime.fromisoformat(ended_at)))
+    if elapsed_seconds is not None:
+        if isinstance(elapsed_seconds, bool):
+            raise ValueError("timing_elapsed_invalid")
+        try:
+            elapsed_value = float(elapsed_seconds)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("timing_elapsed_invalid") from exc
+        if not math.isfinite(elapsed_value) or elapsed_value < 0:
+            raise ValueError("timing_elapsed_invalid")
+    else:
+        elapsed_value = None
+    store.ensure_runtime_schema()
+    with closing(store.connect()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        row = store._run_row(conn, run_id)
+        _verify_writer(row, writer_lease, store.now(), fencing_token=fencing_token)
+        event_id = _append_timing_event_in_tx(
+            conn,
+            run_id=run_id,
+            event_kind=event_kind,
+            started_at=start_value,
+            ended_at=end_value,
+            evidence=evidence,
+        )
+        conn.commit()
+    return {
+        "schemaVersion": "NEWS_GRASP_TIMING_EVENT_V1",
+        "ok": True,
+        "status": "recorded",
+        "event_id": event_id,
+        "run_id": run_id,
+        "event_kind": event_kind,
+        "started_at": start_value,
+        "ended_at": end_value,
+        "elapsed_seconds": elapsed_value,
+        "evidence": dict(evidence or {}),
+    }
+
+
+def freeze_completion_elapsed(
+    store: DirectRunStore,
+    *,
+    run_id: str,
+    writer_lease: str,
+    elapsed_seconds: int | float,
+    fencing_token: int | None = None,
+) -> dict[str, Any]:
+    """completion elapsedを最初の値へ一度だけfreezeする。"""
+
+    # productionではcompletion elapsedのauthorityはfinalize_public_completion
+    # だけである。任意callerが先に値を書けると、scheduler T0からの実測を
+    # 上書きして45分SLOと完了証跡を偽装できるため、DBへ触れる前に拒否する。
+    if not store.test_only_allow_semantic_verifier:
+        raise PermissionError("completion_elapsed_finalizer_only")
+    if isinstance(elapsed_seconds, bool):
+        raise ValueError("elapsed_seconds_invalid")
+    _require_fencing_token(store, fencing_token)
+    try:
+        requested = float(elapsed_seconds)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("elapsed_seconds_invalid") from exc
+    if not math.isfinite(requested) or requested < 0:
+        raise ValueError("elapsed_seconds_invalid")
+    store.ensure_runtime_schema()
+    now_text = _iso(store.now())
+    with closing(store.connect()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        row = store._run_row(conn, run_id)
+        _verify_writer(row, writer_lease, store.now(), fencing_token=fencing_token)
+        current = row["completion_elapsed_seconds"]
+        if current is None:
+            conn.execute(
+                """
+                UPDATE runs
+                SET completion_elapsed_seconds=?, completion_elapsed_at=?, updated_at=?
+                WHERE run_id=? AND writer_lease=? AND completion_elapsed_seconds IS NULL
+                """,
+                (requested, now_text, now_text, run_id, writer_lease),
+            )
+            current = requested
+        else:
+            current = float(current)
+        conn.commit()
+    return {
+        "schemaVersion": "NEWS_GRASP_COMPLETION_ELAPSED_V1",
+        "ok": True,
+        "status": "frozen",
+        "run_id": run_id,
+        "elapsed_seconds": current,
+        "frozen": True,
+    }
+
+
+def admit_daily_operation(
+    store: DirectRunStore,
+    *,
+    run_id: str,
+    writer_lease: str,
+    operation_id: str,
+    fencing_token: int | None = None,
+) -> dict[str, Any]:
+    """Daily operationを実行前にSLO dispatcherへ通す。
+
+    45/75/90分の分岐を表示だけにせずadmissionへ接続する。ただし六つの
+    operationはすべて公開必須であるため、method_change/scope_reduceでも
+    operation自体は削らず、高コスト診断・再試行の禁止だけをreceiptへ残す。
+    """
+
+    if operation_id not in DAILY_OPERATION_ORDER:
+        raise ValueError("daily_operation_unknown")
+    _require_fencing_token(store, fencing_token)
+    store.ensure_runtime_schema()
+    now = store.now()
+    now_text = _iso(now)
+    with closing(store.connect()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        row = store._run_row(conn, run_id)
+        _verify_writer(row, writer_lease, now, allowed_statuses={"active", "executing", "finalizing"}, fencing_token=fencing_token)
+        t0 = _parse_time(str(_row_value(row, "scheduler_trigger_at", ""))) or _parse_time(str(row["started_at"])) or now
+        elapsed_seconds = max(0.0, (now - t0).total_seconds())
+        dispatch = slo_dispatch(elapsed_seconds=elapsed_seconds)
+        for checkpoint in (45, 75, 90):
+            if elapsed_seconds >= checkpoint * 60:
+                conn.execute(
+                    "INSERT OR IGNORE INTO runtime_checkpoints(run_id,checkpoint_minute,elapsed_minutes,recorded_at) VALUES(?,?,?,?)",
+                    (run_id, checkpoint, elapsed_seconds / 60.0, now_text),
+                )
+        conn.commit()
+    return {
+        "schemaVersion": "NEWS_GRASP_DAILY_OPERATION_ADMISSION_V1",
+        "ok": True,
+        "status": "admitted",
+        "run_id": run_id,
+        "operation_id": operation_id,
+        "elapsed_seconds": elapsed_seconds,
+        "elapsed_minutes": elapsed_seconds / 60.0,
+        "dispatch": dispatch["dispatch"],
+        "time_band": dispatch["time_band"],
+        "method_change": dispatch["dispatch"] == "method_change",
+        "scope_reduce": dispatch["dispatch"] == "scope_reduce",
+        "deadline_revision": dispatch["dispatch"] == "deadline_revision",
+        "high_cost_capability_frozen": dispatch["dispatch"] in {"scope_reduce", "deadline_revision"},
+        "retry_allowed": dispatch["dispatch"] not in {"deadline_revision"},
+        "new_generation_allowed": dispatch["dispatch"] not in {"deadline_revision"},
+        "required_inventory_preserved": True,
+        "consumer_verifier_preserved": True,
+    }
+
+
+def _canonical_child_mapping(
+    child_result: Mapping[str, Any],
+    *,
+    expected_schema: str,
+    expected_input_hash: str,
+    expected_stage_id: str | None = None,
+) -> dict[str, Any]:
+    canonical = _canonicalize_child_value(child_result)
+    if not isinstance(canonical, Mapping):
+        raise ValueError("child_result_object_required")
+    if canonical.get("schema_version") != expected_schema:
+        raise ValueError("child_result_schema_mismatch")
+    if canonical.get("input_hash") != expected_input_hash:
+        raise ValueError("child_result_input_hash_mismatch")
+    if "ok" in canonical and canonical.get("ok") is not True:
+        raise ValueError("child_result_ok_false")
+    status = str(canonical.get("status") or "").casefold()
+    if status in {"", "red", "failed", "blocked", "error", "invalid", "not_executed"}:
+        raise ValueError("child_result_status_red")
+    if expected_stage_id:
+        observed_stage = str(canonical.get("stage_id") or "")
+        if observed_stage and observed_stage != expected_stage_id:
+            raise ValueError("child_result_stage_mismatch")
+    output_hash = str(canonical.get("output_hash") or "").strip()
+    if output_hash:
+        without_hash = dict(canonical)
+        without_hash.pop("output_hash", None)
+        actual_hash = hashlib.sha256(_json_dump(without_hash).encode("utf-8")).hexdigest()
+        if output_hash != actual_hash:
+            raise ValueError("child_result_output_hash_mismatch")
+    return dict(canonical)
+
+
+def apply_stage_result_atomic(
+    store: DirectRunStore,
+    *,
+    run_id: str,
+    writer_lease: str,
+    stage_id: str,
+    child_result: Mapping[str, Any] | bytes | str,
+    expected_input_hash: str,
+    operation_id: str | None = None,
+    expected_schema: str = CHILD_RESULT_SCHEMA,
+    fencing_token: int | None = None,
+) -> dict[str, Any]:
+    """child結果とstage state、applied receiptを一つのtransactionで適用する。"""
+
+    if isinstance(child_result, Mapping) and not store.test_only_allow_semantic_verifier:
+        raise ValueError("child_result_mapping_test_only")
+    if not isinstance(expected_input_hash, str) or not expected_input_hash:
+        raise ValueError("child_result_input_hash_expected_missing")
+    _require_fencing_token(store, fencing_token)
+    if isinstance(child_result, Mapping):
+        canonical = _canonical_child_mapping(
+            child_result,
+            expected_schema=expected_schema,
+            expected_input_hash=expected_input_hash,
+            expected_stage_id=stage_id,
+        )
+    else:
+        parsed = parse_child_result(
+            child_result,
+            expected_schema=expected_schema,
+            expected_input_hash=expected_input_hash,
+        )
+        if parsed.get("ok") is not True:
+            raise ValueError(str(parsed.get("reason_code") or "child_result_invalid"))
+        canonical = dict(parsed["child_result"])
+    if not isinstance(stage_id, str) or stage_id not in DIRECT_STAGES:
+        raise ValueError("stage_id_invalid")
+    store.ensure_runtime_schema()
+    effective_operation_id = str(operation_id or f"{run_id}:{stage_id}:{expected_input_hash}")
+    if not effective_operation_id.strip():
+        raise ValueError("operation_id_invalid")
+    payload = {
+        "run_id": run_id,
+        "stage_id": stage_id,
+        "input_hash": expected_input_hash,
+        "child_result": canonical,
+    }
+    payload_json = _json_dump(payload)
+    now_text = _iso(store.now())
+    with closing(store.connect()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        existing = conn.execute(
+            "SELECT payload_json,receipt_json,run_id FROM applied_receipts WHERE operation_id=?",
+            (effective_operation_id,),
+        ).fetchone()
+        if existing is not None:
+            stored_payload = str(existing[0])
+            if str(existing[2]) == run_id and stored_payload == payload_json:
+                receipt = _json_load(str(existing[1]), {})
+                conn.rollback()
+                if not isinstance(receipt, dict):
+                    raise RuntimeError("applied_receipt_invalid")
+                return receipt
+            conn.rollback()
+            raise RuntimeError("idempotency_conflict")
+        row = store._run_row(conn, run_id)
+        _verify_writer(row, writer_lease, store.now(), fencing_token=fencing_token)
+        stage_index = DIRECT_STAGES.index(stage_id)
+        current_index = int(row["current_stage_index"])
+        # stateの現在successorだけを一回で適用する。先行・先読みstageの
+        # receiptを保存して後から穴埋めする経路は out-of-order 完了を隠すため禁止。
+        if stage_index != current_index:
+            conn.rollback()
+            raise RuntimeError("stage order successor violation")
+        stage_status = str(canonical.get("status") or "verified")
+        if stage_index == current_index:
+            existing_stage = conn.execute(
+                "SELECT 1 FROM stages WHERE run_id=? AND stage_index=?",
+                (run_id, stage_index),
+            ).fetchone()
+            if existing_stage is not None:
+                conn.rollback()
+                raise RuntimeError("stage_already_applied")
+            conn.execute(
+                """
+                INSERT INTO stages(
+                    run_id,stage_index,stage_id,status,started_at,completed_at,evidence_json
+                ) VALUES(?,?,?,?,?,?,?)
+                """,
+                (run_id, stage_index, stage_id, stage_status, now_text, now_text, _json_dump(canonical)),
+            )
+        if stage_index == current_index:
+            next_index = min(current_index + 1, len(DIRECT_STAGES))
+            next_stage = _stage_for_index(next_index)
+            conn.execute(
+                "UPDATE runs SET current_stage_index=?, exact_successor=?, updated_at=? WHERE run_id=?",
+                (next_index, next_stage, now_text, run_id),
+            )
+        if canonical.get("external_started") is True or canonical.get("external_operation_id"):
+            conn.execute(
+                "UPDATE runs SET external_started_at=COALESCE(NULLIF(external_started_at,''),?), updated_at=? WHERE run_id=?",
+                (now_text, now_text, run_id),
+            )
+        receipt = {
+            "schemaVersion": APPLIED_RECEIPT_SCHEMA,
+            "ok": True,
+            "status": "applied",
+            "operation_id": effective_operation_id,
+            "operationId": effective_operation_id,
+            "run_id": run_id,
+            "stage_id": stage_id,
+            "stageId": stage_id,
+            "input_hash": expected_input_hash,
+            "inputHash": expected_input_hash,
+            "child_result": canonical,
+            "applied_at": now_text,
+            "state": {
+                "current_stage_index": int(next_index if stage_index == current_index else current_index),
+                "current_stage": _stage_for_index(next_index if stage_index == current_index else current_index),
+            },
+        }
+        conn.execute(
+            """
+            INSERT INTO applied_receipts(
+                operation_id,run_id,stage_id,input_hash,payload_json,receipt_json,applied_at
+            ) VALUES(?,?,?,?,?,?,?)
+            """,
+            (
+                effective_operation_id,
+                run_id,
+                stage_id,
+                expected_input_hash,
+                payload_json,
+                _json_dump(receipt),
+                now_text,
+            ),
+        )
+        conn.commit()
+        return receipt
+
+
+def get_applied_receipt(
+    store: DirectRunStore,
+    *,
+    run_id: str,
+    operation_id: str,
+) -> dict[str, Any] | None:
+    """同一operation_idの適用receiptだけをretry authorityとして返す。"""
+
+    with closing(store.connect()) as conn:
+        row = conn.execute(
+            "SELECT run_id,receipt_json FROM applied_receipts WHERE operation_id=?",
+            (operation_id,),
+        ).fetchone()
+    if row is None:
+        return None
+    if str(row[0]) != run_id:
+        raise ValueError("applied_receipt_run_mismatch")
+    receipt = _json_load(str(row[1]), {})
+    if not isinstance(receipt, dict):
+        raise RuntimeError("applied_receipt_invalid")
+    return receipt
+
+
+def get_active_run(
+    store: DirectRunStore,
+    *,
+    automation_id: str = AUTOMATION_ID,
+    issue_date: str,
+    run_intent: str = RUN_INTENT,
+    include_writer: bool = False,
+) -> dict[str, Any] | None:
+    """canonical identityのactive runを観測投影として取得する。
+
+    leaseを必要とする内部writerだけが``include_writer=True``を明示する。
+    """
+
+    issue = _validate_issue_date(issue_date)
+    # V1 DBを読み取る前に明示migrationを完了させる。これをcaller側の
+    # get_active_run順序へ任せると、旧schemaのactive rowを誤ってwinner扱いする。
+    store.ensure_runtime_schema()
+    with closing(store.connect()) as conn:
+        row = store._latest_for_identity(
+            conn,
+            automation_id=automation_id,
+            issue_date=issue,
+            run_intent=str(run_intent or ""),
+        )
+        if row is None or row["status"] not in {"active", "executing", "finalizing"}:
+            return None
+        projection = _projection_from_row(store, conn, row)
+        if not include_writer:
+            projection.pop("writer_lease", None)
+            projection.pop("fencing_token", None)
+            start_seal = projection.get("start_seal")
+            if isinstance(start_seal, Mapping):
+                projection["start_seal"] = {
+                    key: value
+                    for key, value in start_seal.items()
+                    if key not in {"fencingToken", "writerLease"}
+                }
+        return projection
+
+
+def claim_daily_operation(
+    store: DirectRunStore,
+    *,
+    run_id: str,
+    writer_lease: str,
+    operation_id: str,
+    input_hash: str,
+    handler_id: str,
+    fencing_token: int | None = None,
+) -> dict[str, Any]:
+    """handler起動前にDaily operationを一度だけclaimする。
+
+    claimは``BEGIN IMMEDIATE``内で行い、同じrun/operationを並列workerが
+    二重実行できないようにする。既存claimは再実行許可ではなく、callerが
+    既存receiptをattachすべき状態として返す。
+    """
+
+    if operation_id not in DAILY_OPERATION_ORDER:
+        raise ValueError("daily_operation_unknown")
+    if not isinstance(input_hash, str) or not input_hash.strip():
+        raise ValueError("daily_operation_input_hash_invalid")
+    if not isinstance(handler_id, str) or not handler_id.strip():
+        raise ValueError("daily_operation_handler_id_invalid")
+    _require_fencing_token(store, fencing_token)
+    store.ensure_runtime_schema()
+    operation_index = DAILY_OPERATION_ORDER.index(operation_id)
+    now_text = _iso(store.now())
+    with closing(store.connect()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        row = store._run_row(conn, run_id)
+        _verify_writer(row, writer_lease, store.now(), fencing_token=fencing_token)
+        existing_receipt = conn.execute(
+            "SELECT receipt_json FROM daily_operation_receipts WHERE run_id=? AND operation_id=?",
+            (run_id, operation_id),
+        ).fetchone()
+        if existing_receipt is not None:
+            receipt = _json_load(str(existing_receipt[0]), {})
+            if (
+                not isinstance(receipt, Mapping)
+                or str(receipt.get("input_hash") or "") != input_hash
+                or str(receipt.get("handler_id") or "") != handler_id
+            ):
+                conn.rollback()
+                raise RuntimeError("daily_operation_receipt_binding_conflict")
+            conn.rollback()
+            return {
+                "schemaVersion": "NEWS_GRASP_DAILY_OPERATION_CLAIM_V1",
+                "ok": True,
+                "status": "completed",
+                "run_id": run_id,
+                "operation_id": operation_id,
+                "input_hash": input_hash,
+                "handler_id": handler_id,
+                "fencing_token": int(_row_value(row, "fencing_token", 0) or 0),
+                "receipt": receipt if isinstance(receipt, Mapping) else {},
+                "attach_only": True,
+            }
+        prior_rows = conn.execute(
+            "SELECT operation_index FROM daily_operation_receipts WHERE run_id=? ORDER BY operation_index",
+            (run_id,),
+        ).fetchall()
+        prior_indices = [int(item[0]) for item in prior_rows]
+        if prior_indices != list(range(operation_index)):
+            conn.rollback()
+            raise RuntimeError("daily_operation_order_violation")
+        existing = conn.execute(
+            "SELECT input_hash,handler_id,fencing_token,status,claimed_at FROM daily_operation_claims WHERE run_id=? AND operation_id=?",
+            (run_id, operation_id),
+        ).fetchone()
+        if existing is not None:
+            if str(existing[0]) != input_hash or str(existing[1]) != handler_id:
+                conn.rollback()
+                raise RuntimeError("daily_operation_claim_idempotency_conflict")
+            conn.rollback()
+            return {
+                "schemaVersion": "NEWS_GRASP_DAILY_OPERATION_CLAIM_V1",
+                "ok": False,
+                "status": "already_claimed",
+                "run_id": run_id,
+                "operation_id": operation_id,
+                "input_hash": input_hash,
+                "handler_id": handler_id,
+                "fencing_token": int(existing[2] or 0),
+                "claimed_at": str(existing[4] or ""),
+                "attach_only": True,
+            }
+        token = int(fencing_token if fencing_token is not None else _row_value(row, "fencing_token", 0) or 0)
+        if token <= 0:
+            conn.rollback()
+            raise PermissionError("fencing_token_required")
+        timing_event_id = _append_timing_event_in_tx(
+            conn,
+            run_id=run_id,
+            event_kind="internal_processing",
+            started_at=now_text,
+            evidence={
+                "phase": "daily_operation",
+                "operation_id": operation_id,
+                "operation_index": operation_index,
+                "event": "operation_start",
+            },
+        )
+        conn.execute(
+            """
+            INSERT INTO daily_operation_claims(
+                run_id,operation_id,operation_index,input_hash,handler_id,
+                fencing_token,status,claimed_at
+            ) VALUES(?,?,?,?,?,?,?,?)
+            """,
+            (run_id, operation_id, operation_index, input_hash, handler_id, token, "claimed", now_text),
+        )
+        conn.commit()
+    return {
+        "schemaVersion": "NEWS_GRASP_DAILY_OPERATION_CLAIM_V1",
+        "ok": True,
+        "status": "claimed",
+        "run_id": run_id,
+        "operation_id": operation_id,
+        "input_hash": input_hash,
+        "handler_id": handler_id,
+        "fencing_token": token,
+        "claimed_at": now_text,
+        "timing_event_id": timing_event_id,
+        "attach_only": False,
+    }
+
+
+def apply_daily_operation_atomic(
+    store: DirectRunStore,
+    *,
+    run_id: str,
+    writer_lease: str,
+    operation_id: str,
+    input_hash: str,
+    handler_id: str,
+    producer_receipt: Mapping[str, Any],
+    fencing_token: int | None = None,
+) -> dict[str, Any]:
+    """Daily operationのproducer receiptと進捗を同一SQLite transactionへ適用する。"""
+
+    if operation_id not in DAILY_OPERATION_ORDER:
+        raise ValueError("daily_operation_unknown")
+    if not isinstance(input_hash, str) or not input_hash.strip():
+        raise ValueError("daily_operation_input_hash_invalid")
+    if not isinstance(handler_id, str) or not handler_id.strip():
+        raise ValueError("daily_operation_handler_id_invalid")
+    if not isinstance(producer_receipt, Mapping):
+        raise ValueError("daily_operation_producer_receipt_missing")
+    if producer_receipt.get("ok") is not True:
+        raise ValueError("daily_operation_producer_receipt_red")
+    producer_status = str(
+        producer_receipt.get("status") or producer_receipt.get("result") or ""
+    ).casefold()
+    if producer_status in {"", "red", "failed", "blocked", "missing", "not_executed"}:
+        raise ValueError("daily_operation_producer_receipt_invalid")
+    _require_fencing_token(store, fencing_token)
+    store.ensure_runtime_schema()
+    operation_index = DAILY_OPERATION_ORDER.index(operation_id)
+    payload = {
+        "run_id": run_id,
+        "operation_id": operation_id,
+        "operation_index": operation_index,
+        "input_hash": input_hash,
+        "handler_id": handler_id,
+        "producer_receipt": dict(producer_receipt),
+    }
+    payload_json = _json_dump(payload)
+    now_text = _iso(store.now())
+    with closing(store.connect()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        existing = conn.execute(
+            """
+            SELECT payload_json,receipt_json
+            FROM daily_operation_receipts
+            WHERE run_id=? AND operation_id=?
+            """,
+            (run_id, operation_id),
+        ).fetchone()
+        if existing is not None:
+            if str(existing[0]) == payload_json:
+                receipt = _json_load(str(existing[1]), {})
+                conn.rollback()
+                if not isinstance(receipt, dict):
+                    raise RuntimeError("daily_operation_receipt_invalid")
+                return receipt
+            conn.rollback()
+            raise RuntimeError("idempotency_conflict")
+        row = store._run_row(conn, run_id)
+        _verify_writer(row, writer_lease, store.now(), fencing_token=fencing_token)
+        token = int(fencing_token if fencing_token is not None else _row_value(row, "fencing_token", 0) or 0)
+        if token <= 0:
+            conn.rollback()
+            raise PermissionError("fencing_token_required")
+        claim_row = conn.execute(
+            """
+            SELECT input_hash,handler_id,fencing_token,status
+            FROM daily_operation_claims
+            WHERE run_id=? AND operation_id=?
+            """,
+            (run_id, operation_id),
+        ).fetchone()
+        if claim_row is None:
+            conn.rollback()
+            raise PermissionError("daily_operation_claim_required")
+        if (
+            str(claim_row[0]) != input_hash
+            or str(claim_row[1]) != handler_id
+            or int(claim_row[2] or 0) != token
+            or str(claim_row[3]) != "claimed"
+        ):
+            conn.rollback()
+            raise PermissionError("daily_operation_claim_fenced")
+        prior_rows = conn.execute(
+            """
+            SELECT operation_id,operation_index
+            FROM daily_operation_receipts WHERE run_id=? ORDER BY operation_index
+            """,
+            (run_id,),
+        ).fetchall()
+        prior_indices = [int(item[1]) for item in prior_rows]
+        expected_prior = list(range(operation_index))
+        if prior_indices != expected_prior:
+            conn.rollback()
+            raise RuntimeError("daily_operation_order_violation")
+        receipt = {
+            "schemaVersion": "NEWS_GRASP_DAILY_OPERATION_RECEIPT_V1",
+            "ok": True,
+            "status": "completed",
+            "run_id": run_id,
+            "operation_id": operation_id,
+            "operation_index": operation_index,
+            "input_hash": input_hash,
+            "handler_id": handler_id,
+            "producer_receipt": dict(producer_receipt),
+            "applied_at": now_text,
+            "sequence": {
+                "completed_before": [item[0] for item in prior_rows],
+                "next_operation": (
+                    DAILY_OPERATION_ORDER[operation_index + 1]
+                    if operation_index + 1 < len(DAILY_OPERATION_ORDER)
+                    else ""
+                ),
+            },
+        }
+        receipt_hash = hashlib.sha256(_json_dump(receipt).encode("utf-8")).hexdigest()
+        closed_timing_event_id = _close_open_timing_event(
+            conn,
+            run_id=run_id,
+            ended_at=now_text,
+            evidence={
+                "phase": "daily_operation",
+                "operation_id": operation_id,
+                "event": "operation_end",
+                "status": "completed",
+            },
+        )
+        conn.execute(
+            """
+            INSERT INTO daily_operation_receipts(
+                run_id,operation_id,operation_index,input_hash,handler_id,
+                payload_json,receipt_json,applied_at,fencing_token,receipt_hash
+            ) VALUES(?,?,?,?,?,?,?,?,?,?)
+            """,
+            (
+                run_id,
+                operation_id,
+                operation_index,
+                input_hash,
+                handler_id,
+                payload_json,
+                _json_dump(receipt),
+                now_text,
+                token,
+                receipt_hash,
+            ),
+        )
+        changed_claim = conn.execute(
+            """
+            UPDATE daily_operation_claims
+            SET status='completed',completed_at=?
+            WHERE run_id=? AND operation_id=? AND input_hash=? AND handler_id=?
+              AND fencing_token=? AND status='claimed'
+            """,
+            (now_text, run_id, operation_id, input_hash, handler_id, token),
+        ).rowcount
+        if changed_claim != 1:
+            conn.rollback()
+            raise PermissionError("daily_operation_claim_cas_conflict")
+        if producer_receipt.get("external_started") is True:
+            conn.execute(
+                "UPDATE runs SET external_started_at=COALESCE(NULLIF(external_started_at,''),?), updated_at=? WHERE run_id=? AND writer_lease=? AND fencing_token=?",
+                (now_text, now_text, run_id, writer_lease, token),
+            )
+        if operation_id == DAILY_OPERATION_ORDER[-1]:
+            # operation receiptの適用は完了判定ではない。public verifierを
+            # 通した既存唯一finalizerだけがstatus=completedへ遷移させる。
+            changed_run = conn.execute(
+                "UPDATE runs SET status='finalizing', exact_successor='public_completion', updated_at=? WHERE run_id=? AND writer_lease=? AND fencing_token=? AND status IN ('active','executing','finalizing')",
+                (now_text, run_id, writer_lease, token),
+            ).rowcount
+            if changed_run != 1:
+                conn.rollback()
+                raise PermissionError("daily_operation_run_cas_conflict")
+        else:
+            changed_run = conn.execute(
+                "UPDATE runs SET updated_at=? WHERE run_id=? AND writer_lease=? AND fencing_token=?",
+                (now_text, run_id, writer_lease, token),
+            ).rowcount
+            if changed_run != 1:
+                conn.rollback()
+                raise PermissionError("daily_operation_run_cas_conflict")
+        conn.commit()
+        receipt["receipt_hash"] = receipt_hash
+        receipt["timing_event_id"] = closed_timing_event_id
+        return receipt
+
+
+def get_daily_operation_receipt(
+    store: DirectRunStore,
+    *,
+    run_id: str,
+    operation_id: str,
+) -> dict[str, Any] | None:
+    """Daily operationの既存receiptを返す。"""
+
+    with closing(store.connect()) as conn:
+        row = conn.execute(
+            """
+            SELECT receipt_json FROM daily_operation_receipts
+            WHERE run_id=? AND operation_id=?
+            """,
+            (run_id, operation_id),
+        ).fetchone()
+    if row is None:
+        return None
+    receipt = _json_load(str(row[0]), {})
+    if not isinstance(receipt, dict):
+        raise RuntimeError("daily_operation_receipt_invalid")
+    return receipt
+
+
+def record_external_outbox(
+    store: DirectRunStore,
+    *,
+    run_id: str,
+    writer_lease: str,
+    operation_id: str,
+    side_effect_id: str,
+    status: str,
+    payload: Mapping[str, Any] | None = None,
+    idempotency_key: str | None = None,
+    fencing_token: int | None = None,
+) -> dict[str, Any]:
+    """許可済みexternal side effectをoutboxへ一度だけ記録する。"""
+
+    allowed_statuses = {
+        "reserved",
+        "started",
+        "sent",
+        "acknowledged",
+        "completed",
+        "unknown_delivery",
+        "unknown_unobtainable",
+    }
+    if status not in allowed_statuses:
+        raise ValueError("external_outbox_status_invalid")
+    if status != "reserved":
+        raise ValueError("external_outbox_initial_status_must_be_reserved")
+    if not operation_id.strip() or not side_effect_id.strip():
+        raise ValueError("external_outbox_identity_invalid")
+    _require_fencing_token(store, fencing_token)
+    store.ensure_runtime_schema()
+    payload_value = dict(payload or {})
+    payload_json = _json_dump(payload_value)
+    now_text = _iso(store.now())
+    with closing(store.connect()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        row = store._run_row(conn, run_id)
+        _verify_writer(row, writer_lease, store.now(), fencing_token=fencing_token)
+        start_seal = _json_load(_row_value(row, "start_seal_json", "{}"), {})
+        allowed_ids = {
+            str(item)
+            for item in (start_seal.get("allowedSideEffectIds") or [])
+            if isinstance(item, str)
+        }
+        if allowed_ids and side_effect_id not in allowed_ids:
+            conn.rollback()
+            raise PermissionError("external_side_effect_not_allowed")
+        existing = conn.execute(
+            "SELECT side_effect_id,status,payload_json FROM external_outbox "
+            "WHERE run_id=? AND logical_operation_id=?",
+            (run_id, operation_id),
+        ).fetchone()
+        if existing is not None:
+            if str(existing[0]) == side_effect_id and str(existing[2]) == payload_json:
+                result = {
+                    "schemaVersion": "NEWS_GRASP_EXTERNAL_OUTBOX_RECEIPT_V1",
+                    "ok": True,
+                    "status": str(existing[1]),
+                    "operation_id": operation_id,
+                    "side_effect_id": side_effect_id,
+                    "idempotent": True,
+                }
+                conn.rollback()
+                return result
+            conn.rollback()
+            raise RuntimeError("idempotency_conflict")
+        token = int(fencing_token if fencing_token is not None else _row_value(row, "fencing_token", 0) or 0)
+        key = str(idempotency_key or f"{run_id}:{operation_id}:{side_effect_id}").strip()
+        if not key:
+            conn.rollback()
+            raise ValueError("external_idempotency_key_invalid")
+        started_at = ""
+        completed_at = now_text if status in {"acknowledged", "completed"} else ""
+        output_hash = hashlib.sha256(payload_json.encode("utf-8")).hexdigest()
+        physical_operation_id = hashlib.sha256(
+            f"{run_id}\0{operation_id}".encode("utf-8")
+        ).hexdigest()
+        conn.execute(
+            """
+            INSERT INTO external_outbox(
+                operation_id,run_id,logical_operation_id,side_effect_id,status,payload_json,started_at,completed_at,
+                idempotency_key,fencing_token,updated_at,output_hash
+            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)
+            """,
+            (physical_operation_id, run_id, operation_id, side_effect_id, status, payload_json, started_at, completed_at,
+             key, token, now_text, output_hash),
+        )
+        result = {
+            "schemaVersion": "NEWS_GRASP_EXTERNAL_OUTBOX_RECEIPT_V1",
+            "ok": True,
+            "status": status,
+            "operation_id": operation_id,
+            "side_effect_id": side_effect_id,
+            "payload": payload_value,
+            "started_at": started_at,
+            "completed_at": completed_at,
+            "idempotency_key": key,
+            "fencing_token": token,
+            "output_hash": output_hash,
+            "idempotent": False,
+        }
+        conn.commit()
+        return result
+
+
+def transition_external_outbox(
+    store: DirectRunStore,
+    *,
+    run_id: str,
+    writer_lease: str,
+    operation_id: str,
+    expected_status: str,
+    next_status: str,
+    provider_ack_status: str = "",
+    fencing_token: int | None = None,
+) -> dict[str, Any]:
+    """sealed outboxの単調CAS遷移。送信処理自体はこの関数の外で一度だけ行う。"""
+
+    transitions = {
+        "reserved": {"started"},
+        "started": {"sent", "unknown_delivery", "unknown_unobtainable"},
+        "sent": {"acknowledged", "completed", "unknown_delivery", "unknown_unobtainable"},
+        "acknowledged": {"completed"},
+        "completed": set(),
+        "unknown_delivery": set(),
+        "unknown_unobtainable": set(),
+    }
+    if next_status not in transitions.get(expected_status, set()):
+        raise ValueError("external_outbox_transition_invalid")
+    _require_fencing_token(store, fencing_token)
+    store.ensure_runtime_schema()
+    now_text = _iso(store.now())
+    with closing(store.connect()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        row = store._run_row(conn, run_id)
+        _verify_writer(row, writer_lease, store.now(), fencing_token=fencing_token)
+        current = conn.execute(
+            "SELECT side_effect_id,status,idempotency_key,fencing_token,payload_json,output_hash "
+            "FROM external_outbox WHERE run_id=? AND logical_operation_id=?",
+            (run_id, operation_id),
+        ).fetchone()
+        if current is None:
+            conn.rollback()
+            raise ValueError("external_outbox_missing")
+        if str(current[1]) != expected_status:
+            conn.rollback()
+            if str(current[1]) == next_status:
+                return {
+                    "schemaVersion": "NEWS_GRASP_EXTERNAL_OUTBOX_RECEIPT_V1",
+                    "ok": True,
+                    "status": next_status,
+                    "operation_id": operation_id,
+                    "side_effect_id": str(current[0]),
+                    "idempotency_key": str(current[2]),
+                    "idempotent": True,
+                }
+            raise PermissionError("external_outbox_cas_conflict")
+        token = int(fencing_token if fencing_token is not None else current[3] or 0)
+        if token != int(current[3] or 0):
+            conn.rollback()
+            raise PermissionError("external_outbox_fencing_conflict")
+        started_at = now_text if next_status == "started" else ""
+        completed_at = now_text if next_status in {"completed", "acknowledged"} else ""
+        changed = conn.execute(
+            """
+            UPDATE external_outbox
+            SET status=?,started_at=CASE WHEN ?!='' THEN ? ELSE started_at END,
+                completed_at=CASE WHEN ?!='' THEN ? ELSE completed_at END,
+                provider_ack_status=?,updated_at=?
+            WHERE run_id=? AND logical_operation_id=? AND status=? AND fencing_token=?
+            """,
+            (next_status, started_at, started_at, completed_at, completed_at,
+             str(provider_ack_status or ""), now_text, run_id, operation_id,
+             expected_status, token),
+        ).rowcount
+        if changed != 1:
+            conn.rollback()
+            raise PermissionError("external_outbox_cas_conflict")
+        conn.execute(
+            "UPDATE runs SET external_started_at=COALESCE(NULLIF(external_started_at,''),?),updated_at=? WHERE run_id=?",
+            (now_text, now_text, run_id),
+        )
+        conn.commit()
+    return {
+        "schemaVersion": "NEWS_GRASP_EXTERNAL_OUTBOX_RECEIPT_V1",
+        "ok": True,
+        "status": next_status,
+        "operation_id": operation_id,
+        "side_effect_id": str(current[0]),
+        "idempotency_key": str(current[2]),
+        "provider_ack_status": str(provider_ack_status or ""),
+        "idempotent": False,
+    }
+
+
+def seal_publish(
+    store: DirectRunStore,
+    *,
+    run_id: str,
+    writer_lease: str,
+    release_commit_sha: str,
+    exact_write_set: Sequence[str],
+    file_hashes: Mapping[str, str],
+    manifest_id: str,
+    bundle_id: str,
+    external_operation_ids: Sequence[str] = (),
+    fencing_token: int | None = None,
+) -> dict[str, Any]:
+    """外部公開直前のpublish sealを同一runへ固定する。"""
+
+    _require_fencing_token(store, fencing_token)
+    if not isinstance(exact_write_set, Sequence) or isinstance(exact_write_set, (str, bytes, bytearray)) or not exact_write_set:
+        raise ValueError("publish_seal_write_set_invalid")
+    write_set = [str(item) for item in exact_write_set]
+    if len(set(write_set)) != len(write_set) or any(not item or Path(item).is_absolute() or ".." in Path(item).parts for item in write_set):
+        raise ValueError("publish_seal_write_set_invalid")
+    if not store.test_only_allow_semantic_verifier and "docs/index.html" not in write_set:
+        raise ValueError("publish_seal_home_write_required")
+    if not isinstance(file_hashes, Mapping):
+        raise ValueError("publish_seal_file_hashes_invalid")
+    if not re.fullmatch(r"[0-9a-f]{40}", str(release_commit_sha or "").casefold()):
+        raise ValueError("publish_seal_release_commit_invalid")
+    if set(str(key) for key in file_hashes) != set(write_set) or any(
+        re.fullmatch(r"[0-9a-f]{64}", str(value or "").casefold()) is None
+        for value in file_hashes.values()
+    ):
+        raise ValueError("publish_seal_file_hashes_invalid")
+    manifest_value = str(manifest_id or "").strip().casefold()
+    if not re.fullmatch(r"[0-9a-f]{64}", manifest_value) or not str(bundle_id or "").strip():
+        raise ValueError("publish_seal_binding_invalid")
+    seal = {
+        "schemaVersion": "NEWS_GRASP_PUBLISH_SEAL_V1",
+        "releaseCommitSha": release_commit_sha,
+        "exactWriteSet": write_set,
+        "fileHashes": dict(file_hashes),
+        "manifestId": manifest_value,
+        "bundleId": bundle_id,
+        "externalOperationIds": list(external_operation_ids),
+    }
+    seal_json = _json_dump(seal)
+    now_text = _iso(store.now())
+    store.ensure_runtime_schema()
+    with closing(store.connect()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        row = store._run_row(conn, run_id)
+        _verify_writer(row, writer_lease, store.now(), fencing_token=fencing_token)
+        if str(_row_value(row, "external_started_at", "") or "") or store._external_side_effect_state(conn, run_id) != "none":
+            conn.rollback()
+            raise PermissionError("superseded_after_external_start")
+        row_manifest = str(_row_value(row, "manifest_id", "") or "").strip().casefold()
+        reservation_id = str(_row_value(row, "manifest_reservation_id", "") or "").strip().casefold()
+        if not store.test_only_allow_semantic_verifier:
+            if not re.fullmatch(r"[0-9a-f]{64}", reservation_id):
+                conn.rollback()
+                raise PermissionError("manifest_reservation_missing")
+            # reservationはrun開始時にseal済みであり、公開直前に差し替え
+            # られない。publish seal自身にも同じ値を持たせることで、
+            # DB列・start seal・publish sealの三者を同一identityへ束縛する。
+        seal["manifestReservationId"] = reservation_id
+        seal_json = _json_dump(seal)
+        start_seal = _json_load(_row_value(row, "start_seal_json", "{}"), {})
+        start_reservation_id = str(
+            _mapping_first(start_seal, "manifestReservationId", "manifest_reservation_id", default="")
+            or ""
+        ).strip().casefold()
+        if not store.test_only_allow_semantic_verifier and start_reservation_id != reservation_id:
+            conn.rollback()
+            raise PermissionError("manifest_reservation_binding_conflict")
+        allowed_ids = {
+            str(item)
+            for item in (start_seal.get("allowedSideEffectIds") or [])
+            if isinstance(item, str)
+        }
+        if allowed_ids and any(str(item) not in allowed_ids for item in external_operation_ids):
+            conn.rollback()
+            raise PermissionError("external_side_effect_not_allowed")
+        existing = str(_row_value(row, "publish_seal_json", "{}") or "{}")
+        if existing not in {"", "{}"}:
+            if row_manifest == manifest_value and existing == seal_json:
+                conn.rollback()
+                return _json_load(existing, seal)
+            conn.rollback()
+            raise RuntimeError("publish_seal_idempotency_conflict")
+        if row_manifest and row_manifest != manifest_value:
+            conn.rollback()
+            raise RuntimeError("publish_seal_idempotency_conflict")
+        if not store.test_only_allow_semantic_verifier and row_manifest:
+            # productionのactual manifestはpublish seal以外から設定されては
+            # ならない。既存値が残る不整合はrebindせず拒否する。
+            conn.rollback()
+            raise RuntimeError("publish_seal_idempotency_conflict")
+        if store.test_only_allow_semantic_verifier and row_manifest:
+            token = int(fencing_token if fencing_token is not None else _row_value(row, "fencing_token", 0) or 0)
+            changed = conn.execute(
+                "UPDATE runs SET publish_seal_json=?, updated_at=? WHERE run_id=? AND writer_lease=? AND fencing_token=? AND manifest_id=? AND publish_seal_json='{}'",
+                (seal_json, now_text, run_id, writer_lease, token, row_manifest),
+            ).rowcount
+        else:
+            # productionの二段目seal。manifest列へのCAS設定とseal JSONの
+            # 書込みを同一BEGIN IMMEDIATEへ置き、片側だけのbindを許さない。
+            token = int(fencing_token if fencing_token is not None else _row_value(row, "fencing_token", 0) or 0)
+            changed = conn.execute(
+                "UPDATE runs SET manifest_id=?, publish_seal_json=?, updated_at=? WHERE run_id=? AND writer_lease=? AND fencing_token=? AND manifest_id='' AND publish_seal_json='{}'",
+                (manifest_value, seal_json, now_text, run_id, writer_lease, token),
+            ).rowcount
+        if changed != 1:
+            conn.rollback()
+            raise PermissionError("publish_seal_cas_conflict")
+        conn.commit()
+    return seal
+
+
+record_publish_seal = seal_publish
 
 
 def relocate_runtime_state_v1(
@@ -588,16 +2545,21 @@ def _projection_from_row(store: DirectRunStore, conn: sqlite3.Connection, row: s
         }
         for item in stage_rows
     ]
-    started_at = _parse_time(row["started_at"]) or store.now()
-    elapsed = max(0.0, (store.now() - started_at).total_seconds() / 60.0)
-    if elapsed <= 45:
-        time_band = "target"
-    elif elapsed < 75:
-        time_band = "closeout"
-    elif elapsed <= 90:
-        time_band = "public_critical_only"
+    # 所要時間の起点はworker再起動やgenerationではなくscheduler T0。
+    # 旧rowにtriggerがない場合だけstarted_atへ限定的にfallbackし、観測不能を
+    # 現在時刻から再計算して過去のelapsedを水増ししない。
+    started_at = (
+        _parse_time(str(_row_value(row, "scheduler_trigger_at", "")))
+        or _parse_time(row["started_at"])
+        or store.now()
+    )
+    frozen_elapsed = _row_value(row, "completion_elapsed_seconds")
+    if frozen_elapsed is None:
+        elapsed_seconds = max(0.0, (store.now() - started_at).total_seconds())
     else:
-        time_band = "slo_debt_continue_public"
+        elapsed_seconds = max(0.0, float(frozen_elapsed))
+    elapsed = elapsed_seconds / 60.0
+    slo = slo_dispatch(elapsed_seconds=elapsed_seconds)
     current_stage = _stage_for_index(int(row["current_stage_index"]))
     title_status = str(row["title_status"] or "")
     title_completion = (
@@ -613,6 +2575,26 @@ def _projection_from_row(store: DirectRunStore, conn: sqlite3.Connection, row: s
         "SELECT previous_manifest_id,manifest_id,receipt_json,rebound_at FROM runtime_manifest_rebindings WHERE run_id=? ORDER BY id",
         (row["run_id"],),
     ).fetchall()
+    try:
+        timing_rows = conn.execute(
+            """
+            SELECT event_kind,started_at,ended_at,elapsed_seconds,evidence_json
+            FROM timing_events WHERE run_id=? ORDER BY event_id
+            """,
+            (row["run_id"],),
+        ).fetchall()
+    except sqlite3.OperationalError:
+        timing_rows = []
+    try:
+        daily_rows = conn.execute(
+            """
+            SELECT operation_id,operation_index,input_hash,handler_id,receipt_json,applied_at,fencing_token,receipt_hash
+            FROM daily_operation_receipts WHERE run_id=? ORDER BY operation_index
+            """,
+            (row["run_id"],),
+        ).fetchall()
+    except sqlite3.OperationalError:
+        daily_rows = []
     return {
         "schemaVersion": row["runtime_schema"] or RUNTIME_SCHEMA,
         "legacySchemaVersion": RUNTIME_SCHEMA,
@@ -623,6 +2605,7 @@ def _projection_from_row(store: DirectRunStore, conn: sqlite3.Connection, row: s
         "issue_date": row["issue_date"],
         "run_intent": row["run_intent"],
         "manifest_id": row["manifest_id"],
+        "manifest_reservation_id": _row_value(row, "manifest_reservation_id", "") or "",
         "migration_receipt": _json_load(row["migration_receipt_json"], {}),
         "observation_receipt": _json_load(row["observation_receipt_json"], {}),
         "manifest_rebindings": [
@@ -636,6 +2619,7 @@ def _projection_from_row(store: DirectRunStore, conn: sqlite3.Connection, row: s
         ],
         "typed_issues": _json_load(row["typed_issues_json"], []),
         "generation": int(row["generation"]),
+        "fencing_token": int(_row_value(row, "fencing_token", 0) or 0),
         "writer_lease": row["writer_lease"],
         "status": row["status"],
         "current_stage": current_stage,
@@ -651,10 +2635,47 @@ def _projection_from_row(store: DirectRunStore, conn: sqlite3.Connection, row: s
         "post_publish_issue_list": _json_load(row["post_publish_issue_list"], []),
         "surface_failures": _json_load(row["surface_failures"], []),
         "started_at": row["started_at"],
+        "scheduler_trigger_at": _row_value(row, "scheduler_trigger_at", "") or "",
         "updated_at": row["updated_at"],
         "completed_at": row["completed_at"],
+        "completion_elapsed_seconds": (
+            float(_row_value(row, "completion_elapsed_seconds"))
+            if _row_value(row, "completion_elapsed_seconds") is not None
+            else None
+        ),
+        "completion_elapsed_at": _row_value(row, "completion_elapsed_at", "") or "",
+        "start_seal": _json_load(_row_value(row, "start_seal_json", "{}"), {}),
+        "publish_seal": _json_load(_row_value(row, "publish_seal_json", "{}"), {}),
+        "timing_events": [
+            {
+                "event_kind": item["event_kind"],
+                "started_at": item["started_at"],
+                "ended_at": item["ended_at"],
+                "elapsed_seconds": (
+                    float(item["elapsed_seconds"])
+                    if item["elapsed_seconds"] is not None
+                    else None
+                ),
+                "evidence": _json_load(item["evidence_json"], {}),
+            }
+            for item in timing_rows
+        ],
+        "daily_operations": [
+            {
+                "operation_id": item["operation_id"],
+                "operation_index": int(item["operation_index"]),
+                "input_hash": item["input_hash"],
+                "handler_id": item["handler_id"],
+                "receipt": _json_load(item["receipt_json"], {}),
+                "applied_at": item["applied_at"],
+                "fencing_token": int(item["fencing_token"] or 0),
+                "receipt_hash": item["receipt_hash"] or "",
+            }
+            for item in daily_rows
+        ],
         "slo": {
             "elapsed_minutes": elapsed,
+            "elapsed_seconds": elapsed_seconds,
             "target_minutes": 45,
             "optional_high_cost_freeze_minutes": 75,
             "slo_minutes": 90,
@@ -662,7 +2683,8 @@ def _projection_from_row(store: DirectRunStore, conn: sqlite3.Connection, row: s
             "optional_high_cost_frozen": elapsed >= 75,
             "slo_met": elapsed <= 90,
             "slo_debt": elapsed > 90,
-            "time_band": time_band,
+            "time_band": slo["time_band"],
+            "dispatch": slo["dispatch"],
             "continue_public_successors": True,
             "checkpoints": [
                 {"minute": int(item["checkpoint_minute"]), "elapsed_minutes": float(item["elapsed_minutes"]), "recorded_at": item["recorded_at"]}
@@ -688,12 +2710,56 @@ def start_run(
     issue_date: str,
     run_intent: str | None = None,
     manifest_id: str = "",
+    manifest_reservation_id: str = "",
     observation_receipt: Mapping[str, Any] | None = None,
+    scheduler_trigger_at: str | None = None,
+    source_baseline: str = "",
+    runtime_generation: str = "",
+    remote_base_sha: str = "",
+    allowed_side_effect_ids: list[str] | tuple[str, ...] | None = None,
 ) -> dict[str, Any]:
+    schema_receipt = store.ensure_runtime_schema()
     issue = _validate_issue_date(issue_date)
     canonical_cwd = _canonical_cwd(cwd)
     now = store.now()
     now_text = _iso(now)
+    if run_intent is not None and not str(run_intent).strip():
+        raise ValueError("run_intent_invalid")
+    if run_intent is None and not store.test_only_allow_semantic_verifier:
+        raise ValueError("run_intent_required")
+    identity_run_intent = str(run_intent or "")
+    if not store.test_only_allow_semantic_verifier and not str(scheduler_trigger_at or "").strip():
+        raise ValueError("scheduler_trigger_at_required")
+    trigger_at = str(scheduler_trigger_at or now_text)
+    if _parse_time(trigger_at) is None:
+        raise ValueError("scheduler_trigger_at_invalid")
+    supplied_manifest_id = str(manifest_id or "").strip().casefold()
+    supplied_manifest_reservation_id = str(manifest_reservation_id or "").strip().casefold()
+    if supplied_manifest_reservation_id and not re.fullmatch(r"[0-9a-f]{64}", supplied_manifest_reservation_id):
+        raise ValueError("manifest_reservation_id_invalid")
+    if not store.test_only_allow_semantic_verifier:
+        if not re.fullmatch(r"[0-9a-f]{40}", str(source_baseline or "").casefold()):
+            raise ValueError("source_baseline_required")
+        if not re.fullmatch(r"[0-9a-f]{40}", str(remote_base_sha or "").casefold()):
+            raise ValueError("remote_base_sha_required")
+        # manifestは公開直前のsealまで存在してはならない。開始時に完成
+        # manifestを受け取ると、開始identityと公開identityの二段階束縛が
+        # 崩れ、後段のrebind逃げ道になるためfail-closedする。
+        if supplied_manifest_id:
+            raise ValueError("manifest_id_must_be_unsealed_at_start")
+        if not re.fullmatch(r"[0-9a-f]{64}", supplied_manifest_reservation_id):
+            raise ValueError("manifest_reservation_id_required")
+        if not str(runtime_generation or "").strip():
+            raise ValueError("runtime_generation_required")
+        side_effect_ids = [str(item).strip() for item in (allowed_side_effect_ids or ())]
+        if not side_effect_ids or len(set(side_effect_ids)) != len(side_effect_ids):
+            raise ValueError("allowed_side_effect_ids_required")
+    else:
+        side_effect_ids = [str(item).strip() for item in (allowed_side_effect_ids or ()) if str(item).strip()]
+        # test_onlyの既存fixtureはmanifest_idだけを渡して開始するため、
+        # その互換性は維持する。productionでは上記の未seal規則を緩めない。
+        if not supplied_manifest_reservation_id and re.fullmatch(r"[0-9a-f]{64}", supplied_manifest_id):
+            supplied_manifest_reservation_id = supplied_manifest_id
     with closing(store.connect()) as conn:
         conn.execute("BEGIN IMMEDIATE")
         latest = store._latest_for_identity(
@@ -701,33 +2767,96 @@ def start_run(
             automation_id=automation_id,
             cwd=canonical_cwd,
             issue_date=issue,
+            run_intent=identity_run_intent,
         )
         if latest is not None:
             lease_until = _parse_time(latest["lease_until"])
             if latest["status"] in {"active", "executing", "finalizing"} and lease_until and lease_until > now:
                 projection = _projection_from_row(store, conn, latest)
+                projection["status"] = "attached"
+                projection["single_flight"] = "attached"
+                projection["attached_to_run_id"] = latest["run_id"]
+                # attachは観測専用。active writerのleaseを別workerへ返さない。
                 projection.pop("writer_lease", None)
+                projection.pop("fencing_token", None)
+                start_seal_projection = projection.get("start_seal")
+                if isinstance(start_seal_projection, Mapping):
+                    projection["start_seal"] = {
+                        key: value
+                        for key, value in start_seal_projection.items()
+                        if key not in {"fencingToken", "writerLease"}
+                    }
                 conn.rollback()
                 return projection
             if latest["status"] in {"active", "executing", "finalizing"}:
+                external_state = store._external_side_effect_state(conn, latest["run_id"])
+                if str(latest["external_started_at"] or "") or external_state != "none":
+                    projection = _projection_from_row(store, conn, latest)
+                    failure = (
+                        "unknown_delivery_requires_attach"
+                        if external_state == "unknown_delivery"
+                        else "superseded_after_external_start"
+                    )
+                    projection.update(
+                        {
+                            "status": "blocked",
+                            "single_flight": "blocked",
+                            "failures": [failure],
+                        }
+                    )
+                    projection.pop("writer_lease", None)
+                    conn.rollback()
+                    return projection
                 conn.execute(
                     "UPDATE runs SET status = ?, updated_at = ? WHERE run_id = ?",
                     ("stale_writer_rejected", now_text, latest["run_id"]),
                 )
         prior_generation = int(latest["generation"]) if latest is not None else 0
         generation = max(prior_generation + 1, _call_generation(store.host_generation))
+        fence_row = conn.execute(
+            """
+            SELECT COALESCE(MAX(fencing_token), 0)
+            FROM runs
+            WHERE automation_id=? AND issue_date=? AND COALESCE(run_intent,'')=?
+            """,
+            (automation_id, issue, identity_run_intent),
+        ).fetchone()
+        fencing_token = int(fence_row[0] or 0) + 1
         run_id = _opaque_id("direct", issue, generation)
         writer_lease = _opaque_id("lease", issue, generation)
         lease_until = _iso(now + store.lease_ttl)
         expected_title = _expected_title(issue)
+        start_seal = {
+            "schemaVersion": "NEWS_GRASP_START_SEAL_V2",
+            "runId": run_id,
+            "automationId": automation_id,
+            "issueDate": issue,
+            "runIntent": identity_run_intent,
+            "generation": generation,
+            "fencingToken": fencing_token,
+            "schedulerTriggerAt": trigger_at,
+            "cwd": canonical_cwd,
+            "manifestReservationId": supplied_manifest_reservation_id,
+            "sourceBaseline": str(source_baseline),
+            "runtimeGeneration": str(runtime_generation or (RUNTIME_SCHEMA_V2 if run_intent else RUNTIME_SCHEMA)),
+            "remoteBaseSha": str(remote_base_sha),
+            "allowedSideEffectIds": side_effect_ids,
+            "runtimeSchemaMigrationId": str(
+                (schema_receipt.get("migration_receipt") or {}).get("migrationId") or ""
+            ),
+            "runtimeSchemaMigrationHash": str(
+                (schema_receipt.get("migration_receipt") or {}).get("migrationHash") or ""
+            ),
+        }
         conn.execute(
             """
             INSERT INTO runs (
                 run_id, automation_id, cwd, issue_date, generation, writer_lease,
                 status, current_stage_index, started_at, lease_until, updated_at,
                 expected_title, exact_successor, runtime_schema, run_intent,
-                manifest_id, observation_receipt_json
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                manifest_id, manifest_reservation_id, observation_receipt_json, scheduler_trigger_at,
+                fencing_token, start_seal_json, migration_receipt_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 run_id,
@@ -744,10 +2873,49 @@ def start_run(
                 expected_title,
                 DIRECT_STAGES[0],
                 RUNTIME_SCHEMA_V2 if run_intent else RUNTIME_SCHEMA,
-                str(run_intent or ""),
-                str(manifest_id),
+                identity_run_intent,
+                supplied_manifest_id if store.test_only_allow_semantic_verifier else "",
+                supplied_manifest_reservation_id,
                 _json_dump(dict(observation_receipt or {})),
+                trigger_at,
+                fencing_token,
+                _json_dump(start_seal),
+                _json_dump(schema_receipt.get("migration_receipt") or {}),
             ),
+        )
+        trigger_value = _parse_time(trigger_at)
+        if trigger_value is None:
+            conn.rollback()
+            raise ValueError("scheduler_trigger_at_invalid")
+        # T0はschedulerのtrigger時刻で固定する。triggerから実際のworker
+        # admissionまでをqueue、admission後をinternal_processingとして
+        # 最初から区間分離し、後段でwall-clockを推測しない。
+        if trigger_value <= now:
+            _append_timing_event_in_tx(
+                conn,
+                run_id=run_id,
+                event_kind="queue",
+                started_at=_iso(trigger_value),
+                ended_at=now_text,
+                evidence={"scheduler_trigger_at": _iso(trigger_value), "t0": _iso(trigger_value)},
+            )
+        else:
+            # 未来のtriggerは時計補正・テストfixtureでは許すが、負の時間を
+            # 作らず、admissionをtrigger時刻から開始した扱いに固定する。
+            _append_timing_event_in_tx(
+                conn,
+                run_id=run_id,
+                event_kind="queue",
+                started_at=now_text,
+                ended_at=now_text,
+                evidence={"scheduler_trigger_at": _iso(trigger_value), "t0": _iso(trigger_value), "clock_skew": True},
+            )
+        _append_timing_event_in_tx(
+            conn,
+            run_id=run_id,
+            event_kind="internal_processing",
+            started_at=now_text,
+            evidence={"phase": "run_admission", "scheduler_trigger_at": _iso(trigger_value), "t0": _iso(trigger_value)},
         )
         row = store._run_row(conn, run_id)
         projection = _projection_from_row(store, conn, row)
@@ -767,9 +2935,17 @@ def _verify_writer(
     now: datetime,
     *,
     allowed_statuses: set[str] | None = None,
+    fencing_token: int | None = None,
 ) -> None:
     if str(row["writer_lease"]) != str(writer_lease):
         raise PermissionError("stale writer lease fenced")
+    if fencing_token is not None:
+        try:
+            observed_token = int(fencing_token)
+        except (TypeError, ValueError) as exc:
+            raise PermissionError("fencing_token_invalid") from exc
+        if observed_token <= 0 or observed_token != int(_row_value(row, "fencing_token", 0) or 0):
+            raise PermissionError("fencing_token_fenced")
     if row["status"] not in (allowed_statuses or {"active", "executing"}):
         raise RuntimeError("run_not_writable")
     # 期限切れ後も同じtokenかつactiveのrunはresume可能。別writerがstart_runを
@@ -888,6 +3064,7 @@ def _advance_core(
     verifier: Any = None,
     observed_at: datetime | None = None,
     _registered_consumer: Any = None,
+    fencing_token: int | None = None,
 ) -> dict[str, Any]:
     if verifier is not None and not store.test_only_allow_semantic_verifier and _registered_consumer is not _REGISTERED_CONSUMER_CAPABILITY:
         raise PermissionError("semantic_verifier_injection_test_only")
@@ -895,8 +3072,13 @@ def _advance_core(
     now_text = _iso(now)
     with closing(store.connect()) as conn:
         row = store._run_row(conn, run_id)
-        _verify_writer(row, writer_lease, now)
-        started_at = _parse_time(str(row["started_at"])) or now
+        _require_fencing_token(store, fencing_token)
+        _verify_writer(row, writer_lease, now, fencing_token=fencing_token)
+        started_at = (
+            _parse_time(str(_row_value(row, "scheduler_trigger_at", "")))
+            or _parse_time(str(row["started_at"]))
+            or now
+        )
         elapsed_minutes = max(0.0, (now - started_at).total_seconds() / 60.0)
         for checkpoint in (45, 75, 90):
             if elapsed_minutes >= checkpoint:
@@ -920,6 +3102,13 @@ def _advance_core(
             raise ValueError("stage order successor violation")
         if stage_id == "public_completion":
             raise PermissionError("public_completion_requires_atomic_finalizer")
+        _append_timing_event_in_tx(
+            conn,
+            run_id=run_id,
+            event_kind="internal_processing",
+            started_at=now_text,
+            evidence={"phase": "legacy_stage", "stage_id": stage_id, "event": "stage_start"},
+        )
         projection = _projection_from_row(store, conn, row)
         verifier_row = _call_verifier(
             verifier if verifier is not None else store.semantic_verifier,
@@ -983,6 +3172,12 @@ def _advance_core(
                 ),
             )
         if not ok:
+            _close_open_timing_event(
+                conn,
+                run_id=run_id,
+                ended_at=now_text,
+                evidence={"phase": "legacy_stage", "stage_id": stage_id, "event": "stage_failure"},
+            )
             if _surface_scoped(verifier_row, stage_id):
                 surface_failures = _append_unique(surface_failures, dict(verifier_row))
                 next_index = min(current_index + 1, len(DIRECT_STAGES) - 1)
@@ -1038,6 +3233,12 @@ def _advance_core(
             }
             conn.commit()
             return projection
+        _close_open_timing_event(
+            conn,
+            run_id=run_id,
+            ended_at=now_text,
+            evidence={"phase": "legacy_stage", "stage_id": stage_id, "event": "stage_end"},
+        )
         conn.execute(
             """
             INSERT OR REPLACE INTO stages (
@@ -1123,6 +3324,7 @@ def advance_stage(
     semantic_oracle: Any = None,
     semantic_verifier: Any = None,
     observed_at: datetime | None = None,
+    fencing_token: int | None = None,
 ) -> dict[str, Any]:
     verifier = semantic_verifier if semantic_verifier is not None else semantic_oracle
     return _advance_core(
@@ -1134,6 +3336,7 @@ def advance_stage(
         observed_surface=evidence,
         verifier=verifier,
         observed_at=observed_at,
+        fencing_token=fencing_token,
     )
 
 
@@ -1149,6 +3352,7 @@ def run_exact_successor(
     stage_id: str | None = None,
     handlers: Mapping[str, Callable[..., Mapping[str, Any]]] | None = None,
     _registered_consumer: Any = None,
+    fencing_token: int | None = None,
 ) -> dict[str, Any]:
     state = inspect_run(store, run_id=run_id)
     current_stage = str(state.get("current_stage") or "")
@@ -1185,6 +3389,7 @@ def run_exact_successor(
         verifier=semantic_verifier,
         observed_at=observed_at,
         _registered_consumer=_registered_consumer,
+        fencing_token=fencing_token,
     )
 
 
@@ -1529,6 +3734,7 @@ def probe_public_completion(
     branch: str = "main",
     wait_sec: int = 0,
     poll_sec: int = 30,
+    observation_nonce: str | None = None,
 ) -> dict[str, Any]:
     """工程0〜19完了を前提に、20を閉じる前のfresh public predicateを評価する。"""
     _require_registered_public_context(
@@ -1543,9 +3749,32 @@ def probe_public_completion(
     )
     state = inspect_run(store, run_id=run_id)
     failures: list[str] = []
+    daily_receipts = list(state.get("daily_operations") or [])
     stage_history = list(state.get("stage_history") or [])
     current_stage = state.get("current_stage")
-    if current_stage == "public_completion":
+    if daily_receipts:
+        expected_daily = [
+            (index, operation_id)
+            for index, operation_id in enumerate(DAILY_OPERATION_ORDER)
+        ]
+        observed_daily = [
+            (int(item.get("operation_index")) if item.get("operation_index") is not None else -1, str(item.get("operation_id") or ""))
+            for item in daily_receipts
+            if isinstance(item, Mapping)
+        ]
+        if observed_daily != expected_daily or any(
+            not isinstance(item, Mapping)
+            or not isinstance(item.get("receipt"), Mapping)
+            or item["receipt"].get("ok") is not True
+            or str(item["receipt"].get("status") or "").casefold() != "completed"
+            for item in daily_receipts
+        ):
+            failures.append("daily_operation_history_incomplete")
+        if state.get("status") not in {"active", "executing", "finalizing"}:
+            failures.append("daily_public_completion_status_invalid")
+        if str(state.get("exact_successor") or "") != "public_completion":
+            failures.append("daily_public_completion_successor_invalid")
+    elif current_stage == "public_completion":
         if len(stage_history) != len(DIRECT_STAGES) - 1:
             failures.append("pre_public_stage_history_incomplete")
     elif state.get("status") in {"complete", "completed", "green"}:
@@ -1583,13 +3812,14 @@ def probe_public_completion(
         failures.extend(list(verifier_row.get("failures") or [str(verifier_row.get("status") or "public_semantic_red")]))
     else:
         failures.extend(_public_failures(verifier_row, str(state.get("issue_date") or "")))
+    resolved_nonce = str(observation_nonce or uuid.uuid4().hex)
     return {
         "schemaVersion": PUBLIC_SCHEMA_V2,
         "ok": not failures,
         "status": "verified" if not failures else "blocked",
         "completion_mode": "direct_public_v2",
         "run_id": run_id,
-        "runIntent": state.get("run_intent") or RUN_INTENT,
+        "runIntent": state.get("run_intent") if "run_intent" in state else RUN_INTENT,
         "manifestId": state.get("manifest_id") or "",
         "issue_date": state.get("issue_date"),
         "failures": failures,
@@ -1602,8 +3832,437 @@ def probe_public_completion(
             "updatedAt": state.get("updated_at"),
             "manifestId": state.get("manifest_id") or "",
             "issueDate": state.get("issue_date"),
+            "runIntent": state.get("run_intent") if "run_intent" in state else RUN_INTENT,
+            "observationNonce": resolved_nonce,
             "observedAt": _iso(store.now()),
         },
+    }
+
+
+def _mapping_first(value: Any, *keys: str, default: Any = None) -> Any:
+    if not isinstance(value, Mapping):
+        return default
+    for key in keys:
+        if key in value:
+            return value[key]
+    return default
+
+
+def _unwrap_consumer_public_receipt(value: Any) -> dict[str, Any] | None:
+    """consumer operation/producer receiptを同じtyped shapeへ解決する。"""
+
+    if not isinstance(value, Mapping):
+        return None
+    for key in ("producer_receipt", "producerReceipt"):
+        nested = value.get(key)
+        if isinstance(nested, Mapping):
+            return dict(nested)
+    return dict(value)
+
+
+def _consumer_receipt_hash(receipt: Mapping[str, Any]) -> str:
+    return hashlib.sha256(_json_dump(dict(receipt)).encode("utf-8")).hexdigest()
+
+
+def _daily_public_observation_receipt(
+    *,
+    store: DirectRunStore,
+    row: sqlite3.Row,
+    daily_rows: Sequence[sqlite3.Row],
+    public_observation_receipt: Mapping[str, Any] | None,
+    admitted_at: datetime,
+) -> tuple[dict[str, Any], dict[str, Any], str, str]:
+    """Daily consumer receiptを検証し、観測・binding・hashを返す。
+
+    この関数はnetwork verifierを呼ばない。公開観測のauthorityは、
+    operation index 4へatomicに保存されたconsumer receiptだけである。
+    """
+
+    expected_rows = [
+        (index, operation_id)
+        for index, operation_id in enumerate(DAILY_OPERATION_ORDER)
+    ]
+    if len(daily_rows) != len(expected_rows):
+        raise PermissionError("finalizer_daily_operation_count_red")
+    observed_rows: list[tuple[int, str]] = []
+    parsed_operations: list[dict[str, Any]] = []
+    for item in daily_rows:
+        raw_operation = _json_load(str(item[5]), None)
+        if not isinstance(raw_operation, dict):
+            raise PermissionError("finalizer_daily_operation_receipt_invalid")
+        try:
+            operation_index = int(item[1])
+        except (TypeError, ValueError) as exc:
+            raise PermissionError("finalizer_daily_operation_index_invalid") from exc
+        # index 0は有効値であり、truthinessで-1へ落としてはいけない。
+        observed_rows.append((operation_index, str(item[0])))
+        parsed_operations.append(raw_operation)
+        saved_hash = str(item[8] or "").strip().casefold()
+        computed_hash = _consumer_receipt_hash(raw_operation)
+        if not re.fullmatch(r"[0-9a-f]{64}", saved_hash) or saved_hash != computed_hash:
+            raise PermissionError("finalizer_daily_operation_receipt_hash_mismatch")
+        try:
+            raw_operation_index = int(raw_operation.get("operation_index", -1))
+        except (TypeError, ValueError) as exc:
+            raise PermissionError("finalizer_daily_operation_binding_red") from exc
+        if (
+            raw_operation.get("ok") is not True
+            or str(raw_operation.get("status") or "").casefold() != "completed"
+            or str(raw_operation.get("run_id") or raw_operation.get("runId") or "") != str(row["run_id"])
+            or str(raw_operation.get("operation_id") or raw_operation.get("operationId") or "") != str(item[0])
+            or raw_operation_index != operation_index
+            or str(raw_operation.get("input_hash") or raw_operation.get("inputHash") or "") != str(item[2])
+            or str(raw_operation.get("handler_id") or raw_operation.get("handlerId") or "") != str(item[3])
+        ):
+            raise PermissionError("finalizer_daily_operation_receipt_binding_red")
+    if observed_rows != expected_rows:
+        raise PermissionError("finalizer_daily_operation_history_red")
+
+    consumer_operation = parsed_operations[DAILY_OPERATION_ORDER.index("consumer_public_verification")]
+    stored_consumer = _unwrap_consumer_public_receipt(consumer_operation.get("producer_receipt"))
+    if stored_consumer is None:
+        stored_consumer = _unwrap_consumer_public_receipt(consumer_operation.get("producerReceipt"))
+    supplied_consumer = _unwrap_consumer_public_receipt(public_observation_receipt)
+    if stored_consumer is None and supplied_consumer is None:
+        raise PermissionError("finalizer_consumer_public_receipt_missing")
+    if stored_consumer is not None and supplied_consumer is not None:
+        if _json_dump(stored_consumer) != _json_dump(supplied_consumer):
+            raise PermissionError("finalizer_consumer_public_receipt_binding_conflict")
+    consumer = stored_consumer or supplied_consumer
+    if consumer is None:
+        raise PermissionError("finalizer_consumer_public_receipt_missing")
+    if (
+        consumer.get("schemaVersion") != CONSUMER_PUBLIC_VERIFICATION_RECEIPT_SCHEMA
+        or consumer.get("ok") is not True
+        or str(consumer.get("status") or "").casefold() != "verified"
+    ):
+        raise PermissionError("finalizer_consumer_public_receipt_invalid")
+    observation = consumer.get("observation")
+    if not isinstance(observation, Mapping) or observation.get("ok") is not True:
+        raise PermissionError("finalizer_consumer_public_observation_invalid")
+    binding = _mapping_first(consumer, "freshnessBinding", "freshness_binding")
+    if not isinstance(binding, Mapping):
+        binding = _mapping_first(observation, "freshnessBinding", "freshness_binding")
+    if not isinstance(binding, Mapping):
+        raise PermissionError("finalizer_consumer_freshness_binding_missing")
+    binding = dict(binding)
+    expected_run_id = str(_mapping_first(binding, "runId", "run_id", default="") or "")
+    expected_issue_date = str(
+        _mapping_first(binding, "issueDate", "issue_date", "date", default="") or ""
+    )
+    expected_run_intent = str(_mapping_first(binding, "runIntent", "run_intent", default="") or "")
+    expected_manifest = str(_mapping_first(binding, "manifestId", "manifest_id", default="") or "").casefold()
+    expected_generation = _mapping_first(binding, "generation", "generationId", "generation_id")
+    expected_fencing = _mapping_first(binding, "fencingToken", "fencing_token")
+    expected_updated = str(_mapping_first(binding, "updatedAt", "updated_at", default="") or "")
+    observed_at_text = str(_mapping_first(binding, "observedAt", "observed_at", default="") or "")
+    observed_at = _parse_time(observed_at_text)
+    observation_nonce = str(
+        _mapping_first(
+            binding,
+            "observationNonce",
+            "observation_nonce",
+            "observationToken",
+            "observation_token",
+            "nonce",
+            "token",
+            default="",
+        )
+        or _mapping_first(
+            observation,
+            "observationNonce",
+            "observation_nonce",
+            "observationToken",
+            "observation_token",
+            "nonce",
+            "token",
+            default="",
+        )
+        or consumer.get("observation_token")
+        or consumer.get("observationToken")
+        or ""
+    ).strip()
+    if not observation_nonce:
+        raise PermissionError("finalizer_consumer_observation_nonce_missing")
+    try:
+        generation_matches = expected_generation is not None and int(expected_generation) == int(row["generation"])
+        fencing_matches = expected_fencing is not None and int(expected_fencing) == int(_row_value(row, "fencing_token", 0) or 0)
+    except (TypeError, ValueError) as exc:
+        raise PermissionError("finalizer_consumer_freshness_binding_invalid") from exc
+    consumer_index = DAILY_OPERATION_ORDER.index("consumer_public_verification")
+    previous_applied_at = str(daily_rows[consumer_index - 1][6] or "")
+    consumer_applied_at = _parse_time(str(daily_rows[consumer_index][6] or ""))
+    expected_updated_at = _parse_time(expected_updated)
+    if (
+        expected_run_id != str(row["run_id"])
+        or expected_issue_date != str(row["issue_date"])
+        or expected_run_intent != str(row["run_intent"] or "")
+        or expected_manifest != str(row["manifest_id"] or "").casefold()
+        or not expected_manifest
+        or not generation_matches
+        or not fencing_matches
+        # consumer観測はexternal_publication適用後、consumer自身のreceipt適用前に行う。
+        # そのため、後続二receiptでも進むrun.updated_atではなく、安定した直前operation
+        # のapplied_atへ束縛する。
+        or expected_updated != previous_applied_at
+        or expected_updated_at is None
+        or observed_at is None
+        or consumer_applied_at is None
+        or observed_at < expected_updated_at
+        or observed_at > consumer_applied_at
+        or observed_at > admitted_at
+        or (admitted_at - observed_at).total_seconds() > 15 * 60
+    ):
+        raise PermissionError("finalizer_consumer_freshness_binding_invalid")
+
+    atomic_operation = parsed_operations[DAILY_OPERATION_ORDER.index("atomic_completion")]
+    atomic_producer = _unwrap_consumer_public_receipt(atomic_operation.get("producer_receipt"))
+    if atomic_producer is None:
+        atomic_producer = _unwrap_consumer_public_receipt(atomic_operation.get("producerReceipt"))
+    if atomic_producer is not None:
+        declared_hash = _mapping_first(
+            atomic_producer,
+            "consumer_receipt_hash",
+            "consumerReceiptHash",
+            "public_observation_receipt_hash",
+            "publicObservationReceiptHash",
+        )
+        if declared_hash is not None and str(declared_hash).strip().casefold() != _consumer_receipt_hash(consumer):
+            raise PermissionError("finalizer_atomic_consumer_receipt_hash_mismatch")
+    return consumer, binding, _consumer_receipt_hash(consumer), expected_updated
+
+
+def _finalize_daily_public_completion(
+    store: DirectRunStore,
+    *,
+    run_id: str,
+    writer_lease: str,
+    public_observation_receipt: Mapping[str, Any] | None,
+    semantic_verifier: Any = None,
+    fencing_token: int | None = None,
+) -> dict[str, Any]:
+    """Daily六operationの保存済み公開観測だけを一度consumeして完了する。"""
+
+    # Daily finalizerはconsumer operationが既に取得したfresh observationを
+    # consumeするだけであり、ここからnetwork/semantic verifierを呼ばない。
+    if not store.test_only_allow_semantic_verifier and semantic_verifier is not None:
+        raise PermissionError("semantic_verifier_injection_test_only")
+    _require_fencing_token(store, fencing_token)
+    if fencing_token is None and not store.test_only_allow_semantic_verifier:
+        raise PermissionError("fencing_token_required")
+    store.ensure_runtime_schema()
+    if not store.test_only_allow_semantic_verifier:
+        # public URLの有無に依存せず、canonical runtime DB identityだけを
+        # 確認する。公開観測自体は先行consumer operationの責務である。
+        store.bind_production_runtime()
+    finalizer_nonce = uuid.uuid4().hex
+    admitted_row: sqlite3.Row | None = None
+    admitted_stage_digest = ""
+    admitted_updated_at = ""
+    admitted_consumer_receipt: dict[str, Any] = {}
+    admitted_consumer_hash = ""
+    admission_updated_at = ""
+    with closing(store.connect()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        row = store._run_row(conn, run_id)
+        now = store.now()
+        _verify_writer(
+            row,
+            writer_lease,
+            now,
+            allowed_statuses={"active", "executing", "finalizing"},
+            fencing_token=fencing_token,
+        )
+        if str(row["status"] or "") == "finalizing" and str(row["finalization_nonce"] or ""):
+            conn.rollback()
+            raise PermissionError("finalizer_already_consumed")
+        daily_rows = conn.execute(
+            """
+            SELECT operation_id,operation_index,input_hash,handler_id,payload_json,receipt_json,
+                   applied_at,fencing_token,receipt_hash
+            FROM daily_operation_receipts WHERE run_id=? ORDER BY operation_index
+            """,
+            (run_id,),
+        ).fetchall()
+        # row.updated_atはfinalizer admissionが書き換える前の値を保持する。
+        # consumer freshness bindingはこの値へ束縛し、admission後の新しい
+        # updated_atへ誤って再束縛しない。
+        admitted_consumer_receipt, _binding, admitted_consumer_hash, admitted_updated_at = _daily_public_observation_receipt(
+            store=store,
+            row=row,
+            daily_rows=daily_rows,
+            public_observation_receipt=public_observation_receipt,
+            admitted_at=now,
+        )
+        admitted_row = row
+        admitted_stage_digest = hashlib.sha256(
+            _json_dump([list(item) for item in daily_rows]).encode("utf-8")
+        ).hexdigest()
+        now_text = _iso(now)
+        admission_updated_at = now_text
+        lease_until = _iso(now + store.lease_ttl)
+        changed = conn.execute(
+            """
+            UPDATE runs SET status='finalizing', finalization_nonce=?, lease_until=?, updated_at=?
+            WHERE run_id=? AND writer_lease=? AND fencing_token=?
+              AND status IN ('active','executing','finalizing')
+              AND finalization_nonce=''
+              AND updated_at=?
+            """,
+            (
+                finalizer_nonce,
+                lease_until,
+                now_text,
+                run_id,
+                writer_lease,
+                int(fencing_token if fencing_token is not None else _row_value(row, "fencing_token", 0) or 0),
+                row["updated_at"],
+            ),
+        ).rowcount
+        if changed != 1:
+            conn.rollback()
+            raise PermissionError("finalizer_admission_cas_conflict")
+        conn.commit()
+
+    def restore_after_red() -> None:
+        with closing(store.connect()) as restore:
+            restore.execute("BEGIN IMMEDIATE")
+            token = int(fencing_token if fencing_token is not None else _row_value(admitted_row, "fencing_token", 0) or 0)
+            restored = restore.execute(
+                """
+                UPDATE runs SET status='active',finalization_nonce='',exact_successor='public_completion',updated_at=?
+                WHERE run_id=? AND writer_lease=? AND fencing_token=? AND status='finalizing' AND finalization_nonce=?
+                """,
+                (_iso(store.now()), run_id, writer_lease, token, finalizer_nonce),
+            ).rowcount
+            if restored == 1:
+                restore.commit()
+            else:
+                restore.rollback()
+
+    try:
+        with closing(store.connect()) as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            row = store._run_row(conn, run_id)
+            now = store.now()
+            _verify_writer(
+                row,
+                writer_lease,
+                now,
+                allowed_statuses={"finalizing"},
+                fencing_token=fencing_token,
+            )
+            current_daily_rows = conn.execute(
+                """
+                SELECT operation_id,operation_index,input_hash,handler_id,payload_json,receipt_json,
+                       applied_at,fencing_token,receipt_hash
+                FROM daily_operation_receipts WHERE run_id=? ORDER BY operation_index
+                """,
+                (run_id,),
+            ).fetchall()
+            current_digest = hashlib.sha256(
+                _json_dump([list(item) for item in current_daily_rows]).encode("utf-8")
+            ).hexdigest()
+            # 再度network verifierを実行せず、保存行のhash/bindingだけを
+            # admission時のsnapshotに照合する。15分freshnessもfinal時点で
+            # 再計算するが、意味predicate自体は再評価しない。
+            current_consumer, binding, current_consumer_hash, _ = _daily_public_observation_receipt(
+                store=store,
+                row=admitted_row,
+                daily_rows=current_daily_rows,
+                public_observation_receipt=admitted_consumer_receipt,
+                admitted_at=now,
+            )
+            if (
+                current_digest != admitted_stage_digest
+                or current_consumer_hash != admitted_consumer_hash
+                or str(row["updated_at"]) != admission_updated_at
+                or str(row["finalization_nonce"] or "") != finalizer_nonce
+                or str(row["exact_successor"] or "") != "public_completion"
+                or str(row["manifest_id"] or "") != str(admitted_row["manifest_id"] or "")
+            ):
+                conn.rollback()
+                raise PermissionError("finalizer_freshness_cas_conflict")
+            # _daily_public_observation_receipt checked binding.updatedAt against
+            # admitted_row. The current run row is intentionally newer because
+            # the admission transaction refreshed updated_at.
+            prior = _json_load(row["surface_failures"], [])
+            typed = _json_load(row["typed_issues_json"], [])
+            post_publish_issues = _json_load(row["post_publish_issue_list"], [])
+            if prior:
+                typed = _append_unique(
+                    typed,
+                    {
+                        "surface": "public_completion",
+                        "reasonCode": "prior_surface_failures_resolved_by_stored_consumer_observation",
+                        "status": "verified",
+                        "evidenceRef": CONSUMER_PUBLIC_VERIFICATION_RECEIPT_SCHEMA,
+                        "priorFailures": prior,
+                    },
+                )
+            for issue in current_consumer.get("post_publish_issue_list") or []:
+                if isinstance(issue, Mapping):
+                    post_publish_issues = _append_unique(post_publish_issues, dict(issue))
+            now_text = _iso(now)
+            completion_start = _parse_time(str(_row_value(row, "scheduler_trigger_at", "")))
+            if completion_start is None:
+                completion_start = _parse_time(str(row["started_at"])) or now
+            completion_elapsed = max(0.0, (now - completion_start).total_seconds())
+            _close_open_timing_event(
+                conn,
+                run_id=run_id,
+                ended_at=now_text,
+                evidence={"phase": "public_completion", "event": "completion", "nonce": finalizer_nonce},
+            )
+            consumed_observation = {
+                "schemaVersion": CONSUMER_PUBLIC_VERIFICATION_RECEIPT_SCHEMA,
+                "receipt": current_consumer,
+                "receiptHash": current_consumer_hash,
+                "source": "consumer_public_verification_receipt",
+                "consumedAt": now_text,
+            }
+            changed = conn.execute(
+                """
+                UPDATE runs SET surface_failures='[]',typed_issues_json=?,post_publish_issue_list=?,
+                   observation_receipt_json=?,status='completed',current_stage_index=?,exact_successor='',
+                   finalization_nonce='',completed_at=?,completion_elapsed_seconds=COALESCE(completion_elapsed_seconds,?),
+                   completion_elapsed_at=COALESCE(NULLIF(completion_elapsed_at,''),?),updated_at=?
+                WHERE run_id=? AND writer_lease=? AND fencing_token=? AND status='finalizing'
+                  AND finalization_nonce=? AND updated_at=? AND manifest_id=?
+                """,
+                (
+                    _json_dump(typed),
+                    _json_dump(post_publish_issues),
+                    _json_dump(consumed_observation),
+                    len(DIRECT_STAGES),
+                    now_text,
+                    completion_elapsed,
+                    now_text,
+                    now_text,
+                    run_id,
+                    writer_lease,
+                    int(fencing_token if fencing_token is not None else _row_value(row, "fencing_token", 0) or 0),
+                    finalizer_nonce,
+                    row["updated_at"],
+                    row["manifest_id"],
+                ),
+            ).rowcount
+            if changed != 1:
+                conn.rollback()
+                raise PermissionError("finalizer_atomic_cas_conflict")
+            result = _projection_from_row(store, conn, store._run_row(conn, run_id))
+            result.pop("writer_lease", None)
+            conn.commit()
+    except Exception:
+        restore_after_red()
+        raise
+    return {
+        **result,
+        "ok": True,
+        "publicProbe": admitted_consumer_receipt,
+        "public_probe_source": "consumer_public_verification_receipt",
+        "completion_elapsed_seconds": result.get("completion_elapsed_seconds"),
+        "freshnessBinding": binding,
     }
 
 
@@ -1620,8 +4279,33 @@ def finalize_public_completion(
     wait_sec: int = 0,
     poll_sec: int = 30,
     exact_successor: str,
+    fencing_token: int | None = None,
+    public_observation_receipt: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """fresh probe Green後だけsurface failureをtyped issueへ移して工程20を閉じる。"""
+    """Dailyは保存済みconsumer観測、legacyは一回のfresh probeで工程20を閉じる。"""
+    # Daily経路ではconsumer_public_verificationが唯一のnetwork/semantic
+    # verifier実行主体であり、finalizerはそのreceiptを一回だけconsumeする。
+    # 先にoperation存在だけをreadし、legacy direct stageには従来probeを残す。
+    if not store.test_only_allow_semantic_verifier:
+        store.bind_production_runtime()
+    store.ensure_runtime_schema()
+    with closing(store.connect()) as daily_probe_conn:
+        store._run_row(daily_probe_conn, run_id)
+        has_daily_receipt = daily_probe_conn.execute(
+            "SELECT 1 FROM daily_operation_receipts WHERE run_id=? LIMIT 1",
+            (run_id,),
+        ).fetchone() is not None
+    if has_daily_receipt:
+        return _finalize_daily_public_completion(
+            store,
+            run_id=run_id,
+            writer_lease=writer_lease,
+            public_observation_receipt=public_observation_receipt,
+            semantic_verifier=semantic_verifier,
+            fencing_token=fencing_token,
+        )
+    if public_observation_receipt is not None:
+        raise ValueError("public_observation_receipt_daily_only")
     _require_registered_public_context(
         store,
         semantic_verifier=semantic_verifier,
@@ -1632,17 +4316,46 @@ def finalize_public_completion(
         wait_sec=wait_sec,
         poll_sec=poll_sec,
     )
+    _require_fencing_token(store, fencing_token)
     if exact_successor != "public_completion":
         raise ValueError("exact_successor_invalid")
     nonce = uuid.uuid4().hex
     admitted_stage_digest = ""
     admitted_stage_warnings: list[dict[str, Any]] = []
+    finalizing_updated_at = ""
     with closing(store.connect()) as conn:
         conn.execute("BEGIN IMMEDIATE")
         row = store._run_row(conn, run_id)
         now = store.now()
-        _verify_writer(row, writer_lease, now, allowed_statuses={"active", "executing", "finalizing"})
-        if (
+        _verify_writer(row, writer_lease, now, allowed_statuses={"active", "executing", "finalizing"}, fencing_token=fencing_token)
+        daily_rows = conn.execute(
+            """
+            SELECT operation_id,operation_index,input_hash,handler_id,payload_json,receipt_json,
+                   applied_at,fencing_token,receipt_hash
+            FROM daily_operation_receipts WHERE run_id=? ORDER BY operation_index
+            """,
+            (run_id,),
+        ).fetchall()
+        daily_mode = bool(daily_rows)
+        if daily_mode:
+            expected_daily = [(index, operation_id) for index, operation_id in enumerate(DAILY_OPERATION_ORDER)]
+            observed_daily = [(int(item[1]), str(item[0])) for item in daily_rows]
+            if (
+                observed_daily != expected_daily
+                or any(str(_json_load(str(item[5]), {}).get("status") or "").casefold() != "completed" for item in daily_rows)
+                or any(_json_load(str(item[5]), {}).get("ok") is not True for item in daily_rows)
+                or str(row["exact_successor"] or "") != "public_completion"
+                or str(row["status"] or "") not in {"active", "executing", "finalizing"}
+            ):
+                conn.rollback()
+                raise PermissionError("finalizer_daily_operation_admission_red")
+            if any(int(item[7] or 0) != int(_row_value(row, "fencing_token", 0) or 0) for item in daily_rows):
+                conn.rollback()
+                raise PermissionError("finalizer_daily_fencing_admission_red")
+            admitted_stage_digest = hashlib.sha256(
+                _json_dump([list(item) for item in daily_rows]).encode("utf-8")
+            ).hexdigest()
+        elif (
             int(row["current_stage_index"]) != len(DIRECT_STAGES) - 1
             or str(row["exact_successor"] or "") != "public_completion"
             or not re.fullmatch(r"[0-9a-f]{64}", str(row["manifest_id"] or ""))
@@ -1650,38 +4363,40 @@ def finalize_public_completion(
             conn.rollback()
             raise PermissionError("finalizer_admission_red")
         stages = conn.execute("SELECT stage_index,stage_id,status,evidence_json FROM stages WHERE run_id=? ORDER BY stage_index", (run_id,)).fetchall()
-        expected = [(index, stage_id) for index, stage_id in enumerate(DIRECT_STAGES[:-1])]
-        observed = [(int(item[0]), str(item[1])) for item in stages]
-        stage_evidence = [_json_load(str(item[3]), None) for item in stages]
-        for item, evidence_row in zip(stages, stage_evidence, strict=True):
-            if str(item[2]).casefold() != "verified_with_warnings":
-                continue
-            warnings = list(evidence_row.get("post_publish_issue_list") or []) if isinstance(evidence_row, Mapping) else []
-            if not warnings or any(
-                not isinstance(warning, Mapping)
-                or str(warning.get("status") or "").casefold() != "warning"
-                or not warning.get("surface")
-                or not warning.get("reasonCode")
-                or not warning.get("evidenceRef")
-                for warning in warnings
+        if not daily_mode:
+            expected = [(index, stage_id) for index, stage_id in enumerate(DIRECT_STAGES[:-1])]
+            observed = [(int(item[0]), str(item[1])) for item in stages]
+            stage_evidence = [_json_load(str(item[3]), None) for item in stages]
+            for item, evidence_row in zip(stages, stage_evidence, strict=True):
+                if str(item[2]).casefold() != "verified_with_warnings":
+                    continue
+                warnings = list(evidence_row.get("post_publish_issue_list") or []) if isinstance(evidence_row, Mapping) else []
+                if not warnings or any(
+                    not isinstance(warning, Mapping)
+                    or str(warning.get("status") or "").casefold() != "warning"
+                    or not warning.get("surface")
+                    or not warning.get("reasonCode")
+                    or not warning.get("evidenceRef")
+                    for warning in warnings
+                ):
+                    conn.rollback()
+                    raise PermissionError("finalizer_stage_warning_admission_red")
+                admitted_stage_warnings.extend(dict(warning) for warning in warnings)
+            if (
+                observed != expected
+                or any(str(item[2]).casefold() not in {"green", "verified", "verified_with_warnings"} for item in stages)
+                or any(not isinstance(item, Mapping) or not item for item in stage_evidence)
             ):
                 conn.rollback()
-                raise PermissionError("finalizer_stage_warning_admission_red")
-            admitted_stage_warnings.extend(dict(warning) for warning in warnings)
-        if (
-            observed != expected
-            or any(str(item[2]).casefold() not in {"green", "verified", "verified_with_warnings"} for item in stages)
-            or any(not isinstance(item, Mapping) or not item for item in stage_evidence)
-        ):
-            conn.rollback()
-            raise PermissionError("finalizer_stage_history_admission_red")
-        admitted_stage_digest = hashlib.sha256(_json_dump([list(item) for item in stages]).encode("utf-8")).hexdigest()
+                raise PermissionError("finalizer_stage_history_admission_red")
+            admitted_stage_digest = hashlib.sha256(_json_dump([list(item) for item in stages]).encode("utf-8")).hexdigest()
         now_text = _iso(now)
+        finalizing_updated_at = now_text
         lease_until = _iso(now + store.lease_ttl)
         changed = conn.execute(
             """UPDATE runs SET status='finalizing', finalization_nonce=?, lease_until=?, updated_at=?
-               WHERE run_id=? AND writer_lease=? AND status=? AND updated_at=?""",
-            (nonce, lease_until, now_text, run_id, writer_lease, row["status"], row["updated_at"]),
+               WHERE run_id=? AND writer_lease=? AND fencing_token=? AND status=? AND updated_at=?""",
+            (nonce, lease_until, now_text, run_id, writer_lease, int(fencing_token if fencing_token is not None else _row_value(row, "fencing_token", 0) or 0), row["status"], row["updated_at"]),
         ).rowcount
         if changed != 1:
             conn.rollback()
@@ -1691,10 +4406,14 @@ def finalize_public_completion(
     def restore_after_red() -> None:
         with closing(store.connect()) as restore:
             restore.execute("BEGIN IMMEDIATE")
+            restore_token = int(fencing_token or 0)
+            if restore_token <= 0:
+                token_row = restore.execute("SELECT fencing_token FROM runs WHERE run_id=?", (run_id,)).fetchone()
+                restore_token = int(token_row[0] or 0) if token_row is not None else 0
             restored = restore.execute(
                 """UPDATE runs SET status='active', finalization_nonce='', exact_successor='public_completion', updated_at=?
-                   WHERE run_id=? AND writer_lease=? AND status='finalizing' AND finalization_nonce=?""",
-                (_iso(store.now()), run_id, writer_lease, nonce),
+                   WHERE run_id=? AND writer_lease=? AND fencing_token=? AND status='finalizing' AND finalization_nonce=?""",
+                (_iso(store.now()), run_id, writer_lease, restore_token, nonce),
             ).rowcount
             if restored == 1:
                 restore.commit()
@@ -1702,7 +4421,10 @@ def finalize_public_completion(
                 restore.rollback()
 
     try:
-        probe = probe_public_completion(
+        # verifierは同一predicateを二度観測しない。waitを伴うこの一回の
+        # fresh probeだけを公開consumerのauthorityとしてfinal transactionへ
+        # 束縛する。
+        fresh_probe = probe_public_completion(
             store,
             run_id=run_id,
             semantic_verifier=semantic_verifier,
@@ -1712,20 +4434,7 @@ def finalize_public_completion(
             branch=branch,
             wait_sec=wait_sec,
             poll_sec=poll_sec,
-        )
-        if probe.get("ok") is not True:
-            restore_after_red()
-            return {**inspect_run(store, run_id=run_id), "ok": False, "status": "needs_successor", "failures": probe["failures"], "exact_successor": "public_completion"}
-        fresh_probe = probe_public_completion(
-            store,
-            run_id=run_id,
-            semantic_verifier=semantic_verifier,
-            repo_root=repo_root,
-            public_base_url=public_base_url,
-            remote=remote,
-            branch=branch,
-            wait_sec=0,
-            poll_sec=poll_sec,
+            observation_nonce=nonce,
         )
         if fresh_probe.get("ok") is not True:
             restore_after_red()
@@ -1738,18 +4447,57 @@ def finalize_public_completion(
             conn.execute("BEGIN IMMEDIATE")
             row = store._run_row(conn, run_id)
             now = store.now()
-            _verify_writer(row, writer_lease, now, allowed_statuses={"finalizing"})
+            _verify_writer(row, writer_lease, now, allowed_statuses={"finalizing"}, fencing_token=fencing_token)
             binding = fresh_probe.get("freshnessBinding") or {}
-            current_stages = conn.execute("SELECT stage_index,stage_id,status,evidence_json FROM stages WHERE run_id=? ORDER BY stage_index", (run_id,)).fetchall()
-            current_stage_digest = hashlib.sha256(_json_dump([list(item) for item in current_stages]).encode("utf-8")).hexdigest()
+            current_daily_rows = conn.execute(
+                """
+                SELECT operation_id,operation_index,input_hash,handler_id,payload_json,receipt_json,
+                       applied_at,fencing_token,receipt_hash
+                FROM daily_operation_receipts WHERE run_id=? ORDER BY operation_index
+                """,
+                (run_id,),
+            ).fetchall()
+            current_daily_mode = bool(current_daily_rows)
+            current_bind_rows = current_daily_rows if current_daily_mode else conn.execute(
+                "SELECT stage_index,stage_id,status,evidence_json FROM stages WHERE run_id=? ORDER BY stage_index",
+                (run_id,),
+            ).fetchall()
+            current_stage_digest = hashlib.sha256(_json_dump([list(item) for item in current_bind_rows]).encode("utf-8")).hexdigest()
+            expected_manifest = str(binding.get("manifestId") or binding.get("manifest_id") or "")
+            expected_run_id = str(binding.get("runId") or binding.get("run_id") or "")
+            expected_run_intent = str(binding.get("runIntent") or binding.get("run_intent") or "")
+            expected_updated = str(binding.get("updatedAt") or binding.get("updated_at") or "")
+            expected_issue_date = str(binding.get("issueDate") or binding.get("issue_date") or "")
+            expected_generation = binding.get("generation")
+            expected_observation_nonce = str(
+                binding.get("observationNonce")
+                or binding.get("observation_nonce")
+                or ""
+            )
+            observed_at = _parse_time(
+                str(binding.get("observedAt") or binding.get("observed_at") or "")
+            )
+            binding_ok = (
+                expected_manifest == str(row["manifest_id"] or "")
+                and bool(expected_manifest)
+                and expected_run_id == run_id
+                and expected_run_intent == str(row["run_intent"] or "")
+                and expected_issue_date == str(row["issue_date"] or "")
+                and expected_generation is not None
+                and int(row["generation"]) == int(expected_generation)
+                # legacy probeはfinalizing遷移後のrun snapshotへ束縛する。
+                # 現在行も同じ遷移時刻から変化していないことを照合する。
+                and expected_updated == finalizing_updated_at
+                and str(row["updated_at"] or "") == finalizing_updated_at
+                and expected_observation_nonce == nonce
+                and observed_at is not None
+            )
             if (
                 str(row["finalization_nonce"] or "") != nonce
                 or current_stage_digest != admitted_stage_digest
-                or int(row["current_stage_index"]) != len(DIRECT_STAGES) - 1
+                or not binding_ok
+                or (not current_daily_mode and int(row["current_stage_index"]) != len(DIRECT_STAGES) - 1)
                 or str(row["exact_successor"] or "") != "public_completion"
-                or str(row["manifest_id"] or "") != str(binding.get("manifestId") or "")
-                or int(row["generation"]) != int(binding.get("generation") or -1)
-                or str(row["updated_at"] or "") != str(binding.get("updatedAt") or "")
             ):
                 conn.rollback()
                 raise PermissionError("finalizer_freshness_cas_conflict")
@@ -1765,24 +4513,35 @@ def finalize_public_completion(
                     post_publish_issues = _append_unique(post_publish_issues, dict(issue))
             now_text = _iso(now)
             evidence = {**fresh_probe.get("verifier", {}), "freshnessBinding": binding}
-            conn.execute(
-                "INSERT OR REPLACE INTO stages (run_id,stage_index,stage_id,status,started_at,completed_at,evidence_json) VALUES (?,?,?,?,?,?,?)",
-                (run_id, len(DIRECT_STAGES) - 1, "public_completion", "verified", now_text, now_text, _json_dump(evidence)),
+            if not current_daily_mode:
+                conn.execute(
+                    "INSERT OR REPLACE INTO stages (run_id,stage_index,stage_id,status,started_at,completed_at,evidence_json) VALUES (?,?,?,?,?,?,?)",
+                    (run_id, len(DIRECT_STAGES) - 1, "public_completion", "verified", now_text, now_text, _json_dump(evidence)),
+                )
+            completion_start = _parse_time(str(_row_value(row, "scheduler_trigger_at", ""))) or _parse_time(str(row["started_at"])) or now
+            completion_elapsed = max(0.0, (now - completion_start).total_seconds())
+            _close_open_timing_event(
+                conn,
+                run_id=run_id,
+                ended_at=now_text,
+                evidence={"phase": "public_completion", "event": "completion", "nonce": nonce},
             )
             changed = conn.execute(
                 """UPDATE runs SET surface_failures='[]', typed_issues_json=?, post_publish_issue_list=?, status='completed',
-                   current_stage_index=?, exact_successor='', finalization_nonce='', completed_at=?, updated_at=?
-                   WHERE run_id=? AND writer_lease=? AND status='finalizing' AND finalization_nonce=?
-                     AND current_stage_index=? AND updated_at=? AND manifest_id=?""",
-                (_json_dump(typed), _json_dump(post_publish_issues), len(DIRECT_STAGES), now_text, now_text, run_id, writer_lease, nonce, len(DIRECT_STAGES) - 1, row["updated_at"], row["manifest_id"]),
+                   current_stage_index=?, exact_successor='', finalization_nonce='', completed_at=?,
+                   completion_elapsed_seconds=COALESCE(completion_elapsed_seconds,?), completion_elapsed_at=COALESCE(NULLIF(completion_elapsed_at,''),?), updated_at=?
+                   WHERE run_id=? AND writer_lease=? AND fencing_token=? AND status='finalizing' AND finalization_nonce=?
+                     AND updated_at=? AND manifest_id=?""",
+                (_json_dump(typed), _json_dump(post_publish_issues), len(DIRECT_STAGES), now_text, completion_elapsed, now_text, now_text, run_id, writer_lease, int(fencing_token if fencing_token is not None else _row_value(row, "fencing_token", 0) or 0), nonce, row["updated_at"], row["manifest_id"]),
             ).rowcount
             if changed != 1:
                 conn.rollback()
                 raise PermissionError("finalizer_atomic_cas_conflict")
-            final_stages = conn.execute("SELECT stage_index,stage_id FROM stages WHERE run_id=? ORDER BY stage_index", (run_id,)).fetchall()
-            if [(int(item[0]), str(item[1])) for item in final_stages] != [(index, stage_id) for index, stage_id in enumerate(DIRECT_STAGES)]:
-                conn.rollback()
-                raise PermissionError("finalizer_stage_history_postcondition_red")
+            if not current_daily_mode:
+                final_stages = conn.execute("SELECT stage_index,stage_id FROM stages WHERE run_id=? ORDER BY stage_index", (run_id,)).fetchall()
+                if [(int(item[0]), str(item[1])) for item in final_stages] != [(index, stage_id) for index, stage_id in enumerate(DIRECT_STAGES)]:
+                    conn.rollback()
+                    raise PermissionError("finalizer_stage_history_postcondition_red")
             result = _projection_from_row(store, conn, store._run_row(conn, run_id))
             result.pop("writer_lease", None)
             conn.commit()
@@ -1825,7 +4584,25 @@ def verify_public_completion(
         store.bind_production_runtime()
     state = inspect_run(store, run_id=run_id)
     failures: list[str] = []
-    if len(state.get("stage_history") or []) != len(DIRECT_STAGES):
+    daily_receipts = list(state.get("daily_operations") or [])
+    if daily_receipts:
+        expected_daily = [
+            (index, operation_id)
+            for index, operation_id in enumerate(DAILY_OPERATION_ORDER)
+        ]
+        observed_daily = [
+            (int(item.get("operation_index")) if item.get("operation_index") is not None else -1, str(item.get("operation_id") or ""))
+            for item in daily_receipts
+            if isinstance(item, Mapping)
+        ]
+        if observed_daily != expected_daily or any(
+            not isinstance(item, Mapping)
+            or item.get("receipt", {}).get("ok") is not True
+            or item.get("receipt", {}).get("status") != "completed"
+            for item in daily_receipts
+        ):
+            failures.append("daily_operation_history_incomplete")
+    elif len(state.get("stage_history") or []) != len(DIRECT_STAGES):
         failures.append("stage_history_incomplete")
     if state.get("status") not in {"complete", "completed", "green"}:
         failures.append("run_not_completed")
@@ -1908,6 +4685,22 @@ def validate_installed_automation_semantics(path: str | Path | None = None) -> d
         return {"schemaVersion": "NEWS_GRASP_DIRECT_AUTOMATION_CONFIG_V1", "ok": False, "failures": ["installed_config_missing"], "path": str(config_path)}
     except (UnicodeError, tomllib.TOMLDecodeError) as exc:
         return {"schemaVersion": "NEWS_GRASP_DIRECT_AUTOMATION_CONFIG_V1", "ok": False, "failures": [f"installed_config_invalid:{exc}"], "path": str(config_path)}
+    python_path = Path(r"C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe")
+    python_sha256 = ""
+    if not python_path.is_file():
+        failures.append("python312_executable_missing")
+    else:
+        try:
+            digest = hashlib.sha256()
+            with python_path.open("rb") as stream:
+                for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                    digest.update(chunk)
+            python_sha256 = digest.hexdigest()
+            expected_hash = os.environ.get("NEWS_GRASP_PYTHON312_SHA256", "").strip().casefold()
+            if expected_hash and python_sha256 != expected_hash:
+                failures.append("python312_executable_hash_mismatch")
+        except OSError as exc:
+            failures.append(f"python312_executable_unreadable:{type(exc).__name__}")
     if value.get("id") != AUTOMATION_ID:
         failures.append("automation_id_invalid")
     if value.get("status") != "ACTIVE":
@@ -1982,6 +4775,11 @@ def validate_installed_automation_semantics(path: str | Path | None = None) -> d
     for part in required_prompt_parts:
         if part not in prompt:
             failures.append(f"prompt_missing:{part}")
+    completion_phrase = "完全な品質で記事公開するまで完了してはならない"
+    if prompt.count(completion_phrase) != 3:
+        failures.append("prompt_completion_phrase_count_invalid")
+    if "[automation]" in prompt or "prompt =" in prompt:
+        failures.append("prompt_toml_replacement_detected")
     if "public incomplete のまま最終応答しないでください" in prompt:
         failures.append("prompt_external_blocker_boundary_ambiguous")
     if "最初に `python -m tools.news_grasp_direct_runtime start" in prompt:
@@ -2024,45 +4822,10 @@ def validate_installed_automation_semantics(path: str | Path | None = None) -> d
         "updated_at": updated_at,
         "app_db": app_db_result,
         "snapshots": snapshot_results,
+        "python_executable": str(python_path),
+        "python_sha256": python_sha256,
+        "prompt_completion_phrase_count": prompt.count(completion_phrase),
     }
-
-
-def _repair_installed_automation_config_once(*, cwd: Path) -> dict[str, Any]:
-    """live installed automation を repo template へ一度だけ同期する。
-
-    `--installed-config` で渡されたテスト用・手動検査用pathは対象にしない。
-    06:00 direct 本線の開始前に、App/UI 側で medium や旧promptへ戻った
-    live store だけを operation-local に修復するための薄い successor である。
-    """
-
-    try:
-        from tools import sync_news_grasp_codex_automation as automation_sync
-
-        canonical_repo = automation_sync._assert_trusted_repo_root(  # noqa: SLF001
-            automation_sync._default_repo_root()  # noqa: SLF001
-        )
-        requested_cwd = cwd.resolve(strict=True)
-        if requested_cwd != canonical_repo:
-            return {
-                "schemaVersion": "NEWS_GRASP_CODEX_AUTOMATION_SYNC_V1",
-                "ok": False,
-                "failures": ["automation_config_repair_cwd_not_canonical_news_grasp_repo"],
-                "cwd": str(requested_cwd),
-                "expected_cwd": str(canonical_repo),
-            }
-        return automation_sync.sync(
-            repo_root=canonical_repo,
-            write_snapshot=True,
-            write_skill=True,
-            write_app_db=True,
-            dry_run=False,
-        )
-    except Exception as exc:  # pragma: no cover - 例外型は呼出環境依存
-        return {
-            "schemaVersion": "NEWS_GRASP_CODEX_AUTOMATION_SYNC_V1",
-            "ok": False,
-            "failures": [f"automation_config_repair_unavailable:{exc}"],
-        }
 
 
 def _load_cli_mapping(*, evidence_json: str | None, evidence_file: Path | None) -> dict[str, Any]:
@@ -2082,6 +4845,15 @@ def _load_cli_mapping(*, evidence_json: str | None, evidence_file: Path | None) 
             raise ValueError("evidence_json_not_object")
         evidence.update(dict(loaded))
     return evidence
+
+
+def _emit_cli(result: Mapping[str, Any]) -> None:
+    """machine-readable stdoutをBOMなし・UTF-8・一行JSONに固定する。"""
+
+    text = json.dumps(dict(result), ensure_ascii=False, separators=(",", ":"))
+    if "\r" in text or "\n" in text:
+        raise ValueError("cli_result_multiline_forbidden")
+    sys.stdout.write(text + "\n")
 
 
 _REGISTERED_STAGE_CONSUMERS = {
@@ -2316,6 +5088,12 @@ def _main() -> int:
     start.add_argument("--automation-id", default=AUTOMATION_ID)
     start.add_argument("--run-intent", default="")
     start.add_argument("--manifest-id", default="")
+    start.add_argument("--manifest-reservation-id", default="")
+    start.add_argument("--scheduler-trigger-at", default=None)
+    start.add_argument("--source-baseline", default="")
+    start.add_argument("--runtime-generation", default=RUNTIME_SCHEMA_V2)
+    start.add_argument("--remote-base-sha", default="")
+    start.add_argument("--allowed-side-effect-id", action="append", default=[])
 
     inspect = sub.add_parser("inspect")
     inspect.add_argument("--state-root", type=Path, required=True)
@@ -2358,6 +5136,7 @@ def _main() -> int:
     advance.add_argument("--branch", default="main")
     advance.add_argument("--wait-sec", type=int, default=0)
     advance.add_argument("--poll-sec", type=int, default=30)
+    advance.add_argument("--fencing-token", type=int, default=None)
 
     verify = sub.add_parser("verify-public")
     verify.add_argument("--state-root", type=Path, required=True)
@@ -2392,6 +5171,7 @@ def _main() -> int:
     finalize.add_argument("--branch", default="main")
     finalize.add_argument("--wait-sec", type=int, default=0)
     finalize.add_argument("--poll-sec", type=int, default=30)
+    finalize.add_argument("--fencing-token", type=int, default=None)
 
     args = parser.parse_args()
     if args.cmd == "validate-installed":
@@ -2427,15 +5207,11 @@ def _main() -> int:
                         "--installed-config is test-only and cannot replace live automation authority"
                     ],
                 }
-                sys.stdout.write(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
+                _emit_cli(result)
                 return 2
+            # runtime startはautomationを自動修復しない。source/installed/App DBの
+            # parityをpromotion工程で閉じ、ここはRedのまま停止する。
             config_result = validate_installed_automation_semantics(args.installed_config)
-            config_repair = None
-            if config_result.get("ok") is not True and args.installed_config is None:
-                config_repair = _repair_installed_automation_config_once(
-                    cwd=Path(args.cwd),
-                )
-                config_result = validate_installed_automation_semantics(None)
             if config_result.get("ok") is not True:
                 issue_date = args.issue_date or _now_jst().date().isoformat()
                 result = {
@@ -2447,16 +5223,15 @@ def _main() -> int:
                     "issue_date": issue_date,
                     "failures": list(config_result.get("failures") or ["automation_config_red"]),
                     "config": config_result,
-                    "config_repair": config_repair,
                     "exact_successor": (
-                        "python -m tools.sync_news_grasp_codex_automation "
+                        "python -m tools.sync_news_grasp_codex_automation --promote "
                         "--write-snapshot --write-skill --write-app-db"
                     ),
                     "post_publish_issue_list": [
                         "automation_config_red: live automation must be gpt-5.6-luna/max with direct-mainline prompt before production start"
                     ],
                 }
-                sys.stdout.write(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
+                _emit_cli(result)
                 return 2
             result = start_run(
                 store,
@@ -2465,12 +5240,13 @@ def _main() -> int:
                 issue_date=args.issue_date or _now_jst().date().isoformat(),
                 run_intent=args.run_intent,
                 manifest_id=args.manifest_id,
+                manifest_reservation_id=args.manifest_reservation_id,
+                scheduler_trigger_at=args.scheduler_trigger_at,
+                source_baseline=args.source_baseline,
+                runtime_generation=args.runtime_generation,
+                remote_base_sha=args.remote_base_sha,
+                allowed_side_effect_ids=args.allowed_side_effect_id,
             )
-            if config_repair is not None:
-                result["config_repair"] = config_repair
-                result["post_publish_issue_list"] = list(
-                    result.get("post_publish_issue_list") or []
-                ) + ["automation_config_repaired_before_stage_start"]
         elif args.cmd == "inspect":
             result = inspect_run(store, run_id=args.run_id)
         elif args.cmd == "migrate-v2":
@@ -2509,6 +5285,7 @@ def _main() -> int:
                     store,
                     run_id=args.run_id,
                     writer_lease=args.writer_lease,
+                    fencing_token=args.fencing_token,
                     semantic_verifier=lambda stage_id, **kwargs: _cli_stage_verifier(
                         stage_id,
                         run=kwargs.get("run") or {},
@@ -2561,8 +5338,9 @@ def _main() -> int:
                     wait_sec=args.wait_sec,
                     poll_sec=args.poll_sec,
                     exact_successor=args.exact_successor,
+                    fencing_token=args.fencing_token,
                 )
-    sys.stdout.write(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
+    _emit_cli(result)
     if result.get("ok", True) is not False:
         return 0
     status = str(result.get("status") or "").casefold()

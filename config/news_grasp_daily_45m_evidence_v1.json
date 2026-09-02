@@ -1,0 +1,310 @@
+{
+  "schema_version": "NEWS_GRASP_DAILY_45M_EVIDENCE_V1",
+  "task_id": "NG-DAILY-45M-20260902",
+  "append_only_events": [
+    {
+      "event_id": "NG45-EV-001",
+      "kind": "expected_red",
+      "surface": "product",
+      "runtime": "C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "command": "python -m pytest tests/test_news_grasp_daily_45m_contract.py -q",
+      "exit_code": 1,
+      "collected": 18,
+      "failed": 16,
+      "passed": 2,
+      "failed_fixture_ids": ["F01", "F02", "F03", "F05", "F06", "F07", "F08", "F09", "F10", "F11", "F12", "F13", "F14", "F15", "F16", "F17"],
+      "baseline_green_fixture_ids": ["F04", "F18"],
+      "meaning": "hotfix済みfixtureを弱体化せず保持し、未実装capabilityと現在の誤受理をRedとして実測した"
+    },
+    {
+      "event_id": "NG45-EV-002",
+      "kind": "expected_red",
+      "surface": "workspace_global_entry",
+      "runtime": "C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "command": "python -m pytest -q tools/tests/test_news_grasp_daily_route_v2.py",
+      "exit_code": 1,
+      "collected": 13,
+      "failed": 13,
+      "passed": 0,
+      "meaning": "Release-only/unknown拒否と六broker admitが汎用ENTRY_ADMITTEDへ落ちることをproduction変更前に実測した"
+    },
+    {
+      "event_id": "NG45-EV-003",
+      "kind": "focused_green",
+      "surface": "workspace_global_entry",
+      "runtime": "C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "command": "python -m pytest -q tools/tests/test_news_grasp_daily_route_v2.py",
+      "exit_code": 0,
+      "passed": 13,
+      "failed": 0,
+      "meaning": "exact Daily broker以外をspawn前にfail-closedにする上流entryを確認した"
+    },
+    {
+      "event_id": "NG45-TF-001",
+      "kind": "tool_failure",
+      "failure_class": "powershell_pipeline_parse_error",
+      "state_mutated": false,
+      "cause": "foreach statementを直接pipelineへ接続した",
+      "resolution": "中間変数へ格納してからConvertTo-Jsonへ渡した",
+      "same_shape_retry": 0
+    },
+    {
+      "event_id": "NG45-TF-002",
+      "kind": "tool_failure",
+      "failure_class": "python_inline_quote_syntax_error",
+      "state_mutated": false,
+      "cause": "PowerShellとpython -cの引用符境界を誤った",
+      "resolution": "single-quoted PowerShell argumentへ固定した",
+      "same_shape_retry": 0
+    },
+    {
+      "event_id": "NG45-TF-003",
+      "kind": "tool_failure",
+      "failure_class": "windows_rg_glob_and_scope_overreach",
+      "state_mutated": false,
+      "cause": "Windowsのrgへバックスラッシュ付きwildcardと巨大generated JSON directoryを同時指定した",
+      "resolution": "対象ファイルまたはdirectoryをexact指定し、generated matrixを検索対象から除外した",
+      "same_shape_retry": 0
+    },
+    {
+      "event_id": "NG45-TF-004",
+      "kind": "test_environment_rejection",
+      "failure_class": "wrong_python_runtime",
+      "state_mutated": false,
+      "cause": "Test Lunaの自己計測がPython 3.13.14を使用した",
+      "resolution": "その結果をauthorityにせずParentが固定Python 3.12で18 nodeを再計測した",
+      "same_shape_retry": 0
+    },
+    {
+      "event_id": "NG45-EV-004",
+      "kind": "focused_green",
+      "surface": "workspace_global_snapshot_entry",
+      "runtime": "C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "command": "python -m pytest -q tools/tests/test_news_grasp_daily_route_v2.py",
+      "exit_code": 0,
+      "passed": 17,
+      "failed": 0,
+      "meaning": "AIHarnessState clean snapshotでもexact Daily brokerとRelease-only/raw/unknown拒否が同じ契約でGreenであることを確認した"
+    },
+    {
+      "event_id": "NG45-TF-005",
+      "kind": "tool_failure",
+      "failure_class": "pytest_invoked_above_snapshot_import_root",
+      "state_mutated": false,
+      "cause": "AIHarnessState repository rootからsnapshot/ProjectFolders配下testを起動し、tools packageをimport pathへ載せられなかった",
+      "resolution": "snapshot/ProjectFoldersをworking directoryへ固定して同じtest nodeを実行し17 passedを確認した",
+      "same_shape_retry": 0
+    },
+    {
+      "event_id": "NG45-EV-005",
+      "kind": "causal_focused_green",
+      "surface": "product_runtime_atomic_receipt",
+      "runtime": "C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "command": "python -m pytest -q tests/test_news_grasp_daily_45m_contract.py -k f14",
+      "exit_code": 0,
+      "passed": 1,
+      "failed": 0,
+      "cause_change": "F14をruntimeのcurrent exact successorであるtitle_controlへ束縛し、非current stage fixtureによる偽Redを除去した",
+      "meaning": "state mutationとapplied receiptが同じtransactionで確定し、retry authorityがreceipt lookupであることを確認した"
+    },
+    {
+      "event_id": "NG45-EV-006",
+      "kind": "focused_green",
+      "surface": "publication_automation_contract",
+      "runtime": "C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "command": "python -m pytest -q tests/test_news_grasp_daily_45m_contract.py -k 'f03 or f04 or f05 or f06 or f11 or f12 or f15 or f17 or f18'",
+      "exit_code": 0,
+      "passed": 9,
+      "failed": 0,
+      "meaning": "Markdown正本、current issue、optional field、URL identity、祖先SHA、Home/Pages、post-external drift、fresh verifier API、arbitrary Green拒否のfocused contractを確認した"
+    },
+    {
+      "event_id": "NG45-EV-007",
+      "kind": "third_party_review",
+      "surface": "daily_route_runtime_release_design",
+      "review_result": "blocked",
+      "blocker_count": 7,
+      "high_count": 7,
+      "medium_count": 2,
+      "finding_ids": [
+        "RRT-001", "RRT-002", "RRT-003", "RRT-004", "RRT-005", "RRT-006",
+        "RRT-007", "RRT-008", "RRT-009", "RRT-010", "RRT-011", "RRT-012",
+        "RRT-013", "RRT-014", "RRT-015", "RRT-016", "RRT-017"
+      ],
+      "meaning": "単体fixtureのGreenだけでは閉じない自然六operation、migration、fencing、outbox、唯一finalizer、正確なRelease failure setの不足を独立観点で検出し、production reworkへ戻した"
+    },
+    {
+      "event_id": "NG45-EV-008",
+      "kind": "focused_green",
+      "surface": "consumer_freshness_and_automation_prompt",
+      "runtime": "C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "command": "python -m pytest -q tests/test_news_grasp_daily_45m_contract.py -k 'ng_rrt_public_observation or ng_rrt_duplicate_side_effect or ng_rrt_automation_template'",
+      "exit_code": 0,
+      "passed": 3,
+      "failed": 0,
+      "meaning": "local observationをfresh networkへ昇格しないこと、重複判定がkey名でなくsealed immutable identityに基づくこと、automation必須文言exact三回と固定Python六operationを確認した"
+    },
+    {
+      "event_id": "NG45-EV-009",
+      "kind": "scoped_regression_green",
+      "surface": "publish_contract_v2",
+      "runtime": "C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "command": "python -m pytest -q tests/test_news_grasp_publish_contract_v2.py",
+      "exit_code": 0,
+      "passed": 39,
+      "failed": 0,
+      "meaning": "manifest/write set/distribution/URL/baseline/public semantic contractの既存変更対象回帰を一回だけ確認した"
+    },
+    {
+      "event_id": "NG45-EV-010",
+      "kind": "installed_integrity_expected_red",
+      "surface": "automation_source_installed_app_db_snapshot",
+      "runtime": "C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "command": "validate_integrity_surfaces(repo_root=clean_worktree)",
+      "exit_code": 0,
+      "verifier_status": "blocked",
+      "detail_codes": ["app_db_prompt_drift", "installed_prompt_drift", "snapshot_prompt_drift"],
+      "state_mutated": false,
+      "meaning": "source templateだけが新generationで、installed TOML、App DB、snapshotが旧generationであることを四surface別観測としてpromotion前に実測した"
+    },
+    {
+      "event_id": "NG45-EV-011",
+      "kind": "causal_red",
+      "surface": "daily_runtime_finalization",
+      "runtime": "C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "command": "python -m pytest -q tests/test_news_grasp_daily_route_runtime_review.py -k 'rrt_18 or rrt_19 or rrt_20 or rrt_21 or rrt_22'",
+      "exit_code": 1,
+      "passed": 3,
+      "failed": 2,
+      "failed_test_nodes": ["T-RRT-21", "T-RRT-22"],
+      "meaning": "operation index 0のfalsey誤処理とatomic_completion CLIが唯一finalizerへ到達しない欠陥をproduction変更前に実測した"
+    },
+    {
+      "event_id": "NG45-EV-012",
+      "kind": "focused_green",
+      "surface": "release_partition_gate_unit",
+      "runtime": "C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "command": "python -m pytest -q tests/test_news_grasp_release_gate_v2.py",
+      "exit_code": 0,
+      "passed": 28,
+      "failed": 0,
+      "meaning": "authoritative collection、排他的partition、crash attach、exact failed-set repair、NoPublish一回性、UTF-8 structured receipt、ledger改ざん拒否をunit fixtureで確認した"
+    },
+    {
+      "event_id": "NG45-EV-013",
+      "kind": "timebox_method_change",
+      "surface": "delivery",
+      "received_at": "2026-09-03T03:27:55.6404048+09:00",
+      "deadline_at": "2026-09-03T05:30:00.0000000+09:00",
+      "method_change": "独立実装を並行し、focused contractを先行し、Release partitionを排他的に並行実行する",
+      "scope_preserved": true,
+      "cutover_before_all_green": false,
+      "meaning": "過去full suite実績129分を同じ直列方式で再実行せず、test node重複0を維持したままpush期限へ合わせる"
+    },
+    {
+      "event_id": "NG45-EV-014",
+      "kind": "causal_focused_green",
+      "surface": "daily_runtime_finalization",
+      "runtime": "C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "command": "python -m pytest -q tests/test_news_grasp_daily_route_runtime_review.py -k ng_t_rrt",
+      "exit_code": 0,
+      "passed": 5,
+      "failed": 0,
+      "meaning": "T-RRT-18からT-RRT-22までが、保存済みconsumer receiptを唯一finalizerへ一回だけ渡しelapsedを固定する契約でGreenになった"
+    },
+    {
+      "event_id": "NG45-EV-015",
+      "kind": "causal_focused_green",
+      "surface": "external_transactional_outbox",
+      "runtime": "C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "command": "python -m pytest -q tests/test_news_grasp_daily_external_v1.py",
+      "exit_code": 0,
+      "passed": 13,
+      "failed": 0,
+      "meaning": "未登録adapterの副作用前Red、各operation一回性、ambiguous deliveryのunknown固定、attach、依存順、identity/fencing不一致、重複send/upload防止、固定9 IDによる翌日runとの非衝突を確認した"
+    },
+    {
+      "event_id": "NG45-EV-016",
+      "kind": "release_partition_exact_red_set",
+      "surface": "existing_constitution_historical",
+      "runtime": "C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "command": "changed product contract test modules, one execution",
+      "exit_code": 1,
+      "failed": 10,
+      "failed_test_nodes": [
+        "test_ng813_runner_passes_real_state_file_and_ops_root",
+        "test_audit_normal_requires_actual_same_date_public_green",
+        "test_caller_boolean_or_url_200_cannot_produce_green",
+        "test_recoverable_failure_uses_ledger_backed_authority_not_deferred",
+        "test_startup_terminal_state_without_repo_dir_can_enter_scheduled_recovery",
+        "test_green_public_surface_releases_only_runner_finalization_after_recovery",
+        "test_missing_or_unvalidated_authority_is_major_incident",
+        "test_failed_schedule_recovered_keeps_failed_history",
+        "test_automation_and_direct_skill_use_executable_direct_terminal_contract",
+        "test_ensure_audit_0640_default_owner_delegates_public_green_closeout_once"
+      ],
+      "meaning": "ユーザー指定の既知constitution/historical系10 failureを削除、skip、xfail、assert緩和せず正確な集合として保持した"
+    },
+    {
+      "event_id": "NG45-EV-017",
+      "kind": "runtime_operational_red_set",
+      "surface": "source_vs_installed_and_legacy_migration_fixture",
+      "runtime": "C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "command": "python -m pytest -q tests/test_news_grasp_direct_runtime.py tests/test_news_grasp_direct_runtime_v2.py",
+      "exit_code": 1,
+      "failed": 5,
+      "failed_test_nodes": [
+        "test_installed_direct_config_semantics_are_validated_by_producer",
+        "test_start_cli_uses_jst_today_when_issue_date_is_omitted",
+        "test_start_cli_rejects_medium_installed_config_before_run_creation",
+        "test_advance_cli_records_exact_successor_title_stage",
+        "test_v1_to_v2_migration_preserves_run_id_and_stage_history"
+      ],
+      "meaning": "4件はinstalled/App DB/snapshotをまだpromoteしていないことを正しくRedにし、1件はmigration-before-start後も旧preimage件数0を期待するlegacy fixtureとして未解決のまま記録した"
+    },
+    {
+      "event_id": "NG45-EV-018",
+      "kind": "focused_green",
+      "surface": "workspace_global_snapshot_entry",
+      "runtime": "C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "command": "python -m pytest -q tools/tests/test_news_grasp_daily_route_v2.py",
+      "exit_code": 0,
+      "passed": 17,
+      "failed": 0,
+      "meaning": "AIHarnessState snapshotのDaily六routeとRelease/raw/unknown拒否を再確認した"
+    },
+    {
+      "event_id": "NG45-EV-019",
+      "kind": "third_party_review_red_green",
+      "surface": "prepush_outbox_and_python_entry",
+      "review_result": "causal_blockers_fixed",
+      "finding_ids": ["PREPUSH-P0-OUTBOX-CROSS-RUN", "PREPUSH-P1-PYTHON-PATH"],
+      "green_tests": [
+        "tests/test_news_grasp_daily_external_v1.py:13 passed",
+        "tests/test_news_grasp_daily_route_runtime_review.py:13 passed",
+        "AIHarnessState tools/tests/test_news_grasp_daily_route_v2.py:20 passed"
+      ],
+      "meaning": "outbox logical operation identityをrun scopeへ分離し、翌日同じ固定9 operationを許可した。global entryとproduct CLIの双方で固定Python 3.12以外をstate mutation前に拒否した"
+    },
+    {
+      "event_id": "NG45-EV-020",
+      "kind": "third_party_review_open_findings",
+      "surface": "prepush_cutover_admission",
+      "review_result": "branch_push_allowed_cutover_blocked",
+      "finding_ids": [
+        "PREPUSH-P1-SCOPED-TEST-RECEIPT-MISSING",
+        "PREPUSH-P1-WRITER-LEASE-DB-REACQUIRE",
+        "PREPUSH-P1-APPDB-FILE-ROLLBACK-UNSAFE",
+        "PREPUSH-P2-BASELINE-ANCESTRY-PREFLIGHT"
+      ],
+      "protected_surfaces": [
+        "origin/main",
+        "installed automation TOML",
+        "Codex App DB",
+        "loaded runtime",
+        "2026-09-02 public release"
+      ],
+      "meaning": "専用work branchへの保存だけを許可し、上記findingを閉じるまでinstall、cutover、自然公開canaryを禁止する"
+    }
+  ]
+}

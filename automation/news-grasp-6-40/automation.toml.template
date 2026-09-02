@@ -21,6 +21,7 @@ News-Grasp の臨時本線日次バッチを実行してください。
 2. 日次バッチが品質と速度を両立した形で完走すること。
 
 最優先制御:
+- 最優先事項: 完全な品質で記事公開するまで完了してはならない。
 - 唯一の主成果物は、当日の News-Grasp 公開体験 Web / Daily audio / DeepDive / DeepDive audio / YouTube Podcast / playlist / notification / distribution / publish-status を読者可視まで完成させることです。
 - 記事品質または公開面完成に直結しない問題は、post_publish_issue_list に 1 行で記録し、修正に入らず公開作成へ戻ってください。
 - 公開面が incomplete の間に許される作業は、記事生成、品質 gate Green 化、TTS、YouTube/playlist、notification、distribution、publish-status、Pages 反映、またはそれらの開始に不可欠な最小 local unblocker だけです。
@@ -28,14 +29,9 @@ News-Grasp の臨時本線日次バッチを実行してください。
 - コスト起因またはハーネス起因で、記事品質・公開完成と無関係な停止判断をしないでください。
 
 セッション名:
-- 実行スレッドの表示名は、スレッド生成前に専用の `News-Grasp Title Materializer` が Asia/Tokyo の対象日を計算し、Codex App の automation name と App DB name へ反映します。本文から `set_thread_title`、正規表現、日時 placeholder を呼び出して表示名を変える方式は使いません。
-- 正本を読む準備作業を除き、最初の実行操作は `python -m tools.news_grasp_title_materializer --verify-only --repo-root .` による read-only の実反映確認にしてください。runtime起動、scheduler確認、title status記録、記事処理を先に実行してはいけません。
-- 期待形: 対象日が 2026-08-30 なら `26/08/30 News-Grasp 臨時本線日次バッチ 6:00 記事作成・公開`。固定日付を再利用せず、毎回対象日から生成してください。
-- 対象日は Asia/Tokyo の当日です。既に同じ日付 prefix がある場合は重複させないでください。
-- 余計な文字列を混ぜないでください。例: TT26/08/30 は不合格です。
-- materializer は 05:59 JST に1回だけ実行する冪等な前処理です。`name` 以外の prompt、schedule、model、reasoning、cwd、target は変更しません。実行時に `NEWS_GRASP_TITLE_MATERIALIZATION_V1` の receipt と、installed TOML / App DB の exact title を検証してください。
-- materializer が stale / unavailable / failed の場合は `title_status=unavailable|failed|skipped`、`title_completion=deferred`、`post_publish_issue_list` 1行を記録して公開処理へ進みます。タイトル未達を最終報告で達成済みと混同しないでください。
-- タイトル更新は公開可否を止める gate ではありません。ただし最終報告では、title_status を updated / already_ok / unavailable / failed / skipped のいずれかで必ず報告してください。成功claimは `title_status=updated` または `title_status=already_ok` の形で、返却された実titleの exact 一致と一緒に記録してください。
+- 実行スレッドの表示名は、スケジューラが保持する対象日と title_status receipt の観測値を表示するだけです。本文から表示名、automation、App DB、schedulerを変更してはいけません。
+- 対象日は Asia/Tokyo の当日として、static_check が発行した issue_date と title_status を以後の全receiptへ引き継いでください。固定日付、日時 placeholder、保存済みcaller JSONの再利用は禁止です。
+- title_status は updated / already_ok / unavailable / failed / skipped のいずれかを producer receipt に記録し、成功時の具体例 `title_status=already_ok` を含めて公開可否と混同しないでください。
 
 品質と速度:
 - 開始時刻は毎日 06:00 JST。
@@ -46,14 +42,19 @@ News-Grasp の臨時本線日次バッチを実行してください。
 - 90 分を超えた場合は SLO 超過を記録し、新規 high-cost stage / 追加分析 / report polish を増やさず、実行可能な public-critical successor がある限り継続してください。OAuth 再同意、2FA、quota 変更、rollback、削除、未承認 public incident publication、外部サービス障害の具体的証明だけが残る場合は、Green ではなく未完了/blocked として exact successor と残surfaceを報告してください。
 
 実行入口:
-- 既存 runner / clean runtime launcher / audit recovery control は使いません。
-- title action と title status 記録を終えたら、`python -m tools.news_grasp_direct_runtime start --state-root build/direct-mainline` で direct runtime run を開始してください。対象日は runtime が Asia/Tokyo の当日から確定します。明示指定が必要な時だけ `--issue-date 2026-08-30` のように実日付を渡し、角括弧付きの placeholder を実行しないでください。
-- `tools.news_grasp_direct_runtime.DIRECT_STAGES` の 21工程だけを順番 authority とし、stage_history、`NEWS_GRASP_DIRECT_RUNTIME_V1` state、`NEWS_GRASP_DIRECT_MAINLINE_RECEIPT_V1` receipt を生成してください。skill 本文、TODO、自己申告 JSON、URL 200、publish-status 単独を stage / completion authority にしないでください。
-- 各工程の実作業を repo-local tool / Codex direct work で終えたら、`python -m tools.news_grasp_direct_runtime advance --state-root build/direct-mainline --run-id <startが返したrun_id> --writer-lease <startが返したwriter_lease> --evidence-file <実工程の検証JSON>` で現在の exact successor だけを記録してください。`public_completion` だけは `--repo-root . --public-base-url https://hidepon-umg.github.io/News-Grasp` を渡して consumer-owned public verifier に実成果物と公開面を読ませてください。
-- direct completion guard は `automation/news-grasp-6-40/completion_guard.py` の read-only stdout projection として使い、`--direct-state-root build/direct-mainline --direct-run-id` には direct runtime が返した実 run_id を渡して canonical runtime state と `NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1` public verifier を読ませてください。completion_mode は `direct_public_v1` だけを使います。caller が作った `--direct-receipt` は Green authority ではありません。
-- repo-local deterministic tools は使ってよいです。通常公開の ad hoc 手編集は避け、生成・検証・公開は repo-local tools と Codex direct work で行ってください。
-- Windows Scheduled Task の News-Grasp Production / Bootstrap / Deadman / Runner が再有効化されていないことを read-only で確認し、二重起動の危険だけを避けてください。
-- public mutation はこの臨時本線バッチの範囲で許可済みです: git commit/push, GitHub Pages 更新, Release audio upload, YouTube Podcast upload, playlist 登録, notification 送信。
+- 既存 runner、旧runtime、audit recovery control、raw/full pytest、historical、Playwright、NoPublish は使いません。
+- 次の六つのDaily operationだけをこの順で一回ずつ実行し、各CLIのGreenをそのoperationのproducer receiptとして保存してください。brokerのadmission表示やcaller自己申告だけでは完了にしません。
+  1. `C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -m tools.news_grasp_daily_gate static_check`
+  2. `C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -m tools.news_grasp_daily_gate scoped_contract_unit`
+  3. `C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -m tools.news_grasp_daily_gate current_issue_integration`
+  4. `C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -m tools.news_grasp_daily_gate external_publication`
+  5. `C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -m tools.news_grasp_daily_gate consumer_public_verification`
+  6. `C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -m tools.news_grasp_daily_gate atomic_completion`
+- 各CLIは同じ issue_date、run_intent、actual run ID、bundle/manifest identityを入力へ束縛し、前operationのproducer receiptがGreenである場合だけ次へ進めてください。任意のraw Python、別module、別route、順序飛ばし、同一operation再実行はRedです。
+- `consumer_public_verification` は新しいnetwork observation token、observed_at、external_operation_idを発行し、Home、当日カテゴリ、Summary/DeepDive MarkdownとHTML、Daily/DeepDive audio、YouTube、playlist、distribution、publish-status、notification immutable ledger、Pagesをfreshに論理積検証してください。
+- `atomic_completion` は direct completion guard として全producer receiptとfresh consumer observationを束ねた完了receiptだけを発行します。保存済みcaller JSON、URL 200、publish-status、commit/push、runner/readiness単独をGreen authorityにしないでください。
+- repo-local deterministic tools は六operation内部のproducerとしてのみ使い、通常公開のad hoc 手編集、外部状態の無断再送、Windows Scheduled Taskの変更を行わないでください。
+- public mutation はこの臨時本線バッチの範囲で許可済みです: git commit/push, GitHub Pages 更新, Release audio upload, YouTube Podcast upload, playlist 登録, notification 送信。開始後のsource/manifest driftは同runへrebindせず新generationへ送ってください。
 - rollback、削除、OAuth 再同意、2FA、quota 変更、public incident publication は許可外です。
 
 モデル・役割:
@@ -72,17 +73,18 @@ News-Grasp の臨時本線日次バッチを実行してください。
 - 必要に応じて prompts/newsroom-editor-system.md, prompts/newsroom-reporter-system.md, prompts/deepdive-research-system.md
 
 完了条件:
+- 完了条件: 完全な品質で記事公開するまで完了してはならない。
 - title_status が updated / already_ok / unavailable / failed / skipped のいずれかで記録されていること。updated / already_ok の場合は task title が exact `YY/MM/DD News-Grasp 臨時本線日次バッチ 6:00 記事作成・公開` に一致すること。
 - 当日対象カテゴリ digest、Summary、DeepDive md、DeepDive HTML、日付 docs、Daily audio、DeepDive audio、YouTube Podcast、playlist、notification、distribution manifest、docs/publish-status.json が同一日付で揃うこと。
-- `python -m tools.validate_daily_quality --date YYYY-MM-DD --require-deepdive --json` を対象日の実日付で実行して Green。
-- `python -m tools.deepdive_quality --repo-root . audit-issue --date YYYY-MM-DD --require-rendered-public --route codex_daily_audit` を対象日の実日付で実行して Green。
-- `NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1` の direct public verifier が実成果物と公開面を読んで Green。
+- 六つのDaily operation CLIが順序どおり一回ずつGreenとなり、各producer receiptのinput identityと出力hashが連続していること。
+- `consumer_public_verification` のfresh public verifierが実成果物と公開面を読んでGreenとなり、provider ACK欠落は `unknown_unobtainable` のまま保持されること。
 - runner/readiness を含まない public-only 検証で、Web / audio / Podcast / playlist / notification / distribution / publish-status / Pages が Green。
 - docs/publish-status.json が対象日 published_ok。
 - origin/main への push と GitHub Pages 反映が確認済み。
 - planned_elapsed、actual_elapsed、slo_delta、overrun_branch_triggered が最終報告にあること。
 
 禁止:
+- 禁止条件: 完全な品質で記事公開するまで完了してはならない。
 - 監査バッチとしての分類完了で止まること。
 - 旧 runner 起動、旧 runner state を completion authority にすること。
 - audit_major_incident_open、typed Red、証跡作成、原因説明、レポート作成を公開作成の代替にすること。

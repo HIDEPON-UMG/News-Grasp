@@ -169,6 +169,22 @@ product sourceのmutationは `config/news_grasp_product_write_allowlist_v1.json`
 
 Daily gateは当日製品oracle・必須bundle・public surface・distribution・notification・pure readinessだけを評価する。pytest全回帰、Playwright、historical、crash/replay/drift、final NoPublish E2EはRelease gateへ移し、scheduled/recovery call graphから到達不能にする。全下位証拠がGreenになった後だけsafe commit、fast-forward push、remote HEAD、正規installer、runtime/task parity、rollback receipt、隔離NoPublish E2E一回を順に閉じる。NoPublish E2Eのpublish/push/upload/notification副作用は0とする。
 
+### 2026-09-03 Daily Public 45-minute Contract
+
+`NG-DAILY-45M-20260902` は、記事品質を削らずに重複判定とRelease-only検証を日次critical pathから除外する。Daily capabilityが実行できるoperationは `static_check` → `scoped_contract_unit` → `current_issue_integration` → `external_publication` → `consumer_public_verification` → `atomic_completion` の六つだけである。raw/full pytest、historical corpus、Playwright全件、crash/replay/drift、final NoPublish E2E、Release gate、raw Python、未登録routeはspawn前にfail-closedにする。
+
+各acceptance predicateは `generation_id + predicate_id` につき一つのownerが一つのcanonical sourceから一度だけ判定する。Summaryの正本はfrontmatter付きMarkdown、DeepDive direct監査はcurrent issueだけ、HTMLはproducerの派生物である。Release gateは全pytest nodeを排他的partitionへ分類し、各nodeを一回だけ実行したreceiptの和集合でfull suiteを証明する。
+
+preflightはissue date、run intent、actual run ID、writer fencing token、scheduler trigger、source baseline、runtime generation、remote base SHA、許可外部副作用をstart sealへ固定する。外部公開直前にrelease commit SHA、exact write set、file hash、manifest ID、bundle ID、external operation IDをpublish sealへ固定する。外部公開開始後のsource、manifest、write set driftは同runへrebindせず `superseded_after_external_start` として新generationを要求する。
+
+state/notification ledgerはrun作成前にV2へmigrationする。single-flight identityは `automation_id + issue_date + run_intent` であり、cwdを含めない。child resultはUTF-8一行JSON、canonical snake_case schema、input hashをmutation前に検証し、stateとapplied receiptを同一transactionでcommitする。retryはidempotency keyのreceipt照会だけをauthorityにする。
+
+scheduler triggerをT0としてinternal processing、queue、external wait、retry、handoff、user wait、unmeasuredを永続化する。completion時のelapsedは固定し、inspect時に増加させない。45分で `method_change`、75分で `scope_reduce`、90分超で `deadline_revision` を一度だけdispatchするが、公開必須inventoryやconsumer verifierを削らない。
+
+atomic completionは、同一issue date・run intent・actual run ID・bundle ID・manifest ID・release/remote/Pages SHAに束縛されたfresh consumer-owned public verifierだけが発行できる。7カテゴリuniverse、当日scheduledカテゴリ、Summary/DeepDive MarkdownとHTML、日次/DeepDive音声、YouTube、playlist、notification immutable sender ledger、distribution、publish-status、Home、Pagesの論理積を要求する。provider delivery ACKを取得できない場合は `unknown_unobtainable` を維持し、成功・失敗・再送要求のいずれにも変換しない。
+
+automation promptはtemplate、installed TOML、App DB、全snapshotでexact一致し、指定文言が最優先事項・完了条件・禁止条件に各一回存在する。runtime startはdriftを自動修復せずRedにし、backup/rollback receiptを伴う明示promotionだけが更新できる。
+
 ### Model役割と境界
 
 要件・設計・security判断はSol Max、固定された機械編集と限定fixtureはLuna Max（reasoning effort max）、hash/JSON/test/parityはlocal deterministic toolとする。本節の実装ではLuna packetに `unresolvedDecisionIds=[]`、exact write set、Red oracle、command、causal retry、rollback、`return_to_sol_before_execution` を必須化する。共有global変更、public semantics変更、未登録failure class、write set拡張は実行せず上流設計へ戻す。
@@ -297,6 +313,7 @@ runner の start marker は `run_id` を同一行に含める。旧ログの run
 | Incident / reporting / recovery evidence | 障害 evidence、公開 inventory、完了報告の必須項目を更新する。新規 `docs/incidents/*-report.html` は追跡・公開しない。HTML 証跡が必要な場合は untracked の `build/incidents/` を既定置場にし、公開が必要な場合は別途明示承認を要する。direction/handler capability drift は historical failure scenario と weekly regression case の双方へ登録する。 | `.gitignore`、`AGENTS.md`、`CLAUDE.md`、`build/incidents/`、historical failure scenario evidence、weekly failure regression corpus。 | `tests/test_incident_report_tracking_policy.py`、`tests/test_historical_failure_scenarios.py`、`tests/test_product_spec_contract.py`、公開 inventory 確認。 |
 | External integration / auth | OAuth、API quota、権限、token expiry、公開反映遅延の failure domain を typed status に分ける。 | token / auth state、external API response、runner typed status。 | auth/quota/permission の fixture、retry しない fatal と fallback 可能な verify failure の分類テスト。 |
 | Direct execution evidence / canonical publish manifest / causal retry | `NEWS_GRASP_RUN_OBSERVATION_V1` でsource/index/dirty/cwd/exact write set、固定Python/pytest、外部ready、runtime/source/installed/loaded/publicをfield分離する。`NEWS_GRASP_PUBLISH_MANIFEST_V2` は `scheduled_category_ids(issue_date)` から生成し、manifest外publication差分・manifest内未リンク・別issue/run-intentをfail-closedにする。`NEWS_GRASP_DIRECT_RUNTIME_V2` はV1 stage historyをappend-only移行し、工程0〜19 Green後にconsumer-owned finalizerが`public_completion`だけを閉じる。同一environment/failure shapeのretryは原因入力が変化した`causalRemediationReceipt`なしに拒否する。 | clean production worktree、外部runtime state root、publish manifest、audio V2、execution receipt、retry/checkpoint/duration ledger、remote main、Pages workflow/public surfaces。 | `tests/test_news_grasp_publish_contract_v2.py`、`tests/test_news_grasp_execution_receipt.py`、`tests/test_news_grasp_direct_runtime_v2.py`、cache-busted Pages semantic probe、remote HEAD/workflow head/manifest ID照合。 |
+| Daily 45-minute public completion / Release partition | Daily六operation、predicate単一owner、start/publish seal、automation/date/intent single-flight、V2 migration、UTF-8 atomic child receipt、分類済みtiming/SLO dispatch、fresh consumer verifier、automation prompt parityを同じtask IDへ束縛する。DailyからRelease-only/unknown routeをspawn前に拒否し、Release nodeは排他的partitionで一回だけ実行する。 | `config/news_grasp_daily_45m_contract_v1.json`、`config/news_grasp_failure_ledger_v2.json`、daily/release broker、runtime SQLite V2、automation template/installed/App DB/snapshot、public observation receipt。 | `tests/test_news_grasp_daily_45m_contract.py`、`tests/test_news_grasp_direct_runtime_v2.py`、`tests/test_news_grasp_publish_contract_v2.py`、`tests/test_product_spec_contract.py`、Release partition receipt、installed launcher final NoPublish一回、自然scheduled canaryのconsumer verifier一回。 |
 
 非自明な変更計画と完了報告には、必ず「Affected matrix rows」「Gate update decision」「Verification command」を書く。該当する row が無い機能を追加、削除、修正する場合は、実装と同じ変更単位でこの `Feature Change Quality Gate Matrix` と `tests/test_product_spec_contract.py` を更新してから完了扱いにする。
 
@@ -600,7 +617,7 @@ audit Greenとterminalはcallerのboolean自己申告から発行しない。sch
 
 ## 2026-08-10 Audit Green Non-regression And Typed Recovery Commitment
 
-通常scheduled productionは、人間が翌朝の自然実行を監視しなくても、実行、必要時の型付き復旧、公開確認、証拠確定まで閉じなければならない。自然scheduled run、翌朝6:00／6:40の待機、ユーザー目視をTODO、Acceptance、完了証拠へ含めない。最終実行証拠は、全上流契約がGreenになった後の隔離scheduled-equivalent `NoPublish` E2E attempt Aと、Aがfailure-local修正を要した場合だけのattempt Bで閉じる。A無修正成功時のB、B後のattempt C、自然実行待ちは完了経路に含めない。
+通常scheduled productionは、人間が翌朝の自然実行を監視しなくても、実行、必要時の型付き復旧、公開確認、証拠確定まで閉じなければならない。恒常運用では自然scheduled runやユーザー目視を手動TODOにしない。最終実行証拠は、全上流契約がGreenになった後の隔離scheduled-equivalent `NoPublish` E2E attempt Aと、Aがfailure-local修正を要した場合だけのattempt Bで閉じる。A無修正成功時のBとB後のattempt Cは禁止する。ただし、日次公開runtime自体をcutoverする `NG-DAILY-45M-20260902` の一回限りのrollout acceptanceは、最初の自然scheduled canaryが45分以内に同一runのconsumer public verifier Greenを発行するまで未完了とする。このcanaryは人間目視でなくautomation/runtime receiptが観測・確定する。
 
 同日公開完了、次回runner readiness、最新audit観測は交換不能な別stateである。`CompletionVerificationResultV1`は`verified_green|verified_incomplete|verification_unavailable`を型として保持し、`publicCompletionStatus`、`nextRunReadinessStatus`、`phase`、`reasonCode`、`failedGateIds`、source/runtime/config/evidence hashを持つ。例外、subprocess失敗、JSON parse失敗、gate Redを`None`や単一booleanへ潰してはならない。
 

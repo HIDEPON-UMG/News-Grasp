@@ -184,9 +184,10 @@ def test_recovery_runner_preserves_canonical_paths_and_seals_lineage() -> None:
 
     assert not (root / "scripts" / "ops" / "news-grasp-runner.ps1").exists()
     assert "validate_installed_automation_semantics(" in direct_runtime
-    assert "_repair_installed_automation_config_once(" in direct_runtime
+    assert "_repair_installed_automation_config_once(" not in direct_runtime
     assert "run_exact_successor(" in direct_runtime
     assert "--write-app-db" in syncer
+    assert "--promote" in syncer
     assert "news-grasp-runner.ps1" not in direct_runtime
 
 

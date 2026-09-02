@@ -611,6 +611,8 @@ def test_audit_and_direct_runtime_consume_freshness_before_recovery_child_admiss
 
     assert not (ROOT / "scripts" / "ops" / "news-grasp-runner.ps1").exists()
     config_gate = direct_runtime.index("validate_installed_automation_semantics(")
-    repair_gate = direct_runtime.index("_repair_installed_automation_config_once(")
     stage_start = direct_runtime.index("result = start_run(")
-    assert config_gate < repair_gate < stage_start
+    assert config_gate < stage_start
+    assert "_repair_installed_automation_config_once(" not in direct_runtime
+    assert '"status": "automation_config_red"' in direct_runtime[config_gate:stage_start]
+    assert "--promote" in direct_runtime[config_gate:stage_start]
