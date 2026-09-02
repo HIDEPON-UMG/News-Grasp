@@ -1,0 +1,34 @@
+{
+  "articleContentSha256": "228c5f111e5f4ea8d7eba003da8f0442ec5656292ace754f41bd283f9485a836",
+  "articlePath": "digest/DeepDive/2026-09-02-DeepDive.md",
+  "bindings": [
+    {
+      "claim": "ローカルLLMを手元で動かす記事は、利用環境と確認責任を分けて考える入口になる",
+      "claimId": "ai-20260902-local-llm",
+      "evidence": "自宅でローカルLLMを動かしてみた ローカルなら実現できる遊びとこだわり",
+      "sourceUrl": "https://gihyo.jp/article/2026/09/home-local-llm-guide"
+    },
+    {
+      "claim": "為替見通しの記事は、金利・介入観測と相場の受け止めを別の確認対象にする",
+      "claimId": "fx-20260902-outlook",
+      "evidence": "ドル/円の9月見通し 「協調介入の円高効果半減 焦点は日米金融政策に」",
+      "sourceUrl": "https://www.gaitame.com/media/entry/2026/09/01/152019"
+    },
+    {
+      "claim": "関市の工場参観日告知は、製造の現場を地域との接点として開く",
+      "claimId": "manufacturing-20260902-factory",
+      "evidence": "工場は関のミュージアム。「関の工場参観日」開催（11/12～14）",
+      "sourceUrl": "https://www.city.seki.lg.jp/0000023478.html"
+    },
+    {
+      "claim": "福山市の自動運転バス意見募集は、移動サービスを地域条件と意見収集へ接続する",
+      "claimId": "mobility-20260902-bus",
+      "evidence": "自動運転による路線バスの協議運賃（案）に関する意見を募集します",
+      "sourceUrl": "https://www.city.fukuyama.hiroshima.jp/soshiki/toshikotsu/410081.html"
+    }
+  ],
+  "issueDate": "2026-09-02",
+  "schemaVersion": "DEEPDIVE_CLAIM_SOURCE_TRANSPORT_V1",
+  "status": "Green",
+  "transportSha256": "349ebb144b45422f1d4525635e2adbbd2cb3b49d4805fbeecdf0a4e88154048d"
+}

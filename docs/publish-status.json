@@ -1,22 +1,19 @@
 {
-  "2026-09-01": {
-    "date": "2026-09-01",
-    "result": "published_ok",
-    "status": "published_ok",
-    "updated_at": "2026-09-01T07:23:36+09:00"
-  },
-  "date": "2026-09-01",
-  "manifestId": "be9d9041346a044937366943b5d2df37ee078ead24337a3cd7bb431d37abf471",
   "ok": true,
-  "result": "published_ok",
-  "runId": "direct-2026-09-01-1-3f4fda64605e42d9a88bab7086903aa7",
-  "runIntent": "scheduled_production_direct",
   "status": "published_ok",
-  "updated_at": "2026-09-01T07:23:36+09:00",
   "value": {
-    "date": "2026-09-01",
+    "date": "2026-09-02",
     "result": "published_ok",
     "status": "published_ok",
-    "updated_at": "2026-09-01T07:23:36+09:00"
+    "updated_at": "2026-09-02T07:18:32+09:00"
+  },
+  "date": "2026-09-02",
+  "result": "published_ok",
+  "updated_at": "2026-09-02T07:18:32+09:00",
+  "2026-09-02": {
+    "date": "2026-09-02",
+    "result": "published_ok",
+    "status": "published_ok",
+    "updated_at": "2026-09-02T07:18:32+09:00"
   }
 }
