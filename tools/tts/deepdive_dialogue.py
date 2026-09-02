@@ -248,9 +248,11 @@ def _jaccard(left: set[str], right: set[str]) -> float:
 def source_evidence_sentences(markdown: str, *, limit: int = 20) -> list[str]:
     """記事本文から台本が参照できる根拠文を決定的に抽出する。"""
     body = _FRONTMATTER_RE.sub("", markdown)
-    body = strip_internal_metadata(body)
     body = _CODE_FENCE_RE.sub("", body)
     body = _HEADING_RE.sub("", body)
+    # strip_internal_metadata は Markdown 見出しの制御記号だけを除去するため、
+    # 見出し本文が後続段落へ連結される前に見出し全体を落とす。
+    body = strip_internal_metadata(body)
     body = re.sub(r"\[\[([^\]]+)\]\]", r"\1", body)
     body = body.replace("__", "").replace("**", "")
     sentences: list[str] = []

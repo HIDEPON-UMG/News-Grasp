@@ -1,8 +1,8 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 2994,
-  "collectedNodeSetSha256": "3bf9cf68f649f1bcd51bad55b8fdef97e606fc3611afffece775b62384644cbc",
+  "collectedNodeCount": 3013,
+  "collectedNodeSetSha256": "b45259a54bd8117a7d084787f2f670b7b34e3b1731ca84030004cdad67536418",
   "files": [
     {
       "path": "tests/test_20260813_control_plane_repair.py",
@@ -732,7 +732,7 @@
     },
     {
       "path": "tests/test_daily_model_cost_projection.py",
-      "sha256": "585ffb26581a14c3288eb03558cd1077ef57f81eb3745989a611536866397545",
+      "sha256": "64de482531c5d2666445f01f5483f5ce7ff3196383775364f8dbed3ca2ca2851",
       "nodeCount": 3,
       "nodeIds": [
         "tests/test_daily_model_cost_projection.py::test_calibration_uses_current_model_policy_without_retired_fallback",
@@ -752,6 +752,18 @@
         "tests/test_daily_quality_category_presence.py::test_issue_schedule_allows_per_category_intentional_pause_marker",
         "tests/test_daily_quality_category_presence.py::test_issue_schedule_ignores_unscheduled_category_digest_for_required_presence",
         "tests/test_daily_quality_category_presence.py::test_issue_schedule_rejects_missing_scheduled_category_digest"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
+      "path": "tests/test_daily_quality_current_scope.py",
+      "sha256": "a080d93632ccc0e2b7f2a52269fa87595304b10dd43c81adf65fa9984911e54a",
+      "nodeCount": 1,
+      "nodeIds": [
+        "tests/test_daily_quality_current_scope.py::test_daily_quality_deepdive_gate_excludes_historical_corpus"
       ],
       "clauseIds": [
         "NGC-C06",
@@ -1032,6 +1044,18 @@
       ]
     },
     {
+      "path": "tests/test_deepdive_history_promotion.py",
+      "sha256": "0c72ce5b1d60463cbaa8df5cb33ff2570e657803cff647b31776ad3dfee4a45c",
+      "nodeCount": 1,
+      "nodeIds": [
+        "tests/test_deepdive_history_promotion.py::test_history_promotion_expected_green_fixture_current_script_is_red"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
       "path": "tests/test_deepdive_not_summary.py",
       "sha256": "af2f0c1fc418477db45a196cc91e3abd9753cf645f4c0257b452fadf9dbb5afa",
       "nodeCount": 4,
@@ -1048,8 +1072,8 @@
     },
     {
       "path": "tests/test_deepdive_quality_engine.py",
-      "sha256": "28cef12b71e388c5220317a8d71dc7ca2b21e8192a10eaec6fdfbc5dd233a923",
-      "nodeCount": 66,
+      "sha256": "375e1c285612b1b4c7f876ba32caa8416f64ee130d6e6d70fbb9a0b8aca7d20f",
+      "nodeCount": 73,
       "nodeIds": [
         "tests/test_deepdive_quality_engine.py::test_audit_history_routes_pre_enforcement_missing_claim_bindings_to_research",
         "tests/test_deepdive_quality_engine.py::test_audit_issue_maps_duplicate_claim_evidence_to_article_value_invalid",
@@ -1089,6 +1113,11 @@
         "tests/test_deepdive_quality_engine.py::test_materializer_rejects_reparse_stage_leaf",
         "tests/test_deepdive_quality_engine.py::test_materializer_rejects_untracked_reparse_output_scope",
         "tests/test_deepdive_quality_engine.py::test_materializer_stage_names_are_exclusive_and_not_pid_predictable",
+        "tests/test_deepdive_quality_engine.py::test_normalized_evidence_text_joins_japanese_html_tag_boundaries",
+        "tests/test_deepdive_quality_engine.py::test_normalized_evidence_text_removes_nextjs_literal_escaped_tags",
+        "tests/test_deepdive_quality_engine.py::test_observed_record_decodes_declared_html_charset_without_replacement[Shift_JIS-cp932-<meta charset=\"Shift_JIS\">]",
+        "tests/test_deepdive_quality_engine.py::test_observed_record_decodes_declared_html_charset_without_replacement[UTF-8-utf-8-<meta charset=\"UTF-8\">]",
+        "tests/test_deepdive_quality_engine.py::test_observed_record_decodes_declared_html_charset_without_replacement[Windows-31J-cp932-<meta http-equiv=\"Content-Type\" content=\"text/html; charset=Windows-31J\">]",
         "tests/test_deepdive_quality_engine.py::test_observed_record_decodes_declared_shift_jis_evidence",
         "tests/test_deepdive_quality_engine.py::test_period_audit_exposes_green_corpus_evidence",
         "tests/test_deepdive_quality_engine.py::test_period_audit_forwards_rendered_public_requirement",
@@ -1100,6 +1129,7 @@
         "tests/test_deepdive_quality_engine.py::test_provenance_binds_article_hash_location_and_public_href",
         "tests/test_deepdive_quality_engine.py::test_provenance_fails_closed_after_article_or_fetch_drift",
         "tests/test_deepdive_quality_engine.py::test_provenance_manifest_is_worktree_portable_and_crlf_stable",
+        "tests/test_deepdive_quality_engine.py::test_provenance_manifest_self_validates_with_mixed_transport_records",
         "tests/test_deepdive_quality_engine.py::test_provenance_rejects_manifest_hash_tamper",
         "tests/test_deepdive_quality_engine.py::test_provenance_rejects_missing_extra_and_duplicate_sources",
         "tests/test_deepdive_quality_engine.py::test_public_fetch_boundary_rejects_loopback_before_transport",
@@ -1107,6 +1137,7 @@
         "tests/test_deepdive_quality_engine.py::test_rendered_public_surface_rejects_cross_date_html_substitution",
         "tests/test_deepdive_quality_engine.py::test_rendered_public_surface_rejects_internal_transport_metadata[&lt;!-- claim-source: {&quot;claimId&quot;:&quot;secret&quot;} --&gt;]",
         "tests/test_deepdive_quality_engine.py::test_rendered_public_surface_rejects_internal_transport_metadata[<!-- claim-source: {\"claimId\":\"secret\"} -->]",
+        "tests/test_deepdive_quality_engine.py::test_rendered_public_surface_rejects_internal_transport_metadata[<p>### /xa702 /u4f01/u696d/u5229/u7528 /u2014 /u8907/u6570/u30e2/u30c7/u30eb/u3092/u9078/u3079/u308b/u3053/u3068/u306e/u6761/u4ef6</p>]",
         "tests/test_deepdive_quality_engine.py::test_rendered_public_surface_rejects_internal_transport_metadata[[/u5185/u90e8/u30ea/u30f3/u30af](https://example.com/private)]",
         "tests/test_deepdive_quality_engine.py::test_rendered_public_surface_rejects_internal_transport_metadata[```json/n{\"sourceUrl\":\"https://example.com/private\"}/n```]",
         "tests/test_deepdive_quality_engine.py::test_rendered_public_surface_rejects_internal_transport_metadata[{\"claim\":\"/u5185/u90e8/u4e3b/u5f35\",\"sourceUrl\":\"https://example.com/private\"}]",
@@ -1144,8 +1175,8 @@
     },
     {
       "path": "tests/test_deepdive_quality_route_contract.py",
-      "sha256": "2cef7243df6a74771dc1e584c3c001c9004b817cddefcc04e1f7bc3b192702e2",
-      "nodeCount": 15,
+      "sha256": "540baa38ec82974efc0354e6488fb05809567c715cbd5e8cf295ebdb56a05f28",
+      "nodeCount": 16,
       "nodeIds": [
         "tests/test_deepdive_quality_route_contract.py::test_codex_mainline_automation_uses_same_shared_quality_cli",
         "tests/test_deepdive_quality_route_contract.py::test_constitution_trace_and_generated_projection_bind_v2_review",
@@ -1153,6 +1184,7 @@
         "tests/test_deepdive_quality_route_contract.py::test_daily_quality_uses_shared_quality_engine",
         "tests/test_deepdive_quality_route_contract.py::test_declared_consumer_and_fixture_routes_match_exactly",
         "tests/test_deepdive_quality_route_contract.py::test_deepdive_prompt_uses_v2_publication_review_contract_only",
+        "tests/test_deepdive_quality_route_contract.py::test_direct_completion_quality_gate_excludes_historical_corpus",
         "tests/test_deepdive_quality_route_contract.py::test_four_consumers_pass_their_exact_route_identity",
         "tests/test_deepdive_quality_route_contract.py::test_post_generation_consumers_require_rendered_public_surface",
         "tests/test_deepdive_quality_route_contract.py::test_product_contract_projections_name_the_same_v2_schema_routes_and_issues",
@@ -1294,7 +1326,7 @@
     },
     {
       "path": "tests/test_deepdive_terra_benchmark.py",
-      "sha256": "7755bf21b3e15ae7fb4cdf19a9452ecd2ba415116b5ad269bc5cff750a298455",
+      "sha256": "fe98a928ff1be3f3ce25586b292434d0cc5a86c6b98cbd7df6dfde2716b10daf",
       "nodeCount": 2,
       "nodeIds": [
         "tests/test_deepdive_terra_benchmark.py::test_blind_bundle_removes_model_identity_and_self_scores",
@@ -1307,7 +1339,7 @@
     },
     {
       "path": "tests/test_deepdive_triad_judge.py",
-      "sha256": "dfd31be392a16f8e092a1f85739c4d2dfe391c3f90fc79f8bf0bbeb2ba21a9e3",
+      "sha256": "982347f373ec637508c1ead1cd3fdcb1d7e01575bfe3370f3345867b3db96436",
       "nodeCount": 2,
       "nodeIds": [
         "tests/test_deepdive_triad_judge.py::test_deepdive_weights_prioritize_decision_support",
@@ -1662,7 +1694,7 @@
     },
     {
       "path": "tests/test_gate_contract.py",
-      "sha256": "c23cbfa2b55641f2cd806667fcbac22bdb184f50d94caa9741b785aeee0d5110",
+      "sha256": "51819dd1c476d05c5f1b90ca7f67f9b118591cdd1255cbd59a48adae4b74f4e7",
       "nodeCount": 8,
       "nodeIds": [
         "tests/test_gate_contract.py::test_category_budget_allows_distinct_failures_after_artifact_changes",
@@ -1695,7 +1727,7 @@
     },
     {
       "path": "tests/test_generate_pages.py",
-      "sha256": "cd8687a04727725304b99560e06d6918f184b30b9758054cb613bd13b62a5371",
+      "sha256": "6c70f1a443511bb969cfe781dd9245d7af3f3bf612c825c75fda86e1d48c86c9",
       "nodeCount": 21,
       "nodeIds": [
         "tests/test_generate_pages.py::test_article_thumb_accepts_non_thumb_markdown_alt",
@@ -1743,7 +1775,7 @@
     },
     {
       "path": "tests/test_generate_pages_integration.py",
-      "sha256": "eb30c8934768c7c30750a04194f8bbe3b2944bdb97c6138a7417d0c3f3865a33",
+      "sha256": "4696fae39a6c584468e09307a19ec6110dc3787d18a569c09f433cb3176ae10f",
       "nodeCount": 11,
       "nodeIds": [
         "tests/test_generate_pages_integration.py::test_all_required_ogp_meta_present",
@@ -2052,7 +2084,7 @@
     },
     {
       "path": "tests/test_incident_report_tracking_policy.py",
-      "sha256": "8837189f90c6010d5f89c510837f95e35efbdd2af6b8f662ff55a1c269332768",
+      "sha256": "617d55824c8be50f91410058dafdb47f7f547406c0520a3387f3d75821836d9a",
       "nodeCount": 4,
       "nodeIds": [
         "tests/test_incident_report_tracking_policy.py::test_2026_06_30_public_report_is_not_tracked",
@@ -2128,7 +2160,7 @@
     },
     {
       "path": "tests/test_model_benchmark.py",
-      "sha256": "7902dfb51ebc873c788bb619a4211d07f2e7fcdaaabea60408a62dad52a7d1b9",
+      "sha256": "66530115ab81ecadb2a591de72fbf523c364abfd419983a00de7b64afe7e5f92",
       "nodeCount": 3,
       "nodeIds": [
         "tests/test_model_benchmark.py::test_official_api_prices_are_recorded_per_million_tokens",
@@ -2200,7 +2232,7 @@
     },
     {
       "path": "tests/test_model_selection_html_report.py",
-      "sha256": "7cae92be02a536dc74606aec7ce9a38346cb947b5179b0628512119ee217ecd5",
+      "sha256": "2596127f08d35c51eb59938e22342c8cb5df8b4b6dad639b5ad5c228aae7deb0",
       "nodeCount": 3,
       "nodeIds": [
         "tests/test_model_selection_html_report.py::test_deepdive_stacks_sum_to_displayed_scores_with_unique_axis_colors",
@@ -2801,9 +2833,10 @@
     },
     {
       "path": "tests/test_news_grasp_direct_runtime_v2.py",
-      "sha256": "c9ffe563ec20a44e8d7bf70e47b44a1f1cbb4581578f30cd05c1d1060b7ad727",
-      "nodeCount": 25,
+      "sha256": "1dd20fe625150338f614e84d326bb0d1e1b9d4baf30b3eecb69f8fc98b3ce986",
+      "nodeCount": 30,
       "nodeIds": [
+        "tests/test_news_grasp_direct_runtime_v2.py::test_deepdive_completion_audits_current_issue_without_history_corpus",
         "tests/test_news_grasp_direct_runtime_v2.py::test_finalizer_fences_wrong_lease_before_any_public_probe",
         "tests/test_news_grasp_direct_runtime_v2.py::test_finalizer_persists_verified_optional_warning",
         "tests/test_news_grasp_direct_runtime_v2.py::test_finalizer_rejects_noncontiguous_stage_history_even_when_count_matches",
@@ -2821,6 +2854,8 @@
         "tests/test_news_grasp_direct_runtime_v2.py::test_registered_consumer_rejects_git_and_timing_inputs_before_transport[origin-../main-0-30]",
         "tests/test_news_grasp_direct_runtime_v2.py::test_registered_consumer_rejects_git_and_timing_inputs_before_transport[origin-main-0-0]",
         "tests/test_news_grasp_direct_runtime_v2.py::test_registered_consumer_rejects_git_and_timing_inputs_before_transport[origin-main-901-30]",
+        "tests/test_news_grasp_direct_runtime_v2.py::test_registered_deepdive_consumers_scope_audit_to_current_issue",
+        "tests/test_news_grasp_direct_runtime_v2.py::test_registered_summary_consumer_reads_frontmatter_source_not_rendered_html",
         "tests/test_news_grasp_direct_runtime_v2.py::test_runtime_relocation_adopts_exact_orphan_after_post_commit_crash",
         "tests/test_news_grasp_direct_runtime_v2.py::test_runtime_relocation_rejects_canonical_parent_junction",
         "tests/test_news_grasp_direct_runtime_v2.py::test_runtime_relocation_rejects_fresh_source_lease_dual_writer",
@@ -2828,7 +2863,9 @@
         "tests/test_news_grasp_direct_runtime_v2.py::test_runtime_state_relocation_uses_sqlite_snapshot_and_preserves_source",
         "tests/test_news_grasp_direct_runtime_v2.py::test_start_run_has_database_single_writer_identity_gate",
         "tests/test_news_grasp_direct_runtime_v2.py::test_title_completion_is_separate_from_publication_status",
-        "tests/test_news_grasp_direct_runtime_v2.py::test_v1_to_v2_migration_preserves_run_id_and_stage_history"
+        "tests/test_news_grasp_direct_runtime_v2.py::test_v1_to_v2_migration_preserves_run_id_and_stage_history",
+        "tests/test_news_grasp_direct_runtime_v2.py::test_v1_to_v2_migration_rebinds_only_target_copy_to_clean_observation_cwd",
+        "tests/test_news_grasp_direct_runtime_v2.py::test_v2_manifest_rebinding_is_append_only_and_preserves_stage_history"
       ],
       "clauseIds": [
         "NGC-C06",
@@ -3188,14 +3225,15 @@
     },
     {
       "path": "tests/test_news_grasp_publish_contract_v2.py",
-      "sha256": "fe35c6967f616b4baee71b9bc767a52f8ca888e2774f5c5e14b9e58ad325ee9d",
-      "nodeCount": 35,
+      "sha256": "3ef569f599e27bdd85607d1e7df0fb310071d08da0987fc95d91097da9ab051b",
+      "nodeCount": 39,
       "nodeIds": [
         "tests/test_news_grasp_publish_contract_v2.py::test_distribution_binding_exactly_binds_run_and_component_receipts",
         "tests/test_news_grasp_publish_contract_v2.py::test_distribution_binding_validates_all_sources_before_any_target_mutation",
         "tests/test_news_grasp_publish_contract_v2.py::test_guarded_repo_write_rejects_parent_redirect_without_touching_victim",
         "tests/test_news_grasp_publish_contract_v2.py::test_hidden_or_template_links_are_not_reader_visible_evidence",
         "tests/test_news_grasp_publish_contract_v2.py::test_home_summary_and_daily_scheduled_category_links_are_required",
+        "tests/test_news_grasp_publish_contract_v2.py::test_local_required_docs_loads_every_scheduled_category",
         "tests/test_news_grasp_publish_contract_v2.py::test_malformed_closing_tag_cannot_escape_hidden_surface",
         "tests/test_news_grasp_publish_contract_v2.py::test_manifest_digest_does_not_neutralize_script_or_comment_literals",
         "tests/test_news_grasp_publish_contract_v2.py::test_manifest_digest_neutralizes_only_owned_direct_head_marker",
@@ -3225,7 +3263,10 @@
         "tests/test_news_grasp_publish_contract_v2.py::test_r08_normalized_claim_evidence_equality_is_red",
         "tests/test_news_grasp_publish_contract_v2.py::test_r09_dirty_or_unbound_checkout_is_not_remote_authority",
         "tests/test_news_grasp_publish_contract_v2.py::test_r14_required_warning_is_red_optional_warning_is_preserved",
-        "tests/test_news_grasp_publish_contract_v2.py::test_r15_history_quarantine_is_not_daily_authority"
+        "tests/test_news_grasp_publish_contract_v2.py::test_r15_history_quarantine_is_not_daily_authority",
+        "tests/test_news_grasp_publish_contract_v2.py::test_semantic_pages_accepts_audio_release_cache_busting_query",
+        "tests/test_news_grasp_publish_contract_v2.py::test_semantic_pages_accepts_canonical_published_ok_status",
+        "tests/test_news_grasp_publish_contract_v2.py::test_semantic_parser_accepts_standard_meta_without_name"
       ],
       "clauseIds": [
         "NGC-C06",
@@ -3438,7 +3479,7 @@
     },
     {
       "path": "tests/test_newsroom_append_safety_benchmark.py",
-      "sha256": "e27ef9fa5e8db50807415d35bce4300175b213a93d0312865afeb6983e9b518d",
+      "sha256": "1c2be89b05bb7078945c2cdbe86ae4d7aa3b55fbed193cfe93da972388dacb2e",
       "nodeCount": 2,
       "nodeIds": [
         "tests/test_newsroom_append_safety_benchmark.py::test_append_safety_fixture_covers_five_failure_boundaries",
@@ -3471,7 +3512,7 @@
     },
     {
       "path": "tests/test_newsroom_prompts.py",
-      "sha256": "ac9ab1e1e6c41ce4593abad1ec6d49c2c2036226c4276421fe72e636825c69b1",
+      "sha256": "15744653a0a60c53fb5fcf2358082a0143639342b742b32b63ae1e0f643b9530",
       "nodeCount": 22,
       "nodeIds": [
         "tests/test_newsroom_prompts.py::test_active_newsroom_prompts_do_not_reference_legacy_agents",
@@ -3705,7 +3746,7 @@
     },
     {
       "path": "tests/test_overview_pattern_c.py",
-      "sha256": "0b6d7336e8175382745085a67380b2f6c696ec0c72fc9dc07ac5758982ba0c7b",
+      "sha256": "813dbde6d855331838e0f010e20659d31ec12cdaf1bc8b984da947a7344cd3e0",
       "nodeCount": 11,
       "nodeIds": [
         "tests/test_overview_pattern_c.py::test_build_all_overviews_creates_unique_dates_only",
@@ -3769,7 +3810,7 @@
     },
     {
       "path": "tests/test_prepare_editor_workspace.py",
-      "sha256": "f97df29ae5e5a46d4c075b662e550065ec1eeb23e9ec71b8a210cd4732500d68",
+      "sha256": "2397a1d5dc51876312932b41b109986ec22fd82039206f2a9cef6c26d21fc632",
       "nodeCount": 1,
       "nodeIds": [
         "tests/test_prepare_editor_workspace.py::test_prepare_editor_workspace_removes_only_target_issue_date"
@@ -4631,7 +4672,7 @@
     },
     {
       "path": "tests/test_send_push.py",
-      "sha256": "631d40c2c5f3a6d23a5153a53e25bdb34a58b9b1b3a5a0af444aaca7c47617df",
+      "sha256": "751eaddead7b7e933cc10358d087b8bebf0fc55121aa4b9925f3773981c5c41c",
       "nodeCount": 32,
       "nodeIds": [
         "tests/test_send_push.py::test_build_payload_shape_and_japanese",
@@ -4674,7 +4715,7 @@
     },
     {
       "path": "tests/test_session_url_fragments.py",
-      "sha256": "9960ce058151ffcb5d3584ae119557f028d69f14c8bdba1b35340c29908a1c44",
+      "sha256": "1695970b346507e447e75eab2510a4d9bddcae10ac55878b9babda736c64de0b",
       "nodeCount": 4,
       "nodeIds": [
         "tests/test_session_url_fragments.py::test_broken_fragment_is_warn_skipped",
@@ -4795,7 +4836,7 @@
     },
     {
       "path": "tests/test_summary_pattern_d.py",
-      "sha256": "52e410e6ead384187415a8f4eaa1aa96f10019127839bfb2c36ba8a7406eb862",
+      "sha256": "e2a0d472776abffa271071d7b5246b37aea18d2bb1f8cf1f69c9888b537c8781",
       "nodeCount": 26,
       "nodeIds": [
         "tests/test_summary_pattern_d.py::test_3_takeaways_always_rendered",
@@ -5029,7 +5070,7 @@
     },
     {
       "path": "tests/test_tts_generate_bgm.py",
-      "sha256": "988ff8382149c3e8805ca94cfdfb56e0a6bad8113e6c610ebb70136d0add37bb",
+      "sha256": "1ee3a906ecdbb60af426ba06e46993320bf57548436442eaad6d6b6e67a51867",
       "nodeCount": 19,
       "nodeIds": [
         "tests/test_tts_generate_bgm.py::test_all_styles_render_mono_quiet_and_deterministic",
@@ -5198,7 +5239,7 @@
     },
     {
       "path": "tests/test_validate_editor_output_preview.py",
-      "sha256": "f51fd549da466f6d9671ea90a787ea73ac2bb7eee814dc90357ca7762daf118d",
+      "sha256": "8467f651772a4e0d0e65441dd5b3797a766b4058eb5441242fa455387ad58e7d",
       "nodeCount": 5,
       "nodeIds": [
         "tests/test_validate_editor_output_preview.py::test_accepts_semantically_valid_editor_payload",

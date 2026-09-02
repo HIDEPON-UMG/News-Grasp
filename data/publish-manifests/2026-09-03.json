@@ -64,7 +64,7 @@
     {
       "artifactKind": "service_worker",
       "commitRole": "publication",
-      "digest": "b2d2d87d39976c1f1356771ae3659c1d593047dd5cce20eaf60a21afe7dd5560",
+      "digest": "55f1509d9c9ea689456ce70bec3119b4d2bc56081b64993e2b07f02438f4d4f5",
       "digestAuthority": "artifact_bytes",
       "exists": true,
       "linkFrom": "docs/index.html",
@@ -174,7 +174,7 @@
     {
       "artifactKind": "playlist_state",
       "commitRole": "publication",
-      "digest": "bc515525c00152f32df3f17d4ab0a0202f3f993f44010b3f59b692029b738137",
+      "digest": "0d6ea90113c64b2d78fc8cb6e4b50a4ef0a4702653ed793ca5695fc07bfb39f5",
       "digestAuthority": "artifact_bytes",
       "exists": true,
       "linkFrom": "",
@@ -185,7 +185,7 @@
     {
       "artifactKind": "distribution_binding",
       "commitRole": "publication",
-      "digest": "bb5fe080104db96430e04c2eb271a6bf8f1b121aa75c3185f7d0a5d08df1b375",
+      "digest": "40fc5bbecc970ae95900265f38c442736976159fe5bd80c773328d561371af27",
       "digestAuthority": "artifact_bytes",
       "exists": true,
       "linkFrom": "",
@@ -196,7 +196,7 @@
     {
       "artifactKind": "notification_v2",
       "commitRole": "publication",
-      "digest": "c84ceebd92bf1dbb0ebc52ff531c47b59636b57be7e222a56d582fb2863e045c",
+      "digest": "d9bfeb2ccfb0230715318988ac2e5569c6b71abf005400fc6b7789d33f6544e2",
       "digestAuthority": "artifact_bytes",
       "exists": true,
       "linkFrom": "",
@@ -415,7 +415,7 @@
     "docs/sw.js"
   ],
   "issueDate": "2026-09-03",
-  "manifestId": "e05f06bdc1743eeb072ceb0c6e10e1998962137908beb172c0637fd5a56210ce",
+  "manifestId": "e3cb7e75aac30201c3dbc08d0de45b9fd0c11b6ba0ffa3c32f25525477d45a1d",
   "runId": "direct-2026-09-03-1-3f3e6b7a2bba445298d6fa216b11a865",
   "runIntent": "scheduled_production_direct",
   "scheduledCategoryIds": [
@@ -428,5 +428,5 @@
     "game"
   ],
   "schemaVersion": "NEWS_GRASP_PUBLISH_MANIFEST_V2",
-  "sourceBaseline": "c7e92cd872d9a1993f92287db8b506e17907a369"
+  "sourceBaseline": "d3c8940e7185ec77a1f9933cc5cfc57b6ae5de40"
 }
