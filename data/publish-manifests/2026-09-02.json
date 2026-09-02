@@ -64,7 +64,7 @@
     {
       "artifactKind": "service_worker",
       "commitRole": "publication",
-      "digest": "f63774525db478f86c28ad40e17cc9f2e80d4e26c7e189c35a0616c695d6e9f1",
+      "digest": "6025e6655461778368a0cfd6ca95257a70bab92a8097502e33b521fb452c1727",
       "digestAuthority": "artifact_bytes",
       "exists": true,
       "linkFrom": "docs/index.html",
@@ -391,7 +391,7 @@
     "docs/sw.js"
   ],
   "issueDate": "2026-09-02",
-  "manifestId": "bc19c23146978ec69033a57b4758e3c5e70c3640f86c096639aa0b813a5ffaae",
+  "manifestId": "dcb1830c6249213e94f81ea239103b1f00d37442f4bdf1e57dad0e4e8e086fef",
   "runId": "direct-2026-09-02-1-9d516936281b41bbac6a6dc1f2d9b0f0",
   "runIntent": "scheduled_production_direct",
   "scheduledCategoryIds": [
