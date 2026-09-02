@@ -462,7 +462,9 @@ def test_ng813_recovery_python_entrypoints_are_isolated_direct_scripts() -> None
     assert "& $PythonExe @controlPlaneArgs" in bootstrap
     assert "from tools.news_grasp_direct_runtime import" in direct_branch
     assert "DirectRunStore(args.direct_state_root, create=False)" in direct_branch
-    assert "python -m tools.news_grasp_direct_runtime start" in prompt
+    assert "tools.news_grasp_daily_gate static_check" in prompt
+    assert "tools.news_grasp_daily_gate atomic_completion" in prompt
+    assert "python -m tools.news_grasp_direct_runtime start" not in prompt
     assert "'-P' '-m' 'tools.news_grasp_recovery_receipts'" not in bootstrap
     assert "'-P' '-m' 'tools.news_grasp_recovery_receipts'" not in direct_branch
     assert "'-P' '-m' 'tools.news_grasp_completion_guard'" not in direct_branch

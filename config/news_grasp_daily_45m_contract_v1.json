@@ -1,0 +1,316 @@
+{
+  "schemaVersion": "NEWS_GRASP_DAILY_45M_CONTRACT_V1",
+  "taskOperatingContract": {
+    "schemaVersion": "TASK_OPERATING_CONTRACT_V1",
+    "taskId": "NG-DAILY-45M-20260902",
+    "goal": "定期実行開始から完全な公開確認までを45分以内で終える",
+    "completionAuthority": "consumer-owned public verifier",
+    "protectedRelease": "2026-09-02",
+    "protectedReleasePolicy": "再生成・再アップロード・通知再送・再公開を禁止",
+    "implementationBaseline": "9c0ea5bb8ca2ea884dc22c867217a5056cf018f6",
+    "implementationWorktree": "C:\\ngstage\\News-Grasp-daily-45m-20260903-a",
+    "implementationBranch": "codex/news-grasp-daily-45m-20260903-a",
+    "reviewPolicy": "required_finite_series",
+    "unknownRoutePolicy": "fail_closed",
+    "unresolvedDecisionIds": []
+  },
+  "humanImpactContract": {
+    "schemaVersion": "HUMAN_IMPACT_CONTRACT_V1",
+    "affectedSurface": "noninteractive",
+    "audience": [
+      "News-Grasp利用者",
+      "運用者",
+      "定期実行automation"
+    ],
+    "noninteractive": {
+      "noFocusTheft": true,
+      "noAutoOpen": true,
+      "noUserMonitoring": true,
+      "observability": {
+        "log": "UTF-8 rotating JSONL",
+        "state": "canonical SQLite V2",
+        "stop": "所有processへのcooperative stopだけ",
+        "terminalMonitoring": "terminal receipt event"
+      },
+      "secretsPolicy": "never_log_raw_secrets"
+    }
+  },
+  "purposeMethodAllocation": [
+    {
+      "purposeId": "NG45-P01",
+      "purpose": "完全品質と45分SLOを同時に満たす",
+      "candidateMethods": [
+        "prompt_only",
+        "runtime_only",
+        "verifier_only",
+        "two_layer_route_plus_single_owner_plus_transactional_runtime"
+      ],
+      "selectedMethod": "two_layer_route_plus_single_owner_plus_transactional_runtime",
+      "selectedRationale": "上流entryとproduct runtimeの両方でRelease-only operationを到達不能にし、各predicateの単一ownerとtransactional receiptで重複・部分完了を同時に防げる",
+      "controlTier": "high",
+      "workPackageIds": [
+        "WP-T",
+        "WP-1",
+        "WP-2",
+        "WP-3",
+        "WP-4"
+      ],
+      "testNodeIds": [
+        "NG-A01-N",
+        "NG-A01-A",
+        "NG-A01-R",
+        "NG-A02-N",
+        "NG-A02-A",
+        "NG-A02-R",
+        "NG-A03-N",
+        "NG-A03-A",
+        "NG-A03-R",
+        "NG-A04-N",
+        "NG-A04-A",
+        "NG-A04-R",
+        "NG-A05-N",
+        "NG-A05-A",
+        "NG-A05-R",
+        "NG-A06-N",
+        "NG-A06-A",
+        "NG-A06-R",
+        "NG-A07-N",
+        "NG-A07-A",
+        "NG-A07-R",
+        "NG-A08-N",
+        "NG-A08-A",
+        "NG-A08-R",
+        "NG-A09-N",
+        "NG-A09-A",
+        "NG-A09-R",
+        "NG-A10-N",
+        "NG-A10-A",
+        "NG-A10-R",
+        "NG-A11-N",
+        "NG-A11-A",
+        "NG-A11-R"
+      ]
+    }
+  ],
+  "requirements": [
+    {
+      "requirementId": "NG45-R01",
+      "issueIds": ["A01", "A02", "A03", "A07", "E01"],
+      "acceptanceId": "NG-A01",
+      "predicate": "scheduled Daily capabilityから六つのDaily operation以外へprocess spawn前に到達不能で、unknown routeはfail-closedになる",
+      "owner": "tools.news_grasp_gate_profiles.daily_admission",
+      "redFixtures": ["F01", "F02"],
+      "testNodes": ["NG-A01-N", "NG-A01-A", "NG-A01-R"]
+    },
+    {
+      "requirementId": "NG45-R02",
+      "issueIds": ["A04", "D04", "D05", "D06", "D07", "D11", "E03", "E04"],
+      "acceptanceId": "NG-A02",
+      "predicate": "scheduler triggerをT0として全区間を分類し、completion時点のwall_secondsを固定し、45/75/90分で実制御へ分岐する",
+      "owner": "tools.news_grasp_direct_runtime.DirectRunStore",
+      "redFixtures": ["F09", "F10"],
+      "testNodes": ["NG-A02-N", "NG-A02-A", "NG-A02-R"]
+    },
+    {
+      "requirementId": "NG45-R03",
+      "issueIds": ["A05", "A06", "B03", "B04"],
+      "acceptanceId": "NG-A03",
+      "predicate": "同一generationのpredicateは登録済みownerが同一正本から一度だけ評価し、SummaryはMarkdown、DeepDiveはcurrent issueだけを対象にする",
+      "owner": "tools.news_grasp_direct_runtime.PredicateLedger",
+      "redFixtures": ["F03", "F16"],
+      "testNodes": ["NG-A03-N", "NG-A03-A", "NG-A03-R"]
+    },
+    {
+      "requirementId": "NG45-R04",
+      "issueIds": ["A08", "A09", "B01", "B02", "C04"],
+      "acceptanceId": "NG-A04",
+      "predicate": "public release write setはdocs/index.htmlを必須にし、公開releaseでdocs差分がなければRed、source-only変更ではPagesを要求しない",
+      "owner": "tools.news_grasp_publish_contract",
+      "redFixtures": ["F11"],
+      "testNodes": ["NG-A04-N", "NG-A04-A", "NG-A04-R"]
+    },
+    {
+      "requirementId": "NG45-R05",
+      "issueIds": ["A10", "A11", "B05", "B06", "B07", "C05", "C06"],
+      "acceptanceId": "NG-A05",
+      "predicate": "actual run IDと祖先baselineを二段sealへ束縛し、optional fieldとURL identityを保持し、external開始後driftを新generationへ分離する",
+      "owner": "tools.news_grasp_publish_contract",
+      "redFixtures": ["F04", "F05", "F06", "F15"],
+      "testNodes": ["NG-A05-N", "NG-A05-A", "NG-A05-R"]
+    },
+    {
+      "requirementId": "NG45-R06",
+      "issueIds": ["B08", "C01", "C02", "C03"],
+      "acceptanceId": "NG-A06",
+      "predicate": "V1 stateとnotification ledgerを開始前にV2へmigrationしautomation/date/intentでactive writerを一件以下にする",
+      "owner": "tools.news_grasp_direct_runtime.DirectRunStore",
+      "redFixtures": ["F07", "F13"],
+      "testNodes": ["NG-A06-N", "NG-A06-A", "NG-A06-R"]
+    },
+    {
+      "requirementId": "NG45-R07",
+      "issueIds": ["D01", "D02", "D03"],
+      "acceptanceId": "NG-A07",
+      "predicate": "UTF-8一行JSONをschema/input hash検証後に適用し、stateとreceiptを一transactionでcommitし、retryはidempotency receiptを照合する",
+      "owner": "tools.news_grasp_direct_runtime.atomic_apply_receipt",
+      "redFixtures": ["F08", "F09", "F14"],
+      "testNodes": ["NG-A07-N", "NG-A07-A", "NG-A07-R"]
+    },
+    {
+      "requirementId": "NG45-R08",
+      "issueIds": ["B09", "B10"],
+      "acceptanceId": "NG-A08",
+      "predicate": "fresh consumer verifierの全surface論理積だけがcompletion authorityで、provider ACK unknownはfalse Greenにも再送要求にも変換しない",
+      "owner": "tools.news_grasp_direct_completion.verify_direct_public_completion",
+      "redFixtures": ["F17", "F18"],
+      "testNodes": ["NG-A08-N", "NG-A08-A", "NG-A08-R"]
+    },
+    {
+      "requirementId": "NG45-R09",
+      "issueIds": ["D08", "D09", "D10", "E02"],
+      "acceptanceId": "NG-A09",
+      "predicate": "goal/TODO/Requirement/Acceptance/test/evidence/failure ledgerが同一task IDへ束縛され、ownerなし欠陥はcloseできない",
+      "owner": "tests.test_product_spec_contract",
+      "redFixtures": ["F12"],
+      "testNodes": ["NG-A09-N", "NG-A09-A", "NG-A09-R"]
+    },
+    {
+      "requirementId": "NG45-R10",
+      "issueIds": ["A01", "E01"],
+      "acceptanceId": "NG-A10",
+      "predicate": "Release test nodeは排他的partitionの和集合として全collectionと一致し各nodeが一回だけ実行される",
+      "owner": "tools.news_grasp_release_gate",
+      "redFixtures": ["F01"],
+      "testNodes": ["NG-A10-N", "NG-A10-A", "NG-A10-R"]
+    },
+    {
+      "requirementId": "NG45-R11",
+      "issueIds": ["D09"],
+      "acceptanceId": "NG-A11",
+      "predicate": "automation template/installed/App DB/snapshot promptがexact一致し必須文言が三箇所に一回ずつ存在しstartはdriftを自動修復しない",
+      "owner": "tools.sync_news_grasp_codex_automation",
+      "redFixtures": ["F12"],
+      "testNodes": ["NG-A11-N", "NG-A11-A", "NG-A11-R"]
+    }
+  ],
+  "fixtureRegistry": [
+    {"fixtureId": "F01", "failure": "Dailyからfull pytestまたはRelease gateへ到達する"},
+    {"fixtureId": "F02", "failure": "direct pathからhistorical corpusへ到達する"},
+    {"fixtureId": "F03", "failure": "Summary HTMLを正本として受理する"},
+    {"fixtureId": "F04", "failure": "distribution rebindingがoptional playlist fieldを落とす"},
+    {"fixtureId": "F05", "failure": "単一v queryで音声identityが変わる"},
+    {"fixtureId": "F06", "failure": "non-ancestor baselineを受理する"},
+    {"fixtureId": "F07", "failure": "同一automation/date/intentにactive writerが二件存在する"},
+    {"fixtureId": "F08", "failure": "child JSON parse失敗後にstateだけ進む"},
+    {"fixtureId": "F09", "failure": "snake/camel不一致をnull表示する"},
+    {"fixtureId": "F10", "failure": "completion後にelapsedが増える"},
+    {"fixtureId": "F11", "failure": "public releaseなのにPages trigger対象がない"},
+    {"fixtureId": "F12", "failure": "promptがTOML本文へ置換される"},
+    {"fixtureId": "F13", "failure": "stale runへ新leaseを重ねる"},
+    {"fixtureId": "F14", "failure": "stateとreceiptが片側だけcommitされる"},
+    {"fixtureId": "F15", "failure": "external開始後にsourceまたはmanifestが変わる"},
+    {"fixtureId": "F16", "failure": "同じpredicateを再実行する"},
+    {"fixtureId": "F17", "failure": "YouTubeまたはnotificationを重複送信する"},
+    {"fixtureId": "F18", "failure": "callerの任意Green JSONで完了する"}
+  ],
+  "baselineObservations": {
+    "observedAt": "2026-09-03T00:39:52.1205932+09:00",
+    "canonicalSource": {
+      "path": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp",
+      "head": "81f2bfd07e36a5f41f9101c266faa94976d90089",
+      "statusEntryCount": 226,
+      "statusFingerprintObservationOnly": "E2DB3AD2970D24391C8269F832CF7F19FB4B85D745C245C312305B6BF162F0E6",
+      "mutationPolicy": "preserve"
+    },
+    "cleanSource": {
+      "path": "C:\\ngstage\\News-Grasp-daily-45m-20260903-a",
+      "head": "9c0ea5bb8ca2ea884dc22c867217a5056cf018f6",
+      "clean": true
+    },
+    "installedAutomation": {
+      "path": "C:\\Users\\hidek\\.codex\\automations\\news-grasp-6-40\\automation.toml",
+      "sha256ObservationOnly": "03FE2FF6E7A1C478571EEB525701CFE08869090FBABA5F84782CB58F10A049FE",
+      "requiredPhraseCount": 1
+    },
+    "appDb": {
+      "path": "C:\\Users\\hidek\\.codex\\sqlite\\codex-dev.db",
+      "promptSha256ObservationOnly": "75d6cec28e8d558318e603de19f812232c53ff23aac75338f8a68a86cecc7325",
+      "requiredPhraseCount": 1
+    },
+    "snapshots": {
+      "sha256ObservationOnly": "FA90B749F11C9F95EAFB1082C3DE5B1FBC8F12CD4E915F995153D7DEDB387F03",
+      "requiredPhraseCount": 0,
+      "count": 2
+    },
+    "runtime": {
+      "path": "C:\\Users\\hidek\\AppData\\Local\\News-Grasp\\direct-mainline\\direct-mainline.sqlite3",
+      "sha256ObservationOnly": "44D1F730BC20A648117348D6A84503CD3DD106F54EC6F623D6B2CDD84CC65528",
+      "activeRunIds": ["direct-2026-09-02-1-e6b912854b5a4771ab667ce9c7e171bd"],
+      "completedRunId": "direct-2026-09-02-1-9d516936281b41bbac6a6dc1f2d9b0f0",
+      "loadedProcessFreshness": "not_observable_before_cutover_canary"
+    },
+    "remote": {
+      "originMain": "9c0ea5bb8ca2ea884dc22c867217a5056cf018f6",
+      "pagesWorkflowRunId": 33587124971,
+      "pagesHeadSha": "9c0ea5bb8ca2ea884dc22c867217a5056cf018f6",
+      "pagesConclusion": "success"
+    },
+    "public": {
+      "issueDate": "2026-09-02",
+      "homeHttp": 200,
+      "issueHttp": 200,
+      "summaryHttp": 200,
+      "deepDiveHttp": 200,
+      "publishStatusHttp": 200,
+      "semanticVerification": "deferred_to_new_consumer_verifier"
+    }
+  },
+  "incidentTimingObservations": {
+    "finalDirectRun": {
+      "start": "2026-09-02T11:50:40.683981+09:00",
+      "end": "2026-09-02T12:29:32.817752+09:00",
+      "wallSeconds": 2332.134
+    },
+    "contentStage": {
+      "start": "2026-09-02T11:55:04.464064+09:00",
+      "end": "2026-09-02T12:12:26.616678+09:00",
+      "wallSeconds": 1042.153,
+      "artifactReuse": true,
+      "zeroArtifactTiming": false
+    },
+    "priorRunObservedElapsedMinutes": 129.38,
+    "unmeasuredWallClock": {
+      "start": "2026-09-02T08:06:00+09:00",
+      "end": "2026-09-02T11:50:40+09:00",
+      "seconds": 13476,
+      "classification": "unmeasured"
+    },
+    "pagesDeploymentApproxSeconds": 15,
+    "notificationToDistributionApproxSeconds": 347,
+    "pagesVerifyToPublicCompletionApproxSeconds": 530
+  },
+  "appendOnlyTodos": [
+    {"todoId": "No.01/A-01", "phase": "要件・影響調査", "text": "clean baselineと実環境inventoryを固定する", "status": "completed"},
+    {"todoId": "No.02/A-02", "phase": "要件・影響調査", "text": "goal・Requirement・Acceptance・証拠を束縛する", "status": "completed"},
+    {"todoId": "No.03/A-03", "phase": "要件・影響調査", "text": "必須Redを実測する", "status": "completed"},
+    {"todoId": "No.04/A-04", "phase": "設計・事前review", "text": "Daily/Release routeとpredicate ownerを閉じる", "status": "in_progress"},
+    {"todoId": "No.05/A-05", "phase": "実装＋unit", "text": "release identityとpublic verifierを実装する", "status": "pending"},
+    {"todoId": "No.06/A-06", "phase": "実装＋unit", "text": "runtime state・CLI・timingを実装する", "status": "pending"},
+    {"todoId": "No.07/A-07", "phase": "実装＋unit", "text": "automation・spec・failure ledgerを更新する", "status": "pending"},
+    {"todoId": "No.08/A-08", "phase": "結合テスト", "text": "Release partitionとNoPublishを各一回実行する", "status": "pending"},
+    {"todoId": "No.09/A-09", "phase": "runtime canary", "text": "commit・push・install・rollback・自然公開を閉じる", "status": "pending"},
+    {"todoId": "No.10/A-10", "phase": "最終review", "text": "公開証拠と最終報告を閉じる", "status": "pending"}
+  ],
+  "appendOnlyTimeboxEvents": [
+    {
+      "eventId": "NG45-TIMEBOX-20260903-0530",
+      "receivedAt": "2026-09-03T03:27:55.6404048+09:00",
+      "deadlineAt": "2026-09-03T05:30:00.0000000+09:00",
+      "requiredOutcome": "検証可能な変更をcommitしremote作業branchへpushする",
+      "methodChange": "独立実装を並行し、focused contractを先行し、Release partitionを排他的に並行実行する",
+      "scopePreserved": true,
+      "cutoverBeforeAllGreen": false,
+      "protectedReleaseMutationAllowed": false
+    }
+  ]
+}

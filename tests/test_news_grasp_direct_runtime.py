@@ -1366,15 +1366,19 @@ def test_installed_direct_config_rejects_codex_app_schema_timestamp_gaps(
     assert "automation_app_schema_updated_at_invalid" in result.get("failures", [])
 
 
-def test_public_template_uses_portable_cwd_placeholder_while_installed_is_bound() -> None:
-    """public repoのtemplateは個人pathを持たず、installed configだけが実cwdへbindする。"""
+def test_public_template_keeps_portable_cwd_and_exact_approved_python312() -> None:
+    """cwdは可搬のまま、実行Pythonだけを承認済み3.12実体へ固定する。"""
 
     template_path = REPO / "automation/news-grasp-6-40/automation.toml.template"
     template_text = template_path.read_text(encoding="utf-8-sig")
     template = tomllib.loads(template_text)
     assert template.get("cwds") == ["${NEWS_GRASP_REPO_ROOT}"]
-    assert "C:\\Users\\" not in template_text
-    assert ("hi" + "dek") not in template_text.casefold()
+    approved_python = (
+        "C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe"
+    )
+    assert approved_python in template["prompt"]
+    scrubbed = template["prompt"].replace(approved_python, "${NEWS_GRASP_PYTHON312}")
+    assert "C:\\Users\\" not in scrubbed
 
     installed_path = Path.home() / ".codex" / "automations" / AUTOMATION_ID / "automation.toml"
     installed = tomllib.loads(installed_path.read_text(encoding="utf-8-sig"))
@@ -1394,6 +1398,11 @@ def test_start_cli_uses_jst_today_when_issue_date_is_omitted(
     """06:00 promptはangle placeholderを実行せず、runtimeがJST当日を確定できる。"""
 
     api = _api()
+    monkeypatch.setattr(
+        api,
+        "validate_installed_automation_semantics",
+        lambda *_args, **_kwargs: {"ok": True, "failures": []},
+    )
     monkeypatch.setattr(api, "_now_jst", lambda: STARTED_AT)
     monkeypatch.chdir(REPO)
     monkeypatch.setattr(
@@ -1414,10 +1423,10 @@ def test_start_cli_uses_jst_today_when_issue_date_is_omitted(
     assert output["exact_successor"] == "title_control"
 
 
-def test_start_cli_repairs_live_installed_config_once_before_run_creation(
+def test_start_cli_rejects_live_installed_config_drift_without_mutation(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """live automation Red は開始前に一度だけ同期し、Green化できたら記事工程へ進む。"""
+    """live automation Red は開始前にfail-closedし、自動修復しない。"""
 
     api = _api()
     calls: list[str] = []
@@ -1425,32 +1434,13 @@ def test_start_cli_repairs_live_installed_config_once_before_run_creation(
     def validate(path: Path | None = None) -> dict[str, Any]:
         assert path is None
         calls.append("validate")
-        if calls.count("validate") == 1:
-            return {
-                "schemaVersion": "NEWS_GRASP_DIRECT_AUTOMATION_CONFIG_V1",
-                "ok": False,
-                "failures": ["automation_reasoning_not_max"],
-            }
         return {
             "schemaVersion": "NEWS_GRASP_DIRECT_AUTOMATION_CONFIG_V1",
-            "ok": True,
-            "failures": [],
-            "model": "gpt-5.6-luna",
-            "reasoning_effort": "max",
-        }
-
-    def repair(*, cwd: Path) -> dict[str, Any]:
-        calls.append("repair")
-        assert cwd == REPO
-        return {
-            "schemaVersion": "NEWS_GRASP_CODEX_AUTOMATION_SYNC_V1",
-            "ok": True,
-            "changed": True,
-            "app_db_changed": True,
+            "ok": False,
+            "failures": ["automation_prompt_integrity_drift"],
         }
 
     monkeypatch.setattr(api, "validate_installed_automation_semantics", validate)
-    monkeypatch.setattr(api, "_repair_installed_automation_config_once", repair)
     monkeypatch.setattr(api, "_now_jst", lambda: STARTED_AT)
     monkeypatch.chdir(REPO)
     monkeypatch.setattr(
@@ -1464,13 +1454,16 @@ def test_start_cli_repairs_live_installed_config_once_before_run_creation(
         ],
     )
 
-    assert api._main() == 0
+    assert api._main() == 2
     output = json.loads(capsys.readouterr().out)
-    assert calls == ["validate", "repair", "validate"]
+    assert calls == ["validate"]
     assert output["schemaVersion"] == "NEWS_GRASP_DIRECT_RUNTIME_V1"
-    assert output["exact_successor"] == "title_control"
-    assert output["config_repair"]["ok"] is True
-    assert "automation_config_repaired_before_stage_start" in output["post_publish_issue_list"]
+    assert output["status"] == "automation_config_red"
+    assert output["exact_successor"] == (
+        "python -m tools.sync_news_grasp_codex_automation --promote "
+        "--write-snapshot --write-skill --write-app-db"
+    )
+    assert not (tmp_path / "direct-mainline" / "runtime.sqlite3").exists()
 
 
 def test_start_cli_forbids_installed_config_override_outside_test_mode(
@@ -1510,8 +1503,8 @@ def test_start_cli_rejects_medium_installed_config_before_run_creation(
     """live automation が medium へ戻っていたら、記事処理に入らず exact successor を返す。"""
 
     api = _api()
-    installed = Path.home() / ".codex" / "automations" / AUTOMATION_ID / "automation.toml"
-    text = installed.read_text(encoding="utf-8-sig")
+    template = REPO / "automation" / AUTOMATION_ID / "automation.toml.template"
+    text = template.read_text(encoding="utf-8-sig")
     assert 'reasoning_effort = "max"' in text
     stale = tmp_path / "automation.toml"
     stale.write_text(text.replace('reasoning_effort = "max"', 'reasoning_effort = "medium"'), encoding="utf-8")
@@ -1538,7 +1531,8 @@ def test_start_cli_rejects_medium_installed_config_before_run_creation(
     assert output["status"] == "automation_config_red"
     assert "automation_reasoning_not_max" in output["failures"]
     assert output["exact_successor"] == (
-        "python -m tools.sync_news_grasp_codex_automation --write-snapshot --write-skill --write-app-db"
+        "python -m tools.sync_news_grasp_codex_automation --promote "
+        "--write-snapshot --write-skill --write-app-db"
     )
     assert output["post_publish_issue_list"]
 
@@ -1549,6 +1543,11 @@ def test_advance_cli_records_exact_successor_title_stage(
     """automationから呼べるCLIだけでtitle_controlをstage_historyへ記録する。"""
 
     api = _api()
+    monkeypatch.setattr(
+        api,
+        "validate_installed_automation_semantics",
+        lambda *_args, **_kwargs: {"ok": True, "failures": []},
+    )
     state_root = tmp_path / "direct-mainline"
     monkeypatch.setattr(api, "_now_jst", lambda: STARTED_AT)
     monkeypatch.chdir(REPO)

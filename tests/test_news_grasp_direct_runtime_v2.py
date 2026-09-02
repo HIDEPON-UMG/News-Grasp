@@ -394,7 +394,10 @@ def test_v1_to_v2_migration_preserves_run_id_and_stage_history(tmp_path, monkeyp
     with sqlite3.connect(backup_path) as backup_db:
         assert backup_db.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
         assert backup_db.execute("SELECT runtime_schema FROM runs WHERE run_id=?", (run["run_id"],)).fetchone()[0] == api.RUNTIME_SCHEMA
-        assert backup_db.execute("SELECT COUNT(*) FROM runtime_migrations").fetchone()[0] == 0
+        assert backup_db.execute(
+            "SELECT COUNT(*) FROM runtime_migrations WHERE run_id=?",
+            (run["run_id"],),
+        ).fetchone()[0] == 0
     repeated = api.migrate_run_v1_to_v2(
         store,
         run_id=run["run_id"],
@@ -492,7 +495,7 @@ def test_inspect_does_not_disclose_writer_lease(tmp_path) -> None:
     assert "writer_lease" not in api.inspect_run(store, run_id=run["run_id"])
 
 
-def test_finalizer_rolls_back_when_run_changes_after_fresh_probe(tmp_path) -> None:
+def test_finalizer_rolls_back_when_run_changes_after_fresh_probe(tmp_path, monkeypatch) -> None:
     """security Red: fresh probe後のrow変更時にfailure clearやstage20を部分commitしない。"""
     api = importlib.import_module("tools.news_grasp_direct_runtime")
     base = _Verifier()
@@ -503,21 +506,22 @@ def test_finalizer_rolls_back_when_run_changes_after_fresh_probe(tmp_path) -> No
     for stage_id in api.DIRECT_STAGES[:-1]:
         api.advance_stage(store, run_id=run["run_id"], stage_id=stage_id, writer_lease=run["writer_lease"], semantic_verifier=base)
 
-    class MutatingVerifier(_Verifier):
-        calls = 0
+    original_probe = api.probe_public_completion
 
-        def verify(self, stage_id: str, **kwargs):
-            result = super().verify(stage_id, **kwargs)
-            if stage_id == "public_completion":
-                self.calls += 1
-                if self.calls == 2:
-                    with store.connect() as conn:
-                        conn.execute("UPDATE runs SET updated_at=? WHERE run_id=?", ("2099-01-01T00:00:00+09:00", run["run_id"]))
-                        conn.commit()
-            return result
+    def mutating_probe(*args, **kwargs):
+        result = original_probe(*args, **kwargs)
+        with store.connect() as conn:
+            conn.execute(
+                "UPDATE runs SET updated_at=? WHERE run_id=?",
+                ("2099-01-01T00:00:00+09:00", run["run_id"]),
+            )
+            conn.commit()
+        return result
+
+    monkeypatch.setattr(api, "probe_public_completion", mutating_probe)
 
     with pytest.raises(PermissionError, match="freshness"):
-        api.finalize_public_completion(store, run_id=run["run_id"], writer_lease=run["writer_lease"], semantic_verifier=MutatingVerifier(), exact_successor="public_completion")
+        api.finalize_public_completion(store, run_id=run["run_id"], writer_lease=run["writer_lease"], semantic_verifier=base, exact_successor="public_completion")
     with store.connect() as conn:
         assert conn.execute("SELECT COUNT(*) FROM stages WHERE run_id=? AND stage_id='public_completion'", (run["run_id"],)).fetchone()[0] == 0
         assert conn.execute("SELECT status FROM runs WHERE run_id=?", (run["run_id"],)).fetchone()[0] != "completed"

@@ -7,6 +7,7 @@ from types import SimpleNamespace
 import pytest
 
 from tools.historical_failure_scenarios import (
+    DAILY_45M_FAILURE_CLASSES_V2,
     LOCAL_ONLY_EVIDENCE_SHA256,
     HistoricalFailureScenario,
     compound_failure_scenarios,
@@ -757,3 +758,20 @@ def test_ng_red_16_prepare_recovery_connects_causal_retry_runtime(
         "CAUSAL_RETRY_NOT_CONNECTED_TO_RUNTIME"
     )
     assert third["causalRetry"]["reasonCode"] == "CAUSAL_RETRY_ALREADY_CONSUMED"
+
+
+def test_2026_09_02_daily_45m_incident_registers_nine_nonduplicated_root_classes() -> None:
+    rows = [
+        row
+        for row in historical_failure_scenarios()
+        if row.issue_date == "2026-09-02"
+        and row.evidence_path == "config/news_grasp_failure_ledger_v2.json"
+    ]
+    assert len(rows) == 9
+    assert len({row.direct_cause for row in rows}) == 9
+    assert {row.direct_cause for row in rows} == {
+        failure_class
+        for failure_class, _stage, _invariant in DAILY_45M_FAILURE_CLASSES_V2
+    }
+    assert all(row.expected_status == "fixture_required" for row in rows)
+    assert all(row.cheapest_e2e_or_fixture.startswith("tests/test_news_grasp_daily_45m_contract.py") for row in rows)

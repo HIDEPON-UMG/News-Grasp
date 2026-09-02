@@ -645,19 +645,22 @@ def test_automation_and_skill_bind_direct_contract() -> None:
     for fragment in (
         "news-grasp-direct-mainline",
         "YY/MM/DD",
-        "TT26/",
         "45",
         "90",
         "scheduled_category_ids",
-        "--require-deepdive",
-        "public-only",
+        "static_check",
+        "scoped_contract_unit",
+        "current_issue_integration",
+        "external_publication",
+        "consumer_public_verification",
+        "atomic_completion",
         "post_publish_issue_list",
         "title_status",
-        "title_completion",
-        "materializer receipt",
-        "最初の実行操作は `python -m tools.news_grasp_title_materializer --verify-only --repo-root .`",
+        "frontmatter付きMarkdown",
+        "unknown_unobtainable",
     ):
         assert fragment in combined
+    assert "python -m tools.news_grasp_direct_runtime start" not in combined
     assert "news_grasp_runner.py" not in prompt
     assert "news_grasp_nopublish.py" not in prompt
 

@@ -836,6 +836,33 @@ SCENARIOS = SCENARIOS + tuple(
 )
 
 
+DAILY_45M_FAILURE_CLASSES_V2: tuple[tuple[str, str, str], ...] = (
+    ("daily_release_route_reachable", "Daily / Release entry", "Daily capability must spawn only six registered operations and reject unknown routes before process start"),
+    ("unclassified_runtime_time", "runtime timing / SLO", "scheduler T0 and every queue/wait/external/retry/handoff interval must be classified while completion elapsed remains frozen"),
+    ("predicate_owner_duplication", "Summary / DeepDive / quality", "one registered owner must evaluate each generation predicate once from its canonical source"),
+    ("pages_home_write_set_drift", "manifest / Pages", "a public release must include docs/index.html while source-only change must not demand a Pages deployment"),
+    ("release_identity_rebinding", "run / manifest / distribution", "actual run ID, ancestor baseline, optional fields and external-start seal must remain bound to one release generation"),
+    ("duplicate_active_writer", "runtime state / lease / migration", "V2 migration must precede a single active writer for automation, issue date and run intent"),
+    ("child_parse_partial_mutation", "CLI / child process / receipt", "UTF-8 JSON schema and input identity must validate before atomic state and receipt commit"),
+    ("public_http_false_green", "consumer public completion", "fresh semantic surface identity, not HTTP 200 or caller JSON, is completion authority"),
+    ("prompt_goal_failure_trace_drift", "goal / task ledger / automation / failure ledger", "task ID, acceptance, tests, evidence and exact prompt parity must close together"),
+)
+
+SCENARIOS = SCENARIOS + tuple(
+    HistoricalFailureScenario(
+        "2026-09-02",
+        stage,
+        failure_class,
+        failure_class,
+        invariant,
+        f"tests/test_news_grasp_daily_45m_contract.py fixture for {failure_class}",
+        "config/news_grasp_failure_ledger_v2.json",
+        "fixture_required",
+    )
+    for failure_class, stage, invariant in DAILY_45M_FAILURE_CLASSES_V2
+)
+
+
 WEEKLY_FAILURE_REGRESSION_CASES: tuple[WeeklyFailureRegressionCase, ...] = (
     WeeklyFailureRegressionCase(
         "2026-08-02",

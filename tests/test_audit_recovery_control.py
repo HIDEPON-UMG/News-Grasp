@@ -930,23 +930,27 @@ def test_audit_cli_cannot_self_mint_completion_or_trust_plain_attempt_status() -
 
 
 def test_automation_and_direct_skill_use_executable_direct_terminal_contract() -> None:
-    home = Path.home()
+    repo = Path(__file__).resolve().parents[1]
     automation = (
-        home / ".codex" / "automations" / "news-grasp-6-40" / "automation.toml"
+        repo / "automation" / "news-grasp-6-40" / "automation.toml.template"
     ).read_text(encoding="utf-8-sig")
     skill = (
-        home / ".codex" / "skills" / "news-grasp-direct-mainline" / "SKILL.md"
+        repo / "automation" / "skills" / "news-grasp-direct-mainline" / "SKILL.md"
     ).read_text(encoding="utf-8-sig")
     for source in (automation, skill):
         assert "$news-grasp-direct-mainline" in source or "News-Grasp Direct Mainline" in source
-        assert "python -m tools.news_grasp_direct_runtime start" in source
-        assert (
-            "run_exact_successor" in source
-            or "python -m tools.news_grasp_direct_runtime advance" in source
-        )
-        assert "validate_daily_quality" in source
-        assert "--require-deepdive" in source
-        assert "NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1" in source
+        for operation in (
+            "static_check",
+            "scoped_contract_unit",
+            "current_issue_integration",
+            "external_publication",
+            "consumer_public_verification",
+            "atomic_completion",
+        ):
+            assert f"tools.news_grasp_daily_gate {operation}" in source
+        assert "python -m tools.news_grasp_direct_runtime start" not in source
+        assert "consumer_public_verification" in source
+        assert "atomic_completion" in source
         assert "runner/readiness" in source
         assert (
             "completion authorityではない" in source
@@ -957,6 +961,7 @@ def test_automation_and_direct_skill_use_executable_direct_terminal_contract() -
         assert "python -m tools.audit_recovery_control execute --input <audit-input.json>" not in source
         assert "python -m tools.news_grasp_runner" not in source
         assert "python -m tools.news_grasp_nopublish" not in source
+        assert "python -m pytest" not in source
         assert "-File scripts/ops/news-grasp-runner.ps1" not in source
         assert "runnerStatePath" not in source
         assert "FinalizeVerifiedPublishManifest" not in source

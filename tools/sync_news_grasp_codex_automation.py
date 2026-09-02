@@ -10,15 +10,18 @@ from __future__ import annotations
 import argparse
 import contextlib
 import ctypes
+import hashlib
 import json
 import os
 import sqlite3
 import stat
+import subprocess
+import sys
 import tempfile
 import time
 import tomllib
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 from .news_grasp_title_control import TITLE_PATTERN, TITLE_SUFFIX
 
@@ -31,21 +34,26 @@ TEST_FIXTURE_ROOT_NAME = "news-grasp-sync-fixture"
 MAX_AUTOMATION_TOML_BYTES = 96 * 1024
 MAX_SKILL_BYTES = 96 * 1024
 MAX_APP_GLOBAL_STATE_BYTES = 2 * 1024 * 1024
+MAX_PROMOTION_BACKUP_BYTES = 64 * 1024 * 1024
 REQUIRED_PROMPT_PARTS = (
     "$news-grasp-direct-mainline",
     "YY/MM/DD",
-    "news_grasp_title_materializer",
+    r"C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_daily_gate",
     "title_status",
     "title_status=already_ok",
     "already_ok",
     "post_publish_issue_list",
-    "news_grasp_direct_runtime start",
-    "direct completion guard",
-    "completion_guard.py",
-    "direct_public_v1",
-    "validate_daily_quality",
-    "--require-deepdive",
+    "tools.news_grasp_daily_gate",
+    "static_check",
+    "scoped_contract_unit",
+    "current_issue_integration",
+    "external_publication",
+    "consumer_public_verification",
+    "atomic_completion",
+    "producer receipt",
+    "unknown_unobtainable",
 )
+AUTOMATION_COMPLETION_PHRASE = "完全な品質で記事公開するまで完了してはならない"
 
 if os.name == "nt":
     import msvcrt
@@ -450,9 +458,52 @@ def _assert_trusted_repo_root(path: Path, *, read_only: bool = False) -> Path:
     resolved = path.expanduser().resolve(strict=True)
     canonical = CANONICAL_NEWS_GRASP_REPO_ROOT.expanduser().resolve(strict=True)
     same_worktree = _same_git_repository(resolved, canonical)
+    clean_release_worktree = False
+    if same_worktree and not _same_path(resolved, canonical) and not read_only:
+        staging_root = Path(r"C:\ngstage").resolve(strict=True)
+        try:
+            resolved.relative_to(staging_root)
+        except ValueError:
+            clean_release_worktree = False
+        else:
+            creationflags = int(getattr(subprocess, "CREATE_NO_WINDOW", 0))
+
+            def git_text(*args: str) -> tuple[int, str]:
+                completed = subprocess.run(
+                    ["git", *args],
+                    cwd=str(resolved),
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    shell=False,
+                    check=False,
+                    timeout=30,
+                    creationflags=creationflags,
+                )
+                try:
+                    stdout = bytes(completed.stdout or b"").decode("utf-8", errors="strict").strip()
+                except UnicodeDecodeError:
+                    return 1, ""
+                return int(completed.returncode), stdout
+
+            top_rc, top = git_text("rev-parse", "--show-toplevel")
+            head_rc, head = git_text("rev-parse", "HEAD")
+            remote_rc, remote_head = git_text("rev-parse", "refs/remotes/origin/main")
+            status_rc, status_text = git_text("status", "--porcelain", "--untracked-files=all")
+            clean_release_worktree = (
+                top_rc == head_rc == remote_rc == status_rc == 0
+                and _same_path(Path(top), resolved)
+                and bool(head)
+                and head == remote_head
+                and not status_text
+            )
     if not _same_path(resolved, canonical) and not (
         same_worktree
-        and (read_only or os.environ.get("NEWS_GRASP_ALLOW_TEST_SYNC_PATHS") == "1")
+        and (
+            read_only
+            or clean_release_worktree
+            or os.environ.get("NEWS_GRASP_ALLOW_TEST_SYNC_PATHS") == "1"
+        )
     ):
         raise ValueError("repo_root_not_canonical_news_grasp")
     required = (
@@ -543,6 +594,9 @@ def _render_installed(
     target_line = _inline_target(project_target)
 
     prompt = str(template.get("prompt") or "").strip()
+    # multiline basic stringでも、固定Windows実行パスのバックスラッシュを
+    # TOML escapeとして誤解釈させず、installed側のprompt bytesを正本値へ戻す。
+    toml_prompt = prompt.replace("\\", "\\\\")
     repo_cwd = str(repo_root.resolve(strict=True))
     template_name = str(template.get("name") or TITLE_SUFFIX)
     installed_name = installed.get("name")
@@ -572,7 +626,7 @@ def _render_installed(
                 f"created_at = {created_at}",
                 f"updated_at = {updated_at}",
                 "prompt = \"\"\"",
-                prompt,
+                toml_prompt,
                 "\"\"\"",
                 "",
             ]
@@ -617,6 +671,172 @@ def _atomic_write_text(path: Path, text: str) -> None:
                 temp_path.unlink()
             except FileNotFoundError:
                 pass
+
+
+def _atomic_write_bytes(path: Path, value: bytes) -> None:
+    """backup復元用にexact bytesをatomic replaceする。"""
+
+    _assert_no_reparse_chain(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    _assert_no_reparse_chain(path.parent)
+    with _directory_guard(path.parent):
+        with _existing_file_guard(path):
+            if path.exists() and not _is_regular_file_no_reparse(path):
+                raise ValueError(f"unsafe_write_target:{path}")
+        fd, temp_name = tempfile.mkstemp(
+            prefix=f".{path.name}.",
+            suffix=".tmp",
+            dir=str(path.parent),
+        )
+        temp_path = Path(temp_name)
+        try:
+            with os.fdopen(fd, "wb") as handle:
+                handle.write(value)
+                handle.flush()
+                os.fsync(handle.fileno())
+            _assert_no_reparse_chain(path)
+            _assert_no_reparse_chain(path.parent)
+            with _existing_file_guard(path):
+                if path.exists() and not _is_regular_file_no_reparse(path):
+                    raise ValueError(f"unsafe_write_target:{path}")
+            os.replace(temp_path, path)
+            _assert_no_reparse_chain(path)
+        finally:
+            try:
+                temp_path.unlink()
+            except FileNotFoundError:
+                pass
+
+
+def _capture_promotion_target(path: Path, *, kind: str) -> dict[str, Any]:
+    """promotion前のbytesをmemory backupとして固定する。"""
+
+    try:
+        preimage = _read_bytes_no_follow(path, limit=MAX_PROMOTION_BACKUP_BYTES)
+        present = True
+    except FileNotFoundError:
+        preimage = b""
+        present = False
+    return {
+        "target": str(path),
+        "kind": kind,
+        "preimagePresent": present,
+        "preimageSha256": hashlib.sha256(preimage).hexdigest() if present else "",
+        "preimageBytes": preimage,
+        "candidateSha256": "",
+        "postimageSha256": "",
+        "backupStatus": "captured",
+        "atomic": True,
+        "status": "pending",
+    }
+
+
+def _promote_text_target(
+    target: dict[str, Any],
+    text: str,
+    *,
+    promoted: list[dict[str, Any]],
+) -> bool:
+    """candidateを明示promotionし、失敗時は同runのbackupへ戻す。"""
+
+    path = Path(str(target["target"]))
+    encoded = text.encode("utf-8")
+    target["candidateSha256"] = hashlib.sha256(encoded).hexdigest()
+    if target["preimagePresent"] and target["preimageBytes"] == encoded:
+        target["status"] = "noop"
+        target["postimageSha256"] = target["preimageSha256"]
+        return False
+    try:
+        _atomic_write_text(path, text)
+        postimage = _read_bytes_no_follow(path, limit=MAX_PROMOTION_BACKUP_BYTES)
+        target["postimageSha256"] = hashlib.sha256(postimage).hexdigest()
+        if postimage != encoded:
+            raise RuntimeError("promotion_postimage_mismatch")
+        target["status"] = "promoted"
+        promoted.append(target)
+        return True
+    except Exception as exc:
+        target["promotionError"] = f"{type(exc).__name__}:{exc}"
+        target["rollbackReceipt"] = _rollback_promotion_targets([*promoted, target])
+        raise
+
+
+def _rollback_promotion_targets(targets: list[dict[str, Any]]) -> dict[str, Any]:
+    """promotion backupを明示的に復元し、rollback receiptを返す。"""
+
+    failures: list[str] = []
+    restored: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for target in reversed(targets):
+        path = Path(str(target.get("target") or ""))
+        key = str(path.expanduser().resolve(strict=False)).casefold()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        try:
+            if target.get("preimagePresent") is True:
+                _atomic_write_bytes(path, bytes(target.get("preimageBytes") or b""))
+                post = _read_bytes_no_follow(path, limit=MAX_PROMOTION_BACKUP_BYTES)
+                post_sha = hashlib.sha256(post).hexdigest()
+                if post_sha != target.get("preimageSha256"):
+                    raise RuntimeError("rollback_postimage_mismatch")
+            elif _exists_no_follow(path):
+                _assert_no_reparse_chain(path)
+                path.unlink()
+                post_sha = ""
+            else:
+                post_sha = ""
+            target["status"] = "rolled_back"
+            target["rollbackPostimageSha256"] = post_sha
+            restored.append(
+                {
+                    "target": target.get("target"),
+                    "kind": target.get("kind"),
+                    "preimageSha256": target.get("preimageSha256", ""),
+                    "postimageSha256": post_sha,
+                    "status": "rolled_back",
+                    "atomic": True,
+                }
+            )
+        except Exception as exc:  # noqa: BLE001 - receipt records typed recovery failure.
+            failures.append(f"{target.get('target')}:{exc}")
+            target["status"] = "rollback_failed"
+    return {
+        "schemaVersion": "NEWS_GRASP_CODEX_AUTOMATION_ROLLBACK_RECEIPT_V1",
+        "status": "rolled_back" if not failures else "blocked",
+        "ok": not failures,
+        "targets": restored,
+        "failures": failures,
+    }
+
+
+def _promotion_target_projection(target: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        str(key): value
+        for key, value in target.items()
+        if key not in {"preimageBytes"}
+    }
+
+
+def _promotion_receipt(
+    *,
+    promotion_id: str,
+    targets: list[dict[str, Any]],
+    dry_run: bool,
+    status: str,
+    failures: list[str] | None = None,
+) -> dict[str, Any]:
+    return {
+        "schemaVersion": "NEWS_GRASP_CODEX_AUTOMATION_PROMOTION_RECEIPT_V1",
+        "promotionId": promotion_id,
+        "mode": "dry_run" if dry_run else "explicit",
+        "startAutoRepair": False,
+        "status": status,
+        "ok": not failures,
+        "atomic": True,
+        "targets": [_promotion_target_projection(target) for target in targets],
+        "failures": sorted(set(failures or [])),
+    }
 
 
 def _custom_path_args(
@@ -754,6 +974,186 @@ def validate_semantics(
     )
 
 
+def validate_integrity_bundle(bundle: Mapping[str, Any]) -> dict[str, Any]:
+    """template/installed/App DB/snapshotのprompt整合性を純粋に検証する。
+
+    この関数は同期・自動修復・外部状態の変更を行わず、呼び出し側が渡した
+    観測bundleだけを判定する。promptの一部一致やTOML本文の置換をGreenへ
+    昇格させず、三つの運用区分に同じ必須文言が一度ずつあることを要求する。
+    """
+
+    reasons: list[str] = []
+    if not isinstance(bundle, Mapping):
+        return {
+            "schemaVersion": "NEWS_GRASP_CODEX_AUTOMATION_INTEGRITY_V1",
+            "ok": False,
+            "status": "blocked",
+            "reasonCodes": ["automation_prompt_drift_fail_closed"],
+        }
+
+    template_prompt = bundle.get("templatePrompt")
+    installed_prompt = bundle.get("installedPrompt")
+    app_db_prompt = bundle.get("appDbPrompt")
+    snapshots = bundle.get("snapshotPrompts")
+    if not isinstance(template_prompt, str) or not template_prompt:
+        reasons.append("template_prompt_missing")
+    if not isinstance(installed_prompt, str) or installed_prompt != template_prompt:
+        reasons.append("installed_prompt_drift")
+    if not isinstance(app_db_prompt, str) or app_db_prompt != template_prompt:
+        reasons.append("app_db_prompt_drift")
+    if not isinstance(snapshots, list) or not snapshots:
+        reasons.append("snapshot_prompt_missing")
+    elif any(not isinstance(prompt, str) or prompt != template_prompt for prompt in snapshots):
+        reasons.append("snapshot_prompt_drift")
+
+    required_phrase = bundle.get("requiredPhrase")
+    if required_phrase != AUTOMATION_COMPLETION_PHRASE:
+        reasons.append("required_phrase_invalid")
+
+    if isinstance(template_prompt, str):
+        if template_prompt.count(AUTOMATION_COMPLETION_PHRASE) != 3:
+            reasons.append("required_phrase_total_count_invalid")
+        section_bounds = (
+            ("最優先事項", "完了条件"),
+            ("完了条件", "禁止"),
+            ("禁止", "最終報告"),
+        )
+        for start_marker, end_marker in section_bounds:
+            start = template_prompt.find(start_marker)
+            end = template_prompt.find(end_marker, start + len(start_marker)) if start >= 0 else -1
+            section = template_prompt[start:end if end >= 0 else len(template_prompt)] if start >= 0 else ""
+            if section.count(AUTOMATION_COMPLETION_PHRASE) != 1:
+                reasons.append(f"required_phrase_section_invalid:{start_marker}")
+
+    toml_body = bundle.get("tomlBody")
+    if not isinstance(toml_body, str) or not toml_body:
+        reasons.append("toml_body_missing")
+    else:
+        try:
+            parsed_toml = tomllib.loads(toml_body)
+        except (tomllib.TOMLDecodeError, UnicodeError, TypeError):
+            reasons.append("toml_body_invalid")
+        else:
+            if parsed_toml.get("prompt") != template_prompt:
+                reasons.append("toml_prompt_replacement_forbidden")
+
+    if bundle.get("startAutoRepair") is not False:
+        reasons.append("start_auto_repair_forbidden")
+    if reasons:
+        reason_codes = ["automation_prompt_drift_fail_closed"]
+    else:
+        reason_codes = []
+    digest = hashlib.sha256(template_prompt.encode("utf-8")).hexdigest() if isinstance(template_prompt, str) else ""
+    return {
+        "schemaVersion": "NEWS_GRASP_CODEX_AUTOMATION_INTEGRITY_V1",
+        "ok": not reasons,
+        "status": "verified" if not reasons else "blocked",
+        "reasonCodes": reason_codes,
+        "detailCodes": sorted(set(reasons)),
+        "promptSha256": digest,
+        "snapshotCount": len(snapshots) if isinstance(snapshots, list) else 0,
+        "startAutoRepair": bundle.get("startAutoRepair"),
+    }
+
+
+def observe_integrity_bundle(
+    *,
+    repo_root: Path | None = None,
+    template_path: Path | None = None,
+    installed_path: Path | None = None,
+    app_db_path: Path | None = None,
+    snapshot_path: Path | None = None,
+) -> dict[str, Any]:
+    """source/installed/App DB/snapshotを別々にread-only観測する。"""
+
+    repo = _assert_trusted_repo_root(repo_root or _default_repo_root(), read_only=True)
+    template = _assert_role_path(
+        template_path or _default_template(repo),
+        repo_root=repo,
+        label="template",
+        custom_allowed=False,
+    )
+    installed = _assert_role_path(
+        installed_path or _default_installed(),
+        repo_root=repo,
+        label="installed",
+        custom_allowed=False,
+    )
+    app_db = _assert_role_path(
+        app_db_path or _default_app_db(),
+        repo_root=repo,
+        label="app_db",
+        custom_allowed=False,
+    )
+    snapshots = [
+        _assert_role_path(path, repo_root=repo, label="snapshot", custom_allowed=False)
+        for path in _snapshot_targets(repo, snapshot_path)
+    ]
+    template_bytes = _read_bytes_no_follow(template, limit=MAX_AUTOMATION_TOML_BYTES)
+    installed_bytes = _read_bytes_no_follow(installed, limit=MAX_AUTOMATION_TOML_BYTES)
+    template_value = tomllib.loads(template_bytes.decode("utf-8-sig"))
+    installed_value = tomllib.loads(installed_bytes.decode("utf-8-sig"))
+    snapshot_values: list[dict[str, Any]] = []
+    snapshot_hashes: list[dict[str, str]] = []
+    for path in snapshots:
+        raw = _read_bytes_no_follow(path, limit=MAX_AUTOMATION_TOML_BYTES)
+        snapshot_values.append(tomllib.loads(raw.decode("utf-8-sig")))
+        snapshot_hashes.append({"path": str(path), "sha256": hashlib.sha256(raw).hexdigest()})
+    with _existing_file_guard(app_db, require_exists=True):
+        connection = sqlite3.connect(f"file:{app_db.as_posix()}?mode=ro", uri=True)
+        connection.row_factory = sqlite3.Row
+        try:
+            row = connection.execute(
+                "select * from automations where id = ?",
+                (AUTOMATION_ID,),
+            ).fetchone()
+        finally:
+            connection.close()
+    app_value = _automation_value_from_app_db_row(row)
+    if app_value is None:
+        raise ValueError("app_db_automation_missing")
+    runtime_path = repo / "tools" / "news_grasp_direct_runtime.py"
+    runtime_text = _read_text_limited(runtime_path, limit=2 * 1024 * 1024)
+    auto_repair_call = "config_repair = _repair_installed_automation_config_once(" in runtime_text
+    return {
+        "schemaVersion": "NEWS_GRASP_CODEX_AUTOMATION_INTEGRITY_OBSERVATION_V1",
+        "templatePrompt": str(template_value.get("prompt") or ""),
+        "installedPrompt": str(installed_value.get("prompt") or ""),
+        "appDbPrompt": str(app_value.get("prompt") or ""),
+        "snapshotPrompts": [str(value.get("prompt") or "") for value in snapshot_values],
+        "requiredPhrase": AUTOMATION_COMPLETION_PHRASE,
+        "tomlBody": template_bytes.decode("utf-8-sig"),
+        "startAutoRepair": auto_repair_call,
+        "surfaceHashes": {
+            "template": hashlib.sha256(template_bytes).hexdigest(),
+            "installed": hashlib.sha256(installed_bytes).hexdigest(),
+            "appDbPrompt": hashlib.sha256(
+                str(app_value.get("prompt") or "").encode("utf-8")
+            ).hexdigest(),
+            "snapshots": snapshot_hashes,
+            "runtimeSource": hashlib.sha256(runtime_text.encode("utf-8")).hexdigest(),
+        },
+    }
+
+
+def validate_integrity_surfaces(**kwargs: Any) -> dict[str, Any]:
+    """live四surface観測をcaller自己申告なしで検証する。"""
+
+    try:
+        bundle = observe_integrity_bundle(**kwargs)
+    except (OSError, UnicodeError, ValueError, sqlite3.Error, tomllib.TOMLDecodeError) as exc:
+        return {
+            "schemaVersion": "NEWS_GRASP_CODEX_AUTOMATION_INTEGRITY_V1",
+            "ok": False,
+            "status": "blocked",
+            "reasonCodes": ["automation_prompt_drift_fail_closed"],
+            "detailCodes": [f"integrity_observation_unavailable:{type(exc).__name__}:{exc}"],
+        }
+    result = validate_integrity_bundle(bundle)
+    result["observation"] = bundle
+    return result
+
+
 def _automation_value_from_app_db_row(row: sqlite3.Row | dict[str, Any] | None) -> dict[str, Any] | None:
     if row is None:
         return None
@@ -818,10 +1218,17 @@ def validate_skill_semantics(path: Path) -> dict[str, Any]:
         return {"ok": False, "path": str(path), "failures": [f"skill_invalid:{exc}"]}
 
     required = (
-        "news_grasp_title_materializer",
-        "title_completion=fulfilled|deferred",
-        "NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1",
-        "caller作成の completion JSON は Green authority ではない",
+        "Daily 六phase",
+        "static_check",
+        "scoped_contract_unit",
+        "current_issue_integration",
+        "external_publication",
+        "consumer_public_verification",
+        "atomic_completion",
+        "frontmatter付きMarkdown",
+        "current issue",
+        "unknown_unobtainable",
+        "callerの`ok=true`だけではrunをcompletedにしない",
         "Git commit ID は観測値としてだけ報告してよい",
         "public incompleteかつexact successorがある状態で終了しない",
     )
@@ -830,6 +1237,13 @@ def validate_skill_semantics(path: Path) -> dict[str, Any]:
             failures.append(f"skill_missing:{part}")
     if "最大1回だけ試す" in text:
         failures.append("skill_title_retry_old_contract")
+    for forbidden in (
+        "python -m tools.news_grasp_direct_runtime start",
+        "python -m tools.news_grasp_direct_runtime advance",
+        "python -m pytest",
+    ):
+        if forbidden in text:
+            failures.append(f"skill_forbidden_daily_route:{forbidden}")
     return {
         "schemaVersion": "NEWS_GRASP_DIRECT_SKILL_SYNC_V1",
         "ok": not failures,
@@ -1013,6 +1427,7 @@ def sync(
     write_skill: bool = False,
     write_app_db: bool = False,
     dry_run: bool = False,
+    promote: bool = False,
     allow_custom_paths: bool = False,
 ) -> dict[str, Any]:
     custom_path_args = _custom_path_args(
@@ -1061,11 +1476,59 @@ def sync(
     )
     before = _read_text_limited(installed, limit=MAX_AUTOMATION_TOML_BYTES) if installed.is_file() else ""
     changed = before != rendered
+    # canonical installed/App DB/snapshotを変更できるのは、operatorが明示した
+    # promotionだけである。custom pathはfixture専用capabilityであり、既存unitの
+    # isolated mutationを許すがlive promotion authorityにはならない。
+    if (
+        not dry_run
+        and not promote
+        and not allow_custom_paths
+        and (changed or write_snapshot or write_skill or write_app_db)
+    ):
+        return {
+            "schemaVersion": "NEWS_GRASP_CODEX_AUTOMATION_SYNC_V1",
+            "ok": False,
+            "status": "promotion_required",
+            "dry_run": False,
+            "changed": changed,
+            "snapshot_changed": None,
+            "skill_changed": None,
+            "app_db_changed": None,
+            "failures": ["explicit_promotion_required"],
+            "exact_successor": "rerun with --promote after dry-run validation and backup review",
+            "promotionReceipt": None,
+            "rollbackReceipt": None,
+        }
+    promotion_id = hashlib.sha256(
+        f"{AUTOMATION_ID}|{time.time_ns()}|{hashlib.sha256(rendered.encode('utf-8')).hexdigest()}".encode("utf-8")
+    ).hexdigest()
+    promotion_targets: list[dict[str, Any]] = []
+    promoted_targets: list[dict[str, Any]] = []
+    rollback_receipt: dict[str, Any] | None = None
+    promotion_failures: list[str] = []
+
+    def explicit_promote(target: dict[str, Any], text: str) -> bool:
+        """一つの明示promotionを実行し、失敗時はJSON receiptへ戻す。"""
+
+        nonlocal rollback_receipt
+        try:
+            return _promote_text_target(target, text, promoted=promoted_targets)
+        except Exception as exc:  # noqa: BLE001 - typed promotion failure is returned.
+            receipt = target.get("rollbackReceipt")
+            if isinstance(receipt, dict):
+                rollback_receipt = receipt
+            else:
+                rollback_receipt = _rollback_promotion_targets([*promoted_targets, target])
+            promotion_failures.append(f"{target.get('kind', 'target')}:{type(exc).__name__}:{exc}")
+            return False
+
     snapshot_results: list[dict[str, Any]] = []
     if not dry_run:
-        if changed:
-            _atomic_write_text(installed, rendered)
-        if write_snapshot:
+        if changed and not promotion_failures:
+            target = _capture_promotion_target(installed, kind="installed_toml")
+            promotion_targets.append(target)
+            explicit_promote(target, rendered)
+        if write_snapshot and not promotion_failures:
             for snapshot in _snapshot_targets(repo, snapshot_path):
                 snapshot = _assert_role_path(
                     snapshot,
@@ -1076,7 +1539,10 @@ def sync(
                 before_snapshot = _read_text_limited(snapshot, limit=MAX_AUTOMATION_TOML_BYTES) if snapshot.is_file() else ""
                 snapshot_changed = before_snapshot != rendered
                 if snapshot_changed:
-                    _atomic_write_text(snapshot, rendered)
+                    target = _capture_promotion_target(snapshot, kind="snapshot_toml")
+                    promotion_targets.append(target)
+                    if not explicit_promote(target, rendered):
+                        break
                 snapshot_result = validate_semantics(
                     snapshot,
                     repo_root=repo,
@@ -1102,11 +1568,18 @@ def sync(
         skill_text = _read_text_limited(source_skill, limit=MAX_SKILL_BYTES)
         before_skill = _read_text_limited(installed_skill, limit=MAX_SKILL_BYTES) if installed_skill.is_file() else ""
         skill_changed = before_skill != skill_text
-        if skill_changed and not dry_run:
-            _atomic_write_text(installed_skill, skill_text)
+        if skill_changed and not dry_run and not promotion_failures:
+            target = _capture_promotion_target(installed_skill, kind="installed_skill")
+            promotion_targets.append(target)
+            explicit_promote(target, skill_text)
         skill_result = validate_skill_semantics(source_skill if dry_run else installed_skill)
     app_db_result = None
-    if write_app_db:
+    if write_app_db and not promotion_failures:
+        app_db_target = _capture_promotion_target(
+            app_db_path or _default_app_db(),
+            kind="app_db",
+        )
+        promotion_targets.append(app_db_target)
         app_db_result = sync_app_db(
             repo_root=repo,
             template_path=template,
@@ -1115,6 +1588,39 @@ def sync(
             dry_run=dry_run,
             allow_custom_app_db=allow_custom_paths and custom_path_args["app_db"],
         )
+        if app_db_result.get("changed") is True:
+            try:
+                postimage = _read_bytes_no_follow(
+                    Path(str(app_db_target["target"])),
+                    limit=MAX_APP_GLOBAL_STATE_BYTES,
+                )
+                app_db_target["postimageSha256"] = hashlib.sha256(postimage).hexdigest()
+                app_db_target["candidateSha256"] = app_db_target["postimageSha256"]
+                app_db_target["status"] = "promoted"
+                promoted_targets.append(app_db_target)
+            except (OSError, ValueError) as exc:
+                app_db_result = {
+                    **app_db_result,
+                    "ok": False,
+                    "failures": [*(app_db_result.get("failures") or []), f"app_db_postimage_unavailable:{exc}"],
+                }
+        else:
+            app_db_target["status"] = "noop"
+            app_db_target["postimageSha256"] = app_db_target.get("preimageSha256", "")
+        if app_db_result.get("ok") is not True:
+            promotion_failures.extend(
+                f"app_db:{failure}"
+                for failure in (app_db_result.get("failures") or [])
+            )
+            if promoted_targets:
+                rollback_receipt = _rollback_promotion_targets(promoted_targets)
+    elif write_app_db and promotion_failures:
+        app_db_result = {
+            "schemaVersion": "NEWS_GRASP_CODEX_AUTOMATION_APP_DB_V1",
+            "ok": False,
+            "changed": False,
+            "failures": ["promotion_aborted_after_failure"],
+        }
     if dry_run:
         installed_result = _validate_loaded_automation(
             tomllib.loads(rendered),
@@ -1164,6 +1670,25 @@ def sync(
                     snapshot_result_existing["changed"] = False
                     snapshot_results.append(snapshot_result_existing)
         snapshot_result = snapshot_results[0] if snapshot_results else None
+    promotion_status = (
+        "dry_run"
+        if dry_run
+        else (
+            "rolled_back"
+            if rollback_receipt is not None
+            else ("failed" if promotion_failures else ("promoted" if promoted_targets else "noop"))
+        )
+    )
+    promotion_result = _promotion_receipt(
+        promotion_id=promotion_id,
+        targets=promotion_targets,
+        dry_run=dry_run,
+        status=promotion_status,
+        failures=[
+            *promotion_failures,
+            *([] if rollback_receipt is None else list(rollback_receipt.get("failures") or [])),
+        ],
+    )
     return {
         "schemaVersion": "NEWS_GRASP_CODEX_AUTOMATION_SYNC_V1",
         "ok": (
@@ -1185,6 +1710,10 @@ def sync(
         "app_db": app_db_result,
         "snapshot": snapshot_result,
         "snapshots": snapshot_results,
+        "promotionReceipt": promotion_result,
+        "promotion_receipt": promotion_result,
+        "rollbackReceipt": rollback_receipt,
+        "rollback_receipt": rollback_receipt,
     }
 
 
@@ -1201,6 +1730,11 @@ def _main(argv: list[str] | None = None) -> int:
     parser.add_argument("--write-skill", action="store_true")
     parser.add_argument("--write-app-db", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--promote",
+        action="store_true",
+        help="backupとrollback receiptを伴う明示promotionを許可する。",
+    )
     parser.add_argument(
         "--allow-custom-paths",
         action="store_true",
@@ -1220,7 +1754,9 @@ def _main(argv: list[str] | None = None) -> int:
     if any(custom_path_args.values()) and not args.allow_custom_paths:
         result = _custom_path_error(custom_path_args)
         result["dry_run"] = args.dry_run
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        sys.stdout.buffer.write(
+            json.dumps(result, ensure_ascii=False, separators=(",", ":")).encode("utf-8") + b"\n"
+        )
         return 2
     result = sync(
         repo_root=args.repo_root,
@@ -1234,9 +1770,12 @@ def _main(argv: list[str] | None = None) -> int:
         write_skill=args.write_skill,
         write_app_db=args.write_app_db,
         dry_run=args.dry_run,
+        promote=args.promote,
         allow_custom_paths=args.allow_custom_paths,
     )
-    print(json.dumps(result, ensure_ascii=False, indent=2))
+    sys.stdout.buffer.write(
+        json.dumps(result, ensure_ascii=False, separators=(",", ":")).encode("utf-8") + b"\n"
+    )
     return 0 if result.get("ok") else 1
 
 

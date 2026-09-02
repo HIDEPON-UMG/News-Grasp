@@ -2,6 +2,7 @@
 """News-Grasp product constitution contract tests."""
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -559,3 +560,56 @@ def test_product_constitution_is_referenced_from_repo_entrypoints() -> None:
         assert "Feature Change Quality Gate Matrix" in text
         assert "affected" in text
         assert "tests/test_product_spec_contract.py" in text
+
+
+def test_daily_45m_contract_is_bound_to_gate_matrix_and_public_completion() -> None:
+    """Daily短縮が品質省略でなくroute分離とfresh公開論理積であることを固定する。"""
+    text = _read(SPEC)
+
+    for phrase in [
+        "2026-09-03 Daily Public 45-minute Contract",
+        "static_check` → `scoped_contract_unit` → `current_issue_integration`",
+        "raw/full pytest、historical corpus、Playwright全件、crash/replay/drift、final NoPublish E2E",
+        "generation_id + predicate_id",
+        "automation_id + issue_date + run_intent",
+        "superseded_after_external_start",
+        "unknown_unobtainable",
+        "Daily 45-minute public completion / Release partition",
+        "自然scheduled canaryが45分以内",
+    ]:
+        assert phrase in text
+
+    contract = json.loads(
+        (ROOT / "config" / "news_grasp_daily_45m_contract_v1.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    ledger = json.loads(
+        (ROOT / "config" / "news_grasp_failure_ledger_v2.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert contract["taskOperatingContract"]["taskId"] == "NG-DAILY-45M-20260902"
+    assert len(contract["requirements"]) == 11
+    assert len(contract["fixtureRegistry"]) == 18
+    assert ledger["task_id"] == "NG-DAILY-45M-20260902"
+    assert {row["defect_code"] for row in ledger["entries"]} == {
+        f"NG-I{index:02d}" for index in range(1, 10)
+    }
+    required = {
+        "defect_code",
+        "source_of_truth",
+        "affected_consumer",
+        "impact_binding",
+        "red_fixture",
+        "green_test",
+        "operational_recovery",
+        "independent_evidence",
+        "owner",
+        "maintenance_condition",
+    }
+    assert all(required <= set(row) for row in ledger["entries"])
+    for entrypoint in (_read(AGENTS), _read(CLAUDE)):
+        assert "daily_45m_public_route" in entrypoint
+        assert "tools.news_grasp_daily_gate" in entrypoint
+        assert "fresh consumer public verifier Green" in entrypoint
