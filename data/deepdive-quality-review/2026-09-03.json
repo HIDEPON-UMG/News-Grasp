@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-09-03",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-09-03-DeepDive.md",
+      "sha256": "601f47e44546b7b5ed574e881ccae4f71d2035f6c2f42ed528db3890d682d70c"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-09-03-DeepDive.md",
+      "sha256": "85bd0df8caa57ccee06dda9372e17fe51cdafd98ccaca88aed445ae8ab71056e"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-09-03-DeepDive-dialogue.md",
+      "sha256": "37a4498fc8c97f680bcc39bb4dbb6f29c063146d53760c668e02be684260b4a4"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 5,
+    "evidence_depth": 5,
+    "causal_coherence": 5,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 5,
+    "relation_map_utility": 5
+  },
+  "findings": {
+    "theme_specific_insight": "国産LLM、円急伸、自動運転トラック、量産工場計画を確認条件という共通軸で結び、分野ごとの差も残した。",
+    "evidence_depth": "4件の当日URLをclaim-sourceと本文根拠へ束ね、実取得provenanceで再確認する構成にした。",
+    "causal_coherence": "公開日・本文・影響・条件・停止という順序で、見出しから判断までの段差を整理した。",
+    "counterevidence": "将来の普及、収益、性能、価格、運行実績、経済効果は当日材料だけでは断定できないと明記した。",
+    "decision_utility": "9月3日までのURL・更新主体・確認担当・停止条件の一覧化へ、記事の読後行動を落とし込んだ。",
+    "dialogue_naturalness": "先輩の常体と若手の敬体を保ち、7価値区間へ14件の異なるsource根拠を割り当てた。",
+    "relation_map_utility": "公開情報、本文照合、現場運用、利用者・地域、判断責任の5ノードを意味付き線で結んだ。"
+  },
+  "averageScore": 5.0,
+  "reviewRoute": "production_generation",
+  "status": "Green"
+}

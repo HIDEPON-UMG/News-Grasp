@@ -1,0 +1,16 @@
+{
+  "articlePath": "digest/DeepDive/2026-09-03-DeepDive.md",
+  "articleSha256": "601f47e44546b7b5ed574e881ccae4f71d2035f6c2f42ed528db3890d682d70c",
+  "bundleSha256": "adc3590364239771149d20718077919b718eb8f01c30b12dee00839a23d848e4",
+  "claimSourceTransportPath": "data/deepdive-claim-source/2026-09-03.json",
+  "claimSourceTransportSha256": "7239512b2c2200737cf0d1552550e061741b95afd8a145e19f5c6ab4d128ac2f",
+  "dialoguePath": "digest/DeepDive/2026-09-03-DeepDive-dialogue.md",
+  "dialogueSha256": "37a4498fc8c97f680bcc39bb4dbb6f29c063146d53760c668e02be684260b4a4",
+  "handler": "tools.deepdive_quality.materialize-issue",
+  "issueDate": "2026-09-03",
+  "provenancePath": "data/deepdive-provenance/2026-09-03.json",
+  "provenanceSha256": "ca6ff1f7570b182f990b3ce1559eb154ee1d9bc9a15d1715f445923eafd899c1",
+  "renderedPublicRequired": false,
+  "schemaVersion": "DEEPDIVE_ISSUE_BUNDLE_V1",
+  "status": "Green"
+}

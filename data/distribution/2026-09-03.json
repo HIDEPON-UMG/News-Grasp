@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "NEWS_GRASP_DIRECT_DISTRIBUTION_V1",
+  "ok": true,
+  "status": "published_ok",
+  "reason": "",
+  "date": "2026-09-03",
+  "pre_publish_commit": "cb8226b43e5bce746af6d88e3896c3a234bec02d",
+  "publish_commit": "",
+  "publish_commit_resolution": "post_push_verify",
+  "same_publish_contract": "pre_publish_commit_must_equal_verified_publish_commit",
+  "checks": {
+    "daily_podcast_public": true,
+    "deepdive_podcast_public": true,
+    "deepdive_primary_playlist": true,
+    "daily_audio_current": true,
+    "deepdive_audio_current": true,
+    "notification_sent": true
+  },
+  "primary_podcast_state": "build/youtube-podcast/uploads.json",
+  "deepdive_podcast_state": "build/youtube-podcast-deepdive/uploads.json",
+  "latest_audio_state": "build/tts/latest_audio.json",
+  "deepdive_audio_state": "build/tts/deepdive/latest_audio.json",
+  "notification_state": "build/notification/2026-09-03.json",
+  "notification": {
+    "status": "sent",
+    "sent_count": 3,
+    "subscription_count": 3,
+    "state_path": "build/notification/2026-09-03.json",
+    "delivery_receipt_sha256": "9ce85a8c1899fc7b4ff1feb84f3f5b11f91adf5622fcf55474bc2804700132db"
+  },
+  "generated_at": "2026-09-03T07:00:29+09:00",
+  "playlist": {
+    "status": "public",
+    "daily": {
+      "playlistId": "PLZgyB9WCfZhomVxnIiiKdNbnKbG4acao6",
+      "videoId": "zNRc-eh9yM0",
+      "playlistItemId": "UExaZ3lCOVdDZlpob21WeG5JaWlLZE5ibktiRzRhY2FvNi5DNzNDRDE1NzhGODQzODI2"
+    },
+    "deepdive": {
+      "playlistId": "PLZgyB9WCfZhrw-OXyv7uG9hoEipJ17ZzV",
+      "videoId": "agedVeURijQ",
+      "playlistItemId": "UExaZ3lCOVdDZlpocnctT1h5djd1Rzlob0VpcEoxN1p6Vi4zQTkzRjgxRTY0OEU0MkM3",
+      "primaryPodcastPlaylistId": "PLZgyB9WCfZhomVxnIiiKdNbnKbG4acao6",
+      "primaryPodcastPlaylistItemId": "UExaZ3lCOVdDZlpob21WeG5JaWlLZE5ibktiRzRhY2FvNi4zQTkyMjEwN0U0QkU3RDg5"
+    }
+  },
+  "value": {
+    "date": "2026-09-03",
+    "primary_podcast_state": "build/youtube-podcast/uploads.json",
+    "deepdive_podcast_state": "build/youtube-podcast-deepdive/uploads.json",
+    "latest_audio_state": "build/tts/latest_audio.json",
+    "deepdive_audio_state": "build/tts/deepdive/latest_audio.json",
+    "generated_at": "2026-09-03T07:00:29+09:00",
+    "playlist": "public",
+    "notification": "sent"
+  }
+}

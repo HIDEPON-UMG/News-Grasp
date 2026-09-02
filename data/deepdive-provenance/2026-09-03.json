@@ -1,0 +1,111 @@
+{
+  "articlePath": "digest/DeepDive/2026-09-03-DeepDive.md",
+  "articleSha256": "601f47e44546b7b5ed574e881ccae4f71d2035f6c2f42ed528db3890d682d70c",
+  "claimBindings": [
+    {
+      "claimId": "ai-20260903-domestic-llm",
+      "claimSha256": "c0fb4e1bbbfa8f96003b2c1d0cf9e58c7d20631325018c1d4ae518e0fe2cde90",
+      "evidenceSha256": "1ece706a2926485ca0b94f2a8ff0410aba5c028862caa073d0101b6aae4c98f4",
+      "sourceUrl": "https://exawizards.com/column/article/ai-article/japanese-domestic-llm/"
+    },
+    {
+      "claimId": "fx-20260903-yen-surge",
+      "claimSha256": "19833872a5fbe05f08fc55346736db5cbb11c3c82a5b09c8f902c48e058fb379",
+      "evidenceSha256": "677e4e081c2a5ec428f9eb7a6e98d6280d5729ba8c6321bf1897a5cb29f85b8e",
+      "sourceUrl": "https://www.nikkei.com/article/DGXZQOGN02BMM0S6A900C2000000/"
+    },
+    {
+      "claimId": "manufacturing-20260903-drone-factory",
+      "claimSha256": "2b340c96b950de8e4d2e6918a4685f251babb1c8f303c0efe7bc5efa2306caf8",
+      "evidenceSha256": "be73b9acf5535130a0e4d628c0eebf7223ad6c60ae868d218aadc0c2cd6ae0de",
+      "sourceUrl": "https://www.chukei-news.co.jp/news/2026/09/03/OK0002609030301_01/"
+    },
+    {
+      "claimId": "mobility-20260903-autonomous-truck",
+      "claimSha256": "cd5fe5dbe8811d8cebf675d59e373d6c49edd86ae92ebb78b61c93d9001fb752",
+      "evidenceSha256": "98be3f9e763802a253b1a3fcfea420b534ad50189d94006b557e5ebbed332291",
+      "sourceUrl": "https://cargo-news.online/news/detail.php?id=11928"
+    }
+  ],
+  "claimSetSha256": "ac9c4551724436bd7fcfebece796fb7f27512e2d2e97e85a20058b371e1daf81",
+  "issueDate": "2026-09-03",
+  "manifestSha256": "67e36aae5daede0c18a5e58b2924c2a59178470423be67eee5ad7284502bc0c5",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V2",
+  "sourceSetSha256": "0607a3b61b72f73f6a0a2df76ca28423a36fec90360ac6cf31d5cc80f0dd6043",
+  "sources": [
+    {
+      "contentSha256": "bc477ee24d1e958bc03188104be7010958c8f1db1eab6c067e03802202c01df5",
+      "fetchedAt": "2026-09-02T21:30:22.578463+00:00",
+      "finalUrl": "https://cargo-news.online/news/detail.php?id=11928",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://cargo-news.online/news/detail.php?id=11928",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://cargo-news.online/news/detail.php?id=11928"
+    },
+    {
+      "contentSha256": "811507535b5894d5efe5790c3a174d10891fc8388b9bc07ddeae1de3fa5d1477",
+      "fetchedAt": "2026-09-02T21:30:22.851597+00:00",
+      "finalUrl": "https://exawizards.com/column/article/ai-article/japanese-domestic-llm/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://exawizards.com/column/article/ai-article/japanese-domestic-llm/",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://exawizards.com/column/article/ai-article/japanese-domestic-llm/"
+    },
+    {
+      "contentSha256": "54ba209251b2671860793fe737afaaff980709b021bcffa54a8f91fb3c81fcc2",
+      "fetchedAt": "2026-09-02T21:30:23.087690+00:00",
+      "finalUrl": "https://www.chukei-news.co.jp/news/2026/09/03/OK0002609030301_01/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.chukei-news.co.jp/news/2026/09/03/OK0002609030301_01/",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://www.chukei-news.co.jp/news/2026/09/03/OK0002609030301_01/"
+    },
+    {
+      "contentSha256": "69b9f2c5eabdf348f32973776fa10d9377dbab05198edd66ab75280b052b575b",
+      "fetchedAt": "2026-09-02T21:30:23.329973+00:00",
+      "finalUrl": "https://www.nikkei.com/article/DGXZQOGN02BMM0S6A900C2000000/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.nikkei.com/article/DGXZQOGN02BMM0S6A900C2000000/",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://www.nikkei.com/article/DGXZQOGN02BMM0S6A900C2000000/"
+    }
+  ],
+  "status": "Green",
+  "transportEvidenceVersion": 1
+}

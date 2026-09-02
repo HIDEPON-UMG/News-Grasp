@@ -1,0 +1,34 @@
+{
+  "articleContentSha256": "6a51aabe2839176983fa07b4fada3eb134f34c0eca25cbefd294356ea400f6ab",
+  "articlePath": "digest/DeepDive/2026-09-03-DeepDive.md",
+  "bindings": [
+    {
+      "claim": "国産LLMの比較記事は、モデル選択と導入条件を分けて考える入口になる",
+      "claimId": "ai-20260903-domestic-llm",
+      "evidence": "国産LLMにはどんなものがある？主要モデルの比較と企業の選び方【2026年版】",
+      "sourceUrl": "https://exawizards.com/column/article/ai-article/japanese-domestic-llm/"
+    },
+    {
+      "claim": "円急伸の記事は、相場の値動きと政策・介入観測を別の確認対象にする",
+      "claimId": "fx-20260903-yen-surge",
+      "evidence": "円急伸、一時158円台前半 介入・日銀利上げ加速に警戒感",
+      "sourceUrl": "https://www.nikkei.com/article/DGXZQOGN02BMM0S6A900C2000000/"
+    },
+    {
+      "claim": "量産工場計画の記事は、設備投資と供給・販売条件を分けて確認する入口になる",
+      "claimId": "manufacturing-20260903-drone-factory",
+      "evidence": "愛知県内で量産工場 プロドローン、29年までに 年５万８千機を計画",
+      "sourceUrl": "https://www.chukei-news.co.jp/news/2026/09/03/OK0002609030301_01/"
+    },
+    {
+      "claim": "自動運転トラック輸送の記事は、物流実装を地域・安全・継続条件へ接続する",
+      "claimId": "mobility-20260903-autonomous-truck",
+      "evidence": "三井倉庫ロジ／Ｔ２ 日立産機の製品を自動運転トラックで輸送",
+      "sourceUrl": "https://cargo-news.online/news/detail.php?id=11928"
+    }
+  ],
+  "issueDate": "2026-09-03",
+  "schemaVersion": "DEEPDIVE_CLAIM_SOURCE_TRANSPORT_V1",
+  "status": "Green",
+  "transportSha256": "9717f8c2692e3eb4d6b67da866dd2342fc1b792e6e262029e7ee600368b21d99"
+}
