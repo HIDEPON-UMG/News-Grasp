@@ -179,6 +179,8 @@ Release gateのcollection、partition、causal repair、finalize、Daily promoti
 
 commit前のRelease検証は、全意図差分がstage済みでunstaged/untracked差分がないGit index treeをcandidate sourceとして固定する。baseline HEADとcandidate treeを一回だけ全nodeで検証し、commit後のclean HEADが同じtreeを持ち、baseline HEADを直接親に持つ場合だけDaily promotionを発行する。これによりsafe-commitのcommit前Greenを維持しつつ、同じfull suiteの二重実行と未検証commitへの差替えを拒否する。repair authorityは実pytest processを起動するclosure外へstarted/completed writerを公開しない。`release_completed`後・promotion前の停止は同じrelease eventへattachし、nodeを再実行せず欠落promotionだけをexactly once回復する。
 
+Release CLIはmachine-readable UTF-8 JSON一行とprocess exitを同じ結果へ束縛する。`promote`はauthoritative receiptの`status=trusted`だけをCLIの`ok=true`へ投影し、state適用済みの成功をexit 1へ誤変換しない。parse/transport failure時は適用済みreceiptをidempotency identityで照会し、promotionや外部副作用を再適用しない。
+
 preflightはissue date、run intent、actual run ID、writer fencing token、scheduler trigger、source baseline、runtime generation、remote base SHA、許可外部副作用をstart sealへ固定する。外部公開直前にrelease commit SHA、exact write set、file hash、manifest ID、bundle ID、external operation IDをpublish sealへ固定する。外部公開開始後のsource、manifest、write set driftは同runへrebindせず `superseded_after_external_start` として新generationを要求する。
 
 state/notification ledgerはrun作成前にV2へmigrationする。single-flight identityは `automation_id + issue_date + run_intent` であり、cwdを含めない。child resultはUTF-8一行JSON、canonical snake_case schema、input hashをmutation前に検証し、stateとapplied receiptを同一transactionでcommitする。retryはidempotency keyのreceipt照会だけをauthorityにする。

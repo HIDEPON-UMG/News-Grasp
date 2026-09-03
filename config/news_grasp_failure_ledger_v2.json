@@ -438,6 +438,20 @@
       "owner": "release_authority_recovery_owner",
       "maintenance_condition": "repair authority writer、release finalize resume、promotion exactly-once変更時",
       "status": "open"
+    },
+    {
+      "defect_code": "NG-I32",
+      "incident_codes": ["PREPUSH-P1-PROMOTION-SUCCESS-EXIT-ONE"],
+      "source_of_truth": ["promotion receipt status", "Release CLI exit code", "applied promotion ledger event"],
+      "affected_consumer": ["Release operator", "automation retry controller", "post-commit promotion recovery"],
+      "impact_binding": "trusted promotion receiptにok fieldがないまま共通CLI終端へ渡すと、state適用済みでもexit 1となり、callerが失敗と誤認して重複retryし得る",
+      "red_fixture": ["trusted promotion receipt without ok field returned by promote command"],
+      "green_test": ["test_NG_RG_30_promote_cli_returns_zero_for_trusted_receipt"],
+      "operational_recovery": "promote command境界でstatus=trustedをcanonical ok=trueへ一度だけ投影し、既存receiptを再適用せず正常終了する",
+      "independent_evidence": ["promotion JSON one line", "CLI exit code 0", "daily_promotion_issued count 1", "same release event hash"],
+      "owner": "release_cli_projection_owner",
+      "maintenance_condition": "Release CLI command、promotion receipt schema、retry controller変更時",
+      "status": "open"
     }
   ]
 }

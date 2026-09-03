@@ -3229,10 +3229,14 @@ def _main(argv: Sequence[str] | None = None) -> int:
                 raise NewsGraspReleaseGateError(
                     "release_promote_requires_repo_root_and_release_id"
                 )
-            result = promote_completed_release(
+            promotion = promote_completed_release(
                 repo_root=args[1],
                 release_id=args[2],
             )
+            result = {
+                **promotion,
+                "ok": promotion.get("status") == "trusted",
+            }
         elif args and args[0] == "nopublish":
             if len(args) != 2:
                 raise NewsGraspReleaseGateError("release_nopublish_requires_payload")

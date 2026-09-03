@@ -2157,3 +2157,31 @@ def test_NG_RG_29_causal_repair_source_mismatch_rejects_before_process(
         )
 
     assert process_calls == []
+
+
+def test_NG_RG_30_promote_cli_returns_zero_for_trusted_receipt(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
+) -> None:
+    """trusted promotionをstate適用後のCLI失敗へ誤投影しない。"""
+
+    monkeypatch.setattr(
+        gate,
+        "promote_completed_release",
+        lambda **_kwargs: {
+            "schemaVersion": "NEWS_GRASP_DAILY_SCOPED_PROMOTION_RECEIPT_V1",
+            "status": "trusted",
+            "release_id": "release-cli-promotion",
+        },
+    )
+
+    exit_code = gate._main(
+        ["promote", str(tmp_path), "release-cli-promotion"]
+    )
+    output = capsys.readouterr().out
+    rows = output.splitlines()
+
+    assert exit_code == 0
+    assert len(rows) == 1
+    assert json.loads(rows[0])["ok"] is True
