@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from datetime import date, timedelta
+from pathlib import Path
 
 from tools.tts import publish_audio
 
@@ -75,20 +76,27 @@ def test_publish_uses_timeout_bounded_gh_commands(tmp_path, monkeypatch):
         return Result()
 
     monkeypatch.setattr(publish_audio.proc, "quiet_run", fake_quiet_run)
-    monkeypatch.setattr(publish_audio, "_url_returns_200", lambda _url: True)
+    hash_checks = iter((False, True))
+    monkeypatch.setattr(
+        publish_audio,
+        "_url_matches_sha256",
+        lambda _url, _sha256: next(hash_checks),
+    )
     monkeypatch.setattr(publish_audio, "write_latest_audio", lambda _day, _url: None)
     expected_hash = hashlib.sha256(b"ID3").hexdigest()[:12]
 
     assert publish_audio.publish("2026-06-16", mp3) == {
         "latest_audio_url": (
             "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/"
-            f"audio-daily/2026-06-16.mp3?v={expected_hash}"
+            f"audio-daily/2026-06-16-{expected_hash}.mp3?v={expected_hash}"
         ),
         "latest_audio_date": "2026-06-16",
     }
     gh_calls = [call for call in calls if call["args"][0] == "gh"]
     assert gh_calls
     assert all(call["kwargs"].get("timeout") == publish_audio.GH_TIMEOUT_SEC for call in gh_calls)
+    upload = next(call for call in gh_calls if call["args"][:3] == ["gh", "release", "upload"])
+    assert Path(upload["args"][-1]).name == f"2026-06-16-{expected_hash}.mp3"
 
 
 def test_audio_url_uses_confirmed_owner_and_repo():
@@ -106,7 +114,7 @@ def test_latest_audio_url_uses_mp3_content_hash_cache_buster(tmp_path):
 
     assert url == (
         "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/"
-        f"audio-daily/2026-06-16.mp3?v={expected_hash}"
+        f"audio-daily/2026-06-16-{expected_hash}.mp3?v={expected_hash}"
     )
 
 
@@ -175,4 +183,5 @@ def test_publish_audio_dry_run_writes_latest_audio_without_gh_upload(tmp_path, m
     assert calls == []
     payload = latest_json.read_text(encoding="utf-8")
     assert "2026-06-17" in payload
-    assert "audio-daily/2026-06-17.mp3" in payload
+    digest = hashlib.sha256(b"dry-run-audio").hexdigest()[:12]
+    assert f"audio-daily/2026-06-17-{digest}.mp3?v={digest}" in payload

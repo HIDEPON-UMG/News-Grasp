@@ -50,5 +50,5 @@ This is the root routing contract for Claude Code and Codex.
 - DeepDive quality review schema: `DEEPDIVE_QUALITY_REVIEW_V2`; shared route registry schema: `DEEPDIVE_SHARED_QUALITY_ROUTES_V2`; engine: `tools.deepdive_quality`.
 - DeepDive quality issue codes (exact): `deepdive_url_provenance_invalid`, `deepdive_article_value_invalid`, `deepdive_relation_quality_invalid`, `deepdive_dialogue_value_invalid`, `deepdive_research_evidence_insufficient`, `deepdive_public_surface_invalid`.
 - DeepDive quality declared routes (exact): `production_generation`, `repair_publish`, `daily_quality`, `codex_daily_audit`; unknown route policy: `fail_closed`.
-- Projection SHA-256: `691cc6ae3de9fa93e550490aa9f9c4ee07824eb2a8caa296163798a2b5f32418`; product asset set SHA-256: `5e910382afdad04d71c35bafb195ab86f5bc2a9e7d391f2f94c43a5a303f3cf9`.
+- Projection SHA-256: `691cc6ae3de9fa93e550490aa9f9c4ee07824eb2a8caa296163798a2b5f32418`; product asset set SHA-256: `dadf276104ab50a2eaf8cb3482d09aacb68febedb9208d4e6fa137ece9315c62`.
 <!-- NEWS_GRASP_CONSTITUTION_PROJECTION_V1_END -->

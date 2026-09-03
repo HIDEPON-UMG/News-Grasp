@@ -294,7 +294,9 @@ def _issue_authorized_promotion(
     if not release_id or not _HEX64.fullmatch(release_receipt_sha256):
         raise ValueError("scoped_promotion_release_binding_invalid")
     root = Path(repo_root).resolve(strict=True)
-    head, tree = _head_and_tree(root)
+    source = release_gate._require_release_source_promotable(release_receipt, root)
+    head = str(source["source_head"])
+    tree = str(source["source_tree"])
     issued = (now or datetime.now(JST)).astimezone(JST)
     if validity_days < 1 or validity_days > 31:
         raise ValueError("scoped_promotion_validity_invalid")

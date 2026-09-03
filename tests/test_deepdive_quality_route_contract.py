@@ -150,9 +150,10 @@ def test_publish_complete_rechecks_shared_quality_before_public_probe() -> None:
 
 def test_codex_mainline_automation_uses_same_shared_quality_cli() -> None:
     source = AUTOMATION.read_text(encoding="utf-8-sig")
-    assert "tools.deepdive_quality" in source
-    assert "audit-issue" in source
-    assert "audit-issue --date YYYY-MM-DD --require-rendered-public" in source
+    assert "current_issue_integration" in source
+    assert "consumer_public_verification" in source
+    assert "--route codex_daily_audit" not in source
+    assert "audit-history" not in source
     assert "2026-07-02" not in source
 
 
@@ -181,13 +182,12 @@ def test_four_consumers_pass_their_exact_route_identity() -> None:
     direct = DIRECT_COMPLETION.read_text(encoding="utf-8-sig")
     repair = PUBLISH_COMPLETE.read_text(encoding="utf-8-sig")
     daily = DAILY_QUALITY.read_text(encoding="utf-8-sig")
-    automation = AUTOMATION.read_text(encoding="utf-8-sig")
 
     assert 'route="production_generation"' in engine
     assert 'route="production_generation"' in direct
     assert 'route="repair_publish"' in repair
     assert 'route="daily_quality"' in daily
-    assert "--route codex_daily_audit" in automation
+    assert 'audit.add_argument("--route", default="codex_daily_audit")' in engine
 
 
 def test_direct_completion_quality_gate_excludes_historical_corpus(

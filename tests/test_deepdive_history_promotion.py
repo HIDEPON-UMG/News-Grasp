@@ -1,6 +1,6 @@
-"""履歴 DeepDive promotion の変更前 Red fixture。
+"""履歴 DeepDive promotion の凍結済みRelease fixture。
 
-対象は production の PowerShell consumer そのものとし、temp repo 内だけに
+対象は実運用で使用したPowerShell consumerの追跡済み凍結bytesとし、temp repo 内だけに
 stage/canonical の最小履歴を構成する。8 日分の claim-source / bundle を欠落
 させても promotion は全 70 件を一括検証でき、成功時には全 target が stage
 bytes と一致する、という acceptance を固定する。
@@ -15,8 +15,12 @@ import subprocess
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PRODUCTION_SCRIPT = (
-    ROOT / "build" / "deepdive-history-remediation" / "promote_selected_history.ps1"
+FIXTURE_SCRIPT = (
+    ROOT
+    / "tests"
+    / "fixtures"
+    / "deepdive-history-promotion"
+    / "promote_selected_history.ps1"
 )
 
 DAYS = (
@@ -60,10 +64,10 @@ def test_history_promotion_expected_green_fixture_current_script_is_red(
     """70件 promotion の成功 oracle を現行 script で実測する（変更前 Red）。"""
     temp_repo = tmp_path / "News-Grasp"
     copied_script = (
-        temp_repo / "build" / "deepdive-history-remediation" / PRODUCTION_SCRIPT.name
+        temp_repo / "build" / "deepdive-history-remediation" / FIXTURE_SCRIPT.name
     )
     copied_script.parent.mkdir(parents=True)
-    copied_script.write_bytes(PRODUCTION_SCRIPT.read_bytes())
+    copied_script.write_bytes(FIXTURE_SCRIPT.read_bytes())
 
     summary_path = (
         temp_repo

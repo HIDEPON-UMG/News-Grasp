@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import inspect
 import json
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -16,6 +17,80 @@ from typing import Any
 import pytest
 
 from tools import news_grasp_release_gate as gate
+
+
+_REAL_OBSERVE_RELEASE_SOURCE = gate._observe_release_source
+
+
+@pytest.fixture(autouse=True)
+def _deterministic_release_source(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Release unit testsを実worktreeのdirty状態から分離する。"""
+
+    monkeypatch.setattr(
+        gate,
+        "_observe_release_source",
+        lambda repo_root: {
+            "source_root": str(Path(repo_root).resolve()),
+            "source_head": "a" * 40,
+            "source_tree": "b" * 40,
+            "worktree_clean": True,
+        },
+    )
+
+
+def _run_candidate_git(repo: Path, *args: str) -> str:
+    completed = gate.subprocess.run(
+        ["git", *args],
+        cwd=str(repo),
+        stdin=gate.subprocess.DEVNULL,
+        stdout=gate.subprocess.PIPE,
+        stderr=gate.subprocess.PIPE,
+        text=True,
+        encoding="utf-8",
+        errors="strict",
+        check=False,
+        shell=False,
+    )
+    assert completed.returncode == 0, (
+        f"git {' '.join(args)} failed: {completed.stderr.strip()}"
+    )
+    return completed.stdout.strip()
+
+
+def _make_staged_candidate_repo(tmp_path: Path, *, name: str = "candidate") -> dict[str, Any]:
+    """baseline commit + fully staged candidateだけを持つ一時Git repoを作る。"""
+
+    repo = tmp_path / name
+    repo.mkdir()
+    _run_candidate_git(repo, "init", "-b", "main")
+    _run_candidate_git(repo, "config", "user.name", "News-Grasp fixture")
+    _run_candidate_git(repo, "config", "user.email", "fixture@example.invalid")
+    _run_candidate_git(repo, "config", "core.autocrlf", "false")
+    tracked = repo / "tracked.txt"
+    tracked.write_text("baseline\n", encoding="utf-8")
+    _run_candidate_git(repo, "add", "tracked.txt")
+    _run_candidate_git(repo, "commit", "-m", "baseline")
+    baseline_head = _run_candidate_git(repo, "rev-parse", "HEAD")
+    baseline_tree = _run_candidate_git(repo, "rev-parse", "HEAD^{tree}")
+
+    tracked.write_text("candidate\n", encoding="utf-8")
+    _run_candidate_git(repo, "add", "tracked.txt")
+    candidate_tree = _run_candidate_git(repo, "write-tree")
+    candidate = _REAL_OBSERVE_RELEASE_SOURCE(
+        repo,
+        allow_staged_candidate=True,
+    )
+    assert candidate["source_head"] == baseline_head
+    assert candidate["source_tree"] == candidate_tree
+    assert candidate["source_tree"] != baseline_tree
+    return {
+        "repo": repo,
+        "tracked": tracked,
+        "baseline_head": baseline_head,
+        "baseline_tree": baseline_tree,
+        "candidate_tree": candidate_tree,
+        "candidate": candidate,
+    }
 
 
 def _collection_report(nodes: list[str]) -> dict[str, Any]:
@@ -73,7 +148,13 @@ def _partition_receipt(
     nodes: list[str],
     collection_sha256: str,
     receipt_id: str = "partition-receipt-1",
+    source_root: Path | str | None = None,
 ) -> dict[str, Any]:
+    resolved_source_root = (
+        str(Path(source_root).resolve())
+        if source_root is not None
+        else str(Path(__file__).resolve().parents[1])
+    )
     return {
         "schemaVersion": "NEWS_GRASP_RELEASE_PARTITION_PROCESS_RECEIPT_V2",
         "receipt_id": receipt_id,
@@ -100,6 +181,10 @@ def _partition_receipt(
         "cause_hash": "1" * 64,
         "release_id": release_id,
         "collection_sha256": collection_sha256,
+        "source_root": resolved_source_root,
+        "source_head": "a" * 40,
+        "source_tree": "b" * 40,
+        "worktree_clean": True,
     }
 
 
@@ -108,6 +193,7 @@ def _seed_failed_partition(
     *,
     release_id: str = "release-causal",
     partition: str = "scoped_changed",
+    source_root: Path | str | None = None,
 ) -> tuple[dict[str, Any], list[str]]:
     nodes = [
         "tests/test_fixture_release.py::test_failed",
@@ -118,6 +204,7 @@ def _seed_failed_partition(
         partition=partition,
         nodes=nodes,
         collection_sha256="2" * 64,
+        source_root=source_root,
     )
     gate._append_ledger(
         ledger_path,
@@ -130,6 +217,148 @@ def _seed_failed_partition(
         receipt_hash=gate._mapping_hash(previous),
     )
     return previous, nodes
+
+
+def _seed_causal_release_ledger(
+    ledger_path: Path,
+    *,
+    release_id: str,
+    target_green: bool = False,
+) -> dict[str, Any]:
+    """causal repair合成用のauthoritative collection/partition鎖を作るfixture。"""
+
+    partition_nodes = {
+        gate.RELEASE_PARTITIONS[0]: [
+            "tests/test_news_grasp_daily_45m_contract.py::test_fixture_pass",
+            "tests/test_news_grasp_daily_45m_contract.py::test_fixture_fail",
+        ],
+        gate.RELEASE_PARTITIONS[1]: [
+            "tests/test_news_grasp_constitution_acceptance.py::test_fixture_pass",
+        ],
+        gate.RELEASE_PARTITIONS[2]: [
+            "tests/test_historical_failure_scenarios.py::test_fixture_pass",
+        ],
+        gate.RELEASE_PARTITIONS[3]: [
+            "tests/test_all_article_urls_live.py::test_fixture_pass",
+        ],
+        gate.RELEASE_PARTITIONS[4]: [
+            "tests/test_2026_08_14_recovery_replay.py::test_fixture_pass",
+        ],
+        gate.RELEASE_PARTITIONS[5]: [
+            "tests/test_news_grasp_release_gate_v2.py::test_fixture_pass",
+        ],
+    }
+    collection_nodes = [
+        node
+        for partition in gate.RELEASE_PARTITIONS
+        for node in partition_nodes[partition]
+    ]
+    classification = gate.validate_partition(collection_nodes, partition_nodes)
+    collection_sha256 = classification["collection_sha256"]
+    collection_receipt = {
+        "schemaVersion": gate.RELEASE_COLLECTION_SCHEMA,
+        "ok": True,
+        "status": "collection_produced",
+        "authority": "release_authoritative_collect_only",
+        "release_id": release_id,
+        "collection_nodes": list(collection_nodes),
+        "collection_count": len(collection_nodes),
+        "collection_sha256": collection_sha256,
+        "node_set_hash": collection_sha256,
+        "ledger_path": str(ledger_path),
+        "source_root": str(Path(__file__).resolve().parents[1]),
+        "source_head": "a" * 40,
+        "source_tree": "b" * 40,
+        "worktree_clean": True,
+    }
+    gate._append_ledger(
+        ledger_path,
+        "collection_completed",
+        release_id=release_id,
+        receipt=collection_receipt,
+        receipt_hash=gate._mapping_hash(collection_receipt),
+    )
+
+    partition_receipts: dict[str, dict[str, Any]] = {}
+    for partition in gate.RELEASE_PARTITIONS:
+        nodes = list(partition_nodes[partition])
+        receipt = _partition_receipt(
+            release_id=release_id,
+            partition=partition,
+            nodes=nodes,
+            collection_sha256=collection_sha256,
+            receipt_id=f"partition-{partition}",
+        )
+        if partition != gate.RELEASE_PARTITIONS[0] or target_green:
+            receipt["node_receipts"] = [
+                {**row, "status": "pass"}
+                for row in receipt["node_receipts"]
+            ]
+            receipt["failed_nodes"] = []
+            receipt["exact_failed_set_sha256"] = gate._node_hash([])
+            receipt["ok"] = True
+            receipt["status"] = "green"
+            receipt["failure"] = None
+        partition_receipts[partition] = receipt
+        gate._append_ledger(
+            ledger_path,
+            "partition_completed",
+            release_id=release_id,
+            partition=partition,
+            identity=f"{release_id}:{partition}",
+            collection_sha256=collection_sha256,
+            receipt=receipt,
+            receipt_hash=gate._mapping_hash(receipt),
+        )
+
+    return {
+        "collection_nodes": collection_nodes,
+        "classification": classification,
+        "collection_receipt": collection_receipt,
+        "partition_nodes": partition_nodes,
+        "partition_receipts": partition_receipts,
+        "target_partition": gate.RELEASE_PARTITIONS[0],
+        "target_receipt": partition_receipts[gate.RELEASE_PARTITIONS[0]],
+        "failed_node": partition_nodes[gate.RELEASE_PARTITIONS[0]][0],
+        "collection_sha256": collection_sha256,
+    }
+
+
+def _green_repair_process(
+    *,
+    partition: str,
+    nodes: list[str],
+    release_id: str,
+    collection_sha256: str,
+    receipt_id: str,
+) -> dict[str, Any]:
+    """causal_repair_partitionへ渡す当日修復Green process fixture。"""
+
+    return {
+        "schemaVersion": "NEWS_GRASP_RELEASE_PARTITION_PROCESS_RECEIPT_V2",
+        "receipt_id": receipt_id,
+        "partition": partition,
+        "node_ids": list(nodes),
+        "node_count": len(nodes),
+        "node_receipts": [
+            {
+                "node_id": node,
+                "partition": partition,
+                "status": "pass",
+                "events": [],
+                "receipt_id": receipt_id,
+            }
+            for node in nodes
+        ],
+        "failed_nodes": [],
+        "skipped_nodes": [],
+        "exact_failed_set_sha256": gate._node_hash([]),
+        "process_count": 1,
+        "ok": True,
+        "status": "green",
+        "release_id": release_id,
+        "collection_sha256": collection_sha256,
+    }
 
 
 def test_NG_RG_01_authoritative_collection_count_mismatch_is_red() -> None:
@@ -264,6 +493,10 @@ def test_NG_RG_03_fabricated_collection_mapping_is_not_release_authority(
         "collection_nodes": [node],
         "collection_sha256": gate._node_hash([node]),
         "ledger_path": str(ledger),
+        "source_root": str(tmp_path.resolve()),
+        "source_head": "a" * 40,
+        "source_tree": "b" * 40,
+        "worktree_clean": True,
     }
 
     with pytest.raises(
@@ -452,7 +685,7 @@ def test_NG_RG_06_causal_repair_allows_only_exact_failed_set_and_new_cause(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     ledger = tmp_path / "ledger.jsonl"
-    previous, nodes = _seed_failed_partition(ledger)
+    previous, nodes = _seed_failed_partition(ledger, source_root=tmp_path)
     calls: list[tuple[Any, ...]] = []
 
     def fake_partition_process(*args: Any, **kwargs: Any) -> dict[str, Any]:
@@ -494,7 +727,7 @@ def test_NG_RG_06_red_causal_repair_chains_only_its_remaining_failed_nodes(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     ledger = tmp_path / "ledger.jsonl"
-    previous, nodes = _seed_failed_partition(ledger)
+    previous, nodes = _seed_failed_partition(ledger, source_root=tmp_path)
     calls: list[list[str]] = []
 
     def fake_partition_process(name: str, selected: list[str], **kwargs: Any) -> dict[str, Any]:
@@ -566,7 +799,7 @@ def test_NG_RG_06_causal_repair_rejects_same_cause_or_success_node(
     tmp_path: Path,
 ) -> None:
     ledger = tmp_path / "ledger.jsonl"
-    previous, nodes = _seed_failed_partition(ledger)
+    previous, nodes = _seed_failed_partition(ledger, source_root=tmp_path)
     requested = [nodes[0]] if nodes_mode == "exact" else nodes
 
     with pytest.raises(gate.NewsGraspReleaseGateError, match=expected):
@@ -1039,6 +1272,29 @@ def test_NG_RG_14_partition_transport_or_collection_red_binds_all_nodes_for_caus
     ]
     ledger = tmp_path / "release-ledger.jsonl"
     observed: list[list[str]] = []
+    collection_receipt = {
+        "schemaVersion": gate.RELEASE_COLLECTION_SCHEMA,
+        "ok": True,
+        "status": "collection_produced",
+        "authority": "release_authoritative_collect_only",
+        "release_id": release_id,
+        "collection_nodes": list(nodes),
+        "collection_count": len(nodes),
+        "collection_sha256": gate._node_hash(nodes),
+        "node_set_hash": gate._node_hash(nodes),
+        "ledger_path": str(ledger),
+        "source_root": str(tmp_path.resolve()),
+        "source_head": "a" * 40,
+        "source_tree": "b" * 40,
+        "worktree_clean": True,
+    }
+    gate._append_ledger(
+        ledger,
+        "collection_completed",
+        release_id=release_id,
+        receipt=collection_receipt,
+        receipt_hash=gate._mapping_hash(collection_receipt),
+    )
 
     def fake_run_fixed_pytest(**kwargs: Any) -> dict[str, Any]:
         chunk = list(kwargs["node_ids"])
@@ -1105,3 +1361,799 @@ def test_NG_RG_14_partition_transport_or_collection_red_binds_all_nodes_for_caus
     assert repair["ok"] is True
     assert repair["exact_failed_nodes"] == nodes
     assert observed == [nodes, nodes]
+
+
+def test_NG_RG_15_finalize_causal_repairs_composes_green_chain_without_rerunning_successes(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """既存passを再実行せず、causal repairだけを合成してReleaseを完了する。"""
+
+    release_id = "release-finalize-causal-green"
+    ledger = tmp_path / "release-ledger.jsonl"
+    repo_root = Path(__file__).resolve().parents[1]
+    fixture = _seed_causal_release_ledger(ledger, release_id=release_id)
+    repair_calls: list[list[str]] = []
+
+    def green_repair(name: str, nodes: list[str], **_kwargs: Any) -> dict[str, Any]:
+        repair_calls.append(list(nodes))
+        return _green_repair_process(
+            partition=name,
+            nodes=list(nodes),
+            release_id=release_id,
+            collection_sha256=fixture["collection_sha256"],
+            receipt_id="repair-process-green",
+        )
+
+    monkeypatch.setattr(gate, "_run_partition_process", green_repair)
+    repair = gate.causal_repair_partition(
+        repo_root=repo_root,
+        partition=fixture["target_partition"],
+        node_ids=[fixture["failed_node"]],
+        cause_hash="2" * 64,
+        previous_receipt=fixture["target_receipt"],
+        repair_id="repair-finalize-green",
+        release_id=release_id,
+        ledger_path=ledger,
+        timeout_seconds=5,
+    )
+    assert repair["ok"] is True
+    assert repair_calls == [[fixture["failed_node"]]]
+    before_finalize_calls = list(repair_calls)
+
+    result = gate.finalize_causal_repairs(
+        repo_root=repo_root,
+        release_id=release_id,
+        ledger_path=ledger,
+        _test_only_allow_ledger_override=True,
+    )
+    release_receipt = (
+        result["receipt"]
+        if result.get("event_type") == "release_completed"
+        else result
+    )
+
+    assert repair_calls == before_finalize_calls
+    assert release_receipt["release_id"] == release_id
+    assert release_receipt["ok"] is True
+    assert release_receipt["status"] == "green"
+    node_ids = [row["node_id"] for row in release_receipt["node_receipts"]]
+    assert node_ids == fixture["collection_nodes"]
+    assert len(node_ids) == len(set(node_ids)) == len(fixture["collection_nodes"])
+    assert release_receipt["failed_nodes"] == []
+    assert fixture["partition_nodes"][fixture["target_partition"]][1] not in repair_calls
+    events = gate._ledger_events(ledger)
+    completed = [event for event in events if event["event_type"] == "release_completed"]
+    assert len(completed) == 1
+    assert completed[0]["receipt"]["ok"] is True
+    assert not [event for event in events if event["event_type"] == "daily_promotion_issued"]
+
+
+@pytest.mark.parametrize("repair_state", ["red", "missing"], ids=["repair-red", "repair-missing"])
+def test_NG_RG_16_finalize_causal_repairs_rejects_incomplete_red_chain(
+    repair_state: str,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """repair Redまたは未完了のchainからGreen releaseを合成しない。"""
+
+    release_id = f"release-finalize-causal-{repair_state}"
+    ledger = tmp_path / "release-ledger.jsonl"
+    repo_root = Path(__file__).resolve().parents[1]
+    fixture = _seed_causal_release_ledger(ledger, release_id=release_id)
+
+    if repair_state == "red":
+        def red_repair(name: str, nodes: list[str], **_kwargs: Any) -> dict[str, Any]:
+            result = _green_repair_process(
+                partition=name,
+                nodes=list(nodes),
+                release_id=release_id,
+                collection_sha256=fixture["collection_sha256"],
+                receipt_id="repair-process-red",
+            )
+            result["ok"] = False
+            result["status"] = "red"
+            result["failed_nodes"] = list(nodes)
+            result["failure"] = "fixture_repair_red"
+            result["node_receipts"] = [
+                {**row, "status": "fail"}
+                for row in result["node_receipts"]
+            ]
+            return result
+
+        monkeypatch.setattr(gate, "_run_partition_process", red_repair)
+        repair = gate.causal_repair_partition(
+            repo_root=repo_root,
+            partition=fixture["target_partition"],
+            node_ids=[fixture["failed_node"]],
+            cause_hash="2" * 64,
+            previous_receipt=fixture["target_receipt"],
+            repair_id=f"repair-finalize-{repair_state}",
+            release_id=release_id,
+            ledger_path=ledger,
+            timeout_seconds=5,
+        )
+        assert repair["ok"] is False
+
+    with pytest.raises(gate.NewsGraspReleaseGateError):
+        gate.finalize_causal_repairs(
+            repo_root=repo_root,
+            release_id=release_id,
+            ledger_path=ledger,
+            _test_only_allow_ledger_override=True,
+        )
+
+    events = gate._ledger_events(ledger)
+    assert not [event for event in events if event["event_type"] == "release_completed"]
+    assert not [event for event in events if event["event_type"] == "daily_promotion_issued"]
+
+
+def test_NG_RG_17_finalize_causal_repairs_rejects_forked_repair_chain(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """同一previous_receipt_idから分岐したrepairをRelease authorityが拒否する。"""
+
+    release_id = "release-finalize-causal-fork"
+    ledger = tmp_path / "release-ledger.jsonl"
+    repo_root = Path(__file__).resolve().parents[1]
+    fixture = _seed_causal_release_ledger(ledger, release_id=release_id)
+
+    def green_repair(name: str, nodes: list[str], **_kwargs: Any) -> dict[str, Any]:
+        return _green_repair_process(
+            partition=name,
+            nodes=list(nodes),
+            release_id=release_id,
+            collection_sha256=fixture["collection_sha256"],
+            receipt_id="repair-process-fork",
+        )
+
+    monkeypatch.setattr(gate, "_run_partition_process", green_repair)
+    repair = gate.causal_repair_partition(
+        repo_root=repo_root,
+        partition=fixture["target_partition"],
+        node_ids=[fixture["failed_node"]],
+        cause_hash="2" * 64,
+        previous_receipt=fixture["target_receipt"],
+        repair_id="repair-fork-first",
+        release_id=release_id,
+        ledger_path=ledger,
+        timeout_seconds=5,
+    )
+    assert repair["ok"] is True
+
+    fork = dict(repair)
+    fork["repair_id"] = "repair-fork-second"
+    gate._append_ledger(
+        ledger,
+        "repair_completed",
+        release_id=release_id,
+        partition=fixture["target_partition"],
+        identity=fork["repair_id"],
+        repair_id=fork["repair_id"],
+        previous_receipt_id=repair["previous_receipt_id"],
+        cause_hash=fork["cause_hash"],
+        receipt=fork,
+        receipt_hash=gate._mapping_hash(fork),
+    )
+
+    with pytest.raises(gate.NewsGraspReleaseGateError):
+        gate.finalize_causal_repairs(
+            repo_root=repo_root,
+            release_id=release_id,
+            ledger_path=ledger,
+            _test_only_allow_ledger_override=True,
+        )
+
+    events = gate._ledger_events(ledger)
+    assert not [event for event in events if event["event_type"] == "release_completed"]
+    assert not [event for event in events if event["event_type"] == "daily_promotion_issued"]
+
+
+def test_NG_RG_18_canonical_repair_authority_rejects_generic_and_startless_writes(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """repair authorityは専用writerだけがstarted→completed順で発行できる。"""
+
+    ledger = tmp_path / "canonical" / "release-ledger.jsonl"
+    monkeypatch.setattr(gate, "_canonical_ledger_path", lambda: ledger)
+    with pytest.raises(
+        gate.NewsGraspReleaseGateError,
+        match="release_authority_event_generic_append_forbidden",
+    ):
+        gate._append_ledger(
+            ledger,
+            "repair_completed",
+            release_id="release-startless-repair",
+            partition="scoped_changed",
+            repair_id="repair-startless",
+            previous_receipt_id="partition-base",
+            receipt={},
+            receipt_hash=gate._mapping_hash({}),
+        )
+
+
+def test_NG_RG_19_collection_seals_source_and_rejects_collection_drift(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """collection前後のHEAD/treeが変わればGreen receiptを発行しない。"""
+
+    repo = Path(__file__).resolve().parents[1]
+    node = "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_01_authoritative_collection_count_mismatch_is_red"
+    monkeypatch.setattr(
+        gate,
+        "_run_fixed_pytest",
+        lambda **_kwargs: {
+            "schemaVersion": "NEWS_GRASP_RELEASE_PROCESS_RECEIPT_V1",
+            "ok": True,
+            "status": "green",
+            "transport": "ok",
+            "exit_code": 0,
+            "structured": _collection_report([node]),
+        },
+    )
+    observed = iter(
+        (
+            {
+                "source_root": str(repo.resolve()),
+                "source_head": "a" * 40,
+                "source_tree": "b" * 40,
+                "worktree_clean": True,
+            },
+            {
+                "source_root": str(repo.resolve()),
+                "source_head": "c" * 40,
+                "source_tree": "d" * 40,
+                "worktree_clean": True,
+            },
+        )
+    )
+    monkeypatch.setattr(gate, "_observe_release_source", lambda _root: next(observed))
+    receipt = gate.collect_only_nodes(
+        repo,
+        release_id="release-source-drift",
+        ledger_path=tmp_path / "release-ledger.jsonl",
+        _test_only_allow_ledger_override=True,
+    )
+    assert receipt["ok"] is False
+    assert receipt["status"] == "red"
+    assert receipt["failures"] == ["release_source_drift"]
+    assert receipt["source_head"] == "a" * 40
+    assert receipt["source_tree"] == "b" * 40
+
+
+@pytest.mark.parametrize(
+    "observed,reason",
+    [
+        (
+            {
+                "source_root": str(Path(__file__).resolve().parents[1]),
+                "source_head": "c" * 40,
+                "source_tree": "b" * 40,
+                "worktree_clean": True,
+            },
+            "release_source_binding_mismatch",
+        ),
+        (None, "release_source_worktree_dirty"),
+    ],
+    ids=["different-head", "dirty"],
+)
+def test_NG_RG_20_finalize_rejects_current_source_mismatch_or_dirty(
+    observed: dict[str, Any] | None,
+    reason: str,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """completion時sourceがcollection sealと異なる場合はreleaseを作らない。"""
+
+    release_id = f"release-source-{reason}"
+    ledger = tmp_path / "release-ledger.jsonl"
+    repo = Path(__file__).resolve().parents[1]
+    _seed_causal_release_ledger(ledger, release_id=release_id, target_green=True)
+    if observed is None:
+        def observe(_root: Path) -> dict[str, Any]:
+            raise gate.NewsGraspReleaseGateError("release_source_worktree_dirty")
+    else:
+        def observe(_root: Path) -> dict[str, Any]:
+            return dict(observed)
+    monkeypatch.setattr(gate, "_observe_release_source", observe)
+    with pytest.raises(gate.NewsGraspReleaseGateError, match=reason):
+        gate.finalize_causal_repairs(
+            repo_root=repo,
+            release_id=release_id,
+            ledger_path=ledger,
+            _test_only_allow_ledger_override=True,
+        )
+    assert not [
+        event for event in gate._ledger_events(ledger)
+        if event.get("event_type") == "release_completed"
+    ]
+
+
+def test_NG_RG_21_promotion_rejects_release_source_mismatch(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """promotion時のsourceをRelease試験時sourceへ必ず束縛する。"""
+
+    repo = Path(__file__).resolve().parents[1]
+    ledger = tmp_path / "canonical" / "release-ledger.jsonl"
+    receipt = {
+        "schemaVersion": gate.RELEASE_GATE_SCHEMA,
+        "ok": True,
+        "status": "green",
+        "release_id": "release-promotion-source-mismatch",
+        "failed_nodes": [],
+        "executed_node_count": 1,
+        "union_node_count": 1,
+        "source_head": "a" * 40,
+        "source_tree": "b" * 40,
+        "source_root": str(repo.resolve()),
+        "worktree_clean": True,
+    }
+    release_event = {
+        "event_type": "release_completed",
+        "release_id": receipt["release_id"],
+        "event_hash": "e" * 64,
+        "receipt": receipt,
+        "receipt_hash": gate._mapping_hash(receipt),
+    }
+    monkeypatch.setattr(gate, "_canonical_ledger_path", lambda: ledger)
+    monkeypatch.setattr(gate, "_ledger_events", lambda _ledger: [release_event])
+    monkeypatch.setattr(
+        gate,
+        "_validate_release_completion_chain",
+        lambda *_args, **_kwargs: {"green": True},
+    )
+    monkeypatch.setattr(
+        gate,
+        "_observe_release_source",
+        lambda _root: {
+            "source_root": str(repo.resolve()),
+            "source_head": "c" * 40,
+            "source_tree": "b" * 40,
+            "worktree_clean": True,
+        },
+    )
+    with pytest.raises(
+        gate.NewsGraspReleaseGateError,
+        match="release_source_binding_mismatch",
+    ):
+        gate._ensure_daily_promotion(
+            repo_root=repo,
+            ledger=ledger,
+            release_event=release_event,
+            release_receipt=receipt,
+        )
+
+
+def test_NG_RG_22_staged_candidate_observation_binds_head_and_index_tree(
+    tmp_path: Path,
+) -> None:
+    """完全stage済みcandidateはbaseline HEADとindex treeへ束縛する。"""
+
+    fixture = _make_staged_candidate_repo(tmp_path, name="candidate-observation")
+    candidate = fixture["candidate"]
+
+    assert candidate["source_mode"] == "staged_candidate"
+    assert candidate["source_head"] == fixture["baseline_head"]
+    assert candidate["source_tree"] == fixture["candidate_tree"]
+    assert candidate["worktree_exact"] is True
+    assert candidate["worktree_clean"] is False
+
+
+@pytest.mark.parametrize(
+    "candidate_change",
+    ["unstaged", "untracked"],
+    ids=["unstaged-candidate", "untracked-candidate"],
+)
+def test_NG_RG_23_staged_candidate_rejects_unstaged_or_untracked_input(
+    candidate_change: str,
+    tmp_path: Path,
+) -> None:
+    """candidate観測は意図外のunstaged/untracked差分を受理しない。"""
+
+    fixture = _make_staged_candidate_repo(tmp_path, name=f"candidate-{candidate_change}")
+    repo = fixture["repo"]
+    if candidate_change == "unstaged":
+        _run_candidate_git(repo, "reset", "HEAD", "--", "tracked.txt")
+        expected = "release_source_unstaged_candidate_forbidden"
+    else:
+        (repo / "untracked.txt").write_text("outside-candidate\n", encoding="utf-8")
+        expected = "release_source_untracked_candidate_forbidden"
+
+    with pytest.raises(gate.NewsGraspReleaseGateError, match=expected):
+        _REAL_OBSERVE_RELEASE_SOURCE(repo, allow_staged_candidate=True)
+
+
+def test_NG_RG_24_candidate_receipt_is_not_promotable_before_commit(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """未commitのcandidate receiptをpromotion境界へ持ち込めない。"""
+
+    fixture = _make_staged_candidate_repo(tmp_path, name="candidate-before-promotion")
+    repo = fixture["repo"]
+    monkeypatch.setattr(gate, "_observe_release_source", _REAL_OBSERVE_RELEASE_SOURCE)
+
+    with pytest.raises(
+        gate.NewsGraspReleaseGateError,
+        match="release_source_worktree_dirty",
+    ):
+        gate._require_release_source_promotable(fixture["candidate"], repo)
+    assert _run_candidate_git(repo, "rev-parse", "HEAD") == fixture["baseline_head"]
+
+
+@pytest.mark.parametrize(
+    "commit_shape",
+    ["one-commit-green", "different-tree", "different-parent"],
+    ids=["one-commit-green", "candidate-tree-mismatch", "candidate-parent-mismatch"],
+)
+def test_NG_RG_25_candidate_commit_requires_exact_tree_and_baseline_parent(
+    commit_shape: str,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """candidate一回commit後だけを同一tree・baseline parentへpromotionできる。"""
+
+    fixture = _make_staged_candidate_repo(tmp_path, name=f"candidate-{commit_shape}")
+    repo = fixture["repo"]
+    tracked = fixture["tracked"]
+    candidate = fixture["candidate"]
+    _run_candidate_git(repo, "commit", "-m", "candidate")
+
+    if commit_shape == "one-commit-green":
+        monkeypatch.setattr(gate, "_observe_release_source", _REAL_OBSERVE_RELEASE_SOURCE)
+        promoted = gate._require_release_source_promotable(candidate, repo)
+        assert promoted["source_mode"] == "committed"
+        assert promoted["source_head"] == _run_candidate_git(repo, "rev-parse", "HEAD")
+        assert promoted["source_tree"] == candidate["source_tree"]
+        assert _run_candidate_git(repo, "rev-parse", "HEAD^") == fixture["baseline_head"]
+        return
+
+    if commit_shape == "different-tree":
+        tracked.write_text("different-candidate-tree\n", encoding="utf-8")
+        _run_candidate_git(repo, "add", "tracked.txt")
+        _run_candidate_git(repo, "commit", "-m", "different candidate tree")
+        expected = "release_candidate_tree_mismatch"
+    else:
+        _run_candidate_git(repo, "commit", "--allow-empty", "-m", "different parent")
+        expected = "release_candidate_parent_mismatch"
+
+    monkeypatch.setattr(gate, "_observe_release_source", _REAL_OBSERVE_RELEASE_SOURCE)
+    with pytest.raises(gate.NewsGraspReleaseGateError, match=expected):
+        gate._require_release_source_promotable(candidate, repo)
+
+
+def test_NG_RG_26_candidate_index_tree_drift_is_rejected_by_source_match(
+    tmp_path: Path,
+) -> None:
+    """candidate観測後にindex treeが変化した場合は同一sourceと見なさない。"""
+
+    fixture = _make_staged_candidate_repo(tmp_path, name="candidate-index-drift")
+    repo = fixture["repo"]
+    tracked = fixture["tracked"]
+    candidate = fixture["candidate"]
+    tracked.write_text("changed-after-observation\n", encoding="utf-8")
+    _run_candidate_git(repo, "add", "tracked.txt")
+    changed = _REAL_OBSERVE_RELEASE_SOURCE(repo, allow_staged_candidate=True)
+
+    assert changed["source_mode"] == "staged_candidate"
+    assert changed["source_tree"] != candidate["source_tree"]
+    with pytest.raises(
+        gate.NewsGraspReleaseGateError,
+        match="release_source_binding_mismatch",
+    ):
+        gate._require_release_source_match(candidate, changed)
+
+
+def _seed_expected_red_legacy_prior_candidate_release(
+    ledger_path: Path,
+    *,
+    repo_root: Path,
+    release_id: str,
+    source: dict[str, Any],
+) -> dict[str, Any]:
+    """旧prior branchを再現するcandidate source付きGreen release fixture。"""
+
+    partition_nodes = {
+        gate.RELEASE_PARTITIONS[0]: [
+            "tests/test_news_grasp_daily_45m_contract.py::test_fixture_candidate_pass",
+        ],
+        gate.RELEASE_PARTITIONS[1]: [
+            "tests/test_news_grasp_constitution_acceptance.py::test_fixture_candidate_pass",
+        ],
+        gate.RELEASE_PARTITIONS[2]: [
+            "tests/test_historical_failure_scenarios.py::test_fixture_candidate_pass",
+        ],
+        gate.RELEASE_PARTITIONS[3]: [
+            "tests/test_all_article_urls_live.py::test_fixture_candidate_pass",
+        ],
+        gate.RELEASE_PARTITIONS[4]: [
+            "tests/test_2026_08_14_recovery_replay.py::test_fixture_candidate_pass",
+        ],
+        gate.RELEASE_PARTITIONS[5]: [
+            "tests/test_news_grasp_release_gate_v2.py::test_fixture_candidate_pass",
+        ],
+    }
+    collection_nodes = [
+        node
+        for partition in gate.RELEASE_PARTITIONS
+        for node in partition_nodes[partition]
+    ]
+    classification = gate.validate_partition(collection_nodes, partition_nodes)
+    collection_sha256 = classification["collection_sha256"]
+    collection_receipt = {
+        "schemaVersion": gate.RELEASE_COLLECTION_SCHEMA,
+        "ok": True,
+        "status": "collection_produced",
+        "authority": "release_authoritative_collect_only",
+        "release_id": release_id,
+        "collection_nodes": list(collection_nodes),
+        "collection_count": len(collection_nodes),
+        "collection_sha256": collection_sha256,
+        "node_set_hash": collection_sha256,
+        "ledger_path": str(ledger_path),
+        **source,
+    }
+    gate._append_ledger_locked(
+        ledger_path,
+        "collection_completed",
+        release_id=release_id,
+        repo_root=str(repo_root),
+        receipt=collection_receipt,
+        receipt_hash=gate._mapping_hash(collection_receipt),
+        **source,
+    )
+
+    partition_receipts: list[dict[str, Any]] = []
+    node_receipts: list[dict[str, Any]] = []
+    for partition in gate.RELEASE_PARTITIONS:
+        nodes = list(partition_nodes[partition])
+        receipt = _partition_receipt(
+            release_id=release_id,
+            partition=partition,
+            nodes=nodes,
+            collection_sha256=collection_sha256,
+            receipt_id=f"prior-{partition}",
+        )
+        receipt["node_receipts"] = [
+            {**row, "status": "pass"}
+            for row in receipt["node_receipts"]
+        ]
+        receipt.update(
+            {
+                "failed_nodes": [],
+                "exact_failed_set_sha256": gate._node_hash([]),
+                "ok": True,
+                "status": "green",
+                "failure": None,
+                **source,
+            }
+        )
+        partition_receipts.append(receipt)
+        node_receipts.extend(receipt["node_receipts"])
+        gate._append_ledger_locked(
+            ledger_path,
+            "partition_completed",
+            release_id=release_id,
+            partition=partition,
+            identity=f"{release_id}:{partition}",
+            collection_sha256=collection_sha256,
+            receipt=receipt,
+            receipt_hash=gate._mapping_hash(receipt),
+            **source,
+        )
+
+    release_receipt = {
+        "schemaVersion": gate.RELEASE_GATE_SCHEMA,
+        "ok": True,
+        "status": "green",
+        "partition": classification,
+        "node_receipts": node_receipts,
+        "partition_receipts": partition_receipts,
+        "executed_node_count": len(collection_nodes),
+        "executed_process_count": len(collection_nodes),
+        "finalization_process_count": 0,
+        "union_node_count": len(collection_nodes),
+        "failed_nodes": [],
+        "collection_sha256": collection_sha256,
+        "release_id": release_id,
+        "ledger_path": str(ledger_path),
+        **source,
+    }
+    collection_event = gate._latest_event(
+        gate._ledger_events(ledger_path),
+        release_id=release_id,
+        event_type="collection_completed",
+    )
+    assert collection_event is not None
+    release_event = gate._append_ledger_locked(
+        ledger_path,
+        "release_completed",
+        release_id=release_id,
+        collection_sha256=collection_sha256,
+        collection_event_hash=str(collection_event["event_hash"]),
+        partition_receipt_hashes=[gate._mapping_hash(item) for item in partition_receipts],
+        receipt=release_receipt,
+        receipt_hash=gate._mapping_hash(release_receipt),
+        **source,
+    )
+    return {
+        "collection_nodes": collection_nodes,
+        "collection_receipt": collection_receipt,
+        "partition_receipts": partition_receipts,
+        "release_receipt": release_receipt,
+        "release_event": release_event,
+        "collection_sha256": collection_sha256,
+    }
+
+
+def test_NG_RG_27_authoritative_repair_is_single_capability_without_caller_green(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Expected Red固定事実: 旧実装はrepair writer globalsを公開していた。"""
+
+    assert not hasattr(gate, "_record_authoritative_repair_started")
+    assert not hasattr(gate, "_record_authoritative_repair_completed")
+    parameters = inspect.signature(gate._run_authoritative_repair).parameters
+    assert "receipt" not in parameters
+    assert "green_receipt" not in parameters
+    assert "caller_receipt" not in parameters
+    assert "result" not in parameters
+
+    repo_root = Path(__file__).resolve().parents[1]
+    ledger = tmp_path / "repair-authority.jsonl"
+    release_id = "release-authoritative-repair-capability"
+    partition = "scoped_changed"
+    nodes = ["tests/test_news_grasp_release_gate_v2.py::test_fixture_authoritative_repair"]
+    source = {
+        "source_root": str(repo_root.resolve()),
+        "source_head": "a" * 40,
+        "source_tree": "b" * 40,
+        "source_mode": "committed",
+        "worktree_clean": True,
+        "worktree_exact": True,
+    }
+    process_calls: list[dict[str, Any]] = []
+
+    def green_process(name: str, selected: list[str], **kwargs: Any) -> dict[str, Any]:
+        process_calls.append({"partition": name, "nodes": list(selected), **kwargs})
+        return _green_repair_process(
+            partition=name,
+            nodes=list(selected),
+            release_id=release_id,
+            collection_sha256="c" * 64,
+            receipt_id="repair-process-authority",
+        )
+
+    monkeypatch.setattr(gate, "_run_partition_process", green_process)
+    result = gate._run_authoritative_repair(
+        ledger,
+        repo_root=repo_root,
+        release_id=release_id,
+        partition=partition,
+        repair_id="repair-authority-once",
+        previous_receipt_id="partition-authority-base",
+        cause_hash="d" * 64,
+        nodes=nodes,
+        collection_sha256="c" * 64,
+        timeout_seconds=5,
+        source=source,
+    )
+
+    assert result["ok"] is True
+    assert len(process_calls) == 1
+    assert process_calls[0]["nodes"] == nodes
+    events = gate._ledger_events(ledger)
+    assert len([item for item in events if item["event_type"] == "repair_started"]) == 1
+    assert len([item for item in events if item["event_type"] == "repair_completed"]) == 1
+
+
+def test_NG_RG_28_prior_candidate_release_resume_attaches_and_promotes_once(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Expected Red固定事実: 旧prior branchはpromotionを発行せず再開を閉じていた。"""
+
+    fixture = _make_staged_candidate_repo(tmp_path, name="candidate-prior-release")
+    repo = fixture["repo"]
+    candidate = fixture["candidate"]
+    release_id = "release-prior-candidate-resume"
+    ledger = tmp_path / "canonical" / "release-ledger.jsonl"
+    state_root = tmp_path / "direct-mainline"
+    key = b"k" * 32
+    authority_types = gate._CANONICAL_AUTHORITY_EVENT_TYPES
+    monkeypatch.setattr(gate, "_canonical_ledger_mac_key", lambda create: key)
+    monkeypatch.setattr(gate, "_canonical_ledger_path", lambda: ledger)
+    # frozen legacy fixtureだけは旧generic writerでcanonical MAC付きeventをseedする。
+    monkeypatch.setattr(gate, "_CANONICAL_AUTHORITY_EVENT_TYPES", frozenset())
+    prior_fixture = _seed_expected_red_legacy_prior_candidate_release(
+        ledger,
+        repo_root=repo,
+        release_id=release_id,
+        source=candidate,
+    )
+    monkeypatch.setattr(gate, "_CANONICAL_AUTHORITY_EVENT_TYPES", authority_types)
+    monkeypatch.setattr(gate, "_canonical_daily_state_root", lambda: state_root)
+    _run_candidate_git(repo, "commit", "-m", "candidate release")
+    monkeypatch.setattr(gate, "_observe_release_source", _REAL_OBSERVE_RELEASE_SOURCE)
+
+    from tools import news_grasp_scoped_test_broker as broker
+
+    real_issue = broker._issue_authorized_promotion
+    issue_calls: list[dict[str, Any]] = []
+
+    def issue_once(**kwargs: Any) -> dict[str, Any]:
+        issue_calls.append(dict(kwargs))
+        return real_issue(**kwargs)
+
+    monkeypatch.setattr(broker, "_issue_authorized_promotion", issue_once)
+    process_calls: list[object] = []
+    monkeypatch.setattr(
+        gate,
+        "_run_partition_process",
+        lambda *args, **kwargs: process_calls.append((args, kwargs)),
+    )
+
+    first = gate.finalize_causal_repairs(repo_root=repo, release_id=release_id)
+    second = gate.finalize_causal_repairs(repo_root=repo, release_id=release_id)
+    events = gate._ledger_events(ledger)
+    release_events = [item for item in events if item["event_type"] == "release_completed"]
+    promotions = [item for item in events if item["event_type"] == "daily_promotion_issued"]
+
+    assert process_calls == []
+    assert len(issue_calls) == 1
+    assert first["attached"] is True
+    assert second["attached"] is True
+    assert first["event_hash"] == prior_fixture["release_event"]["event_hash"]
+    assert second["event_hash"] == first["event_hash"]
+    assert first["promotion"]["release_event_hash"] == first["event_hash"]
+    assert second["promotion"]["release_event_hash"] == first["event_hash"]
+    assert len(release_events) == 1
+    assert len(promotions) == 1
+
+
+def test_NG_RG_29_causal_repair_source_mismatch_rejects_before_process(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """source binding不一致はpartition process起動前にfail-closedする。"""
+
+    ledger = tmp_path / "causal-source-mismatch.jsonl"
+    previous, nodes = _seed_failed_partition(ledger, source_root=tmp_path)
+    process_calls: list[tuple[tuple[Any, ...], dict[str, Any]]] = []
+
+    def mismatched_source(repo_root: Path | str) -> dict[str, Any]:
+        return {
+            "source_root": str(Path(repo_root).resolve()),
+            "source_head": "c" * 40,
+            "source_tree": "b" * 40,
+            "source_mode": "committed",
+            "worktree_clean": True,
+            "worktree_exact": True,
+        }
+
+    monkeypatch.setattr(gate, "_observe_release_source", mismatched_source)
+    monkeypatch.setattr(
+        gate,
+        "_run_partition_process",
+        lambda *args, **kwargs: process_calls.append((args, kwargs)),
+    )
+
+    with pytest.raises(gate.NewsGraspReleaseGateError, match="release_source_binding_mismatch"):
+        gate.causal_repair_partition(
+            repo_root=tmp_path,
+            partition="scoped_changed",
+            node_ids=[nodes[0]],
+            cause_hash="3" * 64,
+            previous_receipt=previous,
+            repair_id="repair-source-mismatch",
+            release_id="release-causal",
+            ledger_path=ledger,
+        )
+
+    assert process_calls == []

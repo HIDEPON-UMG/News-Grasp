@@ -85,7 +85,7 @@
         "kind": "skill",
         "sourcePath": "automation/skills/news-grasp-direct-mainline/SKILL.md",
         "installPath": "skills/news-grasp-direct-mainline/SKILL.md",
-        "sourceSha256": "8f212776825bf4dab5e6923451e1dae700835d20ddca56ca299fb78a17c63d52"
+        "sourceSha256": "602ee3e17e6dbced9a7142d78b5d6c2c19f70f43b5eba23ef762e1e81989d89e"
       },
       {
         "assetId": "direct-mainline-openai-yaml-v1",
@@ -134,7 +134,7 @@
         "kind": "automation",
         "sourcePath": "automation/news-grasp-6-40/automation.toml.template",
         "installPath": "automations/news-grasp-6-40/automation.toml",
-        "sourceSha256": "dc85a8dcfd2a2307bc44a5ffb1b6f81eb3e19ab5bb14eb5f602f94fe626fb43c"
+        "sourceSha256": "c97901f8ef13fe6e2cece6017d9cc8e025fc62c24cfde420a5dd9a5ae3dc8273"
       },
       {
         "assetId": "news-grasp-6-40-completion-guard-projection-v1",
@@ -144,7 +144,7 @@
         "sourceSha256": "77112e72c167230d6b0aebc9dc71114879b4cf896fbfaaf423248b5456e86657"
       }
     ],
-    "assetSetSha256": "5e910382afdad04d71c35bafb195ab86f5bc2a9e7d391f2f94c43a5a303f3cf9"
+    "assetSetSha256": "dadf276104ab50a2eaf8cb3482d09aacb68febedb9208d4e6fa137ece9315c62"
   },
   "deepDiveQualityRoutes": {
     "schemaVersion": "DEEPDIVE_SHARED_QUALITY_ROUTES_V2",
@@ -202,15 +202,15 @@
   "outputs": [
     {
       "path": "AGENTS.md",
-      "managedBlockSha256": "506c2cb84c7fbc7bd7221baf186459a75788642db032bba4937e9f5d8a25e5ba"
+      "managedBlockSha256": "baca7a585486ae52232b4808eccd9391a1500fb20bccac2c3baa6c5ff8e1eec1"
     },
     {
       "path": "CLAUDE.md",
-      "managedBlockSha256": "506c2cb84c7fbc7bd7221baf186459a75788642db032bba4937e9f5d8a25e5ba"
+      "managedBlockSha256": "baca7a585486ae52232b4808eccd9391a1500fb20bccac2c3baa6c5ff8e1eec1"
     },
     {
       "path": "docs/specs/2026-08-12_news-grasp-product-constitution.html",
-      "sha256": "0def1a4a839580f1976efe4f4886e58a0e45aec89e7d0215ab25d73266a2ff6f",
+      "sha256": "4b623e96cd6ab1c078e636f45b97af75b29b8f662bd6b6725df49c1fe4cec4ce",
       "lineCount": 1064
     },
     {

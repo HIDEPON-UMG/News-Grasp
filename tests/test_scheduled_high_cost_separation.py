@@ -2359,13 +2359,13 @@ def test_direct_identity_uses_issue_scoped_completion_and_detached_push_is_exact
     skill = (root / "automation/skills/news-grasp-direct-mainline/SKILL.md").read_text(
         encoding="utf-8"
     )
-    completion = (root / "tools/news_grasp_completion_guard.py").read_text(
+    runtime = (root / "tools/news_grasp_direct_runtime.py").read_text(
         encoding="utf-8"
     )
-    assert "automation_id + canonical cwd + issue_date" in skill
-    assert "`origin/main`へpush" in skill
-    assert 'receipt.get("automation_id")' in completion
-    assert 'receipt.get("cwd")' in completion
+    assert "automation_id + issue_date + run_intent" in skill
+    assert "`origin/main`へfast-forward push" in skill
+    assert "ON runs(automation_id,issue_date,run_intent)" in runtime
+    assert "ON runs(automation_id,cwd,issue_date" not in runtime
 
 
 def test_scheduled_high_cost_failure_is_operation_local_for_direct_recovery() -> None:
@@ -2434,7 +2434,7 @@ def test_direct_resume_uses_exact_public_successor_without_runner_continuation()
     )
     assert "実行可能なexact public successorを継続" in skill
     assert "quality Redは該当artifactだけを修復" in skill
-    assert "旧 runner、NoPublish、fallbackへ切り替えない" in skill
+    assert "旧 runner、NoPublish、fallbackへの切替えは行わない" in skill
 
 
 def test_installer_seals_recurring_audit_mission_authority() -> None:

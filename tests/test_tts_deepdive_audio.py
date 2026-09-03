@@ -23,7 +23,7 @@ def test_deepdive_audio_for_pages_uses_local_mp3_with_release_url(tmp_path):
         "deepdive_audio_date": "2026-06-21",
         "deepdive_audio_url": (
             "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/"
-            f"audio-deepdive/2026-06-21.mp3?v={digest}"
+            f"audio-deepdive/2026-06-21-{digest}.mp3?v={digest}"
         ),
     }
 
@@ -54,7 +54,8 @@ def test_deepdive_audio_for_pages_hides_audio_for_archive_older_than_latest_two(
 
     assert hidden == {"deepdive_audio_url": "", "deepdive_audio_date": ""}
     assert visible["deepdive_audio_date"] == "2026-06-20"
-    assert "/audio-deepdive/2026-06-20.mp3" in visible["deepdive_audio_url"]
+    digest = hashlib.sha256(b"2026-06-20").hexdigest()[:12]
+    assert f"/audio-deepdive/2026-06-20-{digest}.mp3?v={digest}" in visible["deepdive_audio_url"]
 
 
 def test_latest_deepdive_dates_ignores_dialogue_scripts(tmp_path):
@@ -90,7 +91,8 @@ def test_deepdive_audio_dry_run_writes_latest_audio_without_gh_upload(tmp_path, 
     assert calls == []
     payload = latest_json.read_text(encoding="utf-8")
     assert "2026-06-21" in payload
-    assert "audio-deepdive/2026-06-21.mp3" in payload
+    digest = hashlib.sha256(b"deepdive-dry-run-audio").hexdigest()[:12]
+    assert f"audio-deepdive/2026-06-21-{digest}.mp3?v={digest}" in payload
 
 
 def test_deepdive_audio_classifies_github_503_as_typed_external():

@@ -16,7 +16,7 @@ description: Run the 06:00 News-Grasp scheduled production directly with Codex, 
 5. ScheduledProductionが実行可能なentryは下記の単一launcherだけである。launcherが同一process memory内のwriter leaseで六operationを順に一回ずつ実行する。UTF-8一行JSON receiptの`ok=true`、前receipt hash、同一seal identity、exact successorを確認する。個別operation CLI、raw Python、旧runtimeの`start/advance`、Release gate、NoPublish、historical、Playwright、full pytest、未登録commandは使わない。
 6. `tools.publish_inventory.scheduled_category_ids(issue_date)` を当日の対象カテゴリ正本にする。7カテゴリはpublic verifierのuniverse coverageであり、毎日の固定生成対象へ読み替えない。
 
-## Daily 六phase
+## Direct 本線工程（Daily 六phase）
 
 次の単一commandだけを実行する。内部順序を変えず、同じoperationを二回実行しない。各phase内部ではbrokerが固定したproducer/consumerだけを使い、同じacceptance predicateを別phaseで再評価しない。
 
@@ -39,7 +39,7 @@ task contractの`protectedRelease`は通常launcherから解除不能であり�
    - Summaryはfrontmatter付きMarkdown、DeepDiveはcurrent issueだけを意味品質正本にする。HTML、音声、distributionは同じsource snapshotの派生物とする。
    - 外部公開直前にrelease commit、`docs/index.html`を含むexact write set、全file hash、manifest ID、bundle ID、external operation ID一覧をpublish sealへ固定する。
 4. `external_publication`
-   - publish seal済みtransactional outboxだけを順にclaimし、commit/push、Pages、Release audio、YouTube、playlist、notification、distributionをprovider idempotency key付きで一回だけ実行する。
+   - publish seal済みtransactional outboxだけを順にclaimし、`origin/main`へfast-forward push、Pages、Release audio、YouTube、playlist、notification、distributionをprovider idempotency key付きで一回だけ実行する。
    - 送信後にstdoutが失われた場合はimmutable receiptを照会し、再upload・再送しない。provider ACKだけが得られない通知は`unknown_unobtainable`を保持する。
 5. `consumer_public_verification`
    - verifier自身が新しいnonce、時刻、content hashを発行してnetworkからHome、当日カテゴリ、Summary/DeepDive HTML、Daily/DeepDive音声、YouTube、playlist、publish-status、Pagesを観測する。

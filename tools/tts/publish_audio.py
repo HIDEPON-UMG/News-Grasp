@@ -6,6 +6,7 @@ import json
 import re
 import shutil
 import sys
+import tempfile
 import urllib.request
 from datetime import date as date_type
 from datetime import datetime, timedelta

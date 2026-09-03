@@ -11,6 +11,53 @@ from tools import news_grasp_constitution as constitution
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def test_collection_harness_root_accepts_explicit_absolute_cleanroom_binding(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    cleanroom = tmp_path / "cleanroom" / "repo"
+    cleanroom.mkdir(parents=True)
+    workspace = tmp_path / "workspace"
+    (workspace / "tools" / "harness").mkdir(parents=True)
+    monkeypatch.setenv("NEWS_GRASP_WORKSPACE_HARNESS_ROOT", str(workspace.resolve()))
+
+    assert constitution._resolve_workspace_harness_root(cleanroom) == workspace.resolve()
+
+
+def test_collection_harness_root_rejects_relative_binding(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("NEWS_GRASP_WORKSPACE_HARNESS_ROOT", "relative-workspace")
+
+    with pytest.raises(
+        ValueError,
+        match="CONSTITUTION_COLLECTION_HARNESS_ROOT_NOT_ABSOLUTE",
+    ):
+        constitution._resolve_workspace_harness_root(tmp_path / "repo")
+
+
+def test_collection_harness_root_rejects_invalid_absolute_without_ambient_fallback(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    repo = tmp_path / "workspace" / "repo"
+    repo.mkdir(parents=True)
+    (tmp_path / "workspace" / "tools" / "harness").mkdir(parents=True)
+    missing = (tmp_path / "missing-workspace").resolve()
+    monkeypatch.setenv("NEWS_GRASP_WORKSPACE_HARNESS_ROOT", str(missing))
+
+    with pytest.raises(ValueError, match="CONSTITUTION_COLLECTION_HARNESS_UNAVAILABLE"):
+        constitution._resolve_workspace_harness_root(repo)
+
+
+def test_active_universe_includes_transitive_runtime_consumers() -> None:
+    discovered = constitution._discover_active_candidates(ROOT)
+
+    assert "tools/news_grasp_title_control.py" in discovered
+    assert "tools/validate_daily_quality.py" in discovered
+
+
 def test_constitution_projection_is_exact_mirrored_and_generated() -> None:
     result = constitution.validate_constitution_projections(ROOT)
 

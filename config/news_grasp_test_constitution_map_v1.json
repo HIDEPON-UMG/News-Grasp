@@ -1,12 +1,12 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 3013,
-  "collectedNodeSetSha256": "b45259a54bd8117a7d084787f2f670b7b34e3b1731ca84030004cdad67536418",
+  "collectedNodeCount": 3216,
+  "collectedNodeSetSha256": "8a0d981bc2c69ac0079d58ce812923240e3dccf42031a725c9a7957077d4677e",
   "files": [
     {
       "path": "tests/test_20260813_control_plane_repair.py",
-      "sha256": "6e308dc20806c28811bd267549ac8116de4800f788a33bab2d8101b0c515e194",
+      "sha256": "81a8a7dd416e95a4a613c1826457032e840db7d04eedf0ede03da9e01ac0e19b",
       "nodeCount": 57,
       "nodeIds": [
         "tests/test_20260813_control_plane_repair.py::test_ng813_bootstrap_and_watcher_propagate_explicit_ops_root_before_runner",
@@ -253,7 +253,7 @@
     },
     {
       "path": "tests/test_audit_recovery_control.py",
-      "sha256": "a55f095d72b1667768d8a7c44d5c057320518e9b0e3b47a448f885f64fd75ebf",
+      "sha256": "24441b18b9c19cbf74c76b0b85f227befb656bcbefe0d4a8b5ad48b0f939f29c",
       "nodeCount": 80,
       "nodeIds": [
         "tests/test_audit_recovery_control.py::test_actual_completion_verifier_owns_all_required_gates",
@@ -634,7 +634,7 @@
     },
     {
       "path": "tests/test_codex_runner_contract.py",
-      "sha256": "fb85156725c7356e9e1d1cc0d368dd8559e963b73f9e32fe749ffe9745ecdd75",
+      "sha256": "cac623fb3c09129c729127bb2937e06e8b2fd31deafb0069854c68361be30ffc",
       "nodeCount": 5,
       "nodeIds": [
         "tests/test_codex_runner_contract.py::test_daily_automation_points_to_direct_mainline_without_runner_command",
@@ -693,7 +693,7 @@
     },
     {
       "path": "tests/test_complete_codex_migration_contract.py",
-      "sha256": "5759a8947f2ac46dd6ea5fc14758d022c79c59a1a9771c968715b7b49591e904",
+      "sha256": "701fdaeec653fec17c2d59306761c4a84f41dbdcd735fe8e1740bd03af69da29",
       "nodeCount": 4,
       "nodeIds": [
         "tests/test_complete_codex_migration_contract.py::test_direct_automation_contract_contains_title_quality_and_completion_gates",
@@ -732,7 +732,7 @@
     },
     {
       "path": "tests/test_daily_model_cost_projection.py",
-      "sha256": "64de482531c5d2666445f01f5483f5ce7ff3196383775364f8dbed3ca2ca2851",
+      "sha256": "585ffb26581a14c3288eb03558cd1077ef57f81eb3745989a611536866397545",
       "nodeCount": 3,
       "nodeIds": [
         "tests/test_daily_model_cost_projection.py::test_calibration_uses_current_model_policy_without_retired_fallback",
@@ -1045,7 +1045,7 @@
     },
     {
       "path": "tests/test_deepdive_history_promotion.py",
-      "sha256": "0c72ce5b1d60463cbaa8df5cb33ff2570e657803cff647b31776ad3dfee4a45c",
+      "sha256": "443fac739c1f23a5b8cc602cdecd119376e700bfe329368846033374427cc0b3",
       "nodeCount": 1,
       "nodeIds": [
         "tests/test_deepdive_history_promotion.py::test_history_promotion_expected_green_fixture_current_script_is_red"
@@ -1175,7 +1175,7 @@
     },
     {
       "path": "tests/test_deepdive_quality_route_contract.py",
-      "sha256": "540baa38ec82974efc0354e6488fb05809567c715cbd5e8cf295ebdb56a05f28",
+      "sha256": "c3a04fe9430411709bbf2bfbf78184aa9811c9ddd7ef6d65738a5b4f4f520f74",
       "nodeCount": 16,
       "nodeIds": [
         "tests/test_deepdive_quality_route_contract.py::test_codex_mainline_automation_uses_same_shared_quality_cli",
@@ -1326,7 +1326,7 @@
     },
     {
       "path": "tests/test_deepdive_terra_benchmark.py",
-      "sha256": "fe98a928ff1be3f3ce25586b292434d0cc5a86c6b98cbd7df6dfde2716b10daf",
+      "sha256": "7755bf21b3e15ae7fb4cdf19a9452ecd2ba415116b5ad269bc5cff750a298455",
       "nodeCount": 2,
       "nodeIds": [
         "tests/test_deepdive_terra_benchmark.py::test_blind_bundle_removes_model_identity_and_self_scores",
@@ -1339,7 +1339,7 @@
     },
     {
       "path": "tests/test_deepdive_triad_judge.py",
-      "sha256": "982347f373ec637508c1ead1cd3fdcb1d7e01575bfe3370f3345867b3db96436",
+      "sha256": "dfd31be392a16f8e092a1f85739c4d2dfe391c3f90fc79f8bf0bbeb2ba21a9e3",
       "nodeCount": 2,
       "nodeIds": [
         "tests/test_deepdive_triad_judge.py::test_deepdive_weights_prioritize_decision_support",
@@ -1497,7 +1497,7 @@
     },
     {
       "path": "tests/test_e2e_first_principles_contract.py",
-      "sha256": "f15caa404cb36d7e362bb5d85e2847e1b0b5d983d7bb4099639f672df4b1c3bf",
+      "sha256": "95b1513a9697cf96734be4a94f839bd1c4a5ff14a544fc1d43b0dc73d78e6a7c",
       "nodeCount": 18,
       "nodeIds": [
         "tests/test_e2e_first_principles_contract.py::test_completion_viability_branching_prefers_deterministic_evidence_over_llm_judgment",
@@ -1694,7 +1694,7 @@
     },
     {
       "path": "tests/test_gate_contract.py",
-      "sha256": "51819dd1c476d05c5f1b90ca7f67f9b118591cdd1255cbd59a48adae4b74f4e7",
+      "sha256": "c23cbfa2b55641f2cd806667fcbac22bdb184f50d94caa9741b785aeee0d5110",
       "nodeCount": 8,
       "nodeIds": [
         "tests/test_gate_contract.py::test_category_budget_allows_distinct_failures_after_artifact_changes",
@@ -1727,7 +1727,7 @@
     },
     {
       "path": "tests/test_generate_pages.py",
-      "sha256": "6c70f1a443511bb969cfe781dd9245d7af3f3bf612c825c75fda86e1d48c86c9",
+      "sha256": "cd8687a04727725304b99560e06d6918f184b30b9758054cb613bd13b62a5371",
       "nodeCount": 21,
       "nodeIds": [
         "tests/test_generate_pages.py::test_article_thumb_accepts_non_thumb_markdown_alt",
@@ -1775,7 +1775,7 @@
     },
     {
       "path": "tests/test_generate_pages_integration.py",
-      "sha256": "4696fae39a6c584468e09307a19ec6110dc3787d18a569c09f433cb3176ae10f",
+      "sha256": "eb30c8934768c7c30750a04194f8bbe3b2944bdb97c6138a7417d0c3f3865a33",
       "nodeCount": 11,
       "nodeIds": [
         "tests/test_generate_pages_integration.py::test_all_required_ogp_meta_present",
@@ -1946,8 +1946,8 @@
     },
     {
       "path": "tests/test_historical_failure_scenarios.py",
-      "sha256": "7870244caabac51211ed0c8351d4511da0e29d03a6e7ec3a7ff4e82c70b1d429",
-      "nodeCount": 38,
+      "sha256": "efbb97e1cf732cd6d6b6e40bed08f7a6557a02a0b1c5a2b6b007f2ec62e9b51a",
+      "nodeCount": 39,
       "nodeIds": [
         "tests/test_historical_failure_scenarios.py::test_20260813_control_plane_incident_is_registered_without_publishing_report",
         "tests/test_historical_failure_scenarios.py::test_2026_07_11_editor_repair_routing_incident_is_registered",
@@ -1968,6 +1968,7 @@
         "tests/test_historical_failure_scenarios.py::test_2026_08_02_scheduled_high_cost_identity_incident_is_registered",
         "tests/test_historical_failure_scenarios.py::test_2026_08_03_startup_self_repair_and_audit_recovery_incident_is_registered",
         "tests/test_historical_failure_scenarios.py::test_2026_09_01_public_integrity_registers_nine_failure_classes",
+        "tests/test_historical_failure_scenarios.py::test_2026_09_02_daily_45m_incident_registers_nine_nonduplicated_root_classes",
         "tests/test_historical_failure_scenarios.py::test_absent_unregistered_historical_evidence_is_rejected",
         "tests/test_historical_failure_scenarios.py::test_compound_failure_matrix_covers_interaction_dimensions",
         "tests/test_historical_failure_scenarios.py::test_compound_failure_matrix_never_treats_internal_block_as_success",
@@ -2084,7 +2085,7 @@
     },
     {
       "path": "tests/test_incident_report_tracking_policy.py",
-      "sha256": "617d55824c8be50f91410058dafdb47f7f547406c0520a3387f3d75821836d9a",
+      "sha256": "8837189f90c6010d5f89c510837f95e35efbdd2af6b8f662ff55a1c269332768",
       "nodeCount": 4,
       "nodeIds": [
         "tests/test_incident_report_tracking_policy.py::test_2026_06_30_public_report_is_not_tracked",
@@ -2160,7 +2161,7 @@
     },
     {
       "path": "tests/test_model_benchmark.py",
-      "sha256": "66530115ab81ecadb2a591de72fbf523c364abfd419983a00de7b64afe7e5f92",
+      "sha256": "7902dfb51ebc873c788bb619a4211d07f2e7fcdaaabea60408a62dad52a7d1b9",
       "nodeCount": 3,
       "nodeIds": [
         "tests/test_model_benchmark.py::test_official_api_prices_are_recorded_per_million_tokens",
@@ -2232,7 +2233,7 @@
     },
     {
       "path": "tests/test_model_selection_html_report.py",
-      "sha256": "2596127f08d35c51eb59938e22342c8cb5df8b4b6dad639b5ad5c228aae7deb0",
+      "sha256": "7cae92be02a536dc74606aec7ce9a38346cb947b5179b0628512119ee217ecd5",
       "nodeCount": 3,
       "nodeIds": [
         "tests/test_model_selection_html_report.py::test_deepdive_stacks_sum_to_displayed_scores_with_unique_axis_colors",
@@ -2275,14 +2276,29 @@
     },
     {
       "path": "tests/test_news_grasp_audio_projection_v2.py",
-      "sha256": "0c53cb0a149fef592c44339917aa58739685feb7d78a360a19c8c88a5201bc61",
-      "nodeCount": 5,
+      "sha256": "f876ea9dc91e8664550b5c9518d4740726d1ed05169679b37709b941b03d9e82",
+      "nodeCount": 6,
       "nodeIds": [
         "tests/test_news_grasp_audio_projection_v2.py::test_audio_binding_rejects_noncanonical_or_missing_public_asset",
         "tests/test_news_grasp_audio_projection_v2.py::test_audio_href_port_and_legacy_run_id_cannot_bypass_binding",
         "tests/test_news_grasp_audio_projection_v2.py::test_existing_v1_receipt_is_bound_without_v1_rewrite",
+        "tests/test_news_grasp_audio_projection_v2.py::test_public_audio_verifier_hashes_full_bytes_and_rejects_mismatch",
         "tests/test_news_grasp_audio_projection_v2.py::test_r05_daily_and_deepdive_normalize_to_one_v2_schema",
         "tests/test_news_grasp_audio_projection_v2.py::test_v1_cache_buster_is_read_only_normalized_to_canonical_release_url"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
+      "path": "tests/test_news_grasp_automation_appdb_cas.py",
+      "sha256": "371f30032316a22c0282fe3c09c02b7a4b8e3f4d046364c8b973cc7eb43abb3a",
+      "nodeCount": 3,
+      "nodeIds": [
+        "tests/test_news_grasp_automation_appdb_cas.py::test_app_db_rollback_cas_mismatch_preserves_newer_target_row",
+        "tests/test_news_grasp_automation_appdb_cas.py::test_app_db_rollback_restores_only_target_row_and_preserves_optional_fields",
+        "tests/test_news_grasp_automation_appdb_cas.py::test_app_db_schema_drift_is_rejected_without_row_mutation"
       ],
       "clauseIds": [
         "NGC-C06",
@@ -2660,9 +2676,13 @@
     },
     {
       "path": "tests/test_news_grasp_constitution_projection.py",
-      "sha256": "11f0ab18dea58bfaec87c99ac70f2a0ba27f2bc360e700c15f44055949179cf6",
-      "nodeCount": 6,
+      "sha256": "c968212271781794271765912adf4983b355c3cc65c477324d806e99d7ce93b3",
+      "nodeCount": 10,
       "nodeIds": [
+        "tests/test_news_grasp_constitution_projection.py::test_active_universe_includes_transitive_runtime_consumers",
+        "tests/test_news_grasp_constitution_projection.py::test_collection_harness_root_accepts_explicit_absolute_cleanroom_binding",
+        "tests/test_news_grasp_constitution_projection.py::test_collection_harness_root_rejects_invalid_absolute_without_ambient_fallback",
+        "tests/test_news_grasp_constitution_projection.py::test_collection_harness_root_rejects_relative_binding",
         "tests/test_news_grasp_constitution_projection.py::test_constitution_asset_projection_hashes_every_versioned_asset",
         "tests/test_news_grasp_constitution_projection.py::test_constitution_html_projection_has_accessible_offline_contract",
         "tests/test_news_grasp_constitution_projection.py::test_constitution_projection_is_exact_mirrored_and_generated",
@@ -2704,8 +2724,63 @@
       ]
     },
     {
+      "path": "tests/test_news_grasp_daily_45m_contract.py",
+      "sha256": "fb6c5a7484761db9fd17a597e5ce62a9a39d1bf53e81b6375b87a2919847bc92",
+      "nodeCount": 27,
+      "nodeIds": [
+        "tests/test_news_grasp_daily_45m_contract.py::test_consumer_public_verifier_does_not_reaudit_current_issue_quality_predicates",
+        "tests/test_news_grasp_daily_45m_contract.py::test_f01_daily_route_rejects_release_and_raw_process_before_spawn",
+        "tests/test_news_grasp_daily_45m_contract.py::test_f02_daily_route_rejects_historical_unknown_and_raw_python",
+        "tests/test_news_grasp_daily_45m_contract.py::test_f03_summary_uses_markdown_and_deepdive_is_current_issue_only",
+        "tests/test_news_grasp_daily_45m_contract.py::test_f04_distribution_rebinding_retains_optional_primary_playlist_fields",
+        "tests/test_news_grasp_daily_45m_contract.py::test_f05_audio_identity_ignores_only_v_cache_query",
+        "tests/test_news_grasp_daily_45m_contract.py::test_f06_manifest_source_baseline_must_be_real_ancestor",
+        "tests/test_news_grasp_daily_45m_contract.py::test_f07_start_run_single_flight_includes_run_intent",
+        "tests/test_news_grasp_daily_45m_contract.py::test_f08_invalid_child_json_is_observed_before_any_state_mutation",
+        "tests/test_news_grasp_daily_45m_contract.py::test_f09_schema_input_identity_rejects_atomic_apply_without_projection_drift",
+        "tests/test_news_grasp_daily_45m_contract.py::test_f10_completion_elapsed_freezes_and_dispatches_45_75_90_boundaries",
+        "tests/test_news_grasp_daily_45m_contract.py::test_f11_home_is_required_and_source_only_release_does_not_require_pages",
+        "tests/test_news_grasp_daily_45m_contract.py::test_f12_automation_integrity_bundle_rejects_prompt_replacement_and_auto_repair",
+        "tests/test_news_grasp_daily_45m_contract.py::test_f13_start_run_requires_scheduler_trigger_inheritance",
+        "tests/test_news_grasp_daily_45m_contract.py::test_f14_atomic_receipt_lookup_is_the_retry_authority",
+        "tests/test_news_grasp_daily_45m_contract.py::test_f15_post_external_drift_becomes_superseded_observation",
+        "tests/test_news_grasp_daily_45m_contract.py::test_f16_predicate_owner_mismatch_and_duplicate_claim_are_rejected",
+        "tests/test_news_grasp_daily_45m_contract.py::test_f17_direct_completion_requires_fresh_observation_and_side_effect_identity",
+        "tests/test_news_grasp_daily_45m_contract.py::test_f18_arbitrary_caller_green_json_is_not_completion_authority",
+        "tests/test_news_grasp_daily_45m_contract.py::test_ng_rrt_automation_template_has_exact_prompt_parity_contract",
+        "tests/test_news_grasp_daily_45m_contract.py::test_ng_rrt_consumer_rejects_arbitrary_side_effect_identity_not_bound_to_outbox",
+        "tests/test_news_grasp_daily_45m_contract.py::test_ng_rrt_duplicate_side_effect_uses_sealed_ledger_identity_not_key_name",
+        "tests/test_news_grasp_daily_45m_contract.py::test_ng_rrt_expired_external_owner_recovery_rebinds_claim_to_reconcile",
+        "tests/test_news_grasp_daily_45m_contract.py::test_ng_rrt_public_observation_marks_only_actual_network_fetch_as_fresh",
+        "tests/test_news_grasp_daily_45m_contract.py::test_ng_rrt_writer_heartbeat_survives_ttl_and_second_start_is_attach_only",
+        "tests/test_news_grasp_daily_45m_contract.py::test_release_materializer_rebinds_old_publish_status_to_current_issue_before_manifest",
+        "tests/test_news_grasp_daily_45m_contract.py::test_release_materializer_rejects_non_main_before_publish_status_mutation"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
+      "path": "tests/test_news_grasp_daily_content.py",
+      "sha256": "3d397ef565b57108ead9582a217e4147214155f76960e11e0f0ca12d4f04b66d",
+      "nodeCount": 6,
+      "nodeIds": [
+        "tests/test_news_grasp_daily_content.py::test_derived_failure_retry_reuses_validated_model_bundle",
+        "tests/test_news_grasp_daily_content.py::test_model_failure_before_materialize_does_not_change_canonical_artifacts",
+        "tests/test_news_grasp_daily_content.py::test_production_current_issue_gate_invokes_canonical_content_producer",
+        "tests/test_news_grasp_daily_content.py::test_protected_release_is_rejected_before_candidate_or_model_call",
+        "tests/test_news_grasp_daily_content.py::test_same_issue_and_run_bundle_is_reused_without_duplicate_model_call",
+        "tests/test_news_grasp_daily_content.py::test_zero_artifact_generation_materializes_one_canonical_bundle"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
       "path": "tests/test_news_grasp_daily_control.py",
-      "sha256": "9a20329539727a49dfd31bd7e0098399dd6c8233b9912556eee148b78f9f1fe3",
+      "sha256": "ac917bb63af49aae712d1edfd2528d6b8b0b1125b5fa956e7b032cbce6068c67",
       "nodeCount": 38,
       "nodeIds": [
         "tests/test_news_grasp_daily_control.py::test_audit_controller_failure_writes_owned_major_incident",
@@ -2753,8 +2828,95 @@
       ]
     },
     {
+      "path": "tests/test_news_grasp_daily_external_v1.py",
+      "sha256": "0bd1e4ef71af1a5091b7be85fc19bc35f904b7b769a713578a79b7de62b10e88",
+      "nodeCount": 18,
+      "nodeIds": [
+        "tests/test_news_grasp_daily_external_v1.py::test_actual_run_manifest_bundle_and_fencing_mismatch_are_rejected[bundle_id]",
+        "tests/test_news_grasp_daily_external_v1.py::test_actual_run_manifest_bundle_and_fencing_mismatch_are_rejected[fencing_token]",
+        "tests/test_news_grasp_daily_external_v1.py::test_actual_run_manifest_bundle_and_fencing_mismatch_are_rejected[manifest_id]",
+        "tests/test_news_grasp_daily_external_v1.py::test_actual_run_manifest_bundle_and_fencing_mismatch_are_rejected[run_id]",
+        "tests/test_news_grasp_daily_external_v1.py::test_adapter_exception_or_ambiguous_result_is_unknown_and_rerun_does_not_resend[ambiguous]",
+        "tests/test_news_grasp_daily_external_v1.py::test_adapter_exception_or_ambiguous_result_is_unknown_and_rerun_does_not_resend[exception]",
+        "tests/test_news_grasp_daily_external_v1.py::test_completed_operation_attach_and_rerun_has_zero_adapter_calls",
+        "tests/test_news_grasp_daily_external_v1.py::test_completed_outbox_persists_provider_evidence_and_release_identity",
+        "tests/test_news_grasp_daily_external_v1.py::test_dependency_order_violation_in_publish_seal_is_rejected_before_outbox",
+        "tests/test_news_grasp_daily_external_v1.py::test_external_timing_open_fault_leaves_reserved_and_retries_each_adapter_once",
+        "tests/test_news_grasp_daily_external_v1.py::test_fixed_logical_operation_ids_are_scoped_per_run_and_next_day_can_publish",
+        "tests/test_news_grasp_daily_external_v1.py::test_notification_and_youtube_upload_finalize_duplicates_are_zero",
+        "tests/test_news_grasp_daily_external_v1.py::test_production_adapter_injection_is_rejected_before_state_mutation",
+        "tests/test_news_grasp_daily_external_v1.py::test_production_adapter_unregistered_red_precedes_reserve_and_preserves_db",
+        "tests/test_news_grasp_daily_external_v1.py::test_reconcile_required_preserves_operation_and_reconciles_once_without_adapter_resend",
+        "tests/test_news_grasp_daily_external_v1.py::test_remote_cas_race_after_completed_side_effect_stops_before_following_adapters[git_release_push]",
+        "tests/test_news_grasp_daily_external_v1.py::test_remote_cas_race_after_completed_side_effect_stops_before_following_adapters[pages_deployment_wait]",
+        "tests/test_news_grasp_daily_external_v1.py::test_test_only_adapter_is_called_at_most_once_per_operation"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
+      "path": "tests/test_news_grasp_daily_release_recovery.py",
+      "sha256": "baf3b99b1fcfc5397ac7b898d494994acb38f2793778d709d89704574474f307",
+      "nodeCount": 5,
+      "nodeIds": [
+        "tests/test_news_grasp_daily_release_recovery.py::test_commit_then_seal_boundary_recovers_real_index_drift_without_recommit",
+        "tests/test_news_grasp_daily_release_recovery.py::test_commit_then_seal_boundary_reuses_same_release_commit_without_second_commit",
+        "tests/test_news_grasp_daily_release_recovery.py::test_current_issue_commit_update_ref_crash_reuses_same_run_and_exact_commit_before_seal",
+        "tests/test_news_grasp_daily_release_recovery.py::test_current_issue_publish_seal_crash_reuses_seal_and_applies_receipt_without_recommit",
+        "tests/test_news_grasp_daily_release_recovery.py::test_reuse_exact_commit_rejects_extra_path_outside_sealed_write_set"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
+      "path": "tests/test_news_grasp_daily_route_runtime_review.py",
+      "sha256": "e8517ab230efa27276416694dd86ad392ffd80ea4c94258d6a3ea84168ff7b1a",
+      "nodeCount": 31,
+      "nodeIds": [
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_rrt_attached_observer_never_receives_writer_secret",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_rrt_boolean_gate_is_explicitly_report_only",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_rrt_child_canonical_key_collision_and_red_never_mutate_state",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_rrt_cli_rejects_windowsapps_or_noncanonical_python_before_state",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_rrt_completed_identity_reexecution_is_blocked_before_new_row_or_handler",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_rrt_direct_api_cannot_self_authorize_missing_command_or_capability",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_rrt_identity_preflight_ignores_caller_baseline_and_remote_env[bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb-dddddddddddddddddddddddddddddddddddddddd]",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_rrt_identity_preflight_ignores_caller_baseline_and_remote_env[bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb-eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee]",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_rrt_launcher_cli_ignores_state_root_environment_redirect",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_rrt_launcher_rejects_nested_writer_capability_projection[continuation_capability]",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_rrt_launcher_rejects_nested_writer_capability_projection[fencingToken]",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_rrt_launcher_rejects_nested_writer_capability_projection[fencing_token]",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_rrt_launcher_rejects_nested_writer_capability_projection[writerLease]",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_rrt_launcher_rejects_nested_writer_capability_projection[writer_lease]",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_rrt_launcher_runs_exact_sequence_and_never_projects_writer_capability",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_rrt_mapping_child_result_is_test_only",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_rrt_protected_20260902_is_rejected_before_identity_or_state",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_rrt_sequence_keeps_one_writer_in_memory_across_exact_six_operations",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_rrt_single_operation_cli_is_rejected_before_database_creation",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_rrt_zero_artifact_current_issue_cannot_be_green",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_t_rrt_18_production_freeze_is_finalizer_only",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_t_rrt_19_incomplete_migration_journal_fails_closed_without_run_creation",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_t_rrt_20_notification_ledger_migration_receipt_is_v2_and_hashed",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_t_rrt_21_daily_finalizer_consumes_fresh_public_verifier_once_and_freezes_elapsed",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_t_rrt_22_daily_cli_calls_unique_finalizer_and_emits_one_line_completion",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_t_rrt_broker_rejects_complete_forged_chain_before_promotion",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_t_rrt_canonical_generic_authority_append_is_rejected_without_mutation[collection_completed]",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_t_rrt_canonical_generic_authority_append_is_rejected_without_mutation[partition_completed]",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_t_rrt_canonical_generic_authority_append_is_rejected_without_mutation[release_completed]",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_t_rrt_protected_external_direct_call_is_red_before_identity_outbox_or_adapter",
+        "tests/test_news_grasp_daily_route_runtime_review.py::test_ng_t_rrt_protected_sequence_direct_call_is_red_before_resolve_without_state_mutation"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
       "path": "tests/test_news_grasp_direct_mainline_integration.py",
-      "sha256": "2d2b305254430c98471a4666056731d02b739c674e5d78ef2622cc751cee27df",
+      "sha256": "06da8098f5b2679cee1e3414710891a8e45e35519ccd408e345a3a5164d8bdeb",
       "nodeCount": 18,
       "nodeIds": [
         "tests/test_news_grasp_direct_mainline_integration.py::test_automation_and_skill_bind_direct_contract",
@@ -2783,7 +2945,7 @@
     },
     {
       "path": "tests/test_news_grasp_direct_runtime.py",
-      "sha256": "91208d4d2449771a99b5268f52c45b43d35026f86955170729b073206dea017f",
+      "sha256": "59fe855774ab3412ca9f7bf3dfe47982815bc616e6856bb91985a3e966f01d71",
       "nodeCount": 39,
       "nodeIds": [
         "tests/test_news_grasp_direct_runtime.py::test_active_direct_controls_have_no_content_derived_authority_fields",
@@ -2806,7 +2968,7 @@
         "tests/test_news_grasp_direct_runtime.py::test_installed_direct_config_semantics_are_validated_by_producer",
         "tests/test_news_grasp_direct_runtime.py::test_ninety_minute_overrun_keeps_public_successor_available",
         "tests/test_news_grasp_direct_runtime.py::test_public_completion_reverifies_public_surface_when_base_url_is_given",
-        "tests/test_news_grasp_direct_runtime.py::test_public_template_uses_portable_cwd_placeholder_while_installed_is_bound",
+        "tests/test_news_grasp_direct_runtime.py::test_public_template_keeps_portable_cwd_and_exact_approved_python312",
         "tests/test_news_grasp_direct_runtime.py::test_public_verifier_rejects_local_private_or_file_base_urls[file:///tmp/news-grasp-public]",
         "tests/test_news_grasp_direct_runtime.py::test_public_verifier_rejects_local_private_or_file_base_urls[http://10.0.0.8]",
         "tests/test_news_grasp_direct_runtime.py::test_public_verifier_rejects_local_private_or_file_base_urls[http://127.0.0.1:8780]",
@@ -2815,8 +2977,8 @@
         "tests/test_news_grasp_direct_runtime.py::test_publish_status_only_cannot_claim_public_completion",
         "tests/test_news_grasp_direct_runtime.py::test_quality_red_stays_at_same_stage_then_dispatches_exact_successor",
         "tests/test_news_grasp_direct_runtime.py::test_start_cli_forbids_installed_config_override_outside_test_mode",
+        "tests/test_news_grasp_direct_runtime.py::test_start_cli_rejects_live_installed_config_drift_without_mutation",
         "tests/test_news_grasp_direct_runtime.py::test_start_cli_rejects_medium_installed_config_before_run_creation",
-        "tests/test_news_grasp_direct_runtime.py::test_start_cli_repairs_live_installed_config_once_before_run_creation",
         "tests/test_news_grasp_direct_runtime.py::test_start_cli_uses_jst_today_when_issue_date_is_omitted",
         "tests/test_news_grasp_direct_runtime.py::test_title_failure_is_recorded_and_dispatcher_continues[failed]",
         "tests/test_news_grasp_direct_runtime.py::test_title_failure_is_recorded_and_dispatcher_continues[skipped]",
@@ -2833,10 +2995,11 @@
     },
     {
       "path": "tests/test_news_grasp_direct_runtime_v2.py",
-      "sha256": "1dd20fe625150338f614e84d326bb0d1e1b9d4baf30b3eecb69f8fc98b3ce986",
-      "nodeCount": 30,
+      "sha256": "593ed379c0aeb19afb698046941cadac221fa8bbf699f437bd732bc9ceeb3d8e",
+      "nodeCount": 35,
       "nodeIds": [
         "tests/test_news_grasp_direct_runtime_v2.py::test_deepdive_completion_audits_current_issue_without_history_corpus",
+        "tests/test_news_grasp_direct_runtime_v2.py::test_finalizer_crash_resumes_same_nonce_without_public_reprobe_or_external_resend",
         "tests/test_news_grasp_direct_runtime_v2.py::test_finalizer_fences_wrong_lease_before_any_public_probe",
         "tests/test_news_grasp_direct_runtime_v2.py::test_finalizer_persists_verified_optional_warning",
         "tests/test_news_grasp_direct_runtime_v2.py::test_finalizer_rejects_noncontiguous_stage_history_even_when_count_matches",
@@ -2861,7 +3024,11 @@
         "tests/test_news_grasp_direct_runtime_v2.py::test_runtime_relocation_rejects_fresh_source_lease_dual_writer",
         "tests/test_news_grasp_direct_runtime_v2.py::test_runtime_relocation_transient_failure_rolls_back_recovery_claim",
         "tests/test_news_grasp_direct_runtime_v2.py::test_runtime_state_relocation_uses_sqlite_snapshot_and_preserves_source",
+        "tests/test_news_grasp_direct_runtime_v2.py::test_schema_preflight_terminalizes_expired_active_row_when_same_identity_is_completed",
         "tests/test_news_grasp_direct_runtime_v2.py::test_start_run_has_database_single_writer_identity_gate",
+        "tests/test_news_grasp_direct_runtime_v2.py::test_started_migration_journal_finalizes_receipt_when_schema_is_already_complete",
+        "tests/test_news_grasp_direct_runtime_v2.py::test_started_migration_journal_restores_valid_backup_before_retry_atomically",
+        "tests/test_news_grasp_direct_runtime_v2.py::test_started_migration_journal_with_insufficient_backup_keeps_state_unchanged",
         "tests/test_news_grasp_direct_runtime_v2.py::test_title_completion_is_separate_from_publication_status",
         "tests/test_news_grasp_direct_runtime_v2.py::test_v1_to_v2_migration_preserves_run_id_and_stage_history",
         "tests/test_news_grasp_direct_runtime_v2.py::test_v1_to_v2_migration_rebinds_only_target_copy_to_clean_observation_cwd",
@@ -3212,6 +3379,23 @@
       ]
     },
     {
+      "path": "tests/test_news_grasp_production_adapters.py",
+      "sha256": "023e41d2a8dc7d600d2656fc1e0c32fc373ce5c6d0e6bf1468065b620dc6823c",
+      "nodeCount": 6,
+      "nodeIds": [
+        "tests/test_news_grasp_production_adapters.py::test_daily_audio_adapter_disables_history_rotation",
+        "tests/test_news_grasp_production_adapters.py::test_distribution_evidence_accepts_snake_case_ledger_and_preserves_deepdive_primary_fields",
+        "tests/test_news_grasp_production_adapters.py::test_distribution_evidence_count_mismatch_creates_no_green_evidence",
+        "tests/test_news_grasp_production_adapters.py::test_distribution_evidence_rejects_live_notification_binding_hash_drift_before_green",
+        "tests/test_news_grasp_production_adapters.py::test_notification_provider_mock_rejects_run_identity_mismatch_before_distribution",
+        "tests/test_news_grasp_production_adapters.py::test_notification_recipient_ledger_resume_sends_only_unfinished_after_crash"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
       "path": "tests/test_news_grasp_public_recovery_l5.py",
       "sha256": "937b896b0bb06f60f301877b69af9681077c4c8f69079b5bc6abe4093d4d0ba2",
       "nodeCount": 1,
@@ -3225,9 +3409,14 @@
     },
     {
       "path": "tests/test_news_grasp_publish_contract_v2.py",
-      "sha256": "3ef569f599e27bdd85607d1e7df0fb310071d08da0987fc95d91097da9ab051b",
-      "nodeCount": 39,
+      "sha256": "117e04bcccd9a6d694258c42b13436c2b818cd09bdae1290d89a28c5640121a3",
+      "nodeCount": 55,
       "nodeIds": [
+        "tests/test_news_grasp_publish_contract_v2.py::test_completion_attestation_body_hash_mismatch_is_red",
+        "tests/test_news_grasp_publish_contract_v2.py::test_completion_attestation_distribution_component_hash_mismatch_is_red",
+        "tests/test_news_grasp_publish_contract_v2.py::test_completion_attestation_fresh_public_exact_is_green",
+        "tests/test_news_grasp_publish_contract_v2.py::test_completion_attestation_manifest_locator_tamper_is_red",
+        "tests/test_news_grasp_publish_contract_v2.py::test_consumer_public_web_rejects_manifest_html_body_digest_mismatch",
         "tests/test_news_grasp_publish_contract_v2.py::test_distribution_binding_exactly_binds_run_and_component_receipts",
         "tests/test_news_grasp_publish_contract_v2.py::test_distribution_binding_validates_all_sources_before_any_target_mutation",
         "tests/test_news_grasp_publish_contract_v2.py::test_guarded_repo_write_rejects_parent_redirect_without_touching_victim",
@@ -3235,6 +3424,12 @@
         "tests/test_news_grasp_publish_contract_v2.py::test_home_summary_and_daily_scheduled_category_links_are_required",
         "tests/test_news_grasp_publish_contract_v2.py::test_local_required_docs_loads_every_scheduled_category",
         "tests/test_news_grasp_publish_contract_v2.py::test_malformed_closing_tag_cannot_escape_hidden_surface",
+        "tests/test_news_grasp_publish_contract_v2.py::test_manifest_audio_public_url_and_page_href_treat_valid_v_as_same_identity[-?v=0123456789ab]",
+        "tests/test_news_grasp_publish_contract_v2.py::test_manifest_audio_public_url_and_page_href_treat_valid_v_as_same_identity[?v=0123456789ab-]",
+        "tests/test_news_grasp_publish_contract_v2.py::test_manifest_audio_rejects_noncanonical_v_on_public_url_or_page_href[#fragment]",
+        "tests/test_news_grasp_publish_contract_v2.py::test_manifest_audio_rejects_noncanonical_v_on_public_url_or_page_href[?download=1]",
+        "tests/test_news_grasp_publish_contract_v2.py::test_manifest_audio_rejects_noncanonical_v_on_public_url_or_page_href[?v=0123456789ab&v=abcdef012345]",
+        "tests/test_news_grasp_publish_contract_v2.py::test_manifest_audio_rejects_noncanonical_v_on_public_url_or_page_href[?v=NOT-LOWERCASE]",
         "tests/test_news_grasp_publish_contract_v2.py::test_manifest_digest_does_not_neutralize_script_or_comment_literals",
         "tests/test_news_grasp_publish_contract_v2.py::test_manifest_digest_neutralizes_only_owned_direct_head_marker",
         "tests/test_news_grasp_publish_contract_v2.py::test_manifest_digest_rejects_noncanonical_or_duplicate_marker[<html><head>  <meta name=\"news-grasp-manifest-id\" content=\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\">/n  <meta name=\"news-grasp-manifest-id\" content=\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\">/n</head></html>]",
@@ -3265,7 +3460,12 @@
         "tests/test_news_grasp_publish_contract_v2.py::test_r14_required_warning_is_red_optional_warning_is_preserved",
         "tests/test_news_grasp_publish_contract_v2.py::test_r15_history_quarantine_is_not_daily_authority",
         "tests/test_news_grasp_publish_contract_v2.py::test_semantic_pages_accepts_audio_release_cache_busting_query",
-        "tests/test_news_grasp_publish_contract_v2.py::test_semantic_pages_accepts_canonical_published_ok_status",
+        "tests/test_news_grasp_publish_contract_v2.py::test_semantic_pages_accepts_pending_status_bound_to_consumer_attestation",
+        "tests/test_news_grasp_publish_contract_v2.py::test_semantic_pages_rejects_noncanonical_audio_identity_query[#fragment]",
+        "tests/test_news_grasp_publish_contract_v2.py::test_semantic_pages_rejects_noncanonical_audio_identity_query[?download=1]",
+        "tests/test_news_grasp_publish_contract_v2.py::test_semantic_pages_rejects_noncanonical_audio_identity_query[?v=0123456789ab&v=abcdef012345]",
+        "tests/test_news_grasp_publish_contract_v2.py::test_semantic_pages_rejects_noncanonical_audio_identity_query[?v=NOT-LOWERCASE]",
+        "tests/test_news_grasp_publish_contract_v2.py::test_semantic_pages_rejects_published_ok_before_completion_attestation",
         "tests/test_news_grasp_publish_contract_v2.py::test_semantic_parser_accepts_standard_meta_without_name"
       ],
       "clauseIds": [
@@ -3275,7 +3475,7 @@
     },
     {
       "path": "tests/test_news_grasp_recovery_closeout.py",
-      "sha256": "cc7383043242dab250ca2fc39e73c37a111126c8a5b1c7b8733e285133859eae",
+      "sha256": "78d75265d6041378d8f8eddd91a4b9def52b95539b86d1ec9a84e4ace61cdafd",
       "nodeCount": 26,
       "nodeIds": [
         "tests/test_news_grasp_recovery_closeout.py::test_actual_runner_blocks_non_finalizer_reentry_after_public_green",
@@ -3312,7 +3512,7 @@
     },
     {
       "path": "tests/test_news_grasp_recovery_freshness.py",
-      "sha256": "d129caacf2cb4719c573f50257c76d3c18f672b05aba120edea5e2fe608c0aeb",
+      "sha256": "360493aa4e900c8dffe428bcd5d9cd089dcdaec352c9bec00d7a72c24a7d5233",
       "nodeCount": 12,
       "nodeIds": [
         "tests/test_news_grasp_recovery_freshness.py::test_audit_and_direct_runtime_consume_freshness_before_recovery_child_admission",
@@ -3355,6 +3555,77 @@
       ]
     },
     {
+      "path": "tests/test_news_grasp_release_gate_v2.py",
+      "sha256": "33dc8a1ce5263c0833f67a6094140d917077c05298d8402f468bde9c3818a7d1",
+      "nodeCount": 60,
+      "nodeIds": [
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_01_authoritative_collection_count_mismatch_is_red",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_01_authoritative_collection_hash_mismatch_is_red",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_02_partition_shape_is_fail_closed[extra-unknown-node]",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_02_partition_shape_is_fail_closed[missing]",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_02_partition_shape_is_fail_closed[overlap]",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_02_partition_shape_is_fail_closed[unknown-partition]",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_02_registry_unknown_node_is_fail_closed",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_03_cli_payload_injection_is_rejected_without_process[fake-collection]",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_03_cli_payload_injection_is_rejected_without_process[fake-partition]",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_03_cli_payload_injection_is_rejected_without_process[ledger-override]",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_03_cli_payload_injection_is_rejected_without_process[runner-injection]",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_03_cli_payload_injection_is_rejected_without_process[selector]",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_03_fabricated_collection_mapping_is_not_release_authority",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_03_production_api_rejects_runner_and_partition_override_before_process",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_03_production_ledger_override_is_rejected_before_process",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_03_selector_is_rejected_before_subprocess",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_04_structured_plugin_receipt_has_exact_pass_fail_error_skip_nodes",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_05_completed_partition_attaches_without_process",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_05_started_partition_requires_crash_attach_and_never_reruns",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_06_causal_repair_allows_only_exact_failed_set_and_new_cause",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_06_causal_repair_rejects_same_cause_or_success_node[same-cause]",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_06_causal_repair_rejects_same_cause_or_success_node[success-node-injected]",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_06_causal_repair_rejects_unbound_previous_receipt",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_06_red_causal_repair_chains_only_its_remaining_failed_nodes",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_07_nopublish_receipt_is_outside_union_and_duplicate_is_red",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_07_nopublish_side_effect_or_union_overlap_is_red[mutation]",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_07_nopublish_side_effect_or_union_overlap_is_red[union-binding]",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_07_nopublish_side_effect_or_union_overlap_is_red[union-overlap]",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_08_six_partition_union_runs_each_node_once_in_collection_order",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_09_fixed_pytest_uses_utf8_fixed_python_and_structured_authority",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_10_append_only_ledger_chain_tamper_is_rejected",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_10_append_only_ledger_event_hash_tamper_is_rejected",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_10_canonical_ledger_uses_known_folder_mac_not_localappdata",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_10_parallel_ledger_append_has_one_valid_hash_chain",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_11_green_release_event_issues_exactly_one_daily_promotion",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_12_many_nodes_use_bounded_process_chunks_and_execute_each_once",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_12_partition_deadline_stops_future_spawns_and_binds_remaining_nodes",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_13_parametrized_address_identity_survives_module_deselection_once",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_14_partition_transport_or_collection_red_binds_all_nodes_for_causal_repair[collection-mismatch]",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_14_partition_transport_or_collection_red_binds_all_nodes_for_causal_repair[transport]",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_15_finalize_causal_repairs_composes_green_chain_without_rerunning_successes",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_16_finalize_causal_repairs_rejects_incomplete_red_chain[repair-missing]",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_16_finalize_causal_repairs_rejects_incomplete_red_chain[repair-red]",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_17_finalize_causal_repairs_rejects_forked_repair_chain",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_18_canonical_repair_authority_rejects_generic_and_startless_writes",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_19_collection_seals_source_and_rejects_collection_drift",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_20_finalize_rejects_current_source_mismatch_or_dirty[different-head]",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_20_finalize_rejects_current_source_mismatch_or_dirty[dirty]",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_21_promotion_rejects_release_source_mismatch",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_22_staged_candidate_observation_binds_head_and_index_tree",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_23_staged_candidate_rejects_unstaged_or_untracked_input[unstaged-candidate]",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_23_staged_candidate_rejects_unstaged_or_untracked_input[untracked-candidate]",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_24_candidate_receipt_is_not_promotable_before_commit",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_25_candidate_commit_requires_exact_tree_and_baseline_parent[candidate-parent-mismatch]",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_25_candidate_commit_requires_exact_tree_and_baseline_parent[candidate-tree-mismatch]",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_25_candidate_commit_requires_exact_tree_and_baseline_parent[one-commit-green]",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_26_candidate_index_tree_drift_is_rejected_by_source_match",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_27_authoritative_repair_is_single_capability_without_caller_green",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_28_prior_candidate_release_resume_attaches_and_promotes_once",
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_29_causal_repair_source_mismatch_rejects_before_process"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
       "path": "tests/test_news_grasp_release_reflection.py",
       "sha256": "13ca3677d0c102bb5c4078db721f2da7fc167104dbe4bebb482d1f3032ba10d9",
       "nodeCount": 3,
@@ -3375,6 +3646,31 @@
       "nodeIds": [
         "tests/test_news_grasp_scheduled_admission.py::test_scheduled_admission_validator_accepts_only_exact_sealed_three_schema_bodies",
         "tests/test_news_grasp_scheduled_admission.py::test_seal_fresh_broker_admission_rejects_replay_tamper_and_extra_key"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
+      "path": "tests/test_news_grasp_scoped_test_broker.py",
+      "sha256": "74b7379f7df51224e2be2cad33f707d68507d78cec881736d9c1d9960f4f3e9a",
+      "nodeCount": 14,
+      "nodeIds": [
+        "tests/test_news_grasp_scoped_test_broker.py::test_scoped_gate_rejects_release_only_changed_path_before_runner",
+        "tests/test_news_grasp_scoped_test_broker.py::test_scoped_gate_rejects_tampered_promotion_signature",
+        "tests/test_news_grasp_scoped_test_broker.py::test_scoped_gate_rejects_unknown_changed_path_before_test_process",
+        "tests/test_news_grasp_scoped_test_broker.py::test_scoped_gate_reuses_signed_same_head_promotion_without_pytest",
+        "tests/test_news_grasp_scoped_test_broker.py::test_scoped_gate_runs_only_signed_registry_nodes_once_after_source_change",
+        "tests/test_news_grasp_scoped_test_broker.py::test_scoped_promotion_direct_import_cannot_redirect_canonical_root",
+        "tests/test_news_grasp_scoped_test_broker.py::test_scoped_registered_forbidden_node_is_red_before_spawn[tests/test_forbidden_historical_import.py-from tools import historical_failure_scenarios/n-scoped_test_transitive_release_import_forbidden]",
+        "tests/test_news_grasp_scoped_test_broker.py::test_scoped_registered_forbidden_node_is_red_before_spawn[tests/test_forbidden_nested_process.py-import subprocess/nsubprocess.run(['nested'])/n-scoped_test_nested_process_forbidden]",
+        "tests/test_news_grasp_scoped_test_broker.py::test_scoped_registered_forbidden_node_is_red_before_spawn[tests/test_forbidden_release_import.py-import tools.news_grasp_release_gate/n-scoped_test_transitive_release_import_forbidden]",
+        "tests/test_news_grasp_scoped_test_broker.py::test_scoped_registered_forbidden_node_is_red_before_spawn[tests/test_forbidden_ui_dependency.py-import playwright/n-scoped_test_transitive_release_import_forbidden]",
+        "tests/test_news_grasp_scoped_test_broker.py::test_scoped_registered_forbidden_node_is_red_before_spawn[tests/test_historical_failure_fixture.py-def test_fixture():/n    assert True/n-scoped_test_node_release_only_forbidden]",
+        "tests/test_news_grasp_scoped_test_broker.py::test_scoped_registered_forbidden_node_is_red_before_spawn[tests/test_nopublish_fixture.py-def test_fixture():/n    assert True/n-scoped_test_node_release_only_forbidden]",
+        "tests/test_news_grasp_scoped_test_broker.py::test_scoped_registered_forbidden_node_is_red_before_spawn[tests/test_playwright_fixture.py-def test_fixture():/n    assert True/n-scoped_test_node_release_only_forbidden]",
+        "tests/test_news_grasp_scoped_test_broker.py::test_scoped_registered_forbidden_node_is_red_before_spawn[tests/test_release_gate_fixture.py-def test_fixture():/n    assert True/n-scoped_test_node_release_only_forbidden]"
       ],
       "clauseIds": [
         "NGC-C06",
@@ -3479,7 +3775,7 @@
     },
     {
       "path": "tests/test_newsroom_append_safety_benchmark.py",
-      "sha256": "1c2be89b05bb7078945c2cdbe86ae4d7aa3b55fbed193cfe93da972388dacb2e",
+      "sha256": "e27ef9fa5e8db50807415d35bce4300175b213a93d0312865afeb6983e9b518d",
       "nodeCount": 2,
       "nodeIds": [
         "tests/test_newsroom_append_safety_benchmark.py::test_append_safety_fixture_covers_five_failure_boundaries",
@@ -3512,7 +3808,7 @@
     },
     {
       "path": "tests/test_newsroom_prompts.py",
-      "sha256": "15744653a0a60c53fb5fcf2358082a0143639342b742b32b63ae1e0f643b9530",
+      "sha256": "ac9ab1e1e6c41ce4593abad1ec6d49c2c2036226c4276421fe72e636825c69b1",
       "nodeCount": 22,
       "nodeIds": [
         "tests/test_newsroom_prompts.py::test_active_newsroom_prompts_do_not_reference_legacy_agents",
@@ -3746,7 +4042,7 @@
     },
     {
       "path": "tests/test_overview_pattern_c.py",
-      "sha256": "813dbde6d855331838e0f010e20659d31ec12cdaf1bc8b984da947a7344cd3e0",
+      "sha256": "0b6d7336e8175382745085a67380b2f6c696ec0c72fc9dc07ac5758982ba0c7b",
       "nodeCount": 11,
       "nodeIds": [
         "tests/test_overview_pattern_c.py::test_build_all_overviews_creates_unique_dates_only",
@@ -3810,7 +4106,7 @@
     },
     {
       "path": "tests/test_prepare_editor_workspace.py",
-      "sha256": "2397a1d5dc51876312932b41b109986ec22fd82039206f2a9cef6c26d21fc632",
+      "sha256": "f97df29ae5e5a46d4c075b662e550065ec1eeb23e9ec71b8a210cd4732500d68",
       "nodeCount": 1,
       "nodeIds": [
         "tests/test_prepare_editor_workspace.py::test_prepare_editor_workspace_removes_only_target_issue_date"
@@ -3839,9 +4135,10 @@
     },
     {
       "path": "tests/test_product_spec_contract.py",
-      "sha256": "c34441b230c006f8788001f18fa45732388146f5c32e920dcd08dcab1fb96266",
-      "nodeCount": 24,
+      "sha256": "184ad018a16e895b965a7cd9737edfbf2632ea8d7f6d3471a093d993bea37573",
+      "nodeCount": 25,
       "nodeIds": [
+        "tests/test_product_spec_contract.py::test_daily_45m_contract_is_bound_to_gate_matrix_and_public_completion",
         "tests/test_product_spec_contract.py::test_product_constitution_binds_directional_digest_repair_to_quality_matrix",
         "tests/test_product_spec_contract.py::test_product_constitution_binds_horizontal_failure_modes_and_matrix_ownership",
         "tests/test_product_spec_contract.py::test_product_constitution_binds_repair_closed_world_completeness_gate",
@@ -4576,7 +4873,7 @@
     },
     {
       "path": "tests/test_scheduled_high_cost_separation.py",
-      "sha256": "be715f412f15a5a9894945dd07bf5553efc2b2aa6f827ee51defa657f2707ffb",
+      "sha256": "5138041258477ac136479dc17957bfa65c29784968f857e310a2eb6338cbfe0e",
       "nodeCount": 85,
       "nodeIds": [
         "tests/test_scheduled_high_cost_separation.py::test_attempt_status_is_derived_from_canonical_ledger_not_caller_text",
@@ -4672,8 +4969,8 @@
     },
     {
       "path": "tests/test_send_push.py",
-      "sha256": "751eaddead7b7e933cc10358d087b8bebf0fc55121aa4b9925f3773981c5c41c",
-      "nodeCount": 32,
+      "sha256": "27cb8f76285e1457d978677f1ba4f66c0ec25ae0e2ea7c4d4372b72cdf296c98",
+      "nodeCount": 34,
       "nodeIds": [
         "tests/test_send_push.py::test_build_payload_shape_and_japanese",
         "tests/test_send_push.py::test_default_body_value_phrasing_and_order",
@@ -4700,6 +4997,8 @@
         "tests/test_send_push.py::test_public_completion_rejects_self_hashed_notification_without_sender_ledger",
         "tests/test_send_push.py::test_public_completion_rejects_sender_ledger_without_immutable_git_blob_binding",
         "tests/test_send_push.py::test_publish_status_is_fallback_pure",
+        "tests/test_send_push.py::test_recipient_reservation_crash_restarts_as_unknown_without_resend",
+        "tests/test_send_push.py::test_recipient_terminal_sent_crash_sends_only_unsent_recipients_once",
         "tests/test_send_push.py::test_resolve_token_missing_and_empty_and_value",
         "tests/test_send_push.py::test_schedule_matches_routine_matrix",
         "tests/test_send_push.py::test_send_one_passes_high_urgency",
@@ -4715,7 +5014,7 @@
     },
     {
       "path": "tests/test_session_url_fragments.py",
-      "sha256": "1695970b346507e447e75eab2510a4d9bddcae10ac55878b9babda736c64de0b",
+      "sha256": "9960ce058151ffcb5d3584ae119557f028d69f14c8bdba1b35340c29908a1c44",
       "nodeCount": 4,
       "nodeIds": [
         "tests/test_session_url_fragments.py::test_broken_fragment_is_warn_skipped",
@@ -4836,7 +5135,7 @@
     },
     {
       "path": "tests/test_summary_pattern_d.py",
-      "sha256": "e2a0d472776abffa271071d7b5246b37aea18d2bb1f8cf1f69c9888b537c8781",
+      "sha256": "52e410e6ead384187415a8f4eaa1aa96f10019127839bfb2c36ba8a7406eb862",
       "nodeCount": 26,
       "nodeIds": [
         "tests/test_summary_pattern_d.py::test_3_takeaways_always_rendered",
@@ -4941,7 +5240,7 @@
     },
     {
       "path": "tests/test_tts_audio_embed.py",
-      "sha256": "6c4c50df1431ae643107117297865ca5fb7cd1504d3f08029e74bf6dd08a0d60",
+      "sha256": "3d9cd85d901c168615d1d9ca65c49000a2e47fa029efd782734e1009236ad5bd",
       "nodeCount": 6,
       "nodeIds": [
         "tests/test_tts_audio_embed.py::test_audio_block_is_absent_without_latest_audio_url",
@@ -5016,7 +5315,7 @@
     },
     {
       "path": "tests/test_tts_deepdive_audio.py",
-      "sha256": "11105f810d06eb152f82aba333a71d7e3f371adc2387fdb805238069b111f7ea",
+      "sha256": "46e79455df10cdb84b719ad36c68a9b9275d1ae63704a25873cb9c5f28cb2411",
       "nodeCount": 6,
       "nodeIds": [
         "tests/test_tts_deepdive_audio.py::test_deepdive_audio_classifies_github_503_as_typed_external",
@@ -5070,7 +5369,7 @@
     },
     {
       "path": "tests/test_tts_generate_bgm.py",
-      "sha256": "1ee3a906ecdbb60af426ba06e46993320bf57548436442eaad6d6b6e67a51867",
+      "sha256": "988ff8382149c3e8805ca94cfdfb56e0a6bad8113e6c610ebb70136d0add37bb",
       "nodeCount": 19,
       "nodeIds": [
         "tests/test_tts_generate_bgm.py::test_all_styles_render_mono_quiet_and_deterministic",
@@ -5130,7 +5429,7 @@
     },
     {
       "path": "tests/test_tts_rotation.py",
-      "sha256": "994224ec3acad275b243bf5df242f2be245ea0c3ef856a64a78cc872d36a4770",
+      "sha256": "3acc80f37da1c6d4d2bc6a47cc523ea7e689287c1bf7b5158e44e912f3e16c6d",
       "nodeCount": 11,
       "nodeIds": [
         "tests/test_tts_rotation.py::test_audio_url_uses_confirmed_owner_and_repo",
@@ -5239,7 +5538,7 @@
     },
     {
       "path": "tests/test_validate_editor_output_preview.py",
-      "sha256": "8467f651772a4e0d0e65441dd5b3797a766b4058eb5441242fa455387ad58e7d",
+      "sha256": "f51fd549da466f6d9671ea90a787ea73ac2bb7eee814dc90357ca7762daf118d",
       "nodeCount": 5,
       "nodeIds": [
         "tests/test_validate_editor_output_preview.py::test_accepts_semantically_valid_editor_payload",
@@ -5410,8 +5709,8 @@
     },
     {
       "path": "tests/test_youtube_podcast_upload.py",
-      "sha256": "e4111b064eeb897fd797b756f4c456b9c02989d9537af6431ab637e880f80b29",
-      "nodeCount": 13,
+      "sha256": "15560b21a90baf0c56ac4fbeb34e3b5d8756290ae133483220949f19e4e119d7",
+      "nodeCount": 16,
       "nodeIds": [
         "tests/test_youtube_podcast_upload.py::test_audit_playlist_uniqueness_rejects_e2e_leftovers",
         "tests/test_youtube_podcast_upload.py::test_deepdive_finalize_adds_video_to_deepdive_and_primary_podcast_playlists",
@@ -5425,7 +5724,10 @@
         "tests/test_youtube_podcast_upload.py::test_prepare_uploads_private_without_playlist_insert",
         "tests/test_youtube_podcast_upload.py::test_publish_calls_video_upload_then_playlist_insert",
         "tests/test_youtube_podcast_upload.py::test_publish_skips_api_when_same_date_is_already_public",
-        "tests/test_youtube_podcast_upload.py::test_youtube_client_marks_uploaded_and_finalized_videos_embeddable"
+        "tests/test_youtube_podcast_upload.py::test_same_day_older_marker_recovery_never_regresses_newer_active_projection",
+        "tests/test_youtube_podcast_upload.py::test_youtube_client_marks_uploaded_and_finalized_videos_embeddable",
+        "tests/test_youtube_podcast_upload.py::test_youtube_finalize_resume_after_provider_crash_repeats_no_applied_step[playlist]",
+        "tests/test_youtube_podcast_upload.py::test_youtube_finalize_resume_after_provider_crash_repeats_no_applied_step[privacy]"
       ],
       "clauseIds": [
         "NGC-C06",

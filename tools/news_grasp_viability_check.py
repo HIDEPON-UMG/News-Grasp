@@ -200,7 +200,7 @@ def evaluate(
             "required_digest_artifacts",
             "required_published_artifacts",
             "required_distribution_artifacts",
-            "Daily audio script",
+            "Daily audio",
             "DeepDive audio",
             "distribution manifest",
             "docs/publish-status.json",
@@ -233,11 +233,12 @@ def evaluate(
         (
             "direct_public_v1",
             "evaluate_direct_public",
-            "validate_daily_quality",
-            "--require-deepdive",
+            "consumer_public_verification",
+            "atomic_completion",
+            "NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1",
             "fallback",
             "NoPublish",
-            "publish_commit",
+            "origin/main",
             "post_publish_issue_list",
         ),
     ) and completion_guard_exists
@@ -248,7 +249,10 @@ def evaluate(
     st, reason = _status(slo_ok, missing_reason="bounded SLO control missing")
     rows.append(Row("bounded_slo_control", st, "recover_now", ["automation/news-grasp-6-40/automation.toml.template", "automation/skills/news-grasp-direct-mainline/SKILL.md"], reason))
 
-    post_ok = _has_all(template + skill, ("post_publish_issue_list", "公開作業を止めない"))
+    post_ok = _has_all(
+        template + skill,
+        ("post_publish_issue_list", "修正に入らず公開作成へ戻ってください"),
+    )
     st, reason = _status(post_ok, missing_reason="post-publish issue boundary missing")
     post_ok = post_ok and _has_all(title_control, ("post_publish_issue_list", "updated", "already_ok", "unavailable", "failed", "skipped"))
     if not post_ok:

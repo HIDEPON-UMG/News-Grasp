@@ -40,13 +40,17 @@ def test_direct_automation_contract_contains_title_quality_and_completion_gates(
         "YY/MM/DD",
         "title_status=already_ok",
         "post_publish_issue_list",
-        "--require-deepdive",
+        "tools.news_grasp_daily_launcher",
+        "current_issue_integration",
+        "consumer_public_verification",
+        "atomic_completion",
         "direct completion guard",
-        "NEWS_GRASP_DIRECT_MAINLINE_RECEIPT_V1",
-        "NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1",
     ]:
         assert marker in prompt
-    assert "TT26/" in prompt
+    assert (
+        "YY/MM/DD News-Grasp 臨時本線日次バッチ 6:00 記事作成・公開"
+        in prompt
+    )
 
 
 def test_direct_runtime_stage_inventory_replaces_runner_stage_contract() -> None:

@@ -54,6 +54,7 @@ RELEASE_PROCESS_NODE_LIMIT = 160
 RELEASE_PROCESS_SELECTOR_CHAR_LIMIT = 20_000
 
 _HEX64 = re.compile(r"^[0-9a-fA-F]{64}$")
+_HEX40 = re.compile(r"^[0-9a-fA-F]{40}$")
 _SAFE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
 _NODE_ADDRESS = re.compile(r" at 0x(?!ADDR\b)[0-9a-fA-F]+")
 _LEDGER_LOCKS_GUARD = threading.Lock()
@@ -64,6 +65,8 @@ _CANONICAL_AUTHORITY_EVENT_TYPES = frozenset(
         "collection_completed",
         "partition_started",
         "partition_completed",
+        "repair_started",
+        "repair_completed",
         "release_completed",
         "daily_promotion_issued",
     }
@@ -241,6 +244,193 @@ def _repo_root(value: str | Path) -> Path:
     if not root.is_dir():
         raise NewsGraspReleaseGateError("release_repo_root_invalid")
     return root
+
+
+def _observe_release_source(
+    repo_root: str | Path,
+    *,
+    allow_staged_candidate: bool = False,
+) -> dict[str, Any]:
+    """Releaseへ束縛するcommittedまたは完全stage済みGit source identity。"""
+
+    root = _repo_root(repo_root)
+    env = os.environ.copy()
+    for key in list(env):
+        if key.upper().startswith("GIT_"):
+            env.pop(key, None)
+    # indexへstageしたときと同じcore.autocrlf/filter設定でtreeを観測する。
+    # commandは固定・shell=False・external diff無効なのでglobal alias等は実行されない。
+    env["PYTHONIOENCODING"] = "utf-8"
+
+    def git(*args: str, allowed_returncodes: tuple[int, ...] = (0,)) -> tuple[int, str]:
+        try:
+            completed = subprocess.run(
+                [
+                    "git",
+                    "--no-optional-locks",
+                    "-c",
+                    "core.fsmonitor=false",
+                    "-c",
+                    "diff.external=",
+                    *args,
+                ],
+                cwd=str(root),
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                encoding="utf-8",
+                errors="strict",
+                timeout=30,
+                check=False,
+                shell=False,
+                env=env,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            )
+        except (OSError, UnicodeError, subprocess.TimeoutExpired) as exc:
+            raise NewsGraspReleaseGateError("release_source_git_unavailable") from exc
+        if completed.returncode not in allowed_returncodes:
+            raise NewsGraspReleaseGateError("release_source_git_unavailable")
+        return completed.returncode, completed.stdout.strip()
+
+    _, head = git("rev-parse", "--verify", "HEAD")
+    _, committed_tree = git("rev-parse", "--verify", "HEAD^{tree}")
+    _, status = git("status", "--porcelain=v1", "--untracked-files=all")
+    tree = committed_tree
+    source_mode = "committed"
+    worktree_clean = not status
+    worktree_exact = worktree_clean
+    if status and allow_staged_candidate:
+        if any(line.startswith("??") for line in status.splitlines()):
+            raise NewsGraspReleaseGateError("release_source_untracked_candidate_forbidden")
+        unstaged_rc, _ = git("diff", "--quiet", "--", allowed_returncodes=(0, 1))
+        staged_rc, _ = git("diff", "--cached", "--quiet", "--", allowed_returncodes=(0, 1))
+        if unstaged_rc != 0:
+            raise NewsGraspReleaseGateError("release_source_unstaged_candidate_forbidden")
+        if staged_rc == 0:
+            raise NewsGraspReleaseGateError("release_source_candidate_empty")
+        _, tree = git("write-tree")
+        source_mode = "staged_candidate"
+        worktree_clean = False
+        worktree_exact = True
+    elif status:
+        raise NewsGraspReleaseGateError("release_source_worktree_dirty")
+    if not _HEX40.fullmatch(head) or not _HEX40.fullmatch(tree):
+        raise NewsGraspReleaseGateError("release_source_identity_invalid")
+    return {
+        "source_root": str(root),
+        "source_head": head.casefold(),
+        "source_tree": tree.casefold(),
+        "source_mode": source_mode,
+        "worktree_clean": worktree_clean,
+        "worktree_exact": worktree_exact,
+    }
+
+
+def _release_source_binding(value: Mapping[str, Any]) -> dict[str, Any]:
+    raw_root = str(value.get("source_root") or "").strip()
+    if not raw_root:
+        raise NewsGraspReleaseGateError("release_source_identity_invalid")
+    try:
+        root = str(Path(raw_root).resolve(strict=True))
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
+        raise NewsGraspReleaseGateError("release_source_identity_invalid") from exc
+    head = str(value.get("source_head") or "").casefold()
+    tree = str(value.get("source_tree") or "").casefold()
+    mode = str(value.get("source_mode") or "committed")
+    worktree_clean = value.get("worktree_clean") is True
+    worktree_exact = value.get("worktree_exact", worktree_clean) is True
+    if (
+        not _HEX40.fullmatch(head)
+        or not _HEX40.fullmatch(tree)
+        or mode not in {"committed", "staged_candidate"}
+        or not worktree_exact
+        or (mode == "committed" and not worktree_clean)
+        or (mode == "staged_candidate" and worktree_clean)
+    ):
+        raise NewsGraspReleaseGateError("release_source_identity_invalid")
+    return {
+        "source_root": root,
+        "source_head": head,
+        "source_tree": tree,
+        "source_mode": mode,
+        "worktree_clean": worktree_clean,
+        "worktree_exact": True,
+    }
+
+
+def _require_release_source_match(
+    expected: Mapping[str, Any],
+    observed: Mapping[str, Any],
+) -> dict[str, Any]:
+    sealed = _release_source_binding(expected)
+    current = _release_source_binding(observed)
+    if sealed != current:
+        raise NewsGraspReleaseGateError("release_source_binding_mismatch")
+    return current
+
+
+def _observe_release_source_for_binding(
+    repo_root: str | Path,
+    expected: Mapping[str, Any],
+) -> dict[str, Any]:
+    """既存bindingと同じmodeでsourceを再観測する。"""
+
+    mode = str(expected.get("source_mode") or "committed")
+    if mode == "staged_candidate":
+        return _observe_release_source(repo_root, allow_staged_candidate=True)
+    return _observe_release_source(repo_root)
+
+
+def _observe_release_source_for_collection(repo_root: str | Path) -> dict[str, Any]:
+    """clean commitを優先し、dirty理由がstage済みcandidateの場合だけ再観測する。"""
+
+    try:
+        return _observe_release_source(repo_root)
+    except NewsGraspReleaseGateError as exc:
+        if str(exc) != "release_source_worktree_dirty":
+            raise
+    return _observe_release_source(repo_root, allow_staged_candidate=True)
+
+
+def _require_release_source_promotable(
+    expected: Mapping[str, Any],
+    repo_root: str | Path,
+) -> dict[str, Any]:
+    """tested sourceを現在のclean commitへ一意に束縛してpromotionを許可する。"""
+
+    sealed = _release_source_binding(expected)
+    current = _release_source_binding(_observe_release_source(repo_root))
+    if sealed["source_root"] != current["source_root"]:
+        raise NewsGraspReleaseGateError("release_source_binding_mismatch")
+    if sealed["source_mode"] == "committed":
+        return _require_release_source_match(sealed, current)
+    if sealed["source_tree"] != current["source_tree"]:
+        raise NewsGraspReleaseGateError("release_candidate_tree_mismatch")
+    root = _repo_root(repo_root)
+    env = os.environ.copy()
+    for key in list(env):
+        if key.upper().startswith("GIT_"):
+            env.pop(key, None)
+    env["PYTHONIOENCODING"] = "utf-8"
+    completed = subprocess.run(
+        ["git", "--no-optional-locks", "rev-parse", "--verify", "HEAD^"],
+        cwd=str(root),
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        encoding="utf-8",
+        errors="strict",
+        timeout=30,
+        check=False,
+        shell=False,
+        env=env,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+    )
+    if completed.returncode != 0 or completed.stdout.strip().casefold() != sealed["source_head"]:
+        raise NewsGraspReleaseGateError("release_candidate_parent_mismatch")
+    return current
 
 
 def _safe_id(value: str | None, *, field: str, generate: bool = True) -> str:
@@ -628,6 +818,9 @@ def _build_ledger_recorders():
         release_id: str,
         timeout_seconds: float | int | None,
     ) -> dict[str, Any]:
+        source_before = _release_source_binding(
+            _observe_release_source_for_collection(repo_root)
+        )
         with _ledger_lock(path):
             write_locked(
                 path,
@@ -636,6 +829,7 @@ def _build_ledger_recorders():
                     "release_id": release_id,
                     "repo_root": str(repo_root),
                     "authority": "release_authoritative_collect_only",
+                    **source_before,
                 },
             )
         process = _run_fixed_pytest(
@@ -649,6 +843,24 @@ def _build_ledger_recorders():
             release_id=release_id,
             ledger_path=path,
         )
+        result.update(source_before)
+        try:
+            source_after = _release_source_binding(
+                _observe_release_source_for_binding(repo_root, source_before)
+            )
+        except NewsGraspReleaseGateError as exc:
+            result.update(
+                ok=False,
+                status="red",
+                failures=[str(exc)],
+            )
+        else:
+            if source_after != source_before:
+                result.update(
+                    ok=False,
+                    status="red",
+                    failures=["release_source_drift"],
+                )
         with _ledger_lock(path):
             write_locked(
                 path,
@@ -672,6 +884,21 @@ def _build_ledger_recorders():
         collection_sha256: str,
         operation_id: str,
     ) -> dict[str, Any]:
+        events = _ledger_events(path)
+        collection_event = _latest_event(
+            events,
+            release_id=release_id,
+            event_type="collection_completed",
+        )
+        collection_receipt = (
+            collection_event.get("receipt") if isinstance(collection_event, Mapping) else None
+        )
+        if not isinstance(collection_receipt, Mapping):
+            raise NewsGraspReleaseGateError("release_partition_collection_source_missing")
+        source_before = _require_release_source_match(
+            collection_receipt,
+            _observe_release_source_for_binding(repo_root, collection_receipt),
+        )
         with _ledger_lock(path):
             write_locked(
                 path,
@@ -683,6 +910,7 @@ def _build_ledger_recorders():
                     "collection_sha256": collection_sha256,
                     "node_ids": list(nodes),
                     "operation_id": operation_id,
+                    **source_before,
                 },
             )
         result = _run_partition_process(
@@ -694,6 +922,35 @@ def _build_ledger_recorders():
         )
         result["release_id"] = release_id
         result["collection_sha256"] = collection_sha256
+        result.update(source_before)
+        try:
+            source_after = _release_source_binding(
+                _observe_release_source_for_binding(repo_root, source_before)
+            )
+        except NewsGraspReleaseGateError as exc:
+            source_failure = str(exc)
+        else:
+            source_failure = None if source_after == source_before else "release_source_drift"
+        if source_failure:
+            result.update(
+                ok=False,
+                status="red",
+                failed_nodes=list(nodes),
+                skipped_nodes=[],
+                exact_failed_set_sha256=_node_hash(list(nodes)),
+                failure=source_failure,
+                node_receipts=[
+                    {
+                        "node_id": node,
+                        "partition": name,
+                        "status": "error",
+                        "events": [],
+                        "receipt_id": operation_id,
+                        "failure": source_failure,
+                    }
+                    for node in nodes
+                ],
+            )
         if not result.get("cause_hash"):
             result["cause_hash"] = _mapping_hash(
                 {
@@ -716,6 +973,186 @@ def _build_ledger_recorders():
                     "receipt_hash": _mapping_hash(result),
                 },
             )
+        return result
+
+    def record_repair_started(
+        path: Path,
+        *,
+        release_id: str,
+        partition: str,
+        repair_id: str,
+        previous_receipt_id: str,
+        cause_hash: str,
+        node_ids: Sequence[str],
+        collection_sha256: str,
+        source: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        bound_source = _release_source_binding(source)
+        with _ledger_lock(path):
+            events = _ledger_events(path)
+            if _latest_event(
+                events,
+                release_id=release_id,
+                event_type="repair_started",
+                identity=repair_id,
+            ) is not None:
+                raise NewsGraspReleaseGateError("release_repair_id_replay")
+            return write_locked(
+                path,
+                "repair_started",
+                {
+                    "release_id": release_id,
+                    "partition": partition,
+                    "identity": repair_id,
+                    "repair_id": repair_id,
+                    "previous_receipt_id": previous_receipt_id,
+                    "cause_hash": cause_hash,
+                    "node_ids": list(node_ids),
+                    "collection_sha256": collection_sha256,
+                    **bound_source,
+                },
+            )
+
+    def record_repair_completed(
+        path: Path,
+        *,
+        release_id: str,
+        partition: str,
+        repair_id: str,
+        previous_receipt_id: str,
+        cause_hash: str,
+        receipt: Mapping[str, Any],
+        source: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        bound_source = _release_source_binding(source)
+        with _ledger_lock(path):
+            events = _ledger_events(path)
+            started = _latest_event(
+                events,
+                release_id=release_id,
+                event_type="repair_started",
+                identity=repair_id,
+            )
+            if (
+                not isinstance(started, Mapping)
+                or started.get("partition") != partition
+                or started.get("previous_receipt_id") != previous_receipt_id
+                or started.get("cause_hash") != cause_hash
+                or _release_source_binding(started) != bound_source
+                or _latest_event(
+                    events,
+                    release_id=release_id,
+                    event_type="repair_completed",
+                    identity=repair_id,
+                )
+                is not None
+            ):
+                raise NewsGraspReleaseGateError("release_repair_started_binding_invalid")
+            return write_locked(
+                path,
+                "repair_completed",
+                {
+                    "release_id": release_id,
+                    "partition": partition,
+                    "identity": repair_id,
+                    "repair_id": repair_id,
+                    "previous_receipt_id": previous_receipt_id,
+                    "cause_hash": cause_hash,
+                    "receipt": dict(receipt),
+                    "receipt_hash": _mapping_hash(receipt),
+                    **bound_source,
+                },
+            )
+
+    def run_authoritative_repair(
+        path: Path,
+        *,
+        repo_root: Path,
+        release_id: str,
+        partition: str,
+        repair_id: str,
+        previous_receipt_id: str,
+        cause_hash: str,
+        nodes: Sequence[str],
+        collection_sha256: str,
+        timeout_seconds: float | int | None,
+        source: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        """started→実process→completedを不可分なauthority capabilityへ閉じる。"""
+
+        source_before = _release_source_binding(source)
+        record_repair_started(
+            path,
+            release_id=release_id,
+            partition=partition,
+            repair_id=repair_id,
+            previous_receipt_id=previous_receipt_id,
+            cause_hash=cause_hash,
+            node_ids=nodes,
+            collection_sha256=collection_sha256,
+            source=source_before,
+        )
+        group = _run_partition_process(
+            partition,
+            nodes,
+            repo_root=repo_root,
+            timeout_seconds=timeout_seconds,
+            operation_id=repair_id,
+        )
+        group.update(source_before)
+        try:
+            source_after = _release_source_binding(
+                _observe_release_source_for_binding(repo_root, source_before)
+            )
+        except NewsGraspReleaseGateError as exc:
+            source_failure = str(exc)
+        else:
+            source_failure = None if source_after == source_before else "release_source_drift"
+        if source_failure:
+            group.update(
+                ok=False,
+                status="red",
+                failed_nodes=list(nodes),
+                skipped_nodes=[],
+                exact_failed_set_sha256=_node_hash(list(nodes)),
+                failure=source_failure,
+                node_receipts=[
+                    {
+                        "node_id": node,
+                        "partition": partition,
+                        "status": "error",
+                        "events": [],
+                        "receipt_id": repair_id,
+                        "failure": source_failure,
+                    }
+                    for node in nodes
+                ],
+            )
+        result = {
+            "schemaVersion": "NEWS_GRASP_RELEASE_CAUSAL_REPAIR_RECEIPT_V2",
+            "ok": group.get("ok") is True,
+            "status": "repair_green" if group.get("ok") is True else "repair_red",
+            "repair": True,
+            "repair_id": repair_id,
+            "previous_receipt_id": previous_receipt_id,
+            "cause_hash": cause_hash,
+            "exact_failed_nodes": list(nodes),
+            "collection_sha256": collection_sha256,
+            "partition_receipt": group,
+            "automatic_retry": False,
+            "process_count": int(group.get("process_count", 0)),
+            **source_before,
+        }
+        record_repair_completed(
+            path,
+            release_id=release_id,
+            partition=partition,
+            repair_id=repair_id,
+            previous_receipt_id=previous_receipt_id,
+            cause_hash=cause_hash,
+            receipt=result,
+            source=source_before,
+        )
         return result
 
     def record_release_locked(
@@ -759,11 +1196,19 @@ def _build_ledger_recorders():
     def finalize_release_event(
         ledger_path: str | Path,
         release_receipt: Mapping[str, Any],
+        *,
+        repo_root: str | Path | None = None,
     ) -> dict[str, Any]:
         """完全なcollection/partition/node鎖を再検証してからだけ完了を書く。"""
 
         ledger = _ledger_file(ledger_path)
         with _ledger_lock(ledger):
+            if repo_root is None:
+                raise NewsGraspReleaseGateError("release_completion_repo_root_required")
+            _require_release_source_match(
+                release_receipt,
+                _observe_release_source_for_binding(repo_root, release_receipt),
+            )
             chain = _validate_release_completion_chain(ledger, release_receipt)
             return record_release_locked(
                 ledger,
@@ -792,6 +1237,7 @@ def _build_ledger_recorders():
             )
             if ledger != _canonical_ledger_path():
                 raise NewsGraspReleaseGateError("daily_promotion_noncanonical_ledger_forbidden")
+            _require_release_source_promotable(release_receipt, repo_root)
             # callerのmappingだけを信頼せず、完了鎖をもう一度canonical ledgerから
             # 集約する。raw writerはこのclosure外へ一切公開しない。
             chain = _validate_release_completion_chain(ledger, release_receipt)
@@ -879,6 +1325,7 @@ def _build_ledger_recorders():
         append_non_authority_locked,
         record_collection,
         record_partition,
+        run_authoritative_repair,
         finalize_release_event,
         ensure_daily_promotion,
     )
@@ -888,6 +1335,7 @@ def _build_ledger_recorders():
     _append_ledger_locked,
     _record_authoritative_collection,
     _record_authoritative_partition,
+    _run_authoritative_repair,
     _finalize_release_event,
     _ensure_daily_promotion,
 ) = _build_ledger_recorders()
@@ -1635,6 +2083,254 @@ def _partition_process_receipt(
     )
 
 
+def _failed_nodes_from_partition_receipt(receipt: Mapping[str, Any]) -> list[str]:
+    """partition receiptのRed集合を、欠落時もGreenへ倒さず復元する。"""
+
+    nodes = _node_list(receipt.get("node_ids") or ())
+    raw_failed = receipt.get("failed_nodes")
+    if raw_failed is None:
+        raw_failed = [
+            str(item.get("node_id") or "")
+            for item in (receipt.get("node_receipts") or ())
+            if isinstance(item, Mapping) and item.get("status") in {"fail", "error"}
+        ]
+    failed = _node_list(raw_failed or ())
+    if not failed and nodes and not list(receipt.get("node_receipts") or ()) and receipt.get("failure"):
+        # V2以前のtransport failureはnode receiptを持たない。成功と推測せず、
+        # 束縛済みpartition全体をRedとして扱う。
+        failed = list(nodes)
+    if set(failed) - set(nodes):
+        raise NewsGraspReleaseGateError("release_repair_failed_set_outside_partition")
+    return failed
+
+
+def _effective_partition_receipt(
+    events: Sequence[Mapping[str, Any]],
+    *,
+    release_id: str,
+    partition: str,
+    expected_nodes: Sequence[str],
+    collection_sha256: str,
+) -> dict[str, Any]:
+    """初回partitionと線形causal repair鎖から一意な現在receiptを合成する。"""
+
+    base_events = [
+        event
+        for event in events
+        if event.get("release_id") == release_id
+        and event.get("event_type") == "partition_completed"
+        and event.get("partition") == partition
+    ]
+    if len(base_events) != 1:
+        raise NewsGraspReleaseGateError("release_partition_authority_event_count_invalid")
+    base_event = base_events[0]
+    base = base_event.get("receipt")
+    if (
+        not isinstance(base, Mapping)
+        or base_event.get("receipt_hash") != _mapping_hash(base)
+        or base.get("release_id") != release_id
+        or base.get("partition") != partition
+        or list(base.get("node_ids") or ()) != list(expected_nodes)
+        or base.get("collection_sha256") != collection_sha256
+    ):
+        raise NewsGraspReleaseGateError("release_completion_partition_event_invalid")
+    base_id = str(base.get("receipt_id") or "")
+    if not base_id:
+        raise NewsGraspReleaseGateError("release_partition_receipt_id_missing")
+    effective_source = _release_source_binding(base)
+
+    base_rows = base.get("node_receipts")
+    if not isinstance(base_rows, list):
+        raise NewsGraspReleaseGateError("release_completion_node_receipts_invalid")
+    row_by_node: dict[str, dict[str, Any]] = {}
+    if base_rows:
+        if [str(item.get("node_id") or "") for item in base_rows if isinstance(item, Mapping)] != list(expected_nodes):
+            raise NewsGraspReleaseGateError("release_completion_node_union_invalid")
+        for item in base_rows:
+            if not isinstance(item, Mapping) or item.get("partition") != partition:
+                raise NewsGraspReleaseGateError("release_completion_node_receipt_invalid")
+            row_by_node[str(item.get("node_id"))] = dict(item)
+    else:
+        for node in expected_nodes:
+            row_by_node[node] = {
+                "node_id": node,
+                "partition": partition,
+                "status": "error",
+                "result": {
+                    "status": base.get("status"),
+                    "failure": base.get("failure"),
+                },
+            }
+
+    repairs = [
+        event
+        for event in events
+        if event.get("release_id") == release_id
+        and event.get("event_type") == "repair_completed"
+        and event.get("partition") == partition
+    ]
+    completed_repair_id_list = [str(event.get("repair_id") or "") for event in repairs]
+    completed_repair_ids = set(completed_repair_id_list)
+    if "" in completed_repair_ids or len(completed_repair_ids) != len(completed_repair_id_list):
+        raise NewsGraspReleaseGateError("release_repair_identity_invalid")
+    started_events = [
+        event
+        for event in events
+        if event.get("release_id") == release_id
+        and event.get("event_type") == "repair_started"
+        and event.get("partition") == partition
+    ]
+    started_repair_id_list = [
+        str(event.get("repair_id") or event.get("identity") or "")
+        for event in started_events
+    ]
+    started_repair_ids = set(started_repair_id_list)
+    started_by_id = {
+        str(event.get("repair_id") or event.get("identity") or ""): event
+        for event in started_events
+    }
+    if (
+        "" in started_repair_ids
+        or len(started_repair_ids) != len(started_repair_id_list)
+        or started_repair_ids != completed_repair_ids
+    ):
+        raise NewsGraspReleaseGateError("release_repair_inflight")
+    if not repairs:
+        # causal repairが無い通常Releaseは既存のauthoritative receiptそのものを
+        # completion validatorへ渡す。合成receiptはrepair鎖がある場合だけ作る。
+        return dict(base)
+
+    child_by_parent: dict[str, Mapping[str, Any]] = {}
+    for event in repairs:
+        repair = event.get("receipt")
+        repair_id = str(event.get("repair_id") or "")
+        previous_id = str(event.get("previous_receipt_id") or "")
+        started = started_by_id.get(repair_id)
+        if (
+            not isinstance(repair, Mapping)
+            or not isinstance(started, Mapping)
+            or repair.get("schemaVersion") != "NEWS_GRASP_RELEASE_CAUSAL_REPAIR_RECEIPT_V2"
+            or event.get("receipt_hash") != _mapping_hash(repair)
+            or repair.get("repair_id") != repair_id
+            or repair.get("previous_receipt_id") != previous_id
+            or repair.get("collection_sha256") != collection_sha256
+            or event.get("cause_hash") != repair.get("cause_hash")
+            or not _HEX64.fullmatch(str(repair.get("cause_hash") or ""))
+            or started.get("previous_receipt_id") != previous_id
+            or started.get("cause_hash") != repair.get("cause_hash")
+            or list(started.get("node_ids") or ())
+            != list(repair.get("exact_failed_nodes") or ())
+            or started.get("collection_sha256") != collection_sha256
+        ):
+            raise NewsGraspReleaseGateError("release_repair_receipt_binding_invalid")
+        if previous_id in child_by_parent:
+            raise NewsGraspReleaseGateError("release_repair_chain_forked")
+        child_by_parent[previous_id] = event
+
+    current_id = base_id
+    current_failed = _failed_nodes_from_partition_receipt(base)
+    repair_chain_ids: list[str] = []
+    visited: set[str] = set()
+    process_count = int(base.get("process_count") or 0)
+    last_cause_hash = str(base.get("cause_hash") or "")
+    while current_id in child_by_parent:
+        event = child_by_parent[current_id]
+        repair_id = str(event.get("repair_id") or "")
+        if repair_id in visited:
+            raise NewsGraspReleaseGateError("release_repair_chain_cycle")
+        visited.add(repair_id)
+        repair = event["receipt"]
+        exact_failed = _node_list(repair.get("exact_failed_nodes") or ())
+        if exact_failed != current_failed:
+            raise NewsGraspReleaseGateError("release_repair_exact_failed_set_required")
+        nested = repair.get("partition_receipt")
+        repair_source = _release_source_binding(repair)
+        if (
+            not isinstance(nested, Mapping)
+            or nested.get("partition") != partition
+            or list(nested.get("node_ids") or ()) != exact_failed
+            or nested.get("collection_sha256") not in {None, "", collection_sha256}
+            or _release_source_binding(nested) != repair_source
+            or _release_source_binding(event) != repair_source
+            or _release_source_binding(started_by_id[repair_id]) != repair_source
+        ):
+            raise NewsGraspReleaseGateError("release_repair_partition_receipt_invalid")
+        nested_rows = nested.get("node_receipts")
+        if not isinstance(nested_rows, list):
+            raise NewsGraspReleaseGateError("release_repair_node_receipts_invalid")
+        if nested_rows:
+            if [str(item.get("node_id") or "") for item in nested_rows if isinstance(item, Mapping)] != exact_failed:
+                raise NewsGraspReleaseGateError("release_repair_node_union_invalid")
+            for item in nested_rows:
+                if not isinstance(item, Mapping) or item.get("partition") != partition:
+                    raise NewsGraspReleaseGateError("release_repair_node_receipt_invalid")
+                row_by_node[str(item.get("node_id"))] = dict(item)
+        else:
+            for node in exact_failed:
+                row_by_node[node] = {
+                    "node_id": node,
+                    "partition": partition,
+                    "status": "error",
+                    "result": {
+                        "status": nested.get("status"),
+                        "failure": nested.get("failure"),
+                    },
+                }
+        nested_failed = _failed_nodes_from_partition_receipt(nested)
+        nested_green = (
+            not nested_failed
+            and len(nested_rows) == len(exact_failed)
+            and all(
+                isinstance(item, Mapping) and item.get("status") in {"pass", "skip"}
+                for item in nested_rows
+            )
+        )
+        if repair.get("ok") is not nested_green:
+            raise NewsGraspReleaseGateError("release_repair_status_invalid")
+        current_failed = nested_failed
+        current_id = repair_id
+        repair_chain_ids.append(repair_id)
+        process_count += int(repair.get("process_count") or 0)
+        last_cause_hash = str(repair.get("cause_hash") or "")
+        effective_source = repair_source
+
+    if len(visited) != len(repairs):
+        raise NewsGraspReleaseGateError("release_repair_chain_orphaned")
+    rows = [row_by_node[node] for node in expected_nodes]
+    failed = [
+        str(item.get("node_id") or "")
+        for item in rows
+        if item.get("status") in {"fail", "error"}
+    ]
+    green = not failed and len(rows) == len(expected_nodes) and all(
+        item.get("status") in {"pass", "skip"} for item in rows
+    )
+    return {
+        "schemaVersion": "NEWS_GRASP_RELEASE_EFFECTIVE_PARTITION_RECEIPT_V1",
+        "receipt_id": current_id,
+        "base_receipt_id": base_id,
+        "partition": partition,
+        "node_ids": list(expected_nodes),
+        "node_count": len(expected_nodes),
+        "node_receipts": rows,
+        "failed_nodes": failed,
+        "skipped_nodes": [
+            str(item.get("node_id") or "") for item in rows if item.get("status") == "skip"
+        ],
+        "exact_failed_set_sha256": _node_hash(failed),
+        "process_count": process_count,
+        "finalization_process_count": 0,
+        "ok": green,
+        "status": "green" if green else "red",
+        "failure": None if green else "causal_repair_chain_not_green",
+        "cause_hash": last_cause_hash,
+        "release_id": release_id,
+        "collection_sha256": collection_sha256,
+        "repair_chain_ids": repair_chain_ids,
+        **effective_source,
+    }
+
+
 def _validate_release_completion_chain(
     ledger_path: str | Path,
     release_receipt: Mapping[str, Any],
@@ -1686,6 +2382,11 @@ def _validate_release_completion_chain(
         or collection_event.get("receipt_hash") != _mapping_hash(collection_receipt)
     ):
         raise NewsGraspReleaseGateError("release_completion_collection_event_invalid")
+    collection_source = _release_source_binding(collection_receipt)
+    release_source = _require_release_source_match(
+        collection_source,
+        release_receipt,
+    )
 
     listed_receipts = release_receipt.get("partition_receipts")
     if not isinstance(listed_receipts, list):
@@ -1708,18 +2409,16 @@ def _validate_release_completion_chain(
             if name in listed_by_partition:
                 raise NewsGraspReleaseGateError("release_completion_empty_partition_receipt")
             continue
-        event = _latest_event(
+        authoritative = _effective_partition_receipt(
             events,
             release_id=release_id,
-            event_type="partition_completed",
             partition=name,
+            expected_nodes=nodes,
+            collection_sha256=collection_sha256,
         )
-        authoritative = event.get("receipt") if isinstance(event, Mapping) else None
         listed = listed_by_partition.get(name)
         if (
-            not isinstance(authoritative, Mapping)
-            or not isinstance(listed, Mapping)
-            or event.get("receipt_hash") != _mapping_hash(authoritative)
+            not isinstance(listed, Mapping)
             or _mapping_hash(listed) != _mapping_hash(authoritative)
             or authoritative.get("release_id") != release_id
             or authoritative.get("partition") != name
@@ -1727,6 +2426,7 @@ def _validate_release_completion_chain(
             or authoritative.get("collection_sha256") != collection_sha256
         ):
             raise NewsGraspReleaseGateError("release_completion_partition_event_invalid")
+        _require_release_source_match(release_source, authoritative)
         node_receipts = authoritative.get("node_receipts")
         if not isinstance(node_receipts, list):
             raise NewsGraspReleaseGateError("release_completion_node_receipts_invalid")
@@ -1791,6 +2491,178 @@ def _validate_release_completion_chain(
     }
 
 
+def finalize_causal_repairs(
+    *,
+    repo_root: str | Path,
+    release_id: str,
+    ledger_path: str | Path | None = None,
+    _test_only_allow_ledger_override: bool = False,
+) -> dict[str, Any]:
+    """成功済みnodeを再実行せず、authoritative repair鎖だけからReleaseを閉じる。"""
+
+    root = _repo_root(repo_root)
+    rid = _safe_id(release_id, field="release_id", generate=False)
+    if ledger_path is not None and not _test_only_allow_ledger_override:
+        raise NewsGraspReleaseGateError("release_production_ledger_override_forbidden")
+    ledger = (
+        _ledger_file(ledger_path)
+        if _test_only_allow_ledger_override
+        else _canonical_ledger_path()
+    )
+    collection_event = _latest_event(
+        _ledger_events(ledger),
+        release_id=rid,
+        event_type="collection_completed",
+    )
+    collection_hint = (
+        collection_event.get("receipt") if isinstance(collection_event, Mapping) else {}
+    )
+    current_source = _release_source_binding(
+        _observe_release_source_for_binding(root, collection_hint)
+    )
+    events = _ledger_events(ledger)
+    prior_release = _latest_event(events, release_id=rid, event_type="release_completed")
+    if prior_release is not None:
+        prior = prior_release.get("receipt")
+        if not isinstance(prior, Mapping):
+            raise NewsGraspReleaseGateError("release_completion_prior_receipt_invalid")
+        if _test_only_allow_ledger_override:
+            _require_release_source_match(current_source, prior)
+        else:
+            _require_release_source_promotable(prior, root)
+        chain = _validate_release_completion_chain(ledger, prior)
+        if chain.get("green") is not True:
+            raise NewsGraspReleaseGateError("release_completion_prior_receipt_not_green")
+        if not _test_only_allow_ledger_override:
+            promotion = _ensure_daily_promotion(
+                repo_root=root,
+                ledger=ledger,
+                release_event=prior_release,
+                release_receipt=prior,
+            )
+        else:
+            promotion = None
+        attached = dict(prior_release)
+        attached["attached"] = True
+        attached["finalization_process_count"] = 0
+        if promotion is not None:
+            attached["promotion"] = promotion
+        return attached
+
+    collection_event = _latest_event(events, release_id=rid, event_type="collection_completed")
+    collection = collection_event.get("receipt") if isinstance(collection_event, Mapping) else None
+    if (
+        not isinstance(collection, Mapping)
+        or collection.get("authority") != "release_authoritative_collect_only"
+        or collection.get("ok") is not True
+        or collection.get("release_id") != rid
+        or collection_event.get("receipt_hash") != _mapping_hash(collection)
+    ):
+        raise NewsGraspReleaseGateError("release_completion_collection_event_invalid")
+    nodes = _node_list(collection.get("collection_nodes") or ())
+    collection_sha256 = _node_hash(nodes)
+    if not nodes or collection.get("collection_sha256") != collection_sha256:
+        raise NewsGraspReleaseGateError("release_completion_collection_binding_invalid")
+
+    partition_nodes: dict[str, list[str]] = {name: [] for name in RELEASE_PARTITIONS}
+    for name in RELEASE_PARTITIONS:
+        base_event = _latest_event(
+            events,
+            release_id=rid,
+            event_type="partition_completed",
+            partition=name,
+        )
+        base = base_event.get("receipt") if isinstance(base_event, Mapping) else None
+        if isinstance(base, Mapping):
+            partition_nodes[name] = _node_list(base.get("node_ids") or ())
+    classification = validate_partition(nodes, partition_nodes)
+    partition_receipts: list[dict[str, Any]] = []
+    node_receipts: list[dict[str, Any]] = []
+    for name in RELEASE_PARTITIONS:
+        expected = list(classification["partitions"].get(name) or ())
+        if not expected:
+            continue
+        effective = _effective_partition_receipt(
+            events,
+            release_id=rid,
+            partition=name,
+            expected_nodes=expected,
+            collection_sha256=collection_sha256,
+        )
+        _require_release_source_match(current_source, effective)
+        partition_receipts.append(effective)
+        node_receipts.extend(dict(item) for item in effective["node_receipts"])
+    failed_nodes = [
+        str(item.get("node_id") or "")
+        for item in node_receipts
+        if item.get("status") in {"fail", "error"}
+    ]
+    green = (
+        not failed_nodes
+        and len(node_receipts) == len(nodes)
+        and all(item.get("status") in {"pass", "skip"} for item in node_receipts)
+        and all(receipt.get("ok") is True for receipt in partition_receipts)
+    )
+    if not green:
+        raise NewsGraspReleaseGateError("release_causal_repair_chain_not_green")
+    result = {
+        "schemaVersion": RELEASE_GATE_SCHEMA,
+        "ok": True,
+        "status": "green",
+        "partition": classification,
+        "node_receipts": node_receipts,
+        "partition_receipts": partition_receipts,
+        "executed_node_count": len(nodes),
+        "executed_process_count": 0,
+        "finalization_process_count": 0,
+        "union_node_count": len(nodes),
+        "failed_nodes": [],
+        "collection_sha256": collection_sha256,
+        "release_id": rid,
+        "ledger_path": str(ledger),
+        "causal_repair_finalized": True,
+        **current_source,
+    }
+    release_event = _finalize_release_event(ledger, result, repo_root=root)
+    if not _test_only_allow_ledger_override:
+        if current_source["source_mode"] == "committed":
+            _ensure_daily_promotion(
+                repo_root=root,
+                ledger=ledger,
+                release_event=release_event,
+                release_receipt=result,
+            )
+        else:
+            release_event = dict(release_event)
+            release_event["promotion_pending_commit"] = True
+    return release_event
+
+
+def promote_completed_release(
+    *,
+    repo_root: str | Path,
+    release_id: str,
+) -> dict[str, Any]:
+    """commit前に検証したcandidate treeをcommit後のclean HEADへpromotionする。"""
+
+    root = _repo_root(repo_root)
+    rid = _safe_id(release_id, field="release_id", generate=False)
+    ledger = _canonical_ledger_path()
+    events = _ledger_events(ledger)
+    release_event = _latest_event(events, release_id=rid, event_type="release_completed")
+    release_receipt = (
+        release_event.get("receipt") if isinstance(release_event, Mapping) else None
+    )
+    if not isinstance(release_event, Mapping) or not isinstance(release_receipt, Mapping):
+        raise NewsGraspReleaseGateError("daily_promotion_release_event_missing")
+    return _ensure_daily_promotion(
+        repo_root=root,
+        ledger=ledger,
+        release_event=release_event,
+        release_receipt=release_receipt,
+    )
+
+
 def execute_partitioned_nodes(
     collection_nodes: Iterable[str],
     *,
@@ -1811,6 +2683,7 @@ def execute_partitioned_nodes(
     """
 
     collection = _node_list(collection_nodes)
+    source_binding: dict[str, Any] | None = None
     if repo_root is not None:
         if runner is not None:
             raise NewsGraspReleaseGateError("release_runner_injection_forbidden")
@@ -1826,6 +2699,10 @@ def execute_partitioned_nodes(
         if receipt_nodes != collection or collection_receipt.get("collection_sha256") != _node_hash(collection):
             raise NewsGraspReleaseGateError("release_authoritative_collection_binding_mismatch")
         root = _repo_root(repo_root)
+        source_binding = _require_release_source_match(
+            collection_receipt,
+            _observe_release_source_for_binding(root, collection_receipt),
+        )
         rid = _safe_id(release_id or collection_receipt.get("release_id"), field="release_id")
         if ledger_path is not None and not _test_only_allow_ledger_override:
             raise NewsGraspReleaseGateError("release_production_ledger_override_forbidden")
@@ -2003,15 +2880,19 @@ def execute_partitioned_nodes(
         "collection_sha256": classification["collection_sha256"],
         "release_id": rid,
         "ledger_path": str(ledger),
+        **(source_binding or {}),
     }
-    release_event = _finalize_release_event(ledger, result)
+    release_event = _finalize_release_event(ledger, result, repo_root=root)
     if green and not _test_only_allow_ledger_override:
-        _ensure_daily_promotion(
-            repo_root=root,
-            ledger=ledger,
-            release_event=release_event,
-            release_receipt=result,
-        )
+        if source_binding and source_binding["source_mode"] == "committed":
+            _ensure_daily_promotion(
+                repo_root=root,
+                ledger=ledger,
+                release_event=release_event,
+                release_receipt=result,
+            )
+        else:
+            result["promotion_pending_commit"] = True
     return result
 
 
@@ -2149,52 +3030,24 @@ def causal_repair_partition(
     )
     if not _HEX64.fullmatch(collection_sha256):
         raise NewsGraspReleaseGateError("release_repair_collection_binding_missing")
-    _append_ledger(
+    root = _repo_root(repo_root)
+    source_before = _require_release_source_match(
+        previous_receipt,
+        _observe_release_source_for_binding(root, previous_receipt),
+    )
+    return _run_authoritative_repair(
         ledger,
-        "repair_started",
+        repo_root=root,
         release_id=rid,
         partition=partition,
-        identity=repair,
         repair_id=repair,
         previous_receipt_id=previous_id,
         cause_hash=cause,
-        node_ids=list(nodes),
+        nodes=nodes,
         collection_sha256=collection_sha256,
-    )
-    group = _run_partition_process(
-        partition,
-        nodes,
-        repo_root=_repo_root(repo_root),
         timeout_seconds=timeout_seconds,
-        operation_id=repair,
+        source=source_before,
     )
-    result = {
-        "schemaVersion": "NEWS_GRASP_RELEASE_CAUSAL_REPAIR_RECEIPT_V2",
-        "ok": group.get("ok") is True,
-        "status": "repair_green" if group.get("ok") is True else "repair_red",
-        "repair": True,
-        "repair_id": repair,
-        "cause_hash": cause,
-        "previous_receipt_id": previous_id,
-        "exact_failed_nodes": list(nodes),
-        "collection_sha256": collection_sha256,
-        "partition_receipt": group,
-        "automatic_retry": False,
-        "process_count": int(group.get("process_count", 0)),
-    }
-    _append_ledger(
-        ledger,
-        "repair_completed",
-        release_id=rid,
-        partition=partition,
-        identity=repair,
-        repair_id=repair,
-        previous_receipt_id=previous_id,
-        cause_hash=cause,
-        receipt=result,
-        receipt_hash=_mapping_hash(result),
-    )
-    return result
 
 
 def record_nopublish_receipt(
@@ -2361,6 +3214,24 @@ def _main(argv: Sequence[str] | None = None) -> int:
                 release_id=payload.get("release_id"),
                 ledger_path=payload.get("ledger_path"),
                 timeout_seconds=payload.get("timeout_seconds"),
+            )
+        elif args and args[0] == "finalize-repairs":
+            if len(args) != 3:
+                raise NewsGraspReleaseGateError(
+                    "release_finalize_repairs_requires_repo_root_and_release_id"
+                )
+            result = finalize_causal_repairs(
+                repo_root=args[1],
+                release_id=args[2],
+            )
+        elif args and args[0] == "promote":
+            if len(args) != 3:
+                raise NewsGraspReleaseGateError(
+                    "release_promote_requires_repo_root_and_release_id"
+                )
+            result = promote_completed_release(
+                repo_root=args[1],
+                release_id=args[2],
             )
         elif args and args[0] == "nopublish":
             if len(args) != 2:

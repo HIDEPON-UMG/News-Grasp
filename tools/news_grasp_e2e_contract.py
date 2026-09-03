@@ -14,6 +14,8 @@ class E2ECompositionContractError(RuntimeError):
 ROUTES = {
     "automation": "automation/news-grasp-6-40/automation.toml.template",
     "skill": "automation/skills/news-grasp-direct-mainline/SKILL.md",
+    "launcher": "tools/news_grasp_daily_launcher.py",
+    "daily_gate": "tools/news_grasp_daily_gate.py",
     "runtime": "tools/news_grasp_direct_runtime.py",
     "completion": "tools/news_grasp_direct_completion.py",
     "title_control": "tools/news_grasp_title_control.py",
@@ -54,6 +56,8 @@ def validate_e2e_launch_contract(
     }
     automation = sources["automation"]
     skill = sources["skill"]
+    launcher = sources["launcher"]
+    daily_gate = sources["daily_gate"]
     runtime = sources["runtime"]
     completion = sources["completion"]
     title_control = sources["title_control"]
@@ -63,16 +67,32 @@ def validate_e2e_launch_contract(
         '$news-grasp-direct-mainline',
         'model = "gpt-5.6-luna"',
         'reasoning_effort = "max"',
-        "tools.news_grasp_direct_runtime.DIRECT_STAGES",
-        "NEWS_GRASP_DIRECT_MAINLINE_RECEIPT_V1",
-        "NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1",
+        "tools.news_grasp_daily_launcher",
+        "static_check",
+        "scoped_contract_unit",
+        "current_issue_integration",
+        "external_publication",
+        "consumer_public_verification",
+        "atomic_completion",
     )
     skill_markers = (
-        "news_grasp_title_materializer",
-        "python -m tools.news_grasp_direct_runtime start",
-        "run_exact_successor",
-        "validate_daily_quality --date YYYY-MM-DD --require-deepdive",
+        "Direct 本線工程（Daily 六phase）",
+        "tools.news_grasp_daily_launcher",
+        "single-flight identity",
+        "consumer_public_verification",
         "public incompleteかつexact successorがある状態で終了しない",
+    )
+    launcher_markers = (
+        "NEWS_GRASP_DAILY_SEQUENCE_RECEIPT_V1",
+        "run_daily_sequence(",
+        "_canonical_daily_state_root(",
+        "daily_sequence_argv_forbidden",
+    )
+    daily_gate_markers = (
+        "DAILY_OPERATIONS",
+        "run_daily_sequence(",
+        "protected_release_reexecution_forbidden",
+        "current_issue_integration",
     )
     runtime_markers = (
         "DIRECT_STAGES = (",
@@ -104,6 +124,8 @@ def validate_e2e_launch_contract(
     for code, source, markers in (
         ("NEWS_GRASP_E2E_AUTOMATION_INVALID", automation, automation_markers),
         ("NEWS_GRASP_E2E_SKILL_INVALID", skill, skill_markers),
+        ("NEWS_GRASP_E2E_LAUNCHER_INVALID", launcher, launcher_markers),
+        ("NEWS_GRASP_E2E_DAILY_GATE_INVALID", daily_gate, daily_gate_markers),
         ("NEWS_GRASP_E2E_RUNTIME_INVALID", runtime, runtime_markers),
         ("NEWS_GRASP_E2E_COMPLETION_INVALID", completion, completion_markers),
         ("NEWS_GRASP_E2E_TITLE_CONTROL_INVALID", title_control, title_markers),
@@ -113,18 +135,19 @@ def validate_e2e_launch_contract(
             raise E2ECompositionContractError(code)
 
     title_at = automation.index("title_status")
-    runtime_at = automation.index("tools.news_grasp_direct_runtime.DIRECT_STAGES")
-    quality_at = automation.index("validate_daily_quality")
-    completion_at = automation.index("NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1", quality_at)
-    if not title_at < runtime_at < quality_at < completion_at:
+    launcher_at = automation.index("tools.news_grasp_daily_launcher")
+    quality_at = automation.index("current_issue_integration", launcher_at)
+    verification_at = automation.index("consumer_public_verification", quality_at)
+    completion_at = automation.index("atomic_completion", verification_at)
+    if not title_at < launcher_at < quality_at < verification_at < completion_at:
         raise E2ECompositionContractError("NEWS_GRASP_E2E_DIRECT_ORDER_INVALID")
-    if "news-grasp-runner.ps1" in automation + runtime + completion + guard:
+    if "news-grasp-runner.ps1" in automation + launcher + daily_gate + runtime + completion + guard:
         raise E2ECompositionContractError("NEWS_GRASP_E2E_LEGACY_RUNNER_ROUTE_PRESENT")
 
     return {
         "schemaVersion": "NEWS_GRASP_DIRECT_E2E_COMPOSITION_V1",
         "status": "green",
-        "route": "codex_automation_to_direct_runtime_to_public_completion",
+        "route": "codex_automation_to_daily_launcher_to_atomic_completion",
         "executionRootBound": True,
         "executableBound": True,
         "ownerClaimBound": False,
@@ -134,10 +157,11 @@ def validate_e2e_launch_contract(
         "fixedManagedRoot": True,
         "compositionOrder": [
             "automation_prompt",
-            "title_control",
-            "direct_runtime_start",
-            "stage_successors",
-            "public_verification",
+            "title_observation",
+            "daily_launcher",
+            "daily_sequence",
+            "consumer_public_verification",
+            "atomic_completion",
         ],
         "routeHashes": {
             ROUTES[name]: _sha256(source) for name, source in sources.items()

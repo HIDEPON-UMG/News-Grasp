@@ -382,6 +382,62 @@
       "owner": "external transactional outbox owner",
       "maintenance_condition": "external timing、outbox status、YouTube finalize、playlist membership、notification recipient loop変更時",
       "status": "open"
+    },
+    {
+      "defect_code": "NG-I28",
+      "incident_codes": ["PREPUSH-P1-STARTLESS-REPAIR-AUTHORITY"],
+      "source_of_truth": ["tools/news_grasp_release_gate.py", "MAC付きcanonical Release ledger", "causal repair receipt chain"],
+      "affected_consumer": ["Release causal repair finalizer", "Daily scoped-test promotion"],
+      "impact_binding": "汎用ledger writerがrepair_completedを直接発行でき、startedとの一対一対応をfinalizerが要求しない場合、pytest processを起動せず偽Green repairを正規hash-chainへ混入できる",
+      "red_fixture": ["canonical generic repair_completed append", "repair_startedなしのrepair_completed", "同一previous receiptからのfork"],
+      "green_test": ["test_NG_RG_18_canonical_repair_authority_rejects_generic_and_startless_writes", "test_NG_RG_17_finalize_causal_repairs_rejects_forked_repair_chain"],
+      "operational_recovery": "repair_startedとrepair_completedを専用typed writerだけへ閉じ、repair ID、previous receipt、cause、exact failed set、source identityの一対一対応を再検証してから合成する",
+      "independent_evidence": ["generic writer mutation count 0", "started/completed exact set", "linear repair chain", "finalization process count 0", "third-party re-review"],
+      "owner": "release_causal_repair_authority",
+      "maintenance_condition": "Release ledger authority event、causal repair、completion finalizer変更時",
+      "status": "open"
+    },
+    {
+      "defect_code": "NG-I29",
+      "incident_codes": ["PREPUSH-P1-RELEASE-SOURCE-FRESHNESS-UNBOUND"],
+      "source_of_truth": ["tools/news_grasp_release_gate.py", "tools/news_grasp_scoped_test_broker.py", "clean Git HEAD/tree/root observation"],
+      "affected_consumer": ["Release collection", "Release partition executor", "Release finalizer", "Daily promotion issuer"],
+      "impact_binding": "テスト時sourceとpromotion時sourceを同じclean repo root・HEAD・treeへ束縛しない場合、別root、テスト後commit、dirty sourceを未検証のままRelease GreenとしてDailyが再利用できる",
+      "red_fixture": ["collection中HEAD/tree drift", "completion時different HEAD", "dirty worktree", "promotion時different source root/HEAD/tree"],
+      "green_test": ["test_NG_RG_19_collection_seals_source_and_rejects_collection_drift", "test_NG_RG_20_finalize_rejects_current_source_mismatch_or_dirty", "test_NG_RG_21_promotion_rejects_release_source_mismatch"],
+      "operational_recovery": "collection前後、partition前後、finalize、promotionでclean Git source identityを再観測し、全receiptとexact一致しない場合はpromotionを発行せず新しいclean Releaseを要求する",
+      "independent_evidence": ["source root", "source HEAD", "source tree", "worktree clean", "collection/partition/release receipt hash", "promotion call count 0", "third-party re-review"],
+      "owner": "release_source_freshness_owner",
+      "maintenance_condition": "Release collection/partition/repair/finalize、Git observer、promotion issuer変更時",
+      "status": "open"
+    },
+    {
+      "defect_code": "NG-I30",
+      "incident_codes": ["PRECOMMIT-RELEASE-SOURCE-BINDING-CYCLE"],
+      "source_of_truth": ["staged Git index tree", "baseline HEAD", "final clean commit tree and first parent", "canonical Release ledger"],
+      "affected_consumer": ["safe commit gate", "Release full-suite partition", "Daily promotion issuer"],
+      "impact_binding": "Releaseがclean HEADだけを要求すると、commit前full-suite Greenとtested commit identityを同時に満たせず、全件の二重実行または未検証commitのpromotionへ退行する",
+      "red_fixture": ["fully staged candidate tree", "unstaged or untracked candidate", "promotion before commit", "commit with different tree", "commit with different parent", "index drift after collection"],
+      "green_test": ["test_NG_RG_22_staged_candidate_observation_binds_head_and_index_tree", "test_NG_RG_23_staged_candidate_rejects_unstaged_or_untracked_input", "test_NG_RG_24_candidate_receipt_is_not_promotable_before_commit", "test_NG_RG_25_candidate_commit_requires_exact_tree_and_baseline_parent", "test_NG_RG_26_candidate_index_tree_drift_is_rejected_by_source_match"],
+      "operational_recovery": "全意図差分をstageしてbaseline HEADとindex treeを一回だけRelease検証し、Green後のcommitが同じtreeかつbaselineを直接親に持つ場合だけpromotionする。差分が変われば新Releaseを要求する",
+      "independent_evidence": ["candidate source mode", "index tree hash", "baseline HEAD", "final HEAD tree", "first parent", "single full-suite process ledger", "promotion receipt"],
+      "owner": "release_candidate_source_owner",
+      "maintenance_condition": "safe-commit順序、Release source observer、index staging、commit、promotion issuer変更時",
+      "status": "open"
+    },
+    {
+      "defect_code": "NG-I31",
+      "incident_codes": ["PREPUSH-P1-REPAIR-WRITER-CAPABILITY-LEAK", "PREPUSH-P1-PROMOTION-RESUME-GAP"],
+      "source_of_truth": ["closed Release authority writer", "release_completed event", "daily_promotion_issued event"],
+      "affected_consumer": ["causal repair finalizer", "post-commit promotion recovery"],
+      "impact_binding": "started/completed writerがmodule globalへ露出すると実processなしのreceiptをauthority化でき、release完了後の再開がpromotionを回復しないとtested candidateをDailyへ反映できない",
+      "red_fixture": ["direct typed completed writer call with fabricated receipt", "release_completed after process interruption before promotion"],
+      "green_test": ["test_NG_RG_27_authoritative_repair_is_single_capability_without_caller_green", "test_NG_RG_28_prior_candidate_release_resume_attaches_and_promotes_once", "test_NG_RG_29_causal_repair_source_mismatch_rejects_before_process"],
+      "operational_recovery": "repair writerを実process実行closure内へ閉じ、release_completed再開時は同じledger chainとcandidate-to-commit bindingを再検証して欠落promotionだけをexactly once発行する",
+      "independent_evidence": ["fabricated writer symbol absent", "process call count", "existing release event hash", "promotion event exactly once", "node rerun count 0"],
+      "owner": "release_authority_recovery_owner",
+      "maintenance_condition": "repair authority writer、release finalize resume、promotion exactly-once変更時",
+      "status": "open"
     }
   ]
 }

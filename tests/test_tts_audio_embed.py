@@ -149,6 +149,6 @@ def test_latest_audio_for_pages_falls_back_to_requested_local_mp3(tmp_path, monk
         "latest_audio_date": "2026-06-15",
         "latest_audio_url": (
             "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/"
-            f"audio-daily/2026-06-15.mp3?v={digest}"
+            f"audio-daily/2026-06-15-{digest}.mp3?v={digest}"
         ),
     }

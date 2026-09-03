@@ -698,7 +698,72 @@ def _is_active_referenced_path(path: str) -> bool:
     return path.startswith("tests/test_") and path.endswith(".py")
 
 
+def _local_python_imports(root: Path, relative_path: str) -> set[str]:
+    """tracked Python入口から到達するrepo-local importだけを列挙する。"""
+
+    source = root / relative_path
+    try:
+        tree = ast.parse(source.read_text(encoding="utf-8-sig"), filename=relative_path)
+    except (OSError, SyntaxError, UnicodeError) as exc:
+        raise ValueError(f"CONSTITUTION_ACTIVE_IMPORT_SCAN_FAILED:{relative_path}") from exc
+    path_parts = list(Path(relative_path).with_suffix("").parts)
+    package_parts = path_parts[:-1]
+    if path_parts and path_parts[-1] == "__init__":
+        package_parts = path_parts[:-1]
+    modules: set[tuple[str, ...]] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            modules.update(tuple(alias.name.split(".")) for alias in node.names)
+            continue
+        if not isinstance(node, ast.ImportFrom):
+            continue
+        if node.level:
+            keep = len(package_parts) - (node.level - 1)
+            if keep < 0:
+                continue
+            base = tuple(package_parts[:keep])
+            if node.module:
+                base += tuple(node.module.split("."))
+        else:
+            base = tuple((node.module or "").split(".")) if node.module else ()
+        if base:
+            modules.add(base)
+        for alias in node.names:
+            if alias.name != "*":
+                modules.add(base + tuple(alias.name.split(".")))
+    dependencies: set[str] = set()
+    for module_parts in modules:
+        if not module_parts:
+            continue
+        module_path = "/".join(module_parts)
+        for candidate in (f"{module_path}.py", f"{module_path}/__init__.py"):
+            target = root / candidate
+            if (
+                _is_active_referenced_path(candidate)
+                and target.is_file()
+                and target.resolve().is_relative_to(root)
+            ):
+                dependencies.add(candidate)
+    return dependencies
+
+
+def _expand_local_python_imports(root: Path, discovered: set[str]) -> None:
+    pending = sorted(path for path in discovered if path.endswith(".py"))
+    scanned: set[str] = set()
+    while pending:
+        relative_path = pending.pop()
+        if relative_path in scanned:
+            continue
+        scanned.add(relative_path)
+        for dependency in sorted(_local_python_imports(root, relative_path)):
+            if dependency in discovered:
+                continue
+            discovered.add(dependency)
+            pending.append(dependency)
+
+
 def _discover_active_candidates(root: Path) -> list[str]:
+    root = root.resolve()
     discovered = set(
         _git_lines(
             root,
@@ -734,6 +799,7 @@ def _discover_active_candidates(root: Path) -> list[str]:
             candidate = root / normalized
             if candidate.is_file() and candidate.resolve().is_relative_to(root):
                 discovered.add(normalized)
+    _expand_local_python_imports(root, discovered)
     return sorted(
         path
         for path in discovered
@@ -812,6 +878,33 @@ class _CollectionRecorder:
             self.collection_errors.append(str(report.longrepr))
 
 
+def _resolve_workspace_harness_root(root: Path) -> Path:
+    configured_workspace_root = os.environ.get(
+        "NEWS_GRASP_WORKSPACE_HARNESS_ROOT", ""
+    ).strip()
+    workspace_candidates: list[Path] = []
+    if configured_workspace_root:
+        configured = Path(configured_workspace_root)
+        if not configured.is_absolute():
+            raise ValueError("CONSTITUTION_COLLECTION_HARNESS_ROOT_NOT_ABSOLUTE")
+        configured = configured.resolve()
+        if not (configured / "tools" / "harness").is_dir():
+            raise ValueError("CONSTITUTION_COLLECTION_HARNESS_UNAVAILABLE")
+        return configured
+    workspace_candidates.extend((root.parent, root.parent.parent))
+    workspace_root = next(
+        (
+            candidate
+            for candidate in workspace_candidates
+            if (candidate / "tools" / "harness").is_dir()
+        ),
+        None,
+    )
+    if workspace_root is None:
+        raise ValueError("CONSTITUTION_COLLECTION_HARNESS_UNAVAILABLE")
+    return workspace_root
+
+
 def collect_test_nodes(repo_root: Path | str = ROOT) -> list[str]:
     import pytest
     from tools.news_grasp_high_cost_binding import create_binding
@@ -828,16 +921,7 @@ def collect_test_nodes(repo_root: Path | str = ROOT) -> list[str]:
         temporary_root = Path(temporary).resolve()
         fixture_workspace = temporary_root / "workspace"
         fixture_harness = fixture_workspace / "tools" / "harness"
-        workspace_root = next(
-            (
-                candidate
-                for candidate in (root.parent, root.parent.parent)
-                if (candidate / "tools" / "harness").is_dir()
-            ),
-            None,
-        )
-        if workspace_root is None:
-            raise ValueError("CONSTITUTION_COLLECTION_HARNESS_UNAVAILABLE")
+        workspace_root = _resolve_workspace_harness_root(root)
         workspace_harness = workspace_root / "tools" / "harness"
         shutil.copytree(workspace_harness, fixture_harness)
         workspace_harness_docs = workspace_root / "docs" / "harness"
@@ -3234,9 +3318,9 @@ def _operation_integrity_oracle(
         )
 
         if perspective == "adversarial_boundary":
-            relative = ROUTES["runtime"]
+            relative = ROUTES["launcher"]
             unsafe = (root / relative).read_text(encoding="utf-8-sig").replace(
-                "run_exact_successor(", "run_exact_successor_removed("
+                "run_daily_sequence(", "run_daily_sequence_removed("
             )
             _expect_exception(
                 lambda: validate_e2e_launch_contract(
@@ -3249,10 +3333,11 @@ def _operation_integrity_oracle(
         receipt = validate_e2e_launch_contract(root)
         if receipt.get("compositionOrder") != [
             "automation_prompt",
-            "title_control",
-            "direct_runtime_start",
-            "stage_successors",
-            "public_verification",
+            "title_observation",
+            "daily_launcher",
+            "daily_sequence",
+            "consumer_public_verification",
+            "atomic_completion",
         ]:
             raise ValueError("CONSTITUTION_E2E_COMPOSITION_ORDER_INVALID")
         if perspective == "operational_recovery" and (
@@ -3292,7 +3377,7 @@ def _operation_integrity_oracle(
             raise ValueError("CONSTITUTION_E2E_IDENTITY_BUNDLE_INVALID")
         if perspective == "operational_recovery" and (
             receipt.get("route")
-            != "codex_automation_to_direct_runtime_to_public_completion"
+            != "codex_automation_to_daily_launcher_to_atomic_completion"
             or receipt.get("directEntryRejected") is not True
         ):
             raise ValueError("CONSTITUTION_E2E_RECOVERY_ROUTE_INVALID")
