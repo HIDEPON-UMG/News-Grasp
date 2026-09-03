@@ -640,6 +640,38 @@ def test_ng_rrt_public_observation_marks_only_actual_network_fetch_as_fresh() ->
     assert local["nonce"] == network["nonce"] == context["nonce"]
 
 
+def test_ng_rg_31_surface_observation_accepts_explicit_public_identity() -> None:
+    """consumer public verifierの明示source identityを共通観測へ保持する。"""
+
+    completion = _module("tools.news_grasp_direct_completion")
+    context = completion._new_observation_context(
+        issue_date=ISSUE_DATE,
+        run_id="direct-public-observation",
+        run_intent=RUN_INTENT,
+    )
+    completion._bind_observation_context(
+        context,
+        issue_date=ISSUE_DATE,
+        run_id="direct-public-observation",
+        run_intent=RUN_INTENT,
+        manifest_id="b" * 64,
+    )
+    result = completion._attach_surface_observation(
+        "playlist",
+        {"ok": True, "status": "green"},
+        context,
+        request_started_at=context["startedAt"],
+        response_observed_at=datetime.now(timezone.utc).isoformat(),
+        observation_kind="network_fetch",
+        source_identity="youtube:playlist:playlist-identity",
+        source_path="youtube:playlist:playlist-identity",
+    )
+
+    assert result["observation"]["sourceIdentity"] == "youtube:playlist:playlist-identity"
+    assert result["observation"]["sourcePath"] == "youtube:playlist:playlist-identity"
+    assert result["observation"]["freshNetwork"] is True
+
+
 def test_ng_rrt_duplicate_side_effect_uses_sealed_ledger_identity_not_key_name() -> None:
     completion = _module("tools.news_grasp_direct_completion")
     one_upload = {

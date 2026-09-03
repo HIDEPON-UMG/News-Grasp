@@ -216,6 +216,8 @@ def _attach_surface_observation(
     request_started_at: str | None = None,
     response_observed_at: str | None = None,
     observation_kind: str = "local_canonical_read",
+    source_identity: str = "",
+    source_path: str = "",
 ) -> object:
     """互換consumerを含む全surfaceへverifier-owned observationを束ねる。"""
 
@@ -238,7 +240,8 @@ def _attach_surface_observation(
         observed["networkObservations"] = prior_network
     body = _observation_content(observed)
     local_source_path = str(
-        observed.get("path")
+        source_path
+        or observed.get("path")
         or (observed.get("state") if isinstance(observed.get("state"), str) else "")
         or f"surface/{name}"
     )
@@ -248,7 +251,10 @@ def _attach_surface_observation(
         response_observed_at=response_observed_at,
         content={"surface": name, "value": body},
         observation_kind=observation_kind,
-        source_identity=f"{observation_kind}:{name}:{local_source_path}",
+        source_identity=(
+            source_identity
+            or f"{observation_kind}:{name}:{local_source_path}"
+        ),
         source_path=local_source_path,
     )
     return observed

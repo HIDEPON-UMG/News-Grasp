@@ -452,6 +452,20 @@
       "owner": "release_cli_projection_owner",
       "maintenance_condition": "Release CLI command、promotion receipt schema、retry controller変更時",
       "status": "open"
+    },
+    {
+      "defect_code": "NG-I33",
+      "incident_codes": ["PUBLIC-VERIFIER-SURFACE-IDENTITY-SIGNATURE-DRIFT"],
+      "source_of_truth": ["tools/news_grasp_direct_completion.py", "consumer-owned public observation schema", "fresh public verifier execution"],
+      "affected_consumer": ["YouTube daily verifier", "DeepDive YouTube verifier", "playlist verifier", "consumer public completion"],
+      "impact_binding": "公開surface producerがsource_identity/source_pathを渡す一方で共通観測helperが受理しないと、全公開面の意味検証前にTypeErrorとなりconsumer-owned verifierが実行不能になる",
+      "red_fixture": ["completed 2026-09-03 runに対するfresh probe-publicで明示source identity付きplaylist観測を実行"],
+      "green_test": ["test_ng_rg_31_surface_observation_accepts_explicit_public_identity"],
+      "operational_recovery": "共通観測helperが明示identity/pathを受理してmetadataへ保持し、未指定時だけ従来の決定的defaultへfallbackする。外部送信や公開artifactは変更しない",
+      "independent_evidence": ["focused contract exit 0", "fresh probe-public JSON", "external mutation count 0", "protected release artifact diff 0"],
+      "owner": "consumer public observation owner",
+      "maintenance_condition": "public surface adapter、observation metadata、YouTube/playlist/notification verifier引数変更時",
+      "status": "open"
     }
   ]
 }

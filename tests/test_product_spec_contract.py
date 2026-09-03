@@ -594,7 +594,7 @@ def test_daily_45m_contract_is_bound_to_gate_matrix_and_public_completion() -> N
     assert len(contract["fixtureRegistry"]) == 18
     assert ledger["task_id"] == "NG-DAILY-45M-20260902"
     assert {row["defect_code"] for row in ledger["entries"]} == {
-        f"NG-I{index:02d}" for index in range(1, 33)
+        f"NG-I{index:02d}" for index in range(1, 34)
     }
     required = {
         "defect_code",
