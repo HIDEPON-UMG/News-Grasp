@@ -287,8 +287,14 @@ def test_deadman_delegates_to_single_canonical_audit_executor() -> None:
     )
     route_ids = {row["routeId"] for row in registry["routes"]}
     assert "audit_0640_control" not in route_ids
-    assert "direct_runtime_stage_history" in route_ids
-    assert "direct_completion" in route_ids
+    assert route_ids == {
+        "static_check",
+        "scoped_contract_unit",
+        "current_issue_integration",
+        "external_publication",
+        "consumer_public_verification",
+        "atomic_completion",
+    }
 
 
 def test_failure_classification_is_derived_from_observed_state_only() -> None:
@@ -835,18 +841,21 @@ def test_production_registry_excludes_root_fix_promotion_routes() -> None:
         )
     )
     expected_route_ids = [
-        "title_control",
-        "scheduled_inventory",
-        "direct_runtime_stage_history",
-        "daily_quality",
-        "deepdive_quality",
-        "direct_completion",
+        "static_check",
+        "scoped_contract_unit",
+        "current_issue_integration",
+        "external_publication",
+        "consumer_public_verification",
+        "atomic_completion",
     ]
     assert registry["declaredRouteIds"] == expected_route_ids
     assert registry["consumerRouteIds"] == expected_route_ids
     assert registry["positiveFixtureRouteIds"] == expected_route_ids
     assert registry["negativeFixtureRouteIds"] == expected_route_ids
-    assert registry["contractTest"] == "tests/test_news_grasp_daily_control.py"
+    assert registry["contractTest"] == (
+        "tests/test_news_grasp_daily_45m_contract.py and "
+        "tests/test_news_grasp_daily_route_runtime_review.py"
+    )
     assert [route["routeId"] for route in registry["routes"]] == expected_route_ids
     assert all(
         not route["consumerPath"].startswith("tools/root_fix_")

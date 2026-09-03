@@ -50,9 +50,12 @@ RELEASE_TIMEOUT_SECONDS = 60 * 60
 RELEASE_LEDGER_ENV = "NEWS_GRASP_RELEASE_LEDGER_PATH"
 RELEASE_ID_ENV = "NEWS_GRASP_RELEASE_ID"
 RELEASE_SCHEMA_VERSION = "NEWS_GRASP_RELEASE_GATE_V2"
+RELEASE_PROCESS_NODE_LIMIT = 160
+RELEASE_PROCESS_SELECTOR_CHAR_LIMIT = 20_000
 
 _HEX64 = re.compile(r"^[0-9a-fA-F]{64}$")
 _SAFE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
+_NODE_ADDRESS = re.compile(r" at 0x(?!ADDR\b)[0-9a-fA-F]+")
 _LEDGER_LOCKS_GUARD = threading.Lock()
 _LEDGER_LOCKS: dict[str, threading.Lock] = {}
 _CANONICAL_AUTHORITY_EVENT_TYPES = frozenset(
@@ -176,6 +179,12 @@ def _mapping_hash(value: Mapping[str, Any]) -> str:
     return hashlib.sha256(_json_bytes(dict(value))).hexdigest()
 
 
+def _canonical_node_id(node: str) -> str:
+    """processごとに変わるfunction reprのaddressをnode identityから除く。"""
+
+    return _NODE_ADDRESS.sub(" at 0xADDR", node)
+
+
 def _node_list(nodes: Iterable[str]) -> list[str]:
     if isinstance(nodes, (str, bytes, bytearray)):
         raise NewsGraspReleaseGateError("release_collection_nodes_invalid")
@@ -193,6 +202,13 @@ def _node_list(nodes: Iterable[str]) -> list[str]:
     if len(set(result)) != len(result):
         raise NewsGraspReleaseGateError("release_collection_duplicate_node")
     return result
+
+
+def _canonical_node_list(nodes: Iterable[str]) -> list[str]:
+    canonical = [_canonical_node_id(node) for node in _node_list(nodes)]
+    if len(set(canonical)) != len(canonical):
+        raise NewsGraspReleaseGateError("release_collection_duplicate_canonical_node")
+    return canonical
 
 
 def _validate_pytest_args(values: Sequence[str]) -> tuple[str, ...]:
@@ -917,6 +933,21 @@ class _StructuredPytestPlugin:
         self.collection_nodes: list[str] = []
         self.collection_errors: list[str] = []
         self.reports: dict[str, list[dict[str, Any]]] = {}
+        self.allowed_nodes = self._load_allowed_nodes()
+
+    def _load_allowed_nodes(self) -> set[str] | None:
+        raw = str(os.environ.get("NEWS_GRASP_RELEASE_ALLOWED_NODES_FILE") or "").strip()
+        if self.kind != "run":
+            return None
+        if not raw:
+            return set()
+        try:
+            value = json.loads(Path(raw).read_text(encoding="utf-8"))
+            if not isinstance(value, Mapping):
+                return set()
+            return set(_canonical_node_list(value.get("nodes") or ()))
+        except (OSError, TypeError, ValueError, json.JSONDecodeError, NewsGraspReleaseGateError):
+            return set()
 
     @staticmethod
     def _report_event(report: Any) -> dict[str, Any]:
@@ -939,15 +970,31 @@ class _StructuredPytestPlugin:
         }
 
     def pytest_collection_finish(self, session: Any) -> None:
-        self.collection_nodes = [str(item.nodeid) for item in getattr(session, "items", ())]
+        self.collection_nodes = [
+            _canonical_node_id(str(item.nodeid)) for item in getattr(session, "items", ())
+        ]
+
+    def pytest_collection_modifyitems(self, session: Any, config: Any, items: list[Any]) -> None:
+        if self.kind != "run" or self.allowed_nodes is None:
+            return
+        selected: list[Any] = []
+        deselected: list[Any] = []
+        for item in items:
+            if _canonical_node_id(str(item.nodeid)) in self.allowed_nodes:
+                selected.append(item)
+            else:
+                deselected.append(item)
+        items[:] = selected
+        if deselected:
+            config.hook.pytest_deselected(items=deselected)
 
     def pytest_collectreport(self, report: Any) -> None:
         if bool(getattr(report, "failed", False)):
-            nodeid = str(getattr(report, "nodeid", "<collection>"))
+            nodeid = _canonical_node_id(str(getattr(report, "nodeid", "<collection>")))
             self.collection_errors.append(nodeid)
 
     def pytest_runtest_logreport(self, report: Any) -> None:
-        nodeid = str(getattr(report, "nodeid", ""))
+        nodeid = _canonical_node_id(str(getattr(report, "nodeid", "")))
         if nodeid:
             self.reports.setdefault(nodeid, []).append(self._report_event(report))
 
@@ -992,7 +1039,9 @@ class _StructuredPytestPlugin:
         }
 
     def pytest_sessionfinish(self, session: Any, exitstatus: int) -> None:
-        self.collection_nodes = [str(item.nodeid) for item in getattr(session, "items", ())]
+        self.collection_nodes = [
+            _canonical_node_id(str(item.nodeid)) for item in getattr(session, "items", ())
+        ]
         payload = self._payload(exit_code=int(exitstatus))
         if self.kind == "collection":
             payload["schemaVersion"] = RELEASE_COLLECTION_SCHEMA
@@ -1033,7 +1082,12 @@ def _decode_capture(raw: bytes, *, field: str) -> str:
         raise NewsGraspReleaseGateError(f"release_{field}_not_utf8") from exc
 
 
-def _process_env(structured_path: Path, kind: str) -> dict[str, str]:
+def _process_env(
+    structured_path: Path,
+    kind: str,
+    *,
+    allowed_nodes_path: Path | None = None,
+) -> dict[str, str]:
     env = {str(key): str(value) for key, value in os.environ.items()}
     env["PYTHONIOENCODING"] = "utf-8"
     env["PYTHONUTF8"] = "1"
@@ -1041,6 +1095,10 @@ def _process_env(structured_path: Path, kind: str) -> dict[str, str]:
     env["PYTEST_ADDOPTS"] = ""
     env["NEWS_GRASP_RELEASE_STRUCTURED_FILE"] = str(structured_path)
     env["NEWS_GRASP_RELEASE_STRUCTURED_KIND"] = kind
+    if allowed_nodes_path is not None:
+        env["NEWS_GRASP_RELEASE_ALLOWED_NODES_FILE"] = str(allowed_nodes_path)
+    else:
+        env.pop("NEWS_GRASP_RELEASE_ALLOWED_NODES_FILE", None)
     return env
 
 
@@ -1067,8 +1125,8 @@ def _validate_node_report(report: Mapping[str, Any], expected_nodes: Sequence[st
         raise NewsGraspReleaseGateError("release_node_report_incomplete")
     if report.get("collection_complete") is not True:
         raise NewsGraspReleaseGateError("release_node_report_collection_incomplete")
-    collected = _node_list(report.get("collection_nodes") or ())
-    expected = list(expected_nodes)
+    collected = _canonical_node_list(report.get("collection_nodes") or ())
+    expected = _canonical_node_list(expected_nodes)
     if collected != expected or report.get("collection_count") != len(expected):
         raise NewsGraspReleaseGateError("release_node_report_collection_mismatch")
     if report.get("collection_sha256") != _node_hash(expected):
@@ -1102,19 +1160,27 @@ def _run_fixed_pytest(
     """固定Python、固定env、shell=False、timeout付きでpytestを起動する。"""
 
     root = _repo_root(repo_root)
-    nodes = _node_list(node_ids)
+    nodes = _canonical_node_list(node_ids)
     if collect_only and nodes:
         raise NewsGraspReleaseGateError("release_collect_node_args_forbidden")
     timeout = _validate_timeout(timeout_seconds)
     command = [RELEASE_PYTHON, "-m", "pytest", "-p", RELEASE_PLUGIN_MODULE]
+    module_paths: list[str] = []
+    for node in nodes:
+        module = node.split("::", 1)[0]
+        if module not in module_paths:
+            module_paths.append(module)
     if collect_only:
         command.extend(["--collect-only", "-q"])
     else:
         command.append("-q")
-        command.extend(nodes)
+        command.extend(module_paths)
     temp_root = Path(tempfile.mkdtemp(prefix="news-grasp-release-"))
     structured_path = temp_root / "pytest-result.json"
+    allowed_nodes_path = temp_root / "allowed-nodes.json"
     kind = "collection" if collect_only else "run"
+    if not collect_only:
+        _write_json_atomic(allowed_nodes_path, {"nodes": nodes})
     creationflags = int(getattr(subprocess, "CREATE_NO_WINDOW", 0))
     completed: Any = None
     try:
@@ -1124,7 +1190,11 @@ def _run_fixed_pytest(
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            env=_process_env(structured_path, kind),
+            env=_process_env(
+                structured_path,
+                kind,
+                allowed_nodes_path=None if collect_only else allowed_nodes_path,
+            ),
             shell=False,
             check=False,
             timeout=timeout,
@@ -1334,11 +1404,35 @@ def _node_receipts_from_process(
     # still authoritative and must expose the exact failed node set for repair. Only a
     # transport/structured receipt failure removes node-level evidence.
     if process.get("transport") != "ok" or not isinstance(structured, Mapping):
-        return [], [], [], False, str((process.get("failures") or [process.get("status")])[0])
+        failure = str((process.get("failures") or [process.get("status")])[0])
+        receipts = [
+            {
+                "node_id": node,
+                "partition": partition,
+                "status": "error",
+                "events": [],
+                "receipt_id": receipt_id,
+                "failure": failure,
+            }
+            for node in expected_nodes
+        ]
+        return receipts, list(expected_nodes), [], False, failure
     try:
         rows = _validate_node_report(structured, expected_nodes)
     except NewsGraspReleaseGateError as exc:
-        return [], [], [], False, str(exc)
+        failure = str(exc)
+        receipts = [
+            {
+                "node_id": node,
+                "partition": partition,
+                "status": "error",
+                "events": [],
+                "receipt_id": receipt_id,
+                "failure": failure,
+            }
+            for node in expected_nodes
+        ]
+        return receipts, list(expected_nodes), [], False, failure
     receipts: list[dict[str, Any]] = []
     failed: list[str] = []
     skipped: list[str] = []
@@ -1371,30 +1465,88 @@ def _run_partition_process(
     timeout_seconds: float | int | None,
     operation_id: str,
 ) -> dict[str, Any]:
-    process = _run_fixed_pytest(
-        repo_root=repo_root,
-        node_ids=nodes,
-        collect_only=False,
-        timeout_seconds=timeout_seconds,
-    )
-    node_receipts, failed, skipped, ok, failure = _node_receipts_from_process(
-        process,
-        expected_nodes=nodes,
-        partition=name,
-        receipt_id=operation_id,
-    )
+    expected = _canonical_node_list(nodes)
+    chunks: list[list[str]] = []
+    current: list[str] = []
+    current_chars = 0
+    for node in expected:
+        size = len(node) + 1
+        if current and (
+            len(current) >= RELEASE_PROCESS_NODE_LIMIT
+            or current_chars + size > RELEASE_PROCESS_SELECTOR_CHAR_LIMIT
+        ):
+            chunks.append(current)
+            current = []
+            current_chars = 0
+        current.append(node)
+        current_chars += size
+    if current:
+        chunks.append(current)
+    timeout = _validate_timeout(timeout_seconds)
+    started = time.monotonic()
+    processes: list[dict[str, Any]] = []
+    node_receipts: list[dict[str, Any]] = []
+    failed: list[str] = []
+    skipped: list[str] = []
+    failures: list[str] = []
+    all_ok = True
+    for index, chunk in enumerate(chunks):
+        elapsed = time.monotonic() - started
+        if elapsed >= timeout:
+            failure = f"partition_timeout_before_chunk_{index}"
+            remaining_nodes = [node for pending in chunks[index:] for node in pending]
+            node_receipts.extend(
+                {
+                    "node_id": node,
+                    "partition": name,
+                    "status": "error",
+                    "events": [],
+                    "receipt_id": operation_id,
+                    "failure": failure,
+                }
+                for node in remaining_nodes
+            )
+            failed.extend(remaining_nodes)
+            failures.append(failure)
+            all_ok = False
+            break
+        remaining = timeout - elapsed
+        process = _run_fixed_pytest(
+            repo_root=repo_root,
+            node_ids=chunk,
+            collect_only=False,
+            timeout_seconds=remaining,
+        )
+        process["chunk_index"] = index
+        process["chunk_count"] = len(chunks)
+        processes.append(process)
+        receipts, chunk_failed, chunk_skipped, chunk_ok, chunk_failure = _node_receipts_from_process(
+            process,
+            expected_nodes=chunk,
+            partition=name,
+            receipt_id=operation_id,
+        )
+        node_receipts.extend(receipts)
+        failed.extend(chunk_failed)
+        skipped.extend(chunk_skipped)
+        all_ok = all_ok and chunk_ok
+        if chunk_failure:
+            failures.append(f"chunk_{index}:{chunk_failure}")
+    ok = all_ok and len(node_receipts) == len(expected)
+    failure = ";".join(failures) if failures else None
     return {
         "schemaVersion": "NEWS_GRASP_RELEASE_PARTITION_PROCESS_RECEIPT_V2",
         "receipt_id": operation_id,
         "partition": name,
-        "node_ids": list(nodes),
-        "node_count": len(nodes),
+        "node_ids": expected,
+        "node_count": len(expected),
         "node_receipts": node_receipts,
         "failed_nodes": failed,
         "skipped_nodes": skipped,
         "exact_failed_set_sha256": _node_hash(failed),
-        "process_count": 1,
-        "process": dict(process),
+        "process_count": len(processes),
+        "processes": processes,
+        "process": processes[0] if len(processes) == 1 else None,
         "ok": ok,
         "status": "green" if ok else "red",
         "failure": failure,
@@ -1899,6 +2051,15 @@ def causal_repair_partition(
             if isinstance(item, Mapping) and item.get("status") in {"fail", "error"}
         ]
     failed_nodes = _node_list(raw_failed or ())
+    if (
+        not failed_nodes
+        and previous_nodes
+        and not list(previous_receipt.get("node_receipts") or ())
+        and previous_receipt.get("failure")
+    ):
+        # V2導入前のtransport/structured failure receiptはfailed_nodesを空で
+        # 保存していた。successを推測せず、束縛済みpartition全件をexact Redとする。
+        failed_nodes = list(previous_nodes)
     if set(nodes) != set(failed_nodes) or set(failed_nodes) - set(previous_nodes):
         raise NewsGraspReleaseGateError("release_repair_exact_failed_set_required")
     rid = _safe_id(release_id or previous_receipt.get("release_id"), field="release_id", generate=False)
@@ -1922,6 +2083,13 @@ def causal_repair_partition(
         raise NewsGraspReleaseGateError("release_repair_previous_receipt_not_in_ledger")
     authoritative_nodes = _node_list(authoritative_previous.get("node_ids") or ())
     authoritative_failed = _node_list(authoritative_previous.get("failed_nodes") or ())
+    if (
+        not authoritative_failed
+        and authoritative_nodes
+        and not list(authoritative_previous.get("node_receipts") or ())
+        and authoritative_previous.get("failure")
+    ):
+        authoritative_failed = list(authoritative_nodes)
     if previous_nodes != authoritative_nodes or failed_nodes != authoritative_failed:
         raise NewsGraspReleaseGateError("release_repair_previous_receipt_binding_mismatch")
     if isinstance(authoritative_event, Mapping) and authoritative_event.get("receipt_hash") != _mapping_hash(dict(previous_receipt)):
@@ -1975,7 +2143,7 @@ def causal_repair_partition(
         "collection_sha256": collection_sha256,
         "partition_receipt": group,
         "automatic_retry": False,
-        "process_count": 1,
+        "process_count": int(group.get("process_count", 0)),
     }
     _append_ledger(
         ledger,

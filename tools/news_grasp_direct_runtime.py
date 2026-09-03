@@ -270,6 +270,9 @@ def slo_dispatch(*, elapsed_seconds: int | float) -> dict[str, Any]:
         "elapsed_minutes": seconds / 60.0,
         "time_band": band,
         "dispatch": dispatch,
+        # 旧consumer向けの読み取り専用projection。実制御の正本は
+        # deadline_revisionで、retryと新generationは引き続き禁止する。
+        "compatibility_action": "slo_debt_continue_public" if dispatch == "deadline_revision" else None,
         "required_inventory_preserved": True,
         "consumer_verifier_preserved": True,
     }

@@ -31,6 +31,35 @@ def _collection_report(nodes: list[str]) -> dict[str, Any]:
     }
 
 
+def _node_report(nodes: list[str], *, statuses: list[str] | None = None) -> dict[str, Any]:
+    """指定node集合だけを実行した構造化receiptを作るfixture。"""
+
+    canonical_nodes = gate._node_list(nodes)
+    effective_statuses = statuses or ["pass"] * len(canonical_nodes)
+    assert len(effective_statuses) == len(canonical_nodes)
+    return {
+        "schemaVersion": gate.RELEASE_NODE_REPORT_SCHEMA,
+        "kind": "run",
+        "complete": True,
+        "collection_complete": True,
+        "collection_errors": [],
+        "collection_nodes": canonical_nodes,
+        "collection_count": len(canonical_nodes),
+        "collection_sha256": gate._node_hash(canonical_nodes),
+        "node_results": [
+            {
+                "node_id": node,
+                "status": status,
+                "events": [],
+                "event_count": 0,
+            }
+            for node, status in zip(canonical_nodes, effective_statuses, strict=True)
+        ],
+        "node_result_count": len(canonical_nodes),
+        "exit_code": 0 if all(status in {"pass", "skip"} for status in effective_statuses) else 1,
+    }
+
+
 def _partition_map(nodes: list[str]) -> dict[str, list[str]]:
     result = {name: [] for name in gate.RELEASE_PARTITIONS}
     result[gate.RELEASE_PARTITIONS[0]] = list(nodes)
@@ -802,3 +831,215 @@ def test_NG_RG_11_green_release_event_issues_exactly_one_daily_promotion(
             collection_receipt=collection,
             release_id=release_id,
         )
+
+
+def test_NG_RG_12_many_nodes_use_bounded_process_chunks_and_execute_each_once(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Windows command-line上限を越えるnode集合を一括spawnせず分割する。"""
+
+    nodes = [
+        f"tests/test_release.py::test_param_{index}[{'x' * 180}]"
+        for index in range(200)
+    ]
+    observed_chunks: list[list[str]] = []
+
+    def fake_run_fixed_pytest(**kwargs: Any) -> dict[str, Any]:
+        chunk = list(kwargs["node_ids"])
+        observed_chunks.append(chunk)
+        return {
+            "schemaVersion": "NEWS_GRASP_RELEASE_PROCESS_RECEIPT_V1",
+            "ok": True,
+            "status": "green",
+            "transport": "ok",
+            "exit_code": 0,
+            "structured": _node_report(chunk),
+        }
+
+    monkeypatch.setattr(gate, "_run_fixed_pytest", fake_run_fixed_pytest)
+    result = gate._run_partition_process(
+        "general_complement",
+        nodes,
+        repo_root=tmp_path,
+        timeout_seconds=5,
+        operation_id="release-bounded-chunks",
+    )
+
+    assert result["ok"] is True
+    assert len(observed_chunks) > 1
+    flattened = [node for chunk in observed_chunks for node in chunk]
+    assert flattened == nodes
+    assert len(flattened) == len(set(flattened))
+    for chunk in observed_chunks:
+        assert 0 < len(chunk) <= gate.RELEASE_PROCESS_NODE_LIMIT
+        assert sum(len(node) + 1 for node in chunk) <= gate.RELEASE_PROCESS_SELECTOR_CHAR_LIMIT
+    assert result["process_count"] == len(observed_chunks)
+    assert [row["node_id"] for row in result["node_receipts"]] == nodes
+
+
+def test_NG_RG_12_partition_deadline_stops_future_spawns_and_binds_remaining_nodes(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    nodes = [
+        "tests/test_release.py::test_first",
+        "tests/test_release.py::test_second",
+    ]
+    calls: list[list[str]] = []
+    clock = iter((0.0, 0.0, 6.0))
+    monkeypatch.setattr(gate, "RELEASE_PROCESS_NODE_LIMIT", 1)
+    monkeypatch.setattr(gate.time, "monotonic", lambda: next(clock))
+
+    def fake_run_fixed_pytest(**kwargs: Any) -> dict[str, Any]:
+        chunk = list(kwargs["node_ids"])
+        calls.append(chunk)
+        return {
+            "schemaVersion": "NEWS_GRASP_RELEASE_PROCESS_RECEIPT_V1",
+            "ok": True,
+            "status": "green",
+            "transport": "ok",
+            "exit_code": 0,
+            "structured": _node_report(chunk),
+        }
+
+    monkeypatch.setattr(gate, "_run_fixed_pytest", fake_run_fixed_pytest)
+    result = gate._run_partition_process(
+        "general_complement",
+        nodes,
+        repo_root=tmp_path,
+        timeout_seconds=5,
+        operation_id="release-partition-deadline",
+    )
+
+    assert calls == [[nodes[0]]]
+    assert result["ok"] is False
+    assert result["process_count"] == 1
+    assert result["failed_nodes"] == [nodes[1]]
+    assert [row["node_id"] for row in result["node_receipts"]] == nodes
+    assert result["node_receipts"][1]["failure"] == "partition_timeout_before_chunk_1"
+
+
+def test_NG_RG_13_parametrized_address_identity_survives_module_deselection_once(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """param reprのaddress変動を吸収し、指定nodeだけを一度だけ実行する。"""
+
+    collected = "tests/test_release.py::test_param[value at 0xAAA]"
+    executed = "tests/test_release.py::test_param[value at 0xBBB]"
+    other = "tests/test_release.py::test_other"
+    allowed_path = tmp_path / "allowed-nodes.json"
+    allowed_path.write_text(json.dumps({"nodes": [collected]}), encoding="utf-8")
+    monkeypatch.setenv("NEWS_GRASP_RELEASE_ALLOWED_NODES_FILE", str(allowed_path))
+
+    output = tmp_path / "structured.json"
+    plugin = gate._StructuredPytestPlugin(output, "run")
+    items = [_FakeItem(collected), _FakeItem(other)]
+    deselected: list[_FakeItem] = []
+
+    def record_deselected(*, items: list[_FakeItem]) -> None:
+        deselected.extend(items)
+
+    config = SimpleNamespace(hook=SimpleNamespace(pytest_deselected=record_deselected))
+    plugin.pytest_collection_modifyitems(SimpleNamespace(), config, items)
+    assert [item.nodeid for item in items] == [collected]
+    assert [item.nodeid for item in deselected] == [other]
+
+    plugin.pytest_collection_finish(SimpleNamespace(items=items))
+    plugin.pytest_runtest_logreport(_FakeReport(executed, when="call", passed=True))
+    plugin.pytest_sessionfinish(SimpleNamespace(items=items), 0)
+
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    expected = gate._canonical_node_list([collected])
+    rows = gate._validate_node_report(payload, expected)
+    assert gate._canonical_node_list([collected]) == gate._canonical_node_list([executed])
+    assert payload["collection_count"] == 1
+    assert len(rows) == 1
+    assert rows[0]["node_id"] == expected[0]
+    assert rows[0]["status"] == "pass"
+    assert rows[0]["event_count"] == 1
+
+
+@pytest.mark.parametrize("fault", ["transport", "collection"], ids=["transport", "collection-mismatch"])
+def test_NG_RG_14_partition_transport_or_collection_red_binds_all_nodes_for_causal_repair(
+    fault: str,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """receipt欠落時もexpected全nodeをRed化し、repair対象をその集合に固定する。"""
+
+    release_id = f"release-partition-fault-{fault}"
+    partition = "scoped_changed"
+    nodes = [
+        "tests/test_release.py::test_transport_first",
+        "tests/test_release.py::test_transport_second",
+    ]
+    ledger = tmp_path / "release-ledger.jsonl"
+    observed: list[list[str]] = []
+
+    def fake_run_fixed_pytest(**kwargs: Any) -> dict[str, Any]:
+        chunk = list(kwargs["node_ids"])
+        observed.append(chunk)
+        if len(observed) == 1 and fault == "transport":
+            return {
+                "schemaVersion": "NEWS_GRASP_RELEASE_PROCESS_RECEIPT_V1",
+                "ok": False,
+                "status": "transport_timeout",
+                "transport": "timeout",
+                "exit_code": None,
+                "failures": ["release_process_timeout"],
+            }
+        if len(observed) == 1:
+            invalid = _node_report(chunk)
+            invalid["collection_nodes"] = [chunk[0]]
+            invalid["collection_count"] = 1
+            invalid["collection_sha256"] = gate._node_hash([chunk[0]])
+            return {
+                "schemaVersion": "NEWS_GRASP_RELEASE_PROCESS_RECEIPT_V1",
+                "ok": True,
+                "status": "green",
+                "transport": "ok",
+                "exit_code": 0,
+                "structured": invalid,
+            }
+        return {
+            "schemaVersion": "NEWS_GRASP_RELEASE_PROCESS_RECEIPT_V1",
+            "ok": True,
+            "status": "green",
+            "transport": "ok",
+            "exit_code": 0,
+            "structured": _node_report(chunk),
+        }
+
+    monkeypatch.setattr(gate, "_run_fixed_pytest", fake_run_fixed_pytest)
+    first = gate._partition_process_receipt(
+        partition,
+        nodes,
+        repo_root=tmp_path,
+        timeout_seconds=5,
+        release_id=release_id,
+        collection_sha256=gate._node_hash(nodes),
+        ledger_path=ledger,
+    )
+
+    assert first["ok"] is False
+    assert first["failed_nodes"] == nodes
+    assert [row["node_id"] for row in first["node_receipts"]] == nodes
+    assert first["exact_failed_set_sha256"] == gate._node_hash(nodes)
+
+    repair = gate.causal_repair_partition(
+        repo_root=tmp_path,
+        partition=partition,
+        node_ids=first["failed_nodes"],
+        cause_hash="2" * 64,
+        previous_receipt=first,
+        repair_id=f"repair-{fault}",
+        release_id=release_id,
+        ledger_path=ledger,
+        timeout_seconds=5,
+    )
+
+    assert repair["ok"] is True
+    assert repair["exact_failed_nodes"] == nodes
+    assert observed == [nodes, nodes]
