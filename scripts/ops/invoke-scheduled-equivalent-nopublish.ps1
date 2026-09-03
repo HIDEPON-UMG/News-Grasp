@@ -1,4 +1,4 @@
-﻿# 本番 Scheduled Task と同じ news-grasp-runner.ps1 を、公開副作用なしで最終確認する。
+# 本番Dailyと同じ六operationを、Release専用direct adapterで公開副作用0のまま最終確認する。
 # installed_launcher_identity: 最終実行は正規installerが配置したstable launcher identityへ束縛する。
 [CmdletBinding()]
 param(
@@ -339,6 +339,10 @@ try {
         throw 'installed authority schema mismatch'
     }
     $installedLauncherPath = Get-CanonicalExistingFile -Path ([string]$stableTaskAuthority.stableLauncherPath) -Label 'installed stable launcher' -Boundary $binPath -MaxBytes 67108864
+    $expectedInstalledLauncherPath = [System.IO.Path]::GetFullPath((Join-Path $binPath 'news-grasp-task-launcher.pyw'))
+    if (-not [string]::Equals($installedLauncherPath, $expectedInstalledLauncherPath, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw 'installed stable launcher path mismatch'
+    }
     $installedLauncherSha256 = (Get-FileHash -LiteralPath $installedLauncherPath -Algorithm SHA256).Hash.ToLowerInvariant()
     if ($installedLauncherSha256 -cne ([string]$stableTaskAuthority.stableLauncherSha256).ToLowerInvariant()) {
         throw 'installed launcher hash mismatch'
@@ -349,6 +353,7 @@ try {
         throw 'production runtime root mismatch'
     }
     $installedPythonBoundary = $workspacePath
+    $installedPythonSha256 = ''
     $installedRuntimeBindingPath = Join-Path $env:USERPROFILE 'bin\news-grasp-recovery-runtime-binding-v1.json'
     if (Test-Path -LiteralPath $installedRuntimeBindingPath -PathType Leaf) {
         try {
@@ -372,15 +377,23 @@ try {
             $installedPythonBoundary = $workspacePath
         }
     }
+    if ($installedPythonBoundary -or -not $installedPythonSha256) {
+        throw 'installed Python runtime binding invalid'
+    }
     $installedTaskPythonPath = Get-CanonicalExistingFile -Path ([string]$runtimeRootConfig.pythonExe) -Label 'installed launcher Python' -Boundary $installedPythonBoundary -MaxBytes 67108864
-    $runnerPath = Join-Path $repoPath 'scripts\ops\news-grasp-runner.ps1'
+    $releaseNoPublishModule = 'tools.news_grasp_release_nopublish'
+    $releaseNoPublishModulePath = Join-Path $repoPath (($releaseNoPublishModule -replace '\.', '\') + '.py')
+    $runnerPath = Join-Path $repoPath 'scripts\ops\news-grasp-release-nopublish.ps1'
     $codexWrapperPath = Join-Path $repoPath 'scripts\ops\run_codex_with_timeout.ps1'
     $e2eAdmissionBridgePath = Join-Path $runtimeRepoPath 'tools\e2e_final_admission_bridge.py'
 } catch {
     throw "INSTALLED_LAUNCHER_IDENTITY_INVALID: $($_.Exception.Message)"
 }
 if (-not (Test-Path -LiteralPath $runnerPath -PathType Leaf)) {
-    throw "installed runner が見つかりません: $runnerPath"
+    throw "Release NoPublish adapter が見つかりません: $runnerPath"
+}
+if (-not (Test-Path -LiteralPath $releaseNoPublishModulePath -PathType Leaf)) {
+    throw "Release NoPublish module が見つかりません: $releaseNoPublishModulePath"
 }
 if (-not (Test-Path -LiteralPath $codexWrapperPath -PathType Leaf)) {
     throw "installed Codex wrapper が見つかりません: $codexWrapperPath"
@@ -433,7 +446,17 @@ try {
             $runtimePythonBinding = $null
         }
     }
+    if ($null -eq $runtimePythonBinding) {
+        throw 'authority Python runtime binding invalid'
+    }
+    $pythonBoundary = ''
     $pythonCanonicalPath = Get-CanonicalExistingFile -Path $PythonExe -Label 'authority Python' -Boundary $pythonBoundary -MaxBytes 67108864
+    $pythonCanonicalSha256 = (Get-FileHash -LiteralPath $pythonCanonicalPath -Algorithm SHA256 -ErrorAction Stop).Hash.ToLowerInvariant()
+    if (-not [string]::Equals($pythonCanonicalPath, $installedTaskPythonPath, [StringComparison]::OrdinalIgnoreCase) -or
+        -not [string]::Equals($pythonCanonicalSha256, $installedPythonSha256, [StringComparison]::OrdinalIgnoreCase)) {
+        throw 'authority Python does not match installed runtime binding'
+    }
+    $gitCanonicalPath = Get-CanonicalExistingFile -Path 'C:\Program Files\Git\cmd\git.exe' -Label 'authority Git' -MaxBytes 67108864
     $powerShellCommand = if (Test-Path -LiteralPath $PowerShellExe -PathType Leaf) {
         Get-Item -LiteralPath $PowerShellExe -ErrorAction Stop
     } else {
@@ -445,7 +468,7 @@ try {
         $powerShellCommand.Source
     }
     $powerShellCanonicalPath = Get-CanonicalExistingFile -Path ([string]$powerShellCommandPath) -Label 'runner executable' -MaxBytes 67108864
-    $runnerPath = Get-CanonicalExistingFile -Path $runnerPath -Label 'runner script' -Boundary $repoPath -MaxBytes 67108864
+    $runnerPath = Get-CanonicalExistingFile -Path $runnerPath -Label 'Release NoPublish adapter' -Boundary $repoPath -MaxBytes 67108864
     $codexWrapperPath = Get-CanonicalExistingFile -Path $codexWrapperPath -Label 'Codex wrapper' -Boundary $repoPath -MaxBytes 67108864
     $e2eAdmissionBridgePath = Get-CanonicalExistingFile -Path $e2eAdmissionBridgePath -Label 'E2E admission bridge' -Boundary $runtimeRepoPath -MaxBytes 67108864
     $highCostOperationBudgetPath = Get-CanonicalExistingFile -Path $highCostOperationBudgetPath -Label 'high-cost operation budget' -Boundary $workspacePath -MaxBytes 67108864
@@ -469,18 +492,18 @@ try {
     ) { throw 'HIGH_COST_IDENTITY_DRIFT' }
     $pythonSha256 = (Get-FileHash -LiteralPath $pythonCanonicalPath -Algorithm SHA256).Hash.ToLowerInvariant()
     $powerShellSha256 = (Get-FileHash -LiteralPath $powerShellCanonicalPath -Algorithm SHA256).Hash.ToLowerInvariant()
-    $runtimeRepoCommit = (& git -C $runtimeRepoPath rev-parse HEAD 2>$null).Trim().ToLowerInvariant()
+    $runtimeRepoCommit = (& $gitCanonicalPath -C $runtimeRepoPath rev-parse HEAD 2>$null).Trim().ToLowerInvariant()
     if ($LASTEXITCODE -ne 0) { throw 'runtime commit unavailable' }
-    $runtimeRepoTree = (& git -C $runtimeRepoPath rev-parse 'HEAD^{tree}' 2>$null).Trim().ToLowerInvariant()
+    $runtimeRepoTree = (& $gitCanonicalPath -C $runtimeRepoPath rev-parse 'HEAD^{tree}' 2>$null).Trim().ToLowerInvariant()
     if ($LASTEXITCODE -ne 0 -or $runtimeRepoTree -notmatch '^[0-9a-f]{40}$') { throw 'runtime tree unavailable' }
-    $executionRepoCommit = (& git -C $repoPath rev-parse HEAD 2>$null).Trim().ToLowerInvariant()
+    $executionRepoCommit = (& $gitCanonicalPath -C $repoPath rev-parse HEAD 2>$null).Trim().ToLowerInvariant()
     if ($LASTEXITCODE -ne 0) { throw 'execution commit unavailable' }
     if ($LASTEXITCODE -ne 0 -or $runtimeRepoCommit -notmatch '^[0-9a-f]{40}$' -or
         $executionRepoCommit -notmatch '^[0-9a-f]{40}$' -or
         $executionRepoCommit -cne $runtimeRepoCommit) {
         throw 'execution generation is not the clean active runtime generation'
     }
-    $runtimeRepoStatus = (& git -C $runtimeRepoPath status --porcelain=v1 --untracked-files=all 2>$null | Out-String).Trim()
+    $runtimeRepoStatus = (& $gitCanonicalPath -C $runtimeRepoPath status --porcelain=v1 --untracked-files=all 2>$null | Out-String).Trim()
     if ($LASTEXITCODE -ne 0 -or $runtimeRepoStatus) {
         throw 'active runtime generation is dirty'
     }
@@ -517,9 +540,9 @@ $SimulationReceiptPath = Get-CanonicalExistingFile -Path $SimulationReceiptPath 
 $IsolationReceiptPath = Get-CanonicalExistingFile -Path $IsolationReceiptPath -Label 'NoPublish isolation receipt' -Boundary $workspacePath -MaxBytes 4194304
 $p08EvidenceToolPath = Get-CanonicalExistingFile -Path (Join-Path $runtimeRepoPath 'tools\news_grasp_p08_evidence.py') -Label 'P08 evidence validator' -Boundary $runtimeRepoPath -MaxBytes 4194304
 $p08EvidenceToolSha256 = (Get-FileHash -LiteralPath $p08EvidenceToolPath -Algorithm SHA256).Hash.ToLowerInvariant()
-$p08EvidenceToolBlob = (& git -C $runtimeRepoPath hash-object -- $p08EvidenceToolPath 2>$null).Trim().ToLowerInvariant()
+$p08EvidenceToolBlob = (& $gitCanonicalPath -C $runtimeRepoPath hash-object -- $p08EvidenceToolPath 2>$null).Trim().ToLowerInvariant()
 $p08EvidenceToolBlobExitCode = $LASTEXITCODE
-$p08EvidenceToolHeadBlob = (& git -C $runtimeRepoPath rev-parse 'HEAD:tools/news_grasp_p08_evidence.py' 2>$null).Trim().ToLowerInvariant()
+$p08EvidenceToolHeadBlob = (& $gitCanonicalPath -C $runtimeRepoPath rev-parse 'HEAD:tools/news_grasp_p08_evidence.py' 2>$null).Trim().ToLowerInvariant()
 $p08EvidenceToolHeadBlobExitCode = $LASTEXITCODE
 if (
     $p08EvidenceToolBlobExitCode -ne 0 -or
@@ -627,6 +650,7 @@ $reservationReceiptPath = Get-CanonicalFuturePath -Path "$receiptFullPath.e2e-fi
 $claimReceiptPath = Get-CanonicalFuturePath -Path "$receiptFullPath.e2e-final-claim.json" -Suffix '.e2e-final-claim.json' -Boundary $repoPath -Label 'claim receipt'
 $claimWitnessPath = Get-CanonicalFuturePath -Path "$receiptFullPath.e2e-final-claim-witness.json" -Suffix '.e2e-final-claim-witness.json' -Boundary $repoPath -Label 'claim witness'
 $installedLaunchAuthorityPath = Get-CanonicalFuturePath -Path "$receiptFullPath.installed-launch-authority.json" -Suffix '.installed-launch-authority.json' -Boundary $repoPath -Label 'installed launch authority'
+$launchEvidencePath = Get-CanonicalFuturePath -Path "$receiptFullPath.runner-launch-evidence.json" -Suffix '.runner-launch-evidence.json' -Boundary $repoPath -Label 'runner launch evidence'
 if ($HighCostParentAuthorityPath -and
     -not [string]::Equals(
         [System.IO.Path]::GetFullPath($HighCostParentAuthorityPath),
@@ -647,6 +671,7 @@ $reservationReceiptPath = Get-CanonicalFuturePath -Path $reservationReceiptPath 
 $claimReceiptPath = Get-CanonicalFuturePath -Path $claimReceiptPath -Suffix '.e2e-final-claim.json' -Boundary $repoPath -Label 'claim receipt'
 $claimWitnessPath = Get-CanonicalFuturePath -Path $claimWitnessPath -Suffix '.e2e-final-claim-witness.json' -Boundary $repoPath -Label 'claim witness'
 $installedLaunchAuthorityPath = Get-CanonicalFuturePath -Path $installedLaunchAuthorityPath -Suffix '.installed-launch-authority.json' -Boundary $repoPath -Label 'installed launch authority'
+$launchEvidencePath = Get-CanonicalFuturePath -Path $launchEvidencePath -Suffix '.runner-launch-evidence.json' -Boundary $repoPath -Label 'runner launch evidence'
 $runnerArguments = @(
     '-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass',
     '-File', $runnerPath,
@@ -667,6 +692,8 @@ $runnerArguments = @(
     '-E2EFinalClaimReceiptPath', $claimReceiptPath,
     '-ExternalHealthAuthorityPathOverride', $ExternalHealthAuthorityFixturePath,
     '-ExternalHealthAuthorityExpectedSha256', $externalHealthAuthorityFixtureSha256,
+    '-IsolationReceiptPath', $IsolationReceiptPath,
+    '-LaunchEvidencePath', $launchEvidencePath,
     '-HighCostAttemptId', $attemptId
 )
  $runnerArguments += @('-E2EAttemptPolicyPath', $e2eAttemptPolicyFullPath, '-E2ELogicalAttempt', [string]$E2ELogicalAttempt)
@@ -702,6 +729,7 @@ $installedLaunchAuthority = [ordered]@{
     stableTaskAuthorityFileSha256 = (Get-FileHash -LiteralPath $stableTaskAuthorityPath -Algorithm SHA256).Hash.ToLowerInvariant()
     runnerExecutablePath = $powerShellCanonicalPath
     runnerExecutableSha256 = $powerShellSha256
+    pythonExecutableSha256 = $pythonSha256
     executionRepoRoot = $repoPath
     executionRepoCommit = $executionRepoCommit
     runtimeRepoCommit = $runtimeRepoCommit
@@ -709,6 +737,9 @@ $installedLaunchAuthority = [ordered]@{
     runnerArgumentsFileSha256 = (Get-FileHash -LiteralPath $runnerArgumentsPath -Algorithm SHA256).Hash.ToLowerInvariant()
     externalHealthAuthorityFixturePath = $ExternalHealthAuthorityFixturePath
     externalHealthAuthorityFixtureSha256 = $externalHealthAuthorityFixtureSha256
+    isolationReceiptPath = $IsolationReceiptPath
+    isolationReceiptSha256 = $isolationReceiptSha256
+    launchEvidencePath = $launchEvidencePath
     e2eAttemptPolicyPath = $e2eAttemptPolicyFullPath
     e2eAttemptPolicySha256 = $e2eAttemptPolicySha256
     e2eLogicalAttempt = $E2ELogicalAttempt
@@ -799,16 +830,16 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $startedAt = Get-Date
-$runtimeRepoCommitBeforeLaunch = (& git -C $runtimeRepoPath rev-parse HEAD 2>$null).Trim().ToLowerInvariant()
+$runtimeRepoCommitBeforeLaunch = (& $gitCanonicalPath -C $runtimeRepoPath rev-parse HEAD 2>$null).Trim().ToLowerInvariant()
 $runtimeRepoCommitBeforeLaunchExitCode = $LASTEXITCODE
-$runtimeRepoTreeBeforeLaunch = (& git -C $runtimeRepoPath rev-parse 'HEAD^{tree}' 2>$null).Trim().ToLowerInvariant()
+$runtimeRepoTreeBeforeLaunch = (& $gitCanonicalPath -C $runtimeRepoPath rev-parse 'HEAD^{tree}' 2>$null).Trim().ToLowerInvariant()
 $runtimeRepoTreeBeforeLaunchExitCode = $LASTEXITCODE
-$runtimeRepoStatusBeforeLaunch = (& git -C $runtimeRepoPath status --porcelain=v1 --untracked-files=all 2>$null | Out-String).Trim()
+$runtimeRepoStatusBeforeLaunch = (& $gitCanonicalPath -C $runtimeRepoPath status --porcelain=v1 --untracked-files=all 2>$null | Out-String).Trim()
 $runtimeRepoStatusBeforeLaunchExitCode = $LASTEXITCODE
 $p08EvidenceToolSha256BeforeLaunch = (Get-FileHash -LiteralPath $p08EvidenceToolPath -Algorithm SHA256).Hash.ToLowerInvariant()
-$p08EvidenceToolBlobBeforeLaunch = (& git -C $runtimeRepoPath hash-object -- $p08EvidenceToolPath 2>$null).Trim().ToLowerInvariant()
+$p08EvidenceToolBlobBeforeLaunch = (& $gitCanonicalPath -C $runtimeRepoPath hash-object -- $p08EvidenceToolPath 2>$null).Trim().ToLowerInvariant()
 $p08EvidenceToolBlobBeforeLaunchExitCode = $LASTEXITCODE
-$p08EvidenceToolHeadBlobBeforeLaunch = (& git -C $runtimeRepoPath rev-parse 'HEAD:tools/news_grasp_p08_evidence.py' 2>$null).Trim().ToLowerInvariant()
+$p08EvidenceToolHeadBlobBeforeLaunch = (& $gitCanonicalPath -C $runtimeRepoPath rev-parse 'HEAD:tools/news_grasp_p08_evidence.py' 2>$null).Trim().ToLowerInvariant()
 $p08EvidenceToolHeadBlobBeforeLaunchExitCode = $LASTEXITCODE
 if (
     $runtimeRepoCommitBeforeLaunchExitCode -ne 0 -or
@@ -831,11 +862,17 @@ if ($launchPowerShellSha256 -ne $powerShellSha256) {
     throw "HIGH_COST_POWERSHELL_EXECUTABLE_DRIFT: $powerShellCanonicalPath"
 }
 $installedLauncherArguments = @(
-    $installedLauncherPath,
+    '-I', '-S', '-B', $installedLauncherPath,
     'scheduled-equivalent-nopublish',
     '--launch-authority',
     $installedLaunchAuthorityPath
 )
+foreach ($pythonEnvironmentKey in @('PYTHONPATH','PYTHONHOME','PYTHONSTARTUP','PYTHONINSPECT','PYTHONUSERBASE')) {
+    [Environment]::SetEnvironmentVariable($pythonEnvironmentKey, $null, [EnvironmentVariableTarget]::Process)
+}
+$env:PYTHONNOUSERSITE = '1'
+$env:PYTHONIOENCODING = 'utf-8'
+$env:PYTHONUTF8 = '1'
 & $installedTaskPythonPath @installedLauncherArguments
 $runnerExitCode = $LASTEXITCODE
 
@@ -876,7 +913,7 @@ $receipt = [ordered]@{
     no_focus_theft = $true
     date = $DateStamp
     repo_root = $runtimeRepoPath
-    runner_path = $runnerPath
+    release_nopublish_adapter_path = $runnerPath
     installed_launcher_path = $installedLauncherPath
     installed_launcher_sha256 = $installedLauncherSha256
     installed_launch_authority_path = $installedLaunchAuthorityPath
@@ -900,7 +937,34 @@ $receipt = [ordered]@{
     ok = ($runnerExitCode -eq 0 -and $observedStatus -eq 'publish_dry_run_ok' -and $durationSloMet)
 }
 $json = $receipt | ConvertTo-Json -Depth 6
-[System.IO.File]::WriteAllText($receiptFullPath, ($json + [Environment]::NewLine), $utf8NoBom)
+$receiptDirectory = Split-Path -Parent $receiptFullPath
+$receiptTemporaryPath = Join-Path $receiptDirectory ('.' + [System.IO.Path]::GetFileName($receiptFullPath) + '.' + [Guid]::NewGuid().ToString('N') + '.tmp')
+$receiptBytes = $utf8NoBom.GetBytes($json + [Environment]::NewLine)
+$receiptStream = $null
+try {
+    $receiptStream = [System.IO.FileStream]::new(
+        $receiptTemporaryPath,
+        [System.IO.FileMode]::CreateNew,
+        [System.IO.FileAccess]::Write,
+        [System.IO.FileShare]::None,
+        4096,
+        [System.IO.FileOptions]::WriteThrough
+    )
+    $receiptStream.Write($receiptBytes, 0, $receiptBytes.Length)
+    $receiptStream.Flush($true)
+} finally {
+    if ($null -ne $receiptStream) {
+        $receiptStream.Dispose()
+    }
+}
+try {
+    [System.IO.File]::Move($receiptTemporaryPath, $receiptFullPath)
+} catch {
+    if (Test-Path -LiteralPath $receiptTemporaryPath -PathType Leaf) {
+        Remove-Item -LiteralPath $receiptTemporaryPath -Force
+    }
+    throw
+}
 
 if (-not $receipt.ok) {
     Write-Error "scheduled-equivalent NoPublish E2E failed: exit=$runnerExitCode state=$observedStatus receipt=$receiptFullPath"

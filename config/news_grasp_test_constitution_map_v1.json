@@ -1,8 +1,8 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 3226,
-  "collectedNodeSetSha256": "4b2c0de07ad27f7c5373cb1b1338392c904d893278306e1c7451e779e3988b82",
+  "collectedNodeCount": 3244,
+  "collectedNodeSetSha256": "23869c809ac454b8cc28f46c6afde5cdbfca575a23dd41a8b270d0e1bf0cfc4b",
   "files": [
     {
       "path": "tests/test_20260813_control_plane_repair.py",
@@ -772,7 +772,7 @@
     },
     {
       "path": "tests/test_daily_self_heal.py",
-      "sha256": "8178761c56b3a692e962f3a210c2b4d64ea09572b54212b483094789b41d014d",
+      "sha256": "a06508cad82ac6a2cd0c772aa43f87a39d60886d32884f6c2046bfb435845f27",
       "nodeCount": 121,
       "nodeIds": [
         "tests/test_daily_self_heal.py::test_authenticode_identity_uses_tracked_powershell_helper",
@@ -828,7 +828,7 @@
         "tests/test_daily_self_heal.py::test_task_launcher_contract_accepts_current_registered_multimode_launcher",
         "tests/test_daily_self_heal.py::test_task_launcher_contract_rejects_mode_decoy_without_bootstrap",
         "tests/test_daily_self_heal.py::test_task_launcher_contract_rejects_mode_decoy_without_dispatch",
-        "tests/test_daily_self_heal.py::test_task_launcher_contract_requires_clean_runtime_on_both_scheduled_modes",
+        "tests/test_daily_self_heal.py::test_task_launcher_contract_requires_canonical_direct_dispatch_binding",
         "tests/test_daily_self_heal.py::test_trusted_ops_generation_allows_ignored_runtime_artifacts",
         "tests/test_daily_self_heal.py::test_trusted_ops_generation_rejects_tracked_dirty_with_runtime_artifacts",
         "tests/test_daily_self_heal.py::test_verify_deploy_workflow_accepts_manual_dispatch_for_same_head",
@@ -1908,7 +1908,7 @@
     },
     {
       "path": "tests/test_high_cost_operation_admission_contract.py",
-      "sha256": "2a8d13e9c24b5e45e7eeb1851bb74ddba7d5722fc7d0efe1268780fa782c8341",
+      "sha256": "dde4ea6b385a5f24957881abbb9a782b37f4e3f2568972b3a3b29e8b5445bcb7",
       "nodeCount": 27,
       "nodeIds": [
         "tests/test_high_cost_operation_admission_contract.py::test_every_full_e2e_model_process_issues_exact_child_immediately_before_start",
@@ -2307,7 +2307,7 @@
     },
     {
       "path": "tests/test_news_grasp_cleanroom_operational_cutover.py",
-      "sha256": "e829d8a06ea7007c71cfa244ebe8d5e10ce811180f8022cd6a1eacdc1528026d",
+      "sha256": "ea17b9d467a8c3315bfb514cbf17dda515857d2bdca0db8dbe30cbc4e435e055",
       "nodeCount": 16,
       "nodeIds": [
         "tests/test_news_grasp_cleanroom_operational_cutover.py::test_cleanroom_child_probe_is_exact_exclusive_and_rejects_invalid_names",
@@ -2507,7 +2507,7 @@
     },
     {
       "path": "tests/test_news_grasp_cleanroom_value_review.py",
-      "sha256": "970779a419767fc6ea24fbb130cf048023eb9d28e997813c493e6b631ea0b4f2",
+      "sha256": "2b75a570774653be4bed89a4d0977c9e628793cf37b8d622caaddf3d4229d351",
       "nodeCount": 5,
       "nodeIds": [
         "tests/test_news_grasp_cleanroom_value_review.py::test_r1_task_origin_witness_rejects_before_controller_wal_ledger_child",
@@ -2538,7 +2538,7 @@
     },
     {
       "path": "tests/test_news_grasp_cleanroom_value_review_lane_b.py",
-      "sha256": "ad6ad976fefff54051dd2d53446e7b75716ce70048b589166b932af77b72be2d",
+      "sha256": "35e70a2135691930c61dac3b93e1e900c14fe6f0c376cd7624e05303fb0476ed",
       "nodeCount": 8,
       "nodeIds": [
         "tests/test_news_grasp_cleanroom_value_review_lane_b.py::test_cleanroom_child_drains_bounded_pipes_and_renews_during_large_output",
@@ -2945,6 +2945,35 @@
       ]
     },
     {
+      "path": "tests/test_news_grasp_direct_nopublish_cutover.py",
+      "sha256": "647c03074febf62680ad6b49b81fb479b1be18d11e9dedbd8c5ace70611a3edc",
+      "nodeCount": 18,
+      "nodeIds": [
+        "tests/test_news_grasp_direct_nopublish_cutover.py::test_NG_CUTOVER_01_installer_managed_files_exclude_legacy_runner",
+        "tests/test_news_grasp_direct_nopublish_cutover.py::test_NG_CUTOVER_02_recovery_binding_targets_stable_task_launcher",
+        "tests/test_news_grasp_direct_nopublish_cutover.py::test_NG_CUTOVER_03_scheduled_runner_child_uses_fixed_python_daily_launcher_once",
+        "tests/test_news_grasp_direct_nopublish_cutover.py::test_NG_CUTOVER_04_task_launcher_bootstrap_mode_has_no_legacy_script_child",
+        "tests/test_news_grasp_direct_nopublish_cutover.py::test_NG_CUTOVER_05_deadman_converges_to_stable_task_launcher",
+        "tests/test_news_grasp_direct_nopublish_cutover.py::test_NG_CUTOVER_06_release_nopublish_wrapper_uses_installed_launcher_module",
+        "tests/test_news_grasp_direct_nopublish_cutover.py::test_NG_CUTOVER_07_release_nopublish_isolated_state_and_zero_external_effects",
+        "tests/test_news_grasp_direct_nopublish_cutover.py::test_NG_CUTOVER_08_source_repo_has_no_legacy_runner_script",
+        "tests/test_news_grasp_direct_nopublish_cutover.py::test_NG_CUTOVER_09_bootstrap_syncs_evidence_origin_before_active_generation_validation",
+        "tests/test_news_grasp_direct_nopublish_cutover.py::test_NG_CUTOVER_10_nopublish_isolation_uses_validator_signature_and_green_status",
+        "tests/test_news_grasp_direct_nopublish_cutover.py::test_NG_CUTOVER_11_nopublish_launches_fix_cwd_and_scrubbed_environment",
+        "tests/test_news_grasp_direct_nopublish_cutover.py::test_NG_CUTOVER_12_protected_release_maps_to_simulation_in_real_daily_sequence",
+        "tests/test_news_grasp_direct_nopublish_cutover.py::test_NG_CUTOVER_13_release_cli_claim_missing_fails_before_import_or_receipt_mutation",
+        "tests/test_news_grasp_direct_nopublish_cutover.py::test_NG_CUTOVER_14_run_git_scrubs_all_inherited_git_config_environment",
+        "tests/test_news_grasp_direct_nopublish_cutover.py::test_NG_CUTOVER_15_outer_receipt_flushes_and_atomically_moves_temp_file",
+        "tests/test_news_grasp_direct_nopublish_cutover.py::test_NG_CUTOVER_16_deadman_validates_authority_and_runtime_before_import",
+        "tests/test_news_grasp_direct_nopublish_cutover.py::test_NG_CUTOVER_17_working_tree_identity_changes_with_same_path_bytes",
+        "tests/test_news_grasp_direct_nopublish_cutover.py::test_NG_CUTOVER_18_wrapper_binds_caller_python_before_first_child"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
       "path": "tests/test_news_grasp_direct_runtime.py",
       "sha256": "59fe855774ab3412ca9f7bf3dfe47982815bc616e6856bb91985a3e966f01d71",
       "nodeCount": 39,
@@ -3060,7 +3089,7 @@
     },
     {
       "path": "tests/test_news_grasp_e2e_composition_contract.py",
-      "sha256": "1c59979e3f2c3ae25a2375aa9761fe4a461093d63f6c5e109df18cadfc84a2ba",
+      "sha256": "23e44c7cb4233d1dd17f8aeb8c3c644cd7238640861557a9361aa0ef424e7180",
       "nodeCount": 10,
       "nodeIds": [
         "tests/test_news_grasp_e2e_composition_contract.py::test_installed_launcher_accepts_bound_global_generation_manifest",
@@ -3139,7 +3168,7 @@
     },
     {
       "path": "tests/test_news_grasp_generation_boundary.py",
-      "sha256": "72fa6b98d14bc7f7c411ac0dd848970057e7dd02646a5c51d768321877fe5d37",
+      "sha256": "66975b051adb356eecc6d2dc19bce77b0dfd3ea5531a2742db87e949f71694c7",
       "nodeCount": 7,
       "nodeIds": [
         "tests/test_news_grasp_generation_boundary.py::test_generation_manifest_seals_complete_tracked_source_tree",
@@ -3894,7 +3923,7 @@
     },
     {
       "path": "tests/test_operational_redesign_contract.py",
-      "sha256": "5c0965538c2586d7a3a305510675e152e877ac969da8900d67cb155084a5c989",
+      "sha256": "17831cb79851d11908e46ef5a86e6040190a96e8b5979e96ee1ff7c2bbae3db7",
       "nodeCount": 53,
       "nodeIds": [
         "tests/test_operational_redesign_contract.py::test_ng2_a01_adversarial_scope_escape",
@@ -4145,7 +4174,7 @@
     },
     {
       "path": "tests/test_product_spec_contract.py",
-      "sha256": "aa0afe2f7c1183184fcf2468af9d2b5cb123c14b1b5a81ff21c331e96c0eaaab",
+      "sha256": "09c2fe0ece9f00d6882a85c55bafd5025a02bceef9fd855868bb21aadb7e5e70",
       "nodeCount": 25,
       "nodeIds": [
         "tests/test_product_spec_contract.py::test_daily_45m_contract_is_bound_to_gate_matrix_and_public_completion",
@@ -4883,7 +4912,7 @@
     },
     {
       "path": "tests/test_scheduled_high_cost_separation.py",
-      "sha256": "5138041258477ac136479dc17957bfa65c29784968f857e310a2eb6338cbfe0e",
+      "sha256": "67ebbbd74946f613d635b6b104ca3b6a527324a3676e71cef73b458b419fac91",
       "nodeCount": 85,
       "nodeIds": [
         "tests/test_scheduled_high_cost_separation.py::test_attempt_status_is_derived_from_canonical_ledger_not_caller_text",

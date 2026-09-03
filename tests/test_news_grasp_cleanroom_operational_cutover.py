@@ -151,6 +151,9 @@ def _install_dispatch_authority(module: Any, bin_dir: Path) -> None:
         "stableLauncherSha256": hashlib.sha256(launcher_path.read_bytes()).hexdigest(),
         "action": [
             str(task_pythonw.resolve()),
+            "-I",
+            "-S",
+            "-B",
             str(launcher_path),
             "dispatch",
             "--schedule-id",
@@ -228,6 +231,9 @@ def _dispatch_task_origin_witness_payload(module: Any, *, task_pythonw: str) -> 
                 "execute": task_pythonw,
                 "arguments": subprocess.list2cmdline(
                     [
+                        "-I",
+                        "-S",
+                        "-B",
                         str(launcher_path),
                         "dispatch",
                         "--schedule-id",
@@ -452,6 +458,14 @@ def _run_dispatch(
     monkeypatch.setattr(module["Path"], "home", classmethod(lambda _cls: tmp_path))
     _install_task_topology_authority(tmp_path)
     _install_dispatch_authority(SimpleNamespace(**module), tmp_path / "bin")
+    monkeypatch.setitem(
+        module,
+        "resolve_bootstrap_launch_roots",
+        lambda **_kwargs: {
+            "configuredRuntime": tmp_path / ".news-grasp-runtime" / "production-runtime",
+            "pythonExe": tmp_path / "bin" / "pythonw.exe",
+        },
+    )
     result = helper(
         EXPECTED_SCHEDULE_ID,
         EXPECTED_INTENT,

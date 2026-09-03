@@ -3339,6 +3339,7 @@ def test_task_launcher_contract_accepts_current_registered_multimode_launcher() 
     result = dsh._task_launcher_source_contract(launcher)
 
     assert result["ok"] is True
+    assert result["entry_mode"] == "dispatch"
     assert set(result["modes"]) >= {
         "dispatch",
         "runner",
@@ -3472,10 +3473,10 @@ def test_verify_live_runner_readiness_rejects_legacy_tombstone_as_canonical_succ
     assert result["scheduled_task"]["bootstrap_targets_live_task_launcher"] is True
 
 
-def test_task_launcher_contract_requires_clean_runtime_on_both_scheduled_modes(
+def test_task_launcher_contract_requires_canonical_direct_dispatch_binding(
     tmp_path: Path,
 ) -> None:
-    """旧launcherに単語があるだけでなく、runner/bootstrap両引数列のclean runtimeを必須にする。"""
+    """旧mode列や単語decoyだけではcanonical direct dispatchとして受理しない。"""
     launcher = tmp_path / "news-grasp-task-launcher.pyw"
     launcher.write_text(
         '''
@@ -3494,7 +3495,7 @@ creationflags = subprocess.CREATE_NO_WINDOW
 
     assert result["ok"] is False
     assert result["reason"] == "task_launcher_contract_invalid"
-    assert any("UseProductionRuntime" in token for token in result["missing_tokens"])
+    assert any("run_cleanroom_dispatch" in token for token in result["missing_tokens"])
 
 
 def test_verify_live_runner_readiness_rejects_scheduler_target_drift(monkeypatch, tmp_path: Path) -> None:

@@ -558,8 +558,8 @@ def test_ng2_a02_recovery_rollback_previous_generation(tmp_path: Path) -> None:
 def test_ng2_wp03_installer_tasks_bind_stable_launcher_without_worktree_path() -> None:
     repo = Path(__file__).resolve().parents[1]
     installer = (repo / "scripts/ops/install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
-    assert '$runnerArgs = "`"$taskLauncherPath`" dispatch --schedule-id news-grasp-daily-v1 --intent reconcile"' in installer
-    assert '$bootstrapArgs = "`"$taskLauncherPath`" bootstrap --scheduled-task-name `"$BootstrapTaskName`" --high-cost-binding-path' in installer
+    assert '$runnerArgs = "-I -S -B `"$taskLauncherPath`" dispatch --schedule-id news-grasp-daily-v1 --intent reconcile"' in installer
+    assert '$bootstrapArgs = "-I -S -B `"$taskLauncherPath`" bootstrap --scheduled-task-name `"$BootstrapTaskName`" --high-cost-binding-path' in installer
     assert "[string] $PullTaskName = 'News-Grasp Pull'" in installer
     assert "Register-ScheduledTask -TaskPath '\\' -TaskName $DeadmanTaskName" in installer
     assert "Enable-ScheduledTask -TaskPath '\\' -TaskName $DeadmanTaskName" in installer
@@ -690,7 +690,18 @@ def test_ng3_wp03_runtime_transaction_seals_active_generation(tmp_path: Path) ->
         "stableLauncherSha256": hashlib.sha256(launcher_path.read_bytes()).hexdigest(),
         "bootstrapPath": str((source_repo / "scripts/ops/news-grasp-bootstrap.ps1").resolve()),
         "bootstrapSha256": "b" * 64,
-        "action": [str(task_pythonw.resolve()), str(launcher_path.resolve()), "runner"],
+        "action": [
+            str(task_pythonw.resolve()),
+            "-I",
+            "-S",
+            "-B",
+            str(launcher_path.resolve()),
+            "dispatch",
+            "--schedule-id",
+            "news-grasp-daily-v1",
+            "--intent",
+            "reconcile",
+        ],
         "trigger": {"daily": "06:00"},
         "repoArgumentCount": 0,
         "highCostBindingPath": str(binding_path.resolve()),

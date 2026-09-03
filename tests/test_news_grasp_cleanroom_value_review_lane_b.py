@@ -634,7 +634,11 @@ def test_cleanroom_child_drains_bounded_pipes_and_renews_during_large_output(
         "pipe-drain-test",
         command,
         bin_dir=tmp_path,
-        safety={"timeout": 2.0, "creationflags": 0},
+        safety={
+            "timeout": 2.0,
+            "creationflags": 0,
+            "owned_process_module": str(ROOT / "tools" / "news_grasp_owned_process.py"),
+        },
         renew_slot=lambda: renewals.append(1) or {"status": "renewed"},
         renewal_interval_seconds=0.05,
         renewal_sleep=lambda seconds: __import__("time").sleep(seconds),

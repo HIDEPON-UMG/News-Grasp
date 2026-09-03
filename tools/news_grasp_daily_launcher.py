@@ -9,6 +9,16 @@ import uuid
 from pathlib import Path
 from typing import Any, Sequence
 
+_PRODUCT_ROOT = Path(__file__).resolve().parents[1]
+if str(_PRODUCT_ROOT) not in sys.path:
+    # productionは `python -I -S -B <absolute launcher>` で起動する。
+    # 実行中の検証済みgeneration自身だけをimport rootへ追加する。
+    sys.path.insert(0, str(_PRODUCT_ROOT))
+_TRUSTED_SITE_PACKAGES = Path(sys.executable).resolve().parent / "Lib" / "site-packages"
+if _TRUSTED_SITE_PACKAGES.is_dir() and str(_TRUSTED_SITE_PACKAGES) not in sys.path:
+    # -Sでstartup hook/user siteを無効化したまま、固定Python配下の依存だけを許可する。
+    sys.path.append(str(_TRUSTED_SITE_PACKAGES))
+
 from tools import news_grasp_daily_gate as daily
 from tools import news_grasp_direct_runtime as runtime
 

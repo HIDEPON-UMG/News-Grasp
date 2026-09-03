@@ -168,7 +168,7 @@ def test_r3_task_origin_canary_is_real_task_start_and_fail_closed_unverified() -
         "launcher terminal commit": "commit_slot" in launcher_lower,
         "installer temporary Task start": "start-scheduledtask" in installer_lower,
         "installer nonce receipt": "nonce" in installer_lower and "receipt" in installer_lower,
-        "canonical 8-token canary interface": (
+        "canonical 11-token canary interface": (
             all(
                 marker in launcher_lower
                 for marker in (
@@ -178,7 +178,7 @@ def test_r3_task_origin_canary_is_real_task_start_and_fail_closed_unverified() -
                     "--canary-receipt-path",
                 )
             )
-            and "len(arguments) != 8" in launcher_lower
+            and "len(arguments) != 11" in launcher_lower
             and all(
                 marker in installer_lower
                 for marker in (
@@ -322,32 +322,46 @@ def test_r8_startup_canary_is_bounded_and_run_canary_false_is_not_green(
 
     class _Completed:
         returncode = 0
+        stdout = b""
+        stderr = b""
+        timed_out = False
+        output_exceeded = False
+
+    class _OwnedProcessModule:
+        @staticmethod
+        def run_owned_bounded(_command: list[str], **kwargs: Any) -> _Completed:
+            run_kwargs.update(kwargs)
+            return _Completed()
+
+    def fake_load_module(_path: Path, *, prefix: str) -> _OwnedProcessModule:
+        assert prefix == "news_grasp_owned_process_runtime"
+        return _OwnedProcessModule()
 
     def fake_run(_command: list[str], **kwargs: Any) -> _Completed:
         run_kwargs.update(kwargs)
         return _Completed()
 
     monkeypatch.setattr(launcher.subprocess, "run", fake_run)
+    monkeypatch.setattr(launcher, "_load_module_from_exact_path", fake_load_module)
     assert (
         launcher._run_cleanroom_child(
             "runner",
             ["runner", "--smoke"],
             bin_dir=tmp_path,
-            safety={"creationflags": 0},
+            safety={
+                "creationflags": 0,
+                "owned_process_module": str(LAUNCHER_PATH),
+            },
         )
         == 0
     )
     failures: list[str] = []
-    if run_kwargs.get("shell") is not False:
-        failures.append(f"shell={run_kwargs.get('shell')!r}")
-    if run_kwargs.get("stdin") is not subprocess.DEVNULL:
-        failures.append("stdin is not DEVNULL")
-    if not isinstance(run_kwargs.get("creationflags"), int):
-        failures.append("CREATE_NO_WINDOW creationflags missing")
     if not isinstance(run_kwargs.get("timeout"), (int, float)):
         failures.append("startup timeout missing")
-    if run_kwargs.get("stdout") is subprocess.DEVNULL or run_kwargs.get("stderr") is subprocess.DEVNULL:
-        failures.append("startup output is discarded instead of captured")
+    if not isinstance(run_kwargs.get("max_output_bytes"), int):
+        failures.append("startup output bound missing")
+    if Path(run_kwargs.get("cwd", "")).resolve() != tmp_path.resolve():
+        failures.append("startup cwd is not exact")
 
     dsh = importlib.import_module("tools.daily_self_heal")
     monkeypatch.setattr(dsh, "compare_files", lambda *_args, **_kwargs: {

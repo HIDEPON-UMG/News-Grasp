@@ -105,10 +105,13 @@ def test_nopublish_wrapper_binds_authority_and_runner_to_isolated_repo() -> None
     """installed launcherを使いつつ、生成先は固定generationの隔離worktreeへ束縛する。"""
     text = WRAPPER.read_text(encoding="utf-8-sig")
 
-    assert "$runnerPath = Join-Path $repoPath 'scripts\\ops\\news-grasp-runner.ps1'" in text
+    assert "$runnerPath = Join-Path $repoPath 'scripts\\ops\\news-grasp-release-nopublish.ps1'" in text
+    assert "$releaseNoPublishModule = 'tools.news_grasp_release_nopublish'" in text
     assert "$codexWrapperPath = Join-Path $repoPath 'scripts\\ops\\run_codex_with_timeout.ps1'" in text
     assert "'-RepoDirOverride', $repoPath" in text
     assert "'--execution-root' $repoPath" in text
+    assert "'-IsolationReceiptPath', $IsolationReceiptPath" in text
+    assert "'-LaunchEvidencePath', $launchEvidencePath" in text
     assert "executionRepoRoot = $repoPath" in text
     assert "executionRepoCommit = $executionRepoCommit" in text
     assert "runtimeRepoCommit = $runtimeRepoCommit" in text
@@ -381,7 +384,8 @@ def test_repair_skill_reuses_scheduled_identity_without_e2e_or_budget_reset() ->
 def test_nopublish_wrapper_uses_deterministic_parent_and_final_argument_paths() -> None:
     text = WRAPPER.read_text(encoding="utf-8-sig")
     assert '$receiptFullPath.high-cost-parent-authority.json' in text
-    assert "NewGuid" not in text
+    assert "$receiptTemporaryPath" in text
+    assert "[System.IO.File]::Move($receiptTemporaryPath, $receiptFullPath)" in text
     for flag in (
         "-HighCostParentAuthorityPath",
         "-E2EFinalAdmissionPath",

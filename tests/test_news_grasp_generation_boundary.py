@@ -103,7 +103,18 @@ def _generation_fixture(
         "stableLauncherSha256": namespace["_file_sha256"](LAUNCHER.resolve()),
         "bootstrapPath": str((ROOT / "scripts" / "ops" / "news-grasp-bootstrap.ps1").resolve()),
         "bootstrapSha256": "b" * 64,
-        "action": [str(task_pythonw.resolve()), str(LAUNCHER.resolve()), "runner"],
+        "action": [
+            str(task_pythonw.resolve()),
+            "-I",
+            "-S",
+            "-B",
+            str(LAUNCHER.resolve()),
+            "dispatch",
+            "--schedule-id",
+            "news-grasp-daily-v1",
+            "--intent",
+            "reconcile",
+        ],
         "trigger": {"daily": "06:00"},
         "repoArgumentCount": 0,
         "highCostBindingPath": str(binding_path.resolve()),
@@ -124,6 +135,7 @@ def _generation_fixture(
         if arguments == ("rev-parse", "origin/main"):
             return remote_values.pop(0) if remote_values else head
         if arguments in {
+            ("status", "--porcelain", "--untracked-files=all"),
             ("status", "--porcelain", "--untracked-files=no"),
             ("status", "--porcelain", "--untracked-files=no", "-z"),
         }:

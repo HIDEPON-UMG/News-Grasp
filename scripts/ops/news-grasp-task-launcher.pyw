@@ -21,15 +21,8 @@ from contextlib import contextmanager
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from uuid import uuid4
-from zoneinfo import ZoneInfo
 
-_PRODUCT_ROOT = Path(__file__).resolve().parents[2]
-if str(_PRODUCT_ROOT) not in sys.path:
-    sys.path.insert(0, str(_PRODUCT_ROOT))
-try:
-    from tools.news_grasp_e2e_attempt_policy import validate_policy_ledger as _validate_e2e_policy_transition
-except Exception:
-    _validate_e2e_policy_transition = None
+_validate_e2e_policy_transition = None
 
 
 RUNTIME_RECOVERY_SCHEMA = "NEWS_GRASP_PRODUCTION_RUNTIME_RECOVERY_V1"
@@ -57,6 +50,9 @@ RUNTIME_PRODUCTION_MUTEX_PREFIX = "Global\\NewsGraspProductionRuntime-"
 RUNTIME_LEGACY_MUTEX_NAME = "Global\\NewsGraspProductionRuntimeConvergence"
 INSTALLED_NOPUBLISH_AUTHORITY_SCHEMA = "NEWS_GRASP_INSTALLED_NOPUBLISH_LAUNCH_AUTHORITY_V1"
 STABLE_TASK_AUTHORITY_SCHEMA = "STABLE_TASK_AUTHORITY_V1"
+_CANONICAL_POWERSHELL = Path(
+    r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
+)
 TASK_TOPOLOGY_AUTHORITY_SCHEMA = "NEWS_GRASP_TASK_TOPOLOGY_AUTHORITY_V1"
 NEWS_GRASP_TASK_CONTEXT_REJECTED_EXIT = 67
 GLOBAL_GENERATION_MANIFEST_SCHEMA = (
@@ -234,12 +230,20 @@ def freeze_startup_failure_if_needed(
 def _write_json_atomic(path: Path, value: dict[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temp = path.with_name(f"{path.name}.tmp.{os.getpid()}.{uuid4().hex}")
-    temp.write_text(
-        json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
-        encoding="utf-8",
-        newline="\n",
-    )
-    temp.replace(path)
+    payload = (
+        json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
+    ).encode("utf-8")
+    try:
+        with temp.open("xb") as stream:
+            stream.write(payload)
+            stream.flush()
+            os.fsync(stream.fileno())
+        temp.replace(path)
+    finally:
+        try:
+            temp.unlink()
+        except FileNotFoundError:
+            pass
 
 
 def _write_json_exclusive(path: Path, value: dict[str, object]) -> None:
@@ -770,6 +774,65 @@ def _load_policy_consumer_from_execution_repo(execution_repo: Path):
     return consumer
 
 
+def _load_module_from_exact_path(candidate: Path, *, prefix: str):
+    """検証済み絶対pathだけをimportし、ambient sys.pathを参照しない。"""
+
+    path = candidate.resolve(strict=True)
+    if path.is_symlink() or not path.is_file():
+        raise RuntimeError("NEWS_GRASP_EXACT_MODULE_INVALID")
+    module_name = f"{prefix}_{hashlib.sha256(str(path).encode()).hexdigest()[:16]}"
+    cached = sys.modules.get(module_name)
+    if cached is not None:
+        return cached
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("NEWS_GRASP_EXACT_MODULE_INVALID")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    try:
+        spec.loader.exec_module(module)
+    except Exception:
+        sys.modules.pop(module_name, None)
+        raise
+    return module
+
+
+def _validate_nopublish_isolation(
+    *,
+    execution_repo: Path,
+    runtime_repo: Path,
+    issue_date: str,
+    receipt_path: Path,
+) -> dict[str, object]:
+    """検証済みruntime generationのconsumerで隔離差分だけを許可する。"""
+
+    candidate = (runtime_repo / "tools" / "news_grasp_p08_evidence.py").resolve(strict=True)
+    if candidate.is_symlink() or not candidate.is_file():
+        raise RuntimeError("NEWS_GRASP_NOPUBLISH_ISOLATION_CONSUMER_MISSING")
+    module_name = f"news_grasp_p08_evidence_{hashlib.sha256(str(candidate).encode()).hexdigest()[:16]}"
+    spec = importlib.util.spec_from_file_location(module_name, candidate)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("NEWS_GRASP_NOPUBLISH_ISOLATION_CONSUMER_MISSING")
+    module = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(module)
+        result = module.validate_isolation_receipt(
+            receipt_path,
+            repo_root=execution_repo,
+            source_repo_root=runtime_repo,
+            issue_date=issue_date,
+        )
+    except Exception as error:
+        raise RuntimeError("NEWS_GRASP_NOPUBLISH_ISOLATION_INVALID") from error
+    if (
+        not isinstance(result, Mapping)
+        or result.get("status") != "Green"
+        or not isinstance(result.get("validation"), Mapping)
+    ):
+        raise RuntimeError("NEWS_GRASP_NOPUBLISH_ISOLATION_INVALID")
+    return dict(result)
+
+
 def _load_stable_launcher_identity(*, bin_dir: Path) -> dict[str, object]:
     """installed launcher bytesをinstaller発行authorityへ束縛する。"""
     authority_path = bin_dir / "news-grasp-stable-task-authority-v1.json"
@@ -798,10 +861,18 @@ def _load_stable_launcher_identity(*, bin_dir: Path) -> dict[str, object]:
         or authority_sha256 not in allowed_hashes
         or authority.get("repoArgumentCount") != 0
         or not isinstance(action, list)
-        or len(action) < 3
+        or len(action) != 10
         or any(not isinstance(item, str) or not item for item in action)
         or stable_path != launcher
-        or Path(str(action[1])).resolve() != launcher
+        or action[1:4] != ["-I", "-S", "-B"]
+        or Path(str(action[4])).resolve() != launcher
+        or action[5:] != [
+            "dispatch",
+            "--schedule-id",
+            _CLEANROOM_SCHEDULE_ID,
+            "--intent",
+            _CLEANROOM_INTENT,
+        ]
         or str(authority.get("stableLauncherSha256") or "") != _file_sha256(launcher)
         or any(item.casefold() in {"--repo-dir", "--worktree"} for item in action)
     ):
@@ -873,7 +944,7 @@ def _stable_authority_option(identity: dict[str, object], option: str) -> str:
 _CLEANROOM_SCHEDULE_ID = "news-grasp-daily-v1"
 _CLEANROOM_INTENT = "reconcile"
 _CLEANROOM_LEASE_SECONDS = 3600
-_CLEANROOM_TOKYO = ZoneInfo("Asia/Tokyo")
+_CLEANROOM_TOKYO = timezone(timedelta(hours=9), name="Asia/Tokyo")
 _CLEANROOM_CONTEXT_TASK_NAME = "News-Grasp Production"
 _CLEANROOM_BOOTSTRAP_TASK_NAME = "News-Grasp Bootstrap"
 _CLEANROOM_CONTEXT_TIMEOUT_SECONDS = 10
@@ -1328,10 +1399,11 @@ def _cleanroom_default_task_context_validator(
     arguments = _cleanroom_windows_argument_tokens(action.get("arguments"))
     if (
         arguments is None
-        or len(arguments) != 6
-        or _cleanroom_context_path(arguments[0])
+        or len(arguments) != 9
+        or arguments[:3] != ["-I", "-S", "-B"]
+        or _cleanroom_context_path(arguments[3])
         != _cleanroom_context_path(str(launcher_path))
-        or arguments[1:] != [
+        or arguments[4:] != [
         "dispatch",
         "--schedule-id",
         _CLEANROOM_SCHEDULE_ID,
@@ -1474,10 +1546,11 @@ def _cleanroom_default_task_origin_validator(
         or _cleanroom_context_path(str(launcher_path))
         != _cleanroom_context_path(str(Path(__file__).resolve()))
         or arguments is None
-        or len(arguments) != 8
-        or _cleanroom_context_path(arguments[0])
+        or len(arguments) != 11
+        or arguments[:3] != ["-I", "-S", "-B"]
+        or _cleanroom_context_path(arguments[3])
         != _cleanroom_context_path(str(launcher_path))
-        or arguments[1:6]
+        or arguments[4:9]
         != [
             "task-origin-canary",
             "--canary-nonce",
@@ -1485,8 +1558,8 @@ def _cleanroom_default_task_origin_validator(
             "--canary-generation",
             generation,
         ]
-        or arguments[6] != "--canary-receipt-path"
-        or _cleanroom_context_path(arguments[7]) != expected_receipt_path
+        or arguments[9] != "--canary-receipt-path"
+        or _cleanroom_context_path(arguments[10]) != expected_receipt_path
         or _cleanroom_context_path(action.get("workingDirectory"))
         != _cleanroom_context_path(
             str(
@@ -1925,72 +1998,50 @@ def _cleanroom_child_command(
 ) -> tuple[list[str], dict[str, object]]:
     """installed childのargvと観測可能な安全境界を作る。"""
     launcher = (Path(bin_dir) / "news-grasp-task-launcher.pyw").resolve()
-    if route == "runner":
+    if route in {"runner", "deadman"}:
         executable = Path(sys.executable)
-        high_cost_path = ""
-        high_cost_sha = ""
         if isinstance(authority, Mapping):
-            try:
-                high_cost_path = _stable_authority_option(
-                    dict(authority), "--high-cost-binding-path"
-                )
-                high_cost_sha = _stable_authority_option(
-                    dict(authority), "--high-cost-binding-sha256"
-                )
-            except (RuntimeError, TypeError, ValueError):
-                high_cost_path = ""
-                high_cost_sha = ""
             action = authority.get("action")
             if isinstance(action, list) and action and isinstance(action[0], str) and action[0]:
                 executable = Path(action[0])
+        child_cwd = Path(bin_dir)
+        try:
+            child_cwd = resolve_bootstrap_launch_roots(
+                bin_dir=Path(bin_dir),
+                enforce_canonical_runtime=True,
+            )["configuredRuntime"]
+        except (OSError, RuntimeError, ValueError):
+            # test seamではinstalled runtime configを必須にしない。実authorityが
+            # 渡ったproduction dispatchはconfig driftをspawn前にfail-closedにする。
+            if isinstance(authority, Mapping) and authority.get("schemaVersion") == STABLE_TASK_AUTHORITY_SCHEMA:
+                raise
+            child_cwd = Path(bin_dir)
         command = [
             str(executable),
-            str(launcher),
-            "runner",
-            "--scheduled-task-name",
-            "News-Grasp Production",
+            "-I",
+            "-S",
+            "-B",
+            str(child_cwd / "tools" / "news_grasp_daily_launcher.py"),
         ]
-        if high_cost_path and high_cost_sha:
-            command.extend(
-                [
-                    "--high-cost-binding-path",
-                    high_cost_path,
-                    "--high-cost-binding-sha256",
-                    high_cost_sha,
-                ]
-            )
         safety: dict[str, object] = {
             "route": route,
             "command": tuple(command),
-            "cwd": str(Path(bin_dir)),
+            "cwd": str(child_cwd),
             "shell": False,
             "stdin": subprocess.DEVNULL,
             "creationflags": subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
             "close_fds": True,
             "timeout": _CLEANROOM_CHILD_TIMEOUT_SECONDS,
+            "environment": {
+                "PYTHONIOENCODING": "utf-8",
+                "PYTHONUTF8": "1",
+                "NEWS_GRASP_REPO_ROOT": str(child_cwd),
+            },
+            "owned_process_module": str(
+                child_cwd / "tools" / "news_grasp_owned_process.py"
+            ),
         }
-        if high_cost_path:
-            safety["highCostBindingPath"] = high_cost_path
-        if high_cost_sha:
-            safety["highCostBindingReceiptSha256"] = high_cost_sha
         return command, safety
-    if route == "deadman":
-        executable = Path(sys.executable)
-        if isinstance(authority, Mapping):
-            action = authority.get("action")
-            if isinstance(action, list) and action and isinstance(action[0], str) and action[0]:
-                executable = Path(action[0])
-        command = [str(executable), str((Path(bin_dir) / "news-grasp-deadman-launcher.pyw").resolve())]
-        return command, {
-            "route": route,
-            "command": tuple(command),
-            "cwd": str(Path(bin_dir)),
-            "shell": False,
-            "stdin": subprocess.DEVNULL,
-            "creationflags": subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
-            "close_fds": True,
-            "timeout": _CLEANROOM_CHILD_TIMEOUT_SECONDS,
-        }
     if route == "task-origin-child-probe":
         executable = Path(sys.executable)
         if isinstance(authority, Mapping):
@@ -2024,6 +2075,9 @@ def _cleanroom_child_command(
             "timeout": _CLEANROOM_CHILD_TIMEOUT_SECONDS,
             "externalEffectCount": 0,
             "probePath": str(isolated_probe),
+            "owned_process_module": str(
+                Path(runtime_root) / "tools" / "news_grasp_owned_process.py"
+            ),
         }
     raise ValueError("NEWS_GRASP_CLEANROOM_CHILD_ROUTE_INVALID")
 
@@ -2148,38 +2202,54 @@ def _run_cleanroom_child(
     if isinstance(timeout_seconds, bool) or not isinstance(timeout_seconds, (int, float)) or timeout_seconds <= 0:
         raise RuntimeError("NEWS_GRASP_CHILD_TIMEOUT_INVALID")
     creationflags = int(safety.get("creationflags") or 0)
-    common = {
-        "shell": False,
-        "stdin": subprocess.DEVNULL,
-        "cwd": str(Path(bin_dir)),
-        "close_fds": True,
-        "creationflags": creationflags,
-        "check": False,
-    }
-    if renew_slot is None:
-        result = subprocess.run(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            timeout=float(timeout_seconds),
-            **common,
-        )
-        stdout = getattr(result, "stdout", b"")
-        stderr = getattr(result, "stderr", b"")
-        if isinstance(stdout, (bytes, bytearray)) and len(stdout) > _CLEANROOM_CHILD_MAX_OUTPUT_BYTES:
-            raise RuntimeError("NEWS_GRASP_CHILD_STDOUT_LIMIT")
-        if isinstance(stderr, (bytes, bytearray)) and len(stderr) > _CLEANROOM_CHILD_MAX_OUTPUT_BYTES:
-            raise RuntimeError("NEWS_GRASP_CHILD_STDERR_LIMIT")
-        return int(result.returncode)
-
-    if renewal_interval_seconds is None:
+    child_cwd = Path(str(safety.get("cwd") or bin_dir)).resolve(strict=True)
+    child_env = dict(os.environ)
+    for inherited_name in (
+        "PYTHONPATH",
+        "PYTHONHOME",
+        "PYTHONSTARTUP",
+        "PYTHONINSPECT",
+        "PYTHONUSERBASE",
+    ):
+        child_env.pop(inherited_name, None)
+    child_env["PYTHONNOUSERSITE"] = "1"
+    environment = safety.get("environment")
+    if environment is not None:
+        if not isinstance(environment, Mapping) or not all(
+            isinstance(key, str) and isinstance(value, str)
+            for key, value in environment.items()
+        ):
+            raise RuntimeError("NEWS_GRASP_CHILD_ENVIRONMENT_INVALID")
+        if any(
+            key.upper()
+            in {
+                "PYTHONPATH",
+                "PYTHONHOME",
+                "PYTHONSTARTUP",
+                "PYTHONINSPECT",
+                "PYTHONUSERBASE",
+            }
+            for key in environment
+        ):
+            raise RuntimeError("NEWS_GRASP_CHILD_ENVIRONMENT_INVALID")
+        child_env.update(environment)
+    if renew_slot is not None and renewal_interval_seconds is None:
         renewal_interval_seconds = max(1.0, min(300.0, float(_CLEANROOM_LEASE_SECONDS) / 3.0))
-    if isinstance(renewal_interval_seconds, bool) or not isinstance(renewal_interval_seconds, (int, float)) or renewal_interval_seconds <= 0:
+    if renew_slot is not None and (
+        isinstance(renewal_interval_seconds, bool)
+        or not isinstance(renewal_interval_seconds, (int, float))
+        or renewal_interval_seconds <= 0
+    ):
         raise RuntimeError("NEWS_GRASP_RENEWAL_INTERVAL_INVALID")
     try:
-        owned_module = __import__(
-            "tools.news_grasp_owned_process",
-            fromlist=["run_owned_bounded"],
+        module_path_raw = safety.get("owned_process_module")
+        if isinstance(module_path_raw, str) and module_path_raw:
+            module_path = Path(module_path_raw).resolve(strict=True)
+        else:
+            module_path = (child_cwd / "tools" / "news_grasp_owned_process.py").resolve(strict=True)
+        owned_module = _load_module_from_exact_path(
+            module_path,
+            prefix="news_grasp_owned_process_runtime",
         )
         owned_runner = getattr(owned_module, "run_owned_bounded", None)
     except (ImportError, OSError, RuntimeError) as error:
@@ -2201,11 +2271,14 @@ def _run_cleanroom_child(
 
     result = owned_runner(
         command,
-        cwd=Path(bin_dir),
+        cwd=child_cwd,
+        env=child_env,
         timeout=float(timeout_seconds),
         max_output_bytes=_CLEANROOM_CHILD_MAX_OUTPUT_BYTES,
-        heartbeat=_renew_owned_child,
-        heartbeat_interval_seconds=float(renewal_interval_seconds),
+        heartbeat=_renew_owned_child if renew_slot is not None else None,
+        heartbeat_interval_seconds=(
+            float(renewal_interval_seconds) if renew_slot is not None else None
+        ),
     )
     if bool(getattr(result, "timed_out", False)):
         raise RuntimeError("NEWS_GRASP_CHILD_TIMEOUT")
@@ -2322,6 +2395,8 @@ def run_cleanroom_dispatch(
     child_exit = 1
     child_error = ""
     renew = getattr(controller, "renew_slot", None)
+    if child_runner is None and not callable(renew):
+        raise RuntimeError("NEWS_GRASP_SLOT_RENEWAL_REQUIRED")
     renewal_callback = None
     if callable(renew):
         def _renew_slot() -> Mapping[str, object]:
@@ -2554,19 +2629,20 @@ def _cleanroom_bootstrap_task_origin_witness(
         or _cleanroom_context_path(str(launcher_path))
         != _cleanroom_context_path(str(Path(__file__).resolve()))
         or arguments is None
-        or len(arguments) != 8
-        or _cleanroom_context_path(arguments[0])
+        or len(arguments) != 11
+        or arguments[:3] != ["-I", "-S", "-B"]
+        or _cleanroom_context_path(arguments[3])
         != _cleanroom_context_path(str(launcher_path))
-        or arguments[1:5]
+        or arguments[4:8]
         != [
             "bootstrap",
             "--scheduled-task-name",
             _CLEANROOM_BOOTSTRAP_TASK_NAME,
             "--high-cost-binding-path",
         ]
-        or _cleanroom_context_path(arguments[5])
+        or _cleanroom_context_path(arguments[8])
         != _cleanroom_context_path(str(binding_path))
-        or arguments[6:] != [
+        or arguments[9:] != [
             "--high-cost-binding-sha256",
             high_cost_binding_sha256.lower(),
         ]
@@ -2687,6 +2763,7 @@ def _run_installed_nopublish_authority(
         "stableTaskAuthorityFileSha256",
         "runnerExecutablePath",
         "runnerExecutableSha256",
+        "pythonExecutableSha256",
         "executionRepoRoot",
         "executionRepoCommit",
         "runtimeRepoCommit",
@@ -2694,6 +2771,12 @@ def _run_installed_nopublish_authority(
         "runnerArgumentsFileSha256",
         "externalHealthAuthorityFixturePath",
         "externalHealthAuthorityFixtureSha256",
+        "isolationReceiptPath",
+        "isolationReceiptSha256",
+        "launchEvidencePath",
+        "releaseReflectionReceiptPath",
+        "releaseReflectionReceiptSha256",
+        "releaseReflectionImpactClass",
         "authoritySha256",
     }
     external_fields = {
@@ -2740,6 +2823,7 @@ def _run_installed_nopublish_authority(
     if (
         not executable.is_file()
         or executable.is_symlink()
+        or executable != _CANONICAL_POWERSHELL.resolve(strict=True)
         or not arguments_path.is_file()
         or arguments_path.is_symlink()
         or _file_sha256(executable) != value["runnerExecutableSha256"]
@@ -2750,36 +2834,73 @@ def _run_installed_nopublish_authority(
         arguments = json.loads(arguments_path.read_text(encoding="utf-8"))
     except (OSError, ValueError, TypeError) as error:
         raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_ARGUMENTS_INVALID") from error
-    if (
-        not isinstance(arguments, list)
-        or not arguments
-        or any(not isinstance(item, str) or not item for item in arguments)
-        or "-NoPublish" not in arguments
-        or arguments.count("-ResumeFromStage") > 1
-        or arguments.count("-ExternalHealthAuthorityPathOverride") != 1
-        or arguments.count("-ExternalHealthAuthorityExpectedSha256") != 1
+    prefix = [
+        "-NoProfile",
+        "-NonInteractive",
+        "-WindowStyle",
+        "Hidden",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+    ]
+    mandatory_pair_flags = [
+        "-DateStampOverride",
+        "-RepoDirOverride",
+        "-CodexWrapperOverride",
+        "-StateFileOverride",
+        "-LogDirOverride",
+        "-PyExeOverride",
+        "-PowerShellExe",
+        "-HighCostBindingPath",
+        "-HighCostBindingReceiptSha256",
+        "-HighCostParentAuthorityPath",
+        "-E2EFinalAdmissionPath",
+        "-E2EFinalRunnerArgumentsPath",
+        "-E2EFinalReservationReceiptPath",
+        "-E2EFinalClaimReceiptPath",
+        "-ExternalHealthAuthorityPathOverride",
+        "-ExternalHealthAuthorityExpectedSha256",
+        "-IsolationReceiptPath",
+        "-LaunchEvidencePath",
+        "-HighCostAttemptId",
+        E2E_ATTEMPT_POLICY_ARGUMENT,
+        E2E_LOGICAL_ATTEMPT_ARGUMENT,
+    ]
+    if not isinstance(arguments, list) or any(
+        not isinstance(item, str) or not item for item in arguments
     ):
         raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_ARGUMENTS_INVALID")
-    if "-ResumeFromStage" in arguments:
-        try:
-            resume_index = arguments.index("-ResumeFromStage")
-            resume_stage = arguments[resume_index + 1]
-        except (ValueError, IndexError) as error:
-            raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_ARGUMENTS_INVALID") from error
-        if resume_stage not in {
-            "post-reporter",
-            "editor",
-            "deepdive",
-            "post-daily-quality",
-            "post-deepdive",
-            "generation-quality-repair",
-        }:
-            raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_ARGUMENTS_INVALID")
+    expected_prefix = [*prefix, str((execution_repo / "scripts" / "ops" / "news-grasp-release-nopublish.ps1").resolve()), "-NoPublish"]
+    remainder = arguments[len(expected_prefix):]
+    if arguments[: len(expected_prefix)] != expected_prefix or len(remainder) % 2:
+        raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_ARGUMENTS_INVALID")
+    observed_pair_flags = remainder[::2]
+    allowed_pair_flags = [*mandatory_pair_flags, GLOBAL_GENERATION_ARGUMENT]
+    if (
+        len(observed_pair_flags) != len(set(observed_pair_flags))
+        or any(flag not in allowed_pair_flags for flag in observed_pair_flags)
+        or any(flag not in observed_pair_flags for flag in mandatory_pair_flags)
+        or observed_pair_flags
+        != [
+            *mandatory_pair_flags,
+            *([GLOBAL_GENERATION_ARGUMENT] if GLOBAL_GENERATION_ARGUMENT in observed_pair_flags else []),
+        ]
+    ):
+        raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_ARGUMENTS_INVALID")
+    argument_values = dict(zip(observed_pair_flags, remainder[1::2], strict=True))
+    if (
+        argument_values["-DateStampOverride"] != value["issueDate"]
+        or argument_values["-RepoDirOverride"] != str(execution_repo)
+        or argument_values["-E2EFinalRunnerArgumentsPath"] != str(arguments_path)
+        or argument_values["-HighCostAttemptId"] != value["attemptId"]
+        or argument_values["-PowerShellExe"] != str(executable)
+    ):
+        raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_ARGUMENTS_INVALID")
     global_argument_count = arguments.count(GLOBAL_GENERATION_ARGUMENT)
     if global_argument_count > 1:
         raise RuntimeError("NEWS_GRASP_GLOBAL_GENERATION_ARGUMENTS_INVALID")
     if global_argument_count == 0:
-        if GLOBAL_GENERATION_AUTHORITY_FIELDS.intersection(value) or E2E_ATTEMPT_AUTHORITY_FIELDS.intersection(value):
+        if GLOBAL_GENERATION_AUTHORITY_FIELDS.intersection(value):
             raise RuntimeError("NEWS_GRASP_GLOBAL_GENERATION_BINDING_REQUIRED")
         global_manifest = None
     else:
@@ -2892,20 +3013,96 @@ def _run_installed_nopublish_authority(
         != value["externalHealthAuthorityFixtureSha256"]
     ):
         raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_EXTERNAL_AUTHORITY_DRIFT")
+    try:
+        reflection_receipt = _assert_managed_path(
+            Path(str(value["releaseReflectionReceiptPath"])),
+            execution_repo,
+            "NEWS_GRASP_INSTALLED_NOPUBLISH_REFLECTION_INVALID",
+        ).resolve(strict=True)
+    except OSError as error:
+        raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_REFLECTION_INVALID") from error
+    if (
+        reflection_receipt.is_symlink()
+        or not reflection_receipt.is_file()
+        or _file_sha256(reflection_receipt)
+        != str(value["releaseReflectionReceiptSha256"])
+        or value["releaseReflectionImpactClass"] != "source-runtime-impacting"
+    ):
+        raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_REFLECTION_INVALID")
+    try:
+        expected_isolation_receipt = Path(str(value["isolationReceiptPath"])).resolve(strict=True)
+        expected_launch_evidence = Path(str(value["launchEvidencePath"])).resolve(strict=False)
+    except OSError as error:
+        raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_ISOLATION_DRIFT") from error
+    if (
+        expected_isolation_receipt.is_symlink()
+        or not expected_isolation_receipt.is_file()
+        or _file_sha256(expected_isolation_receipt) != str(value["isolationReceiptSha256"])
+    ):
+        raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_ISOLATION_DRIFT")
+    if (
+        not expected_launch_evidence.is_relative_to(execution_repo)
+        or expected_launch_evidence == execution_repo
+        or expected_launch_evidence.exists()
+        or expected_launch_evidence.is_symlink()
+        or expected_launch_evidence.parent.resolve(strict=True) != expected_launch_evidence.parent
+    ):
+        raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_LAUNCH_EVIDENCE_DRIFT")
     resolved = resolve_bootstrap_launch_roots(
         bin_dir=bin_dir,
         enforce_canonical_runtime=True,
     )
     runtime_repo = resolved["configuredRuntime"].resolve(strict=True)
+    runtime_python = resolved["pythonExe"].resolve(strict=True)
+    try:
+        observed_python = Path(argument_values["-PyExeOverride"]).resolve(strict=True)
+        observed_binding = Path(argument_values["-HighCostBindingPath"]).resolve(strict=True)
+        state_output = Path(argument_values["-StateFileOverride"]).resolve(strict=False)
+        log_output = Path(argument_values["-LogDirOverride"]).resolve(strict=False)
+        parent_authority = Path(argument_values["-HighCostParentAuthorityPath"]).resolve(strict=True)
+        reservation_receipt = Path(argument_values["-E2EFinalReservationReceiptPath"]).resolve(strict=True)
+        claim_receipt = Path(argument_values["-E2EFinalClaimReceiptPath"]).resolve(strict=False)
+    except OSError as error:
+        raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_ARGUMENTS_INVALID") from error
+    expected_binding = Path(
+        _stable_authority_option(launcher_identity, "--high-cost-binding-path")
+    ).resolve(strict=True)
+    if (
+        observed_python != runtime_python
+        or observed_python.is_symlink()
+        or _file_sha256(observed_python) != str(value["pythonExecutableSha256"])
+        or observed_binding != expected_binding
+        or argument_values["-HighCostBindingReceiptSha256"].lower()
+        != _stable_authority_option(
+            launcher_identity, "--high-cost-binding-sha256"
+        ).lower()
+        or any(
+            candidate == execution_repo or not candidate.is_relative_to(execution_repo)
+            for candidate in (
+                state_output,
+                log_output,
+                parent_authority,
+                reservation_receipt,
+                claim_receipt,
+            )
+        )
+    ):
+        raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_ARGUMENTS_INVALID")
     _validate_active_production_generation(
         runtime_repo=runtime_repo,
         launcher_identity=launcher_identity,
+    )
+    isolation_validation = _validate_nopublish_isolation(
+        execution_repo=execution_repo,
+        runtime_repo=runtime_repo,
+        issue_date=str(value["issueDate"]),
+        receipt_path=expected_isolation_receipt,
     )
     try:
         runtime_head = _run_git(runtime_repo, "rev-parse", "HEAD").strip().lower()
         execution_head = _run_git(execution_repo, "rev-parse", "HEAD").strip().lower()
         tracked_diff = _run_git(
-            execution_repo, "status", "--porcelain", "--untracked-files=no"
+            execution_repo, "status", "--porcelain", "--untracked-files=all"
         ).strip()
     except (OSError, RuntimeError) as error:
         raise RuntimeError("NEWS_GRASP_INSTALLED_GENERATION_DRIFT") from error
@@ -2914,21 +3111,27 @@ def _run_installed_nopublish_authority(
         or execution_head != runtime_head
         or value.get("executionRepoCommit") != execution_head
         or value.get("runtimeRepoCommit") != runtime_head
-        or tracked_diff
+        or isolation_validation.get("status") != "Green"
         or _git_common_dir(execution_repo) != _git_common_dir(runtime_repo)
     ):
         raise RuntimeError("NEWS_GRASP_INSTALLED_GENERATION_DRIFT")
     expected_runner = (
-        execution_repo / "scripts" / "ops" / "news-grasp-runner.ps1"
+        execution_repo / "scripts" / "ops" / "news-grasp-release-nopublish.ps1"
     ).resolve(strict=True)
     runtime_runner = (
-        runtime_repo / "scripts" / "ops" / "news-grasp-runner.ps1"
+        runtime_repo / "scripts" / "ops" / "news-grasp-release-nopublish.ps1"
     ).resolve(strict=True)
     expected_codex_wrapper = (
         execution_repo / "scripts" / "ops" / "run_codex_with_timeout.ps1"
     ).resolve(strict=True)
     runtime_codex_wrapper = (
         runtime_repo / "scripts" / "ops" / "run_codex_with_timeout.ps1"
+    ).resolve(strict=True)
+    expected_module = (
+        execution_repo / "tools" / "news_grasp_release_nopublish.py"
+    ).resolve(strict=True)
+    runtime_module = (
+        runtime_repo / "tools" / "news_grasp_release_nopublish.py"
     ).resolve(strict=True)
     try:
         file_index = arguments.index("-File")
@@ -2947,6 +3150,10 @@ def _run_installed_nopublish_authority(
             "-ExternalHealthAuthorityExpectedSha256"
         )
         observed_external_authority_sha256 = arguments[external_hash_index + 1]
+        isolation_index = arguments.index("-IsolationReceiptPath")
+        observed_isolation_receipt = Path(arguments[isolation_index + 1]).resolve(strict=True)
+        launch_evidence_index = arguments.index("-LaunchEvidencePath")
+        observed_launch_evidence = Path(arguments[launch_evidence_index + 1]).resolve(strict=False)
     except (ValueError, IndexError, OSError) as error:
         raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_ARGUMENTS_INVALID") from error
     if (
@@ -2956,22 +3163,86 @@ def _run_installed_nopublish_authority(
     ):
         raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_EXTERNAL_AUTHORITY_DRIFT")
     if (
+        observed_isolation_receipt != expected_isolation_receipt
+        or observed_isolation_receipt.is_symlink()
+        or not observed_isolation_receipt.is_file()
+        or _file_sha256(observed_isolation_receipt) != str(value["isolationReceiptSha256"])
+    ):
+        raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_ISOLATION_DRIFT")
+    if observed_launch_evidence != expected_launch_evidence:
+        raise RuntimeError("NEWS_GRASP_INSTALLED_NOPUBLISH_LAUNCH_EVIDENCE_DRIFT")
+    if (
         observed_runner != expected_runner
         or observed_repo != execution_repo
         or observed_codex_wrapper != expected_codex_wrapper
         or _file_sha256(expected_runner) != _file_sha256(runtime_runner)
         or _file_sha256(expected_codex_wrapper)
         != _file_sha256(runtime_codex_wrapper)
+        or _file_sha256(expected_module) != _file_sha256(runtime_module)
     ):
         raise RuntimeError("NEWS_GRASP_INSTALLED_GENERATION_DRIFT")
+    launch_snapshot = {
+        "executionHead": execution_head,
+        "runtimeHead": runtime_head,
+        "trackedDiff": tracked_diff,
+        "workingTreeContentIdentity": _working_tree_content_identity(execution_repo),
+        "executableSha256": _file_sha256(executable),
+        "pythonSha256": _file_sha256(runtime_python),
+        "argumentsSha256": _file_sha256(arguments_path),
+        "runnerSha256": _file_sha256(expected_runner),
+        "wrapperSha256": _file_sha256(expected_codex_wrapper),
+        "moduleSha256": _file_sha256(expected_module),
+        "isolationSha256": _file_sha256(expected_isolation_receipt),
+        "externalSha256": _file_sha256(external_authority),
+    }
     creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+    try:
+        prelaunch_snapshot = {
+            "executionHead": _run_git(execution_repo, "rev-parse", "HEAD").strip().lower(),
+            "runtimeHead": _run_git(runtime_repo, "rev-parse", "HEAD").strip().lower(),
+            "trackedDiff": _run_git(
+                execution_repo, "status", "--porcelain", "--untracked-files=all"
+            ).strip(),
+            "workingTreeContentIdentity": _working_tree_content_identity(execution_repo),
+            "executableSha256": _file_sha256(executable),
+            "pythonSha256": _file_sha256(runtime_python),
+            "argumentsSha256": _file_sha256(arguments_path),
+            "runnerSha256": _file_sha256(expected_runner),
+            "wrapperSha256": _file_sha256(expected_codex_wrapper),
+            "moduleSha256": _file_sha256(expected_module),
+            "isolationSha256": _file_sha256(expected_isolation_receipt),
+            "externalSha256": _file_sha256(external_authority),
+        }
+    except (OSError, RuntimeError) as error:
+        raise RuntimeError("NEWS_GRASP_INSTALLED_GENERATION_DRIFT") from error
+    if prelaunch_snapshot != launch_snapshot:
+        raise RuntimeError("NEWS_GRASP_INSTALLED_GENERATION_DRIFT")
     launch_started_ns = time.time_ns()
+    child_environment = dict(os.environ)
+    for inherited_name in (
+        "PYTHONPATH",
+        "PYTHONHOME",
+        "PYTHONSTARTUP",
+        "PYTHONINSPECT",
+        "PYTHONUSERBASE",
+    ):
+        child_environment.pop(inherited_name, None)
+    child_environment.update(
+        {
+            "PYTHONIOENCODING": "utf-8",
+            "PYTHONUTF8": "1",
+            "PYTHONNOUSERSITE": "1",
+            "NEWS_GRASP_REPO_ROOT": str(execution_repo),
+        }
+    )
     test_double = getattr(subprocess.run, "__module__", "subprocess") != "subprocess"
     if test_double:
         result = subprocess.run(
             [str(executable), *arguments],
             shell=False,
             stdin=subprocess.DEVNULL,
+            cwd=str(execution_repo),
+            env=child_environment,
             creationflags=creationflags,
             check=False,
         )
@@ -2983,16 +3254,30 @@ def _run_installed_nopublish_authority(
             "imageSha256": _file_sha256(executable),
         }
     else:
-        process = subprocess.Popen(
+        try:
+            owned_module = _load_module_from_exact_path(
+                runtime_repo / "tools" / "news_grasp_owned_process.py",
+                prefix="news_grasp_release_owned_process",
+            )
+            spawn_owned = getattr(owned_module, "spawn_owned", None)
+        except Exception as error:
+            raise RuntimeError("NEWS_GRASP_OWNED_PROCESS_RUNTIME_IMPORT_FAILED") from error
+        if not callable(spawn_owned):
+            raise RuntimeError("NEWS_GRASP_OWNED_PROCESS_RUNTIME_IMPORT_FAILED")
+        process = spawn_owned(
             [str(executable), *arguments],
-            shell=False,
-            stdin=subprocess.DEVNULL,
-            creationflags=creationflags,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            cwd=str(execution_repo),
+            env=child_environment,
+            capture_output=False,
         )
         process_identity = _owned_process_identity(process, executable)
-        result_code = int(process.wait())
+        try:
+            result_code = int(process.wait(timeout=60 * 60))
+        except subprocess.TimeoutExpired as error:
+            process.close_job()
+            raise RuntimeError("NEWS_GRASP_RELEASE_NOPUBLISH_TIMEOUT") from error
+        finally:
+            process.close()
     if not test_double and result_code == 0 and e2e_policy_path is not None and e2e_attempt_number is not None:
         try:
             admission_path = Path(str(value["e2eAdmissionPath"])).resolve(strict=True)
@@ -3001,13 +3286,18 @@ def _run_installed_nopublish_authority(
             state_index = arguments.index("-StateFileOverride")
             claim_path = Path(arguments[claim_index + 1]).resolve(strict=True)
             state_path = Path(arguments[state_index + 1]).resolve(strict=True)
-            evidence_path = bin_dir / "news-grasp-logs" / f"runner-launch-evidence-{value['issueDate']}.json"
             evidence = read_runner_launch_evidence(
-                evidence_path,
+                expected_launch_evidence,
                 issue_date=str(value["issueDate"]),
-                expected_root=bin_dir / "news-grasp-logs",
+                expected_root=expected_launch_evidence.parent,
                 expected_min_mtime_ns=launch_started_ns,
             )
+            if (
+                int(evidence.get("processId", -1)) != int(process_identity.get("pid", -2))
+                or evidence.get("powershellSha256") != _file_sha256(executable)
+                or evidence.get("runnerSha256") != _file_sha256(expected_runner)
+            ):
+                raise RuntimeError("NEWS_GRASP_RUNNER_LAUNCH_EVIDENCE_IDENTITY_DRIFT")
             _write_runner_terminal_authority(
                 policy_path=e2e_policy_path,
                 attempt=e2e_attempt_number,
@@ -3402,18 +3692,38 @@ def _managed_directory_handle(path: Path, boundary: Path, code: str):
             kernel32.CloseHandle(opened)
 
 
-def _run_git(repo: Path, *args: str, allowed_codes: tuple[int, ...] = (0,)) -> str:
+def _run_git(
+    repo: Path,
+    *args: str,
+    allowed_codes: tuple[int, ...] = (0,),
+    timeout_seconds: int | None = None,
+) -> str:
     git_exe = Path(r"C:\Program Files\Git\cmd\git.exe")
     creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
-    completed = subprocess.run(
-        [str(git_exe), "-C", str(repo), *args],
-        shell=False,
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        creationflags=creationflags,
-        check=False,
-    )
+    # GitはGIT_CONFIG_*、GIT_SSH_COMMAND、GIT_ASKPASS等も挙動を変更できる。
+    # 個別deny-listでは将来追加されるGit環境変数を取り逃がすため、継承した
+    # GIT_*をすべて除去して、この境界が所有する非対話設定だけを再追加する。
+    environment = {
+        key: value
+        for key, value in os.environ.items()
+        if not key.upper().startswith("GIT_")
+    }
+    environment["GIT_TERMINAL_PROMPT"] = "0"
+    environment["GCM_INTERACTIVE"] = "Never"
+    try:
+        completed = subprocess.run(
+            [str(git_exe), "-C", str(repo), *args],
+            shell=False,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            creationflags=creationflags,
+            check=False,
+            timeout=timeout_seconds,
+            env=environment,
+        )
+    except subprocess.TimeoutExpired as error:
+        raise RuntimeError("PRODUCTION_RUNTIME_GIT_TIMEOUT") from error
     if len(completed.stdout) > MAX_GIT_OUTPUT_BYTES or len(completed.stderr) > MAX_GIT_OUTPUT_BYTES:
         raise RuntimeError("PRODUCTION_RUNTIME_GIT_OUTPUT_OVERFLOW")
     if completed.returncode not in allowed_codes:
@@ -3422,6 +3732,49 @@ def _run_git(repo: Path, *args: str, allowed_codes: tuple[int, ...] = (0,)) -> s
             f"PRODUCTION_RUNTIME_GIT_FAILED exit={completed.returncode} detail={detail}"
         )
     return completed.stdout.decode("utf-8", errors="replace").strip()
+
+
+def _working_tree_content_identity(repo: Path) -> str:
+    """HEADとの差分pathと現在bytesを一つのidentityへ封印する。"""
+
+    names: set[str] = set()
+    for arguments in (
+        ("diff", "--name-only", "--no-renames", "-z", "--no-ext-diff", "--no-textconv"),
+        ("diff", "--cached", "--name-only", "--no-renames", "-z", "--no-ext-diff", "--no-textconv"),
+    ):
+        raw = _run_git(repo, *arguments)
+        names.update(item for item in raw.split("\x00") if item)
+    rows: list[dict[str, object]] = []
+    resolved_repo = repo.resolve(strict=True)
+    for relative in sorted(names):
+        candidate = (resolved_repo / relative).resolve(strict=False)
+        if candidate == resolved_repo or not candidate.is_relative_to(resolved_repo):
+            raise RuntimeError("NEWS_GRASP_WORKING_TREE_IDENTITY_INVALID")
+        if not candidate.exists():
+            rows.append({"path": relative, "state": "deleted"})
+            continue
+        if candidate.is_symlink() or not candidate.is_file():
+            raise RuntimeError("NEWS_GRASP_WORKING_TREE_IDENTITY_INVALID")
+        before = candidate.stat()
+        payload = candidate.read_bytes()
+        after = candidate.stat()
+        if (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns) != (
+            after.st_dev,
+            after.st_ino,
+            after.st_size,
+            after.st_mtime_ns,
+        ):
+            raise RuntimeError("NEWS_GRASP_WORKING_TREE_IDENTITY_DRIFT")
+        rows.append(
+            {
+                "path": relative,
+                "state": "file",
+                "mode": stat.S_IMODE(after.st_mode),
+                "size": after.st_size,
+                "sha256": hashlib.sha256(payload).hexdigest(),
+            }
+        )
+    return _sha256_json({"paths": rows})
 
 
 def _git_common_dir(repo: Path) -> Path:
@@ -4978,6 +5331,8 @@ def read_runner_launch_evidence(
         "stateClaimed": bool(value["stateClaimed"]),
         "processId": int(value["processId"]),
         "commandIdentitySha256": str(value["commandIdentitySha256"]),
+        "powershellSha256": str(value["powershellSha256"]),
+        "runnerSha256": str(value["runnerSha256"]),
     }
 
 
@@ -5462,245 +5817,190 @@ def main() -> int:
                 file=sys.stderr,
             )
             return 76
-    if args.mode == "runner" and any(
+    if args.mode in {"runner", "bootstrap"} and any(
         value is not None
         for value in (args.repo_dir, args.python_exe, args.evidence_repo_dir)
     ):
         return 66
-    script = bin_dir / "news-grasp-bootstrap.ps1"
-    extra = [
-        "-Start", "-UseProductionRuntime", "-ScheduledTaskName", "News-Grasp Runner",
-        "-ProductionTaskName", "News-Grasp Production",
-    ] if args.mode == "runner" else [
-        "-Start", "-UseProductionRuntime", "-ScheduledTaskName", "News-Grasp Bootstrap",
-        "-ProductionTaskName", "News-Grasp Production",
-        "-SmokeTest",
-        "-SkipSourceSync",
-        "-PollSeconds", "1", "-TimeoutMinutes", "2",
-        "-StateFile", "ng-smoke-state.json", "-LogDir", "ng-smoke-logs",
-    ]
-    if args.scheduled_task_name:
-        extra[extra.index("-ScheduledTaskName") + 1] = args.scheduled_task_name
-    runtime_repo = args.repo_dir
-    runtime_python = args.python_exe
-    runtime_evidence: Path | None = args.evidence_repo_dir
-    if runtime_repo is None:
-        try:
-            resolved_roots = resolve_bootstrap_launch_roots(
-                bin_dir=bin_dir,
-                enforce_canonical_runtime=True,
-            )
-        except (OSError, RuntimeError, ValueError):
-            return 66
-        runtime_repo = (
-            resolved_roots["configuredRuntime"]
-            if args.mode == "runner"
-            else resolved_roots["repoDir"]
-        )
-        runtime_python = resolved_roots["pythonExe"]
-        runtime_evidence = resolved_roots["evidenceRepoDir"]
-    if runtime_repo is not None:
-        try:
-            repo_dir = runtime_repo.resolve(strict=True)
-        except OSError:
-            return 66
-        if args.mode == "runner":
-            try:
-                _validate_active_production_generation(
-                    runtime_repo=repo_dir,
-                    launcher_identity=launcher_identity,
-                )
-            except (OSError, RuntimeError, ValueError):
-                return 66
-        if not (repo_dir / "tools" / "daily_self_heal.py").is_file():
-            return 66
-        extra.extend(["-RepoDir", str(repo_dir)])
-        if runtime_python is None:
-            return 66
-        try:
-            python_exe = runtime_python.resolve(strict=True)
-        except OSError:
-            return 66
-        if not python_exe.is_file():
-            return 66
-        extra.extend(["-PythonExe", str(python_exe)])
-        if runtime_evidence is None:
-            runtime_evidence = repo_dir
-        try:
-            evidence_repo = runtime_evidence.resolve(strict=True)
-        except OSError:
-            return 66
-        extra.extend(["-EvidenceRepoDir", str(evidence_repo)])
-        if args.mode in {"runner", "bootstrap"}:
-            if (
-                args.high_cost_binding_path is None
-                or not args.high_cost_binding_sha256
-            ):
-                return 66
-            binding_tool = evidence_repo / "tools" / "news_grasp_high_cost_binding.py"
-            if not binding_tool.is_file():
-                return 66
-            try:
-                binding_path = args.high_cost_binding_path.resolve(strict=True)
-                validation = subprocess.run(
-                    [
-                        str(python_exe),
-                        "-I",
-                        "-S",
-                        "-B",
-                        str(binding_tool),
-                        "resolve",
-                        "--binding",
-                        str(binding_path),
-                        "--expected-receipt-sha256",
-                        str(args.high_cost_binding_sha256),
-                    ],
-                    cwd=str(evidence_repo),
-                    stdin=subprocess.DEVNULL,
-                    capture_output=True,
-                    text=True,
-                    encoding="utf-8",
-                    errors="backslashreplace",
-                    timeout=20,
-                    check=False,
-                    creationflags=(
-                        subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
-                    ),
-                )
-            except (OSError, subprocess.SubprocessError):
-                return 66
-            if validation.returncode != 0:
-                return int(validation.returncode)
-            extra.extend(
-                [
-                    "-HighCostBindingPath",
-                    str(binding_path),
-                    "-HighCostBindingReceiptSha256",
-                    str(args.high_cost_binding_sha256).lower(),
-                ]
-            )
-    powershell = Path(r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe")
-    issue_date = date.today().isoformat()
-    failure_state = bin_dir / (
-        "news-grasp-runner-state.json" if args.mode == "runner" else "ng-smoke-state.json"
-    )
-    if not script.is_file():
-        freeze_startup_failure_if_needed(
-            state_path=failure_state,
-            returncode=66,
-            issue_date=issue_date,
-            detail="STARTUP_SCRIPT_MISSING",
-        )
+    if args.mode not in {"runner", "bootstrap"}:
         return 66
-    creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
-    log = bin_dir / "news-grasp-task-launcher.log"
-    wal = bin_dir / "news-grasp-task-launcher-wal.json"
-    pre_attempt = _pre_attempt_identity(args.mode, script)
-    _write_json_atomic(wal, pre_attempt)
-    launch_started_ns = time.time_ns()
-    with log.open("a", encoding="utf-8", errors="replace") as stream:
-        result = subprocess.run(
-            [str(powershell), "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", str(script), *extra],
-            shell=False,
-            stdin=subprocess.DEVNULL,
-            stdout=stream,
-            stderr=subprocess.STDOUT,
-            creationflags=creationflags,
-            check=False,
-        )
-    effective_returncode = int(result.returncode)
-    context_rejected = (
-        args.mode == "bootstrap"
-        and effective_returncode == NEWS_GRASP_TASK_CONTEXT_REJECTED_EXIT
-    )
-    child_launch_evidence: dict[str, object] | None = None
-    if not context_rejected:
-        evidence_root = bin_dir / (
-            "ng-smoke-logs" if args.mode == "bootstrap" else "news-grasp-logs"
-        )
-        evidence_path = evidence_root / f"runner-launch-evidence-{issue_date}.json"
-        try:
-            child_launch_evidence = read_runner_launch_evidence(
-                evidence_path,
-                issue_date=issue_date,
-                expected_root=evidence_root,
-                expected_min_mtime_ns=launch_started_ns,
-            )
-        except (OSError, ValueError) as error:
-            child_launch_evidence = {
-                "path": str(evidence_path),
-                "status": "unavailable",
-                "reasonCode": str(error),
-                "childExitCode": effective_returncode,
-                "stateClaimed": False,
-            }
-    if effective_returncode == 0 and args.mode == "bootstrap":
-        state_path = bin_dir / "ng-smoke-state.json"
-        try:
-            state = json.loads(state_path.read_text(encoding="utf-8-sig"))
-        except (OSError, ValueError, TypeError):
-            effective_returncode = 73
-        else:
-            if state.get("status") != "smoke_ok":
-                effective_returncode = 73
-    if (
-        effective_returncode == 0
-        and args.mode == "bootstrap"
-        and args.scheduled_task_name == _CLEANROOM_BOOTSTRAP_TASK_NAME
-        and args.high_cost_binding_path is not None
-        and args.high_cost_binding_sha256
-    ):
-        bootstrap_observed_at = datetime.now(_CLEANROOM_TOKYO)
-        task_origin_witness = _cleanroom_bootstrap_task_origin_witness(
+    try:
+        resolved_roots = resolve_bootstrap_launch_roots(
             bin_dir=bin_dir,
-            observed_at=bootstrap_observed_at,
-            high_cost_binding_path=args.high_cost_binding_path,
-            high_cost_binding_sha256=str(args.high_cost_binding_sha256),
+            enforce_canonical_runtime=True,
         )
-        if task_origin_witness is not None:
-            try:
-                _write_bootstrap_execution_receipt(
-                    bin_dir=bin_dir,
-                    launcher_identity=launcher_identity,
-                    observed_at=bootstrap_observed_at,
-                    task_origin_witness=task_origin_witness,
-                    child_exit_code=effective_returncode,
-                )
-            except (OSError, RuntimeError, ValueError, TypeError):
-                effective_returncode = 73
-    if effective_returncode != 0 and not context_rejected:
+        runtime_repo = resolved_roots["configuredRuntime"].resolve(strict=True)
+        python_exe = resolved_roots["pythonExe"].resolve(strict=True)
+        evidence_repo = resolved_roots["evidenceRepoDir"].resolve(strict=True)
+        if args.high_cost_binding_path is None or not args.high_cost_binding_sha256:
+            raise RuntimeError("HIGH_COST_IDENTITY_DRIFT")
+        binding_path = args.high_cost_binding_path.resolve(strict=True)
+        binding_tool = evidence_repo / "tools" / "news_grasp_high_cost_binding.py"
+        if not binding_tool.is_file():
+            raise RuntimeError("HIGH_COST_BINDING_TOOL_MISSING")
+        validation = subprocess.run(
+            [
+                str(python_exe),
+                "-I",
+                "-S",
+                "-B",
+                str(binding_tool),
+                "resolve",
+                "--binding",
+                str(binding_path),
+                "--expected-receipt-sha256",
+                str(args.high_cost_binding_sha256),
+            ],
+            cwd=str(evidence_repo),
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="backslashreplace",
+            timeout=20,
+            check=False,
+            creationflags=(
+                subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+            ),
+        )
+        if validation.returncode != 0:
+            return int(validation.returncode)
+    except (OSError, RuntimeError, ValueError, subprocess.SubprocessError):
+        return 66
+
+    if args.mode == "bootstrap":
+        try:
+            _run_git(
+                evidence_repo,
+                "fetch",
+                "--prune",
+                "origin",
+                "+refs/heads/main:refs/remotes/origin/main",
+                timeout_seconds=120,
+            )
+            origin_sha = _run_git(
+                evidence_repo,
+                "rev-parse",
+                "--verify",
+                "origin/main^{commit}",
+                timeout_seconds=20,
+            ).lower()
+            if not re.fullmatch(r"[0-9a-f]{40}", origin_sha):
+                raise RuntimeError("PRODUCTION_RUNTIME_ORIGIN_SHA_INVALID")
+            with _production_runtime_lifecycle_mutex():
+                with _production_runtime_outer_mutex():
+                    with _production_runtime_mutex():
+                        convergence = _converge_production_runtime_locked(
+                            source_repo=evidence_repo,
+                            runtime_root=Path.home() / ".news-grasp-runtime",
+                            origin_sha=origin_sha,
+                            bin_dir=bin_dir,
+                        )
+                        maintenance = maintain_production_runtime_recovery(
+                            runtime_root=Path.home() / ".news-grasp-runtime"
+                        )
+            runtime_repo = Path(str(convergence["runtimePath"])).resolve(strict=True)
+            _validate_active_production_generation(
+                runtime_repo=runtime_repo,
+                launcher_identity=launcher_identity,
+            )
+            _write_json_atomic(
+                bin_dir / "ng-smoke-state.json",
+                {
+                    "schemaVersion": "NEWS_GRASP_DIRECT_BOOTSTRAP_RECEIPT_V1",
+                    "status": "smoke_ok",
+                    "route": "direct",
+                    "runtimePath": str(runtime_repo),
+                    "originSha": origin_sha,
+                    "convergence": convergence,
+                    "maintenance": maintenance,
+                    "externalEffectCount": 0,
+                },
+            )
+            return 0
+        except (OSError, RuntimeError, ValueError, TypeError) as error:
+            print(
+                json.dumps(
+                    {"status": "failed", "reasonCode": str(error)},
+                    ensure_ascii=False,
+                    sort_keys=True,
+                ),
+                file=sys.stderr,
+            )
+            return 72
+
+    direct_entry = runtime_repo / "tools" / "news_grasp_daily_launcher.py"
+    failure_state = bin_dir / "news-grasp-runner-state.json"
+    wal = bin_dir / "news-grasp-task-launcher-wal.json"
+    issue_date = date.today().isoformat()
+    try:
+        if not direct_entry.is_file():
+            raise RuntimeError("NEWS_GRASP_DIRECT_DAILY_ENTRY_MISSING")
+        _validate_active_production_generation(
+            runtime_repo=runtime_repo,
+            launcher_identity=launcher_identity,
+        )
+        pre_attempt = _pre_attempt_identity(args.mode, direct_entry)
+        _write_json_atomic(wal, pre_attempt)
+        command = [
+            str(python_exe),
+            "-I",
+            "-S",
+            "-B",
+            str(direct_entry),
+        ]
+        safety = {
+            "route": "runner",
+            "command": tuple(command),
+            "cwd": str(runtime_repo),
+            "shell": False,
+            "stdin": subprocess.DEVNULL,
+            "creationflags": subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
+            "close_fds": True,
+            "timeout": _CLEANROOM_CHILD_TIMEOUT_SECONDS,
+            "environment": {
+                "PYTHONIOENCODING": "utf-8",
+                "PYTHONUTF8": "1",
+                "NEWS_GRASP_REPO_ROOT": str(runtime_repo),
+            },
+        }
+        effective_returncode = _run_cleanroom_child(
+            "runner",
+            command,
+            bin_dir=bin_dir,
+            safety=safety,
+        )
+    except (OSError, RuntimeError, ValueError, TypeError) as error:
+        effective_returncode = 66
+        print(
+            json.dumps(
+                {"status": "failed", "reasonCode": str(error)},
+                ensure_ascii=False,
+                sort_keys=True,
+            ),
+            file=sys.stderr,
+        )
+        pre_attempt = _pre_attempt_identity(args.mode, direct_entry)
+    if effective_returncode != 0:
         freeze_startup_failure_if_needed(
             state_path=failure_state,
             returncode=effective_returncode,
             issue_date=issue_date,
-            detail=f"STARTUP_SELF_REPAIR_FAILED exit={effective_returncode}",
+            detail=f"DIRECT_DAILY_LAUNCH_FAILED exit={effective_returncode}",
         )
     pre_attempt.update(
         {
             "childReturnCode": effective_returncode,
-            "childLaunchEvidence": child_launch_evidence,
             "preAttemptStatus": (
-                "context_rejected"
-                if context_rejected
-                else (
-                    "controller_started"
-                    if effective_returncode == 0
-                    else "failed_before_attempt"
-                )
+                "controller_started" if effective_returncode == 0 else "failed_before_attempt"
             ),
             "continuationState": (
-                "context_rejected_no_attempt"
-                if context_rejected
-                else (
-                    "controller_owns_continuation"
-                    if effective_returncode == 0
-                    else "scheduled_recovery_required"
-                )
+                "controller_owns_continuation"
+                if effective_returncode == 0
+                else "scheduled_recovery_required"
             ),
             "walClosed": True,
-            "scheduledRecoveryFullAuthorityProvable": (
-                effective_returncode != 0 and not context_rejected
-            ),
+            "scheduledRecoveryFullAuthorityProvable": effective_returncode != 0,
         }
     )
     _write_json_atomic(wal, pre_attempt)

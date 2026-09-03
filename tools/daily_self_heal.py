@@ -1653,13 +1653,6 @@ def _task_launcher_source_contract(path: Path) -> dict:
     if missing_modes:
         missing.append("mode_choices:" + "+".join(missing_modes))
 
-    has_bootstrap_script = any(
-        isinstance(node, ast.Constant) and node.value == "news-grasp-bootstrap.ps1"
-        for node in ast.walk(tree)
-    )
-    if not has_bootstrap_script:
-        missing.append("bootstrap_script:news-grasp-bootstrap.ps1")
-
     has_no_window = any(
         isinstance(node, ast.Attribute)
         and isinstance(node.value, ast.Name)
@@ -1669,6 +1662,69 @@ def _task_launcher_source_contract(path: Path) -> dict:
     )
     if not has_no_window:
         missing.append("subprocess.CREATE_NO_WINDOW")
+
+    assignments: dict[str, str] = {}
+    function_names: set[str] = set()
+    called_names: set[str] = set()
+    string_constants = {
+        str(node.value)
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Constant) and isinstance(node.value, str)
+    }
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            function_names.add(node.name)
+        if isinstance(node, ast.Assign) and isinstance(node.value, ast.Constant):
+            if not isinstance(node.value.value, str):
+                continue
+            for target in node.targets:
+                if isinstance(target, ast.Name):
+                    assignments[target.id] = node.value.value
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+            called_names.add(node.func.id)
+
+    direct_requirements = {
+        "_CLEANROOM_SCHEDULE_ID": "news-grasp-daily-v1",
+        "_CLEANROOM_INTENT": "reconcile",
+        "_CLEANROOM_CONTEXT_TASK_NAME": "News-Grasp Production",
+    }
+    direct_missing = [
+        f"binding:{name}={expected}"
+        for name, expected in direct_requirements.items()
+        if assignments.get(name) != expected
+    ]
+    if "run_cleanroom_dispatch" not in function_names:
+        direct_missing.append("function:run_cleanroom_dispatch")
+    if "run_cleanroom_dispatch" not in called_names:
+        direct_missing.append("call:run_cleanroom_dispatch")
+    for token in ("-I", "-S", "-B", "--schedule-id", "--intent"):
+        if token not in string_constants:
+            direct_missing.append(f"dispatch_token:{token}")
+
+    # canonical Scheduled Task はdirect dispatchだけをproduction入口として使う。
+    # 旧PowerShell runner用のextra配列はcompatibility modeの実装詳細であり、
+    # next-run readinessの正本にしない。
+    if not direct_missing:
+        return {
+            "ok": not missing,
+            "reason": "" if not missing else "task_launcher_contract_invalid",
+            "missing_tokens": missing,
+            "modes": sorted(mode_choices),
+            "missing_modes": missing_modes,
+            "timeout_minutes": None,
+            "state_file": "",
+            "log_dir": "",
+            "entry_mode": "dispatch",
+        }
+
+    missing.extend(direct_missing)
+
+    has_bootstrap_script = any(
+        isinstance(node, ast.Constant) and node.value == "news-grasp-bootstrap.ps1"
+        for node in ast.walk(tree)
+    )
+    if not has_bootstrap_script:
+        missing.append("bootstrap_script:news-grasp-bootstrap.ps1")
 
     runner_args: list[str] = []
     bootstrap_args: list[str] = []
@@ -1729,6 +1785,7 @@ def _task_launcher_source_contract(path: Path) -> dict:
         "timeout_minutes": _safe_int(_option_value(bootstrap_args, "-TimeoutMinutes")),
         "state_file": _option_value(bootstrap_args, "-StateFile"),
         "log_dir": _option_value(bootstrap_args, "-LogDir"),
+        "entry_mode": "legacy",
     }
 
 

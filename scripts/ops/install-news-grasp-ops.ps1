@@ -739,7 +739,7 @@ function Invoke-NewsGraspProductionEntryCanary {
     if ($TimeoutSeconds -lt 5 -or $TimeoutSeconds -gt 180) { throw 'NEWS_GRASP_ENTRY_CANARY_TIMEOUT_INVALID' }
     $nonce = [Guid]::NewGuid().ToString('N')
     $receiptPath = Join-Path $BackupDir ("entry-canary-{0}.json" -f $nonce)
-    $entryCanaryArguments = "`"$TaskLauncherPath`" task-origin-canary --canary-nonce $nonce --canary-generation `"$GenerationId`" --canary-receipt-path `"$receiptPath`""
+    $entryCanaryArguments = "-I -S -B `"$TaskLauncherPath`" task-origin-canary --canary-nonce $nonce --canary-generation `"$GenerationId`" --canary-receipt-path `"$receiptPath`""
     $canonicalAction = New-ScheduledTaskAction `
         -Execute $PythonwPath `
         -Argument $CanonicalArguments `
@@ -846,7 +846,7 @@ trap {
 $files = @(
     'run_codex_with_timeout.ps1',
     'news-grasp-bootstrap.ps1',
-    'news-grasp-runner.ps1',
+    'news-grasp-release-nopublish.ps1',
     'news-grasp-lineage.ps1',
     'watch-news-grasp-runner.ps1',
     'news-grasp-deadman.ps1',
@@ -1498,8 +1498,10 @@ $recoveryRuntimeBinding = [ordered]@{
     highCostBindingResolverSha256 = ([string]$highCostBindingResolverAfterHash).ToLowerInvariant()
     bootstrapPath = (Join-Path $BinDir 'news-grasp-bootstrap.ps1')
     bootstrapSha256 = ([string]$sourceSnapshots['news-grasp-bootstrap.ps1'].Sha256).ToLowerInvariant()
-    runnerPath = (Join-Path $BinDir 'news-grasp-runner.ps1')
-    runnerSha256 = ([string]$sourceSnapshots['news-grasp-runner.ps1'].Sha256).ToLowerInvariant()
+    # V1 field名は互換維持するが、identityは廃止済みrunnerではなく
+    # stable direct task launcherへ束縛する。
+    runnerPath = (Join-Path $BinDir 'news-grasp-task-launcher.pyw')
+    runnerSha256 = ([string]$sourceSnapshots['news-grasp-task-launcher.pyw'].Sha256).ToLowerInvariant()
     lineagePath = (Join-Path $BinDir 'news-grasp-lineage.ps1')
     lineageSha256 = ([string]$sourceSnapshots['news-grasp-lineage.ps1'].Sha256).ToLowerInvariant()
 }
@@ -1518,7 +1520,7 @@ $stableTaskAuthority = [ordered]@{
     bootstrapSha256 = [string]$sourceSnapshots['news-grasp-bootstrap.ps1'].Sha256
     # 旧consumerが読むaction listを維持しつつ、production Taskの実引数を
     # clean-room dispatchへ固定する。
-    action = @($TaskPythonwPath, (Join-Path $BinDir 'news-grasp-task-launcher.pyw'), 'dispatch', '--schedule-id', 'news-grasp-daily-v1', '--intent', 'reconcile')
+    action = @($TaskPythonwPath, '-I', '-S', '-B', (Join-Path $BinDir 'news-grasp-task-launcher.pyw'), 'dispatch', '--schedule-id', 'news-grasp-daily-v1', '--intent', 'reconcile')
     trigger = @{ daily = '06:00' }
     manifestAction = [ordered]@{
         entryModule = 'tools.news_grasp_cleanroom_dispatch'
@@ -1643,7 +1645,7 @@ if (-not $SkipTaskRegistration) {
     $pythonw = $TaskPythonwPath
     if (-not (Test-Path -LiteralPath $pythonw)) { throw 'News-Grasp system Python312 pythonw.exe が見つかりません。' }
     # Scheduled Taskはstable installed launcherだけを指す。source worktreeのpathをtask定義へ封印しない。
-    $runnerArgs = "`"$taskLauncherPath`" dispatch --schedule-id news-grasp-daily-v1 --intent reconcile"
+    $runnerArgs = "-I -S -B `"$taskLauncherPath`" dispatch --schedule-id news-grasp-daily-v1 --intent reconcile"
     $runnerAction = New-ScheduledTaskAction -Execute $pythonw -Argument $runnerArgs -WorkingDirectory $productionRuntimePath
     $runnerTrigger = New-ScheduledTaskTrigger -Daily -At 6:00am
     $runnerSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew
@@ -1689,7 +1691,7 @@ if (-not $SkipTaskRegistration) {
         }
     }
 
-    $bootstrapArgs = "`"$taskLauncherPath`" bootstrap --scheduled-task-name `"$BootstrapTaskName`" --high-cost-binding-path `"$highCostBindingPath`" --high-cost-binding-sha256 $highCostBindingReceiptSha256"
+    $bootstrapArgs = "-I -S -B `"$taskLauncherPath`" bootstrap --scheduled-task-name `"$BootstrapTaskName`" --high-cost-binding-path `"$highCostBindingPath`" --high-cost-binding-sha256 $highCostBindingReceiptSha256"
     $bootstrapAction = New-ScheduledTaskAction -Execute $pythonw -Argument $bootstrapArgs -WorkingDirectory $BinDir
     $bootstrapTrigger = New-ScheduledTaskTrigger -Daily -At 5:55am
     $bootstrapSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew
@@ -1729,7 +1731,7 @@ if (-not $SkipTaskRegistration) {
         }
     }
 
-    $deadmanArgs = "`"$deadmanLauncherPath`""
+    $deadmanArgs = "-I -S -B `"$deadmanLauncherPath`""
     $deadmanAction = New-ScheduledTaskAction -Execute $pythonw -Argument $deadmanArgs -WorkingDirectory $BinDir
     $deadmanTrigger = New-ScheduledTaskTrigger -Daily -At 6:40am
     $deadmanRepetition = New-CimInstance -Namespace 'Root/Microsoft/Windows/TaskScheduler' -ClassName 'MSFT_TaskRepetitionPattern' -ClientOnly -Property @{

@@ -1177,8 +1177,10 @@ def test_bootstrap_authenticates_task_context_serializes_runtime_and_bounds_fetc
     assert "finally" in bootstrap.split("$runtimeMutex =", 1)[1]
     assert "GIT_TERMINAL_PROMPT" in bootstrap
     assert "WaitForExit(60000)" in bootstrap
-    assert '"-ScheduledTaskName", "News-Grasp Runner"' in launcher
-    assert '"-ScheduledTaskName", "News-Grasp Bootstrap"' in launcher
+    assert '_CLEANROOM_CONTEXT_TASK_NAME = "News-Grasp Production"' in launcher
+    assert '"dispatch"' in launcher
+    assert '"--schedule-id"' in launcher
+    assert '"--intent"' in launcher
 
 
 def test_local_authority_and_smoke_artifacts_are_never_commit_candidates() -> None:
@@ -1203,9 +1205,10 @@ def test_scheduled_launcher_enters_clean_production_runtime_and_smoke_is_fail_cl
     bootstrap = (root / "scripts" / "ops" / "news-grasp-bootstrap.ps1").read_text(
         encoding="utf-8-sig"
     )
-    assert launcher.count('"-UseProductionRuntime"') == 2
-    assert '"-SkipSourceSync"' in launcher
-    assert 'state.get("status") != "smoke_ok"' in launcher
+    assert 'def run_cleanroom_dispatch(' in launcher
+    assert 'def _cleanroom_default_task_context_validator(' in launcher
+    assert '"owned_process_module"' in launcher
+    assert '"-I"' in launcher and '"-S"' in launcher and '"-B"' in launcher
     assert "[switch] $UseProductionRuntime" in bootstrap
     assert "Resolve-ProductionRuntimeRepo" in bootstrap
     assert "production-runtime" in launcher
