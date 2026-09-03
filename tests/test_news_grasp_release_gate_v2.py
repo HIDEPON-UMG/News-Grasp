@@ -489,6 +489,68 @@ def test_NG_RG_06_causal_repair_allows_only_exact_failed_set_and_new_cause(
     assert len(calls) == 1
 
 
+def test_NG_RG_06_red_causal_repair_chains_only_its_remaining_failed_nodes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    ledger = tmp_path / "ledger.jsonl"
+    previous, nodes = _seed_failed_partition(ledger)
+    calls: list[list[str]] = []
+
+    def fake_partition_process(name: str, selected: list[str], **kwargs: Any) -> dict[str, Any]:
+        calls.append(list(selected))
+        status = "fail" if len(calls) == 1 else "pass"
+        return {
+            "schemaVersion": "NEWS_GRASP_RELEASE_PARTITION_PROCESS_RECEIPT_V2",
+            "receipt_id": str(kwargs["operation_id"]),
+            "partition": name,
+            "node_ids": list(selected),
+            "node_count": len(selected),
+            "node_receipts": [
+                {
+                    "node_id": selected[0],
+                    "partition": name,
+                    "status": status,
+                    "events": [],
+                    "receipt_id": str(kwargs["operation_id"]),
+                }
+            ],
+            "failed_nodes": [selected[0]] if status == "fail" else [],
+            "skipped_nodes": [],
+            "process_count": 1,
+            "ok": status == "pass",
+            "status": "green" if status == "pass" else "red",
+        }
+
+    monkeypatch.setattr(gate, "_run_partition_process", fake_partition_process)
+    first = gate.causal_repair_partition(
+        repo_root=tmp_path,
+        partition="scoped_changed",
+        node_ids=[nodes[0]],
+        cause_hash="2" * 64,
+        previous_receipt=previous,
+        repair_id="repair-red-first",
+        release_id="release-causal",
+        ledger_path=ledger,
+    )
+    assert first["ok"] is False
+
+    second = gate.causal_repair_partition(
+        repo_root=tmp_path,
+        partition="scoped_changed",
+        node_ids=[nodes[0]],
+        cause_hash="3" * 64,
+        previous_receipt=first,
+        repair_id="repair-green-second",
+        release_id="release-causal",
+        ledger_path=ledger,
+    )
+
+    assert second["ok"] is True
+    assert second["exact_failed_nodes"] == [nodes[0]]
+    assert calls == [[nodes[0]], [nodes[0]]]
+
+
 @pytest.mark.parametrize(
     ("nodes_mode", "cause_hash", "expected"),
     [

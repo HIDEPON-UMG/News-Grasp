@@ -2042,20 +2042,28 @@ def causal_repair_partition(
     nodes = _node_list(node_ids)
     if not nodes:
         raise NewsGraspReleaseGateError("release_repair_nodes_empty")
-    previous_nodes = _node_list(previous_receipt.get("node_ids") or ())
-    raw_failed = previous_receipt.get("failed_nodes")
+    previous_view: Mapping[str, Any] = previous_receipt
+    previous_id = str(previous_receipt.get("receipt_id") or previous_receipt.get("partition_receipt_id") or "")
+    if previous_receipt.get("schemaVersion") == "NEWS_GRASP_RELEASE_CAUSAL_REPAIR_RECEIPT_V2":
+        nested = previous_receipt.get("partition_receipt")
+        if not isinstance(nested, Mapping):
+            raise NewsGraspReleaseGateError("release_repair_previous_partition_receipt_missing")
+        previous_view = nested
+        previous_id = str(previous_receipt.get("repair_id") or "")
+    previous_nodes = _node_list(previous_view.get("node_ids") or ())
+    raw_failed = previous_view.get("failed_nodes")
     if raw_failed is None:
         raw_failed = [
             str(item.get("node_id"))
-            for item in (previous_receipt.get("node_receipts") or ())
+            for item in (previous_view.get("node_receipts") or ())
             if isinstance(item, Mapping) and item.get("status") in {"fail", "error"}
         ]
     failed_nodes = _node_list(raw_failed or ())
     if (
         not failed_nodes
         and previous_nodes
-        and not list(previous_receipt.get("node_receipts") or ())
-        and previous_receipt.get("failure")
+        and not list(previous_view.get("node_receipts") or ())
+        and previous_view.get("failure")
     ):
         # V2導入前のtransport/structured failure receiptはfailed_nodesを空で
         # 保存していた。successを推測せず、束縛済みpartition全件をexact Redとする。
@@ -2066,19 +2074,33 @@ def causal_repair_partition(
     repair = _safe_id(repair_id, field="repair_id")
     ledger = _ledger_file(ledger_path or previous_receipt.get("ledger_path"))
     events = _ledger_events(ledger)
-    previous_id = str(previous_receipt.get("receipt_id") or previous_receipt.get("partition_receipt_id") or "")
     if not previous_id:
         raise NewsGraspReleaseGateError("release_repair_previous_receipt_id_missing")
+    authoritative_bound = None
     authoritative_previous = None
     authoritative_event = None
     for event in events:
-        if event.get("release_id") != rid or event.get("event_type") != "partition_completed":
+        if event.get("release_id") != rid or event.get("event_type") not in {
+            "partition_completed",
+            "repair_completed",
+        }:
             continue
         receipt = event.get("receipt")
-        if isinstance(receipt, Mapping) and receipt.get("receipt_id") == previous_id:
-            authoritative_previous = receipt
-            authoritative_event = event
-            break
+        if not isinstance(receipt, Mapping):
+            continue
+        identity = str(receipt.get("receipt_id") or receipt.get("repair_id") or "")
+        if identity != previous_id:
+            continue
+        view: Mapping[str, Any] = receipt
+        if receipt.get("schemaVersion") == "NEWS_GRASP_RELEASE_CAUSAL_REPAIR_RECEIPT_V2":
+            nested = receipt.get("partition_receipt")
+            if not isinstance(nested, Mapping):
+                continue
+            view = nested
+        authoritative_bound = receipt
+        authoritative_previous = view
+        authoritative_event = event
+        break
     if authoritative_previous is None:
         raise NewsGraspReleaseGateError("release_repair_previous_receipt_not_in_ledger")
     authoritative_nodes = _node_list(authoritative_previous.get("node_ids") or ())
@@ -2092,9 +2114,20 @@ def causal_repair_partition(
         authoritative_failed = list(authoritative_nodes)
     if previous_nodes != authoritative_nodes or failed_nodes != authoritative_failed:
         raise NewsGraspReleaseGateError("release_repair_previous_receipt_binding_mismatch")
-    if isinstance(authoritative_event, Mapping) and authoritative_event.get("receipt_hash") != _mapping_hash(dict(previous_receipt)):
+    if (
+        isinstance(authoritative_event, Mapping)
+        and isinstance(authoritative_bound, Mapping)
+        and (
+            authoritative_event.get("receipt_hash") != _mapping_hash(authoritative_bound)
+            or _mapping_hash(authoritative_bound) != _mapping_hash(previous_receipt)
+        )
+    ):
         raise NewsGraspReleaseGateError("release_repair_previous_receipt_hash_mismatch")
-    authoritative_cause = str(authoritative_previous.get("cause_hash") or "")
+    authoritative_cause = str(
+        authoritative_bound.get("cause_hash")
+        if isinstance(authoritative_bound, Mapping)
+        else ""
+    )
     if not _HEX64.fullmatch(authoritative_cause):
         raise NewsGraspReleaseGateError("release_repair_previous_cause_hash_missing")
     if authoritative_cause == cause:
@@ -2109,7 +2142,11 @@ def causal_repair_partition(
         for event in events
     ):
         raise NewsGraspReleaseGateError("release_repair_already_applied")
-    collection_sha256 = str(authoritative_previous.get("collection_sha256") or "")
+    collection_sha256 = str(
+        (authoritative_bound.get("collection_sha256") if isinstance(authoritative_bound, Mapping) else "")
+        or authoritative_previous.get("collection_sha256")
+        or ""
+    )
     if not _HEX64.fullmatch(collection_sha256):
         raise NewsGraspReleaseGateError("release_repair_collection_binding_missing")
     _append_ledger(
