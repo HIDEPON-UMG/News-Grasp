@@ -8,10 +8,12 @@ template と同じ direct 本線契約へ揃えるための薄い同期器であ
 from __future__ import annotations
 
 import argparse
+import base64
 import contextlib
 import ctypes
 import hashlib
 import json
+import math
 import os
 import sqlite3
 import stat
@@ -35,25 +37,66 @@ MAX_AUTOMATION_TOML_BYTES = 96 * 1024
 MAX_SKILL_BYTES = 96 * 1024
 MAX_APP_GLOBAL_STATE_BYTES = 2 * 1024 * 1024
 MAX_PROMOTION_BACKUP_BYTES = 64 * 1024 * 1024
+APP_DB_AUTOMATION_OWNED_COLUMNS = (
+    "id",
+    "name",
+    "prompt",
+    "status",
+    "next_run_at",
+    "last_run_at",
+    "cwds",
+    "rrule",
+    "model",
+    "reasoning_effort",
+    "created_at",
+    "updated_at",
+    "target_type",
+    "project_id",
+)
+# App DBにはCodex所有の追加列がある。News-Grasp promotionはこれらを消去せず
+# pass-throughするが、存在自体はrow-level CAS rollbackのschema契約に含める。
+APP_DB_AUTOMATION_OPTIONAL_COLUMNS = (
+    "kind",
+    "target_thread_id",
+    "execution_environment",
+    "local_environment_config_path",
+    "plugin_template_id",
+    "notification_policy",
+    "account_id",
+    "user_id",
+    "installation_id",
+    "legacy_automation_id",
+)
+APP_DB_AUTOMATION_SCHEMA_COLUMNS = (
+    *APP_DB_AUTOMATION_OWNED_COLUMNS,
+    *APP_DB_AUTOMATION_OPTIONAL_COLUMNS,
+)
+APP_DB_ROW_HASH_SCHEMA_VERSION = "NEWS_GRASP_CODEX_AUTOMATION_ROW_HASH_V1"
 REQUIRED_PROMPT_PARTS = (
     "$news-grasp-direct-mainline",
     "YY/MM/DD",
-    r"C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_daily_gate",
+    r"C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_daily_launcher",
     "title_status",
     "title_status=already_ok",
     "already_ok",
     "post_publish_issue_list",
-    "tools.news_grasp_daily_gate",
+    "tools.news_grasp_daily_launcher",
     "static_check",
     "scoped_contract_unit",
     "current_issue_integration",
     "external_publication",
     "consumer_public_verification",
     "atomic_completion",
+    "protected_release_reexecution_forbidden",
     "producer receipt",
     "unknown_unobtainable",
 )
 AUTOMATION_COMPLETION_PHRASE = "完全な品質で記事公開するまで完了してはならない"
+
+
+class _AppDbSchemaDrift(RuntimeError):
+    """App DB schemaがrow-CAS契約の範囲外である。"""
+
 
 if os.name == "nt":
     import msvcrt
@@ -708,9 +751,132 @@ def _atomic_write_bytes(path: Path, value: bytes) -> None:
                 pass
 
 
+def _app_db_schema_columns(conn: sqlite3.Connection) -> tuple[str, ...]:
+    """App DB の対象表と列を検証し、CASで使う列順を返す。"""
+
+    try:
+        info = conn.execute("PRAGMA table_xinfo(automations)").fetchall()
+    except sqlite3.Error as exc:
+        raise _AppDbSchemaDrift("app_db_schema_unreadable") from exc
+    if not info:
+        raise _AppDbSchemaDrift("app_db_schema_missing")
+
+    columns: list[str] = []
+    for row in info:
+        name = row[1]
+        if not isinstance(name, str) or not name:
+            raise _AppDbSchemaDrift("app_db_schema_column_name_invalid")
+        if len(row) >= 7 and int(row[6] or 0) != 0:
+            raise _AppDbSchemaDrift("app_db_schema_hidden_column_unsupported")
+        columns.append(name)
+    if len(columns) != len(set(columns)):
+        raise _AppDbSchemaDrift("app_db_schema_duplicate_column")
+    missing = sorted(set(APP_DB_AUTOMATION_OWNED_COLUMNS) - set(columns))
+    unknown = sorted(set(columns) - set(APP_DB_AUTOMATION_SCHEMA_COLUMNS))
+    if missing or unknown:
+        details = []
+        if missing:
+            details.append("missing=" + ",".join(missing))
+        if unknown:
+            details.append("unknown=" + ",".join(unknown))
+        raise _AppDbSchemaDrift("app_db_schema_drift:" + ";".join(details))
+
+    id_rows = [row for row in info if row[1] == "id"]
+    if len(id_rows) != 1 or int(id_rows[0][5] or 0) != 1:
+        raise _AppDbSchemaDrift("app_db_schema_id_primary_key_required")
+    return tuple(columns)
+
+
+def _app_db_row_value_for_hash(value: Any) -> Any:
+    """SQLite値を秘密値を含まないcanonical hash入力へ変換する。"""
+
+    if value is None or isinstance(value, (str, int, bool)):
+        return value
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            raise _AppDbSchemaDrift("app_db_row_non_finite_value")
+        return value
+    if isinstance(value, bytes):
+        return {
+            "type": "sqlite_blob",
+            "base64": base64.b64encode(value).decode("ascii"),
+        }
+    raise _AppDbSchemaDrift(f"app_db_row_value_unsupported:{type(value).__name__}")
+
+
+def _app_db_row_hash(
+    row: Mapping[str, Any] | None,
+    columns: tuple[str, ...],
+) -> str:
+    """列名を含む行のcanonical SHA-256を返す。"""
+
+    if row is None:
+        return ""
+    row_keys = set(row.keys())
+    if row_keys != set(columns):
+        raise _AppDbSchemaDrift("app_db_row_columns_drift")
+    payload = {
+        "schemaVersion": APP_DB_ROW_HASH_SCHEMA_VERSION,
+        "columns": list(columns),
+        "row": {
+            column: _app_db_row_value_for_hash(row[column])
+            for column in columns
+        },
+    }
+    encoded = json.dumps(
+        payload,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _fetch_app_db_automation_row(
+    conn: sqlite3.Connection,
+) -> dict[str, Any] | None:
+    """対象 automation row を一意に取得する。"""
+
+    rows = conn.execute(
+        "SELECT * FROM automations WHERE id = ?",
+        (AUTOMATION_ID,),
+    ).fetchall()
+    if len(rows) > 1:
+        raise _AppDbSchemaDrift("app_db_automation_row_not_unique")
+    return None if not rows else dict(rows[0])
+
+
+def _new_app_db_promotion_target(path: Path) -> dict[str, Any]:
+    """App DB専用のrow-CAS promotion targetを作る。"""
+
+    return {
+        "target": str(path),
+        "kind": "app_db",
+        "automationId": AUTOMATION_ID,
+        "preimagePresent": False,
+        "preimageColumns": [],
+        "preimageHash": "",
+        "preimageSha256": "",
+        "candidateHash": "",
+        "candidateSha256": "",
+        "postimageHash": "",
+        "postimageSha256": "",
+        "backupStatus": "row_captured",
+        "atomic": True,
+        "rollbackCas": {
+            "status": "not_attempted",
+            "automationId": AUTOMATION_ID,
+        },
+        "status": "pending",
+    }
+
+
 def _capture_promotion_target(path: Path, *, kind: str) -> dict[str, Any]:
     """promotion前のbytesをmemory backupとして固定する。"""
 
+    if kind == "app_db":
+        raise ValueError("app_db_row_cas_required")
     try:
         preimage = _read_bytes_no_follow(path, limit=MAX_PROMOTION_BACKUP_BYTES)
         present = True
@@ -739,6 +905,8 @@ def _promote_text_target(
 ) -> bool:
     """candidateを明示promotionし、失敗時は同runのbackupへ戻す。"""
 
+    if target.get("kind") == "app_db":
+        raise ValueError("app_db_row_cas_required")
     path = Path(str(target["target"]))
     encoded = text.encode("utf-8")
     target["candidateSha256"] = hashlib.sha256(encoded).hexdigest()
@@ -761,6 +929,153 @@ def _promote_text_target(
         raise
 
 
+def _rollback_app_db_target(target: Mapping[str, Any]) -> dict[str, Any]:
+    """App DBの対象automation rowだけを、hash付きCASで復元する。"""
+
+    raw_path = target.get("target")
+    path = Path(raw_path) if isinstance(raw_path, str) and raw_path.strip() else None
+    automation_id = target.get("automationId")
+    receipt: dict[str, Any] = {
+        "schemaVersion": "NEWS_GRASP_CODEX_AUTOMATION_APP_DB_ROLLBACK_RECEIPT_V1",
+        "status": "blocked",
+        "ok": False,
+        "automationId": automation_id,
+        "preimageHash": str(target.get("preimageHash") or ""),
+        "postimageHash": str(target.get("postimageHash") or ""),
+        "cas": {
+            "status": "not_started",
+            "automationId": automation_id,
+        },
+        "failures": [],
+    }
+    if automation_id != AUTOMATION_ID:
+        receipt["failures"] = ["app_db_rollback_automation_id_mismatch"]
+        return receipt
+    if path is None:
+        receipt["failures"] = ["app_db_rollback_target_missing"]
+        return receipt
+    expected_post_hash = str(target.get("postimageHash") or "")
+    preimage_hash = str(target.get("preimageHash") or "")
+    columns_raw = target.get("preimageColumns")
+    preimage_row = target.get("_preimageRow")
+    preimage_present = target.get("preimagePresent") is True
+    if (
+        not expected_post_hash
+        or not isinstance(columns_raw, list)
+        or not columns_raw
+        or any(not isinstance(column, str) or not column for column in columns_raw)
+    ):
+        receipt["failures"] = ["app_db_rollback_receipt_incomplete"]
+        return receipt
+    columns = tuple(columns_raw)
+    if tuple(dict.fromkeys(columns)) != columns:
+        receipt["failures"] = ["app_db_rollback_receipt_columns_drift"]
+        return receipt
+    if preimage_present and not isinstance(preimage_row, Mapping):
+        receipt["failures"] = ["app_db_rollback_preimage_missing"]
+        return receipt
+    if not preimage_present and preimage_hash:
+        receipt["failures"] = ["app_db_rollback_absent_preimage_hash"]
+        return receipt
+
+    conn: sqlite3.Connection | None = None
+    began = False
+    try:
+        _assert_no_reparse_chain(path)
+        with _existing_file_guard(path, require_exists=True):
+            conn = sqlite3.connect(str(path), timeout=5, isolation_level=None)
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA busy_timeout = 5000")
+        conn.execute("BEGIN IMMEDIATE")
+        began = True
+        actual_columns = _app_db_schema_columns(conn)
+        if actual_columns != columns:
+            raise _AppDbSchemaDrift("app_db_rollback_schema_drift")
+        current = _fetch_app_db_automation_row(conn)
+        if current is None:
+            receipt["cas"] = {
+                "status": "row_missing",
+                "automationId": AUTOMATION_ID,
+                "expectedPostimageHash": expected_post_hash,
+                "currentHash": "",
+            }
+            conn.rollback()
+            began = False
+            receipt["failures"] = ["app_db_rollback_row_missing"]
+            return receipt
+        current_hash = _app_db_row_hash(current, actual_columns)
+        receipt["cas"] = {
+            "status": "compare",
+            "automationId": AUTOMATION_ID,
+            "expectedPostimageHash": expected_post_hash,
+            "currentHash": current_hash,
+        }
+        if current_hash != expected_post_hash:
+            conn.rollback()
+            began = False
+            receipt["cas"]["status"] = "mismatch"
+            receipt["failures"] = ["app_db_rollback_postimage_mismatch"]
+            return receipt
+
+        if preimage_present:
+            assert isinstance(preimage_row, Mapping)
+            if set(preimage_row.keys()) != set(actual_columns):
+                raise _AppDbSchemaDrift("app_db_rollback_preimage_schema_drift")
+            assignments = ", ".join(
+                f"{column} = ?"
+                for column in actual_columns
+                if column != "id"
+            )
+            values = [preimage_row[column] for column in actual_columns if column != "id"]
+            values.append(AUTOMATION_ID)
+            cursor = conn.execute(
+                f"UPDATE automations SET {assignments} WHERE id = ?",
+                tuple(values),
+            )
+            if cursor.rowcount != 1:
+                raise RuntimeError("app_db_rollback_row_update_count")
+        else:
+            cursor = conn.execute(
+                "DELETE FROM automations WHERE id = ?",
+                (AUTOMATION_ID,),
+            )
+            if cursor.rowcount != 1:
+                raise RuntimeError("app_db_rollback_row_delete_count")
+
+        restored = _fetch_app_db_automation_row(conn)
+        if preimage_present:
+            if restored is None or _app_db_row_hash(restored, actual_columns) != preimage_hash:
+                raise RuntimeError("app_db_rollback_preimage_mismatch")
+        elif restored is not None:
+            raise RuntimeError("app_db_rollback_absent_preimage_not_restored")
+        conn.commit()
+        began = False
+        receipt["cas"] = {
+            **receipt["cas"],
+            "status": "restored",
+            "restoredHash": preimage_hash,
+        }
+        receipt["status"] = "rolled_back"
+        receipt["ok"] = True
+        return receipt
+    except (OSError, sqlite3.Error, RuntimeError, ValueError) as exc:
+        if conn is not None and began and conn.in_transaction:
+            with contextlib.suppress(sqlite3.Error):
+                conn.rollback()
+        receipt["cas"] = {
+            **receipt.get("cas", {}),
+            "status": "blocked",
+        }
+        if isinstance(exc, _AppDbSchemaDrift):
+            receipt["failures"] = [str(exc)]
+        else:
+            receipt["failures"] = [f"app_db_rollback_failed:{type(exc).__name__}:{exc}"]
+        return receipt
+    finally:
+        if conn is not None:
+            conn.close()
+
+
 def _rollback_promotion_targets(targets: list[dict[str, Any]]) -> dict[str, Any]:
     """promotion backupを明示的に復元し、rollback receiptを返す。"""
 
@@ -768,6 +1083,28 @@ def _rollback_promotion_targets(targets: list[dict[str, Any]]) -> dict[str, Any]
     restored: list[dict[str, Any]] = []
     seen: set[str] = set()
     for target in reversed(targets):
+        if target.get("kind") == "app_db":
+            app_db_receipt = _rollback_app_db_target(target)
+            target["rollbackCas"] = app_db_receipt.get("cas", {})
+            target["rollbackReceipt"] = app_db_receipt
+            if app_db_receipt.get("ok") is True:
+                target["status"] = "rolled_back"
+                restored.append(
+                    {
+                        "target": target.get("target"),
+                        "kind": "app_db",
+                        "automationId": target.get("automationId"),
+                        "preimageHash": target.get("preimageHash", ""),
+                        "postimageHash": target.get("postimageHash", ""),
+                        "rollbackCas": app_db_receipt.get("cas", {}),
+                        "status": "rolled_back",
+                        "atomic": True,
+                    }
+                )
+            else:
+                target["status"] = "rollback_failed"
+                failures.extend(str(item) for item in app_db_receipt.get("failures") or [])
+            continue
         path = Path(str(target.get("target") or ""))
         key = str(path.expanduser().resolve(strict=False)).casefold()
         if not key or key in seen:
@@ -814,7 +1151,7 @@ def _promotion_target_projection(target: Mapping[str, Any]) -> dict[str, Any]:
     return {
         str(key): value
         for key, value in target.items()
-        if key not in {"preimageBytes"}
+        if key not in {"preimageBytes", "_preimageRow", "_postimageRow"}
     }
 
 
@@ -1302,8 +1639,30 @@ def sync_app_db(
     project_target: dict[str, str],
     dry_run: bool,
     allow_custom_app_db: bool = False,
+    promotion_target: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     conn: sqlite3.Connection | None = None
+    began = False
+    changed = False
+    existing: dict[str, Any] | None = None
+    desired: dict[str, Any] = {}
+    schema_columns: tuple[str, ...] = ()
+    app_db_path_display = str(app_db_path)
+    target = promotion_target or _new_app_db_promotion_target(app_db_path)
+
+    def failure_result(failures: list[str]) -> dict[str, Any]:
+        target["status"] = "blocked"
+        return {
+            "schemaVersion": "NEWS_GRASP_CODEX_AUTOMATION_APP_DB_V1",
+            "ok": False,
+            "path": app_db_path_display,
+            "changed": False,
+            "automationId": AUTOMATION_ID,
+            "preimageHash": target.get("preimageHash", ""),
+            "postimageHash": target.get("postimageHash", ""),
+            "failures": failures,
+        }
+
     try:
         repo_root = _assert_trusted_repo_root(repo_root)
         app_db_path = _assert_role_path(
@@ -1318,15 +1677,31 @@ def sync_app_db(
             label="template",
             custom_allowed=False,
         )
+        app_db_path_display = str(app_db_path)
         with _existing_file_guard(app_db_path, require_exists=True):
-            conn = sqlite3.connect(str(app_db_path), timeout=5)
+            conn = sqlite3.connect(str(app_db_path), timeout=5, isolation_level=None)
             conn.row_factory = sqlite3.Row
             conn.execute("pragma busy_timeout = 5000")
-            row = conn.execute(
-                "select * from automations where id = ?",
-                (AUTOMATION_ID,),
-            ).fetchone()
-            existing = dict(row) if row is not None else None
+            if not dry_run:
+                conn.execute("BEGIN IMMEDIATE")
+                began = True
+            schema_columns = _app_db_schema_columns(conn)
+            existing = _fetch_app_db_automation_row(conn)
+            preimage_hash = _app_db_row_hash(existing, schema_columns)
+            target.update(
+                {
+                    "target": str(app_db_path),
+                    "kind": "app_db",
+                    "automationId": AUTOMATION_ID,
+                    "preimagePresent": existing is not None,
+                    "preimageColumns": list(schema_columns),
+                    "_preimageRow": existing,
+                    "preimageHash": preimage_hash,
+                    "preimageSha256": preimage_hash,
+                    "backupStatus": "row_captured",
+                    "atomic": True,
+                }
+            )
             desired = _desired_app_db_row(
                 template_path=template_path,
                 repo_root=repo_root,
@@ -1346,24 +1721,12 @@ def sync_app_db(
                 }
                 if comparable == desired_comparable:
                     desired["updated_at"] = existing.get("updated_at")
-            changed = existing != desired
+            changed = existing is None or any(
+                existing.get(key) != desired.get(key)
+                for key in APP_DB_AUTOMATION_OWNED_COLUMNS
+            )
             if changed and not dry_run:
-                columns = [
-                    "id",
-                    "name",
-                    "prompt",
-                    "status",
-                    "next_run_at",
-                    "last_run_at",
-                    "cwds",
-                    "rrule",
-                    "model",
-                    "reasoning_effort",
-                    "created_at",
-                    "updated_at",
-                    "target_type",
-                    "project_id",
-                ]
+                columns = list(APP_DB_AUTOMATION_OWNED_COLUMNS)
                 placeholders = ", ".join("?" for _ in columns)
                 update_assignments = ", ".join(
                     f"{column} = excluded.{column}"
@@ -1375,25 +1738,62 @@ def sync_app_db(
                     f"on conflict(id) do update set {update_assignments}",
                     tuple(desired[column] for column in columns),
                 )
+                postimage = _fetch_app_db_automation_row(conn)
+                if postimage is None:
+                    raise RuntimeError("app_db_postimage_row_missing")
+                postimage_hash = _app_db_row_hash(postimage, schema_columns)
+                target.update(
+                    {
+                        "_postimageRow": postimage,
+                        "candidateHash": postimage_hash,
+                        "candidateSha256": postimage_hash,
+                        "postimageHash": postimage_hash,
+                        "postimageSha256": postimage_hash,
+                        "status": "promoted",
+                    }
+                )
                 conn.commit()
+                began = False
+            else:
+                postimage_hash = _app_db_row_hash(existing, schema_columns)
+                target.update(
+                    {
+                        "_postimageRow": existing,
+                        "candidateHash": postimage_hash,
+                        "candidateSha256": postimage_hash,
+                        "postimageHash": postimage_hash,
+                        "postimageSha256": postimage_hash,
+                        "status": "dry_run" if dry_run else "noop",
+                    }
+                )
+                if began:
+                    conn.commit()
+                    began = False
     except FileNotFoundError:
-        return {
-            "schemaVersion": "NEWS_GRASP_CODEX_AUTOMATION_APP_DB_V1",
-            "ok": False,
-            "path": str(app_db_path),
-            "changed": False,
-            "failures": ["app_db_missing"],
-        }
+        return failure_result(["app_db_missing"])
+    except _AppDbSchemaDrift as exc:
+        if conn is not None and began and conn.in_transaction:
+            with contextlib.suppress(sqlite3.Error):
+                conn.rollback()
+            began = False
+        return failure_result([str(exc)])
     except sqlite3.Error as exc:
-        return {
-            "schemaVersion": "NEWS_GRASP_CODEX_AUTOMATION_APP_DB_V1",
-            "ok": False,
-            "path": str(app_db_path),
-            "changed": False,
-            "failures": [f"app_db_update_failed:{exc}"],
-        }
+        if conn is not None and began and conn.in_transaction:
+            with contextlib.suppress(sqlite3.Error):
+                conn.rollback()
+            began = False
+        return failure_result([f"app_db_update_failed:{exc}"])
+    except (OSError, RuntimeError, ValueError) as exc:
+        if conn is not None and began and conn.in_transaction:
+            with contextlib.suppress(sqlite3.Error):
+                conn.rollback()
+            began = False
+        return failure_result([f"app_db_update_failed:{type(exc).__name__}:{exc}"])
     finally:
         if conn is not None:
+            if began and conn.in_transaction:
+                with contextlib.suppress(sqlite3.Error):
+                    conn.rollback()
             conn.close()
 
     if dry_run:
@@ -1411,6 +1811,9 @@ def sync_app_db(
             expected_target=project_target,
         )
     result["changed"] = changed
+    result["automationId"] = AUTOMATION_ID
+    result["preimageHash"] = target.get("preimageHash", "")
+    result["postimageHash"] = target.get("postimageHash", "")
     return result
 
 
@@ -1575,10 +1978,7 @@ def sync(
         skill_result = validate_skill_semantics(source_skill if dry_run else installed_skill)
     app_db_result = None
     if write_app_db and not promotion_failures:
-        app_db_target = _capture_promotion_target(
-            app_db_path or _default_app_db(),
-            kind="app_db",
-        )
+        app_db_target = _new_app_db_promotion_target(app_db_path or _default_app_db())
         promotion_targets.append(app_db_target)
         app_db_result = sync_app_db(
             repo_root=repo,
@@ -1587,26 +1987,12 @@ def sync(
             project_target=project_target,
             dry_run=dry_run,
             allow_custom_app_db=allow_custom_paths and custom_path_args["app_db"],
+            promotion_target=app_db_target,
         )
-        if app_db_result.get("changed") is True:
-            try:
-                postimage = _read_bytes_no_follow(
-                    Path(str(app_db_target["target"])),
-                    limit=MAX_APP_GLOBAL_STATE_BYTES,
-                )
-                app_db_target["postimageSha256"] = hashlib.sha256(postimage).hexdigest()
-                app_db_target["candidateSha256"] = app_db_target["postimageSha256"]
-                app_db_target["status"] = "promoted"
-                promoted_targets.append(app_db_target)
-            except (OSError, ValueError) as exc:
-                app_db_result = {
-                    **app_db_result,
-                    "ok": False,
-                    "failures": [*(app_db_result.get("failures") or []), f"app_db_postimage_unavailable:{exc}"],
-                }
-        else:
-            app_db_target["status"] = "noop"
-            app_db_target["postimageSha256"] = app_db_target.get("preimageSha256", "")
+        # sync_app_dbがBEGIN IMMEDIATE内でrow hashをsealする。DB bytes全体を
+        # 読み直すことや、WAL/SHMを含むファイルbackupを作ることは禁止する。
+        if app_db_target.get("status") == "promoted":
+            promoted_targets.append(app_db_target)
         if app_db_result.get("ok") is not True:
             promotion_failures.extend(
                 f"app_db:{failure}"

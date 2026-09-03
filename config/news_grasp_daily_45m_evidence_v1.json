@@ -305,6 +305,96 @@
         "2026-09-02 public release"
       ],
       "meaning": "専用work branchへの保存だけを許可し、上記findingを閉じるまでinstall、cutover、自然公開canaryを禁止する"
+    },
+    {
+      "event_id": "NG45-EV-021",
+      "kind": "third_party_finding_red_green",
+      "surface": "writer_capability_and_identity_preflight",
+      "finding_ids": [
+        "PREPUSH-P1-WRITER-LEASE-DB-REACQUIRE",
+        "PREPUSH-P2-BASELINE-ANCESTRY-PREFLIGHT"
+      ],
+      "red_exit_code": 1,
+      "red_failed": 4,
+      "green_exit_code": 0,
+      "green_passed": 16,
+      "meaning": "static_checkだけがwriterを作成し、開始応答の一回限りcapabilityを後続processへ明示継承する。DB observerからlease/fenceを再取得せず、source baseline祖先とremote base driftをstart seal前に拒否する"
+    },
+    {
+      "event_id": "NG45-EV-022",
+      "kind": "third_party_finding_green",
+      "surface": "scoped_test_promotion_receipt",
+      "finding_ids": ["PREPUSH-P1-SCOPED-TEST-RECEIPT-MISSING"],
+      "green_tests": "tests/test_news_grasp_scoped_test_broker.py:5 passed",
+      "meaning": "通常DailyはHMAC署名済みRelease Green promotion receiptを同一HEADで再利用してpytest 0回、source変更時だけ署名済みpath registryのtest nodeを一回実行し、未知pathとtamperをfail-closedにした"
+    },
+    {
+      "event_id": "NG45-EV-023",
+      "kind": "third_party_finding_green",
+      "surface": "app_db_row_cas_rollback",
+      "finding_ids": ["PREPUSH-P1-APPDB-FILE-ROLLBACK-UNSAFE"],
+      "green_tests": "tests/test_news_grasp_automation_appdb_cas.py:3 passed",
+      "meaning": "App DB全体のcopy/replaceを廃止し、BEGIN IMMEDIATE内の対象automation row preimage/postimage hashとCAS rollbackへ変更した。他automationの並行更新、optional field、CAS mismatch、schema driftを独立fixtureで確認した"
+    },
+    {
+      "event_id": "NG45-EV-024",
+      "kind": "focused_contract_green_after_review_fixes",
+      "surface": "product_changed_contract_union",
+      "runtime": "C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "command": "python -m pytest -q daily_45m external route_runtime release_gate publish_contract scoped_broker appdb_cas",
+      "exit_code": 0,
+      "passed": 125,
+      "failed": 0,
+      "meaning": "第三者レビュー後の最終mutationに対する変更対象test unionがGreen。full Release suite、installed promotion、自然公開canaryの代替証拠ではない"
+    },
+    {
+      "event_id": "NG45-EV-025",
+      "kind": "third_party_review_rejected_followup",
+      "surface": "promotion_authority_writer_capability_remote_identity",
+      "review_result": "rejected",
+      "finding_ids": [
+        "PREPUSH-P0-SCOPED-PROMOTION-FORGED-RELEASE",
+        "PREPUSH-P1-WRITER-CAPABILITY-PROJECTION",
+        "PREPUSH-P1-REMOTE-OBSERVATION-FAILOPEN"
+      ],
+      "meaning": "初回追補Green後もcaller作成Release mapping、stdout bearer lease、origin/main不在時HEAD fallbackが残ると独立reviewが検出し、同じbranchの上流設計修正へ戻した"
+    },
+    {
+      "event_id": "NG45-EV-026",
+      "kind": "causal_focused_green_after_authority_rework",
+      "surface": "daily_launcher_release_authority_appdb_public_contract",
+      "runtime": "C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "command": "python -m pytest -q changed contract union (11 selectors/modules)",
+      "exit_code": 0,
+      "passed": 163,
+      "failed": 0,
+      "meaning": "単一launcher、capability非投影、canonical Release ledger、偽collection拒否、promotion exactly-once/tamper、origin/main fail-closed、App DB row CAS、公開契約の最終mutation後focused unionがGreen。full Release、installed promotion、自然公開canaryの代替ではない"
+    },
+    {
+      "event_id": "NG45-EV-027",
+      "kind": "third_party_review_rejected_protected_and_authority_boundary",
+      "surface": "protected_release_fencing_projection_release_root_concurrency",
+      "review_result": "rejected",
+      "finding_ids": [
+        "PREPUSH-P0-PROTECTED-RELEASE-REEXECUTION",
+        "PREPUSH-P1-FENCING-CAPABILITY-PROJECTION",
+        "PREPUSH-P1-RELEASE-ROOT-REDIRECT",
+        "PREPUSH-P2-PROMOTION-PAIR-RACE"
+      ],
+      "meaning": "保護日通常再実行、raw fencing token receipt、LOCALAPPDATA redirect/direct import、並行ledger/promotion競合を独立reviewが検出し、pushを止めて上流修正へ戻した"
+    },
+    {
+      "event_id": "NG45-EV-028",
+      "kind": "focused_green_after_final_p0_closure",
+      "surface": "protected_release_direct_routes_release_completion_authority_global_launcher_contract",
+      "runtime": "C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "product_exit_code": 0,
+      "product_collected": 209,
+      "product_failed": 0,
+      "global_route_exit_code": 0,
+      "global_route_passed": 17,
+      "global_collection_blocker": "test_news_grasp_scheduled_production_policy.py cannot collect in snapshot because tools.harness.context_integrity_gateway is absent",
+      "meaning": "9/2保護をsequence、operation、external producer、external executorでstate/outbox/provider前に拒否し、Release完了はlinked collection/partition/node unionを再集約する専用finalizerだけが発行する。global ScheduledProduction entryは固定Pythonの引数なし単一launcherへ同期した。これはfull Release、installed cutover、自然公開canaryの代替ではない"
     }
   ]
 }

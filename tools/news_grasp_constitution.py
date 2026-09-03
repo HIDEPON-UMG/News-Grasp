@@ -221,10 +221,14 @@ def _validate_direct_mainline_skill_semantics(root: Path, overlay_path: str) -> 
         raise ValueError("CONSTITUTION_DIRECT_SKILL_PATH_INVALID") from exc
     text = _bounded_utf8_text(skill, "CONSTITUTION_DIRECT_SKILL_TEXT_INVALID")
     required_markers = (
-        "news_grasp_direct_runtime",
+        "tools.news_grasp_daily_launcher",
+        "static_check",
+        "scoped_contract_unit",
+        "current_issue_integration",
+        "external_publication",
+        "consumer_public_verification",
+        "atomic_completion",
         "NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1",
-        "title_status=already_ok",
-        "validate_daily_quality --require-deepdive",
         "caller作成の completion JSON は Green authority ではない",
         "runner state",
         "public completion authorityではない",
@@ -233,6 +237,7 @@ def _validate_direct_mainline_skill_semantics(root: Path, overlay_path: str) -> 
     forbidden_markers = (
         "publish_commit",
         "content_identity",
+        "validate_daily_quality --require-deepdive",
     )
     forbidden = [marker for marker in forbidden_markers if marker in text]
     if missing or forbidden:
@@ -246,7 +251,11 @@ def _validate_direct_spec_semantics(spec_path: Path) -> None:
     required = (
         "2026-08-30 Direct 06:00 Mainline Supersession",
         "$news-grasp-direct-mainline",
-        "tools.news_grasp_direct_runtime",
+        "tools.news_grasp_daily_launcher",
+        "static_check",
+        "current_issue_integration",
+        "consumer_public_verification",
+        "atomic_completion",
         "NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1",
         "caller作成の completion JSON",
         "publish-status単独",

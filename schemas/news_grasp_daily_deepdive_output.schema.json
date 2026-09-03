@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "News-Grasp daily DeepDive materialization output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["article_markdown", "dialogue_markdown"],
+  "properties": {
+    "article_markdown": {"type": "string", "minLength": 200},
+    "dialogue_markdown": {"type": "string", "minLength": 100}
+  }
+}

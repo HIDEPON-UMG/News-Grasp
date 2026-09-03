@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+import hashlib
 import json
 import os
 import subprocess
@@ -147,6 +148,14 @@ def test_r01_manifest_includes_home_and_exact_write_set(tmp_path: Path) -> None:
         "distribution_binding",
         "notification_v2",
     } <= {row["artifactKind"] for row in manifest["entries"]}
+    assert "docs/index.html" in manifest["exactWriteSet"]
+    external_paths = {
+        row["localPath"]
+        for row in manifest["entries"]
+        if row["commitRole"] == "external_observation"
+    }
+    assert external_paths
+    assert external_paths.isdisjoint(manifest["exactWriteSet"])
     assert api.verify_manifest(manifest, repo_root=tmp_path)["ok"] is True
     tampered = {**manifest, "entries": [row for row in manifest["entries"] if row["localPath"] != "docs/index.html"]}
     assert "manifest_home_missing" in api.verify_manifest(tampered, repo_root=tmp_path)["reasonCodes"]
@@ -165,19 +174,313 @@ def _semantic_fixture(manifest: dict) -> dict[str, str]:
         "daily": f"{meta}<main>{ISSUE_DATE}{category_links}</main>",
         "summary": f'{meta}<main>{ISSUE_DATE}<p class="summary-hero__lead">検証済み材料を分離し、次の観測点へつなぐ本日の編集上の振り返りです。</p></main>',
         "deepdive": f"{meta}<main>{ISSUE_DATE}</main>",
-        "publish_status": f'{{"date":"{ISSUE_DATE}","manifestId":"{marker}","result":"success"}}',
+        "publish_status": json.dumps(
+            {
+                "date": ISSUE_DATE,
+                "manifestId": marker,
+                "runId": manifest["runId"],
+                "runIntent": manifest["runIntent"],
+                "result": "publication_pending",
+                "status": "awaiting_external_completion_attestation",
+                "completionAuthority": "consumer-owned_public_verifier",
+            },
+            separators=(",", ":"),
+        ),
     }
     for category_id in manifest["scheduledCategoryIds"]:
         pages[f"category:{category_id}"] = f"{meta}<main>{ISSUE_DATE} category</main>"
     return pages
 
 
-def test_semantic_pages_accepts_canonical_published_ok_status(tmp_path: Path) -> None:
+def _completion_surface_fixture(tmp_path: Path) -> dict[str, object]:
+    """completion attestation surfaceを全external identity込みで再現する。"""
+
+    completion = importlib.import_module("tools.news_grasp_direct_completion")
+    manifest = _manifest(tmp_path)
+    run_id = str(manifest["runId"])
+    run_intent = str(manifest["runIntent"])
+    manifest_id = str(manifest["manifestId"])
+    bundle_id = "bundle-completion-fixture"
+    release_commit_sha = "c" * 40
+    release_root = (
+        "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/"
+    )
+    artifact_paths = {
+        "distribution": f"data/distribution/{ISSUE_DATE}.json",
+        "distribution-binding": f"build/distribution/{ISSUE_DATE}/binding.json",
+        "playlist-binding": f"build/distribution/{ISSUE_DATE}/playlist.json",
+        "notification-ledger": f"build/notification/{ISSUE_DATE}.json",
+        "daily-audio-projection": "build/tts/daily/latest_audio.json",
+        "deepdive-audio-projection": "build/tts/deepdive/latest_audio.json",
+        "youtube-daily-state": "build/youtube-podcast/uploads.json",
+        "youtube-deepdive-state": "build/youtube-podcast-deepdive/uploads.json",
+    }
+
+    def json_bytes(value: dict[str, object]) -> bytes:
+        return (json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
+
+    artifact_ids = tuple(artifact_paths)
+    artifact_values: dict[str, dict[str, object]] = {
+        artifact_id: {
+            "schemaVersion": "NEWS_GRASP_DISTRIBUTION_ARTIFACT_V1",
+            "issueDate": ISSUE_DATE,
+            "runId": run_id,
+            "runIntent": run_intent,
+        }
+        for artifact_id in artifact_ids
+    }
+    artifact_raw = {
+        artifact_id: json_bytes(value)
+        for artifact_id, value in artifact_values.items()
+    }
+    artifact_hashes = {
+        artifact_id: hashlib.sha256(raw).hexdigest()
+        for artifact_id, raw in artifact_raw.items()
+    }
+    artifact_values["distribution-binding"] = {
+        "schemaVersion": "NEWS_GRASP_DISTRIBUTION_BINDING_V1",
+        "issueDate": ISSUE_DATE,
+        "runId": run_id,
+        "runIntent": run_intent,
+        "manifestId": manifest_id,
+        "bundleId": bundle_id,
+        "releaseCommitSha": release_commit_sha,
+        "distributionSha256": artifact_hashes["distribution"],
+        "dailyAudioProjectionSha256": artifact_hashes["daily-audio-projection"],
+        "deepdiveAudioProjectionSha256": artifact_hashes["deepdive-audio-projection"],
+        "notificationStateSha256": artifact_hashes["notification-ledger"],
+        "youtubeDailyStateSha256": artifact_hashes["youtube-daily-state"],
+        "youtubeDeepdiveStateSha256": artifact_hashes["youtube-deepdive-state"],
+        "playlistBindingStateSha256": artifact_hashes["playlist-binding"],
+    }
+    artifact_raw["distribution-binding"] = json_bytes(artifact_values["distribution-binding"])
+    artifact_hashes["distribution-binding"] = hashlib.sha256(
+        artifact_raw["distribution-binding"]
+    ).hexdigest()
+
+    artifact_rows: list[dict[str, object]] = []
+    responses: dict[str, bytes] = {}
+    for artifact_id in artifact_ids:
+        artifact_url = f"{release_root}{ISSUE_DATE}-{run_id}-{artifact_id}.json"
+        row = {
+            "artifactId": artifact_id,
+            "localPath": artifact_paths[artifact_id],
+            "publicUrl": artifact_url,
+            "sha256": artifact_hashes[artifact_id],
+            "size": len(artifact_raw[artifact_id]),
+        }
+        artifact_rows.append(row)
+        responses[artifact_url] = artifact_raw[artifact_id]
+
+    operations: list[dict[str, object]] = []
+    outbox: list[dict[str, object]] = []
+    for index, operation_id in enumerate(completion.CANONICAL_EXTERNAL_OPERATION_ORDER[:-1]):
+        payload_identity = f"{index + 1:064x}"
+        provider_output_hash = f"{index + 101:064x}"
+        outbox.append(
+            {
+                "operation_id": operation_id,
+                "payload_identity": payload_identity,
+                "provider_output_hash": provider_output_hash,
+            }
+        )
+        operations.append(
+            {
+                "operationId": operation_id,
+                "payloadIdentity": payload_identity,
+                "providerOutputHash": provider_output_hash,
+                "providerAckStatus": "unknown_unobtainable",
+                "providerEvidenceSha256": f"{index + 1001:064x}",
+                "providerBindingReceiptSha256": f"{index + 2001:064x}",
+            }
+        )
+
+    attestation_url = f"{release_root}{ISSUE_DATE}-{run_id}-completion.json"
+    attestation_value = {
+        "schemaVersion": "NEWS_GRASP_PUBLIC_COMPLETION_ATTESTATION_V1",
+        "issueDate": ISSUE_DATE,
+        "runId": run_id,
+        "runIntent": run_intent,
+        "manifestId": manifest_id,
+        "bundleId": bundle_id,
+        "releaseCommitSha": release_commit_sha,
+        "operations": operations,
+        "distributionArtifacts": artifact_rows,
+        "providerDeliveryAckStatus": "unknown_unobtainable",
+    }
+    attestation_raw = json_bytes(attestation_value)
+    attestation_sha256 = hashlib.sha256(attestation_raw).hexdigest()
+    outbox.append(
+        {
+            "operation_id": completion.CANONICAL_EXTERNAL_OPERATION_ORDER[-1],
+            "payload_identity": attestation_sha256,
+            "provider_output_hash": attestation_sha256,
+            "provider_receipt": {
+                "payload_identity": attestation_sha256,
+                "provider_evidence": {
+                    "attestation_url": attestation_url,
+                    "payload_identity": attestation_sha256,
+                },
+            },
+        }
+    )
+    responses[attestation_url] = attestation_raw
+
+    class Response:
+        status = 200
+
+        def __init__(self, url: str, body: bytes) -> None:
+            self.url = url
+            self.body = body
+            self.read_once = False
+
+        def __enter__(self) -> "Response":
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+        def getcode(self) -> int:
+            return self.status
+
+        def read(self, _size: int = -1) -> bytes:
+            if self.read_once:
+                return b""
+            self.read_once = True
+            return self.body
+
+    def open_completion(request: object, *, timeout: int = 30) -> Response:
+        del timeout
+        url = str(getattr(request, "full_url", request))
+        return Response(url, responses[url])
+
+    context = completion._new_observation_context(
+        issue_date=ISSUE_DATE,
+        run_id=run_id,
+        run_intent=run_intent,
+    )
+    completion._bind_observation_context(
+        context,
+        issue_date=ISSUE_DATE,
+        run_id=run_id,
+        run_intent=run_intent,
+        manifest_id=manifest_id,
+    )
+    return {
+        "completion": completion,
+        "manifest": manifest,
+        "outbox": outbox,
+        "responses": responses,
+        "open_completion": open_completion,
+        "context": context,
+        "run_id": run_id,
+        "run_intent": run_intent,
+        "manifest_id": manifest_id,
+        "bundle_id": bundle_id,
+        "release_commit_sha": release_commit_sha,
+        "attestation_url": attestation_url,
+        "attestation_raw": attestation_raw,
+        "artifact_rows": artifact_rows,
+    }
+
+
+def _run_completion_surface_fixture(
+    fixture: dict[str, object],
+    monkeypatch: pytest.MonkeyPatch,
+) -> dict[str, object]:
+    completion = fixture["completion"]
+    assert hasattr(completion, "_completion_attestation_surface")
+    monkeypatch.setattr(completion, "_open_completion_attestation", fixture["open_completion"])
+    return completion._completion_attestation_surface(
+        issue_date=ISSUE_DATE,
+        run_id=str(fixture["run_id"]),
+        run_intent=str(fixture["run_intent"]),
+        manifest_id=str(fixture["manifest_id"]),
+        bundle_id=str(fixture["bundle_id"]),
+        release_commit_sha=str(fixture["release_commit_sha"]),
+        manifest=fixture["manifest"],
+        external_outbox=fixture["outbox"],
+        observation_context=fixture["context"],
+    )
+
+
+def test_completion_attestation_fresh_public_exact_is_green(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _completion_surface_fixture(tmp_path)
+    result = _run_completion_surface_fixture(fixture, monkeypatch)
+
+    assert result["ok"] is True
+    assert result["status"] == "verified"
+    assert result["reasonCodes"] == []
+    assert result["operationCount"] == 9
+    assert result["providerDeliveryAckStatus"] == "unknown_unobtainable"
+    assert result["observation"]["freshNetwork"] is True
+    assert len(result["networkObservations"]) == len(fixture["artifact_rows"])
+
+
+def test_completion_attestation_body_hash_mismatch_is_red(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _completion_surface_fixture(tmp_path)
+    fixture["responses"][fixture["attestation_url"]] += b"tampered"
+    result = _run_completion_surface_fixture(fixture, monkeypatch)
+
+    assert result["ok"] is False
+    assert "completion_attestation_public_hash_mismatch" in result["reasonCodes"]
+
+
+def test_completion_attestation_distribution_component_hash_mismatch_is_red(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _completion_surface_fixture(tmp_path)
+    distribution = next(
+        row for row in fixture["artifact_rows"] if row["artifactId"] == "distribution"
+    )
+    fixture["responses"][distribution["publicUrl"]] += b"tampered"
+    result = _run_completion_surface_fixture(fixture, monkeypatch)
+
+    assert result["ok"] is False
+    assert "completion_distribution_artifact_hash_mismatch:distribution" in result["reasonCodes"]
+
+
+def test_completion_attestation_manifest_locator_tamper_is_red(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _completion_surface_fixture(tmp_path)
+    attestation = dict(fixture["manifest"]["completionAttestation"])
+    attestation["publicUrl"] = str(attestation["publicUrl"]).replace(
+        "-completion.json", "-tampered.json"
+    )
+    fixture["manifest"]["completionAttestation"] = attestation
+    result = _run_completion_surface_fixture(fixture, monkeypatch)
+
+    assert result["ok"] is False
+    assert "completion_attestation_manifest_contract_invalid" in result["reasonCodes"]
+
+
+def test_semantic_pages_rejects_published_ok_before_completion_attestation(tmp_path: Path) -> None:
+    """外部配信attestation前のpublished_okは公開完了へ昇格できない。"""
+
     api = _api()
     manifest = _manifest(tmp_path)
     pages = _semantic_fixture(manifest)
-    pages["publish_status"] = pages["publish_status"].replace('"success"', '"published_ok"')
-    assert api.verify_semantic_pages(manifest, pages)["ok"] is True
+    pages["publish_status"] = pages["publish_status"].replace(
+        '"publication_pending"', '"published_ok"'
+    )
+    result = api.verify_semantic_pages(manifest, pages)
+    assert result["ok"] is False
+    assert "publish_status_result_red" in result["reasonCodes"]
+
+
+def test_semantic_pages_accepts_pending_status_bound_to_consumer_attestation(tmp_path: Path) -> None:
+    api = _api()
+    manifest = _manifest(tmp_path)
+    assert api.verify_semantic_pages(manifest, _semantic_fixture(manifest))["ok"] is True
 
 
 def test_semantic_pages_accepts_audio_release_cache_busting_query(tmp_path: Path) -> None:
@@ -187,10 +490,96 @@ def test_semantic_pages_accepts_audio_release_cache_busting_query(tmp_path: Path
     daily_url = manifest["audio"]["daily"]["publicUrl"]
     pages["home"] = pages["home"].replace(
         f'src="{daily_url}"',
-        f'src="{daily_url}?v=cachebust"',
+        f'src="{daily_url}?v=0123456789ab"',
     )
 
     assert api.verify_semantic_pages(manifest, pages)["ok"] is True
+
+
+@pytest.mark.parametrize(
+    "suffix",
+    (
+        "?download=1",
+        "#fragment",
+        "?v=0123456789ab&v=abcdef012345",
+        "?v=NOT-LOWERCASE",
+    ),
+)
+def test_semantic_pages_rejects_noncanonical_audio_identity_query(tmp_path: Path, suffix: str) -> None:
+    """単一の12桁hex v以外は、公開HTMLの音声identityを満たさない。"""
+
+    api = _api()
+    manifest = _manifest(tmp_path)
+    pages = _semantic_fixture(manifest)
+    daily_url = manifest["audio"]["daily"]["publicUrl"]
+    pages["home"] = pages["home"].replace(
+        f'src="{daily_url}"',
+        f'src="{daily_url}{suffix}"',
+    )
+
+    result = api.verify_semantic_pages(manifest, pages)
+
+    assert result["ok"] is False
+    assert "daily_audio_href_missing" in result["reasonCodes"]
+
+
+@pytest.mark.parametrize(
+    ("public_url_suffix", "public_href_suffix"),
+    (
+        ("", "?v=0123456789ab"),
+        ("?v=0123456789ab", ""),
+    ),
+)
+def test_manifest_audio_public_url_and_page_href_treat_valid_v_as_same_identity(
+    tmp_path: Path,
+    public_url_suffix: str,
+    public_href_suffix: str,
+) -> None:
+    """publicUrl/publicPageHrefは正規cache busterの有無だけを無視して束縛する。"""
+
+    api = _api()
+    manifest = _manifest(tmp_path)
+    daily = dict(manifest["audio"]["daily"])
+    base = str(daily["publicUrl"])
+    daily["publicUrl"] = base + public_url_suffix
+    daily["publicPageHref"] = base + public_href_suffix
+    manifest["audio"] = {**manifest["audio"], "daily": daily}
+    manifest["manifestId"] = hashlib.sha256(
+        api._json_bytes(api._manifest_identity(manifest))
+    ).hexdigest()
+
+    assert api.verify_manifest(manifest, repo_root=tmp_path)["ok"] is True
+
+
+@pytest.mark.parametrize(
+    "invalid_suffix",
+    (
+        "?download=1",
+        "#fragment",
+        "?v=0123456789ab&v=abcdef012345",
+        "?v=NOT-LOWERCASE",
+    ),
+)
+def test_manifest_audio_rejects_noncanonical_v_on_public_url_or_page_href(
+    tmp_path: Path,
+    invalid_suffix: str,
+) -> None:
+    """publicUrl/publicPageHrefのquery・fragmentは単一12桁hex v以外を拒否する。"""
+
+    api = _api()
+    manifest = _manifest(tmp_path)
+    daily = dict(manifest["audio"]["daily"])
+    base = str(daily["publicUrl"])
+    daily["publicPageHref"] = base + invalid_suffix
+    manifest["audio"] = {**manifest["audio"], "daily": daily}
+    manifest["manifestId"] = hashlib.sha256(
+        api._json_bytes(api._manifest_identity(manifest))
+    ).hexdigest()
+
+    result = api.verify_manifest(manifest, repo_root=tmp_path)
+
+    assert result["ok"] is False
+    assert "manifest_audio_projection_mismatch" in result["reasonCodes"]
 
 
 def test_local_required_docs_loads_every_scheduled_category(tmp_path: Path, monkeypatch) -> None:
@@ -693,3 +1082,172 @@ def test_production_public_base_url_requires_https() -> None:
     completion = importlib.import_module("tools.news_grasp_direct_completion")
     with pytest.raises(ValueError, match="scheme"):
         completion.validate_public_base_url("http://hidepon-umg.github.io/News-Grasp/")
+
+
+def test_consumer_public_web_rejects_manifest_html_body_digest_mismatch(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """consumer verifierはHTTP 200だけでなく公開HTMLの全body digestを照合する。"""
+
+    contract = _api()
+    completion = importlib.import_module("tools.news_grasp_direct_completion")
+    manifest = _manifest(tmp_path)
+    marker = manifest["manifestId"]
+    daily_url = manifest["audio"]["daily"]["publicUrl"]
+    deepdive_href = f"https://hidepon-umg.github.io/News-Grasp/deepdive/{ISSUE_DATE}/"
+    summary_href = f"https://hidepon-umg.github.io/News-Grasp/{ISSUE_DATE}/summary/"
+
+    def html(body: str) -> str:
+        # artifact_digest_bytesが唯一許可する、head直下・2空白・改行付きの
+        # manifest markerを使う。marker自体はdigestから除外されるが、本文は
+        # 全bytesをdigest対象に残す。
+        return (
+            "<html><head>\n"
+            f'  <meta name="news-grasp-manifest-id" content="{marker}">\n'
+            "</head><body>"
+            f"{body}"
+            "</body></html>"
+        )
+
+    category_rows = [
+        row
+        for row in manifest["entries"]
+        if row["artifactKind"] == "category_html" and row["required"] is True
+    ]
+    pages: dict[str, bytes] = {
+        "home": html(
+            f'<source src="{daily_url}">'
+            f'<a href="{deepdive_href}">DeepDive</a>'
+            f'<a href="{summary_href}">Summary</a>'
+        ).encode("utf-8"),
+        "daily": html(
+            ISSUE_DATE
+            + "".join(
+                f'<a href="{row["publicUrl"]}">category</a>'
+                for row in category_rows
+            )
+        ).encode("utf-8"),
+        "summary": html(
+            f'{ISSUE_DATE}<p class="summary-hero__lead">'
+            "検証済み材料を分離し、次の観測点へつなぐ本日の編集上の振り返りです。"
+            "</p>"
+        ).encode("utf-8"),
+        "deepdive": html(ISSUE_DATE).encode("utf-8"),
+    }
+    for row in category_rows:
+        category_id = next(
+            value
+            for value in manifest["scheduledCategoryIds"]
+            if f"/{value}/{ISSUE_DATE}/" in row["publicUrl"]
+        )
+        pages[f"category:{category_id}"] = html(
+            f"{ISSUE_DATE} category"
+        ).encode("utf-8")
+    pages["publish_status"] = json.dumps(
+        {
+            "date": ISSUE_DATE,
+            "manifestId": marker,
+            "runId": manifest["runId"],
+            "runIntent": manifest["runIntent"],
+            "result": "publication_pending",
+            "status": "awaiting_external_completion_attestation",
+            "completionAuthority": "consumer-owned_public_verifier",
+        },
+        ensure_ascii=False,
+        separators=(",", ":"),
+    ).encode("utf-8")
+
+    base = "https://hidepon-umg.github.io/News-Grasp/"
+    path_by_name = {
+        "home": "",
+        "daily": f"{ISSUE_DATE}/",
+        "summary": f"{ISSUE_DATE}/summary/",
+        "deepdive": f"deepdive/{ISSUE_DATE}/",
+        "publish_status": "publish-status.json",
+    }
+    for category_id in manifest["scheduledCategoryIds"]:
+        row = next(
+            row
+            for row in category_rows
+            if f"/{category_id}/{ISSUE_DATE}/" in row["publicUrl"]
+        )
+        path_by_name[f"category:{category_id}"] = row["publicUrl"][len(base):]
+
+    expected_public_rows = {
+        row["publicUrl"][len(base):]: row
+        for row in manifest["entries"]
+        if (
+            row.get("required") is True
+            and row.get("commitRole") == "publication"
+            and row.get("artifactKind")
+            in {"public_home", "issue_index", "summary_html", "deepdive_html", "category_html", "publish_status"}
+        )
+    }
+    for name, relative in path_by_name.items():
+        row = expected_public_rows[relative]
+        row["digest"] = contract.artifact_digest_bytes(
+            pages[name], str(row["artifactKind"])
+        )
+
+    class Response:
+        status = 200
+        headers = {"Content-Type": "text/html; charset=utf-8"}
+
+        def __init__(self, url: str, body: bytes) -> None:
+            self.url = url
+            self._body = body
+            self._read = False
+
+        def __enter__(self) -> "Response":
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+        def geturl(self) -> str:
+            return self.url
+
+        def read(self, _size: int = -1) -> bytes:
+            if self._read:
+                return b""
+            self._read = True
+            return self._body
+
+    def open_public(request: object, *, timeout: int = 20) -> Response:
+        del timeout
+        url = str(getattr(request, "full_url", request))
+        return Response(url, pages[next(name for name, rel in path_by_name.items() if base + rel == url)])
+
+    monkeypatch.setattr(completion, "_open_public_no_redirect", open_public)
+
+    green = completion._public_web(
+        tmp_path,
+        ISSUE_DATE,
+        public_base_url=base,
+        remote="origin",
+        branch="main",
+        wait_sec=0,
+        poll_sec=0,
+        manifest=manifest,
+        cache_bust=False,
+    )
+    assert green["ok"] is True
+
+    home_url = base
+    pages["home"] += b"tampered-body"
+    red = completion._public_web(
+        tmp_path,
+        ISSUE_DATE,
+        public_base_url=base,
+        remote="origin",
+        branch="main",
+        wait_sec=0,
+        poll_sec=0,
+        manifest=manifest,
+        cache_bust=False,
+    )
+    assert red["ok"] is False
+    assert "public_digest_mismatch:home" in red["failures"]
+    assert red["observed"]["home"]["status_code"] == 200
+    assert home_url == red["observed"]["home"]["url"]

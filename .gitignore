@@ -107,6 +107,7 @@ build/live-runner-backups/
 build/live-runner-*/
 build/model-eval-*/
 build/notification/
+build/daily-content/
 build/final-drafts/
 build/deepdive-work/
 build/watcher-self-repair-smoke/
@@ -118,6 +119,7 @@ build/*.wrapper.log
 build/tts/
 build/youtube-podcast/
 build/youtube-podcast-deepdive/
+data/distribution/*.json
 build/candidates-last-good/
 build/news-grasp-deepdive-final-draft.md
 build/news-grasp-publish-final-draft.md

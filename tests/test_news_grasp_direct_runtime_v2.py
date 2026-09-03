@@ -845,3 +845,450 @@ def test_title_completion_is_separate_from_publication_status(tmp_path) -> None:
     advanced = api.advance_stage(store, run_id=run["run_id"], stage_id="title_control", writer_lease=run["writer_lease"], semantic_verifier=verifier)
     assert advanced["title_completion"] == "fulfilled"
     assert advanced["status"] != "completed"
+
+
+def _insert_started_schema_migration_journal(
+    store: object,
+    *,
+    backup_path: Path,
+    journal_id: str,
+) -> None:
+    """DDL途中停止を、V2 journalだけを残した状態として構成する。"""
+
+    with store.connect() as conn:  # type: ignore[attr-defined]
+        conn.execute(
+            """
+            INSERT INTO runtime_migration_journal(
+                journal_id, db_path, from_schema, to_schema, backup_path,
+                status, receipt_json, started_at
+            ) VALUES(?,?,?,?,?,?,?,?)
+            """,
+            (
+                journal_id,
+                str(store.db_path),  # type: ignore[attr-defined]
+                "NEWS_GRASP_DIRECT_RUNTIME_V1",
+                "NEWS_GRASP_DIRECT_RUNTIME_V2",
+                str(backup_path),
+                "started",
+                "{}",
+                "2026-09-03T06:00:00+09:00",
+            ),
+        )
+        conn.commit()
+
+
+def test_started_migration_journal_restores_valid_backup_before_retry_atomically(
+    tmp_path: Path,
+) -> None:
+    """schema不完全の中断は有効backupを同一DBへ戻してから再試行する。"""
+
+    api = importlib.import_module("tools.news_grasp_direct_runtime")
+    state = tmp_path / "state"
+    store = api.DirectRunStore(state, test_only_allow_semantic_verifier=True)
+    store.ensure_runtime_schema()
+    with store.connect() as conn:
+        conn.execute(
+            "INSERT INTO external_outbox(operation_id,run_id,side_effect_id,status) VALUES(?,?,?,?)",
+            ("fixture-outbox", "fixture-run", "fixture-side-effect", "completed"),
+        )
+        conn.commit()
+
+    backup = state / f"{store.db_path.name}.pre-daily-v2-fixture.bak"
+    _insert_started_schema_migration_journal(
+        store,
+        backup_path=backup,
+        journal_id="fixture-started-incomplete",
+    )
+    backup.write_bytes(store.db_path.read_bytes())
+    with store.connect() as conn:
+        conn.execute("DROP TABLE external_outbox")
+        conn.commit()
+
+    resumed = api.DirectRunStore(
+        state,
+        create=False,
+        test_only_allow_semantic_verifier=True,
+    )
+    result = resumed.ensure_runtime_schema()
+
+    assert result["ok"] is True
+    assert result["status"] == "migrated"
+    with sqlite3.connect(resumed.db_path) as conn:
+        recovered_row = conn.execute(
+            "SELECT status FROM external_outbox WHERE operation_id=?",
+            ("fixture-outbox",),
+        ).fetchone()
+        assert recovered_row == ("completed",)
+        journal_statuses = dict(
+            conn.execute(
+                "SELECT journal_id,status FROM runtime_migration_journal"
+            ).fetchall()
+        )
+        assert journal_statuses["fixture-started-incomplete"] == "rolled_back_recovered"
+        assert "started" not in set(journal_statuses.values())
+
+
+def test_started_migration_journal_finalizes_receipt_when_schema_is_already_complete(
+    tmp_path: Path,
+) -> None:
+    """DDL済み・receipt欠落の中断はDBを戻さずreceiptだけを確定する。"""
+
+    api = importlib.import_module("tools.news_grasp_direct_runtime")
+    state = tmp_path / "state"
+    store = api.DirectRunStore(state, test_only_allow_semantic_verifier=True)
+    store.ensure_runtime_schema()
+    backup = state / f"{store.db_path.name}.pre-daily-v2-receipt.bak"
+    backup.write_bytes(store.db_path.read_bytes())
+    with store.connect() as conn:
+        conn.execute("DELETE FROM runtime_migrations WHERE run_id='__runtime_schema__'")
+        conn.execute("CREATE TABLE current_only_fixture(value TEXT NOT NULL)")
+        conn.execute("INSERT INTO current_only_fixture(value) VALUES('keep-current-db')")
+        conn.commit()
+    _insert_started_schema_migration_journal(
+        store,
+        backup_path=backup,
+        journal_id="fixture-started-receipt-missing",
+    )
+
+    resumed = api.DirectRunStore(
+        state,
+        create=False,
+        test_only_allow_semantic_verifier=True,
+    )
+    result = resumed.ensure_runtime_schema()
+
+    assert result["ok"] is True
+    assert result["status"] == "already_migrated"
+    assert result["migrated"] is False
+    assert result["migration_receipt"]["backupPath"] == str(backup)
+    with sqlite3.connect(resumed.db_path) as conn:
+        assert conn.execute(
+            "SELECT value FROM current_only_fixture"
+        ).fetchone() == ("keep-current-db",)
+        assert conn.execute(
+            "SELECT COUNT(*) FROM runtime_migrations WHERE run_id='__runtime_schema__'"
+        ).fetchone() == (1,)
+        assert conn.execute(
+            "SELECT status FROM runtime_migration_journal WHERE journal_id=?",
+            ("fixture-started-receipt-missing",),
+        ).fetchone() == ("completed",)
+
+
+def test_started_migration_journal_with_insufficient_backup_keeps_state_unchanged(
+    tmp_path: Path,
+) -> None:
+    """復旧証拠が不足する場合はtyped Redで停止し、DB bytesを変更しない。"""
+
+    api = importlib.import_module("tools.news_grasp_direct_runtime")
+    state = tmp_path / "state"
+    store = api.DirectRunStore(state, test_only_allow_semantic_verifier=True)
+    store.ensure_runtime_schema()
+    missing_backup = state / f"{store.db_path.name}.pre-daily-v2-missing.bak"
+    with store.connect() as conn:
+        conn.execute("DROP TABLE external_outbox")
+        conn.commit()
+    _insert_started_schema_migration_journal(
+        store,
+        backup_path=missing_backup,
+        journal_id="fixture-started-no-evidence",
+    )
+    before = store.db_path.read_bytes()
+    resumed = api.DirectRunStore(
+        state,
+        create=False,
+        test_only_allow_semantic_verifier=True,
+    )
+
+    with pytest.raises(RuntimeError, match="runtime_schema_migration_backup_missing"):
+        resumed.ensure_runtime_schema()
+
+    assert resumed.db_path.read_bytes() == before
+
+
+def test_schema_preflight_terminalizes_expired_active_row_when_same_identity_is_completed(
+    tmp_path: Path,
+) -> None:
+    """completed済みidentityへ残った旧active writerはmigration時に無副作用で閉じる。"""
+    api = importlib.import_module("tools.news_grasp_direct_runtime")
+    verifier = _Verifier()
+    state_root = tmp_path / "state"
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    store = api.DirectRunStore(
+        state_root,
+        semantic_verifier=verifier,
+        test_only_allow_semantic_verifier=True,
+    )
+    completed = api.start_run(
+        store,
+        cwd=repo,
+        issue_date="2026-09-01",
+        run_intent=api.RUN_INTENT,
+        manifest_id="f" * 64,
+    )
+    with sqlite3.connect(store.db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        source = dict(
+            conn.execute(
+                "SELECT * FROM runs WHERE run_id=?",
+                (completed["run_id"],),
+            ).fetchone()
+        )
+        conn.execute(
+            "UPDATE runs SET status='completed', completed_at='2026-09-01T00:45:00+00:00' WHERE run_id=?",
+            (completed["run_id"],),
+        )
+        conn.execute("DROP INDEX runs_active_identity_uq")
+        source.update(
+            {
+                "run_id": "legacy-stale-active",
+                "generation": int(source["generation"]) + 1,
+                "status": "active",
+                "lease_until": "2026-09-01T00:00:00+00:00",
+                "completed_at": "",
+                "external_started_at": "",
+            }
+        )
+        columns = list(source)
+        conn.execute(
+            f"INSERT INTO runs({','.join(columns)}) VALUES({','.join('?' for _ in columns)})",
+            tuple(source[column] for column in columns),
+        )
+        conn.commit()
+
+    resumed = api.DirectRunStore(
+        state_root,
+        semantic_verifier=verifier,
+        test_only_allow_semantic_verifier=True,
+    )
+    assert resumed.ensure_runtime_schema()["ok"] is True
+
+    with sqlite3.connect(store.db_path) as conn:
+        stale = conn.execute(
+            "SELECT status FROM runs WHERE run_id='legacy-stale-active'"
+        ).fetchone()
+        assert stale == ("stale_writer_rejected",)
+        assert conn.execute(
+            "SELECT COUNT(*) FROM external_outbox WHERE run_id='legacy-stale-active'"
+        ).fetchone() == (0,)
+
+
+def test_finalizer_crash_resumes_same_nonce_without_public_reprobe_or_external_resend(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """admission後crashは六operationを再実行せず同じnonceで完了だけ再開する。"""
+
+    from datetime import datetime, timedelta
+
+    api = importlib.import_module("tools.news_grasp_direct_runtime")
+    daily = importlib.import_module("tools.news_grasp_daily_gate")
+
+    class Clock:
+        def __init__(self) -> None:
+            self.value = datetime.fromisoformat("2026-09-04T06:00:00+09:00")
+
+        def __call__(self) -> datetime:
+            return self.value
+
+    clock = Clock()
+    state = tmp_path / "state"
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    store = api.DirectRunStore(
+        state,
+        clock=clock,
+        lease_ttl=timedelta(minutes=10),
+        test_only_allow_semantic_verifier=True,
+    )
+    handler_calls: list[str] = []
+
+    def handler(context: dict[str, object]) -> dict[str, object]:
+        operation_id = str(context["operation_id"])
+        handler_calls.append(operation_id)
+        if operation_id != "consumer_public_verification":
+            return {
+                "schemaVersion": f"FIXTURE_{operation_id.upper()}_V1",
+                "ok": True,
+                "status": "verified",
+                "operation_id": operation_id,
+            }
+        run = api.inspect_run(store, run_id=str(context["run_id"]))
+        freshness = {
+            "runId": run["run_id"],
+            "issueDate": run["issue_date"],
+            "runIntent": run["run_intent"],
+            "generation": run["generation"],
+            "manifestId": run["manifest_id"],
+            "fencingBindingHash": api.fencing_binding_hash(
+                run_id=run["run_id"],
+                generation=run["generation"],
+                writer_lease=str(context["writer_lease"]),
+                fencing_token=int(context["fencing_token"]),
+            ),
+            "updatedAt": str((context.get("run") or {}).get("updated_at") or ""),
+            "observedAt": api._iso(clock.value),
+            "observationNonce": "fixture-finalizer-crash-observation",
+        }
+        return {
+            "schemaVersion": api.CONSUMER_PUBLIC_VERIFICATION_RECEIPT_SCHEMA,
+            "ok": True,
+            "status": "verified",
+            "operation_id": operation_id,
+            "observation": {
+                "schemaVersion": "NEWS_GRASP_PUBLIC_OBSERVATION_V2",
+                "ok": True,
+                "status": "verified",
+                "freshnessBinding": dict(freshness),
+            },
+            "freshnessBinding": freshness,
+            "observationToken": freshness["observationNonce"],
+        }
+
+    handlers = {
+        operation_id: (f"fixture.finalizer.{operation_id}", handler)
+        for operation_id in api.DAILY_OPERATION_ORDER
+    }
+    original_validator = api._daily_public_observation_receipt
+    validation_calls = 0
+
+    def crash_after_admission(**kwargs: object):
+        nonlocal validation_calls
+        validation_calls += 1
+        if validation_calls == 2:
+            raise SystemExit("fixture_crash_after_finalizer_admission")
+        return original_validator(**kwargs)
+
+    monkeypatch.setattr(api, "_daily_public_observation_receipt", crash_after_admission)
+    with pytest.raises(SystemExit, match="fixture_crash_after_finalizer_admission"):
+        daily.run_daily_sequence(
+            store=store,
+            cwd=repo,
+            issue_date="2026-09-04",
+            run_intent=api.RUN_INTENT,
+            scheduler_trigger_at="2026-09-04T06:00:00+09:00",
+            manifest_id="a" * 64,
+            runtime_generation=api.RUNTIME_SCHEMA_V2,
+            handlers=handlers,
+        )
+    monkeypatch.setattr(api, "_daily_public_observation_receipt", original_validator)
+
+    with store.connect() as conn:
+        row = conn.execute("SELECT * FROM runs").fetchone()
+        assert row is not None
+        run_id = str(row["run_id"])
+        nonce = str(row["finalization_nonce"])
+        admission = __import__("json").loads(str(row["observation_receipt_json"]))
+        assert row["status"] == "finalizing"
+        assert admission["schemaVersion"] == "NEWS_GRASP_DAILY_FINALIZER_ADMISSION_V1"
+        assert admission["nonce"] == nonce
+        conn.execute(
+            "UPDATE runs SET publish_seal_json=? WHERE run_id=?",
+            (
+                api._json_dump(
+                    {
+                        "schemaVersion": "NEWS_GRASP_PUBLISH_SEAL_V1",
+                        "runId": run_id,
+                        "fencingToken": int(row["fencing_token"]),
+                    }
+                ),
+                run_id,
+            ),
+        )
+        conn.execute(
+            "INSERT INTO external_outbox(operation_id,run_id,logical_operation_id,side_effect_id,status) "
+            "VALUES(?,?,?,?,?)",
+            ("fixture-external", run_id, "fixture-external", "git_push", "completed"),
+        )
+        conn.commit()
+
+    clock.value += timedelta(minutes=11)
+    tampered = {**admission, "consumerReceiptHash": "0" * 64}
+    with store.connect() as conn:
+        conn.execute(
+            "UPDATE runs SET observation_receipt_json=? WHERE run_id=?",
+            (api._json_dump(tampered), run_id),
+        )
+        conn.commit()
+        before_invalid = tuple(
+            conn.execute(
+                "SELECT status,writer_lease,lease_until,updated_at,finalization_nonce FROM runs WHERE run_id=?",
+                (run_id,),
+            ).fetchone()
+        )
+    invalid = api.start_run(
+        store,
+        cwd=repo,
+        issue_date="2026-09-04",
+        run_intent=api.RUN_INTENT,
+        scheduler_trigger_at="2026-09-04T06:00:00+09:00",
+        runtime_generation=api.RUNTIME_SCHEMA_V2,
+    )
+    assert invalid["status"] == "blocked"
+    assert invalid["failures"] == ["finalizer_recovery_evidence_invalid"]
+    assert "writer_lease" not in invalid
+    with store.connect() as conn:
+        after_invalid = tuple(
+            conn.execute(
+                "SELECT status,writer_lease,lease_until,updated_at,finalization_nonce FROM runs WHERE run_id=?",
+                (run_id,),
+            ).fetchone()
+        )
+        assert after_invalid == before_invalid
+        conn.execute(
+            "UPDATE runs SET observation_receipt_json=? WHERE run_id=?",
+            (api._json_dump(admission), run_id),
+        )
+        conn.commit()
+
+    handler_calls.clear()
+    real_start = api.start_run
+    recovered_starts: list[dict[str, object]] = []
+
+    def observed_start(*args: object, **kwargs: object) -> dict[str, object]:
+        result = real_start(*args, **kwargs)
+        recovered_starts.append(dict(result))
+        return result
+
+    monkeypatch.setattr(api, "start_run", observed_start)
+    resumed = daily.run_daily_sequence(
+        store=store,
+        cwd=repo,
+        issue_date="2026-09-04",
+        run_intent=api.RUN_INTENT,
+        scheduler_trigger_at="2026-09-04T06:00:00+09:00",
+        runtime_generation=api.RUNTIME_SCHEMA_V2,
+        handlers=handlers,
+    )
+    monkeypatch.setattr(api, "start_run", real_start)
+
+    assert recovered_starts[0]["single_flight"] == "recovered_finalizer_receipt"
+    assert recovered_starts[0]["run_id"] == run_id
+    assert handler_calls == []
+    assert len(resumed) == len(api.DAILY_OPERATION_ORDER)
+    assert resumed[-1]["status"] == "completed"
+    assert resumed[-1]["recovery_mode"] == "finalizer_receipt_resume"
+    completed = api.inspect_run(store, run_id=run_id)
+    frozen_elapsed = completed["completion_elapsed_seconds"]
+    assert completed["status"] == "completed"
+    assert nonce
+    clock.value += timedelta(minutes=30)
+    assert api.inspect_run(store, run_id=run_id)["completion_elapsed_seconds"] == frozen_elapsed
+    with store.connect() as conn:
+        assert conn.execute("SELECT COUNT(*) FROM external_outbox WHERE run_id=?", (run_id,)).fetchone()[0] == 1
+        assert conn.execute(
+            "SELECT finalization_nonce FROM runs WHERE run_id=?", (run_id,)
+        ).fetchone()[0] == ""
+        before_count = conn.execute("SELECT COUNT(*) FROM runs").fetchone()[0]
+    duplicate = real_start(
+        store,
+        cwd=repo,
+        issue_date="2026-09-04",
+        run_intent=api.RUN_INTENT,
+        scheduler_trigger_at="2026-09-04T06:00:00+09:00",
+        runtime_generation=api.RUNTIME_SCHEMA_V2,
+    )
+    assert duplicate["status"] == "blocked"
+    assert duplicate["failures"] == ["same_issue_completed_reexecution_forbidden"]
+    with store.connect() as conn:
+        assert conn.execute("SELECT COUNT(*) FROM runs").fetchone()[0] == before_count

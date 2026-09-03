@@ -281,12 +281,16 @@ def test_ng813_runner_finalizer_consumes_only_typed_top_level_publish_commit() -
 
 
 def test_ng813_runner_passes_real_state_file_and_ops_root() -> None:
-    """primary: direct guard は canonical runtime state と明示 ops root を読む。"""
+    """primary: 単一launcherがcanonical stateを内部解決しwriter capabilityを公開しない。"""
     prompt = _automation_prompt()
     direct_branch = _direct_branch()
+    launcher = _source("tools/news_grasp_daily_launcher.py")
 
-    assert "--direct-state-root build/direct-mainline --direct-run-id" in prompt
-    assert "canonical runtime state" in prompt
+    assert "tools.news_grasp_daily_launcher" in prompt
+    assert "--direct-state-root" not in prompt
+    assert "--direct-run-id" not in prompt
+    assert "state作成・外部処理前" in prompt
+    assert "_canonical_daily_state_root()" in launcher
     assert "public verifier" in prompt
     assert "ops_root = args.ops_root.resolve(strict=True)" in direct_branch
     assert "sys.path.insert(0, str(ops_root))" in direct_branch
@@ -462,8 +466,11 @@ def test_ng813_recovery_python_entrypoints_are_isolated_direct_scripts() -> None
     assert "& $PythonExe @controlPlaneArgs" in bootstrap
     assert "from tools.news_grasp_direct_runtime import" in direct_branch
     assert "DirectRunStore(args.direct_state_root, create=False)" in direct_branch
-    assert "tools.news_grasp_daily_gate static_check" in prompt
-    assert "tools.news_grasp_daily_gate atomic_completion" in prompt
+    assert "tools.news_grasp_daily_launcher" in prompt
+    assert "static_check" in prompt
+    assert "atomic_completion" in prompt
+    assert "tools.news_grasp_daily_gate static_check" not in prompt
+    assert "tools.news_grasp_daily_gate atomic_completion" not in prompt
     assert "python -m tools.news_grasp_direct_runtime start" not in prompt
     assert "'-P' '-m' 'tools.news_grasp_recovery_receipts'" not in bootstrap
     assert "'-P' '-m' 'tools.news_grasp_recovery_receipts'" not in direct_branch

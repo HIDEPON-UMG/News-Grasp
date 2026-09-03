@@ -4,7 +4,9 @@ import argparse
 import hashlib
 import json
 import re
+import shutil
 import sys
+import tempfile
 import urllib.request
 from datetime import datetime
 from pathlib import Path
@@ -90,7 +92,7 @@ def versioned_deepdive_audio_url(date: str, mp3_path: Path) -> str:
     digest = hashlib.sha256(mp3_path.read_bytes()).hexdigest()[:12]
     return (
         f"https://github.com/{RELEASE_REPO}/releases/download/"
-        f"{RELEASE_TAG}/{date}.mp3?v={digest}"
+        f"{RELEASE_TAG}/{date}-{digest}.mp3?v={digest}"
     )
 
 
@@ -196,6 +198,26 @@ def _url_returns_200(url: str) -> bool:
         return False
 
 
+def _url_matches_sha256(url: str, expected_sha256: str) -> bool:
+    try:
+        request = urllib.request.Request(
+            url,
+            headers={"Cache-Control": "no-cache", "Pragma": "no-cache"},
+        )
+        digest = hashlib.sha256()
+        with urllib.request.urlopen(request, timeout=30) as response:
+            if response.status != 200:
+                return False
+            while True:
+                chunk = response.read(1024 * 1024)
+                if not chunk:
+                    break
+                digest.update(chunk)
+        return digest.hexdigest() == expected_sha256
+    except Exception:
+        return False
+
+
 def write_latest_audio(
     day: str,
     url: str,
@@ -246,9 +268,17 @@ def publish(
             return {"deepdive_audio_date": day, "deepdive_audio_url": url}
         if not ensure_release():
             return None
-        proc.quiet_run(["gh", "release", "upload", RELEASE_TAG, str(target), "--clobber"], timeout=GH_TIMEOUT_SEC)
         url = versioned_deepdive_audio_url(day, target)
-        if not _url_returns_200(url):
+        full_digest = hashlib.sha256(target.read_bytes()).hexdigest()
+        if not _url_matches_sha256(url, full_digest):
+            with tempfile.TemporaryDirectory(prefix="news-grasp-deepdive-audio-upload-") as raw_temp:
+                immutable_asset = Path(raw_temp) / f"{day}-{full_digest[:12]}.mp3"
+                shutil.copyfile(target, immutable_asset)
+                proc.quiet_run(
+                    ["gh", "release", "upload", RELEASE_TAG, str(immutable_asset)],
+                    timeout=GH_TIMEOUT_SEC,
+                )
+        if not _url_matches_sha256(url, full_digest):
             _record_publish_failure(RuntimeError(f"DeepDive audio URL verification failed: {url}"))
             return None
         write_latest_audio(day, url, run_id=run_id) if run_id else write_latest_audio(day, url)

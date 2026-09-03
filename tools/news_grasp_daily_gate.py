@@ -15,6 +15,7 @@ import os
 import re
 import subprocess
 import sys
+import threading
 import uuid
 from collections.abc import Callable, Mapping, Sequence
 from datetime import date, datetime, timedelta, timezone
@@ -35,6 +36,8 @@ from tools import news_grasp_direct_runtime as runtime
 
 DAILY_GATE_SCHEMA = "NEWS_GRASP_DAILY_GATE_RECEIPT_V1"
 JST = timezone(timedelta(hours=9), name="Asia/Tokyo")
+PROTECTED_RELEASE = "2026-09-02"
+PROTECTED_RELEASE_POLICY = "再生成・再アップロード・通知再送・再公開を禁止"
 DAILY_ALLOWED_SIDE_EFFECT_IDS = (
     "audio_daily_upload",
     "audio_deepdive_upload",
@@ -45,6 +48,7 @@ DAILY_ALLOWED_SIDE_EFFECT_IDS = (
     "youtube_daily_finalize",
     "youtube_deepdive_finalize",
     "notification_send",
+    "completion_attestation_publish",
 )
 
 # Installed ScheduledProductionの正規producerは、この固定registryから解決する。
@@ -53,11 +57,44 @@ DAILY_OPERATION_HANDLERS: dict[str, Callable[..., Any]] = {}
 DAILY_OPERATION_HANDLER_IDS: dict[str, str] = {}
 
 
+def protected_release_failure(
+    *,
+    repo_root: str | Path,
+    issue_date: str,
+    require_contract_integrity: bool = False,
+) -> str | None:
+    """保護済みreleaseの再実行を全公開entryで同じ規則により拒否する。"""
+
+    protected = str(issue_date or "").strip() == PROTECTED_RELEASE
+    if not protected and not require_contract_integrity:
+        return None
+    contract_path = Path(repo_root).resolve() / "config" / "news_grasp_daily_45m_contract_v1.json"
+    try:
+        raw = contract_path.read_bytes()
+        if raw.startswith(b"\xef\xbb\xbf"):
+            raise ValueError("bom")
+        contract = json.loads(raw.decode("utf-8", errors="strict"))
+        task_contract = contract["taskOperatingContract"]
+    except (OSError, UnicodeError, ValueError, KeyError, TypeError, json.JSONDecodeError):
+        return "daily_protected_release_contract_invalid"
+    if (
+        not isinstance(task_contract, Mapping)
+        or task_contract.get("schemaVersion") != "TASK_OPERATING_CONTRACT_V1"
+        or task_contract.get("protectedRelease") != PROTECTED_RELEASE
+        or task_contract.get("protectedReleasePolicy") != PROTECTED_RELEASE_POLICY
+    ):
+        return "daily_protected_release_contract_mismatch"
+    if protected:
+        return "protected_release_reexecution_forbidden"
+    return None
+
+
 def _red_result(operation_id: str, reason: str, **extra: Any) -> dict[str, Any]:
+    status = str(extra.pop("status", "red") or "red")
     return {
         "schemaVersion": DAILY_GATE_SCHEMA,
         "ok": False,
-        "status": "red",
+        "status": status,
         "operation_id": operation_id,
         "phase": operation_id,
         "failures": [reason],
@@ -195,7 +232,7 @@ def _default_static_check(**context: Any) -> dict[str, Any]:
 
 
 def _default_scoped_contract_unit(**context: Any) -> dict[str, Any]:
-    """Daily contractを同一repoから一回だけ読み、route集合を束縛する。"""
+    """署名済みpromotionまたは変更path対応testを一度だけ検証する。"""
 
     root = _context_root(context)
     path = root / "config" / "news_grasp_daily_45m_contract_v1.json"
@@ -217,6 +254,16 @@ def _default_scoped_contract_unit(**context: Any) -> dict[str, Any]:
                 failures.append("daily_contract_unknown_route_policy_invalid")
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         failures.append(f"daily_contract_read_red:{type(exc).__name__}")
+    scoped: Mapping[str, Any] = {}
+    store = context.get("store")
+    if not isinstance(store, runtime.DirectRunStore):
+        failures.append("daily_scoped_test_store_missing")
+    else:
+        from tools.news_grasp_scoped_test_broker import evaluate_scoped_contract
+
+        scoped = evaluate_scoped_contract(repo_root=root, state_root=store.state_root)
+        if scoped.get("ok") is not True:
+            failures.extend(str(item) for item in (scoped.get("failures") or ["daily_scoped_test_red"]))
     return _producer_result(
         "NEWS_GRASP_SCOPED_CONTRACT_RECEIPT_V1",
         ok=not failures,
@@ -227,6 +274,7 @@ def _default_scoped_contract_unit(**context: Any) -> dict[str, Any]:
             "contract_sha256": digest,
             "contract_schema": payload.get("schemaVersion") if isinstance(payload, Mapping) else "",
             "daily_operations": list(DAILY_OPERATIONS),
+            "scoped_test": dict(scoped),
         },
         failures=failures,
     )
@@ -352,6 +400,63 @@ def _default_current_issue_integration(**context: Any) -> dict[str, Any]:
             operation_id="current_issue_integration",
             failures=("producer_route_capability_missing",),
         )
+    content_receipt: Mapping[str, Any] = {}
+    # production current_issue_integration は検証済み既存artifactを前提にせず、
+    # 当日sourceからカテゴリ/summary/deepdive/派生成果物を一回だけ作る。
+    # test storeは既存fixture互換のため、明示seamがある場合だけ生成経路を通す。
+    content_seam = any(
+        key in context
+        for key in ("content_candidate_provider", "content_model_runner", "content_derived_builder")
+    )
+    if not store.test_only_allow_semantic_verifier or content_seam:
+        try:
+            from tools.news_grasp_daily_content import produce_current_issue
+            from tools.publish_inventory import scheduled_category_ids
+
+            content_receipt = produce_current_issue(
+                repo_root=_context_root(context),
+                issue_date=str(context.get("issue_date") or ""),
+                run_id=run_id,
+                scheduled_categories=tuple(
+                    scheduled_category_ids(str(context.get("issue_date") or ""))
+                ),
+                candidate_provider=(
+                    context.get("content_candidate_provider")
+                    if store.test_only_allow_semantic_verifier
+                    and callable(context.get("content_candidate_provider"))
+                    else None
+                ),
+                model_runner=(
+                    context.get("content_model_runner")
+                    if store.test_only_allow_semantic_verifier
+                    and callable(context.get("content_model_runner"))
+                    else None
+                ),
+                derived_builder=(
+                    context.get("content_derived_builder")
+                    if store.test_only_allow_semantic_verifier
+                    and callable(context.get("content_derived_builder"))
+                    else None
+                ),
+            )
+        except Exception as exc:  # noqa: BLE001 - canonical producer failure is typed Red.
+            return _producer_result(
+                "NEWS_GRASP_CURRENT_ISSUE_INTEGRATION_RECEIPT_V1",
+                ok=False,
+                status="red",
+                operation_id="current_issue_integration",
+                values={"content_generation": dict(content_receipt)},
+                failures=(f"content_generation_red:{type(exc).__name__}:{exc}",),
+            )
+        if content_receipt.get("ok") is not True:
+            return _producer_result(
+                "NEWS_GRASP_CURRENT_ISSUE_INTEGRATION_RECEIPT_V1",
+                ok=False,
+                status="red",
+                operation_id="current_issue_integration",
+                values={"content_generation": dict(content_receipt)},
+                failures=("content_generation_receipt_red",),
+            )
     ledger = runtime.PredicateLedger(store)
     source_base = str(context.get("source_identity") or run.get("manifest_id") or "").strip()
     if not source_base:
@@ -394,12 +499,42 @@ def _default_current_issue_integration(**context: Any) -> dict[str, Any]:
         for item in row.get("failures") or []
         if str(item).startswith("WARNING:")
     ]
+    release_receipt: Mapping[str, Any] = {}
+    release_materializer = context.get("content_release_materializer")
+    if not failures and (
+        not store.test_only_allow_semantic_verifier or callable(release_materializer)
+    ):
+        try:
+            if not callable(release_materializer):
+                from tools.news_grasp_daily_release import materialize_and_seal_release
+
+                release_materializer = materialize_and_seal_release
+            release_receipt = release_materializer(
+                store=store,
+                repo_root=_context_root(context),
+                issue_date=str(context.get("issue_date") or ""),
+                run_id=run_id,
+                run_intent=str(context.get("run_intent") or runtime.RUN_INTENT),
+                writer_lease=str(context.get("writer_lease") or ""),
+                fencing_token=int(context.get("fencing_token") or 0),
+                content_receipt=content_receipt,
+            )
+        except Exception as exc:  # noqa: BLE001 - release seal failure is typed Red.
+            failures.append(f"release_bundle_red:{type(exc).__name__}:{exc}")
+        else:
+            if release_receipt.get("ok") is not True:
+                failures.append("release_bundle_receipt_red")
     return _producer_result(
         "NEWS_GRASP_CURRENT_ISSUE_INTEGRATION_RECEIPT_V1",
         ok=not failures,
         status="verified_with_warnings" if not failures and warnings else ("verified" if not failures else "red"),
         operation_id="current_issue_integration",
-        values={"predicates": results, "warnings": warnings},
+        values={
+            "content_generation": dict(content_receipt),
+            "release_bundle": dict(release_receipt),
+            "predicates": results,
+            "warnings": warnings,
+        },
         failures=failures,
     )
 
@@ -419,6 +554,10 @@ def _default_external_publication(**context: Any) -> dict[str, Any]:
     try:
         from tools.news_grasp_daily_external import execute_external_publication
 
+        fresh_run = runtime.inspect_run(store, run_id=str(context["run_id"]))
+        publish_seal = fresh_run.get("publish_seal") if isinstance(fresh_run.get("publish_seal"), Mapping) else {}
+        start_seal = fresh_run.get("start_seal") if isinstance(fresh_run.get("start_seal"), Mapping) else {}
+
         external = execute_external_publication(
             store=store,
             run_id=str(context["run_id"]),
@@ -434,6 +573,15 @@ def _default_external_publication(**context: Any) -> dict[str, Any]:
                 "issue_date": str(context.get("issue_date") or ""),
                 "run_intent": str(context.get("run_intent") or ""),
                 "repo_root": str(_context_root(context)),
+                "run_id": str(context.get("run_id") or ""),
+                "manifest_id": str(fresh_run.get("manifest_id") or ""),
+                "bundle_id": str(publish_seal.get("bundleId") or ""),
+                "fencing_token": int(context.get("fencing_token") or 0),
+                "release_commit_sha": str(publish_seal.get("releaseCommitSha") or ""),
+                "remote_base_sha": str(start_seal.get("remoteBaseSha") or ""),
+                "exact_write_set": list(publish_seal.get("exactWriteSet") or ()),
+                "publish_seal": dict(publish_seal),
+                "start_seal": dict(start_seal),
             },
         )
     except (PermissionError, RuntimeError, ValueError) as exc:
@@ -470,6 +618,20 @@ def _default_consumer_public_verification(**context: Any) -> dict[str, Any]:
     try:
         from tools.news_grasp_direct_completion import verify_direct_public_completion
 
+        fresh_run = runtime.inspect_run(
+            context["store"],
+            run_id=str(context.get("run_id") or ""),
+        )
+        publish_seal = (
+            fresh_run.get("publish_seal")
+            if isinstance(fresh_run.get("publish_seal"), Mapping)
+            else {}
+        )
+        external_outbox = runtime.inspect_external_outbox(
+            context["store"],
+            run_id=str(context.get("run_id") or ""),
+        )
+
         observation = verify_direct_public_completion(
             repo_root=_context_root(context),
             issue_date=str(context["issue_date"]),
@@ -480,7 +642,10 @@ def _default_consumer_public_verification(**context: Any) -> dict[str, Any]:
             poll_sec=30,
             run_id=str(context.get("run_id") or ""),
             run_intent=str(context.get("run_intent") or runtime.RUN_INTENT),
-            manifest_id=str((context.get("run") or {}).get("manifest_id") or ""),
+            manifest_id=str(fresh_run.get("manifest_id") or ""),
+            bundle_id=str(publish_seal.get("bundleId") or ""),
+            release_commit_sha=str(publish_seal.get("releaseCommitSha") or ""),
+            external_outbox=external_outbox,
         )
     except Exception as exc:  # noqa: BLE001 - public verifier emits typed Red.
         return _producer_result(
@@ -491,7 +656,7 @@ def _default_consumer_public_verification(**context: Any) -> dict[str, Any]:
             failures=(f"public_verifier_error:{type(exc).__name__}",),
         )
     ok = observation.get("ok") is True
-    run = context.get("run") if isinstance(context.get("run"), Mapping) else {}
+    run = fresh_run
     observed_at = str(observation.get("observedAt") or datetime.now(JST).isoformat())
     observation_nonce = str(
         observation.get("observationToken")
@@ -504,7 +669,12 @@ def _default_consumer_public_verification(**context: Any) -> dict[str, Any]:
         "runIntent": str(context.get("run_intent") or ""),
         "generation": run.get("generation"),
         "manifestId": str(run.get("manifest_id") or context.get("manifest_id") or ""),
-        "fencingToken": int(context.get("fencing_token") or 0),
+        "fencingBindingHash": runtime.fencing_binding_hash(
+            run_id=str(context.get("run_id") or ""),
+            generation=int(run.get("generation") or 0),
+            writer_lease=str(context.get("writer_lease") or ""),
+            fencing_token=int(context.get("fencing_token") or 0),
+        ),
         "updatedAt": str(run.get("updated_at") or ""),
         "observedAt": observed_at,
         "observationNonce": observation_nonce,
@@ -778,46 +948,33 @@ def _resolve_run(
             return None, "daily_run_identity_mismatch"
         state["writer_lease"] = lease
         return state, None
-    active = runtime.get_active_run(
+    # 観測lookup→startのTOCTOUを作らない。単一BEGIN IMMEDIATEを持つ
+    # start_runだけがnew/attach/expired-owner recoveryを決定する。
+    started = runtime.start_run(
         store,
         automation_id=automation_id,
+        cwd=cwd,
         issue_date=issue_date,
         run_intent=run_intent,
-        include_writer=False,
+        manifest_id=manifest_id,
+        manifest_reservation_id=manifest_reservation_id,
+        scheduler_trigger_at=scheduler_trigger_at,
+        source_baseline=source_baseline,
+        runtime_generation=runtime_generation,
+        remote_base_sha=remote_base_sha,
+        allowed_side_effect_ids=list(allowed_side_effect_ids),
     )
-    if active is not None:
-        # 既存writerをobserverへ再公開しない。継続workerは明示leaseを持つ
-        # 同一process/automation contextとしてrun_id経路を使わなければならない。
+    if started.get("status") == "blocked":
+        return None, str((started.get("failures") or ["daily_run_blocked"])[0])
+    if (
+        str(started.get("status") or "") in {"active", "executing", "finalizing"}
+        and started.get("writer_lease")
+        and int(started.get("fencing_token") or 0) > 0
+    ):
+        return started, None
+    if started.get("status") == "attached":
         return None, "daily_writer_lease_required_for_existing_run"
-    if active is None:
-        started = runtime.start_run(
-            store,
-            automation_id=automation_id,
-            cwd=cwd,
-            issue_date=issue_date,
-            run_intent=run_intent,
-            manifest_id=manifest_id,
-            manifest_reservation_id=manifest_reservation_id,
-            scheduler_trigger_at=scheduler_trigger_at,
-            source_baseline=source_baseline,
-            runtime_generation=runtime_generation,
-            remote_base_sha=remote_base_sha,
-            allowed_side_effect_ids=list(allowed_side_effect_ids),
-        )
-        if started.get("status") == "blocked":
-            return None, str((started.get("failures") or ["daily_run_blocked"])[0])
-        if str(started.get("status") or "") in {"active", "executing", "finalizing"} and started.get("writer_lease"):
-            return started, None
-        active = runtime.get_active_run(
-            store,
-            automation_id=automation_id,
-            issue_date=issue_date,
-            run_intent=run_intent,
-            include_writer=False,
-        )
-    if active is None:
-        return None, "daily_active_run_missing"
-    return active, None
+    return None, "daily_active_run_missing"
 
 
 def _receipt_projection(
@@ -908,6 +1065,16 @@ def run_daily_operation(
     if store is None or not isinstance(store, runtime.DirectRunStore):
         return _red_result(operation_id, "daily_execution_store_required", authorization=dict(authorization))
 
+    # writer capabilityは開始processが一度だけ受け取り、後続processへ明示継承する。
+    # DB observerからlease/fenceを再取得する経路はsingle-flightの所有境界を壊す。
+    creates_run = run_id is None
+    if creates_run and operation_id != DAILY_OPERATIONS[0]:
+        return _red_result(operation_id, "daily_writer_capability_required", authorization=dict(authorization))
+    if run_id is not None and (not str(writer_lease or "").strip() or fencing_token is None):
+        return _red_result(operation_id, "daily_writer_capability_incomplete", authorization=dict(authorization))
+    if creates_run and (writer_lease is not None or fencing_token is not None):
+        return _red_result(operation_id, "daily_writer_capability_inconsistent", authorization=dict(authorization))
+
     selected_handler, handler_id = _handler_spec(operation_id, handlers)
     if selected_handler is None:
         # 明示run_idのretryは既存receiptをauthorityとし、handlerを再実行しない。
@@ -921,6 +1088,15 @@ def run_daily_operation(
 
     issue = issue_date or _issue_date_default()
     requested_cwd = cwd or Path.cwd()
+    protected_failure = protected_release_failure(repo_root=requested_cwd, issue_date=issue)
+    if protected_failure:
+        return _red_result(
+            operation_id,
+            protected_failure,
+            protected_release=PROTECTED_RELEASE,
+            protected_release_policy=PROTECTED_RELEASE_POLICY,
+            exact_successor="explicit_new_release_authority_required",
+        )
     state, failure = _resolve_run(
         store,
         run_id=run_id,
@@ -1052,9 +1228,49 @@ def run_daily_operation(
         return _receipt_projection(claim["receipt"], authorization=authorization, operation_id=operation_id, expected=expected)
     if claim.get("status") != "claimed":
         return _red_result(operation_id, "daily_operation_claim_not_owned", authorization=dict(authorization), claim=claim)
+
+    def _release_claim(reason: str) -> None:
+        runtime.release_daily_operation_claim(
+            store,
+            run_id=active_run_id,
+            writer_lease=lease,
+            operation_id=operation_id,
+            input_hash=effective_hash,
+            handler_id=handler_id,
+            reason=reason,
+            fencing_token=effective_fencing_token,
+        )
+
+    heartbeat_stop = threading.Event()
+    heartbeat_failures: list[str] = []
+
+    def _heartbeat() -> None:
+        interval = max(1.0, min(30.0, float(store.lease_ttl.total_seconds()) / 3.0))
+        while not heartbeat_stop.wait(interval):
+            try:
+                runtime.renew_daily_writer_lease(
+                    store,
+                    run_id=active_run_id,
+                    writer_lease=lease,
+                    fencing_token=effective_fencing_token,
+                )
+            except Exception as exc:  # noqa: BLE001 - owner loss is typed Red
+                heartbeat_failures.append(type(exc).__name__)
+                heartbeat_stop.set()
+                return
+
+    heartbeat_thread = threading.Thread(
+        target=_heartbeat,
+        name=f"news-grasp-lease-{operation_id}",
+        daemon=True,
+    )
+    heartbeat_thread.start()
+
     try:
         produced = _invoke_handler(selected_handler, operation_context)
     except Exception as exc:  # noqa: BLE001 - handler fault is a typed producer Red.
+        heartbeat_stop.set()
+        heartbeat_thread.join(timeout=5.0)
         try:
             runtime.record_timing_event(
                 store,
@@ -1068,10 +1284,27 @@ def run_daily_operation(
             )
         except (PermissionError, RuntimeError, ValueError):
             pass
+        try:
+            _release_claim(f"handler_error:{type(exc).__name__}")
+        except (PermissionError, RuntimeError, ValueError):
+            pass
         return _red_result(
             operation_id,
             "daily_operation_handler_error",
             error_type=type(exc).__name__,
+            authorization=dict(authorization),
+        )
+    heartbeat_stop.set()
+    heartbeat_thread.join(timeout=5.0)
+    if heartbeat_thread.is_alive() or heartbeat_failures:
+        try:
+            _release_claim("daily_writer_heartbeat_red")
+        except (PermissionError, RuntimeError, ValueError):
+            pass
+        return _red_result(
+            operation_id,
+            "daily_writer_heartbeat_red",
+            heartbeat_failures=list(heartbeat_failures),
             authorization=dict(authorization),
         )
     producer, producer_failure = _validate_producer_receipt(produced)
@@ -1089,6 +1322,24 @@ def run_daily_operation(
             )
         except (PermissionError, RuntimeError, ValueError):
             pass
+        try:
+            _release_claim(producer_failure or "producer_receipt_invalid")
+        except (PermissionError, RuntimeError, ValueError):
+            pass
+        if (
+            operation_id == "external_publication"
+            and isinstance(produced, Mapping)
+            and str(produced.get("status") or "") == "reconcile_required"
+        ):
+            return _red_result(
+                operation_id,
+                str((produced.get("failures") or ["external_reconcile_required"])[0]),
+                status="reconcile_required",
+                exact_successor=str(produced.get("exact_successor") or "external_reconcile"),
+                outbox=dict(produced),
+                slo_dispatch=dict(admission),
+                authorization=dict(authorization),
+            )
         return _red_result(
             operation_id,
             producer_failure or "daily_operation_producer_receipt_invalid",
@@ -1117,6 +1368,10 @@ def run_daily_operation(
                 evidence={"operation_id": operation_id, "phase": "daily_operation", "reason": str(exc)},
                 fencing_token=effective_fencing_token,
             )
+        except (PermissionError, RuntimeError, ValueError):
+            pass
+        try:
+            _release_claim(str(exc))
         except (PermissionError, RuntimeError, ValueError):
             pass
         return _red_result(
@@ -1166,15 +1421,93 @@ def run_daily_sequence(
     run_intent: str = runtime.RUN_INTENT,
     automation_id: str = runtime.AUTOMATION_ID,
     scheduler_trigger_at: str | None = None,
+    manifest_id: str = "",
+    manifest_reservation_id: str = "",
+    source_baseline: str = "",
+    runtime_generation: str = runtime.RUNTIME_SCHEMA_V2,
+    remote_base_sha: str = "",
+    allowed_side_effect_ids: Sequence[str] = (),
     context: Mapping[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
-    """六operationを順序・exactly onceでhandler実行する。"""
+    """六operationを一process内の同一writerで順序どおり一回だけ実行する。"""
 
     if store is None:
         return [_red_result("", "daily_execution_store_required")]
+    issue = issue_date or _issue_date_default()
+    requested_cwd = cwd or Path.cwd()
+    protected_failure = protected_release_failure(repo_root=requested_cwd, issue_date=issue)
+    if protected_failure:
+        return [
+            _red_result(
+                "static_check",
+                protected_failure,
+                protected_release=PROTECTED_RELEASE,
+                protected_release_policy=PROTECTED_RELEASE_POLICY,
+                exact_successor="explicit_new_release_authority_required",
+            )
+        ]
+    state, failure = _resolve_run(
+        store,
+        run_id=None,
+        writer_lease=None,
+        cwd=requested_cwd,
+        issue_date=issue,
+        run_intent=run_intent,
+        automation_id=automation_id,
+        scheduler_trigger_at=scheduler_trigger_at,
+        manifest_id=manifest_id,
+        manifest_reservation_id=manifest_reservation_id,
+        source_baseline=source_baseline,
+        runtime_generation=runtime_generation,
+        remote_base_sha=remote_base_sha,
+        allowed_side_effect_ids=allowed_side_effect_ids,
+    )
+    if state is None:
+        return [_red_result("static_check", failure or "daily_run_resolution_failed")]
+    sequence_run_id = str(state.get("run_id") or "")
+    sequence_writer_lease = str(state.get("writer_lease") or "")
+    sequence_fencing_token = int(state.get("fencing_token") or 0)
+    if not sequence_run_id or not sequence_writer_lease or sequence_fencing_token <= 0:
+        return [_red_result("static_check", "daily_active_writer_missing")]
+    if state.get("single_flight") == "recovered_finalizer_receipt":
+        # 六operationは既にatomic receipt化済みであり、再度handler/admissionへ
+        # 通すとpredicate重複とupdated_at driftを作る。保存済み六receiptを読み、
+        # final transactionだけを同じnonceでresumeする。
+        recovered_receipts = [
+            runtime.get_daily_operation_receipt(
+                store,
+                run_id=sequence_run_id,
+                operation_id=operation_id,
+            )
+            for operation_id in DAILY_OPERATIONS
+        ]
+        if any(receipt is None for receipt in recovered_receipts):
+            return [_red_result("atomic_completion", "finalizer_recovery_operation_receipt_missing")]
+        try:
+            finalized = runtime.finalize_public_completion(
+                store,
+                run_id=sequence_run_id,
+                writer_lease=sequence_writer_lease,
+                exact_successor="public_completion",
+                fencing_token=sequence_fencing_token,
+            )
+        except (PermissionError, RuntimeError, ValueError) as exc:
+            return [_red_result("atomic_completion", f"daily_finalizer_resume_red:{exc}")]
+        projected = [dict(receipt or {}) for receipt in recovered_receipts]
+        projected[-1] = {
+            **projected[-1],
+            **dict(finalized),
+            "schemaVersion": DAILY_GATE_SCHEMA,
+            "ok": finalized.get("ok") is True and finalized.get("status") == "completed",
+            "status": finalized.get("status") or "red",
+            "operation_id": "atomic_completion",
+            "phase": "atomic_completion",
+            "recovery_mode": "finalizer_receipt_resume",
+        }
+        return projected
     receipts: list[dict[str, Any]] = []
     for operation_id in DAILY_OPERATIONS:
-        command = command_factory(operation_id) if callable(command_factory) else None
+        command = command_factory(operation_id) if callable(command_factory) else _canonical_argv(operation_id)
         selected_handlers = handlers
         if callable(handler_factory):
             produced_handler = handler_factory(operation_id)
@@ -1184,16 +1517,63 @@ def run_daily_sequence(
             command=command,
             completed_operations=[item["operation_id"] for item in receipts if item.get("ok") is True],
             store=store,
+            run_id=sequence_run_id,
+            writer_lease=sequence_writer_lease,
             cwd=cwd,
             issue_date=issue_date,
             run_intent=run_intent,
             automation_id=automation_id,
             scheduler_trigger_at=scheduler_trigger_at,
+            manifest_id=manifest_id,
+            manifest_reservation_id=manifest_reservation_id,
+            source_baseline=source_baseline,
+            runtime_generation=runtime_generation,
+            remote_base_sha=remote_base_sha,
+            allowed_side_effect_ids=allowed_side_effect_ids,
             context=context,
             handlers=selected_handlers,
+            route_capability=build_daily_route_capability(
+                operation_id,
+                runtime_generation=runtime_generation,
+            ),
+            fencing_token=sequence_fencing_token,
         )
         receipts.append(result)
         if result.get("ok") is not True:
+            # provider結果が曖昧なexternal publicationだけ、同一writer・同一
+            # input hashでread-only reconcileを一回行う。二回目もRedなら終了し、
+            # provider callの再送へは進まない。
+            if (
+                operation_id == "external_publication"
+                and str(result.get("status") or "") == "reconcile_required"
+                and bool((result.get("slo_dispatch") or {}).get("retry_allowed", True))
+            ):
+                retry = run_daily_operation(
+                    operation_id,
+                    command=command,
+                    completed_operations=[item["operation_id"] for item in receipts[:-1] if item.get("ok") is True],
+                    store=store,
+                    run_id=sequence_run_id,
+                    writer_lease=sequence_writer_lease,
+                    cwd=cwd,
+                    issue_date=issue_date,
+                    run_intent=run_intent,
+                    automation_id=automation_id,
+                    scheduler_trigger_at=scheduler_trigger_at,
+                    manifest_id=manifest_id,
+                    manifest_reservation_id=manifest_reservation_id,
+                    source_baseline=source_baseline,
+                    runtime_generation=runtime_generation,
+                    remote_base_sha=remote_base_sha,
+                    allowed_side_effect_ids=allowed_side_effect_ids,
+                    context=context,
+                    handlers=selected_handlers,
+                    route_capability=build_daily_route_capability(operation_id, runtime_generation=runtime_generation),
+                    fencing_token=sequence_fencing_token,
+                )
+                receipts[-1] = retry
+                if retry.get("ok") is True:
+                    continue
             break
     return receipts
 
@@ -1229,20 +1609,47 @@ def _git_ref_sha(root: Path, ref: str) -> str:
     return value if completed.returncode == 0 and re.fullmatch(r"[0-9a-f]{40}", value) else ""
 
 
+def _git_is_ancestor(root: Path, candidate: str, descendant: str) -> bool:
+    """指定SHAの祖先関係をgitのexit codeだけで確認する。"""
+
+    if not re.fullmatch(r"[0-9a-f]{40}", candidate) or not re.fullmatch(r"[0-9a-f]{40}", descendant):
+        return False
+    try:
+        completed = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", candidate, descendant],
+            cwd=str(root),
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+            errors="strict",
+            timeout=10,
+            check=False,
+            shell=False,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
+    except (OSError, UnicodeError, subprocess.TimeoutExpired):
+        return False
+    return completed.returncode == 0
+
+
 def resolve_daily_identity_context(*, repo_root: Path, issue_date: str) -> dict[str, Any]:
     """自然CLIが開始前に必要なseal材料を一度だけ解決する。
 
-    任意のcaller JSONやhandlerではなく、environmentとcanonical manifest/gitの
+    任意のcaller JSON、環境変数、handlerではなく、canonical manifest/gitの
     read-only観測からのみ値を得る。欠落は推測で埋めず、呼び出し側がRedとして
     停止できる形で返す。
     """
 
     failures: list[str] = []
-    observed_manifest_id = os.environ.get("NEWS_GRASP_MANIFEST_ID", "").strip().casefold()
-    source_baseline = os.environ.get("NEWS_GRASP_SOURCE_BASELINE", "").strip().casefold()
-    remote_base_sha = os.environ.get("NEWS_GRASP_REMOTE_BASE_SHA", "").strip().casefold()
-    allowed_raw = os.environ.get("NEWS_GRASP_ALLOWED_SIDE_EFFECT_IDS", "")
-    allowed_side_effect_ids = [item.strip() for item in allowed_raw.split(",") if item.strip()]
+    # seal identityは実Git/route registryだけから観測する。環境変数や既存
+    # manifestをauthorityにすると、callerがbaselineや副作用集合を差し替え、
+    # completed同日runの再実行や別bundleへのrebindを誘発できるためである。
+    observed_manifest_id = ""
+    source_baseline = ""
+    remote_base_sha = ""
+    allowed_side_effect_ids = list(DAILY_ALLOWED_SIDE_EFFECT_IDS)
     manifest: Mapping[str, Any] = {}
     try:
         from tools.news_grasp_publish_contract import load_manifest
@@ -1252,19 +1659,27 @@ def resolve_daily_identity_context(*, repo_root: Path, issue_date: str) -> dict[
             manifest = loaded
     except Exception:  # noqa: BLE001 - zero-artifact startではmanifest未作成が正規状態。
         manifest = {}
-    observed_manifest_id = observed_manifest_id or str(manifest.get("manifestId") or "").strip().casefold()
-    source_baseline = source_baseline or str(manifest.get("sourceBaseline") or "").strip().casefold()
-    remote_base_sha = remote_base_sha or _git_ref_sha(repo_root, "origin/main")
-    if not remote_base_sha:
-        remote_base_sha = _git_ref_sha(repo_root, "HEAD")
-    if not allowed_side_effect_ids:
-        allowed_side_effect_ids = list(DAILY_ALLOWED_SIDE_EFFECT_IDS)
-    if not re.fullmatch(r"[0-9a-f]{40}", source_baseline):
-        source_baseline = _git_ref_sha(repo_root, "HEAD") or source_baseline
+    observed_manifest_id = str(manifest.get("manifestId") or "").strip().casefold()
+    source_baseline = _git_ref_sha(repo_root, "HEAD")
+    observed_remote_base_sha = _git_ref_sha(repo_root, "origin/main")
+    remote_base_sha = observed_remote_base_sha
+    if not observed_remote_base_sha:
+        failures.append("remote_base_sha_unobserved")
     if not re.fullmatch(r"[0-9a-f]{40}", source_baseline):
         failures.append("source_baseline_missing")
     if not re.fullmatch(r"[0-9a-f]{40}", remote_base_sha):
         failures.append("remote_base_sha_missing")
+    head_sha = _git_ref_sha(repo_root, "HEAD")
+    if re.fullmatch(r"[0-9a-f]{40}", source_baseline) and (
+        not head_sha or not _git_is_ancestor(repo_root, source_baseline, head_sha)
+    ):
+        failures.append("source_baseline_not_ancestor")
+    if observed_remote_base_sha and remote_base_sha != observed_remote_base_sha:
+        failures.append("remote_base_sha_drift")
+    if re.fullmatch(r"[0-9a-f]{40}", remote_base_sha) and (
+        not head_sha or not _git_is_ancestor(repo_root, remote_base_sha, head_sha)
+    ):
+        failures.append("remote_base_sha_not_ancestor")
     if len(set(allowed_side_effect_ids)) != len(allowed_side_effect_ids) or not allowed_side_effect_ids:
         failures.append("allowed_side_effect_ids_missing")
     reservation_identity = {
@@ -1295,7 +1710,11 @@ def resolve_daily_identity_context(*, repo_root: Path, issue_date: str) -> dict[
     }
 
 
-def _main(argv: Sequence[str] | None = None) -> int:
+def _main(
+    argv: Sequence[str] | None = None,
+    *,
+    _test_only_allow_single_operation: bool = False,
+) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     if len(args) != 1:
         result = {
@@ -1321,6 +1740,11 @@ def _main(argv: Sequence[str] | None = None) -> int:
         )
         return 2
     operation_id = args[0]
+    if not _test_only_allow_single_operation:
+        runtime._emit_cli(
+            _red_result(operation_id, "daily_single_operation_cli_forbidden_use_sequence_launcher")
+        )
+        return 2
     try:
         state_root = Path(os.environ.get("NEWS_GRASP_STATE_ROOT", str(_default_state_root())))
         repo_root = Path(os.environ.get("NEWS_GRASP_REPO_ROOT", str(Path.cwd())))
@@ -1360,19 +1784,6 @@ def _main(argv: Sequence[str] | None = None) -> int:
                 return 2
         run_id = os.environ.get("NEWS_GRASP_RUN_ID", "").strip() or None
         writer_lease = os.environ.get("NEWS_GRASP_WRITER_LEASE", "").strip() or None
-        if run_id is None:
-            active = runtime.get_active_run(
-                store,
-                automation_id=runtime.AUTOMATION_ID,
-                issue_date=issue_date,
-                run_intent=runtime.RUN_INTENT,
-                include_writer=True,
-            )
-            if isinstance(active, Mapping):
-                run_id = str(active.get("run_id") or "").strip() or None
-                writer_lease = str(active.get("writer_lease") or "").strip() or None
-                observed_fence = int(active.get("fencing_token") or 0)
-                fencing_value = observed_fence if observed_fence > 0 else fencing_value
         # CLI subprocessには任意handlerを注入する入口を設けない。installed
         # producerが登録されていない自然canaryは明示Redとなり、認可だけで0を返さない。
         result = run_daily_operation(

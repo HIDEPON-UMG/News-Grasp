@@ -32,6 +32,20 @@ OBSERVATION_SCHEMA = "NEWS_GRASP_RUN_OBSERVATION_V1"
 PUBLIC_STATUS_VALUES = {"verified", "warning", "deferred", "blocked", "unverified"}
 JST = timezone(timedelta(hours=9), name="Asia/Tokyo")
 _MAX_ARTIFACT_BYTES = 16 * 1024 * 1024
+_EXTERNAL_OBSERVATION_KINDS = frozenset(
+    {
+        "daily_audio_state",
+        "deepdive_audio_state",
+        "youtube_daily_state",
+        "youtube_deepdive_state",
+        "playlist_state",
+        "distribution_binding",
+        "notification_v2",
+        "distribution",
+    }
+)
+_CONTENT_RECEIPT_SCHEMA = "NEWS_GRASP_MANIFEST_CONTENT_BINDING_V1"
+_DYNAMIC_CONTENT_KINDS = frozenset({"current_issue_source", "derived_public_file"})
 _MANIFEST_META_TEXT = re.compile(
     r'<meta name="news-grasp-manifest-id" content="[0-9a-f]{64}">'
 )
@@ -151,8 +165,21 @@ def _manifest_identity(value: Mapping[str, Any]) -> dict[str, Any]:
             if isinstance(row, Mapping)
         ],
         "audio": value.get("audio"),
+        "externalOperationContract": value.get("externalOperationContract"),
+        "completionAttestation": value.get("completionAttestation"),
+        "contentReceiptBinding": value.get("contentReceiptBinding"),
         "exactWriteSet": value.get("exactWriteSet"),
         "commitRole": value.get("commitRole"),
+    }
+
+
+def _content_receipt_binding_identity(value: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        "schemaVersion": value.get("schemaVersion"),
+        "issueDate": value.get("issueDate"),
+        "runId": value.get("runId"),
+        "producerReceiptSha256": value.get("producerReceiptSha256"),
+        "artifactHashes": value.get("artifactHashes"),
     }
 
 
@@ -333,8 +360,9 @@ def _reject_external_reparse_chain(path: str | Path, *, reason: str) -> None:
             raise ValueError(reason)
 
 
-def _artifact_digest(path: Path, artifact_kind: str) -> str:
-    raw = _read_regular_no_follow(path)
+def artifact_digest_bytes(raw: bytes, artifact_kind: str) -> str:
+    """producer/consumerが共有する公開artifact bytesのcanonical digest。"""
+
     if artifact_kind in {"public_home", "issue_index", "summary_html", "deepdive_html", "category_html"}:
         raw = _marker_neutral_html_bytes(raw)
     elif artifact_kind == "publish_status":
@@ -345,6 +373,10 @@ def _artifact_digest(path: Path, artifact_kind: str) -> str:
             value.pop(key, None)
         raw = _json_bytes(value)
     return hashlib.sha256(raw).hexdigest()
+
+
+def _artifact_digest(path: Path, artifact_kind: str) -> str:
+    return artifact_digest_bytes(_read_regular_no_follow(path), artifact_kind)
 
 
 def _entry(
@@ -359,7 +391,8 @@ def _entry(
 ) -> dict[str, Any]:
     normalized, absolute = _safe_repo_relative_path(root, local_path)
     self_excluded = artifact_kind == "publish_manifest"
-    exists = True if self_excluded else absolute.is_file()
+    external_observation = commit_role == "external_observation"
+    exists = True if self_excluded or external_observation else absolute.is_file()
     return {
         "localPath": normalized,
         "artifactKind": artifact_kind,
@@ -368,34 +401,170 @@ def _entry(
         "required": required,
         "commitRole": commit_role,
         "exists": exists,
-        "digest": "self_excluded" if self_excluded else (_artifact_digest(absolute, artifact_kind) if exists else "unverified"),
-        "digestAuthority": "self_excluded" if self_excluded else "artifact_bytes_marker_neutral" if artifact_kind in {"public_home", "issue_index", "summary_html", "deepdive_html", "category_html"} else "artifact_bytes",
+        "digest": (
+            "self_excluded"
+            if self_excluded
+            else f"external_outbox:{artifact_kind}"
+            if external_observation
+            else (_artifact_digest(absolute, artifact_kind) if exists else "unverified")
+        ),
+        "digestAuthority": (
+            "self_excluded"
+            if self_excluded
+            else "runtime_external_operation_receipt"
+            if external_observation
+            else "artifact_bytes_marker_neutral"
+            if artifact_kind in {"public_home", "issue_index", "summary_html", "deepdive_html", "category_html"}
+            else "artifact_bytes"
+        ),
     }
 
 
 def _load_audio(root: Path, audio_type: str, issue_date: str, run_id: str, run_intent: str) -> dict[str, Any]:
-    from tools.news_grasp_audio_projection import canonical_audio_path, load_audio_projection
+    from tools.news_grasp_audio_projection import canonical_audio_path
+    from tools.tts.publish_audio import audio_url, versioned_audio_url
+    from tools.tts.deepdive_audio import versioned_deepdive_audio_url
 
-    path = root / canonical_audio_path(audio_type)
-    if path.is_file():
-        try:
-            return load_audio_projection(path, audio_type=audio_type, run_id=run_id, run_intent=run_intent)
-        except (OSError, UnicodeError, json.JSONDecodeError, ValueError):
-            pass
-    url_name = "daily" if audio_type == "daily" else "deepdive"
+    if audio_type == "daily":
+        source = root / "build" / "tts" / f"{issue_date}.mp3"
+        public_url = versioned_audio_url(issue_date, source) if source.is_file() else audio_url(issue_date)
+        source_artifact = f"build/tts/{issue_date}.mp3"
+        provider_job = f"audio-daily/{issue_date}"
+    else:
+        source = root / "build" / "tts" / "deepdive" / f"{issue_date}.mp3"
+        public_url = (
+            versioned_deepdive_audio_url(issue_date, source)
+            if source.is_file()
+            else f"https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-deepdive/{issue_date}.mp3"
+        )
+        source_artifact = f"build/tts/deepdive/{issue_date}.mp3"
+        provider_job = f"audio-deepdive/{issue_date}"
     return {
         "schemaVersion": AUDIO_SCHEMA,
         "audioType": audio_type,
-        "sourceArtifact": "unverified",
+        "sourceArtifact": source_artifact,
         "runtimeState": canonical_audio_path(audio_type).as_posix(),
-        "provider": {"name": "unverified", "jobIdentity": "unverified"},
-        "publicUrl": f"https://hidepon-umg.github.io/News-Grasp/audio/{issue_date}-{url_name}.mp3",
-        "publicPageHref": f"https://hidepon-umg.github.io/News-Grasp/audio/{issue_date}-{url_name}.mp3",
+        "provider": {"name": "github-release", "jobIdentity": provider_job},
+        "publicUrl": public_url,
+        "publicPageHref": public_url,
         "issueDate": issue_date,
         "runId": run_id,
         "runIntent": run_intent,
-        "completionState": "unverified",
+        "completionState": "external_expected",
     }
+
+
+def _external_operation_contract(
+    root: Path,
+    *,
+    issue_date: str,
+    run_id: str,
+    run_intent: str,
+    public_base_url: str,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """manifest時点で確定可能な外部入力と最終attestation locatorを固定する。"""
+
+    source_paths = {
+        "audio_daily_upload": f"build/tts/{issue_date}.mp3",
+        "audio_deepdive_upload": f"build/tts/deepdive/{issue_date}.mp3",
+        "youtube_daily_prepare": f"build/youtube-podcast/{issue_date}.mp4",
+        "youtube_deepdive_prepare": f"build/youtube-podcast-deepdive/{issue_date}.mp4",
+        "youtube_daily_finalize": f"build/youtube-podcast/{issue_date}.mp4",
+        "youtube_deepdive_finalize": f"build/youtube-podcast-deepdive/{issue_date}.mp4",
+    }
+    input_hashes: dict[str, str] = {}
+    for relative in sorted(set(source_paths.values())):
+        candidate = root / relative
+        input_hashes[relative] = (
+            hashlib.sha256(_read_regular_no_follow(candidate, max_bytes=512 * 1024 * 1024)).hexdigest()
+            if candidate.is_file() and not candidate.is_symlink()
+            else ""
+        )
+    from tools.send_push import DEFAULT_TITLE, build_payload, default_body_for_today
+
+    weekday = datetime.fromisoformat(issue_date).weekday()
+    notification_payload = build_payload(
+        DEFAULT_TITLE,
+        default_body_for_today(weekday),
+        public_base_url.rstrip("/") + f"/{issue_date}/",
+    )
+    notification_sha256 = hashlib.sha256(notification_payload.encode("utf-8")).hexdigest()
+    operation_ids = (
+        "audio_daily_upload",
+        "audio_deepdive_upload",
+        "youtube_daily_prepare",
+        "youtube_deepdive_prepare",
+        "git_release_push",
+        "pages_deployment_wait",
+        "youtube_daily_finalize",
+        "youtube_deepdive_finalize",
+        "notification_send",
+        "completion_attestation_publish",
+    )
+    operations: list[dict[str, Any]] = []
+    for operation_id in operation_ids:
+        if operation_id in source_paths:
+            payload_authority = "sealed_external_input_sha256"
+            payload_identity = input_hashes[source_paths[operation_id]]
+        elif operation_id == "notification_send":
+            payload_authority = "canonical_notification_payload_sha256"
+            payload_identity = notification_sha256
+        elif operation_id == "completion_attestation_publish":
+            payload_authority = "prior_provider_binding_receipt_set"
+            payload_identity = ""
+        else:
+            payload_authority = "sealed_release_commit_sha256"
+            payload_identity = ""
+        operations.append(
+            {
+                "operationId": operation_id,
+                "sideEffectId": operation_id,
+                "payloadIdentityAuthority": payload_authority,
+                "payloadIdentity": payload_identity,
+            }
+        )
+    contract = {
+        "schemaVersion": "NEWS_GRASP_EXTERNAL_OPERATION_CONTRACT_V1",
+        "issueDate": issue_date,
+        "runId": run_id,
+        "runIntent": run_intent,
+        "operationIds": list(operation_ids),
+        "operations": operations,
+        "externalInputHashes": input_hashes,
+        "notificationPayloadSha256": notification_sha256,
+        "providerDeliveryAckPolicy": "unknown_unobtainable_is_neither_success_nor_failure",
+    }
+    attestation = {
+        "schemaVersion": "NEWS_GRASP_COMPLETION_ATTESTATION_CONTRACT_V1",
+        "required": True,
+        "publicUrl": (
+            "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/"
+            f"{issue_date}-{run_id}-completion.json"
+        ),
+        "hashAuthority": "external_completion_receipt",
+        "completionAuthority": "consumer-owned_public_verifier",
+        "distributionArtifacts": [
+            {
+                "artifactId": artifact_id,
+                "publicUrl": (
+                    "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/"
+                    f"{issue_date}-{run_id}-{artifact_id}.json"
+                ),
+                "hashAuthority": "public_completion_attestation",
+            }
+            for artifact_id in (
+                "distribution",
+                "distribution-binding",
+                "playlist-binding",
+                "notification-ledger",
+                "daily-audio-projection",
+                "deepdive-audio-projection",
+                "youtube-daily-state",
+                "youtube-deepdive-state",
+            )
+        ],
+    }
+    return contract, attestation
 
 
 def build_publish_manifest(
@@ -421,23 +590,78 @@ def build_publish_manifest(
         _entry(root, f"docs/{issue_date}/summary/index.html", "summary_html", base + f"{issue_date}/summary/", link_from=f"docs/{issue_date}/index.html"),
         _entry(root, f"digest/DeepDive/{issue_date}-DeepDive.md", "deepdive_source", base + f"deepdive/{issue_date}/"),
         _entry(root, f"docs/deepdive/{issue_date}/index.html", "deepdive_html", base + f"deepdive/{issue_date}/", link_from="docs/index.html"),
-        _entry(root, "build/tts/daily/latest_audio.json", "daily_audio_state", base, link_from="docs/index.html"),
-        _entry(root, "build/tts/deepdive/latest_audio.json", "deepdive_audio_state", base, link_from=f"docs/deepdive/{issue_date}/index.html"),
-        _entry(root, "build/youtube-podcast/uploads.json", "youtube_daily_state", "https://www.youtube.com/", required=True),
-        _entry(root, "build/youtube-podcast-deepdive/uploads.json", "youtube_deepdive_state", "https://www.youtube.com/", required=True),
-        _entry(root, f"build/distribution/{issue_date}/playlist.json", "playlist_state", "https://www.youtube.com/", required=True),
-        _entry(root, f"build/distribution/{issue_date}/binding.json", "distribution_binding", base, required=True),
-        _entry(root, f"build/notification/{issue_date}.json", "notification_v2", base, required=True),
+        _entry(root, "build/tts/daily/latest_audio.json", "daily_audio_state", base, link_from="docs/index.html", commit_role="external_observation"),
+        _entry(root, "build/tts/deepdive/latest_audio.json", "deepdive_audio_state", base, link_from=f"docs/deepdive/{issue_date}/index.html", commit_role="external_observation"),
+        _entry(root, "build/youtube-podcast/uploads.json", "youtube_daily_state", "https://www.youtube.com/", required=True, commit_role="external_observation"),
+        _entry(root, "build/youtube-podcast-deepdive/uploads.json", "youtube_deepdive_state", "https://www.youtube.com/", required=True, commit_role="external_observation"),
+        _entry(root, f"build/distribution/{issue_date}/playlist.json", "playlist_state", "https://www.youtube.com/", required=True, commit_role="external_observation"),
+        _entry(root, f"build/distribution/{issue_date}/binding.json", "distribution_binding", base, required=True, commit_role="external_observation"),
+        _entry(root, f"build/notification/{issue_date}.json", "notification_v2", base, required=True, commit_role="external_observation"),
         _entry(root, "docs/publish-status.json", "publish_status", base + "publish-status.json"),
-        _entry(root, f"data/distribution/{issue_date}.json", "distribution", base, required=True),
+        _entry(root, f"data/distribution/{issue_date}.json", "distribution", base, required=True, commit_role="external_observation"),
     ]
     for category_id in categories:
         entries.append(_entry(root, digest_artifact_for_category(category_id, issue_date), "category_digest", base + f"{category_id}/{issue_date}/"))
         entries.append(_entry(root, docs_artifact_for_category(category_id, issue_date), "category_html", base + f"{category_id}/{issue_date}/", link_from=f"docs/{issue_date}/index.html"))
+    # current_issue producerが発行したhash receiptから、実際に生成した公開sourceと
+    # 派生docsをexact write setへ取り込む。git statusや過去日のglobへ依存せず、
+    # 同一runが所有したbytesだけをrelease bundleへ加える。
+    content_receipt_binding: dict[str, Any] | None = None
+    content_receipt_path = root / "build" / "daily-content" / run_id / "completion.json"
+    if content_receipt_path.is_file() and not content_receipt_path.is_symlink():
+        try:
+            content_receipt_raw = _read_regular_no_follow(content_receipt_path)
+            content_receipt = json.loads(content_receipt_raw.decode("utf-8-sig"))
+        except (OSError, UnicodeError, ValueError, json.JSONDecodeError) as exc:
+            raise ValueError("manifest_content_receipt_invalid") from exc
+        if (
+            not isinstance(content_receipt, Mapping)
+            or content_receipt.get("schemaVersion") != "NEWS_GRASP_DAILY_CONTENT_RECEIPT_V1"
+            or content_receipt.get("issue_date") != issue_date
+            or content_receipt.get("run_id") != run_id
+            or content_receipt.get("ok") is not True
+        ):
+            raise ValueError("manifest_content_receipt_invalid")
+        receipt_hashes: dict[str, str] = {}
+        for field in ("artifact_hashes", "derived_artifact_hashes"):
+            value = content_receipt.get(field)
+            if not isinstance(value, Mapping):
+                raise ValueError("manifest_content_receipt_invalid")
+            for relative, digest in value.items():
+                normalized, absolute = _safe_repo_relative_path(root, str(relative))
+                if not normalized.startswith(("data/", "digest/", "docs/")) or normalized.startswith("data/distribution/"):
+                    continue
+                if not absolute.is_file() or hashlib.sha256(_read_regular_no_follow(absolute)).hexdigest() != str(digest):
+                    raise ValueError("manifest_content_receipt_drift")
+                receipt_hashes[normalized] = str(digest)
+        existing_paths = {str(row["localPath"]) for row in entries}
+        for relative in sorted(receipt_hashes):
+            if relative in existing_paths:
+                continue
+            artifact_kind = "derived_public_file" if relative.startswith("docs/") else "current_issue_source"
+            entries.append(_entry(root, relative, artifact_kind, base, required=True, commit_role="publication"))
+            existing_paths.add(relative)
+        content_receipt_binding = {
+            "schemaVersion": _CONTENT_RECEIPT_SCHEMA,
+            "issueDate": issue_date,
+            "runId": run_id,
+            "producerReceiptSha256": hashlib.sha256(content_receipt_raw).hexdigest(),
+            "artifactHashes": dict(sorted(receipt_hashes.items())),
+        }
+        content_receipt_binding["bindingSha256"] = hashlib.sha256(
+            _json_bytes(_content_receipt_binding_identity(content_receipt_binding))
+        ).hexdigest()
     audio = {
         kind: _load_audio(root, kind, issue_date, run_id, run_intent)
         for kind in ("daily", "deepdive")
     }
+    external_operation_contract, completion_attestation = _external_operation_contract(
+        root,
+        issue_date=issue_date,
+        run_id=run_id,
+        run_intent=run_intent,
+        public_base_url=base,
+    )
     identity = {
         "schemaVersion": MANIFEST_SCHEMA,
         "runId": run_id,
@@ -447,7 +671,10 @@ def build_publish_manifest(
         "scheduledCategoryIds": categories,
         "entries": entries,
         "audio": audio,
-        "exactWriteSet": sorted(row["localPath"] for row in entries),
+        "externalOperationContract": external_operation_contract,
+        "completionAttestation": completion_attestation,
+        "contentReceiptBinding": content_receipt_binding,
+        "exactWriteSet": sorted(row["localPath"] for row in entries if row["commitRole"] == "publication"),
         "commitRole": "publication",
     }
     manifest_id = hashlib.sha256(_json_bytes(_manifest_identity(identity))).hexdigest()
@@ -501,7 +728,11 @@ def verify_manifest(
         reasons.append("manifest_issue_date_invalid")
     if list(manifest.get("scheduledCategoryIds") or []) != expected_categories:
         reasons.append("manifest_schedule_mismatch")
-    expected_write_set = sorted(paths)
+    expected_write_set = sorted(
+        str(row.get("localPath") or "")
+        for row in entries
+        if isinstance(row, Mapping) and row.get("commitRole") == "publication"
+    )
     if list(manifest.get("exactWriteSet") or []) != expected_write_set:
         reasons.append("manifest_exact_write_set_mismatch")
     try:
@@ -515,19 +746,128 @@ def verify_manifest(
     except (OSError, ValueError, json.JSONDecodeError):
         canonical = {"entries": []}
         reasons.append("manifest_canonical_policy_unavailable")
+    for contract_field in ("externalOperationContract", "completionAttestation"):
+        if manifest.get(contract_field) != canonical.get(contract_field):
+            reasons.append(f"manifest_{contract_field}_mismatch")
+    external_contract = manifest.get("externalOperationContract")
+    if not isinstance(external_contract, Mapping):
+        reasons.append("manifest_external_operation_contract_missing")
+    else:
+        operation_ids = external_contract.get("operationIds")
+        operations = external_contract.get("operations")
+        if (
+            external_contract.get("schemaVersion") != "NEWS_GRASP_EXTERNAL_OPERATION_CONTRACT_V1"
+            or external_contract.get("issueDate") != issue_date
+            or external_contract.get("runId") != str(manifest.get("runId") or "")
+            or external_contract.get("runIntent") != str(manifest.get("runIntent") or "")
+            or not isinstance(operation_ids, list)
+            or not isinstance(operations, list)
+            or [row.get("operationId") for row in operations if isinstance(row, Mapping)] != operation_ids
+            or len(operation_ids) != 10
+        ):
+            reasons.append("manifest_external_operation_contract_invalid")
+    completion_contract = manifest.get("completionAttestation")
+    expected_attestation_url = (
+        "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/"
+        f"{issue_date}-{manifest.get('runId')}-completion.json"
+    )
+    if (
+        not isinstance(completion_contract, Mapping)
+        or completion_contract.get("schemaVersion") != "NEWS_GRASP_COMPLETION_ATTESTATION_CONTRACT_V1"
+        or completion_contract.get("required") is not True
+        or completion_contract.get("publicUrl") != expected_attestation_url
+        or completion_contract.get("hashAuthority") != "external_completion_receipt"
+        or completion_contract.get("completionAuthority") != "consumer-owned_public_verifier"
+        or completion_contract.get("distributionArtifacts")
+        != canonical.get("completionAttestation", {}).get("distributionArtifacts")
+    ):
+        reasons.append("manifest_completion_attestation_contract_invalid")
     policy_fields = ("localPath", "artifactKind", "publicUrl", "linkFrom", "required", "commitRole", "digestAuthority")
     expected_policy = sorted(
         tuple(row.get(field) for field in policy_fields)
         for row in canonical.get("entries") or []
-        if isinstance(row, Mapping)
+        if isinstance(row, Mapping) and row.get("artifactKind") not in _DYNAMIC_CONTENT_KINDS
     )
     observed_policy = sorted(
         tuple(row.get(field) for field in policy_fields)
         for row in entries
-        if isinstance(row, Mapping)
+        if isinstance(row, Mapping) and row.get("artifactKind") not in _DYNAMIC_CONTENT_KINDS
     )
     if observed_policy != expected_policy:
         reasons.append("manifest_entry_policy_mismatch")
+    dynamic_rows = [
+        row for row in entries
+        if isinstance(row, Mapping) and row.get("artifactKind") in _DYNAMIC_CONTENT_KINDS
+    ]
+    content_binding = manifest.get("contentReceiptBinding")
+    if dynamic_rows or content_binding is not None:
+        if not isinstance(content_binding, Mapping):
+            reasons.append("manifest_content_receipt_binding_missing")
+            content_binding = {}
+        hashes = content_binding.get("artifactHashes")
+        if not isinstance(hashes, Mapping):
+            hashes = {}
+            reasons.append("manifest_content_receipt_hashes_invalid")
+        if (
+            content_binding.get("schemaVersion") != _CONTENT_RECEIPT_SCHEMA
+            or content_binding.get("issueDate") != issue_date
+            or content_binding.get("runId") != str(manifest.get("runId") or "")
+            or re.fullmatch(r"[0-9a-f]{64}", str(content_binding.get("producerReceiptSha256") or "")) is None
+        ):
+            reasons.append("manifest_content_receipt_binding_invalid")
+        expected_binding_hash = hashlib.sha256(
+            _json_bytes(_content_receipt_binding_identity(content_binding))
+        ).hexdigest()
+        if content_binding.get("bindingSha256") != expected_binding_hash:
+            reasons.append("manifest_content_receipt_binding_hash_mismatch")
+        # receiptはcurrent issue producerが所有した全publication bytesを束縛する。
+        # その一部は固定kindのcanonical entry（Summary/Home等）、残りはdynamic
+        # entryなので、dynamicだけとの比較は集合を自己矛盾させる。
+        receipt_paths = {str(key) for key in hashes}
+        bound_rows = [
+            row
+            for row in entries
+            if isinstance(row, Mapping) and str(row.get("localPath") or "") in receipt_paths
+        ]
+        bound_paths = [str(row.get("localPath") or "") for row in bound_rows]
+        if set(bound_paths) != receipt_paths or len(bound_paths) != len(set(bound_paths)):
+            reasons.append("manifest_content_receipt_path_mismatch")
+        for row in bound_rows:
+            relative = str(row.get("localPath") or "")
+            expected_digest = str(hashes.get(relative) or "")
+            if (
+                re.fullmatch(r"[0-9a-f]{64}", expected_digest) is None
+                or row.get("exists") is not True
+                or row.get("digestAuthority")
+                != (
+                    "artifact_bytes_marker_neutral"
+                    if row.get("artifactKind") in {"public_home", "issue_index", "summary_html", "deepdive_html", "category_html"}
+                    else "artifact_bytes"
+                )
+                or row.get("digest") != expected_digest
+            ):
+                reasons.append(f"manifest_content_receipt_entry_mismatch:{relative}")
+        public_home = next(
+            (row for row in entries if isinstance(row, Mapping) and row.get("artifactKind") == "public_home"),
+            {},
+        )
+        dynamic_public_url = str(public_home.get("publicUrl") or "")
+        for row in dynamic_rows:
+            relative = str(row.get("localPath") or "")
+            expected_kind = "derived_public_file" if relative.startswith("docs/") else "current_issue_source"
+            expected_digest = str(hashes.get(relative) or "")
+            if (
+                row.get("artifactKind") != expected_kind
+                or row.get("publicUrl") != dynamic_public_url
+                or row.get("linkFrom") != ""
+                or row.get("required") is not True
+                or row.get("commitRole") != "publication"
+                or row.get("exists") is not True
+                or row.get("digestAuthority") != "artifact_bytes"
+                or re.fullmatch(r"[0-9a-f]{64}", expected_digest) is None
+                or row.get("digest") != expected_digest
+            ):
+                reasons.append(f"manifest_dynamic_content_policy_invalid:{relative}")
     if not re.fullmatch(r"[0-9a-f]{40}", str(manifest.get("sourceBaseline") or "")):
         reasons.append("manifest_source_baseline_invalid")
     else:
@@ -564,8 +904,71 @@ def verify_manifest(
                 reasons.append("manifest_source_baseline_not_ancestor")
         elif (root / ".git").exists() or (root / ".git").is_symlink():
             reasons.append("manifest_source_baseline_not_ancestor")
-    if manifest.get("audio") != canonical.get("audio"):
-        reasons.append("manifest_audio_projection_mismatch")
+    audio = manifest.get("audio")
+    if not isinstance(audio, Mapping) or set(str(key) for key in audio) != {"daily", "deepdive"}:
+        reasons.append("manifest_audio_projection_invalid")
+        audio = {}
+    for audio_type in ("daily", "deepdive"):
+        row = audio.get(audio_type) if isinstance(audio, Mapping) else None
+        if not isinstance(row, Mapping):
+            reasons.append(f"manifest_audio_projection_missing:{audio_type}")
+            continue
+        expected_source = (
+            f"build/tts/{issue_date}.mp3"
+            if audio_type == "daily"
+            else f"build/tts/deepdive/{issue_date}.mp3"
+        )
+        expected_state = (
+            "build/tts/daily/latest_audio.json"
+            if audio_type == "daily"
+            else "build/tts/deepdive/latest_audio.json"
+        )
+        expected_job = f"audio-{audio_type}/{issue_date}"
+        expected_path = (
+            f"/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/{issue_date}.mp3"
+            if audio_type == "daily"
+            else f"/HIDEPON-UMG/News-Grasp/releases/download/audio-deepdive/{issue_date}.mp3"
+        )
+        public_url = str(row.get("publicUrl") or "")
+        public_href = str(row.get("publicPageHref") or "")
+        parsed = urlsplit(public_url)
+        query_ok = not parsed.query or re.fullmatch(r"v=[0-9a-f]{12}", parsed.query) is not None
+        immutable_path = re.fullmatch(
+            re.escape(expected_path[:-4]) + r"-([0-9a-f]{12})\.mp3",
+            parsed.path,
+        )
+        query_digest = (
+            re.fullmatch(r"v=([0-9a-f]{12})", parsed.query).group(1)
+            if re.fullmatch(r"v=([0-9a-f]{12})", parsed.query or "")
+            else ""
+        )
+        path_ok = parsed.path == expected_path or immutable_path is not None
+        immutable_binding_ok = immutable_path is None or immutable_path.group(1) == query_digest
+        if (
+            row.get("schemaVersion") != AUDIO_SCHEMA
+            or row.get("audioType") != audio_type
+            or row.get("sourceArtifact") != expected_source
+            or row.get("runtimeState") != expected_state
+            or not isinstance(row.get("provider"), Mapping)
+            or row["provider"].get("name") != "github-release"
+            or row["provider"].get("jobIdentity") != expected_job
+            or parsed.scheme != "https"
+            or (parsed.hostname or "").casefold() != "github.com"
+            or not path_ok
+            or not immutable_binding_ok
+            or parsed.fragment
+            or not query_ok
+            or _audio_identity_url(public_url, base="https://github.com/")
+            != _audio_identity_url(public_href, base="https://github.com/")
+            or row.get("issueDate") != issue_date
+            or row.get("runId") != str(manifest.get("runId") or "")
+            or row.get("runIntent") != str(manifest.get("runIntent") or "")
+            or row.get("completionState") != "external_expected"
+        ):
+            reasons.append(f"manifest_audio_projection_invalid:{audio_type}")
+            # 上位consumerがaudio projection全体の不一致を安定codeで判定できる
+            # ように、詳細codeと集約codeを同時に残す。
+            reasons.append("manifest_audio_projection_mismatch")
     if require_files:
         root = Path(repo_root).resolve()
         expected_self_path = f"data/publish-manifests/{issue_date}.json"
@@ -582,6 +985,16 @@ def verify_manifest(
                 reasons.append(f"{exc}:{relative}")
                 continue
             is_canonical_self = row.get("artifactKind") == "publish_manifest" and relative == expected_self_path
+            is_external_observation = row.get("commitRole") == "external_observation"
+            if is_external_observation:
+                if (
+                    row.get("artifactKind") not in _EXTERNAL_OBSERVATION_KINDS
+                    or row.get("digestAuthority") != "runtime_external_operation_receipt"
+                    or row.get("digest") != f"external_outbox:{row.get('artifactKind')}"
+                    or relative in set(manifest.get("exactWriteSet") or [])
+                ):
+                    reasons.append(f"manifest_external_observation_policy_invalid:{relative}")
+                continue
             if row.get("digestAuthority") == "self_excluded" and not is_canonical_self:
                 reasons.append(f"manifest_self_exclusion_forbidden:{relative}")
             if is_canonical_self:
@@ -700,12 +1113,8 @@ def _audio_identity_url(value: str, *, base: str) -> str:
     port = parsed.port
     netloc = host if port is None or (parsed.scheme == "https" and port == 443) else f"{host}:{port}"
     query = parsed.query
-    if query:
-        parts = query.split("&")
-        if len(parts) == 1:
-            key, separator, _value = parts[0].partition("=")
-            if key == "v" and separator and _value:
-                query = ""
+    if re.fullmatch(r"v=[0-9a-f]{12}", query or ""):
+        query = ""
     return urlunsplit((parsed.scheme.casefold(), netloc, parsed.path or "/", query, parsed.fragment))
 
 
@@ -778,8 +1187,15 @@ def verify_semantic_pages(manifest: Mapping[str, Any], pages: Mapping[str, str])
             reasons.append("publish_status_date_mismatch")
         if status.get("manifestId") != marker:
             reasons.append("publish_status_manifest_mismatch")
-        if str(status.get("result") or "").casefold() not in {"success", "verified", "green", "published_ok"}:
+        if str(status.get("result") or "").casefold() != "publication_pending":
             reasons.append("publish_status_result_red")
+        if (
+            status.get("status") != "awaiting_external_completion_attestation"
+            or status.get("completionAuthority") != "consumer-owned_public_verifier"
+            or status.get("runId") != manifest.get("runId")
+            or status.get("runIntent") != manifest.get("runIntent")
+        ):
+            reasons.append("publish_status_completion_authority_invalid")
     return {"ok": not reasons, "status": "verified" if not reasons else "blocked", "reasonCodes": sorted(set(reasons))}
 
 

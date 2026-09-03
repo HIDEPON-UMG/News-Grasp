@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from tools import news_grasp_daily_gate as daily
+from tools import news_grasp_daily_launcher as launcher
 from tools import news_grasp_direct_runtime as runtime
 
 
@@ -19,7 +20,8 @@ def _identity() -> dict[str, object]:
     return {
         "ok": True,
         "manifest_id": "",
-        "manifest_reservation_id": "a" * 64,
+        "manifest_reservation_id": "d" * 64,
+        "observed_manifest_id": "a" * 64,
         "source_baseline": "b" * 40,
         "remote_base_sha": "c" * 40,
         "allowed_side_effect_ids": list(daily.DAILY_ALLOWED_SIDE_EFFECT_IDS),
@@ -39,41 +41,242 @@ def _installed_green(*_args: object, **_kwargs: object) -> dict[str, object]:
     }
 
 
-def test_ng_rrt_cli_carries_one_writer_across_exact_six_operation_processes(
+def test_ng_rrt_sequence_keeps_one_writer_in_memory_across_exact_six_operations(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """bearer leaseはstdoutへ出さず同一launcher processのmemoryだけで継承する。"""
+
+    store = runtime.DirectRunStore(tmp_path / "state", test_only_allow_semantic_verifier=True)
+    monkeypatch.setattr(
+        daily,
+        "_resolve_run",
+        lambda *_args, **_kwargs: (
+            {"run_id": "direct-fixture-1", "writer_lease": "secret-lease", "fencing_token": 7},
+            None,
+        ),
+    )
+    observed: list[tuple[str, str, str, int]] = []
+
+    def fake_operation(operation_id: str, **kwargs: object) -> dict[str, object]:
+        observed.append(
+            (
+                operation_id,
+                str(kwargs["run_id"]),
+                str(kwargs["writer_lease"]),
+                int(kwargs["fencing_token"]),
+            )
+        )
+        return {
+            "schemaVersion": daily.DAILY_GATE_SCHEMA,
+            "ok": True,
+            "status": "completed",
+            "operation_id": operation_id,
+            "run_id": kwargs["run_id"],
+        }
+
+    monkeypatch.setattr(daily, "run_daily_operation", fake_operation)
+    receipts = daily.run_daily_sequence(
+        store=store,
+        cwd=ROOT,
+        issue_date=ISSUE_DATE,
+        scheduler_trigger_at=TRIGGER_AT,
+    )
+
+    assert [item[0] for item in observed] == list(daily.DAILY_OPERATIONS)
+    assert {item[1:] for item in observed} == {("direct-fixture-1", "secret-lease", 7)}
+    assert "secret-lease" not in json.dumps(receipts)
+
+
+def test_ng_rrt_single_operation_cli_is_rejected_before_database_creation(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """自然CLIはcaller提供lease/capabilityなしでもexact argvから同writerへ接続する。"""
-
     state_root = tmp_path / "state"
     monkeypatch.setenv("NEWS_GRASP_STATE_ROOT", str(state_root))
     monkeypatch.setenv("NEWS_GRASP_REPO_ROOT", str(ROOT))
     monkeypatch.setenv("NEWS_GRASP_ISSUE_DATE", ISSUE_DATE)
     monkeypatch.setenv("NEWS_GRASP_SCHEDULER_TRIGGER_AT", TRIGGER_AT)
-    monkeypatch.delenv("NEWS_GRASP_DAILY_ROUTE_CAPABILITY", raising=False)
     monkeypatch.delenv("NEWS_GRASP_RUN_ID", raising=False)
     monkeypatch.delenv("NEWS_GRASP_WRITER_LEASE", raising=False)
     monkeypatch.delenv("NEWS_GRASP_FENCING_TOKEN", raising=False)
+    assert daily._main(["scoped_contract_unit"]) == 2
+    rejected = json.loads(capsys.readouterr().out)
+    assert rejected["failures"] == ["daily_single_operation_cli_forbidden_use_sequence_launcher"]
+    assert not (state_root / "direct-mainline.sqlite3").exists()
+
+
+def test_ng_rrt_launcher_runs_exact_sequence_and_never_projects_writer_capability(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(daily, "resolve_daily_identity_context", lambda **_kwargs: _identity())
-    monkeypatch.setattr(runtime, "validate_installed_automation_semantics", _installed_green)
+    monkeypatch.setattr(
+        daily,
+        "run_daily_sequence",
+        lambda **_kwargs: [
+            {
+                "schemaVersion": daily.DAILY_GATE_SCHEMA,
+                "ok": True,
+                "status": "completed",
+                "operation_id": operation,
+                "run_id": "direct-launcher-1",
+            }
+            for operation in daily.DAILY_OPERATIONS
+        ],
+    )
 
-    assert daily._main(["static_check"]) == 0
-    first = json.loads(capsys.readouterr().out)
-    assert first["ok"] is True
-    assert first["operation_id"] == "static_check"
+    result = launcher.run_sequence(
+        repo_root=ROOT,
+        state_root=tmp_path / "state",
+        issue_date=ISSUE_DATE,
+        scheduler_trigger_at=TRIGGER_AT,
+    )
 
-    assert daily._main(["scoped_contract_unit"]) == 0
-    second = json.loads(capsys.readouterr().out)
-    assert second["ok"] is True
-    assert second["run_id"] == first["run_id"]
+    assert result["ok"] is True
+    assert result["operation_count"] == 6
+    assert [row["operation_id"] for row in result["operation_receipts"]] == list(
+        daily.DAILY_OPERATIONS
+    )
+    assert launcher._contains_writer_capability(result) is False
 
-    store = runtime.DirectRunStore(state_root)
-    inspected = runtime.inspect_run(store, run_id=first["run_id"])
-    assert [row["operation_id"] for row in inspected["daily_operations"]] == [
-        "static_check",
-        "scoped_contract_unit",
-    ]
+
+@pytest.mark.parametrize(
+    "capability_key",
+    ["writer_lease", "writerLease", "fencing_token", "fencingToken", "continuation_capability"],
+)
+def test_ng_rrt_launcher_rejects_nested_writer_capability_projection(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capability_key: str,
+) -> None:
+    monkeypatch.setattr(daily, "resolve_daily_identity_context", lambda **_kwargs: _identity())
+    monkeypatch.setattr(
+        daily,
+        "run_daily_sequence",
+        lambda **_kwargs: [
+            {
+                "ok": True,
+                "status": "completed",
+                "operation_id": daily.DAILY_OPERATIONS[-1],
+                "run_id": "direct-launcher-2",
+                "nested": {capability_key: "must-not-leak"},
+            }
+        ]
+        * len(daily.DAILY_OPERATIONS),
+    )
+
+    result = launcher.run_sequence(
+        repo_root=ROOT,
+        state_root=tmp_path / "state",
+        issue_date=ISSUE_DATE,
+        scheduler_trigger_at=TRIGGER_AT,
+    )
+
+    assert result["ok"] is False
+    assert result["failures"] == ["daily_writer_capability_projection_violation"]
+    assert "must-not-leak" not in json.dumps(result)
+
+
+def test_ng_rrt_protected_20260902_is_rejected_before_identity_or_state(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[str] = []
+    monkeypatch.setattr(
+        daily,
+        "resolve_daily_identity_context",
+        lambda **_kwargs: calls.append("identity") or _identity(),
+    )
+    state_root = tmp_path / "state"
+
+    result = launcher.run_sequence(
+        repo_root=ROOT,
+        state_root=state_root,
+        issue_date="2026-09-02",
+        scheduler_trigger_at="2026-09-02T06:00:00+09:00",
+    )
+
+    assert result["ok"] is False
+    assert result["failures"] == ["protected_release_reexecution_forbidden"]
+    assert result["exact_successor"] == "explicit_new_release_authority_required"
+    assert calls == []
+    assert not state_root.exists()
+
+
+def test_ng_rrt_launcher_cli_ignores_state_root_environment_redirect(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    assert "news_grasp_release_gate" not in Path(launcher.__file__).read_text(
+        encoding="utf-8-sig"
+    )
+    trusted_local = tmp_path / "known-folder"
+    trusted_local.mkdir()
+    attacker_state = tmp_path / "attacker-state"
+    observed: dict[str, object] = {}
+    monkeypatch.setattr(
+        launcher,
+        "_canonical_daily_state_root",
+        lambda: trusted_local / "News-Grasp" / "direct-mainline",
+    )
+    monkeypatch.setenv("NEWS_GRASP_STATE_ROOT", str(attacker_state))
+    # launcherのPython固定入口を通過させ、state rootのauthorityだけを検証する。
+    monkeypatch.setattr(launcher.sys, "executable", daily.DAILY_PYTHON)
+    monkeypatch.setattr(
+        launcher,
+        "run_sequence",
+        lambda **kwargs: observed.update(kwargs)
+        or {
+            "schemaVersion": launcher.SEQUENCE_SCHEMA,
+            "ok": False,
+            "status": "red",
+            "failures": ["fixture_stop"],
+        },
+    )
+
+    assert launcher._main([]) == 1
+    capsys.readouterr()
+    assert observed["state_root"] == trusted_local / "News-Grasp" / "direct-mainline"
+    assert observed["state_root"] != attacker_state
+
+
+@pytest.mark.parametrize(
+    ("poison_source_baseline", "poison_remote_base_sha"),
+    [
+        ("b" * 40, "d" * 40),
+        ("b" * 40, "e" * 40),
+    ],
+)
+def test_ng_rrt_identity_preflight_ignores_caller_baseline_and_remote_env(
+    monkeypatch: pytest.MonkeyPatch,
+    poison_source_baseline: str,
+    poison_remote_base_sha: str,
+) -> None:
+    """source/remote identityはcaller環境変数ではなく実Git観測だけを採る。"""
+
+    monkeypatch.setenv("NEWS_GRASP_SOURCE_BASELINE", poison_source_baseline)
+    monkeypatch.setenv("NEWS_GRASP_REMOTE_BASE_SHA", poison_remote_base_sha)
+    monkeypatch.setattr(
+        daily,
+        "_git_ref_sha",
+        lambda _root, ref: "c" * 40 if ref == "origin/main" else "e" * 40,
+    )
+    monkeypatch.setattr(
+        daily,
+        "_git_is_ancestor",
+        lambda _root, _candidate, _descendant: True,
+    )
+
+    result = daily.resolve_daily_identity_context(repo_root=ROOT, issue_date=ISSUE_DATE)
+
+    assert result["ok"] is True
+    assert result["source_baseline"] == "e" * 40
+    assert result["remote_base_sha"] == "c" * 40
+    assert result["source_baseline"] != poison_source_baseline
+    assert result["remote_base_sha"] != poison_remote_base_sha
 
 
 def test_ng_rrt_cli_rejects_windowsapps_or_noncanonical_python_before_state(
@@ -378,7 +581,12 @@ def test_ng_t_rrt_21_daily_finalizer_consumes_fresh_public_verifier_once_and_fre
                 "runIntent": runtime.RUN_INTENT,
                 "generation": run["generation"],
                 "manifestId": run["manifest_id"],
-                "fencingToken": run["fencing_token"],
+                "fencingBindingHash": runtime.fencing_binding_hash(
+                    run_id=run["run_id"],
+                    generation=run["generation"],
+                    writer_lease=run["writer_lease"],
+                    fencing_token=run["fencing_token"],
+                ),
                 "observedAt": runtime._iso(clock.value),
                 "updatedAt": consumer_updated_at,
                 "observationNonce": "fixture-public-observation-1",
@@ -526,7 +734,12 @@ def test_ng_t_rrt_22_daily_cli_calls_unique_finalizer_and_emits_one_line_complet
                 "runIntent": runtime.RUN_INTENT,
                 "generation": run["generation"],
                 "manifestId": run["manifest_id"],
-                "fencingToken": run["fencing_token"],
+                "fencingBindingHash": runtime.fencing_binding_hash(
+                    run_id=run["run_id"],
+                    generation=run["generation"],
+                    writer_lease=run["writer_lease"],
+                    fencing_token=run["fencing_token"],
+                ),
                 "observedAt": runtime._iso(clock.value),
                 "updatedAt": consumer_updated_at,
                 "observationNonce": "fixture-cli-public-observation-1",
@@ -592,9 +805,9 @@ def test_ng_t_rrt_22_daily_cli_calls_unique_finalizer_and_emits_one_line_complet
     monkeypatch.setenv("NEWS_GRASP_REPO_ROOT", str(repo))
     monkeypatch.setenv("NEWS_GRASP_ISSUE_DATE", ISSUE_DATE)
     monkeypatch.setenv("NEWS_GRASP_SCHEDULER_TRIGGER_AT", TRIGGER_AT)
-    monkeypatch.delenv("NEWS_GRASP_RUN_ID", raising=False)
-    monkeypatch.delenv("NEWS_GRASP_WRITER_LEASE", raising=False)
-    monkeypatch.delenv("NEWS_GRASP_FENCING_TOKEN", raising=False)
+    monkeypatch.setenv("NEWS_GRASP_RUN_ID", run["run_id"])
+    monkeypatch.setenv("NEWS_GRASP_WRITER_LEASE", run["writer_lease"])
+    monkeypatch.setenv("NEWS_GRASP_FENCING_TOKEN", str(run["fencing_token"]))
     monkeypatch.setattr(daily, "resolve_daily_identity_context", lambda **_kwargs: _identity())
 
     public_completion = __import__(
@@ -631,7 +844,7 @@ def test_ng_t_rrt_22_daily_cli_calls_unique_finalizer_and_emits_one_line_complet
 
     monkeypatch.setattr(runtime, "finalize_public_completion", counted_finalizer)
 
-    first_rc = daily._main(["atomic_completion"])
+    first_rc = daily._main(["atomic_completion"], _test_only_allow_single_operation=True)
     first_lines = [line for line in capsys.readouterr().out.splitlines() if line]
     assert first_rc == 0
     assert len(first_lines) == 1
@@ -644,7 +857,7 @@ def test_ng_t_rrt_22_daily_cli_calls_unique_finalizer_and_emits_one_line_complet
     monkeypatch.setenv("NEWS_GRASP_RUN_ID", run["run_id"])
     monkeypatch.setenv("NEWS_GRASP_WRITER_LEASE", run["writer_lease"])
     monkeypatch.setenv("NEWS_GRASP_FENCING_TOKEN", str(run["fencing_token"]))
-    second_rc = daily._main(["atomic_completion"])
+    second_rc = daily._main(["atomic_completion"], _test_only_allow_single_operation=True)
     second_lines = [line for line in capsys.readouterr().out.splitlines() if line]
     assert second_rc != 0
     assert len(second_lines) == 1
@@ -652,3 +865,308 @@ def test_ng_t_rrt_22_daily_cli_calls_unique_finalizer_and_emits_one_line_complet
     assert second["ok"] is False
     assert len(finalizer_calls) == 1
     assert len(verifier_calls) == 0
+
+
+def test_ng_t_rrt_protected_sequence_direct_call_is_red_before_resolve_without_state_mutation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """保護済みreleaseはresolver、outbox、runtime stateへ到達する前に停止する。"""
+
+    store = runtime.DirectRunStore(
+        tmp_path / "state",
+        test_only_allow_semantic_verifier=True,
+    )
+    state_root = tmp_path / "state"
+    before = {
+        path.relative_to(state_root).as_posix(): path.read_bytes()
+        for path in state_root.rglob("*")
+        if path.is_file()
+    }
+    resolver_calls: list[object] = []
+
+    def resolver_must_not_run(*_args: object, **_kwargs: object) -> object:
+        resolver_calls.append(True)
+        raise AssertionError("protected_release_must_precede_resolve_run")
+
+    monkeypatch.setattr(daily, "_resolve_run", resolver_must_not_run)
+    result = daily.run_daily_sequence(
+        store=store,
+        cwd=ROOT,
+        issue_date="2026-09-02",
+        run_intent=RUN_INTENT,
+        scheduler_trigger_at="2026-09-02T06:00:00+09:00",
+        manifest_reservation_id="d" * 64,
+        source_baseline="b" * 40,
+        remote_base_sha="c" * 40,
+        allowed_side_effect_ids=daily.DAILY_ALLOWED_SIDE_EFFECT_IDS,
+    )
+
+    assert len(result) == 1
+    assert result[0]["ok"] is False
+    assert result[0]["status"] == "red"
+    assert result[0]["failures"] == ["protected_release_reexecution_forbidden"]
+    assert result[0]["exact_successor"] == "explicit_new_release_authority_required"
+    assert resolver_calls == []
+    after = {
+        path.relative_to(state_root).as_posix(): path.read_bytes()
+        for path in state_root.rglob("*")
+        if path.is_file()
+    }
+    assert after == before
+
+
+def test_ng_t_rrt_protected_external_direct_call_is_red_before_identity_outbox_or_adapter(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """保護済みreleaseのexternal直呼出しは全identity・副作用境界より前で拒否する。"""
+
+    from tools import news_grasp_daily_external as external
+
+    store = runtime.DirectRunStore(
+        tmp_path / "state",
+        test_only_allow_semantic_verifier=True,
+    )
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    run = runtime.start_run(
+        store,
+        cwd=repo,
+        issue_date="2026-09-02",
+        run_intent=runtime.RUN_INTENT,
+        scheduler_trigger_at="2026-09-02T06:00:00+09:00",
+        manifest_id="a" * 64,
+    )
+    state_root = tmp_path / "state"
+    before = {
+        path.relative_to(state_root).as_posix(): path.read_bytes()
+        for path in state_root.rglob("*")
+        if path.is_file()
+    }
+    boundary_calls: list[str] = []
+
+    def must_not_run(name: str):
+        def blocked(*_args: object, **_kwargs: object) -> object:
+            boundary_calls.append(name)
+            raise AssertionError(f"protected_release_must_precede_{name}")
+
+        return blocked
+
+    monkeypatch.setattr(external, "_outbox_rows", must_not_run("outbox"))
+    monkeypatch.setattr(external, "_adapter_for", must_not_run("adapter"))
+    adapter_calls: list[dict[str, object]] = []
+
+    def adapter(**kwargs: object) -> dict[str, object]:
+        adapter_calls.append(dict(kwargs))
+        raise AssertionError("protected_release_must_not_call_adapter")
+
+    adapters = {
+        operation_id: adapter
+        for operation_id in external.EXTERNAL_OPERATION_ORDER
+    }
+    result = external.execute_external_publication(
+        store=store,
+        run_id=str(run["run_id"]),
+        writer_lease=str(run["writer_lease"]),
+        fencing_token=int(run["fencing_token"]),
+        adapters=adapters,
+        context={
+            "issue_date": "2026-09-03",
+            "run_intent": runtime.RUN_INTENT,
+        },
+    )
+
+    assert result["ok"] is False
+    assert result["status"] == "red"
+    assert result["failures"] == ["protected_release_reexecution_forbidden"]
+    assert result["exact_successor"] == "explicit_new_release_authority_required"
+    assert boundary_calls == []
+    assert adapter_calls == []
+    after = {
+        path.relative_to(state_root).as_posix(): path.read_bytes()
+        for path in state_root.rglob("*")
+        if path.is_file()
+    }
+    assert after == before
+
+
+@pytest.mark.parametrize(
+    "event_type",
+    ("release_completed", "collection_completed", "partition_completed"),
+)
+def test_ng_t_rrt_canonical_generic_authority_append_is_rejected_without_mutation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    event_type: str,
+) -> None:
+    """canonical authority eventは専用producer append以外から発行できない。"""
+
+    from tools import news_grasp_release_gate as release_gate
+
+    ledger = tmp_path / "canonical" / "release_ledger.jsonl"
+    monkeypatch.setattr(release_gate, "_canonical_ledger_path", lambda: ledger)
+    assert not hasattr(release_gate, "_AUTHORITY_APPEND_CAPABILITY")
+    assert not hasattr(release_gate, "_append_authority_event")
+    assert not hasattr(release_gate, "_record_release_completion_locked")
+    assert not hasattr(release_gate, "_record_daily_promotion_locked")
+    with pytest.raises(
+        release_gate.NewsGraspReleaseGateError,
+        match="release_authority_event_generic_append_forbidden",
+    ):
+        release_gate._append_ledger(
+            ledger,
+            event_type,
+            release_id="fixture-generic-append",
+        )
+    with release_gate._ledger_lock(ledger):
+        with pytest.raises(
+            release_gate.NewsGraspReleaseGateError,
+            match="release_authority_event_generic_append_forbidden",
+        ):
+            release_gate._append_ledger_locked(
+                ledger,
+                event_type,
+                release_id="fixture-locked-append",
+            )
+    assert not ledger.exists()
+
+
+def test_ng_t_rrt_broker_rejects_complete_forged_chain_before_promotion(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """callerは完全な偽collection/partition/release chain自体を発行できない。"""
+
+    from tools import news_grasp_release_gate as release_gate
+    from tools import news_grasp_scoped_test_broker as broker
+
+    ledger = tmp_path / "canonical" / "release_ledger.jsonl"
+    state_root = tmp_path / "direct-mainline"
+    monkeypatch.setattr(release_gate, "_canonical_ledger_path", lambda: ledger)
+    monkeypatch.setattr(
+        release_gate,
+        "_canonical_daily_state_root",
+        lambda: state_root,
+    )
+    assert not hasattr(release_gate, "_AUTHORITY_APPEND_CAPABILITY")
+    assert not hasattr(release_gate, "_append_authority_event")
+    assert not hasattr(release_gate, "_record_release_completion_locked")
+    assert not hasattr(release_gate, "_record_daily_promotion_locked")
+    for event_type in ("collection_completed", "partition_completed", "release_completed"):
+        with pytest.raises(
+            release_gate.NewsGraspReleaseGateError,
+            match="release_authority_event_generic_append_forbidden",
+        ):
+            release_gate._append_ledger(
+                ledger,
+                event_type,
+                release_id="fixture-complete-forgery",
+                receipt={"ok": True, "status": "green"},
+            )
+    receipt_path, key_path = broker._promotion_paths(state_root)
+    assert not ledger.exists()
+    assert not receipt_path.exists()
+    assert not key_path.exists()
+
+
+def _snapshot_identity_rows(store: runtime.DirectRunStore) -> list[tuple[object, ...]]:
+    """再実行拒否がrow・generation・writerを増やさないことを比較する。"""
+
+    with store.connect() as conn:
+        return [
+            tuple(row)
+            for row in conn.execute(
+                """
+                SELECT run_id, automation_id, issue_date, run_intent, generation,
+                       writer_lease, status, current_stage_index
+                  FROM runs
+                 ORDER BY generation, run_id
+                """
+            ).fetchall()
+        ]
+
+
+def test_ng_rrt_completed_identity_reexecution_is_blocked_before_new_row_or_handler(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """completed済み同一identityの再実行はcwdや環境変数で迂回できない。"""
+
+    repo = tmp_path / "first-clean-worktree"
+    alternate_repo = tmp_path / "different-clean-worktree"
+    repo.mkdir()
+    alternate_repo.mkdir()
+    store = runtime.DirectRunStore(
+        tmp_path / "state",
+        test_only_allow_semantic_verifier=True,
+    )
+    first = runtime.start_run(
+        store,
+        automation_id=runtime.AUTOMATION_ID,
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        scheduler_trigger_at=TRIGGER_AT,
+        manifest_id="a" * 64,
+        manifest_reservation_id="b" * 64,
+        source_baseline="c" * 40,
+        runtime_generation=runtime.RUNTIME_SCHEMA_V2,
+        remote_base_sha="d" * 40,
+        allowed_side_effect_ids=list(daily.DAILY_ALLOWED_SIDE_EFFECT_IDS),
+    )
+    with store.connect() as conn:
+        conn.execute(
+            """
+            UPDATE runs
+               SET status='completed', current_stage_index=?, exact_successor='',
+                   completed_at=?, completion_elapsed_seconds=?, completion_elapsed_at=?,
+                   updated_at=?
+             WHERE run_id=?
+            """,
+            (
+                len(runtime.DIRECT_STAGES),
+                TRIGGER_AT,
+                1.0,
+                TRIGGER_AT,
+                TRIGGER_AT,
+                first["run_id"],
+            ),
+        )
+        conn.commit()
+
+    before_rows = _snapshot_identity_rows(store)
+    before_db = store.db_path.read_bytes()
+    handler_calls: list[object] = []
+
+    def handler_must_not_run(*_args: object, **_kwargs: object) -> dict[str, object]:
+        handler_calls.append(True)
+        raise AssertionError("completed_identity_must_stop_before_content_or_external_handler")
+
+    poison_baseline = "e" * 40
+    monkeypatch.setenv("NEWS_GRASP_SOURCE_BASELINE", poison_baseline)
+
+    # resolverはcaller環境変数ではなく、実Git HEADだけをsource authorityにする。
+    actual_head = daily._git_ref_sha(ROOT, "HEAD")
+    observed_identity = daily.resolve_daily_identity_context(repo_root=ROOT, issue_date=ISSUE_DATE)
+    assert observed_identity["source_baseline"] == actual_head
+    assert observed_identity["source_baseline"] != poison_baseline
+
+    monkeypatch.setattr(daily, "protected_release_failure", lambda **_kwargs: None)
+    monkeypatch.setattr(daily, "resolve_daily_identity_context", lambda **_kwargs: _identity())
+    monkeypatch.setattr(daily, "run_daily_operation", handler_must_not_run)
+    monkeypatch.setattr(launcher.runtime, "DirectRunStore", lambda *_args, **_kwargs: store)
+    result = launcher.run_sequence(
+        repo_root=alternate_repo,
+        state_root=store.state_root,
+        issue_date=ISSUE_DATE,
+        scheduler_trigger_at=TRIGGER_AT,
+    )
+
+    assert result["ok"] is False
+    assert result["failures"] == ["same_issue_completed_reexecution_forbidden"]
+    assert result["operation_count"] == 1
+    assert handler_calls == []
+    assert launcher._contains_writer_capability(result) is False
+    assert _snapshot_identity_rows(store) == before_rows
+    assert store.db_path.read_bytes() == before_db

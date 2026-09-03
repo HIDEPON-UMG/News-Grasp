@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 
 def test_metadata_uses_daily_briefing_title_and_summary_sources(tmp_path, monkeypatch):
     from tools.youtube_podcast import upload_episode
@@ -505,3 +507,301 @@ def test_audit_playlist_uniqueness_rejects_e2e_leftovers(tmp_path, monkeypatch):
     }
     assert not any(issue.get("videoId") == "deepdive-current" for issue in result["issues"])
     assert {surface["kind"] for surface in result["surfaces"]} == {"daily", "deepdive", "deepdive-primary"}
+
+
+def test_same_day_older_marker_recovery_never_regresses_newer_active_projection(
+    tmp_path,
+    monkeypatch,
+):
+    """同日旧runのprovider marker復旧は履歴だけを更新し、activeを後退させない。"""
+
+    from tools.youtube_podcast import upload_episode
+
+    day = "2026-09-03"
+    build_dir = tmp_path / "build" / "youtube-podcast"
+    state_dir = tmp_path / ".news-grasp"
+    build_dir.mkdir(parents=True)
+    mp4 = build_dir / f"{day}.mp4"
+    mp4.write_bytes(b"same-day-fixture-mp4")
+    monkeypatch.setattr(upload_episode, "BUILD_DIR", build_dir)
+    monkeypatch.setattr(upload_episode, "LOCAL_STATE_DIR", state_dir)
+    monkeypatch.setattr(
+        upload_episode,
+        "_build_metadata",
+        lambda _day, _kind: {"title": f"fixture {_day}", "description": "fixture", "tags": []},
+    )
+
+    payload_identity = upload_episode.sha256_file(mp4)
+    old_run = "run-old-20260903"
+    old_bundle = "bundle-old-20260903"
+    new_run = "run-new-20260903"
+    new_bundle = "bundle-new-20260903"
+
+    def operation_kwargs(run_id, bundle_id, operation_id):
+        return {
+            "run_id": run_id,
+            "bundle_id": bundle_id,
+            "operation_id": operation_id,
+            "payload_identity": payload_identity,
+            "operation_marker": upload_episode.build_operation_marker(
+                run_id=run_id,
+                bundle_id=bundle_id,
+                operation_id=operation_id,
+                payload_identity=payload_identity,
+            ),
+        }
+
+    class FakeClient:
+        def __init__(self):
+            self.marker_results = {}
+            self.video_privacy = {}
+            self.playlist_memberships = {}
+            self.upload_calls = []
+            self.provider_mutations = []
+
+        def find_videos_by_operation_marker(self, operation_marker):
+            return list(self.marker_results.get(operation_marker, []))
+
+        def upload_video(self, _mp4_path, metadata, *, privacy_status):
+            video_id = f"video-{len(self.upload_calls) + 1}"
+            marker = str(metadata["description"]).splitlines()[-1]
+            self.marker_results[marker] = [
+                {"videoId": video_id, "markerCount": 1, "title": metadata["title"]}
+            ]
+            self.video_privacy[video_id] = privacy_status
+            self.upload_calls.append((video_id, marker, privacy_status))
+            return video_id
+
+        def get_video_privacy_status(self, *, video_id):
+            return self.video_privacy[video_id]
+
+        def update_video_privacy(self, *, video_id, privacy_status):
+            self.video_privacy[video_id] = privacy_status
+            self.provider_mutations.append(("privacy", video_id, privacy_status))
+            return {"id": video_id, "status": {"privacyStatus": privacy_status}}
+
+        def ensure_playlist(self, kind="daily"):
+            return f"playlist-{kind}"
+
+        def list_playlist_items(self, *, playlist_id):
+            return [
+                {
+                    "playlistItemId": item_id,
+                    "videoId": video_id,
+                }
+                for (current_playlist, video_id), item_id in self.playlist_memberships.items()
+                if current_playlist == playlist_id
+            ]
+
+        def add_video_to_playlist(self, *, video_id, playlist_id):
+            item_id = f"item-{video_id}-{playlist_id}"
+            self.playlist_memberships[(playlist_id, video_id)] = item_id
+            self.provider_mutations.append(("playlist", video_id, playlist_id))
+            return item_id
+
+        def delete_playlist_item(self, playlist_item_id):  # pragma: no cover - protocol completeness
+            return {"id": playlist_item_id}
+
+    client = FakeClient()
+    old_prepare = operation_kwargs(old_run, old_bundle, "youtube_daily_prepare")
+    new_prepare = operation_kwargs(new_run, new_bundle, "youtube_daily_prepare")
+    old_finalize = operation_kwargs(old_run, old_bundle, "youtube_daily_finalize")
+
+    # 先行旧runは正常prepareでactive projectionを作り、新runの正常prepareだけが
+    # 同日active pointerを進められることを固定する。
+    old_prepared = upload_episode.prepare(day, client=client, **old_prepare)
+    old_key = upload_episode._upload_history_key(
+        run_id=old_run,
+        bundle_id=old_bundle,
+        kind="daily",
+        payload_identity=payload_identity,
+    )
+    state = json.loads((build_dir / "uploads.json").read_text(encoding="utf-8"))
+    assert state["activeUploadKeys"][day] == old_key
+    assert state[day]["videoId"] == old_prepared["videoId"]
+
+    new_prepared = upload_episode.prepare(day, client=client, **new_prepare)
+    new_key = upload_episode._upload_history_key(
+        run_id=new_run,
+        bundle_id=new_bundle,
+        kind="daily",
+        payload_identity=payload_identity,
+    )
+    assert new_prepared["videoId"] != old_prepared["videoId"]
+    state = json.loads((build_dir / "uploads.json").read_text(encoding="utf-8"))
+    assert state["activeUploadKeys"][day] == new_key
+    assert state[day]["runId"] == new_run
+    assert state[day]["videoId"] == new_prepared["videoId"]
+
+    # 旧prepare markerの再照合は旧historyだけを更新し、同日newer activeを維持する。
+    old_reconciled_prepare = upload_episode.prepare(day, client=client, **old_prepare)
+    assert old_reconciled_prepare["skipped"] is True
+    assert old_reconciled_prepare["videoId"] == old_prepared["videoId"]
+    state = json.loads((build_dir / "uploads.json").read_text(encoding="utf-8"))
+    assert state["activeUploadKeys"][day] == new_key
+    assert state[day]["videoId"] == new_prepared["videoId"]
+
+    # 旧finalizeはprovider privacy/playlistを一度だけ確定し、履歴rowをpublicへ
+    # 進めるが、active day projectionはnewer rowから後退させない。
+    client.marker_results[old_finalize["operation_marker"]] = [
+        {"videoId": old_prepared["videoId"], "markerCount": 1, "title": "old"}
+    ]
+    old_finalized = upload_episode.finalize(day, client=client, **old_finalize)
+    assert old_finalized["videoId"] == old_prepared["videoId"]
+    assert old_finalized["status"] == "public"
+    state = json.loads((build_dir / "uploads.json").read_text(encoding="utf-8"))
+    assert state["activeUploadKeys"][day] == new_key
+    assert state[day]["videoId"] == new_prepared["videoId"]
+    assert state["uploadHistoryV2"][old_key]["status"] == "public"
+
+    # finalize後のreconcileもprovider markerを再送せず、同じ旧historyだけを
+    # 再照合する。uploadは最初の旧/new prepareの2回から増えない。
+    old_reconciled_finalize = upload_episode.reconcile(
+        day,
+        client=client,
+        phase="finalize",
+        **old_finalize,
+    )
+    assert old_reconciled_finalize["reconciled"] is True
+    assert old_reconciled_finalize["videoId"] == old_prepared["videoId"]
+    state = json.loads((build_dir / "uploads.json").read_text(encoding="utf-8"))
+    assert state["activeUploadKeys"][day] == new_key
+    assert state[day]["runId"] == new_run
+    assert state[day]["videoId"] == new_prepared["videoId"]
+    assert len(client.upload_calls) == 2
+
+
+@pytest.mark.parametrize("crash_step", ("privacy", "playlist"), ids=("privacy", "playlist"))
+def test_youtube_finalize_resume_after_provider_crash_repeats_no_applied_step(
+    tmp_path,
+    monkeypatch,
+    crash_step,
+):
+    """provider適用直後の停止は、適用済みstepを再実行せず不足分だけ補う。"""
+
+    from tools.youtube_podcast import upload_episode
+
+    day = "2026-09-04"
+    build_dir = tmp_path / "build" / "youtube-podcast"
+    state_dir = tmp_path / ".news-grasp"
+    build_dir.mkdir(parents=True)
+    mp4 = build_dir / f"{day}.mp4"
+    mp4.write_bytes(b"provider-crash-resume-fixture")
+    monkeypatch.setattr(upload_episode, "BUILD_DIR", build_dir)
+    monkeypatch.setattr(upload_episode, "LOCAL_STATE_DIR", state_dir)
+    monkeypatch.setattr(
+        upload_episode,
+        "_build_metadata",
+        lambda _day, _kind: {"title": f"fixture {_day}", "description": "fixture", "tags": []},
+    )
+
+    payload_identity = upload_episode.sha256_file(mp4)
+    run_id = "run-youtube-crash-20260904"
+    bundle_id = "bundle-youtube-crash-20260904"
+
+    def operation_kwargs(operation_id):
+        return {
+            "run_id": run_id,
+            "bundle_id": bundle_id,
+            "operation_id": operation_id,
+            "payload_identity": payload_identity,
+            "operation_marker": upload_episode.build_operation_marker(
+                run_id=run_id,
+                bundle_id=bundle_id,
+                operation_id=operation_id,
+                payload_identity=payload_identity,
+            ),
+        }
+
+    class ProviderCrash(BaseException):
+        pass
+
+    class FakeClient:
+        def __init__(self):
+            self.marker_results = {}
+            self.video_privacy = {}
+            self.playlist_memberships = {}
+            self.upload_calls = []
+            self.provider_mutations = []
+            self.crashed = False
+
+        def find_videos_by_operation_marker(self, operation_marker):
+            return list(self.marker_results.get(operation_marker, []))
+
+        def upload_video(self, _mp4_path, metadata, *, privacy_status):
+            video_id = "video-crash-resume-1"
+            marker = str(metadata["description"]).splitlines()[-1]
+            self.marker_results[marker] = [
+                {"videoId": video_id, "markerCount": 1, "title": metadata["title"]}
+            ]
+            self.video_privacy[video_id] = privacy_status
+            self.upload_calls.append((video_id, marker, privacy_status))
+            return video_id
+
+        def get_video_privacy_status(self, *, video_id):
+            return self.video_privacy[video_id]
+
+        def update_video_privacy(self, *, video_id, privacy_status):
+            self.video_privacy[video_id] = privacy_status
+            self.provider_mutations.append(("privacy", video_id, privacy_status))
+            if crash_step == "privacy" and not self.crashed:
+                self.crashed = True
+                raise ProviderCrash("privacy_applied_before_process_crash")
+            return {"id": video_id, "status": {"privacyStatus": privacy_status}}
+
+        def ensure_playlist(self, kind="daily"):
+            return f"playlist-{kind}"
+
+        def list_playlist_items(self, *, playlist_id):
+            return [
+                {"playlistItemId": item_id, "videoId": video_id}
+                for (current_playlist, video_id), item_id in self.playlist_memberships.items()
+                if current_playlist == playlist_id
+            ]
+
+        def add_video_to_playlist(self, *, video_id, playlist_id):
+            item_id = f"item-{video_id}-{playlist_id}"
+            self.playlist_memberships[(playlist_id, video_id)] = item_id
+            self.provider_mutations.append(("playlist", video_id, playlist_id))
+            if crash_step == "playlist" and not self.crashed:
+                self.crashed = True
+                raise ProviderCrash("playlist_applied_before_process_crash")
+            return item_id
+
+    client = FakeClient()
+    upload_episode.prepare(
+        day,
+        client=client,
+        **operation_kwargs("youtube_daily_prepare"),
+    )
+
+    with pytest.raises(ProviderCrash):
+        upload_episode.finalize(
+            day,
+            client=client,
+            **operation_kwargs("youtube_daily_finalize"),
+        )
+
+    assert len(client.upload_calls) == 1
+    assert sum(item[0] == "privacy" for item in client.provider_mutations) == 1
+    assert sum(item[0] == "playlist" for item in client.provider_mutations) == (
+        1 if crash_step == "playlist" else 0
+    )
+    crashed_state = json.loads((build_dir / "uploads.json").read_text(encoding="utf-8"))
+    assert crashed_state[day]["phase"] == "prepared"
+    assert crashed_state[day]["status"] == "private"
+
+    resumed = upload_episode.finalize(
+        day,
+        client=client,
+        **operation_kwargs("youtube_daily_finalize"),
+    )
+
+    assert resumed["status"] == "public"
+    assert resumed["phase"] == "finalized"
+    assert len(client.upload_calls) == 1
+    assert sum(item[0] == "privacy" for item in client.provider_mutations) == 1
+    assert sum(item[0] == "playlist" for item in client.provider_mutations) == 1
+    final_state = json.loads((build_dir / "uploads.json").read_text(encoding="utf-8"))
+    assert final_state[day]["status"] == "public"
+    assert final_state[day]["videoId"] == "video-crash-resume-1"

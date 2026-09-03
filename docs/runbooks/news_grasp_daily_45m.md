@@ -6,18 +6,15 @@
 
 ## Daily entry
 
-ScheduledProductionが直接起動できるPython commandは次の六つだけである。順序を入れ替えず、各operation receiptを一回だけ消費する。
+ScheduledProductionが直接起動できるPython commandは次の一つだけである。launcherは同一process memoryのwriter leaseを保持し、六operationを順序どおり一回ずつ実行する。
 
 ```powershell
-C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_daily_gate static_check
-C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_daily_gate scoped_contract_unit
-C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_daily_gate current_issue_integration
-C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_daily_gate external_publication
-C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_daily_gate consumer_public_verification
-C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_daily_gate atomic_completion
+C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_daily_launcher
 ```
 
-stdoutはUTF-8・BOMなし・一行JSONだけを受理する。ログはstderrまたはUTF-8 JSONLへ分離する。raw Python、raw/full pytest、Release gate、historical corpus、Playwright全件、crash/replay/drift、NoPublish、unknown operationはDailyから起動しない。
+内部順序は `static_check` → `scoped_contract_unit` → `current_issue_integration` → `external_publication` → `consumer_public_verification` → `atomic_completion` である。stdoutはUTF-8・BOMなし・一行JSONだけを受理し、writer lease/fencing capabilityを含めない。ログはstderrまたはUTF-8 JSONLへ分離する。個別operation CLI、raw Python、raw/full pytest、Release gate、historical corpus、Playwright全件、crash/replay/drift、NoPublish、unknown operationはDailyから起動しない。
+
+`config/news_grasp_daily_45m_contract_v1.json`の`protectedRelease`と同じissue dateは、state作成より前に`protected_release_reexecution_forbidden`で停止する。通常Dailyに解除flagはなく、必要な変更は別run intentの明示的新releaseとして扱う。productionのruntime stateとRelease ledgerはWindows Known Folderの`LocalAppData`から解決し、`LOCALAPPDATA`や`NEWS_GRASP_STATE_ROOT`による差替えをauthorityにしない。
 
 ## Release gate
 
@@ -58,3 +55,11 @@ rollback rehearsalはfixture/simulationで行い、2026-09-02の公開副作用�
 - adapter、Python、Pages action、automation prompt変更時: installed promotion receiptを失効させ、明示promotionとrollback rehearsalを再実行する。
 - failure ledger: append-only。owner、Red fixture、Green test、operational recovery、independent evidence、maintenance conditionが欠けるentryをclosedにしない。
 - public verifier: category universe、Summary/DeepDive Markdown・HTML、両音声、YouTube、playlist、notification、distribution、publish-status、Home、Pages、remote/release/Pages SHA、run/bundle identityを同じfresh observationで確認する。
+- YouTube retry: local receipt未確定でもprovider-native markerに同一idempotency keyとpayload hashが存在する場合は、既存video IDをfresh照合してreceiptだけをforward確定する。marker不一致または複数候補は再uploadせずtyped Redにする。
+- commit/seal recovery: `git update-ref`後に停止した場合はsame-run metadata、exact write set、parent SHA、manifest/bundle identityが一致するHEADだけを回収する。一条件でも不明なら同runへrebindしない。
+- completion attestation: manifestの8 immutable asset locator、fresh bytes hash/size、JSON identity、distribution component hashを全て再取得する。保存済みreceipt、HTTP 200、caller JSONだけでは完了させない。
+- completed identity: 同じ`automation_id + issue_date + run_intent`にcompleted rowがあれば、cwd変更やcaller環境変数に関係なく新runを作らない。通常復旧ではなく、次の自然issue dateまたは別authorityの明示的新releaseだけを後継にする。
+- scoped test closure: Release gate、scoped broker自身、automation promotionの変更はDaily changed-source testで扱わず新Release promotionへ戻す。許可test nodeもRelease/historical/Playwright importとnested processをpytest起動前に拒否する。
+- migration crash: schema完成済みなら既存migration receiptへstarted journalをCAS finalizeする。未完成ならstate root内のintegrity済みpre-migration backupへSQLite backup APIで戻して新attemptを作る。backup欠落・破損・identity不一致はstate不変Redとする。
+- finalizer crash: admission receiptの同じnonce、六operation digest、consumer receipt hash、manifest、writer/fenceが一致する場合だけ、consumer再観測・外部再送・operation再実行なしでcompletion transactionを再開する。
+- external substep crash: outbox startedとtiming openは一transactionで確定する。YouTube finalizeはfresh privacy/playlist観測と`providerSubsteps`を照合して不足stepだけを再開し、notificationはrecipient ledgerで既送信をskipする。recipient予約後の送信可否が不明なら再送せず`unknown_delivery`を維持する。

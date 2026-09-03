@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import re
+import shutil
 import sys
 import urllib.request
 from datetime import date as date_type
@@ -23,7 +24,7 @@ RELEASE_TAG = "audio-daily"
 OWNER = "HIDEPON-UMG"
 REPO = "News-Grasp"
 GH_TIMEOUT_SEC = 120
-_ASSET_DATE_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})\.mp3$")
+_ASSET_DATE_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})(?:-[0-9a-f]{12})?\.mp3$")
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _HTTP_ERROR_RE = re.compile(r"\bHTTP\s+(?P<code>502|503)\b", re.IGNORECASE)
 _LAST_PUBLISH_FAILURE: dict[str, Any] | None = None
@@ -103,7 +104,10 @@ def audio_url(day: str, *, owner: str = OWNER, repo: str = REPO) -> str:
 
 def versioned_audio_url(day: str, mp3_path: Path, *, owner: str = OWNER, repo: str = REPO) -> str:
     digest = hashlib.sha256(mp3_path.read_bytes()).hexdigest()[:12]
-    return f"{audio_url(day, owner=owner, repo=repo)}?v={digest}"
+    return (
+        f"https://github.com/{owner}/{repo}/releases/download/{RELEASE_TAG}/"
+        f"{day}-{digest}.mp3?v={digest}"
+    )
 
 
 def ensure_release() -> bool:
@@ -172,6 +176,26 @@ def _url_returns_200(url: str) -> bool:
         return False
 
 
+def _url_matches_sha256(url: str, expected_sha256: str) -> bool:
+    try:
+        request = urllib.request.Request(
+            url,
+            headers={"Cache-Control": "no-cache", "Pragma": "no-cache"},
+        )
+        digest = hashlib.sha256()
+        with urllib.request.urlopen(request, timeout=30) as response:
+            if response.status != 200:
+                return False
+            while True:
+                chunk = response.read(1024 * 1024)
+                if not chunk:
+                    break
+                digest.update(chunk)
+        return digest.hexdigest() == expected_sha256
+    except Exception:
+        return False
+
+
 def write_latest_audio(
     day: str,
     url: str,
@@ -224,6 +248,7 @@ def publish(
     *,
     dry_run: bool = False,
     run_id: str = "",
+    rotate_history: bool = True,
 ) -> dict[str, str] | None:
     global _LAST_PUBLISH_FAILURE
     _LAST_PUBLISH_FAILURE = None
@@ -240,12 +265,21 @@ def publish(
             return {"latest_audio_date": day, "latest_audio_url": url}
         if not ensure_release():
             return None
-        proc.quiet_run(["gh", "release", "upload", RELEASE_TAG, str(target), "--clobber"], timeout=GH_TIMEOUT_SEC)
         url = versioned_audio_url(day, target)
-        if not _url_returns_200(url):
+        full_digest = hashlib.sha256(target.read_bytes()).hexdigest()
+        if not _url_matches_sha256(url, full_digest):
+            with tempfile.TemporaryDirectory(prefix="news-grasp-audio-upload-") as raw_temp:
+                immutable_asset = Path(raw_temp) / f"{day}-{full_digest[:12]}.mp3"
+                shutil.copyfile(target, immutable_asset)
+                proc.quiet_run(
+                    ["gh", "release", "upload", RELEASE_TAG, str(immutable_asset)],
+                    timeout=GH_TIMEOUT_SEC,
+                )
+        if not _url_matches_sha256(url, full_digest):
             _record_publish_failure(RuntimeError(f"audio URL verification failed: {url}"))
             return None
-        rotate(today=parsed_day)
+        if rotate_history:
+            rotate(today=parsed_day)
         write_latest_audio(day, url, run_id=run_id) if run_id else write_latest_audio(day, url)
         print(f"[tts] audio published: {url}")
         return {"latest_audio_date": day, "latest_audio_url": url}

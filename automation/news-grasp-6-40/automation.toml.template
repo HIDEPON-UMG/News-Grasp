@@ -23,6 +23,7 @@ News-Grasp の臨時本線日次バッチを実行してください。
 最優先制御:
 - 最優先事項: 完全な品質で記事公開するまで完了してはならない。
 - 唯一の主成果物は、当日の News-Grasp 公開体験 Web / Daily audio / DeepDive / DeepDive audio / YouTube Podcast / playlist / notification / distribution / publish-status を読者可視まで完成させることです。
+- 旧 runner state と Codex durable goal は completion authorityではない。consumer-owned public verifierだけが完了を確定します。
 - 記事品質または公開面完成に直結しない問題は、post_publish_issue_list に 1 行で記録し、修正に入らず公開作成へ戻ってください。
 - 公開面が incomplete の間に許される作業は、記事生成、品質 gate Green 化、TTS、YouTube/playlist、notification、distribution、publish-status、Pages 反映、またはそれらの開始に不可欠な最小 local unblocker だけです。
 - 旧 runner、監査 terminal、audit_major_incident_open、原因説明、report polish、harness 整理、恒久対策、NoPublish、fallback publish を完了の代替にしないでください。
@@ -43,14 +44,11 @@ News-Grasp の臨時本線日次バッチを実行してください。
 
 実行入口:
 - 既存 runner、旧runtime、audit recovery control、raw/full pytest、historical、Playwright、NoPublish は使いません。
-- 次の六つのDaily operationだけをこの順で一回ずつ実行し、各CLIのGreenをそのoperationのproducer receiptとして保存してください。brokerのadmission表示やcaller自己申告だけでは完了にしません。
-  1. `C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -m tools.news_grasp_daily_gate static_check`
-  2. `C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -m tools.news_grasp_daily_gate scoped_contract_unit`
-  3. `C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -m tools.news_grasp_daily_gate current_issue_integration`
-  4. `C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -m tools.news_grasp_daily_gate external_publication`
-  5. `C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -m tools.news_grasp_daily_gate consumer_public_verification`
-  6. `C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -m tools.news_grasp_daily_gate atomic_completion`
-- 各CLIは同じ issue_date、run_intent、actual run ID、bundle/manifest identityを入力へ束縛し、前operationのproducer receiptがGreenである場合だけ次へ進めてください。任意のraw Python、別module、別route、順序飛ばし、同一operation再実行はRedです。
+- ScheduledProductionが起動できるcommandは次の一つだけです。launcherは同一process memory内の同一writer leaseで六つのDaily operationを順番に一回ずつ実行し、全producer receiptを一つのmachine receiptへ束縛します。
+  `C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -m tools.news_grasp_daily_launcher`
+- launcher内部の正規順序は `static_check` → `scoped_contract_unit` → `current_issue_integration` → `external_publication` → `consumer_public_verification` → `atomic_completion` です。個別operation CLI、任意のraw Python、別module、別route、順序飛ばし、同一operation再実行はRedです。
+- writer leaseとfencing capabilityをstdout、環境変数、receipt、logへ出してはいけません。brokerのadmission表示やcaller自己申告だけでは完了にしません。
+- task contractのprotectedReleaseと同じissue dateは、launcherがstate作成・外部処理前に`protected_release_reexecution_forbidden`で拒否します。通常Dailyから解除せず、明示的な別run intentと新release authorityへ戻してください。
 - `consumer_public_verification` は新しいnetwork observation token、observed_at、external_operation_idを発行し、Home、当日カテゴリ、Summary/DeepDive MarkdownとHTML、Daily/DeepDive audio、YouTube、playlist、distribution、publish-status、notification immutable ledger、Pagesをfreshに論理積検証してください。
 - `atomic_completion` は direct completion guard として全producer receiptとfresh consumer observationを束ねた完了receiptだけを発行します。保存済みcaller JSON、URL 200、publish-status、commit/push、runner/readiness単独をGreen authorityにしないでください。
 - repo-local deterministic tools は六operation内部のproducerとしてのみ使い、通常公開のad hoc 手編集、外部状態の無断再送、Windows Scheduled Taskの変更を行わないでください。
@@ -76,21 +74,21 @@ News-Grasp の臨時本線日次バッチを実行してください。
 - 完了条件: 完全な品質で記事公開するまで完了してはならない。
 - title_status が updated / already_ok / unavailable / failed / skipped のいずれかで記録されていること。updated / already_ok の場合は task title が exact `YY/MM/DD News-Grasp 臨時本線日次バッチ 6:00 記事作成・公開` に一致すること。
 - 当日対象カテゴリ digest、Summary、DeepDive md、DeepDive HTML、日付 docs、Daily audio、DeepDive audio、YouTube Podcast、playlist、notification、distribution manifest、docs/publish-status.json が同一日付で揃うこと。
-- 六つのDaily operation CLIが順序どおり一回ずつGreenとなり、各producer receiptのinput identityと出力hashが連続していること。
+- 単一launcher内部の六つのDaily operationが順序どおり一回ずつGreenとなり、各producer receiptのinput identityと出力hashが連続していること。
 - `consumer_public_verification` のfresh public verifierが実成果物と公開面を読んでGreenとなり、provider ACK欠落は `unknown_unobtainable` のまま保持されること。
 - runner/readiness を含まない public-only 検証で、Web / audio / Podcast / playlist / notification / distribution / publish-status / Pages が Green。
-- docs/publish-status.json が対象日 published_ok。
+- docs/publish-status.json が対象日・run intent・actual run IDへ束縛された `publication_pending / awaiting_external_completion_attestation` であり、外部公開後に同runのsourceへ書き戻されていないこと。最終 `published_ok` authorityはmanifestでsealしたimmutable completion attestationとfresh consumer verifierの組だけです。
 - origin/main への push と GitHub Pages 反映が確認済み。
 - planned_elapsed、actual_elapsed、slo_delta、overrun_branch_triggered が最終報告にあること。
 
 禁止:
 - 禁止条件: 完全な品質で記事公開するまで完了してはならない。
 - 監査バッチとしての分類完了で止まること。
-- 旧 runner 起動、旧 runner state を completion authority にすること。
+- 旧 runner 起動、旧 runner state を完了根拠にすること。
 - audit_major_incident_open、typed Red、証跡作成、原因説明、レポート作成を公開作成の代替にすること。
 - 記事品質・公開完成に直結しないバグ調査や修正を public Green 前に始めること。
 - fallback publish、NoPublish、URL 200 単独、local generation 単独、前日 publish-status を public Green にすること。
-- Codex durable goal を completion authority に使うこと。
+- Codex durable goal を完了根拠にすること。
 - raw process kill、共有 PowerShell / Windows Terminal / VS Code / browser の停止。
 
 最終報告:

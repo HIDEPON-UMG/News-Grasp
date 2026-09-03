@@ -5,7 +5,7 @@ description: Run the 06:00 News-Grasp scheduled production directly with Codex, 
 
 # News-Grasp Direct Mainline
 
-当日版の読者可視公開を最上位目的にする。旧 runner、NoPublish、fallback、監査成果物、durable goal、URL 200 単独を完了 authority にしない。
+当日版の読者可視公開を最上位目的にする。旧 runner、runner/readiness、NoPublish、fallback、監査成果物、durable goal、URL 200 単独を完了 authority にしない。
 
 ## 開始契約
 
@@ -13,21 +13,20 @@ description: Run the 06:00 News-Grasp scheduled production directly with Codex, 
 2. `static_check` がscheduler triggerをT0として、Asia/Tokyoの `issue_date`、`run_intent`、DB発行のactual run ID、writer lease/fencing token、source baseline、runtime generation、remote base SHA、許可外部副作用をstart sealへ固定する。`final`等のrun aliasを作らない。
 3. single-flight identityは `automation_id + issue_date + run_intent` である。既存active writerへattachしたcallerはobserverであり、writer leaseを再利用してmutationしない。inflight/unknown deliveryがあれば新runを作らず照合へ進む。
 4. V1 runtime stateとnotification ledgerは、run作成より前にV2へ正規migrationする。migration receiptが無い状態でstageを開始しない。
-5. 実行可能なentryは下記六operationだけである。各commandのUTF-8一行JSON receiptを読み、`ok=true`、前receipt hash、同一seal identity、exact successorを確認してから次へ進む。raw Python、旧runtimeの`start/advance`、Release gate、NoPublish、historical、Playwright、full pytest、未登録commandは使わない。
+5. ScheduledProductionが実行可能なentryは下記の単一launcherだけである。launcherが同一process memory内のwriter leaseで六operationを順に一回ずつ実行する。UTF-8一行JSON receiptの`ok=true`、前receipt hash、同一seal identity、exact successorを確認する。個別operation CLI、raw Python、旧runtimeの`start/advance`、Release gate、NoPublish、historical、Playwright、full pytest、未登録commandは使わない。
 6. `tools.publish_inventory.scheduled_category_ids(issue_date)` を当日の対象カテゴリ正本にする。7カテゴリはpublic verifierのuniverse coverageであり、毎日の固定生成対象へ読み替えない。
 
 ## Daily 六phase
 
-次の順序を変えず、同じoperationを二回実行しない。各phase内部ではbrokerが固定したproducer/consumerだけを使い、同じacceptance predicateを別phaseで再評価しない。
+次の単一commandだけを実行する。内部順序を変えず、同じoperationを二回実行しない。各phase内部ではbrokerが固定したproducer/consumerだけを使い、同じacceptance predicateを別phaseで再評価しない。
 
 ```text
-C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_daily_gate static_check
-C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_daily_gate scoped_contract_unit
-C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_daily_gate current_issue_integration
-C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_daily_gate external_publication
-C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_daily_gate consumer_public_verification
-C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_daily_gate atomic_completion
+C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_daily_launcher
 ```
+
+launcher内部の正規順序は `static_check` → `scoped_contract_unit` → `current_issue_integration` → `external_publication` → `consumer_public_verification` → `atomic_completion` である。writer lease/fencing capabilityはprocess外へ投影しない。
+
+task contractの`protectedRelease`は通常launcherから解除不能であり、同じissue dateはstate作成前に`protected_release_reexecution_forbidden`とする。新しい公開が必要なら別run intentと明示的な新release authorityへ戻る。
 
 1. `static_check`
    - source、installed、loaded runtime、snapshot、remoteを別観測として検証する。

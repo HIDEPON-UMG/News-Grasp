@@ -17,6 +17,7 @@ import re
 import shutil
 import sqlite3
 import stat
+import subprocess
 import sys
 import tomllib
 import uuid
@@ -614,21 +615,142 @@ class DirectRunStore:
         except sqlite3.DatabaseError:
             return False
 
+    def _recover_pending_schema_migration(self) -> dict[str, Any] | None:
+        """中断journalを一次証拠からfinalizeまたはbackupへrollbackする。"""
+
+        if not self.db_path.is_file():
+            return None
+        try:
+            with closing(sqlite3.connect(f"file:{self.db_path.as_posix()}?mode=ro", uri=True)) as conn:
+                rows = conn.execute(
+                    "SELECT journal_id,db_path,from_schema,to_schema,backup_path,status "
+                    "FROM runtime_migration_journal WHERE status='started' ORDER BY started_at"
+                ).fetchall()
+        except sqlite3.OperationalError:
+            return None
+        if not rows:
+            return None
+        if len(rows) != 1:
+            raise RuntimeError("runtime_schema_migration_journal_ambiguous")
+        journal_id, db_path, from_schema, to_schema, backup_raw, _status = rows[0]
+        if (
+            os.path.normcase(os.path.abspath(str(db_path)))
+            != os.path.normcase(os.path.abspath(str(self.db_path)))
+            or str(from_schema) != "NEWS_GRASP_DIRECT_RUNTIME_V1"
+            or str(to_schema) != RUNTIME_SCHEMA_V2
+        ):
+            raise RuntimeError("runtime_schema_migration_journal_identity_invalid")
+        backup_path = Path(str(backup_raw))
+        if not str(backup_raw).strip():
+            raise RuntimeError("runtime_schema_migration_incomplete:backup_missing")
+        canonical_parent = self.state_root.resolve(strict=False)
+        try:
+            backup_path.resolve(strict=False).relative_to(canonical_parent)
+        except ValueError as exc:
+            raise RuntimeError("runtime_schema_migration_backup_outside_state_root") from exc
+        if not backup_path.name.startswith(f"{self.db_path.name}.pre-daily-v2-"):
+            raise RuntimeError("runtime_schema_migration_backup_identity_invalid")
+
+        if self._schema_complete():
+            # DDL/receipt commit後、journal finalize前だけがこの分岐へ来る。
+            # 既存receiptがあれば再発行せず、それを同じjournalへ束縛する。
+            with closing(self.connect()) as conn:
+                receipt_row = conn.execute(
+                    """
+                    SELECT receipt_json FROM runtime_migrations
+                    WHERE run_id='__runtime_schema__' AND from_schema=? AND to_schema=?
+                    ORDER BY id DESC LIMIT 1
+                    """,
+                    (str(from_schema), str(to_schema)),
+                ).fetchone()
+            receipt = _json_load(str(receipt_row[0]), {}) if receipt_row is not None else {}
+            if (
+                not isinstance(receipt, Mapping)
+                or receipt.get("schemaVersion") != "NEWS_GRASP_RUNTIME_SCHEMA_MIGRATION_V1"
+                or receipt.get("toSchema") != RUNTIME_SCHEMA_V2
+                or str(receipt.get("backupPath") or "") != str(backup_path)
+            ):
+                receipt = self._persist_schema_migration_receipt(
+                    from_schema=str(from_schema),
+                    status="migrated",
+                    backup_path=str(backup_path),
+                )
+            completed_at = _iso(self.now())
+            with closing(self.connect()) as conn:
+                conn.execute("BEGIN IMMEDIATE")
+                changed = conn.execute(
+                    """
+                    UPDATE runtime_migration_journal
+                    SET status='completed',receipt_json=?,completed_at=?
+                    WHERE journal_id=? AND status='started'
+                    """,
+                    (_json_dump(dict(receipt)), completed_at, str(journal_id)),
+                ).rowcount
+                if changed != 1:
+                    conn.rollback()
+                    raise RuntimeError("runtime_schema_migration_finalize_cas_conflict")
+                conn.commit()
+            self._schema_ready = True
+            self._schema_migration_receipt = dict(receipt)
+            return {
+                "status": "completed_journal_recovered",
+                "migration_receipt": dict(receipt),
+            }
+
+        # DDLが未完了なら、pre-migration backupのintegrityを確認して同じ
+        # database inodeへSQLite backup APIで戻す。backup欠落・破損時は現stateを
+        # 一切変更せずtyped Redにする。
+        if not backup_path.is_file():
+            raise RuntimeError("runtime_schema_migration_backup_missing")
+        try:
+            _reject_reparse_chain(
+                backup_path,
+                reason="runtime_schema_migration_backup_reparse_forbidden",
+            )
+            with closing(sqlite3.connect(str(backup_path))) as backup:
+                if str(backup.execute("PRAGMA integrity_check").fetchone()[0]).casefold() != "ok":
+                    raise RuntimeError("runtime_schema_migration_backup_integrity_red")
+                with closing(sqlite3.connect(str(self.db_path))) as destination:
+                    backup.backup(destination)
+        except sqlite3.DatabaseError as exc:
+            raise RuntimeError("runtime_schema_migration_backup_restore_red") from exc
+        self._schema_ready = False
+        # 旧実装のbackupはjournal insert後に採られている場合がある。その場合も
+        # rollback済みを明記し、次のmigration attemptを妨げない。
+        try:
+            with closing(self.connect()) as conn:
+                conn.execute("BEGIN IMMEDIATE")
+                conn.execute(
+                    """
+                    UPDATE runtime_migration_journal
+                    SET status='rolled_back_recovered',completed_at=?,receipt_json=?
+                    WHERE status='started'
+                    """,
+                    (
+                        _iso(self.now()),
+                        _json_dump(
+                            {
+                                "schemaVersion": "NEWS_GRASP_RUNTIME_SCHEMA_MIGRATION_RECOVERY_V1",
+                                "status": "rolled_back_recovered",
+                                "backupPath": str(backup_path),
+                            }
+                        ),
+                    ),
+                )
+                conn.commit()
+        except sqlite3.OperationalError:
+            pass
+        return {"status": "rolled_back_for_retry", "backup_path": str(backup_path)}
+
     def ensure_runtime_schema(self) -> dict[str, Any]:
         """read-only検査→SQLite backup→明示migrationの順でV2 schemaを準備する。"""
 
+        self._recover_pending_schema_migration()
+
         if self._schema_ready and self._schema_complete():
             with closing(self.connect()) as conn:
-                # DDL/receiptの間でプロセスが停止した場合、schema自体が
-                # 完成していてもmigration journalはstartedのまま残る。
-                # その状態をalready_migratedへ丸めると、次のrunが未完了
-                # migrationをGreenとして進めてしまうため、receiptを追加する
-                # 前に必ずfail-closedする。
-                pending = conn.execute(
-                    "SELECT 1 FROM runtime_migration_journal WHERE status='started' LIMIT 1"
-                ).fetchone()
-                if pending is not None:
-                    raise RuntimeError("runtime_schema_migration_incomplete")
+                conn.execute("BEGIN IMMEDIATE")
+                self._terminalize_completed_identity_writers(conn)
                 latest = conn.execute(
                     """
                     SELECT receipt_json FROM runtime_migrations
@@ -636,6 +758,7 @@ class DirectRunStore:
                     ORDER BY id DESC LIMIT 1
                     """
                 ).fetchone()
+                conn.commit()
             if latest is not None:
                 loaded = _json_load(str(latest[0]), {})
                 if isinstance(loaded, dict):
@@ -687,21 +810,20 @@ class DirectRunStore:
             integrity = str(source.execute("PRAGMA integrity_check").fetchone()[0])
             if integrity.casefold() != "ok":
                 raise RuntimeError("runtime_schema_preflight_integrity_red")
-            try:
-                pending = source.execute(
-                    "SELECT 1 FROM runtime_migration_journal WHERE status='started' LIMIT 1"
-                ).fetchone()
-            except sqlite3.OperationalError:
-                pending = None
-            if pending is not None:
-                raise RuntimeError("runtime_schema_migration_incomplete")
         backup_path = self.db_path.with_name(
             f"{self.db_path.name}.pre-daily-v2-{self.now().strftime('%Y%m%dT%H%M%S%f%z')}-{uuid.uuid4().hex}.bak"
         )
         journal_id = f"schema-journal-{uuid.uuid4().hex}"
         journal_started = _iso(self.now())
+        # backupはjournal/DDLより先に採る。これによりDDL途中終了時も、backupは
+        # 必ず純粋なpre-migration bytesであり、有限rollbackが可能になる。
+        with closing(sqlite3.connect(str(self.db_path))) as source, closing(sqlite3.connect(str(backup_path))) as backup:
+            source.backup(backup)
+            if str(backup.execute("PRAGMA integrity_check").fetchone()[0]).casefold() != "ok":
+                backup_path.unlink(missing_ok=True)
+                raise RuntimeError("runtime_schema_backup_integrity_red")
         # DDL前にrecoverable journalを記録する。途中終了したjournalは次回の
-        # preflightで未完了migrationとして観測でき、暗黙Greenにはならない。
+        # preflightでbackup rollbackまたはreceipt finalizeへ必ず収束させる。
         with closing(sqlite3.connect(str(self.db_path))) as journal_conn:
             journal_conn.execute(
                 """
@@ -735,11 +857,6 @@ class DirectRunStore:
                 ),
             )
             journal_conn.commit()
-        with closing(sqlite3.connect(str(self.db_path))) as source, closing(sqlite3.connect(str(backup_path))) as backup:
-            source.backup(backup)
-            if str(backup.execute("PRAGMA integrity_check").fetchone()[0]).casefold() != "ok":
-                backup_path.unlink(missing_ok=True)
-                raise RuntimeError("runtime_schema_backup_integrity_red")
         self._init_db(allow_migration=True)
         self._schema_ready = True
         self._schema_migration_receipt = self._persist_schema_migration_receipt(
@@ -820,6 +937,49 @@ class DirectRunStore:
             )
             conn.commit()
         return receipt
+
+    def _terminalize_completed_identity_writers(self, conn: sqlite3.Connection) -> None:
+        """completed済みidentityに残るwriterを外部副作用に応じて安全に閉じる。"""
+
+        completed_identity_active_rows = conn.execute(
+            """
+            SELECT active.run_id, active.external_started_at
+            FROM runs AS active
+            WHERE active.status IN ('active','executing','finalizing')
+              AND EXISTS (
+                SELECT 1 FROM runs AS completed
+                WHERE completed.automation_id = active.automation_id
+                  AND completed.issue_date = active.issue_date
+                  AND COALESCE(completed.run_intent, '') = COALESCE(active.run_intent, '')
+                  AND completed.status IN ('completed','complete','green')
+              )
+            """
+        ).fetchall()
+        for stale in completed_identity_active_rows:
+            side_effect_rows = conn.execute(
+                "SELECT status FROM external_outbox WHERE run_id=?",
+                (stale[0],),
+            ).fetchall()
+            side_effect_statuses = {str(item[0]).casefold() for item in side_effect_rows}
+            has_unknown_delivery = bool(
+                side_effect_statuses
+                & {"unknown_delivery", "unknown_unobtainable", "unobtainable"}
+            )
+            has_started_effect = bool(str(stale[1] or "")) or bool(
+                side_effect_statuses
+                & {"started", "sent", "acknowledged", "completed"}
+            )
+            terminal_status = (
+                "blocked_external_delivery_unknown"
+                if has_unknown_delivery
+                else "superseded_after_external_start"
+                if has_started_effect
+                else "stale_writer_rejected"
+            )
+            conn.execute(
+                "UPDATE runs SET status=?, updated_at=? WHERE run_id=?",
+                (terminal_status, _iso(self.now()), stale[0]),
+            )
 
     def _init_db(self, *, allow_migration: bool = True) -> None:
         if self.db_path.exists() and not allow_migration:
@@ -904,6 +1064,9 @@ class DirectRunStore:
                 "updated_at": "TEXT NOT NULL DEFAULT ''",
                 "provider_ack_status": "TEXT NOT NULL DEFAULT ''",
                 "output_hash": "TEXT NOT NULL DEFAULT ''",
+                "provider_receipt_json": "TEXT NOT NULL DEFAULT '{}'",
+                "provider_receipt_hash": "TEXT NOT NULL DEFAULT ''",
+                "provider_output_hash": "TEXT NOT NULL DEFAULT ''",
             }
             for name, declaration in outbox_additions.items():
                 if name not in existing_outbox_columns:
@@ -977,6 +1140,7 @@ class DirectRunStore:
                         "UPDATE runs SET status=?, updated_at=? WHERE run_id=?",
                         (terminal_status, _iso(self.now()), stale[0]),
                     )
+            self._terminalize_completed_identity_writers(conn)
             conn.execute(
                 """CREATE UNIQUE INDEX IF NOT EXISTS runs_active_identity_uq
                    ON runs(automation_id,issue_date,run_intent)
@@ -1409,6 +1573,18 @@ def admit_daily_operation(
         conn.execute("BEGIN IMMEDIATE")
         row = store._run_row(conn, run_id)
         _verify_writer(row, writer_lease, now, allowed_statuses={"active", "executing", "finalizing"}, fencing_token=fencing_token)
+        lease_until = _iso(now + store.lease_ttl)
+        renewed = conn.execute(
+            "UPDATE runs SET lease_until=?,updated_at=? "
+            "WHERE run_id=? AND writer_lease=? AND fencing_token=? AND lease_until=?",
+            (
+                lease_until, now_text, run_id, writer_lease,
+                int(fencing_token or 0), str(row["lease_until"]),
+            ),
+        ).rowcount
+        if renewed != 1:
+            conn.rollback()
+            raise PermissionError("daily_operation_lease_renew_cas_conflict")
         t0 = _parse_time(str(_row_value(row, "scheduler_trigger_at", ""))) or _parse_time(str(row["started_at"])) or now
         elapsed_seconds = max(0.0, (now - t0).total_seconds())
         dispatch = slo_dispatch(elapsed_seconds=elapsed_seconds)
@@ -1437,6 +1613,50 @@ def admit_daily_operation(
         "new_generation_allowed": dispatch["dispatch"] not in {"deadline_revision"},
         "required_inventory_preserved": True,
         "consumer_verifier_preserved": True,
+    }
+
+
+def renew_daily_writer_lease(
+    store: DirectRunStore,
+    *,
+    run_id: str,
+    writer_lease: str,
+    fencing_token: int,
+) -> dict[str, Any]:
+    """長時間operation中の生存ownerだけがleaseをCAS更新する。"""
+
+    _require_fencing_token(store, fencing_token)
+    now = store.now()
+    now_text = _iso(now)
+    with closing(store.connect()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        row = store._run_row(conn, run_id)
+        _verify_writer(
+            row,
+            writer_lease,
+            now,
+            allowed_statuses={"active", "executing", "finalizing"},
+            fencing_token=fencing_token,
+        )
+        lease_until = _iso(now + store.lease_ttl)
+        changed = conn.execute(
+            "UPDATE runs SET lease_until=?,updated_at=? "
+            "WHERE run_id=? AND writer_lease=? AND fencing_token=? AND lease_until=?",
+            (
+                lease_until, now_text, run_id, writer_lease,
+                int(fencing_token), str(row["lease_until"]),
+            ),
+        ).rowcount
+        if changed != 1:
+            conn.rollback()
+            raise PermissionError("daily_writer_heartbeat_cas_conflict")
+        conn.commit()
+    return {
+        "schemaVersion": "NEWS_GRASP_DAILY_WRITER_HEARTBEAT_V1",
+        "ok": True,
+        "status": "renewed",
+        "run_id": run_id,
+        "lease_until": lease_until,
     }
 
 
@@ -1750,6 +1970,45 @@ def claim_daily_operation(
             if str(existing[0]) != input_hash or str(existing[1]) != handler_id:
                 conn.rollback()
                 raise RuntimeError("daily_operation_claim_idempotency_conflict")
+            existing_status = str(existing[3] or "")
+            token = int(fencing_token if fencing_token is not None else _row_value(row, "fencing_token", 0) or 0)
+            if existing_status == "recoverable" and int(existing[2] or 0) == token:
+                timing_event_id = _append_timing_event_in_tx(
+                    conn,
+                    run_id=run_id,
+                    event_kind="retry",
+                    started_at=now_text,
+                    evidence={
+                        "phase": "daily_operation",
+                        "operation_id": operation_id,
+                        "operation_index": operation_index,
+                        "event": "operation_resume",
+                    },
+                )
+                changed = conn.execute(
+                    "UPDATE daily_operation_claims SET status='claimed',claimed_at=?,completed_at='' "
+                    "WHERE run_id=? AND operation_id=? AND input_hash=? AND handler_id=? "
+                    "AND fencing_token=? AND status='recoverable'",
+                    (now_text, run_id, operation_id, input_hash, handler_id, token),
+                ).rowcount
+                if changed != 1:
+                    conn.rollback()
+                    raise PermissionError("daily_operation_claim_resume_cas_conflict")
+                conn.commit()
+                return {
+                    "schemaVersion": "NEWS_GRASP_DAILY_OPERATION_CLAIM_V1",
+                    "ok": True,
+                    "status": "claimed",
+                    "run_id": run_id,
+                    "operation_id": operation_id,
+                    "input_hash": input_hash,
+                    "handler_id": handler_id,
+                    "fencing_token": token,
+                    "claimed_at": now_text,
+                    "timing_event_id": timing_event_id,
+                    "attach_only": False,
+                    "resumed": True,
+                }
             conn.rollback()
             return {
                 "schemaVersion": "NEWS_GRASP_DAILY_OPERATION_CLAIM_V1",
@@ -1801,6 +2060,65 @@ def claim_daily_operation(
         "claimed_at": now_text,
         "timing_event_id": timing_event_id,
         "attach_only": False,
+    }
+
+
+def release_daily_operation_claim(
+    store: DirectRunStore,
+    *,
+    run_id: str,
+    writer_lease: str,
+    operation_id: str,
+    input_hash: str,
+    handler_id: str,
+    reason: str,
+    fencing_token: int | None = None,
+) -> dict[str, Any]:
+    """Redになったclaimを同一writerの有限recoveryだけへ戻す。"""
+
+    if operation_id not in DAILY_OPERATION_ORDER:
+        raise ValueError("daily_operation_unknown")
+    if not reason.strip():
+        raise ValueError("daily_operation_recovery_reason_missing")
+    _require_fencing_token(store, fencing_token)
+    store.ensure_runtime_schema()
+    now_text = _iso(store.now())
+    with closing(store.connect()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        row = store._run_row(conn, run_id)
+        _verify_writer(row, writer_lease, store.now(), fencing_token=fencing_token)
+        token = int(fencing_token if fencing_token is not None else _row_value(row, "fencing_token", 0) or 0)
+        changed = conn.execute(
+            "UPDATE daily_operation_claims SET status='recoverable',completed_at=? "
+            "WHERE run_id=? AND operation_id=? AND input_hash=? AND handler_id=? "
+            "AND fencing_token=? AND status='claimed'",
+            (now_text, run_id, operation_id, input_hash, handler_id, token),
+        ).rowcount
+        if changed != 1:
+            conn.rollback()
+            raise PermissionError("daily_operation_claim_release_cas_conflict")
+        timing_event_id = _close_open_timing_event(
+            conn,
+            run_id=run_id,
+            ended_at=now_text,
+            evidence={
+                "phase": "daily_operation",
+                "operation_id": operation_id,
+                "event": "operation_red",
+                "status": "recoverable",
+                "reason": reason,
+            },
+        )
+        conn.commit()
+    return {
+        "schemaVersion": "NEWS_GRASP_DAILY_OPERATION_CLAIM_RELEASE_V1",
+        "ok": True,
+        "status": "recoverable",
+        "run_id": run_id,
+        "operation_id": operation_id,
+        "fencing_token": token,
+        "timing_event_id": timing_event_id,
+        "reason": reason,
     }
 
 
@@ -2018,6 +2336,55 @@ def get_daily_operation_receipt(
     return receipt
 
 
+def inspect_external_outbox(
+    store: DirectRunStore,
+    *,
+    run_id: str,
+) -> list[dict[str, Any]]:
+    """consumer verifierへ渡すimmutable external receipt projectionを返す。"""
+
+    store.ensure_runtime_schema()
+    with closing(store.connect()) as conn:
+        run = store._run_row(conn, run_id)
+        rows = conn.execute(
+            """
+            SELECT logical_operation_id,side_effect_id,status,idempotency_key,
+                   fencing_token,provider_ack_status,output_hash,
+                   provider_receipt_json,provider_receipt_hash,provider_output_hash,
+                   started_at,completed_at
+            FROM external_outbox WHERE run_id=? ORDER BY rowid
+            """,
+            (run_id,),
+        ).fetchall()
+    projection: list[dict[str, Any]] = []
+    for row in rows:
+        receipt = _json_load(str(row[7] or "{}"), {})
+        payload_identity = str(
+            receipt.get("payload_identity") or receipt.get("payloadIdentity") or ""
+        ).casefold() if isinstance(receipt, Mapping) else ""
+        projection.append(
+            {
+                "run_id": run_id,
+                "issue_date": str(run["issue_date"] or ""),
+                "run_intent": str(_row_value(run, "run_intent", "") or ""),
+                "operation_id": str(row[0] or ""),
+                "side_effect_id": str(row[1] or ""),
+                "status": str(row[2] or ""),
+                "idempotency_key": str(row[3] or ""),
+                "payload_identity": payload_identity,
+                "fencing_token": int(row[4] or 0),
+                "provider_ack_status": str(row[5] or ""),
+                "payload_hash": str(row[6] or ""),
+                "provider_receipt": dict(receipt) if isinstance(receipt, Mapping) else {},
+                "provider_receipt_hash": str(row[8] or ""),
+                "provider_output_hash": str(row[9] or ""),
+                "started_at": str(row[10] or ""),
+                "completed_at": str(row[11] or ""),
+            }
+        )
+    return projection
+
+
 def record_external_outbox(
     store: DirectRunStore,
     *,
@@ -2115,7 +2482,12 @@ def record_external_outbox(
             "started_at": started_at,
             "completed_at": completed_at,
             "idempotency_key": key,
-            "fencing_token": token,
+            "fencing_binding_hash": fencing_binding_hash(
+                run_id=run_id,
+                generation=int(row["generation"]),
+                writer_lease=writer_lease,
+                fencing_token=token,
+            ),
             "output_hash": output_hash,
             "idempotent": False,
         }
@@ -2213,6 +2585,194 @@ def transition_external_outbox(
     }
 
 
+def start_external_outbox_atomic(
+    store: DirectRunStore,
+    *,
+    run_id: str,
+    writer_lease: str,
+    operation_id: str,
+    event_kind: str,
+    started_at: str | datetime,
+    evidence: Mapping[str, Any],
+    fencing_token: int | None = None,
+) -> dict[str, Any]:
+    """outbox started CASと外部call開始timingを同一transactionで確定する。"""
+
+    if event_kind not in TIMING_EVENT_KINDS:
+        raise ValueError("timing_event_kind_invalid")
+    if not isinstance(evidence, Mapping):
+        raise ValueError("timing_evidence_invalid")
+    _require_fencing_token(store, fencing_token)
+    start_value = _iso(
+        started_at
+        if isinstance(started_at, datetime)
+        else (_parse_time(started_at) or datetime.fromisoformat(started_at))
+    )
+    store.ensure_runtime_schema()
+    with closing(store.connect()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        row = store._run_row(conn, run_id)
+        _verify_writer(row, writer_lease, store.now(), fencing_token=fencing_token)
+        current = conn.execute(
+            "SELECT side_effect_id,status,idempotency_key,fencing_token "
+            "FROM external_outbox WHERE run_id=? AND logical_operation_id=?",
+            (run_id, operation_id),
+        ).fetchone()
+        if current is None:
+            conn.rollback()
+            raise ValueError("external_outbox_missing")
+        token = int(fencing_token if fencing_token is not None else current[3] or 0)
+        if token != int(current[3] or 0):
+            conn.rollback()
+            raise PermissionError("external_outbox_fencing_conflict")
+        if str(current[1]) != "reserved":
+            conn.rollback()
+            raise PermissionError("external_outbox_cas_conflict")
+        changed = conn.execute(
+            """
+            UPDATE external_outbox
+            SET status='started',started_at=?,updated_at=?
+            WHERE run_id=? AND logical_operation_id=?
+              AND status='reserved' AND fencing_token=?
+            """,
+            (start_value, start_value, run_id, operation_id, token),
+        ).rowcount
+        if changed != 1:
+            conn.rollback()
+            raise PermissionError("external_outbox_cas_conflict")
+        event_id = _append_timing_event_in_tx(
+            conn,
+            run_id=run_id,
+            event_kind=event_kind,
+            started_at=start_value,
+            evidence=evidence,
+        )
+        conn.execute(
+            "UPDATE runs SET external_started_at=COALESCE(NULLIF(external_started_at,''),?),updated_at=? WHERE run_id=?",
+            (start_value, start_value, run_id),
+        )
+        conn.commit()
+    return {
+        "schemaVersion": "NEWS_GRASP_EXTERNAL_OUTBOX_START_RECEIPT_V1",
+        "ok": True,
+        "status": "started",
+        "operation_id": operation_id,
+        "side_effect_id": str(current[0]),
+        "idempotency_key": str(current[2]),
+        "timing_event_id": event_id,
+        "started_at": start_value,
+    }
+
+
+def complete_external_outbox_atomic(
+    store: DirectRunStore,
+    *,
+    run_id: str,
+    writer_lease: str,
+    operation_id: str,
+    provider_receipt: Mapping[str, Any],
+    provider_ack_status: str,
+    reconciled: bool = False,
+    fencing_token: int | None = None,
+) -> dict[str, Any]:
+    """validated provider receiptとcompleted遷移を同一transactionへ保存する。"""
+
+    if not isinstance(provider_receipt, Mapping):
+        raise ValueError("external_provider_receipt_invalid")
+    receipt_value = dict(provider_receipt)
+    receipt_json = _json_dump(receipt_value)
+    receipt_hash = hashlib.sha256(receipt_json.encode("utf-8")).hexdigest()
+    provider_output_hash = str(
+        _mapping_first(receipt_value, "output_hash", "outputHash", default="") or ""
+    ).casefold()
+    if re.fullmatch(r"[0-9a-f]{64}", provider_output_hash) is None:
+        raise ValueError("external_provider_output_hash_invalid")
+    _require_fencing_token(store, fencing_token)
+    store.ensure_runtime_schema()
+    now_text = _iso(store.now())
+    with closing(store.connect()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        row = store._run_row(conn, run_id)
+        _verify_writer(row, writer_lease, store.now(), fencing_token=fencing_token)
+        current = conn.execute(
+            "SELECT side_effect_id,status,idempotency_key,fencing_token,provider_receipt_json,provider_receipt_hash,provider_output_hash "
+            "FROM external_outbox WHERE run_id=? AND logical_operation_id=?",
+            (run_id, operation_id),
+        ).fetchone()
+        if current is None:
+            conn.rollback()
+            raise ValueError("external_outbox_missing")
+        token = int(fencing_token if fencing_token is not None else current[3] or 0)
+        if token != int(current[3] or 0):
+            conn.rollback()
+            raise PermissionError("external_outbox_fencing_conflict")
+        if str(current[1]) == "completed":
+            if (
+                str(current[4] or "{}") == receipt_json
+                and str(current[5] or "") == receipt_hash
+                and str(current[6] or "") == provider_output_hash
+            ):
+                conn.rollback()
+                return {
+                    "schemaVersion": "NEWS_GRASP_EXTERNAL_OUTBOX_RECEIPT_V2",
+                    "ok": True,
+                    "status": "completed",
+                    "operation_id": operation_id,
+                    "side_effect_id": str(current[0]),
+                    "idempotency_key": str(current[2]),
+                    "provider_receipt_hash": receipt_hash,
+                    "provider_output_hash": provider_output_hash,
+                    "idempotent": True,
+                }
+            conn.rollback()
+            raise RuntimeError("external_provider_receipt_idempotency_conflict")
+        allowed_current = {"started", "unknown_delivery", "unknown_unobtainable"} if reconciled else {"started"}
+        if str(current[1]) not in allowed_current:
+            conn.rollback()
+            raise PermissionError("external_outbox_cas_conflict")
+        status_placeholders = ",".join("?" for _ in sorted(allowed_current))
+        changed = conn.execute(
+            f"""
+            UPDATE external_outbox
+            SET status='completed',completed_at=?,provider_ack_status=?,updated_at=?,
+                provider_receipt_json=?,provider_receipt_hash=?,provider_output_hash=?
+            WHERE run_id=? AND logical_operation_id=? AND status IN ({status_placeholders}) AND fencing_token=?
+            """,
+            (
+                now_text,
+                str(provider_ack_status or ""),
+                now_text,
+                receipt_json,
+                receipt_hash,
+                provider_output_hash,
+                run_id,
+                operation_id,
+                *sorted(allowed_current),
+                token,
+            ),
+        ).rowcount
+        if changed != 1:
+            conn.rollback()
+            raise PermissionError("external_outbox_cas_conflict")
+        conn.execute(
+            "UPDATE runs SET external_started_at=COALESCE(NULLIF(external_started_at,''),?),updated_at=? WHERE run_id=?",
+            (now_text, now_text, run_id),
+        )
+        conn.commit()
+    return {
+        "schemaVersion": "NEWS_GRASP_EXTERNAL_OUTBOX_RECEIPT_V2",
+        "ok": True,
+        "status": "completed",
+        "operation_id": operation_id,
+        "side_effect_id": str(current[0]),
+        "idempotency_key": str(current[2]),
+        "provider_ack_status": str(provider_ack_status or ""),
+        "provider_receipt_hash": receipt_hash,
+        "provider_output_hash": provider_output_hash,
+        "idempotent": False,
+    }
+
+
 def seal_publish(
     store: DirectRunStore,
     *,
@@ -2224,6 +2784,7 @@ def seal_publish(
     manifest_id: str,
     bundle_id: str,
     external_operation_ids: Sequence[str] = (),
+    external_input_hashes: Mapping[str, str] | None = None,
     fencing_token: int | None = None,
 ) -> dict[str, Any]:
     """外部公開直前のpublish sealを同一runへ固定する。"""
@@ -2245,17 +2806,30 @@ def seal_publish(
         for value in file_hashes.values()
     ):
         raise ValueError("publish_seal_file_hashes_invalid")
+    external_inputs = {
+        str(key): str(value).casefold()
+        for key, value in dict(external_input_hashes or {}).items()
+    }
+    if any(
+        not key or Path(key).is_absolute() or ".." in Path(key).parts
+        or re.fullmatch(r"[0-9a-f]{64}", value) is None
+        for key, value in external_inputs.items()
+    ):
+        raise ValueError("publish_seal_external_input_hashes_invalid")
     manifest_value = str(manifest_id or "").strip().casefold()
     if not re.fullmatch(r"[0-9a-f]{64}", manifest_value) or not str(bundle_id or "").strip():
         raise ValueError("publish_seal_binding_invalid")
     seal = {
         "schemaVersion": "NEWS_GRASP_PUBLISH_SEAL_V1",
+        "runId": run_id,
+        "fencingToken": int(fencing_token or 0),
         "releaseCommitSha": release_commit_sha,
         "exactWriteSet": write_set,
         "fileHashes": dict(file_hashes),
         "manifestId": manifest_value,
         "bundleId": bundle_id,
         "externalOperationIds": list(external_operation_ids),
+        "externalInputHashes": external_inputs,
     }
     seal_json = _json_dump(seal)
     now_text = _iso(store.now())
@@ -2264,6 +2838,24 @@ def seal_publish(
         conn.execute("BEGIN IMMEDIATE")
         row = store._run_row(conn, run_id)
         _verify_writer(row, writer_lease, store.now(), fencing_token=fencing_token)
+        if not store.test_only_allow_semantic_verifier:
+            issue_date = str(row["issue_date"])
+            required_external_inputs = {
+                f"build/tts/{issue_date}.mp3",
+                f"build/tts/deepdive/{issue_date}.mp3",
+                f"build/youtube-podcast/{issue_date}.mp4",
+                f"build/youtube-podcast-deepdive/{issue_date}.mp4",
+            }
+            if set(external_inputs) != required_external_inputs:
+                conn.rollback()
+                raise ValueError("publish_seal_external_input_set_invalid")
+        seal["issueDate"] = str(row["issue_date"] or "")
+        seal["runIntent"] = str(_row_value(row, "run_intent", "") or "")
+        seal["fencingToken"] = int(
+            fencing_token
+            if fencing_token is not None
+            else _row_value(row, "fencing_token", 0) or 0
+        )
         if str(_row_value(row, "external_started_at", "") or "") or store._external_side_effect_state(conn, run_id) != "none":
             conn.rollback()
             raise PermissionError("superseded_after_external_start")
@@ -2702,6 +3294,50 @@ def inspect_run(store: DirectRunStore, *, run_id: str) -> dict[str, Any]:
         return projection
 
 
+def _same_run_release_commit_at_head(
+    cwd: str,
+    *,
+    source_baseline: str,
+    issue_date: str,
+    run_id: str,
+    expected_release_sha: str = "",
+) -> bool:
+    """current integrationのcommit後crashだけを同run continuation候補にする。"""
+
+    if not re.fullmatch(r"[0-9a-f]{40}", source_baseline):
+        return False
+    env = dict(os.environ)
+    env.update({"PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"})
+
+    def probe(*args: str) -> str | None:
+        completed = subprocess.run(
+            ["git", *args],
+            cwd=cwd,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+            errors="strict",
+            timeout=30,
+            check=False,
+            shell=False,
+            creationflags=int(getattr(subprocess, "CREATE_NO_WINDOW", 0)),
+            env=env,
+        )
+        return completed.stdout.strip() if completed.returncode == 0 else None
+
+    head = str(probe("rev-parse", "HEAD") or "").casefold()
+    if not re.fullmatch(r"[0-9a-f]{40}", head) or head == source_baseline:
+        return False
+    if expected_release_sha and head != expected_release_sha.casefold():
+        return False
+    parent = str(probe("rev-parse", f"{head}^") or "").casefold()
+    message = str(probe("log", "-1", "--format=%B", head) or "")
+    expected_message = f"Publish {issue_date} News-Grasp daily release [{run_id}]"
+    return parent == source_baseline and message == expected_message
+
+
 def start_run(
     store: DirectRunStore,
     *,
@@ -2769,6 +3405,44 @@ def start_run(
             issue_date=issue,
             run_intent=identity_run_intent,
         )
+        # 同じ自然Daily identityを一度completedへ確定した後は、generationを
+        # 増やして再実行してはならない。公開済みbundleを書き換えるcontent
+        # handlerやduplicate external sendへ到達する前に、この最上流transaction
+        # でfail-closedする。明示的な訂正公開は別run intentと別authorityを持つ
+        # 新releaseであり、scheduled_production_directの続きにはしない。
+        completed_identity = conn.execute(
+            """
+            SELECT * FROM runs
+            WHERE automation_id=? AND issue_date=?
+              AND COALESCE(run_intent,'')=?
+              AND status IN ('completed','complete','green')
+            ORDER BY generation DESC
+            LIMIT 1
+            """,
+            (automation_id, issue, identity_run_intent),
+        ).fetchone()
+        if completed_identity is not None:
+            projection = _projection_from_row(store, conn, completed_identity)
+            projection.update(
+                {
+                    "ok": False,
+                    "status": "blocked",
+                    "single_flight": "completed_reexecution_rejected",
+                    "failures": ["same_issue_completed_reexecution_forbidden"],
+                    "exact_successor": "next_natural_issue_date_or_explicit_new_release",
+                }
+            )
+            projection.pop("writer_lease", None)
+            projection.pop("fencing_token", None)
+            start_seal_projection = projection.get("start_seal")
+            if isinstance(start_seal_projection, Mapping):
+                projection["start_seal"] = {
+                    key: value
+                    for key, value in start_seal_projection.items()
+                    if key not in {"fencingToken", "writerLease"}
+                }
+            conn.rollback()
+            return projection
         if latest is not None:
             lease_until = _parse_time(latest["lease_until"])
             if latest["status"] in {"active", "executing", "finalizing"} and lease_until and lease_until > now:
@@ -2790,7 +3464,357 @@ def start_run(
                 return projection
             if latest["status"] in {"active", "executing", "finalizing"}:
                 external_state = store._external_side_effect_state(conn, latest["run_id"])
+                if latest["status"] == "finalizing" and str(latest["finalization_nonce"] or ""):
+                    admission_receipt = _json_load(
+                        str(latest["observation_receipt_json"] or "{}"),
+                        {},
+                    )
+                    stored_seal = _json_load(
+                        _row_value(latest, "start_seal_json", "{}"),
+                        {},
+                    )
+                    publish_seal = _json_load(
+                        _row_value(latest, "publish_seal_json", "{}"),
+                        {},
+                    )
+                    daily_receipt_rows = conn.execute(
+                        """
+                        SELECT operation_id,operation_index,input_hash,handler_id,payload_json,receipt_json,
+                               applied_at,fencing_token,receipt_hash
+                        FROM daily_operation_receipts WHERE run_id=? ORDER BY operation_index
+                        """,
+                        (latest["run_id"],),
+                    ).fetchall()
+                    daily_indices = [int(item[1]) for item in daily_receipt_rows]
+                    daily_receipt_digest = hashlib.sha256(
+                        _json_dump([list(item) for item in daily_receipt_rows]).encode("utf-8")
+                    ).hexdigest()
+                    consumer_receipt_hash = ""
+                    if len(daily_receipt_rows) > DAILY_OPERATION_ORDER.index("consumer_public_verification"):
+                        consumer_operation = _json_load(
+                            str(
+                                daily_receipt_rows[
+                                    DAILY_OPERATION_ORDER.index("consumer_public_verification")
+                                ][5]
+                            ),
+                            {},
+                        )
+                        consumer_receipt = _unwrap_consumer_public_receipt(
+                            consumer_operation.get("producer_receipt")
+                            if isinstance(consumer_operation, Mapping)
+                            else None
+                        )
+                        if consumer_receipt is None and isinstance(consumer_operation, Mapping):
+                            consumer_receipt = _unwrap_consumer_public_receipt(
+                                consumer_operation.get("producerReceipt")
+                            )
+                        if consumer_receipt is not None:
+                            consumer_receipt_hash = _consumer_receipt_hash(consumer_receipt)
+                    finalizer_recovery_valid = (
+                        isinstance(admission_receipt, Mapping)
+                        and admission_receipt.get("schemaVersion")
+                        == "NEWS_GRASP_DAILY_FINALIZER_ADMISSION_V1"
+                        and str(admission_receipt.get("runId") or "")
+                        == str(latest["run_id"])
+                        and str(admission_receipt.get("nonce") or "")
+                        == str(latest["finalization_nonce"] or "")
+                        and str(admission_receipt.get("manifestId") or "")
+                        == str(latest["manifest_id"] or "")
+                        and str(admission_receipt.get("admissionUpdatedAt") or "")
+                        == str(latest["updated_at"] or "")
+                        and str(admission_receipt.get("dailyReceiptDigest") or "")
+                        == daily_receipt_digest
+                        and str(admission_receipt.get("consumerReceiptHash") or "")
+                        == consumer_receipt_hash
+                        and bool(consumer_receipt_hash)
+                        and daily_indices == list(range(len(DAILY_OPERATION_ORDER)))
+                        and stored_seal.get("runtimeGeneration") == str(runtime_generation)
+                        and stored_seal.get("allowedSideEffectIds") == side_effect_ids
+                        and publish_seal.get("schemaVersion") == "NEWS_GRASP_PUBLISH_SEAL_V1"
+                        and publish_seal.get("runId") == latest["run_id"]
+                        and int(publish_seal.get("fencingToken") or 0)
+                        == int(_row_value(latest, "fencing_token", 0) or 0)
+                        and external_state in {"started", "unknown_delivery"}
+                    )
+                    if finalizer_recovery_valid:
+                        renewed_until = _iso(now + store.lease_ttl)
+                        changed = conn.execute(
+                            "UPDATE runs SET lease_until=? WHERE run_id=? AND writer_lease=? "
+                            "AND fencing_token=? AND lease_until=? AND status='finalizing' "
+                            "AND finalization_nonce=? AND updated_at=?",
+                            (
+                                renewed_until,
+                                latest["run_id"],
+                                latest["writer_lease"],
+                                int(_row_value(latest, "fencing_token", 0) or 0),
+                                latest["lease_until"],
+                                latest["finalization_nonce"],
+                                latest["updated_at"],
+                            ),
+                        ).rowcount
+                        if changed != 1:
+                            conn.rollback()
+                            raise PermissionError("finalizer_continuation_lease_cas_conflict")
+                        _append_timing_event_in_tx(
+                            conn,
+                            run_id=str(latest["run_id"]),
+                            event_kind="handoff",
+                            started_at=str(latest["lease_until"]),
+                            ended_at=now_text,
+                            evidence={
+                                "phase": "atomic_completion",
+                                "event": "finalizer_receipt_resume",
+                                "external_state": external_state,
+                            },
+                        )
+                        recovered = store._run_row(conn, str(latest["run_id"]))
+                        projection = _projection_from_row(store, conn, recovered)
+                        projection.update(
+                            {
+                                "status": "finalizing",
+                                "single_flight": "recovered_finalizer_receipt",
+                                "continuation_recovery": True,
+                            }
+                        )
+                        conn.commit()
+                        return projection
+                    projection = _projection_from_row(store, conn, latest)
+                    projection.update(
+                        {
+                            "status": "blocked",
+                            "single_flight": "blocked",
+                            "failures": ["finalizer_recovery_evidence_invalid"],
+                        }
+                    )
+                    projection.pop("writer_lease", None)
+                    projection.pop("fencing_token", None)
+                    conn.rollback()
+                    return projection
+                # current_issue_integrationはrelease commit/publish sealをDaily
+                # receiptより先に作る。ownerがその狭い窓で停止した場合だけ、
+                # exact commitまたはexact sealを一次証拠として同じrunへ戻す。
+                # 新generationへ進めると旧run ID入りcommitを再利用できず、
+                # duplicate publicationの誘因になるためである。
+                stored_seal = _json_load(
+                    _row_value(latest, "start_seal_json", "{}"),
+                    {},
+                )
+                publish_seal = _json_load(
+                    _row_value(latest, "publish_seal_json", "{}"),
+                    {},
+                )
+                current_claim = conn.execute(
+                    "SELECT input_hash,handler_id,fencing_token,status FROM daily_operation_claims "
+                    "WHERE run_id=? AND operation_id='current_issue_integration'",
+                    (latest["run_id"],),
+                ).fetchone()
+                current_receipt = conn.execute(
+                    "SELECT 1 FROM daily_operation_receipts "
+                    "WHERE run_id=? AND operation_id='current_issue_integration'",
+                    (latest["run_id"],),
+                ).fetchone()
+                current_prior_indices = [
+                    int(item[0])
+                    for item in conn.execute(
+                        "SELECT operation_index FROM daily_operation_receipts "
+                        "WHERE run_id=? ORDER BY operation_index",
+                        (latest["run_id"],),
+                    ).fetchall()
+                ]
+                route_binding_matches = (
+                    stored_seal.get("runtimeGeneration") == str(runtime_generation)
+                    and stored_seal.get("allowedSideEffectIds") == side_effect_ids
+                )
+                publish_seal_matches = (
+                    publish_seal.get("schemaVersion") == "NEWS_GRASP_PUBLISH_SEAL_V1"
+                    and publish_seal.get("runId") == latest["run_id"]
+                    and int(publish_seal.get("fencingToken") or 0)
+                    == int(_row_value(latest, "fencing_token", 0) or 0)
+                )
+                commit_matches = _same_run_release_commit_at_head(
+                    canonical_cwd,
+                    source_baseline=str(stored_seal.get("sourceBaseline") or "").casefold(),
+                    issue_date=issue,
+                    run_id=str(latest["run_id"]),
+                    expected_release_sha=(
+                        str(publish_seal.get("releaseCommitSha") or "")
+                        if publish_seal.get("schemaVersion") == "NEWS_GRASP_PUBLISH_SEAL_V1"
+                        else ""
+                    ),
+                )
+                can_recover_current_issue = (
+                    latest["status"] in {"active", "executing"}
+                    and external_state == "none"
+                    and not str(latest["external_started_at"] or "")
+                    and route_binding_matches
+                    and current_claim is not None
+                    and str(current_claim[3] or "") in {"claimed", "recoverable"}
+                    and int(current_claim[2] or 0)
+                    == int(_row_value(latest, "fencing_token", 0) or 0)
+                    and current_receipt is None
+                    and current_prior_indices
+                    == list(range(DAILY_OPERATION_ORDER.index("current_issue_integration")))
+                    and commit_matches
+                    and (
+                        publish_seal.get("schemaVersion")
+                        != "NEWS_GRASP_PUBLISH_SEAL_V1"
+                        or publish_seal_matches
+                    )
+                )
+                if can_recover_current_issue:
+                    recovery_lease = _opaque_id(
+                        "lease-current-recovery",
+                        issue,
+                        int(latest["generation"]),
+                    )
+                    renewed_until = _iso(now + store.lease_ttl)
+                    changed = conn.execute(
+                        "UPDATE runs SET writer_lease=?,lease_until=?,status='active',updated_at=?,"
+                        "exact_successor='current_issue_integration' "
+                        "WHERE run_id=? AND writer_lease=? AND lease_until=? "
+                        "AND status IN ('active','executing')",
+                        (
+                            recovery_lease,
+                            renewed_until,
+                            now_text,
+                            latest["run_id"],
+                            latest["writer_lease"],
+                            latest["lease_until"],
+                        ),
+                    ).rowcount
+                    if changed != 1:
+                        conn.rollback()
+                        raise PermissionError("current_issue_continuation_lease_cas_conflict")
+                    conn.execute(
+                        "UPDATE daily_operation_claims SET status='recoverable',completed_at=? "
+                        "WHERE run_id=? AND operation_id='current_issue_integration' "
+                        "AND status IN ('claimed','recoverable')",
+                        (now_text, latest["run_id"]),
+                    )
+                    _append_timing_event_in_tx(
+                        conn,
+                        run_id=str(latest["run_id"]),
+                        event_kind="handoff",
+                        started_at=str(latest["lease_until"]),
+                        ended_at=now_text,
+                        evidence={
+                            "phase": "current_issue_integration",
+                            "event": "expired_owner_continuation",
+                            "release_commit_reusable": commit_matches,
+                            "publish_seal_reusable": publish_seal_matches,
+                        },
+                    )
+                    recovered = store._run_row(conn, str(latest["run_id"]))
+                    projection = _projection_from_row(store, conn, recovered)
+                    projection.update(
+                        {
+                            "status": "active",
+                            "single_flight": "recovered_after_expired_owner",
+                            "continuation_recovery": True,
+                        }
+                    )
+                    conn.commit()
+                    return projection
                 if str(latest["external_started_at"] or "") or external_state != "none":
+                    # owner lease失効後のexternal_publicationだけは、同じrunへ
+                    # continuation capabilityを再発行してreconcileさせる。生存中
+                    # leaseのsteal、他operationの再実行、新generation化はしない。
+                    stored_seal = _json_load(_row_value(latest, "start_seal_json", "{}"), {})
+                    # push後のremote HEADやmanifest reservationをcaller側で
+                    # 再計算しない。immutable start/publish sealをauthorityにし、
+                    # restart callerはruntime generationとroute集合だけを証明する。
+                    publish_seal = _json_load(
+                        _row_value(latest, "publish_seal_json", "{}"),
+                        {},
+                    )
+                    binding_matches = (
+                        stored_seal.get("runtimeGeneration") == str(runtime_generation)
+                        and stored_seal.get("allowedSideEffectIds") == side_effect_ids
+                        and publish_seal.get("schemaVersion") == "NEWS_GRASP_PUBLISH_SEAL_V1"
+                        and publish_seal.get("runId") == latest["run_id"]
+                        and int(publish_seal.get("fencingToken") or 0)
+                        == int(_row_value(latest, "fencing_token", 0) or 0)
+                    )
+                    external_claim = conn.execute(
+                        "SELECT input_hash,handler_id,fencing_token,status FROM daily_operation_claims "
+                        "WHERE run_id=? AND operation_id='external_publication'",
+                        (latest["run_id"],),
+                    ).fetchone()
+                    external_receipt = conn.execute(
+                        "SELECT 1 FROM daily_operation_receipts "
+                        "WHERE run_id=? AND operation_id='external_publication'",
+                        (latest["run_id"],),
+                    ).fetchone()
+                    prior_indices = [
+                        int(item[0])
+                        for item in conn.execute(
+                            "SELECT operation_index FROM daily_operation_receipts "
+                            "WHERE run_id=? ORDER BY operation_index",
+                            (latest["run_id"],),
+                        ).fetchall()
+                    ]
+                    can_recover_external = (
+                        latest["status"] in {"active", "executing"}
+                        and binding_matches
+                        and external_claim is not None
+                        and str(external_claim[3] or "") in {"claimed", "recoverable"}
+                        and int(external_claim[2] or 0) == int(_row_value(latest, "fencing_token", 0) or 0)
+                        and external_receipt is None
+                        and prior_indices == list(range(DAILY_OPERATION_ORDER.index("external_publication")))
+                    )
+                    if can_recover_external:
+                        recovery_lease = _opaque_id(
+                            "lease-recovery",
+                            issue,
+                            int(latest["generation"]),
+                        )
+                        renewed_until = _iso(now + store.lease_ttl)
+                        changed = conn.execute(
+                            "UPDATE runs SET writer_lease=?,lease_until=?,status='active',updated_at=?,"
+                            "exact_successor='external_publication' "
+                            "WHERE run_id=? AND writer_lease=? AND lease_until=? "
+                            "AND status IN ('active','executing')",
+                            (
+                                recovery_lease,
+                                renewed_until,
+                                now_text,
+                                latest["run_id"],
+                                latest["writer_lease"],
+                                latest["lease_until"],
+                            ),
+                        ).rowcount
+                        if changed != 1:
+                            conn.rollback()
+                            raise PermissionError("external_continuation_lease_cas_conflict")
+                        conn.execute(
+                            "UPDATE daily_operation_claims SET status='recoverable',completed_at=? "
+                            "WHERE run_id=? AND operation_id='external_publication' "
+                            "AND status IN ('claimed','recoverable')",
+                            (now_text, latest["run_id"]),
+                        )
+                        _append_timing_event_in_tx(
+                            conn,
+                            run_id=str(latest["run_id"]),
+                            event_kind="handoff",
+                            started_at=str(latest["lease_until"]),
+                            ended_at=now_text,
+                            evidence={
+                                "phase": "external_publication",
+                                "event": "expired_owner_continuation",
+                                "external_state": external_state,
+                            },
+                        )
+                        recovered = store._run_row(conn, str(latest["run_id"]))
+                        projection = _projection_from_row(store, conn, recovered)
+                        projection.update(
+                            {
+                                "status": "active",
+                                "single_flight": "recovered_after_expired_owner",
+                                "continuation_recovery": True,
+                            }
+                        )
+                        conn.commit()
+                        return projection
                     projection = _projection_from_row(store, conn, latest)
                     failure = (
                         "unknown_delivery_requires_attach"
@@ -3864,6 +4888,22 @@ def _consumer_receipt_hash(receipt: Mapping[str, Any]) -> str:
     return hashlib.sha256(_json_dump(dict(receipt)).encode("utf-8")).hexdigest()
 
 
+def fencing_binding_hash(
+    *,
+    run_id: str,
+    generation: int,
+    writer_lease: str,
+    fencing_token: int,
+) -> str:
+    """raw fencing capabilityをreceiptへ出さず同一writerへ束縛する。"""
+
+    if not run_id or not writer_lease or int(generation) <= 0 or int(fencing_token) <= 0:
+        raise ValueError("fencing_binding_identity_invalid")
+    return hashlib.sha256(
+        f"{run_id}\0{int(generation)}\0{writer_lease}\0{int(fencing_token)}".encode("utf-8")
+    ).hexdigest()
+
+
 def _daily_public_observation_receipt(
     *,
     store: DirectRunStore,
@@ -3953,7 +4993,9 @@ def _daily_public_observation_receipt(
     expected_run_intent = str(_mapping_first(binding, "runIntent", "run_intent", default="") or "")
     expected_manifest = str(_mapping_first(binding, "manifestId", "manifest_id", default="") or "").casefold()
     expected_generation = _mapping_first(binding, "generation", "generationId", "generation_id")
-    expected_fencing = _mapping_first(binding, "fencingToken", "fencing_token")
+    expected_fencing_hash = str(
+        _mapping_first(binding, "fencingBindingHash", "fencing_binding_hash", default="") or ""
+    ).casefold()
     expected_updated = str(_mapping_first(binding, "updatedAt", "updated_at", default="") or "")
     observed_at_text = str(_mapping_first(binding, "observedAt", "observed_at", default="") or "")
     observed_at = _parse_time(observed_at_text)
@@ -3986,7 +5028,12 @@ def _daily_public_observation_receipt(
         raise PermissionError("finalizer_consumer_observation_nonce_missing")
     try:
         generation_matches = expected_generation is not None and int(expected_generation) == int(row["generation"])
-        fencing_matches = expected_fencing is not None and int(expected_fencing) == int(_row_value(row, "fencing_token", 0) or 0)
+        fencing_matches = expected_fencing_hash == fencing_binding_hash(
+            run_id=str(row["run_id"]),
+            generation=int(row["generation"]),
+            writer_lease=str(row["writer_lease"]),
+            fencing_token=int(_row_value(row, "fencing_token", 0) or 0),
+        )
     except (TypeError, ValueError) as exc:
         raise PermissionError("finalizer_consumer_freshness_binding_invalid") from exc
     consumer_index = DAILY_OPERATION_ORDER.index("consumer_public_verification")
@@ -4062,6 +5109,7 @@ def _finalize_daily_public_completion(
     admitted_consumer_receipt: dict[str, Any] = {}
     admitted_consumer_hash = ""
     admission_updated_at = ""
+    admission_at = store.now()
     with closing(store.connect()) as conn:
         conn.execute("BEGIN IMMEDIATE")
         row = store._run_row(conn, run_id)
@@ -4073,9 +5121,6 @@ def _finalize_daily_public_completion(
             allowed_statuses={"active", "executing", "finalizing"},
             fencing_token=fencing_token,
         )
-        if str(row["status"] or "") == "finalizing" and str(row["finalization_nonce"] or ""):
-            conn.rollback()
-            raise PermissionError("finalizer_already_consumed")
         daily_rows = conn.execute(
             """
             SELECT operation_id,operation_index,input_hash,handler_id,payload_json,receipt_json,
@@ -4084,45 +5129,99 @@ def _finalize_daily_public_completion(
             """,
             (run_id,),
         ).fetchall()
-        # row.updated_atはfinalizer admissionが書き換える前の値を保持する。
-        # consumer freshness bindingはこの値へ束縛し、admission後の新しい
-        # updated_atへ誤って再束縛しない。
-        admitted_consumer_receipt, _binding, admitted_consumer_hash, admitted_updated_at = _daily_public_observation_receipt(
-            store=store,
-            row=row,
-            daily_rows=daily_rows,
-            public_observation_receipt=public_observation_receipt,
-            admitted_at=now,
-        )
-        admitted_row = row
         admitted_stage_digest = hashlib.sha256(
             _json_dump([list(item) for item in daily_rows]).encode("utf-8")
         ).hexdigest()
-        now_text = _iso(now)
-        admission_updated_at = now_text
-        lease_until = _iso(now + store.lease_ttl)
-        changed = conn.execute(
-            """
-            UPDATE runs SET status='finalizing', finalization_nonce=?, lease_until=?, updated_at=?
-            WHERE run_id=? AND writer_lease=? AND fencing_token=?
-              AND status IN ('active','executing','finalizing')
-              AND finalization_nonce=''
-              AND updated_at=?
-            """,
-            (
-                finalizer_nonce,
-                lease_until,
-                now_text,
-                run_id,
-                writer_lease,
-                int(fencing_token if fencing_token is not None else _row_value(row, "fencing_token", 0) or 0),
-                row["updated_at"],
-            ),
-        ).rowcount
-        if changed != 1:
+        persisted_admission = _json_load(str(row["observation_receipt_json"] or "{}"), {})
+        if str(row["status"] or "") == "finalizing" and str(row["finalization_nonce"] or ""):
+            # admission commit後のprocess crashは、保存済みconsumer receiptを
+            # 再観測せず同じnonce/hashでfinal transactionだけresumeする。
+            if (
+                not isinstance(persisted_admission, Mapping)
+                or persisted_admission.get("schemaVersion")
+                != "NEWS_GRASP_DAILY_FINALIZER_ADMISSION_V1"
+                or str(persisted_admission.get("runId") or "") != run_id
+                or str(persisted_admission.get("nonce") or "")
+                != str(row["finalization_nonce"] or "")
+                or str(persisted_admission.get("dailyReceiptDigest") or "")
+                != admitted_stage_digest
+                or str(persisted_admission.get("manifestId") or "")
+                != str(row["manifest_id"] or "")
+                or str(persisted_admission.get("admissionUpdatedAt") or "")
+                != str(row["updated_at"] or "")
+            ):
+                conn.rollback()
+                raise PermissionError("finalizer_resume_admission_receipt_invalid")
+            resumed_at = _parse_time(str(persisted_admission.get("admittedAt") or ""))
+            if resumed_at is None:
+                conn.rollback()
+                raise PermissionError("finalizer_resume_admitted_at_invalid")
+            admitted_consumer_receipt, _binding, admitted_consumer_hash, admitted_updated_at = _daily_public_observation_receipt(
+                store=store,
+                row=row,
+                daily_rows=daily_rows,
+                public_observation_receipt=public_observation_receipt,
+                admitted_at=resumed_at,
+            )
+            if admitted_consumer_hash != str(persisted_admission.get("consumerReceiptHash") or ""):
+                conn.rollback()
+                raise PermissionError("finalizer_resume_consumer_receipt_hash_mismatch")
+            finalizer_nonce = str(row["finalization_nonce"] or "")
+            admission_updated_at = str(row["updated_at"] or "")
+            admission_at = resumed_at
+            admitted_row = row
             conn.rollback()
-            raise PermissionError("finalizer_admission_cas_conflict")
-        conn.commit()
+        else:
+            # row.updated_atはfinalizer admissionが書き換える前の値を保持する。
+            # consumer freshness bindingはこの値へ束縛し、admission後の新しい
+            # updated_atへ誤って再束縛しない。
+            admitted_consumer_receipt, _binding, admitted_consumer_hash, admitted_updated_at = _daily_public_observation_receipt(
+                store=store,
+                row=row,
+                daily_rows=daily_rows,
+                public_observation_receipt=public_observation_receipt,
+                admitted_at=now,
+            )
+            admitted_row = row
+            now_text = _iso(now)
+            admission_updated_at = now_text
+            admission_at = now
+            lease_until = _iso(now + store.lease_ttl)
+            admission_receipt = {
+                "schemaVersion": "NEWS_GRASP_DAILY_FINALIZER_ADMISSION_V1",
+                "runId": run_id,
+                "nonce": finalizer_nonce,
+                "manifestId": str(row["manifest_id"] or ""),
+                "dailyReceiptDigest": admitted_stage_digest,
+                "consumerReceiptHash": admitted_consumer_hash,
+                "consumerBindingUpdatedAt": admitted_updated_at,
+                "admittedAt": now_text,
+                "admissionUpdatedAt": now_text,
+            }
+            changed = conn.execute(
+                """
+                UPDATE runs SET status='finalizing', finalization_nonce=?, lease_until=?, updated_at=?,
+                       observation_receipt_json=?
+                WHERE run_id=? AND writer_lease=? AND fencing_token=?
+                  AND status IN ('active','executing','finalizing')
+                  AND finalization_nonce=''
+                  AND updated_at=?
+                """,
+                (
+                    finalizer_nonce,
+                    lease_until,
+                    now_text,
+                    _json_dump(admission_receipt),
+                    run_id,
+                    writer_lease,
+                    int(fencing_token if fencing_token is not None else _row_value(row, "fencing_token", 0) or 0),
+                    row["updated_at"],
+                ),
+            ).rowcount
+            if changed != 1:
+                conn.rollback()
+                raise PermissionError("finalizer_admission_cas_conflict")
+            conn.commit()
 
     def restore_after_red() -> None:
         with closing(store.connect()) as restore:
@@ -4130,7 +5229,8 @@ def _finalize_daily_public_completion(
             token = int(fencing_token if fencing_token is not None else _row_value(admitted_row, "fencing_token", 0) or 0)
             restored = restore.execute(
                 """
-                UPDATE runs SET status='active',finalization_nonce='',exact_successor='public_completion',updated_at=?
+                UPDATE runs SET status='active',finalization_nonce='',exact_successor='public_completion',
+                       observation_receipt_json='{}',updated_at=?
                 WHERE run_id=? AND writer_lease=? AND fencing_token=? AND status='finalizing' AND finalization_nonce=?
                 """,
                 (_iso(store.now()), run_id, writer_lease, token, finalizer_nonce),
@@ -4171,7 +5271,7 @@ def _finalize_daily_public_completion(
                 row=admitted_row,
                 daily_rows=current_daily_rows,
                 public_observation_receipt=admitted_consumer_receipt,
-                admitted_at=now,
+                admitted_at=admission_at,
             )
             if (
                 current_digest != admitted_stage_digest
@@ -5086,7 +6186,7 @@ def _main() -> int:
         help="対象日 YYYY-MM-DD。未指定なら Asia/Tokyo の当日を使う。",
     )
     start.add_argument("--automation-id", default=AUTOMATION_ID)
-    start.add_argument("--run-intent", default="")
+    start.add_argument("--run-intent", default=RUN_INTENT)
     start.add_argument("--manifest-id", default="")
     start.add_argument("--manifest-reservation-id", default="")
     start.add_argument("--scheduler-trigger-at", default=None)

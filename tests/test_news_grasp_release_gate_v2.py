@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import json
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -175,8 +176,8 @@ def test_NG_RG_03_selector_is_rejected_before_subprocess(monkeypatch: pytest.Mon
 
 @pytest.mark.parametrize(
     "forbidden_key",
-    ["collection_nodes", "partitions", "runner", "pytest_args"],
-    ids=["fake-collection", "fake-partition", "runner-injection", "selector"],
+    ["collection_nodes", "partitions", "runner", "pytest_args", "ledger_path"],
+    ids=["fake-collection", "fake-partition", "runner-injection", "selector", "ledger-override"],
 )
 def test_NG_RG_03_cli_payload_injection_is_rejected_without_process(
     forbidden_key: str,
@@ -197,6 +198,55 @@ def test_NG_RG_03_cli_payload_injection_is_rejected_without_process(
     assert exit_code == 1
     assert "release_payload_selector_or_fake_collection_forbidden" in output
     assert starts == []
+
+
+def test_NG_RG_03_production_ledger_override_is_rejected_before_process(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    starts: list[object] = []
+    monkeypatch.setattr(gate.subprocess, "run", lambda *args, **kwargs: starts.append(args))
+
+    with pytest.raises(gate.NewsGraspReleaseGateError, match="release_production_ledger_override_forbidden"):
+        gate.collect_only_nodes(
+            tmp_path,
+            ledger_path=tmp_path / "caller-ledger.jsonl",
+            release_id="release-ledger-override",
+        )
+    assert starts == []
+
+
+def test_NG_RG_03_fabricated_collection_mapping_is_not_release_authority(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    ledger = tmp_path / "canonical" / "release_ledger.jsonl"
+    monkeypatch.setattr(gate, "_canonical_ledger_path", lambda: ledger)
+    test_module = tmp_path / "tests" / "test_fixture_release.py"
+    test_module.parent.mkdir(parents=True)
+    test_module.write_text("def test_ok():\n    assert True\n", encoding="utf-8")
+    node = "tests/test_fixture_release.py::test_ok"
+    receipt = {
+        "schemaVersion": gate.RELEASE_COLLECTION_SCHEMA,
+        "ok": True,
+        "status": "collection_produced",
+        "authority": "release_authoritative_collect_only",
+        "release_id": "release-fabricated",
+        "collection_nodes": [node],
+        "collection_sha256": gate._node_hash([node]),
+        "ledger_path": str(ledger),
+    }
+
+    with pytest.raises(
+        gate.NewsGraspReleaseGateError,
+        match="release_authoritative_collection_ledger_binding_invalid",
+    ):
+        gate.execute_partitioned_nodes(
+            [node],
+            repo_root=tmp_path,
+            collection_receipt=receipt,
+            release_id="release-fabricated",
+        )
 
 
 def test_NG_RG_03_production_api_rejects_runner_and_partition_override_before_process(
@@ -623,3 +673,132 @@ def test_NG_RG_10_append_only_ledger_chain_tamper_is_rejected(tmp_path: Path) ->
 
     with pytest.raises(gate.NewsGraspReleaseGateError, match="release_ledger_chain_invalid"):
         gate._ledger_events(ledger)
+
+
+def test_NG_RG_10_canonical_ledger_uses_known_folder_mac_not_localappdata(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    trusted_local = tmp_path / "known-folder"
+    trusted_local.mkdir()
+    monkeypatch.setattr(gate, "_known_folder_local_app_data", lambda: trusted_local)
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "attacker-env"))
+    ledger = gate._canonical_ledger_path()
+
+    gate._append_ledger(ledger, "fixture_mac", release_id="release-mac")
+    rows = [json.loads(line) for line in ledger.read_text(encoding="utf-8").splitlines()]
+    assert len(rows) == 1
+    assert len(rows[0]["event_mac"]) == 64
+    assert str(ledger).startswith(str(trusted_local))
+    assert "attacker-env" not in str(ledger)
+    rows[0]["event_mac"] = "0" * 64
+    ledger.write_text(json.dumps(rows[0], separators=(",", ":")) + "\n", encoding="utf-8")
+    with pytest.raises(gate.NewsGraspReleaseGateError, match="release_ledger_event_mac_invalid"):
+        gate._ledger_events(ledger)
+
+
+def test_NG_RG_10_parallel_ledger_append_has_one_valid_hash_chain(tmp_path: Path) -> None:
+    ledger = tmp_path / "parallel" / "release_ledger.jsonl"
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        list(
+            pool.map(
+                lambda index: gate._append_ledger(
+                    ledger,
+                    "parallel_fixture",
+                    release_id=f"release-{index}",
+                ),
+                range(24),
+            )
+        )
+
+    events = gate._ledger_events(ledger)
+    assert len(events) == 24
+    assert len({event["event_hash"] for event in events}) == 24
+
+
+def test_NG_RG_11_green_release_event_issues_exactly_one_daily_promotion(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    repo = Path(__file__).resolve().parents[1]
+    ledger = tmp_path / "canonical" / "release_ledger.jsonl"
+    state_root = tmp_path / "direct-mainline"
+    monkeypatch.setattr(gate, "_canonical_ledger_path", lambda: ledger)
+    monkeypatch.setattr(gate, "_canonical_daily_state_root", lambda: state_root)
+    node = "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_01_authoritative_collection_count_mismatch_is_red"
+    release_id = "release-promotion-authority"
+    monkeypatch.setattr(
+        gate,
+        "_run_fixed_pytest",
+        lambda **_kwargs: {
+            "schemaVersion": "NEWS_GRASP_RELEASE_PROCESS_RECEIPT_V1",
+            "ok": True,
+            "status": "green",
+            "transport": "ok",
+            "exit_code": 0,
+            "structured": _collection_report([node]),
+        },
+    )
+    collection = gate.collect_only_nodes(repo, release_id=release_id)
+    assert collection["ok"] is True
+
+    def green_partition(name: str, nodes: list[str], **_kwargs: Any) -> dict[str, Any]:
+        return {
+            "schemaVersion": "NEWS_GRASP_RELEASE_PARTITION_PROCESS_RECEIPT_V2",
+            "receipt_id": "partition-green",
+            "partition": name,
+            "node_ids": list(nodes),
+            "node_count": len(nodes),
+            "node_receipts": [
+                {
+                    "node_id": item,
+                    "partition": name,
+                    "status": "pass",
+                    "events": [],
+                    "receipt_id": "partition-green",
+                }
+                for item in nodes
+            ],
+            "failed_nodes": [],
+            "skipped_nodes": [],
+            "exact_failed_set_sha256": gate._node_hash([]),
+            "process_count": 1,
+            "ok": True,
+            "status": "green",
+        }
+
+    monkeypatch.setattr(gate, "_run_partition_process", green_partition)
+    first = gate.execute_partitioned_nodes(
+        [node],
+        repo_root=repo,
+        collection_receipt=collection,
+        release_id=release_id,
+    )
+    second = gate.execute_partitioned_nodes(
+        [node],
+        repo_root=repo,
+        collection_receipt=collection,
+        release_id=release_id,
+    )
+
+    assert first["ok"] is True
+    assert second["status"] == "release_attached"
+    events = gate._ledger_events(ledger)
+    promotions = [event for event in events if event["event_type"] == "daily_promotion_issued"]
+    assert len(promotions) == 1
+    promotion_path = state_root / "promotion" / "daily-scoped-promotion.json"
+    assert promotion_path.is_file()
+    tampered = json.loads(promotion_path.read_text(encoding="utf-8"))
+    tampered["release_id"] = "tampered-release"
+    promotion_path.write_text(json.dumps(tampered), encoding="utf-8")
+    with pytest.raises(
+        gate.NewsGraspReleaseGateError,
+        match="daily_promotion_existing_receipt_invalid",
+    ):
+        gate.execute_partitioned_nodes(
+            [node],
+            repo_root=repo,
+            collection_receipt=collection,
+            release_id=release_id,
+        )

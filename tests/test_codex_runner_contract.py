@@ -31,6 +31,7 @@ def test_daily_automation_points_to_direct_mainline_without_runner_command() -> 
     text = AUTOMATION_TEMPLATE.read_text(encoding="utf-8-sig")
 
     assert "$news-grasp-direct-mainline" in text
+    assert text.count("Python312\\\\python.exe -m tools.news_grasp_daily_launcher") == 1
     for operation in (
         "static_check",
         "scoped_contract_unit",
@@ -39,7 +40,8 @@ def test_daily_automation_points_to_direct_mainline_without_runner_command() -> 
         "consumer_public_verification",
         "atomic_completion",
     ):
-        assert f"Python312\\\\python.exe -m tools.news_grasp_daily_gate {operation}" in text
+        assert operation in text
+        assert f"tools.news_grasp_daily_gate {operation}" not in text
     assert "python -m tools.news_grasp_direct_runtime start" not in text
     assert "direct completion guard" in text
     assert "news-grasp-runner.ps1" not in text

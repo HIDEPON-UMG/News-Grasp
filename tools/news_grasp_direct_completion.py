@@ -20,7 +20,7 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 from urllib.parse import urlencode, urlsplit
 
 if __package__ in {None, ""}:
@@ -47,6 +47,20 @@ PUBLIC_SURFACES = (
     "publish_status",
     "remote_commit",
     "pages",
+    "completion_attestation",
+)
+
+CANONICAL_EXTERNAL_OPERATION_ORDER = (
+    "audio_daily_upload",
+    "audio_deepdive_upload",
+    "youtube_daily_prepare",
+    "youtube_deepdive_prepare",
+    "git_release_push",
+    "pages_deployment_wait",
+    "youtube_daily_finalize",
+    "youtube_deepdive_finalize",
+    "notification_send",
+    "completion_attestation_publish",
 )
 
 OBSERVATION_SCHEMA = "NEWS_GRASP_DIRECT_PUBLIC_OBSERVATION_V1"
@@ -320,6 +334,50 @@ def _open_github_actions_no_redirect(request: urllib.request.Request, *, timeout
         response.close()
         raise ValueError("pages_workflow_api_redirect_forbidden")
     return response
+
+
+class _GithubReleaseRedirect(urllib.request.HTTPRedirectHandler):
+    """completion attestationのredirect先をGitHub asset hostへ限定する。"""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: ANN001, ANN201
+        parsed = urlsplit(newurl)
+        host = (parsed.hostname or "").casefold()
+        if (
+            parsed.scheme.casefold() != "https"
+            or parsed.port is not None
+            or parsed.username is not None
+            or parsed.password is not None
+            or not (
+                host == "github.com"
+                or host == "objects.githubusercontent.com"
+                or host == "release-assets.githubusercontent.com"
+                or host.endswith(".githubusercontent.com")
+            )
+        ):
+            raise ValueError("completion_attestation_redirect_forbidden")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def _open_completion_attestation(request: urllib.request.Request, *, timeout: int):
+    parsed = urlsplit(request.full_url)
+    if (
+        parsed.scheme.casefold() != "https"
+        or (parsed.hostname or "").casefold() != "github.com"
+        or parsed.port is not None
+        or parsed.username is not None
+        or parsed.password is not None
+        or not re.fullmatch(
+            r"/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/"
+            r"\d{4}-\d{2}-\d{2}-[0-9A-Za-z._-]+-"
+            r"(?:completion|distribution|distribution-binding|playlist-binding|notification-ledger|"
+            r"daily-audio-projection|deepdive-audio-projection|youtube-daily-state|youtube-deepdive-state)\.json",
+            parsed.path,
+        )
+        or parsed.query
+        or parsed.fragment
+    ):
+        raise ValueError("completion_attestation_url_invalid")
+    return urllib.request.build_opener(_GithubReleaseRedirect()).open(request, timeout=timeout)
 
 
 def _validate_transport_policy(*, remote: str, branch: str, wait_sec: int, poll_sec: int) -> None:
@@ -705,6 +763,9 @@ def _required_distribution(
     manifest: dict[str, Any] | None = None,
     run_id: str = "",
     run_intent: str = "scheduled_production_direct",
+    manifest_id: str = "",
+    bundle_id: str = "",
+    release_commit_sha: str = "",
 ) -> dict[str, Any]:
     from tools.publish_inventory import required_distribution_artifacts
 
@@ -776,6 +837,9 @@ def _required_distribution(
         or binding.get("issueDate") != issue_date
         or binding.get("runId") != run_id
         or binding.get("runIntent") != run_intent
+        or (manifest_id and binding.get("manifestId") != manifest_id)
+        or (bundle_id and binding.get("bundleId") != bundle_id)
+        or (release_commit_sha and binding.get("releaseCommitSha") != release_commit_sha)
         or binding.get("status") != "verified"
         or binding.get("receiptSha256") != binding_sha
         or binding.get("daily") != playlist.get("daily")
@@ -818,12 +882,24 @@ def _required_distribution(
         or distribution_binding.get("issueDate") != issue_date
         or distribution_binding.get("runId") != run_id
         or distribution_binding.get("runIntent") != run_intent
+        or (manifest_id and distribution_binding.get("manifestId") != manifest_id)
+        or (bundle_id and distribution_binding.get("bundleId") != bundle_id)
+        or (release_commit_sha and distribution_binding.get("releaseCommitSha") != release_commit_sha)
         or distribution_binding.get("status") != "verified"
         or distribution_binding.get("receiptSha256") != distribution_binding_sha
         or distribution_binding.get("playlistReceiptSha256") != binding.get("receiptSha256")
         or any(distribution_binding.get(field) != identity for field, identity in live_identities.items())
     ):
         errors.append("distribution_run_binding_invalid")
+    release_identity_required = bool(manifest_id or bundle_id or release_commit_sha)
+    if release_identity_required and (
+        value.get("manifest_id") != manifest_id
+        or value.get("bundle_id") != bundle_id
+        or value.get("publish_commit") != release_commit_sha
+        or value.get("run_id") != run_id
+        or value.get("run_intent") != run_intent
+    ):
+        errors.append("distribution_release_identity_invalid")
     return {
         "ok": not missing and not errors,
         "issue_date": issue_date,
@@ -850,11 +926,24 @@ def _required_distribution(
     }
 
 
-def _publish_status(repo_root: Path, issue_date: str) -> dict[str, Any]:
+def _publish_status(
+    repo_root: Path,
+    issue_date: str,
+    *,
+    run_id: str = "",
+    run_intent: str = "",
+) -> dict[str, Any]:
     state = _load_json(_safe_repo_path(repo_root, Path("docs") / "publish-status.json"))
     value = state.get("value") if isinstance(state.get("value"), dict) else {}
     if state.get("ok"):
-        ok = value.get("date") == issue_date and value.get("result") == "published_ok"
+        ok = (
+            value.get("date") == issue_date
+            and value.get("result") == "publication_pending"
+            and value.get("status") == "awaiting_external_completion_attestation"
+            and value.get("completionAuthority") == "consumer-owned_public_verifier"
+            and (not run_id or value.get("runId") == run_id)
+            and (not run_intent or value.get("runIntent") == run_intent)
+        )
     else:
         ok = False
     return {
@@ -867,6 +956,9 @@ def _publish_status(repo_root: Path, issue_date: str) -> dict[str, Any]:
             "result": value.get("result") if isinstance(value, dict) else None,
             "status": value.get("status") if isinstance(value, dict) else None,
             "updated_at": value.get("updated_at") if isinstance(value, dict) else None,
+            "completionAuthority": value.get("completionAuthority") if isinstance(value, dict) else None,
+            "runId": value.get("runId") if isinstance(value, dict) else None,
+            "runIntent": value.get("runIntent") if isinstance(value, dict) else None,
         },
         "semantic_ok": ok,
         "status": "green" if ok else "red",
@@ -920,6 +1012,7 @@ def _audio_projection(
     audio_type: str,
     run_id: str,
     run_intent: str,
+    expected_sha256: str = "",
     observation_context: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     from tools.news_grasp_audio_projection import _probe_public_audio, canonical_audio_path, load_audio_projection, validate_audio_projection
@@ -939,7 +1032,14 @@ def _audio_projection(
         return {"ok": False, "issue_date": issue_date, "reason": str(exc), "path": str(source), "semantic_ok": False, "status": "blocked"}
     validation = validate_audio_projection(projection, issue_date=issue_date, run_intent=run_intent)
     probe_started = datetime.now(timezone.utc).isoformat()
-    public_observation = _probe_public_audio(str(projection.get("publicUrl") or "")) if validation["ok"] is True else {"ok": False, "reasonCode": "audio_projection_red"}
+    public_observation = (
+        _probe_public_audio(
+            str(projection.get("publicUrl") or ""),
+            expected_sha256=expected_sha256,
+        )
+        if validation["ok"] is True
+        else {"ok": False, "reasonCode": "audio_projection_red"}
+    )
     probe_finished = datetime.now(timezone.utc).isoformat()
     if observation_context is not None:
         public_observation = dict(public_observation)
@@ -982,6 +1082,7 @@ def _deepdive_audio(
     *,
     run_id: str = "",
     run_intent: str = "scheduled_production_direct",
+    expected_sha256: str = "",
     observation_context: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     return _audio_projection(
@@ -990,6 +1091,7 @@ def _deepdive_audio(
         audio_type="deepdive",
         run_id=run_id,
         run_intent=run_intent,
+        expected_sha256=expected_sha256,
         observation_context=observation_context,
     )
 
@@ -1045,6 +1147,7 @@ def _podcast_rows(
     observation_context: Mapping[str, Any] | None = None,
 ) -> dict[str, dict[str, Any]]:
     from tools.daily_self_heal import verify_podcast
+    from tools.youtube_podcast.upload_episode import audit_playlist_uniqueness
 
     daily_request_started = datetime.now(timezone.utc).isoformat()
     daily = verify_podcast(
@@ -1064,6 +1167,27 @@ def _podcast_rows(
         expected_title=f"News-Grasp DeepDive Dialogue {issue_date}",
     )
     deepdive_response_observed = datetime.now(timezone.utc).isoformat()
+    uniqueness: dict[str, Any] = {"ok": True, "status": "not_requested"}
+    if observation_context is not None:
+        uniqueness_started = datetime.now(timezone.utc).isoformat()
+        try:
+            uniqueness = dict(audit_playlist_uniqueness(issue_date))
+        except Exception as exc:  # noqa: BLE001 - provider read failure is typed Red
+            uniqueness = {
+                "ok": False,
+                "status": "provider_read_failed",
+                "reason": type(exc).__name__,
+            }
+        uniqueness_finished = datetime.now(timezone.utc).isoformat()
+        uniqueness["observation"] = _observation_metadata(
+            observation_context,
+            request_started_at=uniqueness_started,
+            response_observed_at=uniqueness_finished,
+            content={"surface": "youtube_playlist_uniqueness", "result": uniqueness},
+            observation_kind="network_fetch",
+            source_identity="youtube:playlist:uniqueness",
+            source_path="youtube:playlist:uniqueness",
+        )
     if observation_context is not None:
         daily = dict(daily)
         daily["observation"] = _observation_metadata(
@@ -1107,8 +1231,9 @@ def _podcast_rows(
             for kind in ("daily", "deepdive")
         )
     )
-    daily_ok = daily.get("ok") is True and binding_ok and daily.get("videoId") == binding.get("daily", {}).get("videoId") and daily.get("playlistId") == binding.get("daily", {}).get("playlistId")
-    deepdive_ok = deepdive.get("ok") is True and binding_ok and deepdive.get("videoId") == binding.get("deepdive", {}).get("videoId") and deepdive.get("playlistId") == binding.get("deepdive", {}).get("playlistId")
+    uniqueness_ok = uniqueness.get("ok") is True
+    daily_ok = daily.get("ok") is True and binding_ok and uniqueness_ok and daily.get("videoId") == binding.get("daily", {}).get("videoId") and daily.get("playlistId") == binding.get("daily", {}).get("playlistId")
+    deepdive_ok = deepdive.get("ok") is True and binding_ok and uniqueness_ok and deepdive.get("videoId") == binding.get("deepdive", {}).get("videoId") and deepdive.get("playlistId") == binding.get("deepdive", {}).get("playlistId")
     playlist_ok = daily_ok and deepdive_ok
     daily_projection = {
         "ok": daily.get("ok") is True,
@@ -1150,7 +1275,7 @@ def _podcast_rows(
         "playlist": {
             "ok": playlist_ok,
             "issue_date": issue_date,
-            "result": {"daily": daily_projection, "deepdive": deepdive_projection},
+            "result": {"daily": daily_projection, "deepdive": deepdive_projection, "uniqueness": uniqueness},
             "semantic_ok": playlist_ok,
             "status": "green" if playlist_ok else "red",
         },
@@ -1374,12 +1499,20 @@ def _notification(
                     )
         else:
             v2_failures.append("notification_v2_receipt_missing")
-    if validated_external_operations:
-        external_operations = validated_external_operations
-    else:
-        for row in observed:
-            value = row.get("value") if isinstance(row.get("value"), dict) else {}
-            external_operations.extend(_side_effect_records(value, surface="notification"))
+    external_operations = list(validated_external_operations)
+    for row in observed:
+        value = row.get("value") if isinstance(row.get("value"), dict) else {}
+        external_operations.extend(_side_effect_records(value, surface="notification"))
+    external_operations = list(
+        {
+            (
+                str(item.get("operationId") or ""),
+                str(item.get("payloadIdentity") or ""),
+                str(item.get("path") or ""),
+            ): item
+            for item in external_operations
+        }.values()
+    )
     ok = ok and not v2_failures
     warning = {
         "surface": "notification",
@@ -1577,7 +1710,14 @@ def _side_effect_records(
                 )
         for key, item in value.items():
             # verifier-created observation metadata is not an external side-effect ledger.
-            if str(key) in {"observation", "networkObservations"}:
+            if str(key) in {
+                "observation",
+                "networkObservations",
+                # append-only historyは監査用であり、active releaseの重複
+                # 判定へ混ぜない。active projectionだけをexpected outboxと照合する。
+                "externalOutboxBindingHistoryV2",
+                "activeExternalOutboxBindingKeys",
+            }:
                 continue
             next_path = (*_path, str(key))
             child_ledger = local_ledger_bound or "ledger" in str(key).casefold()
@@ -1602,81 +1742,111 @@ def _side_effect_records(
     return records
 
 
-def _validate_side_effect_identity(surfaces: Mapping[str, object]) -> dict[str, Any]:
-    """sealed external operation IDとimmutable ledgerの集合を照合する。"""
+def _validate_side_effect_identity(
+    surfaces: Mapping[str, object],
+    *,
+    expected_outbox: Mapping[str, object] | Sequence[Mapping[str, object]] | None = None,
+) -> dict[str, Any]:
+    """provider ledgerをruntime outboxのexact operation/payload集合へ束縛する。"""
 
     failures: set[str] = set()
     by_surface: dict[str, list[dict[str, Any]]] = {}
-    for surface in ("youtube_daily", "youtube_deepdive", "notification"):
+    expected_by_surface: dict[str, set[tuple[str, str]]] = {}
+    all_expected_ids: set[str] = set()
+    if isinstance(expected_outbox, Mapping):
+        for surface, rows in expected_outbox.items():
+            if not isinstance(rows, Sequence) or isinstance(rows, (str, bytes, bytearray)):
+                failures.add("external_outbox_binding_invalid")
+                continue
+            pairs = {
+                (
+                    str(row.get("operationId") or row.get("operation_id") or ""),
+                    str(row.get("payloadIdentity") or row.get("payload_identity") or ""),
+                )
+                for row in rows
+                if isinstance(row, Mapping)
+            }
+            expected_by_surface[str(surface)] = {pair for pair in pairs if all(pair)}
+            all_expected_ids.update(pair[0] for pair in expected_by_surface[str(surface)])
+    elif isinstance(expected_outbox, Sequence) and not isinstance(expected_outbox, (str, bytes, bytearray)):
+        canonical_order = CANONICAL_EXTERNAL_OPERATION_ORDER
+        rows = [row for row in expected_outbox if isinstance(row, Mapping)]
+        observed_order = tuple(str(row.get("operation_id") or "") for row in rows)
+        if observed_order != canonical_order:
+            failures.add("external_outbox_operation_set_mismatch")
+        surface_for_operation = {
+            "audio_daily_upload": "daily_audio",
+            "audio_deepdive_upload": "deepdive_audio",
+            "youtube_daily_prepare": "youtube_daily",
+            "youtube_daily_finalize": "youtube_daily",
+            "youtube_deepdive_prepare": "youtube_deepdive",
+            "youtube_deepdive_finalize": "youtube_deepdive",
+            "notification_send": "notification",
+        }
+        for row in rows:
+            operation_id = str(row.get("operation_id") or "")
+            payload_identity = str(row.get("payload_identity") or "")
+            all_expected_ids.add(operation_id)
+            receipt = row.get("provider_receipt")
+            if not isinstance(receipt, Mapping):
+                failures.add(f"external_outbox_receipt_missing:{operation_id}")
+                continue
+            receipt_hash = hashlib.sha256(
+                json.dumps(dict(receipt), ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+            ).hexdigest()
+            if (
+                row.get("status") != "completed"
+                or receipt_hash != row.get("provider_receipt_hash")
+                or receipt.get("operation_id") != operation_id
+                or receipt.get("side_effect_id") != row.get("side_effect_id")
+                or receipt.get("idempotency_key") != row.get("idempotency_key")
+                or receipt.get("run_id") != row.get("run_id")
+                or receipt.get("output_hash") != row.get("provider_output_hash")
+            ):
+                failures.add(f"external_outbox_receipt_unbound:{operation_id}")
+            surface = surface_for_operation.get(operation_id)
+            if surface:
+                expected_by_surface.setdefault(surface, set()).add((operation_id, payload_identity))
+    else:
+        failures.add("external_outbox_binding_missing")
+
+    for surface in ("daily_audio", "deepdive_audio", "youtube_daily", "youtube_deepdive", "notification"):
         records = _side_effect_records(surfaces.get(surface), surface=surface)
         if records:
             by_surface[surface] = records
         surface_value = surfaces.get(surface)
-        if isinstance(surface_value, Mapping) and surface_value.get("ok") is True and not records:
-            failures.add(f"{surface}_external_operation_ledger_missing")
         successful = [
             row for row in records
             if str(row.get("status") or "verified").casefold() in _SUCCESS_SIDE_EFFECT_STATUSES
         ]
-        operation_ids = {
-            str(row.get("operationId") or "")
-            for row in successful
-            if str(row.get("operationId") or "")
+        outbox_bound = [
+            row for row in successful
+            if "externalOutboxBindings" in str(row.get("path") or "")
+            or str(row.get("operationId") or "") in all_expected_ids
+        ]
+        actual_pairs = {
+            (str(row.get("operationId") or ""), str(row.get("payloadIdentity") or ""))
+            for row in outbox_bound
+            if str(row.get("operationId") or "") and str(row.get("payloadIdentity") or "")
         }
-        payload_ids = {
-            str(row.get("payloadIdentity") or "")
-            for row in successful
-            if str(row.get("payloadIdentity") or "")
-        }
-        successful_identities = {
-            (
-                str(row.get("operationId") or ""),
-                str(row.get("payloadIdentity") or ""),
-            )
-            for row in successful
-        }
-        if len(operation_ids) > 1:
-            failures.add("external_operation_id_mismatch")
-        if len(payload_ids) > 1:
-            failures.add("payload_identity_drift")
-        # 同一immutable ledgerのprojectionが複数箇所に現れることは重複送信では
-        # ない。重複は、同じsurfaceに異なるsealed operation/payload identityが
-        # 成功として残った場合だけ、identity証拠から判定する。
-        if len(successful_identities) > 1:
-            failures.add(
-                "duplicate_send_detected"
-                if surface == "notification"
-                else "duplicate_upload_detected"
-            )
-        if successful and any(row.get("ledgerBound") is not True for row in successful):
+        expected_pairs = expected_by_surface.get(surface, set())
+        if isinstance(surface_value, Mapping) and surface_value.get("ok") is True:
+            if not outbox_bound:
+                failures.add(f"{surface}_external_operation_ledger_missing")
+            if expected_outbox is not None and actual_pairs != expected_pairs:
+                failures.add(f"{surface}_external_outbox_unbound")
+        if outbox_bound and any(row.get("ledgerBound") is not True for row in outbox_bound):
             failures.add("immutable_side_effect_ledger_unbound")
+        legacy_identities = {
+            (str(row.get("operationId") or ""), str(row.get("payloadIdentity") or ""))
+            for row in successful if row not in outbox_bound
+        }
+        if len(legacy_identities) > 1:
+            failures.add("duplicate_send_detected" if surface == "notification" else "duplicate_upload_detected")
 
-    sealed = sorted(
-        {
-            str(row.get("operationId") or "")
-            for rows in by_surface.values()
-            for row in rows
-            if str(row.get("operationId") or "")
-        }
-    )
-    payload_identity = sorted(
-        {
-            str(row.get("payloadIdentity") or "")
-            for rows in by_surface.values()
-            for row in rows
-            if str(row.get("payloadIdentity") or "")
-        }
-    )
-    sealed_identity = sorted(
-        (
-            str(surface),
-            str(row.get("operationId") or ""),
-            str(row.get("payloadIdentity") or ""),
-        )
-        for surface, rows in by_surface.items()
-        for row in rows
-        if str(row.get("operationId") or "")
-    )
+    sealed = sorted({pair[0] for pairs in expected_by_surface.values() for pair in pairs})
+    payload_identity = sorted({pair[1] for pairs in expected_by_surface.values() for pair in pairs})
+    sealed_identity = sorted((surface, operation_id, payload) for surface, pairs in expected_by_surface.items() for operation_id, payload in pairs)
     return {
         "ok": not failures,
         "failures": sorted(failures),
@@ -1691,6 +1861,282 @@ def _validate_side_effect_identity(surfaces: Mapping[str, object]) -> dict[str, 
             }
         ),
     }
+
+
+def _completion_attestation_surface(
+    *,
+    issue_date: str,
+    run_id: str,
+    run_intent: str,
+    manifest_id: str,
+    bundle_id: str,
+    release_commit_sha: str,
+    manifest: Mapping[str, Any] | None,
+    external_outbox: Sequence[Mapping[str, object]] | None,
+    observation_context: Mapping[str, Any],
+) -> dict[str, Any]:
+    """公開済みcompletion attestationをconsumer側からfreshにexact検証する。"""
+
+    failures: list[str] = []
+    rows = [dict(row) for row in (external_outbox or ()) if isinstance(row, Mapping)]
+    observed_order = tuple(str(row.get("operation_id") or "") for row in rows)
+    if observed_order != CANONICAL_EXTERNAL_OPERATION_ORDER:
+        failures.append("completion_attestation_outbox_order_mismatch")
+    row_by_operation = {
+        str(row.get("operation_id") or ""): row
+        for row in rows
+        if str(row.get("operation_id") or "")
+    }
+    attestation_row = row_by_operation.get("completion_attestation_publish")
+    receipt = (
+        attestation_row.get("provider_receipt")
+        if isinstance(attestation_row, Mapping)
+        and isinstance(attestation_row.get("provider_receipt"), Mapping)
+        else {}
+    )
+    evidence = (
+        receipt.get("provider_evidence")
+        if isinstance(receipt, Mapping)
+        and isinstance(receipt.get("provider_evidence"), Mapping)
+        else {}
+    )
+    expected_url = (
+        "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/"
+        f"{issue_date}-{run_id}-completion.json"
+    )
+    manifest_attestation = (
+        manifest.get("completionAttestation")
+        if isinstance(manifest, Mapping)
+        and isinstance(manifest.get("completionAttestation"), Mapping)
+        else {}
+    )
+    if manifest_attestation:
+        if (
+            manifest_attestation.get("required") is not True
+            or manifest_attestation.get("publicUrl") != expected_url
+            or manifest_attestation.get("hashAuthority") != "external_completion_receipt"
+        ):
+            failures.append("completion_attestation_manifest_contract_invalid")
+    else:
+        failures.append("completion_attestation_manifest_contract_missing")
+    url = str(evidence.get("attestation_url") or "")
+    expected_sha256 = str(
+        (attestation_row or {}).get("payload_identity")
+        or receipt.get("payload_identity")
+        or ""
+    ).casefold()
+    if (
+        url != expected_url
+        or not re.fullmatch(r"[0-9a-f]{64}", expected_sha256)
+        or str(evidence.get("payload_identity") or "").casefold() != expected_sha256
+    ):
+        failures.append("completion_attestation_outbox_binding_invalid")
+
+    raw = b""
+    value: Mapping[str, Any] = {}
+    artifact_network_observations: dict[str, dict[str, Any]] = {}
+    status_code: int | None = None
+    request_started = datetime.now(timezone.utc).isoformat()
+    response_observed = request_started
+    if not failures:
+        try:
+            request = urllib.request.Request(
+                url,
+                headers={"Cache-Control": "no-cache", "Pragma": "no-cache"},
+            )
+            with _open_completion_attestation(request, timeout=30) as response:
+                raw = response.read(1_048_577)
+                status_code = int(getattr(response, "status", response.getcode()))
+                response_observed = datetime.now(timezone.utc).isoformat()
+            if len(raw) > 1_048_576:
+                raise ValueError("completion_attestation_body_too_large")
+            loaded = json.loads(raw.decode("utf-8"))
+            if not isinstance(loaded, Mapping):
+                raise ValueError("completion_attestation_not_object")
+            value = loaded
+        except (OSError, urllib.error.URLError, UnicodeError, ValueError, json.JSONDecodeError) as exc:
+            response_observed = datetime.now(timezone.utc).isoformat()
+            failures.append(f"completion_attestation_fetch_red:{exc}")
+
+    observed_sha256 = hashlib.sha256(raw).hexdigest() if raw else ""
+    if raw and observed_sha256 != expected_sha256:
+        failures.append("completion_attestation_public_hash_mismatch")
+    if value:
+        canonical_bytes = (
+            json.dumps(dict(value), ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+        ).encode("utf-8")
+        if raw != canonical_bytes:
+            failures.append("completion_attestation_public_bytes_noncanonical")
+        if (
+            value.get("schemaVersion") != "NEWS_GRASP_PUBLIC_COMPLETION_ATTESTATION_V1"
+            or value.get("issueDate") != issue_date
+            or value.get("runId") != run_id
+            or value.get("runIntent") != run_intent
+            or value.get("manifestId") != manifest_id
+            or value.get("bundleId") != bundle_id
+            or value.get("releaseCommitSha") != release_commit_sha
+            or value.get("providerDeliveryAckStatus") != "unknown_unobtainable"
+        ):
+            failures.append("completion_attestation_release_identity_mismatch")
+        operations = value.get("operations")
+        if not isinstance(operations, list):
+            operations = []
+            failures.append("completion_attestation_operations_invalid")
+        prior_order = CANONICAL_EXTERNAL_OPERATION_ORDER[:-1]
+        if tuple(str(row.get("operationId") or "") for row in operations if isinstance(row, Mapping)) != prior_order:
+            failures.append("completion_attestation_operation_set_mismatch")
+        for operation_id, operation in zip(prior_order, operations):
+            outbox_row = row_by_operation.get(operation_id, {})
+            if (
+                not isinstance(operation, Mapping)
+                or operation.get("operationId") != operation_id
+                or operation.get("payloadIdentity") != outbox_row.get("payload_identity")
+                or operation.get("providerOutputHash") != outbox_row.get("provider_output_hash")
+                or operation.get("providerAckStatus") != "unknown_unobtainable"
+                or re.fullmatch(r"[0-9a-f]{64}", str(operation.get("providerEvidenceSha256") or "")) is None
+                or re.fullmatch(r"[0-9a-f]{64}", str(operation.get("providerBindingReceiptSha256") or "")) is None
+            ):
+                failures.append(f"completion_attestation_operation_binding_invalid:{operation_id}")
+        distribution_artifacts = value.get("distributionArtifacts")
+        expected_artifacts = {
+            "distribution": f"data/distribution/{issue_date}.json",
+            "distribution-binding": f"build/distribution/{issue_date}/binding.json",
+            "playlist-binding": f"build/distribution/{issue_date}/playlist.json",
+            "notification-ledger": f"build/notification/{issue_date}.json",
+            "daily-audio-projection": "build/tts/daily/latest_audio.json",
+            "deepdive-audio-projection": "build/tts/deepdive/latest_audio.json",
+            "youtube-daily-state": "build/youtube-podcast/uploads.json",
+            "youtube-deepdive-state": "build/youtube-podcast-deepdive/uploads.json",
+        }
+        public_artifact_values: dict[str, Mapping[str, Any]] = {}
+        public_artifact_hashes: dict[str, str] = {}
+        if not isinstance(distribution_artifacts, list):
+            distribution_artifacts = []
+            failures.append("completion_attestation_distribution_artifacts_invalid")
+        observed_artifact_ids = {
+            str(row.get("artifactId") or "")
+            for row in distribution_artifacts
+            if isinstance(row, Mapping)
+        }
+        if observed_artifact_ids != set(expected_artifacts):
+            failures.append("completion_attestation_distribution_artifact_set_mismatch")
+        for artifact in distribution_artifacts:
+            if not isinstance(artifact, Mapping):
+                continue
+            artifact_id = str(artifact.get("artifactId") or "")
+            artifact_url = str(artifact.get("publicUrl") or "")
+            artifact_hash = str(artifact.get("sha256") or "").casefold()
+            expected_artifact_url = (
+                "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/"
+                f"{issue_date}-{run_id}-{artifact_id}.json"
+            )
+            if (
+                expected_artifacts.get(artifact_id) != artifact.get("localPath")
+                or artifact_url != expected_artifact_url
+                or re.fullmatch(r"[0-9a-f]{64}", artifact_hash) is None
+                or not isinstance(artifact.get("size"), int)
+                or int(artifact.get("size") or 0) <= 0
+            ):
+                failures.append(f"completion_distribution_artifact_contract_invalid:{artifact_id}")
+                continue
+            artifact_started = datetime.now(timezone.utc).isoformat()
+            artifact_observed = artifact_started
+            artifact_raw = b""
+            artifact_status: int | None = None
+            try:
+                artifact_request = urllib.request.Request(
+                    artifact_url,
+                    headers={"Cache-Control": "no-cache", "Pragma": "no-cache"},
+                )
+                with _open_completion_attestation(artifact_request, timeout=30) as response:
+                    artifact_raw = response.read(4_194_305)
+                    artifact_status = int(getattr(response, "status", response.getcode()))
+                    artifact_observed = datetime.now(timezone.utc).isoformat()
+                if len(artifact_raw) > 4_194_304:
+                    raise ValueError("completion_distribution_asset_too_large")
+            except (OSError, urllib.error.URLError, ValueError) as exc:
+                artifact_observed = datetime.now(timezone.utc).isoformat()
+                failures.append(f"completion_distribution_artifact_fetch_red:{artifact_id}:{exc}")
+            if (
+                artifact_status != 200
+                or len(artifact_raw) != int(artifact.get("size") or 0)
+                or hashlib.sha256(artifact_raw).hexdigest() != artifact_hash
+            ):
+                failures.append(f"completion_distribution_artifact_hash_mismatch:{artifact_id}")
+            else:
+                try:
+                    artifact_value = json.loads(artifact_raw.decode("utf-8-sig"))
+                except (UnicodeError, json.JSONDecodeError):
+                    failures.append(f"completion_distribution_artifact_json_invalid:{artifact_id}")
+                else:
+                    if isinstance(artifact_value, Mapping):
+                        public_artifact_values[artifact_id] = artifact_value
+                        public_artifact_hashes[artifact_id] = artifact_hash
+                    else:
+                        failures.append(f"completion_distribution_artifact_json_invalid:{artifact_id}")
+            artifact_network_observations[artifact_id] = _observation_metadata(
+                observation_context,
+                request_started_at=artifact_started,
+                response_observed_at=artifact_observed,
+                body=artifact_raw,
+                content={"url": artifact_url, "statusCode": artifact_status},
+                status_code=artifact_status,
+                observation_kind="network_fetch",
+                source_identity=artifact_url,
+                source_path=artifact_url,
+            )
+        public_binding = public_artifact_values.get("distribution-binding", {})
+        expected_component_hashes = {
+            "distributionSha256": public_artifact_hashes.get("distribution", ""),
+            "dailyAudioProjectionSha256": public_artifact_hashes.get("daily-audio-projection", ""),
+            "deepdiveAudioProjectionSha256": public_artifact_hashes.get("deepdive-audio-projection", ""),
+            "notificationStateSha256": public_artifact_hashes.get("notification-ledger", ""),
+            "youtubeDailyStateSha256": public_artifact_hashes.get("youtube-daily-state", ""),
+            "youtubeDeepdiveStateSha256": public_artifact_hashes.get("youtube-deepdive-state", ""),
+            "playlistBindingStateSha256": public_artifact_hashes.get("playlist-binding", ""),
+        }
+        if (
+            not public_binding
+            or public_binding.get("runId") != run_id
+            or public_binding.get("runIntent") != run_intent
+            or public_binding.get("manifestId") != manifest_id
+            or public_binding.get("bundleId") != bundle_id
+            or public_binding.get("releaseCommitSha") != release_commit_sha
+            or any(
+                public_binding.get(field) != digest
+                for field, digest in expected_component_hashes.items()
+            )
+        ):
+            failures.append("completion_distribution_binding_public_component_mismatch")
+
+    ok = not failures and status_code == 200
+    output = {
+        "ok": ok,
+        "semantic_ok": ok,
+        "status": "verified" if ok else "blocked",
+        "issue_date": issue_date,
+        "url": url or expected_url,
+        "expectedSha256": expected_sha256,
+        "observedSha256": observed_sha256,
+        "operationCount": len(value.get("operations") or ()) if isinstance(value, Mapping) else 0,
+        "providerDeliveryAckStatus": (
+            value.get("providerDeliveryAckStatus") if isinstance(value, Mapping) else ""
+        ),
+        "reasonCodes": sorted(set(failures)),
+        "networkObservations": artifact_network_observations,
+    }
+    output["observation"] = _observation_metadata(
+        observation_context,
+        request_started_at=request_started,
+        response_observed_at=response_observed,
+        body=raw,
+        content={"url": url or expected_url, "statusCode": status_code},
+        status_code=status_code,
+        observation_kind="network_fetch",
+        source_identity=url or expected_url,
+        source_path=url or expected_url,
+    )
+    return output
 
 
 def _public_web(
@@ -1727,6 +2173,29 @@ def _public_web(
             if not category_id:
                 raise ValueError("manifest_category_public_url_unbound")
             paths[f"category:{category_id}"] = public_url[len(base):]
+    expected_public: dict[str, Mapping[str, Any]] = {}
+    if manifest is not None:
+        public_kinds = {
+            "public_home", "issue_index", "summary_html", "deepdive_html",
+            "category_html", "publish_status",
+        }
+        for row in manifest.get("entries") or []:
+            if (
+                not isinstance(row, Mapping)
+                or row.get("required") is not True
+                or row.get("commitRole") != "publication"
+                or row.get("artifactKind") not in public_kinds
+            ):
+                continue
+            public_url = str(row.get("publicUrl") or "")
+            if not public_url.startswith(base):
+                raise ValueError("manifest_required_public_url_outside_base")
+            relative = public_url[len(base):]
+            if relative in expected_public:
+                raise ValueError("manifest_required_public_url_duplicate")
+            expected_public[relative] = row
+        if set(expected_public) != set(paths.values()):
+            raise ValueError("manifest_required_public_url_set_mismatch")
     observed: dict[str, dict[str, Any]] = {}
     bodies: dict[str, str] = {}
     failures: list[str] = []
@@ -1771,13 +2240,29 @@ def _public_web(
 
         contains_issue_date = issue_date in body
         bodies[name] = body
+        digest_matches = True
+        expected_row = expected_public.get(rel)
+        observed_digest = ""
+        expected_digest = ""
+        if expected_row is not None:
+            from tools.news_grasp_publish_contract import artifact_digest_bytes
+
+            observed_digest = artifact_digest_bytes(
+                raw_body,
+                str(expected_row.get("artifactKind") or ""),
+            )
+            expected_digest = str(expected_row.get("digest") or "")
+            digest_matches = observed_digest == expected_digest
         observed[name] = {
-            "ok": 200 <= code < 300,
+            "ok": 200 <= code < 300 and digest_matches,
             "url": url,
             "status_code": code,
             "contains_issue_date": contains_issue_date,
-            "semantic_ok": 200 <= code < 300 and (name in {"home", "publish_status"} or contains_issue_date),
-            "status": "green" if 200 <= code < 300 else "red",
+            "expected_digest": expected_digest,
+            "observed_digest": observed_digest,
+            "digest_matches": digest_matches,
+            "semantic_ok": 200 <= code < 300 and digest_matches and (name in {"home", "publish_status"} or contains_issue_date),
+            "status": "green" if 200 <= code < 300 and digest_matches else "red",
         }
         if observation_context is not None:
             observed[name]["observation"] = _observation_metadata(
@@ -1793,6 +2278,8 @@ def _public_web(
             )
         if not observed[name]["ok"]:
             failures.append(f"http_red:{name}")
+        if not digest_matches:
+            failures.append(f"public_digest_mismatch:{name}")
         if name not in {"home", "publish_status"} and not contains_issue_date:
             failures.append(f"issue_date_missing:{name}")
 
@@ -2060,6 +2547,9 @@ def verify_direct_public_completion(
     run_id: str = "",
     run_intent: str = "scheduled_production_direct",
     manifest_id: str = "",
+    bundle_id: str = "",
+    release_commit_sha: str = "",
+    external_outbox: Sequence[Mapping[str, object]] | None = None,
     cache_bust: bool = True,
     observation_token: str = "",
     observed_at: str = "",
@@ -2111,6 +2601,11 @@ def verify_direct_public_completion(
     observed_at = str(observation_context["startedAt"])
     external_operation_id = str(observation_context["externalOperationId"])
     fresh_observation_failures: list[str] = []
+    outbox_payload_identities = {
+        str(row.get("operation_id") or ""): str(row.get("payload_identity") or "")
+        for row in (external_outbox or ())
+        if isinstance(row, Mapping)
+    }
     surfaces: dict[str, dict[str, Any]] = {}
     surfaces["web"] = _required_docs(repo, issue_date, manifest=manifest)
     if manifest_failures:
@@ -2121,30 +2616,39 @@ def verify_direct_public_completion(
             "status": "blocked",
             "manifest_failures": manifest_failures,
         }
-    surfaces["deepdive_article"] = _deepdive_quality(repo, issue_date)
-    daily_quality = _daily_quality(repo, issue_date)
     surfaces["daily_audio"] = _audio_projection(
         repo,
         issue_date,
         audio_type="daily",
         run_id=run_id,
         run_intent=run_intent,
+        expected_sha256=outbox_payload_identities.get("audio_daily_upload", ""),
         observation_context=observation_context,
     )
-    surfaces["daily_audio"]["qualityGate"] = daily_quality
-    if daily_quality.get("ok") is not True:
-        surfaces["daily_audio"]["ok"] = False
-        surfaces["daily_audio"]["semantic_ok"] = False
-        surfaces["daily_audio"]["status"] = "blocked"
     surfaces["deepdive_audio"] = _deepdive_audio(
         repo,
         issue_date,
         run_id=run_id,
         run_intent=run_intent,
+        expected_sha256=outbox_payload_identities.get("audio_deepdive_upload", ""),
         observation_context=observation_context,
     )
-    surfaces["distribution"] = _required_distribution(repo, issue_date, manifest=manifest, run_id=run_id, run_intent=run_intent)
-    surfaces["publish_status"] = _publish_status(repo, issue_date)
+    surfaces["distribution"] = _required_distribution(
+        repo,
+        issue_date,
+        manifest=manifest,
+        run_id=run_id,
+        run_intent=run_intent,
+        manifest_id=manifest_id,
+        bundle_id=bundle_id,
+        release_commit_sha=release_commit_sha,
+    )
+    surfaces["publish_status"] = _publish_status(
+        repo,
+        issue_date,
+        run_id=run_id,
+        run_intent=run_intent,
+    )
     surfaces.update(
         _podcast_rows(
             repo,
@@ -2163,7 +2667,21 @@ def verify_direct_public_completion(
         run_intent=run_intent,
         observation_context=observation_context,
     )
-    side_effect_identity = _validate_side_effect_identity(surfaces)
+    surfaces["completion_attestation"] = _completion_attestation_surface(
+        issue_date=issue_date,
+        run_id=run_id,
+        run_intent=run_intent,
+        manifest_id=manifest_id,
+        bundle_id=bundle_id,
+        release_commit_sha=release_commit_sha,
+        manifest=manifest,
+        external_outbox=external_outbox,
+        observation_context=observation_context,
+    )
+    side_effect_identity = _validate_side_effect_identity(
+        surfaces,
+        expected_outbox=external_outbox,
+    )
     side_effect_identity["observationBindingSha256"] = str(
         observation_context.get("bindingSha256") or ""
     )
@@ -2209,6 +2727,42 @@ def verify_direct_public_completion(
         "semantic_ok": local_web.get("semantic_ok") is True and public_web.get("semantic_ok") is True,
         "status": "verified" if local_web.get("ok") is True and public_web.get("ok") is True else "blocked",
     }
+    # DeepDiveの文章品質predicateはcurrent_issue_integrationだけが所有する。
+    # consumer verifierは再監査せず、sealed manifest上のMarkdownと、同じ
+    # manifest markerを持つ公開HTMLが同一releaseへ束縛されたことだけを投影する。
+    deepdive_entry = next(
+        (
+            dict(row)
+            for row in (manifest or {}).get("entries", ())
+            if isinstance(row, Mapping) and row.get("artifactKind") == "deepdive_source"
+        ),
+        {},
+    )
+    deepdive_html_entry = next(
+        (
+            dict(row)
+            for row in (manifest or {}).get("entries", ())
+            if isinstance(row, Mapping) and row.get("artifactKind") == "deepdive_html"
+        ),
+        {},
+    )
+    deepdive_bound = (
+        surfaces["web"].get("ok") is True
+        and bool(deepdive_entry.get("digest"))
+        and deepdive_entry.get("digest") != "unverified"
+        and bool(deepdive_html_entry.get("digest"))
+        and deepdive_html_entry.get("digest") != "unverified"
+    )
+    surfaces["deepdive_article"] = {
+        "ok": deepdive_bound,
+        "semantic_ok": deepdive_bound,
+        "status": "verified" if deepdive_bound else "blocked",
+        "issue_date": issue_date,
+        "predicateOwner": "current_issue_integration",
+        "consumerCheck": "manifest_markdown_and_public_html_release_binding",
+        "markdown": deepdive_entry,
+        "html": deepdive_html_entry,
+    }
     public_status = (
         public_web.get("observed", {}).get("publish_status")
         if isinstance(public_web.get("observed"), Mapping)
@@ -2225,6 +2779,18 @@ def verify_direct_public_completion(
             "status": "verified" if local_publish_status.get("ok") is True and public_status_ok else "blocked",
         }
     remote_observation = _up_to_date_observation(repo, remote, branch, observation_context)
+    if release_commit_sha and (
+        remote_observation.get("head") != release_commit_sha
+        or remote_observation.get("remoteHead") != release_commit_sha
+    ):
+        remote_observation = {
+            **remote_observation,
+            "ok": False,
+            "semantic_ok": False,
+            "status": "blocked",
+            "reason": "release_commit_sha_not_remote_head",
+            "expectedReleaseCommitSha": release_commit_sha,
+        }
     source_baseline = str((manifest or {}).get("sourceBaseline") or "")
     baseline_check = subprocess.run(
         ["git", "merge-base", "--is-ancestor", source_baseline, str(remote_observation.get("remoteHead") or "")],
@@ -2329,6 +2895,7 @@ def verify_direct_public_completion(
         "pages",
         "remote_commit",
         "publish_status",
+        "completion_attestation",
     }
     network_surface_names = {
         path[0]

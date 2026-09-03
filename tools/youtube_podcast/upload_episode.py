@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from collections.abc import Mapping
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -23,15 +24,39 @@ DEEPDIVE_PLAYLIST_TITLE = "News-Grasp DeepDive"
 DEEPDIVE_PLAYLIST_DESCRIPTION = "News-Grasp DeepDive 解説対談の公開ポッドキャストアーカイブ。"
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _URL_RE = re.compile(r"https?://[^\s)>\"]+")
+_SHA256_RE = re.compile(r"^[0-9a-f]{64}$", re.IGNORECASE)
+OPERATION_MARKER_PREFIX = "NEWS_GRASP_OPERATION_V1:"
 
 
 class PodcastClient(Protocol):
     def ensure_playlist(self, kind: str = "daily") -> str: ...
     def upload_video(self, mp4_path: Path, metadata: dict[str, Any], *, privacy_status: str) -> str: ...
+    def find_videos_by_operation_marker(self, operation_marker: str) -> list[dict[str, Any]]: ...
+    def get_video_privacy_status(self, *, video_id: str) -> str: ...
     def update_video_privacy(self, *, video_id: str, privacy_status: str) -> dict[str, Any]: ...
     def add_video_to_playlist(self, *, video_id: str, playlist_id: str) -> str: ...
     def list_playlist_items(self, *, playlist_id: str) -> list[dict[str, Any]]: ...
     def delete_playlist_item(self, playlist_item_id: str) -> dict[str, Any]: ...
+
+
+class YouTubeOperationError(RuntimeError):
+    """YouTube側の状態を安全に確定できないときの typed Red。"""
+
+
+class YouTubeOperationMarkerError(YouTubeOperationError):
+    """operation marker の欠落・形式不整合・identity不一致。"""
+
+
+class YouTubeOperationMarkerDuplicateError(YouTubeOperationError):
+    """同じmarkerを持つprovider動画が複数見つかった。"""
+
+
+class YouTubeOperationUnconfirmedError(YouTubeOperationError):
+    """provider state が0件または必要なfresh状態を確定できない。"""
+
+
+class YouTubePlaylistMembershipDuplicateError(YouTubeOperationError):
+    """同じ動画のplaylist membershipが複数ある。"""
 
 
 def _warn(message: str) -> None:
@@ -209,6 +234,488 @@ def _ensure_playlist(client: PodcastClient, kind: str) -> str:
         return client.ensure_playlist()
 
 
+def _canonical_operation_identity(
+    *,
+    run_id: str,
+    bundle_id: str,
+    operation_id: str,
+    payload_identity: str,
+) -> dict[str, str]:
+    run = str(run_id or "").strip()
+    bundle = str(bundle_id or "").strip()
+    operation = str(operation_id or "").strip()
+    payload = str(payload_identity or "").strip().casefold()
+    if not run or not bundle or not operation:
+        raise YouTubeOperationMarkerError("youtube_operation_marker_identity_required")
+    if not _SHA256_RE.fullmatch(payload):
+        raise YouTubeOperationMarkerError("youtube_operation_marker_payload_identity_invalid")
+    return {
+        "runId": run,
+        "bundleId": bundle,
+        "operationId": operation,
+        "payloadIdentity": payload,
+    }
+
+
+def build_operation_marker(
+    *,
+    run_id: str,
+    bundle_id: str,
+    operation_id: str,
+    payload_identity: str,
+) -> str:
+    """sealed provider identityから再現可能なYouTube markerを生成する。"""
+
+    identity = _canonical_operation_identity(
+        run_id=run_id,
+        bundle_id=bundle_id,
+        operation_id=operation_id,
+        payload_identity=payload_identity,
+    )
+    canonical = json.dumps(
+        identity,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return OPERATION_MARKER_PREFIX + hashlib.sha256(canonical).hexdigest()
+
+
+def _production_operation_identity(
+    *,
+    run_id: str | None,
+    bundle_id: str | None,
+    operation_id: str | None,
+    payload_identity: str | None,
+    operation_marker: str | None,
+    marker: str | None = None,
+    default_operation_id: str,
+) -> dict[str, str] | None:
+    """legacy callerとproduction callerを明確に分離する。"""
+
+    values = (run_id, bundle_id, operation_id, payload_identity, operation_marker, marker)
+    if all(value is None for value in values):
+        return None
+    if operation_marker is not None and marker is not None and operation_marker != marker:
+        raise YouTubeOperationMarkerError("youtube_operation_marker_alias_conflict")
+    supplied_marker = operation_marker if operation_marker is not None else marker
+    if supplied_marker is None:
+        raise YouTubeOperationMarkerError("youtube_operation_marker_required")
+    identity = _canonical_operation_identity(
+        run_id=str(run_id or ""),
+        bundle_id=str(bundle_id or ""),
+        operation_id=str(operation_id or default_operation_id),
+        payload_identity=str(payload_identity or ""),
+    )
+    expected = build_operation_marker(
+        run_id=identity["runId"],
+        bundle_id=identity["bundleId"],
+        operation_id=identity["operationId"],
+        payload_identity=identity["payloadIdentity"],
+    )
+    if str(supplied_marker) != expected:
+        raise YouTubeOperationMarkerError("youtube_operation_marker_identity_mismatch")
+    identity["operationMarker"] = expected
+    return identity
+
+
+def _append_operation_marker(metadata: Mapping[str, Any], operation_marker: str) -> dict[str, Any]:
+    result = dict(metadata)
+    description = str(result.get("description") or "")
+    count = description.count(operation_marker)
+    if count > 1:
+        raise YouTubeOperationMarkerDuplicateError("youtube_operation_marker_embedded_duplicate")
+    if count == 0:
+        description = f"{description.rstrip()}\n{operation_marker}" if description.strip() else operation_marker
+    result["description"] = description
+    return result
+
+
+def _upload_history_key(
+    *,
+    run_id: str,
+    bundle_id: str,
+    kind: str,
+    payload_identity: str,
+) -> str:
+    identity = {
+        "runId": str(run_id),
+        "bundleId": str(bundle_id),
+        "kind": str(kind),
+        "payloadIdentity": str(payload_identity).casefold(),
+    }
+    canonical = json.dumps(
+        identity,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(canonical).hexdigest()
+
+
+def _row_identity_matches(
+    row: Mapping[str, Any],
+    identity: Mapping[str, str],
+    *,
+    kind: str | None = None,
+) -> bool:
+    # history keyはrun/bundle/kind/payloadのrelease identityであり、prepareと
+    # finalizeではoperationId/markerが異なり得る。provider upload時のmarkerは
+    # uploadOperationMarkerへ保持し、同じ履歴rowのphase遷移を許可する。
+    row_kind = row.get("kind")
+    row_payload = str(row.get("mp4_sha256") or "").casefold()
+    return (
+        (kind is None or row_kind in (None, "", kind))
+        and str(row.get("runId") or row.get("run_id") or "") == identity["runId"]
+        and str(row.get("bundleId") or row.get("bundle_id") or "") == identity["bundleId"]
+        and str(row.get("payloadIdentity") or row.get("payload_identity") or "").casefold()
+        == identity["payloadIdentity"]
+        and (not row_payload or row_payload == identity["payloadIdentity"])
+    )
+
+
+def _row_with_identity(row: Mapping[str, Any], identity: Mapping[str, str]) -> dict[str, Any]:
+    result = dict(row)
+    upload_marker = str(
+        result.get("uploadOperationMarker")
+        or result.get("upload_operation_marker")
+        or result.get("operationMarker")
+        or result.get("operation_marker")
+        or identity["operationMarker"]
+    )
+    result.update(
+        {
+            "operationMarker": identity["operationMarker"],
+            "operationId": identity["operationId"],
+            "runId": identity["runId"],
+            "bundleId": identity["bundleId"],
+            "payloadIdentity": identity["payloadIdentity"],
+            "uploadOperationMarker": upload_marker,
+        }
+    )
+    return result
+
+
+def _preserve_legacy_v1_row(
+    uploads: dict[str, Any],
+    *,
+    day: str,
+    kind: str,
+    row: Mapping[str, Any],
+) -> None:
+    """V1 day rowを削除せず、V2履歴へ限定的に退避する。"""
+
+    video_id = str(row.get("videoId") or "")
+    if not video_id:
+        return
+    history = uploads.get("uploadHistoryV2")
+    history_value = dict(history) if isinstance(history, Mapping) else {}
+    payload = str(row.get("payloadIdentity") or row.get("mp4_sha256") or "").casefold()
+    legacy_identity = {
+        "legacyV1": True,
+        "day": day,
+        "kind": kind,
+        "videoId": video_id,
+        "payloadIdentity": payload,
+    }
+    key = hashlib.sha256(
+        json.dumps(legacy_identity, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    if key not in history_value:
+        preserved = dict(row)
+        preserved["legacyV1"] = True
+        preserved["kind"] = kind
+        history_value[key] = preserved
+        uploads["uploadHistoryV2"] = history_value
+
+
+def _history_row(
+    uploads: Mapping[str, Any],
+    *,
+    day: str,
+    kind: str,
+    identity: Mapping[str, str],
+) -> dict[str, Any] | None:
+    key = _upload_history_key(
+        run_id=identity["runId"],
+        bundle_id=identity["bundleId"],
+        kind=kind,
+        payload_identity=identity["payloadIdentity"],
+    )
+    history = uploads.get("uploadHistoryV2")
+    if isinstance(history, Mapping) and key in history:
+        candidate = history[key]
+        if not isinstance(candidate, Mapping) or not _row_identity_matches(candidate, identity, kind=kind):
+            raise YouTubeOperationError("youtube_upload_history_composite_conflict")
+        return dict(candidate)
+    active_keys = uploads.get("activeUploadKeys")
+    active_key = active_keys.get(day) if isinstance(active_keys, Mapping) else None
+    if active_key and str(active_key) != key:
+        # 同日別releaseがactiveでも、当該identityの履歴は独立して読む。
+        return None
+    candidate = uploads.get(day)
+    if isinstance(candidate, Mapping) and _row_identity_matches(candidate, identity, kind=kind):
+        return dict(candidate)
+    return None
+
+
+def _persist_upload_row(
+    uploads: dict[str, Any],
+    *,
+    day: str,
+    kind: str,
+    row: Mapping[str, Any],
+    identity: Mapping[str, str] | None,
+    activate_if_new: bool = True,
+) -> dict[str, Any]:
+    if identity is None:
+        result = dict(row)
+        uploads[day] = result
+        return result
+
+    old_active = uploads.get(day)
+    if (
+        isinstance(old_active, Mapping)
+        and old_active.get("videoId")
+        and not any(
+            str(old_active.get(field) or "").strip()
+            for field in ("operationMarker", "operation_marker", "runId", "run_id", "bundleId", "bundle_id")
+        )
+    ):
+        _preserve_legacy_v1_row(uploads, day=day, kind=kind, row=old_active)
+    key = _upload_history_key(
+        run_id=identity["runId"],
+        bundle_id=identity["bundleId"],
+        kind=kind,
+        payload_identity=identity["payloadIdentity"],
+    )
+    history = uploads.get("uploadHistoryV2")
+    history_value = dict(history) if isinstance(history, Mapping) else {}
+    existing = history_value.get(key)
+    if key in history_value and not isinstance(existing, Mapping):
+        raise YouTubeOperationError("youtube_upload_history_composite_conflict")
+    if isinstance(existing, Mapping):
+        existing_payload = str(existing.get("payloadIdentity") or existing.get("payload_identity") or "").casefold()
+        if existing_payload and existing_payload != identity["payloadIdentity"]:
+            raise YouTubeOperationError("youtube_upload_history_composite_conflict")
+        if not _row_identity_matches(existing, identity, kind=kind):
+            raise YouTubeOperationError("youtube_upload_history_identity_conflict")
+        result = dict(existing)
+        result.update(dict(row))
+    else:
+        result = dict(row)
+    result = _row_with_identity(result, identity)
+    result["kind"] = kind
+    history_value[key] = result
+    active_keys = uploads.get("activeUploadKeys")
+    active_keys_value = dict(active_keys) if isinstance(active_keys, Mapping) else {}
+    previous_active_key = str(active_keys_value.get(day) or "")
+    # 旧historyの再照合で、同日新releaseのactive pointerを過去へ戻さない。
+    # 未登録keyまたは同一keyだけがactive projectionを進められる。
+    advance_active = (
+        not previous_active_key
+        or previous_active_key == key
+        or (activate_if_new and existing is None)
+    )
+    if advance_active:
+        active_keys_value[day] = key
+    uploads["uploadHistoryV2"] = history_value
+    uploads["activeUploadKeys"] = active_keys_value
+    # 旧releaseの再照合は履歴rowだけを更新し、同日active projectionを
+    # 過去へ巻き戻さない。新releaseまたは同一activeだけがday rowを進める。
+    if advance_active:
+        uploads[day] = result
+    return result
+
+
+def _persist_finalize_substep(
+    uploads: dict[str, Any],
+    *,
+    day: str,
+    kind: str,
+    row: Mapping[str, Any],
+    identity: Mapping[str, str],
+    substep_id: str,
+    provider_fields: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """fresh provider観測済みfinalize substepをrelease履歴へ原子的に保存する。"""
+
+    current = dict(row)
+    raw_substeps = current.get("providerSubsteps")
+    substeps = dict(raw_substeps) if isinstance(raw_substeps, Mapping) else {}
+    existing = substeps.get(substep_id)
+    if existing is not None and (
+        not isinstance(existing, Mapping)
+        or str(existing.get("status") or "") != "completed"
+    ):
+        raise YouTubeOperationError("youtube_finalize_substep_history_conflict")
+    record: dict[str, Any] = {"status": "completed"}
+    if provider_fields:
+        record.update({str(key): value for key, value in provider_fields.items()})
+    if isinstance(existing, Mapping) and dict(existing) != record:
+        raise YouTubeOperationError("youtube_finalize_substep_identity_conflict")
+    substeps[substep_id] = record
+    current["providerSubsteps"] = substeps
+    persisted = _persist_upload_row(
+        uploads,
+        day=day,
+        kind=kind,
+        row=current,
+        identity=identity,
+        activate_if_new=False,
+    )
+    _write_uploads(uploads, kind)
+    return persisted
+
+
+def _fresh_marker_candidates(client: PodcastClient, operation_marker: str) -> list[dict[str, Any]]:
+    methods = (
+        "find_videos_by_operation_marker",
+        "find_videos_by_marker",
+        "search_videos_by_marker",
+        "search_videos",
+    )
+    for name in methods:
+        method = getattr(client, name, None)
+        if callable(method):
+            try:
+                value = method(operation_marker)
+            except TypeError:
+                try:
+                    value = method(marker=operation_marker)
+                except TypeError:
+                    value = method(operation_marker=operation_marker)
+            if isinstance(value, Mapping):
+                collection = value.get("candidates") or value.get("items") or value.get("videos")
+                value = collection if collection is not None else ([value] if _candidate_video_id(value) else [])
+            if not isinstance(value, (list, tuple)):
+                raise YouTubeOperationUnconfirmedError("youtube_operation_marker_search_invalid")
+            normalized = [
+                dict(item) if isinstance(item, Mapping) else {"videoId": str(item)}
+                for item in value
+                if isinstance(item, Mapping) or str(item or "")
+            ]
+            filtered: list[dict[str, Any]] = []
+            for item in normalized:
+                raw_count = item.get("markerCount")
+                if raw_count is None:
+                    filtered.append(item)
+                    continue
+                try:
+                    if int(raw_count) > 0:
+                        filtered.append(item)
+                except (TypeError, ValueError):
+                    filtered.append(item)
+            return filtered
+    raise YouTubeOperationUnconfirmedError("youtube_operation_marker_search_unavailable")
+
+
+def _fresh_video_privacy(client: PodcastClient, video_id: str) -> str:
+    methods = ("get_video_privacy_status", "get_video_privacy", "get_video_status")
+    for name in methods:
+        method = getattr(client, name, None)
+        if not callable(method):
+            continue
+        try:
+            value = method(video_id=video_id)
+        except TypeError:
+            value = method(video_id)
+        if isinstance(value, Mapping):
+            status = value.get("status") if isinstance(value.get("status"), Mapping) else value
+            value = status.get("privacyStatus") if isinstance(status, Mapping) else ""
+        privacy = str(value or "").strip().casefold()
+        if privacy:
+            return privacy
+        raise YouTubeOperationUnconfirmedError("youtube_video_privacy_unconfirmed")
+    raise YouTubeOperationUnconfirmedError("youtube_video_privacy_read_unavailable")
+
+
+def _fresh_playlist_membership(
+    client: PodcastClient,
+    *,
+    video_id: str,
+    playlist_id: str,
+) -> dict[str, Any] | None:
+    try:
+        items = client.list_playlist_items(playlist_id=playlist_id)
+    except TypeError:
+        items = client.list_playlist_items(playlist_id)
+    matches = [
+        dict(item)
+        for item in items
+        if isinstance(item, Mapping)
+        and str(
+            item.get("videoId")
+            or (
+                item.get("contentDetails", {}).get("videoId")
+                if isinstance(item.get("contentDetails"), Mapping)
+                else ""
+            )
+            or ""
+        )
+        == video_id
+    ]
+    if len(matches) > 1:
+        raise YouTubePlaylistMembershipDuplicateError("youtube_playlist_membership_duplicate")
+    return matches[0] if matches else None
+
+
+def _single_marker_candidate(candidates: list[dict[str, Any]]) -> dict[str, Any] | None:
+    for candidate in candidates:
+        try:
+            marker_count = int(candidate.get("markerCount") or 1)
+        except (TypeError, ValueError) as exc:
+            raise YouTubeOperationMarkerDuplicateError("youtube_operation_marker_duplicate") from exc
+        if marker_count != 1:
+            raise YouTubeOperationMarkerDuplicateError("youtube_operation_marker_duplicate")
+    if len(candidates) > 1:
+        raise YouTubeOperationMarkerDuplicateError("youtube_operation_marker_duplicate")
+    return candidates[0] if candidates else None
+
+
+def _candidate_video_id(candidate: Mapping[str, Any]) -> str:
+    raw_id = candidate.get("id")
+    nested_id = raw_id.get("videoId") if isinstance(raw_id, Mapping) else ""
+    return str(
+        candidate.get("videoId")
+        or candidate.get("video_id")
+        or nested_id
+        or (raw_id if isinstance(raw_id, str) else "")
+        or ""
+    )
+
+
+def _fresh_candidate_for_identity(
+    client: PodcastClient,
+    *,
+    identity: Mapping[str, str],
+    existing: Mapping[str, Any] | None,
+    kind: str,
+) -> dict[str, Any] | None:
+    """phase markerを優先し、finalizeではupload markerへ安全にfallbackする。"""
+
+    markers = [identity["operationMarker"]]
+    if existing is not None:
+        for field in ("uploadOperationMarker", "upload_operation_marker", "operationMarker", "operation_marker"):
+            value = str(existing.get(field) or "")
+            if value and value not in markers:
+                markers.append(value)
+    if identity["operationId"].endswith("_finalize"):
+        prepare_marker = build_operation_marker(
+            run_id=identity["runId"],
+            bundle_id=identity["bundleId"],
+            operation_id=f"youtube_{kind}_prepare",
+            payload_identity=identity["payloadIdentity"],
+        )
+        if prepare_marker not in markers:
+            markers.append(prepare_marker)
+    for marker_value in markers:
+        candidate = _single_marker_candidate(_fresh_marker_candidates(client, marker_value))
+        if candidate is not None:
+            return candidate
+    return None
+
+
 class YouTubePodcastClient:
     def __init__(self, service: Any):
         self.service = service
@@ -294,6 +801,140 @@ class YouTubePodcastClient:
             raise RuntimeError("YouTube upload response did not include id")
         return video_id
 
+    def find_videos_by_operation_marker(
+        self,
+        operation_marker: str | None = None,
+        *,
+        marker: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """自分の動画をfresh検索し、descriptionにmarkerが一つある候補だけ返す。"""
+
+        if operation_marker is not None and marker is not None and operation_marker != marker:
+            raise YouTubeOperationMarkerError("youtube_operation_marker_alias_conflict")
+        operation_marker = operation_marker if operation_marker is not None else marker
+        if not re.fullmatch(rf"{re.escape(OPERATION_MARKER_PREFIX)}[0-9a-f]{{64}}", str(operation_marker or "")):
+            raise YouTubeOperationMarkerError("youtube_operation_marker_invalid")
+        search_items: list[dict[str, Any]] = []
+        page_token: str | None = None
+        while True:
+            kwargs: dict[str, Any] = {
+                "part": "id,snippet",
+                "forMine": True,
+                "q": operation_marker,
+                "type": "video",
+                "maxResults": 50,
+            }
+            if page_token:
+                kwargs["pageToken"] = page_token
+            response = self.service.search().list(**kwargs).execute()
+            if not isinstance(response, Mapping):
+                raise YouTubeOperationUnconfirmedError("youtube_operation_marker_search_invalid")
+            items = response.get("items")
+            if isinstance(items, list):
+                search_items.extend(item for item in items if isinstance(item, Mapping))
+            page_token = str(response.get("nextPageToken") or "") or None
+            if not page_token:
+                break
+
+        video_ids: list[str] = []
+        search_by_id: dict[str, Mapping[str, Any]] = {}
+        for item in search_items:
+            raw_id = item.get("id")
+            video_id = str(raw_id.get("videoId") or "") if isinstance(raw_id, Mapping) else str(raw_id or "")
+            if video_id and video_id not in search_by_id:
+                video_ids.append(video_id)
+                search_by_id[video_id] = item
+
+        detail_by_id: dict[str, Mapping[str, Any]] = {}
+        for offset in range(0, len(video_ids), 50):
+            video_chunk = video_ids[offset : offset + 50]
+            response = self.service.videos().list(
+                part="snippet,status",
+                id=",".join(video_chunk),
+            ).execute()
+            if not isinstance(response, Mapping):
+                raise YouTubeOperationUnconfirmedError("youtube_operation_marker_video_read_invalid")
+            items = response.get("items")
+            if isinstance(items, list):
+                for item in items:
+                    if not isinstance(item, Mapping):
+                        continue
+                    video_id = str(item.get("id") or "")
+                    if video_id:
+                        detail_by_id[video_id] = item
+
+        candidates: list[dict[str, Any]] = []
+        for video_id in video_ids:
+            detail = detail_by_id.get(video_id, search_by_id.get(video_id, {}))
+            snippet = detail.get("snippet") if isinstance(detail.get("snippet"), Mapping) else {}
+            search_snippet = search_by_id[video_id].get("snippet")
+            if not isinstance(search_snippet, Mapping):
+                search_snippet = {}
+            description = str(snippet.get("description") or search_snippet.get("description") or "")
+            marker_count = description.count(operation_marker)
+            if marker_count <= 0:
+                continue
+            status = detail.get("status") if isinstance(detail.get("status"), Mapping) else {}
+            candidates.append(
+                {
+                    "videoId": video_id,
+                    "description": description,
+                    "markerCount": marker_count,
+                    "title": str(snippet.get("title") or search_snippet.get("title") or ""),
+                    "privacyStatus": str(status.get("privacyStatus") or ""),
+                }
+            )
+        return candidates
+
+    # API名称の違いを吸収するread-only alias。実処理は上記canonical methodだけが持つ。
+    def find_videos_by_marker(
+        self,
+        operation_marker: str | None = None,
+        *,
+        marker: str | None = None,
+    ) -> list[dict[str, Any]]:
+        return self.find_videos_by_operation_marker(operation_marker, marker=marker)
+
+    def search_videos_by_marker(
+        self,
+        operation_marker: str | None = None,
+        *,
+        marker: str | None = None,
+    ) -> list[dict[str, Any]]:
+        return self.find_videos_by_operation_marker(operation_marker, marker=marker)
+
+    def search_videos(
+        self,
+        operation_marker: str | None = None,
+        *,
+        marker: str | None = None,
+    ) -> list[dict[str, Any]]:
+        return self.find_videos_by_operation_marker(operation_marker, marker=marker)
+
+    def get_video_privacy_status(self, *, video_id: str) -> str:
+        """videoIdのprivacyStatusをproviderからfresh取得する。"""
+
+        response = self.service.videos().list(part="status", id=video_id).execute()
+        if not isinstance(response, Mapping):
+            raise YouTubeOperationUnconfirmedError("youtube_video_privacy_read_invalid")
+        items = response.get("items")
+        if not isinstance(items, list) or len(items) != 1 or not isinstance(items[0], Mapping):
+            raise YouTubeOperationUnconfirmedError("youtube_video_privacy_unconfirmed")
+        status = items[0].get("status")
+        privacy = status.get("privacyStatus") if isinstance(status, Mapping) else ""
+        if not str(privacy or "").strip():
+            raise YouTubeOperationUnconfirmedError("youtube_video_privacy_unconfirmed")
+        return str(privacy).strip().casefold()
+
+    def get_video_privacy(self, *, video_id: str) -> dict[str, Any]:
+        return {
+            "id": video_id,
+            "status": {"privacyStatus": self.get_video_privacy_status(video_id=video_id)},
+        }
+
+    def get_video_status(self, *, video_id: str) -> dict[str, Any]:
+        return self.get_video_privacy(video_id=video_id)
+
     def update_video_privacy(self, *, video_id: str, privacy_status: str) -> dict[str, Any]:
         request = self.service.videos().update(
             part="status",
@@ -369,14 +1010,35 @@ def prepare(
     client: PodcastClient | None = None,
     dry_run: bool = False,
     kind: str = "daily",
+    run_id: str | None = None,
+    bundle_id: str | None = None,
+    operation_id: str | None = None,
+    payload_identity: str | None = None,
+    operation_marker: str | None = None,
+    marker: str | None = None,
 ) -> dict[str, Any]:
     mp4, mp4_hash = _mp4_and_hash(day, kind)
+    identity = _production_operation_identity(
+        run_id=run_id,
+        bundle_id=bundle_id,
+        operation_id=operation_id,
+        payload_identity=payload_identity,
+        operation_marker=operation_marker,
+        marker=marker,
+        default_operation_id=f"youtube_{kind}_prepare",
+    )
+    if identity is not None and identity["payloadIdentity"] != mp4_hash:
+        raise YouTubeOperationMarkerError("youtube_operation_marker_payload_identity_mismatch")
+
     uploads = _load_uploads(kind)
-    existing = uploads.get(day)
-    if isinstance(existing, dict) and existing.get("mp4_sha256") == mp4_hash and existing.get("videoId"):
-        return {"date": day, "skipped": True, **existing}
+    if identity is None:
+        existing = uploads.get(day)
+        if isinstance(existing, dict) and existing.get("mp4_sha256") == mp4_hash and existing.get("videoId"):
+            return {"date": day, "skipped": True, **existing}
 
     metadata = _build_metadata(day, kind)
+    if identity is not None:
+        metadata = _append_operation_marker(metadata, identity["operationMarker"])
     if dry_run:
         result = {
             "date": day,
@@ -388,55 +1050,297 @@ def prepare(
             "mp4_sha256": mp4_hash,
             "metadata": metadata,
         }
+        if identity is not None:
+            result.update(
+                {
+                    "operationMarker": identity["operationMarker"],
+                    "operationId": identity["operationId"],
+                    "runId": identity["runId"],
+                    "bundleId": identity["bundleId"],
+                    "payloadIdentity": identity["payloadIdentity"],
+                }
+            )
         print(json.dumps(result, ensure_ascii=False))
         return result
 
     active_client = client or YouTubePodcastClient.from_local_secrets()
+    if identity is not None:
+        # local rowの有無にかかわらず、provider側のmarkerをfreshに観測して
+        # crash後のupload再送を防ぐ。0件だけがuploadへ進む。
+        candidate = _single_marker_candidate(
+            _fresh_marker_candidates(active_client, identity["operationMarker"])
+        )
+        if candidate is not None:
+            existing = _history_row(uploads, day=day, kind=kind, identity=identity)
+            video_id = _candidate_video_id(candidate)
+            if not video_id:
+                raise YouTubeOperationUnconfirmedError("youtube_operation_marker_video_id_missing")
+            if existing is not None and str(existing.get("videoId") or "") not in {"", video_id}:
+                raise YouTubeOperationError("youtube_upload_history_provider_video_conflict")
+            if existing is not None:
+                base_row = dict(existing)
+                base_row.update({"videoId": video_id, "mp4_sha256": mp4_hash})
+                if str(base_row.get("status") or "").casefold() != "public":
+                    base_row.update({"phase": "prepared", "status": "private"})
+                base_row.setdefault("title", metadata["title"])
+            else:
+                base_row = {
+                    "phase": "prepared",
+                    "status": "private",
+                    "videoId": video_id,
+                    "mp4_sha256": mp4_hash,
+                    "title": metadata["title"],
+                }
+            row = _row_with_identity(
+                base_row,
+                identity,
+            )
+            row = _persist_upload_row(
+                uploads,
+                day=day,
+                kind=kind,
+                row=row,
+                identity=identity,
+                activate_if_new=False,
+            )
+            _write_uploads(uploads, kind)
+            result = {"date": day, "skipped": True, **row}
+            print(json.dumps(result, ensure_ascii=False))
+            return result
+
     video_id = active_client.upload_video(mp4, metadata, privacy_status="private")
-    uploads[day] = {
+    row = {
         "phase": "prepared",
         "status": "private",
         "videoId": video_id,
         "mp4_sha256": mp4_hash,
         "title": metadata["title"],
     }
+    row = _persist_upload_row(
+        uploads,
+        day=day,
+        kind=kind,
+        row=row,
+        identity=identity,
+    )
     _write_uploads(uploads, kind)
-    result = {"date": day, "skipped": False, **uploads[day]}
+    result = {"date": day, "skipped": False, **row}
     print(json.dumps(result, ensure_ascii=False))
     return result
 
 
-def finalize(day: str, *, client: PodcastClient | None = None, kind: str = "daily") -> dict[str, Any]:
-    _mp4_and_hash(day, kind)
+def finalize(
+    day: str,
+    *,
+    client: PodcastClient | None = None,
+    kind: str = "daily",
+    run_id: str | None = None,
+    bundle_id: str | None = None,
+    operation_id: str | None = None,
+    payload_identity: str | None = None,
+    operation_marker: str | None = None,
+    marker: str | None = None,
+) -> dict[str, Any]:
+    mp4, mp4_hash = _mp4_and_hash(day, kind)
+    identity = _production_operation_identity(
+        run_id=run_id,
+        bundle_id=bundle_id,
+        operation_id=operation_id,
+        payload_identity=payload_identity,
+        operation_marker=operation_marker,
+        marker=marker,
+        default_operation_id=f"youtube_{kind}_finalize",
+    )
+    if identity is not None and identity["payloadIdentity"] != mp4_hash:
+        raise YouTubeOperationMarkerError("youtube_operation_marker_payload_identity_mismatch")
+
     uploads = _load_uploads(kind)
-    row = uploads.get(day)
-    if not isinstance(row, dict) or not row.get("videoId"):
-        raise RuntimeError(f"prepared podcast upload not found for {day}")
-    needs_primary_playlist = kind == "deepdive" and not row.get("primaryPodcastPlaylistItemId")
-    if row.get("status") == "public" and row.get("playlistItemId") and not needs_primary_playlist:
-        return {"date": day, "skipped": True, **row}
+    if identity is None:
+        row = uploads.get(day)
+        if not isinstance(row, dict) or not row.get("videoId"):
+            raise RuntimeError(f"prepared podcast upload not found for {day}")
+        needs_primary_playlist = kind == "deepdive" and not row.get("primaryPodcastPlaylistItemId")
+        if row.get("status") == "public" and row.get("playlistItemId") and not needs_primary_playlist:
+            return {"date": day, "skipped": True, **row}
+
+        active_client = client or YouTubePodcastClient.from_local_secrets()
+        video_id = str(row["videoId"])
+        playlist_id = str(row.get("playlistId") or _ensure_playlist(active_client, kind))
+        active_client.update_video_privacy(video_id=video_id, privacy_status="public")
+        playlist_item_id = str(row.get("playlistItemId") or "")
+        if not playlist_item_id:
+            playlist_item_id = active_client.add_video_to_playlist(video_id=video_id, playlist_id=playlist_id)
+        primary_playlist_id = str(row.get("primaryPodcastPlaylistId") or "")
+        primary_playlist_item_id = str(row.get("primaryPodcastPlaylistItemId") or "")
+        if kind == "deepdive":
+            if not primary_playlist_id:
+                primary_playlist_id = _ensure_playlist(active_client, "daily")
+            if not primary_playlist_item_id:
+                primary_playlist_item_id = active_client.add_video_to_playlist(
+                    video_id=video_id,
+                    playlist_id=primary_playlist_id,
+                )
+        row.update(
+            {
+                "phase": "finalized",
+                "status": "public",
+                "playlistId": playlist_id,
+                "playlistItemId": playlist_item_id,
+            }
+        )
+        if kind == "deepdive":
+            row.update(
+                {
+                    "primaryPodcastPlaylistId": primary_playlist_id,
+                    "primaryPodcastPlaylistItemId": primary_playlist_item_id,
+                }
+            )
+        uploads[day] = row
+        _write_uploads(uploads, kind)
+        result = {"date": day, "skipped": False, **row}
+        print(json.dumps(result, ensure_ascii=False))
+        return result
 
     active_client = client or YouTubePodcastClient.from_local_secrets()
-    video_id = str(row["videoId"])
+    row = _history_row(uploads, day=day, kind=kind, identity=identity)
+    candidate = _single_marker_candidate(
+        _fresh_marker_candidates(active_client, identity["operationMarker"])
+    )
+    if candidate is None:
+        candidate = _fresh_candidate_for_identity(
+            active_client,
+            identity=identity,
+            existing=row,
+            kind=kind,
+        )
+    if candidate is None:
+        raise YouTubeOperationUnconfirmedError("youtube_operation_unconfirmed")
+    video_id = _candidate_video_id(candidate)
+    if not video_id:
+        raise YouTubeOperationUnconfirmedError("youtube_operation_marker_video_id_missing")
+    if row is not None and str(row.get("videoId") or "") not in {"", video_id}:
+        raise YouTubeOperationError("youtube_upload_history_provider_video_conflict")
+    if row is None:
+        row = {
+            "phase": "prepared",
+            "status": "private",
+            "videoId": video_id,
+            "mp4_sha256": mp4_hash,
+            "title": str(candidate.get("title") or ""),
+        }
+    row = _row_with_identity(row, identity)
+    if str(row.get("mp4_sha256") or "").casefold() != mp4_hash:
+        raise YouTubeOperationError("youtube_upload_history_payload_identity_conflict")
+
+    privacy = _fresh_video_privacy(active_client, video_id)
+    changed_provider = False
+    if privacy != "public":
+        if privacy not in {"private", "unlisted"}:
+            raise YouTubeOperationUnconfirmedError("youtube_video_privacy_unconfirmed")
+        active_client.update_video_privacy(video_id=video_id, privacy_status="public")
+        changed_provider = True
+        privacy = _fresh_video_privacy(active_client, video_id)
+    if privacy != "public":
+        raise YouTubeOperationUnconfirmedError("youtube_reconcile_public_binding_unconfirmed")
+    row = _persist_finalize_substep(
+        uploads,
+        day=day,
+        kind=kind,
+        row=row,
+        identity=identity,
+        substep_id="privacy_public",
+        provider_fields={"videoId": video_id, "privacyStatus": "public"},
+    )
+
     playlist_id = str(row.get("playlistId") or _ensure_playlist(active_client, kind))
-    active_client.update_video_privacy(video_id=video_id, privacy_status="public")
-    playlist_item_id = str(row.get("playlistItemId") or "")
-    if not playlist_item_id:
-        playlist_item_id = active_client.add_video_to_playlist(video_id=video_id, playlist_id=playlist_id)
+    playlist_membership = _fresh_playlist_membership(
+        active_client,
+        video_id=video_id,
+        playlist_id=playlist_id,
+    )
+    changed_provider = changed_provider or playlist_membership is None
+    if playlist_membership is None:
+        playlist_item_id = str(
+            active_client.add_video_to_playlist(video_id=video_id, playlist_id=playlist_id) or ""
+        )
+        if not playlist_item_id:
+            raise YouTubeOperationUnconfirmedError("youtube_playlist_membership_unconfirmed")
+        playlist_membership = _fresh_playlist_membership(
+            active_client,
+            video_id=video_id,
+            playlist_id=playlist_id,
+        )
+        if playlist_membership is None:
+            raise YouTubeOperationUnconfirmedError("youtube_playlist_membership_unconfirmed")
+        playlist_item_id = str(playlist_membership.get("playlistItemId") or playlist_item_id)
+    else:
+        playlist_item_id = str(playlist_membership.get("playlistItemId") or "")
+        if not playlist_item_id:
+            raise YouTubeOperationUnconfirmedError("youtube_playlist_membership_item_id_missing")
+    row = _persist_finalize_substep(
+        uploads,
+        day=day,
+        kind=kind,
+        row=row,
+        identity=identity,
+        substep_id="kind_playlist_membership",
+        provider_fields={"playlistId": playlist_id, "playlistItemId": playlist_item_id},
+    )
+
     primary_playlist_id = str(row.get("primaryPodcastPlaylistId") or "")
     primary_playlist_item_id = str(row.get("primaryPodcastPlaylistItemId") or "")
     if kind == "deepdive":
         if not primary_playlist_id:
             primary_playlist_id = _ensure_playlist(active_client, "daily")
-        if not primary_playlist_item_id:
-            primary_playlist_item_id = active_client.add_video_to_playlist(
+        primary_membership = _fresh_playlist_membership(
+            active_client,
+            video_id=video_id,
+            playlist_id=primary_playlist_id,
+        )
+        changed_provider = changed_provider or primary_membership is None
+        if primary_membership is None:
+            primary_playlist_item_id = str(
+                active_client.add_video_to_playlist(
+                    video_id=video_id,
+                    playlist_id=primary_playlist_id,
+                )
+                or ""
+            )
+            if not primary_playlist_item_id:
+                raise YouTubeOperationUnconfirmedError("youtube_playlist_membership_unconfirmed")
+            primary_membership = _fresh_playlist_membership(
+                active_client,
                 video_id=video_id,
                 playlist_id=primary_playlist_id,
             )
+            if primary_membership is None:
+                raise YouTubeOperationUnconfirmedError("youtube_playlist_membership_unconfirmed")
+            primary_playlist_item_id = str(
+                primary_membership.get("playlistItemId") or primary_playlist_item_id
+            )
+        else:
+            primary_playlist_item_id = str(primary_membership.get("playlistItemId") or "")
+            if not primary_playlist_item_id:
+                raise YouTubeOperationUnconfirmedError("youtube_playlist_membership_item_id_missing")
+        row = _persist_finalize_substep(
+            uploads,
+            day=day,
+            kind=kind,
+            row=row,
+            identity=identity,
+            substep_id="primary_playlist_membership",
+            provider_fields={
+                "playlistId": primary_playlist_id,
+                "playlistItemId": primary_playlist_item_id,
+            },
+        )
+
     row.update(
         {
             "phase": "finalized",
             "status": "public",
+            "videoId": video_id,
+            "mp4_sha256": mp4_hash,
             "playlistId": playlist_id,
             "playlistItemId": playlist_item_id,
         }
@@ -448,11 +1352,143 @@ def finalize(day: str, *, client: PodcastClient | None = None, kind: str = "dail
                 "primaryPodcastPlaylistItemId": primary_playlist_item_id,
             }
         )
-    uploads[day] = row
+    row = _persist_upload_row(
+        uploads,
+        day=day,
+        kind=kind,
+        row=row,
+        identity=identity,
+        activate_if_new=False,
+    )
     _write_uploads(uploads, kind)
-    result = {"date": day, "skipped": False, **row}
+    result = {"date": day, "skipped": not changed_provider, **row}
     print(json.dumps(result, ensure_ascii=False))
     return result
+
+
+def reconcile(
+    day: str,
+    *,
+    client: PodcastClient | None = None,
+    kind: str = "daily",
+    phase: str = "prepare",
+    run_id: str | None = None,
+    bundle_id: str | None = None,
+    operation_id: str | None = None,
+    payload_identity: str | None = None,
+    operation_marker: str | None = None,
+    marker: str | None = None,
+) -> dict[str, Any]:
+    """provider call後local write前の停止を、fresh readだけで復旧する。"""
+
+    if phase not in {"prepare", "finalize"}:
+        raise ValueError(f"invalid reconcile phase: {phase}")
+    mp4, mp4_hash = _mp4_and_hash(day, kind)
+    del mp4
+    identity = _production_operation_identity(
+        run_id=run_id,
+        bundle_id=bundle_id,
+        operation_id=operation_id,
+        payload_identity=payload_identity,
+        operation_marker=operation_marker,
+        marker=marker,
+        default_operation_id=f"youtube_{kind}_{phase}",
+    )
+    if identity is None:
+        raise YouTubeOperationMarkerError("youtube_operation_marker_required")
+    if identity["payloadIdentity"] != mp4_hash:
+        raise YouTubeOperationMarkerError("youtube_operation_marker_payload_identity_mismatch")
+    active_client = client or YouTubePodcastClient.from_local_secrets()
+    uploads = _load_uploads(kind)
+    row = _history_row(uploads, day=day, kind=kind, identity=identity)
+    candidate = _single_marker_candidate(
+        _fresh_marker_candidates(active_client, identity["operationMarker"])
+    )
+    if candidate is None:
+        candidate = _fresh_candidate_for_identity(
+            active_client,
+            identity=identity,
+            existing=row,
+            kind=kind,
+        )
+    if candidate is None:
+        raise YouTubeOperationUnconfirmedError("youtube_reconcile_video_unconfirmed")
+    video_id = _candidate_video_id(candidate)
+    if not video_id:
+        raise YouTubeOperationUnconfirmedError("youtube_reconcile_video_unconfirmed")
+    if row is not None and str(row.get("videoId") or "") not in {"", video_id}:
+        raise YouTubeOperationError("youtube_reconcile_provider_video_conflict")
+    if row is None:
+        row = {
+            "videoId": video_id,
+            "mp4_sha256": mp4_hash,
+            "title": str(candidate.get("title") or ""),
+        }
+    row = _row_with_identity(row, identity)
+    row["videoId"] = video_id
+    row["mp4_sha256"] = mp4_hash
+    if phase == "prepare":
+        row.update({"phase": "prepared", "status": "private"})
+    else:
+        if _fresh_video_privacy(active_client, video_id) != "public":
+            raise YouTubeOperationUnconfirmedError("youtube_reconcile_public_binding_unconfirmed")
+        playlist_id = str(row.get("playlistId") or _ensure_playlist(active_client, kind))
+        membership = _fresh_playlist_membership(
+            active_client,
+            video_id=video_id,
+            playlist_id=playlist_id,
+        )
+        if membership is None:
+            raise YouTubeOperationUnconfirmedError("youtube_reconcile_public_binding_unconfirmed")
+        playlist_item_id = str(membership.get("playlistItemId") or "")
+        if not playlist_item_id:
+            raise YouTubeOperationUnconfirmedError("youtube_reconcile_public_binding_unconfirmed")
+        row.update(
+            {
+                "phase": "finalized",
+                "status": "public",
+                "playlistId": playlist_id,
+                "playlistItemId": playlist_item_id,
+            }
+        )
+        if kind == "deepdive":
+            primary_playlist_id = str(row.get("primaryPodcastPlaylistId") or _ensure_playlist(active_client, "daily"))
+            primary_membership = _fresh_playlist_membership(
+                active_client,
+                video_id=video_id,
+                playlist_id=primary_playlist_id,
+            )
+            if primary_membership is None:
+                raise YouTubeOperationUnconfirmedError("youtube_reconcile_public_binding_unconfirmed")
+            primary_item_id = str(primary_membership.get("playlistItemId") or "")
+            if not primary_item_id:
+                raise YouTubeOperationUnconfirmedError("youtube_reconcile_public_binding_unconfirmed")
+            row.update(
+                {
+                    "primaryPodcastPlaylistId": primary_playlist_id,
+                    "primaryPodcastPlaylistItemId": primary_item_id,
+                }
+            )
+    row = _persist_upload_row(
+        uploads,
+        day=day,
+        kind=kind,
+        row=row,
+        identity=identity,
+        activate_if_new=False,
+    )
+    _write_uploads(uploads, kind)
+    result = {"date": day, "skipped": True, "reconciled": True, **row}
+    print(json.dumps(result, ensure_ascii=False))
+    return result
+
+
+def reconcile_prepare(day: str, **kwargs: Any) -> dict[str, Any]:
+    return reconcile(day, phase="prepare", **kwargs)
+
+
+def reconcile_finalize(day: str, **kwargs: Any) -> dict[str, Any]:
+    return reconcile(day, phase="finalize", **kwargs)
 
 
 def publish(

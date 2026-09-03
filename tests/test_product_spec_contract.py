@@ -594,7 +594,7 @@ def test_daily_45m_contract_is_bound_to_gate_matrix_and_public_completion() -> N
     assert len(contract["fixtureRegistry"]) == 18
     assert ledger["task_id"] == "NG-DAILY-45M-20260902"
     assert {row["defect_code"] for row in ledger["entries"]} == {
-        f"NG-I{index:02d}" for index in range(1, 10)
+        f"NG-I{index:02d}" for index in range(1, 28)
     }
     required = {
         "defect_code",
@@ -609,7 +609,11 @@ def test_daily_45m_contract_is_bound_to_gate_matrix_and_public_completion() -> N
         "maintenance_condition",
     }
     assert all(required <= set(row) for row in ledger["entries"])
+    assert all(
+        all(bool(row.get(field)) for field in required)
+        for row in ledger["entries"]
+    )
     for entrypoint in (_read(AGENTS), _read(CLAUDE)):
         assert "daily_45m_public_route" in entrypoint
-        assert "tools.news_grasp_daily_gate" in entrypoint
+        assert "tools.news_grasp_daily_launcher" in entrypoint
         assert "fresh consumer public verifier Green" in entrypoint

@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 from dataclasses import dataclass
 from collections.abc import Sequence
+from pathlib import Path
 from typing import Any, Mapping
 
 
@@ -57,6 +59,22 @@ DAILY_OPERATION_COMMANDS = {
     for operation in DAILY_OPERATIONS
 }
 DAILY_ROUTE_SCHEMA = "NEWS_GRASP_DAILY_ROUTE_CAPABILITY_V1"
+_ROOT = Path(__file__).resolve().parents[1]
+_DAILY_ROUTE_REGISTRY = _ROOT / "config" / "news_grasp_daily_control_routes.json"
+_DAILY_ENTRY_MODULES = (
+    _ROOT / "tools" / "news_grasp_daily_launcher.py",
+    _ROOT / "tools" / "news_grasp_daily_gate.py",
+    _ROOT / "tools" / "news_grasp_gate_profiles.py",
+)
+_FORBIDDEN_DAILY_IMPORTS = frozenset(
+    {
+        "tools.news_grasp_release_gate",
+        "tools.news_grasp_history_isolation",
+        "tools.news_grasp_nopublish",
+        "pytest",
+        "playwright",
+    }
+)
 
 
 def _argv_digest(argv: Sequence[str]) -> str:
@@ -244,10 +262,82 @@ def validate_profiles() -> dict[str, Any]:
         raise NewsGraspGateProfileError("NG_GATE_ORACLE_OVERLAP")
     if RELEASE_PROFILE.reachable_from_scheduled:
         raise NewsGraspGateProfileError("NG_RELEASE_GATE_REACHABLE_FROM_DAILY")
+    try:
+        registry = json.loads(_DAILY_ROUTE_REGISTRY.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise NewsGraspGateProfileError("NG_DAILY_ROUTE_REGISTRY_INVALID") from exc
+    if not isinstance(registry, Mapping):
+        raise NewsGraspGateProfileError("NG_DAILY_ROUTE_REGISTRY_INVALID")
+    expected_ids = list(DAILY_OPERATIONS)
+    expected_routes = [
+        {
+            "routeId": operation_id,
+            "consumerPath": "tools/news_grasp_daily_gate.py",
+            "consumerSymbol": f"_default_{operation_id}",
+            "productionCallerPath": "tools/news_grasp_daily_launcher.py",
+            "productionCallSymbol": "run_sequence",
+        }
+        for operation_id in DAILY_OPERATIONS
+    ]
+    direct = registry.get("directMainline")
+    if not isinstance(direct, Mapping):
+        raise NewsGraspGateProfileError("NG_DAILY_ROUTE_REGISTRY_INVALID")
+    for projection in (
+        "declaredRouteIds",
+        "consumerRouteIds",
+        "positiveFixtureRouteIds",
+        "negativeFixtureRouteIds",
+    ):
+        if registry.get(projection) != expected_ids or direct.get(projection) != expected_ids:
+            raise NewsGraspGateProfileError(f"NG_DAILY_ROUTE_PARITY_INVALID:{projection}")
+    if registry.get("routes") != expected_routes:
+        raise NewsGraspGateProfileError("NG_DAILY_ROUTE_CONSUMER_BINDING_INVALID")
+    direct_routes = direct.get("routes")
+    if not isinstance(direct_routes, list) or [
+        {
+            "routeId": row.get("routeId"),
+            "consumerPath": row.get("consumerPath"),
+            "consumerSymbol": row.get("consumerSymbol"),
+        }
+        for row in direct_routes
+        if isinstance(row, Mapping)
+    ] != [
+        {
+            "routeId": row["routeId"],
+            "consumerPath": row["consumerPath"],
+            "consumerSymbol": row["consumerSymbol"],
+        }
+        for row in expected_routes
+    ]:
+        raise NewsGraspGateProfileError("NG_DAILY_DIRECT_ROUTE_CONSUMER_BINDING_INVALID")
+    for source_path in _DAILY_ENTRY_MODULES:
+        try:
+            parsed = ast.parse(source_path.read_text(encoding="utf-8"), filename=str(source_path))
+        except (OSError, UnicodeError, SyntaxError) as exc:
+            raise NewsGraspGateProfileError("NG_DAILY_ENTRY_SOURCE_INVALID") from exc
+        imports: set[str] = set()
+        for node in ast.walk(parsed):
+            if isinstance(node, ast.Import):
+                imports.update(alias.name for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                imports.add(node.module)
+                imports.update(f"{node.module}.{alias.name}" for alias in node.names)
+        reached = sorted(
+            forbidden
+            for forbidden in _FORBIDDEN_DAILY_IMPORTS
+            if forbidden in imports
+        )
+        if reached:
+            raise NewsGraspGateProfileError(
+                f"NG_RELEASE_GATE_REACHED_FROM_DAILY:{source_path.name}:{reached}"
+            )
     return {
         "status": "validated",
         "daily": list(DAILY_PROFILE.oracles),
         "release": list(RELEASE_PROFILE.oracles),
+        "dailyOperationIds": expected_ids,
+        "routeRegistry": str(_DAILY_ROUTE_REGISTRY),
+        "releaseImports": [],
     }
 
 

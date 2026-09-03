@@ -13,15 +13,21 @@ node 集合とは別の一回限りの証跡として記録するだけで、外
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
 import os
 import re
+import secrets
 import shutil
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 import uuid
 from collections.abc import Callable, Iterable, Mapping, Sequence
+from contextlib import contextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -47,7 +53,18 @@ RELEASE_SCHEMA_VERSION = "NEWS_GRASP_RELEASE_GATE_V2"
 
 _HEX64 = re.compile(r"^[0-9a-fA-F]{64}$")
 _SAFE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
-
+_LEDGER_LOCKS_GUARD = threading.Lock()
+_LEDGER_LOCKS: dict[str, threading.Lock] = {}
+_CANONICAL_AUTHORITY_EVENT_TYPES = frozenset(
+    {
+        "collection_started",
+        "collection_completed",
+        "partition_started",
+        "partition_completed",
+        "release_completed",
+        "daily_promotion_issued",
+    }
+)
 # This is an exact registry, not a name heuristic. Files not listed here can belong to
 # general_complement only when they are a real test module in the authoritative repo.
 # That explicit tests-root rule prevents an arbitrary caller supplied node from being
@@ -56,8 +73,10 @@ _SAFE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
 RELEASE_PARTITION_REGISTRY: dict[str, tuple[str, ...]] = {
     "scoped_changed": (
         "tests/test_news_grasp_daily_45m_contract.py",
+        "tests/test_news_grasp_automation_appdb_cas.py",
         "tests/test_news_grasp_daily_control.py",
         "tests/test_news_grasp_daily_route_runtime_review.py",
+        "tests/test_news_grasp_scoped_test_broker.py",
         "tests/test_news_grasp_direct_mainline_integration.py",
         "tests/test_news_grasp_direct_runtime.py",
         "tests/test_news_grasp_direct_runtime_v2.py",
@@ -351,6 +370,24 @@ def _write_json_atomic(path: str | Path, value: Mapping[str, Any]) -> None:
         raise
 
 
+def _write_bytes_atomic(path: Path, payload: bytes) -> None:
+    target = path.resolve()
+    target.parent.mkdir(parents=True, exist_ok=True)
+    fd, temp_name = tempfile.mkstemp(prefix=f".{target.name}.", suffix=".tmp", dir=str(target.parent))
+    try:
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(payload)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temp_name, target)
+    except BaseException:
+        try:
+            os.unlink(temp_name)
+        except OSError:
+            pass
+        raise
+
+
 def _read_json_object(path: str | Path) -> Mapping[str, Any]:
     raw = Path(path).read_bytes()
     if raw.startswith(b"\xef\xbb\xbf"):
@@ -371,6 +408,110 @@ def _default_ledger_path() -> Path:
     local_app_data = str(os.environ.get("LOCALAPPDATA") or "").strip()
     base = Path(local_app_data) if local_app_data else Path.home()
     return (base / "News-Grasp" / "release-gate" / "release_ledger.jsonl").resolve()
+
+
+def _known_folder_local_app_data() -> Path:
+    """環境変数で差替えられないWindows Known Folderを解決する。"""
+
+    if os.name != "nt":
+        raise NewsGraspReleaseGateError("release_windows_known_folder_required")
+    try:
+        import ctypes
+
+        class _Guid(ctypes.Structure):
+            _fields_ = [
+                ("data1", ctypes.c_uint32),
+                ("data2", ctypes.c_uint16),
+                ("data3", ctypes.c_uint16),
+                ("data4", ctypes.c_ubyte * 8),
+            ]
+
+        raw = uuid.UUID("f1b32785-6fba-4fcf-9d55-7b8e7f157091").bytes_le
+        folder_id = _Guid.from_buffer_copy(raw)
+        output = ctypes.c_wchar_p()
+        status = ctypes.windll.shell32.SHGetKnownFolderPath(
+            ctypes.byref(folder_id), 0, None, ctypes.byref(output)
+        )
+        if status != 0 or not output.value:
+            raise OSError(f"SHGetKnownFolderPath:{status}")
+        try:
+            return Path(output.value).resolve(strict=True)
+        finally:
+            ctypes.windll.ole32.CoTaskMemFree(output)
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
+        raise NewsGraspReleaseGateError("release_windows_known_folder_unavailable") from exc
+
+
+def _canonical_ledger_path() -> Path:
+    """production Release authorityが所有する固定ledger pathを返す。
+
+    caller環境の ``NEWS_GRASP_RELEASE_LEDGER_PATH`` はtest/diagnostic seamにだけ
+    使用し、production collection/runのauthorityには決して使わない。
+    """
+
+    return (_known_folder_local_app_data() / "News-Grasp" / "release-gate" / "release_ledger.jsonl").resolve()
+
+
+def _canonical_daily_state_root() -> Path:
+    return (_known_folder_local_app_data() / "News-Grasp" / "direct-mainline").resolve()
+
+
+def _is_canonical_ledger(path: Path) -> bool:
+    try:
+        return path.resolve() == _canonical_ledger_path()
+    except NewsGraspReleaseGateError:
+        return False
+
+
+def _canonical_ledger_mac_key(*, create: bool) -> bytes:
+    key_path = _canonical_ledger_path().parent / "release_ledger.mac.key"
+    if not key_path.is_file() and create:
+        _write_bytes_atomic(key_path, secrets.token_bytes(32))
+    try:
+        key = key_path.read_bytes()
+    except OSError as exc:
+        raise NewsGraspReleaseGateError("release_ledger_mac_key_missing") from exc
+    if len(key) != 32:
+        raise NewsGraspReleaseGateError("release_ledger_mac_key_invalid")
+    return key
+
+
+@contextmanager
+def _ledger_lock(path: Path):
+    """thread/process横断でledger appendとpromotion pairを直列化する。"""
+
+    target = path.resolve()
+    lock_key = os.path.normcase(str(target))
+    with _LEDGER_LOCKS_GUARD:
+        process_lock = _LEDGER_LOCKS.setdefault(lock_key, threading.Lock())
+    with process_lock:
+        lock_path = target.with_name(f"{target.name}.lock")
+        lock_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(lock_path, "a+b") as handle:
+            if handle.seek(0, os.SEEK_END) == 0:
+                handle.write(b"\0")
+                handle.flush()
+                os.fsync(handle.fileno())
+            if os.name == "nt":
+                import msvcrt
+
+                deadline = time.monotonic() + 30.0
+                while True:
+                    try:
+                        handle.seek(0)
+                        msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+                        break
+                    except OSError:
+                        if time.monotonic() >= deadline:
+                            raise NewsGraspReleaseGateError("release_ledger_lock_timeout")
+                        time.sleep(0.05)
+                try:
+                    yield
+                finally:
+                    handle.seek(0)
+                    msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                yield
 
 
 def _ledger_file(path: str | Path | None) -> Path:
@@ -404,43 +545,345 @@ def _ledger_events(path: str | Path | None) -> list[dict[str, Any]]:
         if value.get("prev_event_hash", "") != previous_hash:
             raise NewsGraspReleaseGateError("release_ledger_chain_invalid")
         event_hash = str(value.get("event_hash") or "")
+        event_mac = str(value.get("event_mac") or "").casefold()
         unsigned = dict(value)
         unsigned.pop("event_hash", None)
+        unsigned.pop("event_mac", None)
         if not _HEX64.fullmatch(event_hash) or hashlib.sha256(_json_bytes(unsigned)).hexdigest() != event_hash:
             raise NewsGraspReleaseGateError("release_ledger_event_hash_invalid")
+        if _is_canonical_ledger(target):
+            key = _canonical_ledger_mac_key(create=False)
+            expected_mac = hmac.new(key, event_hash.encode("ascii"), hashlib.sha256).hexdigest()
+            if not _HEX64.fullmatch(event_mac) or not hmac.compare_digest(event_mac, expected_mac):
+                raise NewsGraspReleaseGateError("release_ledger_event_mac_invalid")
         previous_hash = event_hash
         events.append(value)
     return events
 
 
+def _build_ledger_recorders():
+    """raw authority writerをclosure内へ封じ、任意fields APIを公開しない。"""
+
+    def write_locked(path: Path, event_type: str, fields: Mapping[str, Any]) -> dict[str, Any]:
+        target = path.resolve()
+        events = _ledger_events(target)
+        event: dict[str, Any] = {
+            "schemaVersion": RELEASE_LEDGER_SCHEMA,
+            "event_id": f"release-event-{uuid.uuid4().hex}",
+            "event_type": str(event_type),
+            "recorded_at": datetime.now(timezone.utc).isoformat(),
+            "prev_event_hash": str(events[-1].get("event_hash") if events else ""),
+            **dict(fields),
+        }
+        event["event_hash"] = hashlib.sha256(_json_bytes(event)).hexdigest()
+        if _is_canonical_ledger(target):
+            key = _canonical_ledger_mac_key(create=True)
+            event["event_mac"] = hmac.new(
+                key, str(event["event_hash"]).encode("ascii"), hashlib.sha256
+            ).hexdigest()
+        target.parent.mkdir(parents=True, exist_ok=True)
+        line = _json_bytes(event) + b"\n"
+        try:
+            descriptor = os.open(str(target), os.O_APPEND | os.O_CREAT | os.O_WRONLY, 0o600)
+            try:
+                written = os.write(descriptor, line)
+                if written != len(line):
+                    raise OSError("short ledger write")
+                os.fsync(descriptor)
+            finally:
+                os.close(descriptor)
+        except OSError as exc:
+            raise NewsGraspReleaseGateError("release_ledger_append_failed") from exc
+        return event
+
+    def append_non_authority_locked(
+        path: Path,
+        event_type: str,
+        **fields: Any,
+    ) -> dict[str, Any]:
+        if _is_canonical_ledger(path) and event_type in _CANONICAL_AUTHORITY_EVENT_TYPES:
+            raise NewsGraspReleaseGateError("release_authority_event_generic_append_forbidden")
+        return write_locked(path, event_type, fields)
+
+    def record_collection(
+        path: Path,
+        *,
+        repo_root: Path,
+        release_id: str,
+        timeout_seconds: float | int | None,
+    ) -> dict[str, Any]:
+        with _ledger_lock(path):
+            write_locked(
+                path,
+                "collection_started",
+                {
+                    "release_id": release_id,
+                    "repo_root": str(repo_root),
+                    "authority": "release_authoritative_collect_only",
+                },
+            )
+        process = _run_fixed_pytest(
+            repo_root=repo_root,
+            node_ids=(),
+            collect_only=True,
+            timeout_seconds=timeout_seconds,
+        )
+        result = _collection_result_from_process(
+            process,
+            release_id=release_id,
+            ledger_path=path,
+        )
+        with _ledger_lock(path):
+            write_locked(
+                path,
+                "collection_completed",
+                {
+                    "release_id": release_id,
+                    "receipt": result,
+                    "receipt_hash": _mapping_hash(result),
+                },
+            )
+        return result
+
+    def record_partition(
+        path: Path,
+        *,
+        name: str,
+        nodes: Sequence[str],
+        repo_root: Path,
+        timeout_seconds: float | int | None,
+        release_id: str,
+        collection_sha256: str,
+        operation_id: str,
+    ) -> dict[str, Any]:
+        with _ledger_lock(path):
+            write_locked(
+                path,
+                "partition_started",
+                {
+                    "release_id": release_id,
+                    "partition": name,
+                    "identity": f"{release_id}:{name}",
+                    "collection_sha256": collection_sha256,
+                    "node_ids": list(nodes),
+                    "operation_id": operation_id,
+                },
+            )
+        result = _run_partition_process(
+            name,
+            nodes,
+            repo_root=repo_root,
+            timeout_seconds=timeout_seconds,
+            operation_id=operation_id,
+        )
+        result["release_id"] = release_id
+        result["collection_sha256"] = collection_sha256
+        if not result.get("cause_hash"):
+            result["cause_hash"] = _mapping_hash(
+                {
+                    "partition": name,
+                    "node_ids": list(nodes),
+                    "failed_nodes": result.get("failed_nodes") or [],
+                    "failure": result.get("failure"),
+                }
+            )
+        with _ledger_lock(path):
+            write_locked(
+                path,
+                "partition_completed",
+                {
+                    "release_id": release_id,
+                    "partition": name,
+                    "identity": f"{release_id}:{name}",
+                    "collection_sha256": collection_sha256,
+                    "receipt": result,
+                    "receipt_hash": _mapping_hash(result),
+                },
+            )
+        return result
+
+    def record_release_locked(
+        path: Path,
+        *,
+        release_receipt: Mapping[str, Any],
+        chain: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        return write_locked(
+            path,
+            "release_completed",
+            {
+                "release_id": chain["release_id"],
+                "collection_sha256": chain["collection_sha256"],
+                "collection_event_hash": chain["collection_event_hash"],
+                "partition_receipt_hashes": chain["partition_receipt_hashes"],
+                "receipt": dict(release_receipt),
+                "receipt_hash": _mapping_hash(release_receipt),
+            },
+        )
+
+    def record_promotion_locked(
+        path: Path,
+        *,
+        release_id: str,
+        event_hash: str,
+        stored: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        return write_locked(
+            path,
+            "daily_promotion_issued",
+            {
+                "release_id": release_id,
+                "identity": event_hash,
+                "release_event_hash": event_hash,
+                "receipt": dict(stored),
+                "receipt_hash": _mapping_hash(stored),
+            },
+        )
+
+    def finalize_release_event(
+        ledger_path: str | Path,
+        release_receipt: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        """完全なcollection/partition/node鎖を再検証してからだけ完了を書く。"""
+
+        ledger = _ledger_file(ledger_path)
+        with _ledger_lock(ledger):
+            chain = _validate_release_completion_chain(ledger, release_receipt)
+            return record_release_locked(
+                ledger,
+                release_receipt=release_receipt,
+                chain=chain,
+            )
+
+    def ensure_daily_promotion(
+        *,
+        repo_root: str | Path,
+        ledger: Path,
+        release_event: Mapping[str, Any],
+        release_receipt: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        """canonical Release鎖を同一lock内で再検証しpromotionを一回だけ発行する。"""
+
+        with _ledger_lock(ledger):
+            if (
+                release_receipt.get("schemaVersion") != RELEASE_GATE_SCHEMA
+                or release_receipt.get("ok") is not True
+                or release_receipt.get("status") != "green"
+            ):
+                raise NewsGraspReleaseGateError("daily_promotion_release_green_required")
+            release_id = _safe_id(
+                release_receipt.get("release_id"), field="release_id", generate=False
+            )
+            if ledger != _canonical_ledger_path():
+                raise NewsGraspReleaseGateError("daily_promotion_noncanonical_ledger_forbidden")
+            # callerのmappingだけを信頼せず、完了鎖をもう一度canonical ledgerから
+            # 集約する。raw writerはこのclosure外へ一切公開しない。
+            chain = _validate_release_completion_chain(ledger, release_receipt)
+            if chain.get("green") is not True:
+                raise NewsGraspReleaseGateError("daily_promotion_release_green_required")
+            event_hash = str(release_event.get("event_hash") or "")
+            authoritative = release_event.get("receipt")
+            ledger_event = next(
+                (
+                    event
+                    for event in _ledger_events(ledger)
+                    if event.get("event_hash") == event_hash
+                    and event.get("event_type") == "release_completed"
+                    and event.get("release_id") == release_id
+                ),
+                None,
+            )
+            if (
+                not isinstance(authoritative, Mapping)
+                or _mapping_hash(authoritative) != _mapping_hash(release_receipt)
+                or release_event.get("receipt_hash") != _mapping_hash(release_receipt)
+                or not _HEX64.fullmatch(event_hash)
+                or not isinstance(ledger_event, Mapping)
+                or _mapping_hash(ledger_event) != _mapping_hash(release_event)
+            ):
+                raise NewsGraspReleaseGateError(
+                    "daily_promotion_release_ledger_binding_invalid"
+                )
+            from tools import news_grasp_scoped_test_broker as broker
+
+            existing = _latest_event(
+                _ledger_events(ledger),
+                release_id=release_id,
+                event_type="daily_promotion_issued",
+                identity=event_hash,
+            )
+            if existing is not None:
+                stored = existing.get("receipt")
+                loaded, failure = broker._load_trusted_promotion(
+                    state_root=_canonical_daily_state_root(),
+                    now=datetime.now(timezone.utc),
+                )
+                if (
+                    not isinstance(stored, Mapping)
+                    or not isinstance(loaded, Mapping)
+                    or loaded.get("release_id") != release_id
+                    or loaded.get("release_event_hash") != event_hash
+                    or loaded.get("release_receipt_sha256")
+                    != _mapping_hash(release_receipt)
+                    or stored.get("release_event_hash") != event_hash
+                ):
+                    raise NewsGraspReleaseGateError(
+                        f"daily_promotion_existing_receipt_invalid:{failure or 'binding'}"
+                    )
+                return dict(stored)
+
+            issued = broker._issue_authorized_promotion(
+                repo_root=_repo_root(repo_root),
+                state_root=_canonical_daily_state_root(),
+                release_event=release_event,
+            )
+            stored = {
+                "schemaVersion": issued.get("schemaVersion"),
+                "status": issued.get("status"),
+                "release_id": issued.get("release_id"),
+                "release_receipt_sha256": issued.get("release_receipt_sha256"),
+                "release_event_hash": issued.get("release_event_hash"),
+                "source_head": issued.get("source_head"),
+                "source_tree": issued.get("source_tree"),
+                "registry_sha256": issued.get("registry_sha256"),
+                "issued_at": issued.get("issued_at"),
+                "expires_at": issued.get("expires_at"),
+                "receipt_path": issued.get("receipt_path"),
+                "receipt_sha256": _mapping_hash(issued),
+            }
+            record_promotion_locked(
+                ledger,
+                release_id=release_id,
+                event_hash=event_hash,
+                stored=stored,
+            )
+            return stored
+
+    return (
+        append_non_authority_locked,
+        record_collection,
+        record_partition,
+        finalize_release_event,
+        ensure_daily_promotion,
+    )
+
+
+(
+    _append_ledger_locked,
+    _record_authoritative_collection,
+    _record_authoritative_partition,
+    _finalize_release_event,
+    _ensure_daily_promotion,
+) = _build_ledger_recorders()
+del _build_ledger_recorders
+
+
 def _append_ledger(path: str | Path | None, event_type: str, **fields: Any) -> dict[str, Any]:
     target = _ledger_file(path)
-    events = _ledger_events(target)
-    from datetime import datetime, timezone
-
-    event: dict[str, Any] = {
-        "schemaVersion": RELEASE_LEDGER_SCHEMA,
-        "event_id": f"release-event-{uuid.uuid4().hex}",
-        "event_type": str(event_type),
-        "recorded_at": datetime.now(timezone.utc).isoformat(),
-        "prev_event_hash": str(events[-1].get("event_hash") if events else ""),
-    }
-    event.update(fields)
-    event["event_hash"] = hashlib.sha256(_json_bytes(event)).hexdigest()
-    target.parent.mkdir(parents=True, exist_ok=True)
-    line = _json_bytes(event) + b"\n"
-    try:
-        descriptor = os.open(str(target), os.O_APPEND | os.O_CREAT | os.O_WRONLY, 0o600)
-        try:
-            written = os.write(descriptor, line)
-            if written != len(line):
-                raise OSError("short ledger write")
-            os.fsync(descriptor)
-        finally:
-            os.close(descriptor)
-    except OSError as exc:
-        raise NewsGraspReleaseGateError("release_ledger_append_failed") from exc
-    return event
+    if _is_canonical_ledger(target) and event_type in _CANONICAL_AUTHORITY_EVENT_TYPES:
+        raise NewsGraspReleaseGateError("release_authority_event_generic_append_forbidden")
+    with _ledger_lock(target):
+        return _append_ledger_locked(target, event_type, **fields)
 
 
 def _latest_event(
@@ -834,13 +1277,16 @@ def collect_only_nodes(
     timeout_seconds: float | int | None = None,
     ledger_path: str | Path | None = None,
     release_id: str | None = None,
+    _test_only_allow_ledger_override: bool = False,
 ) -> dict[str, Any]:
     """固定Python 3.12でauthoritative collectionを一回だけ生成する。"""
 
     _validate_pytest_args(pytest_args)
     root = _repo_root(repo_root)
     rid = _safe_id(release_id or os.environ.get(RELEASE_ID_ENV), field="release_id")
-    ledger = _ledger_file(ledger_path)
+    if ledger_path is not None and not _test_only_allow_ledger_override:
+        raise NewsGraspReleaseGateError("release_production_ledger_override_forbidden")
+    ledger = _ledger_file(ledger_path) if _test_only_allow_ledger_override else _canonical_ledger_path()
     events = _ledger_events(ledger)
     prior_complete = _latest_event(events, release_id=rid, event_type="collection_completed")
     if prior_complete is not None:
@@ -868,28 +1314,12 @@ def collect_only_nodes(
             "ledger_path": str(ledger),
             "failures": ["release_collection_inflight"],
         }
-    _append_ledger(
+    return _record_authoritative_collection(
         ledger,
-        "collection_started",
-        release_id=rid,
-        repo_root=str(root),
-        authority="release_authoritative_collect_only",
-    )
-    process = _run_fixed_pytest(
         repo_root=root,
-        node_ids=(),
-        collect_only=True,
+        release_id=rid,
         timeout_seconds=timeout_seconds,
     )
-    result = _collection_result_from_process(process, release_id=rid, ledger_path=ledger)
-    _append_ledger(
-        ledger,
-        "collection_completed",
-        release_id=rid,
-        receipt=result,
-        receipt_hash=_mapping_hash(result),
-    )
-    return result
 
 
 def _node_receipts_from_process(
@@ -1041,45 +1471,172 @@ def _partition_process_receipt(
             "status": "crash_attach_required",
             "failure": "release_partition_inflight",
         }
-    _append_ledger(
+    return _record_authoritative_partition(
         ledger_path,
-        "partition_started",
-        release_id=release_id,
-        partition=name,
-        identity=f"{release_id}:{name}",
-        collection_sha256=collection_sha256,
-        node_ids=list(nodes),
-        operation_id=operation_id,
-    )
-    result = _run_partition_process(
-        name,
-        nodes,
-        repo_root=repo_root,
+        name=name,
+        nodes=nodes,
+        repo_root=_repo_root(repo_root),
         timeout_seconds=timeout_seconds,
+        release_id=release_id,
+        collection_sha256=collection_sha256,
         operation_id=operation_id,
     )
-    result["release_id"] = release_id
-    result["collection_sha256"] = collection_sha256
-    if not result.get("cause_hash"):
-        result["cause_hash"] = _mapping_hash(
-            {
-                "partition": name,
-                "node_ids": list(nodes),
-                "failed_nodes": result.get("failed_nodes") or [],
-                "failure": result.get("failure"),
-            }
-        )
-    _append_ledger(
-        ledger_path,
-        "partition_completed",
+
+
+def _validate_release_completion_chain(
+    ledger_path: str | Path,
+    release_receipt: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Release完了receiptをauthoritative collection/partition eventから再集約する。"""
+
+    ledger = _ledger_file(ledger_path)
+    if not isinstance(release_receipt, Mapping):
+        raise NewsGraspReleaseGateError("release_completion_receipt_invalid")
+    release_id = _safe_id(release_receipt.get("release_id"), field="release_id", generate=False)
+    classification = release_receipt.get("partition")
+    if not isinstance(classification, Mapping):
+        raise NewsGraspReleaseGateError("release_completion_partition_missing")
+    collection_nodes = _node_list(classification.get("node_set") or ())
+    if not collection_nodes:
+        raise NewsGraspReleaseGateError("release_completion_collection_empty")
+    collection_sha256 = _node_hash(collection_nodes)
+    if (
+        release_receipt.get("schemaVersion") != RELEASE_GATE_SCHEMA
+        or release_receipt.get("collection_sha256") != collection_sha256
+        or classification.get("collection_sha256") != collection_sha256
+        or int(release_receipt.get("union_node_count") or 0) != len(collection_nodes)
+        or int(release_receipt.get("executed_node_count") or 0) != len(collection_nodes)
+    ):
+        raise NewsGraspReleaseGateError("release_completion_collection_binding_invalid")
+    raw_partitions = classification.get("partitions")
+    if not isinstance(raw_partitions, Mapping) or set(raw_partitions) != set(RELEASE_PARTITIONS):
+        raise NewsGraspReleaseGateError("release_completion_partition_registry_invalid")
+    normalized = validate_partition(collection_nodes, raw_partitions)
+    if _mapping_hash(normalized) != _mapping_hash(classification):
+        raise NewsGraspReleaseGateError("release_completion_partition_classification_invalid")
+
+    events = _ledger_events(ledger)
+    collection_event = _latest_event(
+        events,
         release_id=release_id,
-        partition=name,
-        identity=f"{release_id}:{name}",
-        collection_sha256=collection_sha256,
-        receipt=result,
-        receipt_hash=_mapping_hash(result),
+        event_type="collection_completed",
     )
-    return result
+    collection_receipt = (
+        collection_event.get("receipt") if isinstance(collection_event, Mapping) else None
+    )
+    if (
+        not isinstance(collection_receipt, Mapping)
+        or collection_receipt.get("authority") != "release_authoritative_collect_only"
+        or collection_receipt.get("ok") is not True
+        or collection_receipt.get("release_id") != release_id
+        or list(collection_receipt.get("collection_nodes") or ()) != collection_nodes
+        or collection_receipt.get("collection_sha256") != collection_sha256
+        or collection_event.get("receipt_hash") != _mapping_hash(collection_receipt)
+    ):
+        raise NewsGraspReleaseGateError("release_completion_collection_event_invalid")
+
+    listed_receipts = release_receipt.get("partition_receipts")
+    if not isinstance(listed_receipts, list):
+        raise NewsGraspReleaseGateError("release_completion_partition_receipts_invalid")
+    listed_by_partition: dict[str, Mapping[str, Any]] = {}
+    for receipt in listed_receipts:
+        if not isinstance(receipt, Mapping):
+            raise NewsGraspReleaseGateError("release_completion_partition_receipt_invalid")
+        name = str(receipt.get("partition") or "")
+        if name in listed_by_partition or name not in RELEASE_PARTITIONS:
+            raise NewsGraspReleaseGateError("release_completion_partition_receipt_duplicate")
+        listed_by_partition[name] = receipt
+
+    expected_results: list[dict[str, Any]] = []
+    authoritative_receipts: list[dict[str, Any]] = []
+    all_partition_green = True
+    for name in RELEASE_PARTITIONS:
+        nodes = list(normalized["partitions"].get(name) or ())
+        if not nodes:
+            if name in listed_by_partition:
+                raise NewsGraspReleaseGateError("release_completion_empty_partition_receipt")
+            continue
+        event = _latest_event(
+            events,
+            release_id=release_id,
+            event_type="partition_completed",
+            partition=name,
+        )
+        authoritative = event.get("receipt") if isinstance(event, Mapping) else None
+        listed = listed_by_partition.get(name)
+        if (
+            not isinstance(authoritative, Mapping)
+            or not isinstance(listed, Mapping)
+            or event.get("receipt_hash") != _mapping_hash(authoritative)
+            or _mapping_hash(listed) != _mapping_hash(authoritative)
+            or authoritative.get("release_id") != release_id
+            or authoritative.get("partition") != name
+            or list(authoritative.get("node_ids") or ()) != nodes
+            or authoritative.get("collection_sha256") != collection_sha256
+        ):
+            raise NewsGraspReleaseGateError("release_completion_partition_event_invalid")
+        node_receipts = authoritative.get("node_receipts")
+        if not isinstance(node_receipts, list):
+            raise NewsGraspReleaseGateError("release_completion_node_receipts_invalid")
+        if node_receipts:
+            if [str(item.get("node_id") or "") for item in node_receipts if isinstance(item, Mapping)] != nodes:
+                raise NewsGraspReleaseGateError("release_completion_node_union_invalid")
+            for item in node_receipts:
+                if not isinstance(item, Mapping) or item.get("partition") != name:
+                    raise NewsGraspReleaseGateError("release_completion_node_receipt_invalid")
+                expected_results.append(dict(item))
+        else:
+            for node in nodes:
+                expected_results.append(
+                    {
+                        "node_id": node,
+                        "partition": name,
+                        "status": "error",
+                        "result": {
+                            "status": authoritative.get("status"),
+                            "failure": authoritative.get("failure"),
+                        },
+                    }
+                )
+        authoritative_receipts.append(dict(authoritative))
+        all_partition_green = all_partition_green and authoritative.get("ok") is True
+
+    if set(listed_by_partition) != {
+        name for name in RELEASE_PARTITIONS if normalized["partitions"].get(name)
+    }:
+        raise NewsGraspReleaseGateError("release_completion_partition_union_invalid")
+    top_results = release_receipt.get("node_receipts")
+    if (
+        not isinstance(top_results, list)
+        or hashlib.sha256(_json_bytes(top_results)).hexdigest()
+        != hashlib.sha256(_json_bytes(expected_results)).hexdigest()
+    ):
+        raise NewsGraspReleaseGateError("release_completion_node_receipt_union_invalid")
+    failed_nodes = [
+        str(item.get("node_id") or "")
+        for item in expected_results
+        if item.get("status") in {"fail", "error"}
+    ]
+    green = (
+        all_partition_green
+        and not failed_nodes
+        and len(expected_results) == len(collection_nodes)
+        and all(item.get("status") in {"pass", "skip"} for item in expected_results)
+    )
+    if (
+        list(release_receipt.get("failed_nodes") or ()) != failed_nodes
+        or release_receipt.get("ok") is not green
+        or release_receipt.get("status") != ("green" if green else "blocked")
+    ):
+        raise NewsGraspReleaseGateError("release_completion_status_invalid")
+    return {
+        "release_id": release_id,
+        "collection_sha256": collection_sha256,
+        "collection_event_hash": str(collection_event.get("event_hash") or ""),
+        "partition_receipt_hashes": [_mapping_hash(item) for item in authoritative_receipts],
+        "node_count": len(collection_nodes),
+        "green": green,
+    }
 
 
 def execute_partitioned_nodes(
@@ -1092,6 +1649,7 @@ def execute_partitioned_nodes(
     release_id: str | None = None,
     ledger_path: str | Path | None = None,
     timeout_seconds: float | int | None = None,
+    _test_only_allow_ledger_override: bool = False,
 ) -> dict[str, Any]:
     """collection集合をpartitionごとに一回だけ実行する。
 
@@ -1117,7 +1675,32 @@ def execute_partitioned_nodes(
             raise NewsGraspReleaseGateError("release_authoritative_collection_binding_mismatch")
         root = _repo_root(repo_root)
         rid = _safe_id(release_id or collection_receipt.get("release_id"), field="release_id")
-        ledger = _ledger_file(ledger_path or collection_receipt.get("ledger_path"))
+        if ledger_path is not None and not _test_only_allow_ledger_override:
+            raise NewsGraspReleaseGateError("release_production_ledger_override_forbidden")
+        ledger = (
+            _ledger_file(ledger_path or collection_receipt.get("ledger_path"))
+            if _test_only_allow_ledger_override
+            else _canonical_ledger_path()
+        )
+        if str(collection_receipt.get("ledger_path") or "") != str(ledger):
+            raise NewsGraspReleaseGateError("release_authoritative_collection_ledger_mismatch")
+        if not _test_only_allow_ledger_override:
+            collection_event = _latest_event(
+                _ledger_events(ledger),
+                release_id=rid,
+                event_type="collection_completed",
+            )
+            authoritative_collection = (
+                collection_event.get("receipt") if isinstance(collection_event, Mapping) else None
+            )
+            if (
+                not isinstance(authoritative_collection, Mapping)
+                or _mapping_hash(authoritative_collection) != _mapping_hash(collection_receipt)
+                or collection_event.get("receipt_hash") != _mapping_hash(collection_receipt)
+            ):
+                raise NewsGraspReleaseGateError(
+                    "release_authoritative_collection_ledger_binding_invalid"
+                )
         classification = classify_collection_nodes(collection, repo_root=root)
         prior_release = _latest_event(
             _ledger_events(ledger),
@@ -1127,6 +1710,13 @@ def execute_partitioned_nodes(
         if prior_release is not None:
             prior = prior_release.get("receipt")
             if isinstance(prior, Mapping) and prior.get("collection_sha256") == classification["collection_sha256"]:
+                if prior.get("ok") is True and not _test_only_allow_ledger_override:
+                    _ensure_daily_promotion(
+                        repo_root=root,
+                        ledger=ledger,
+                        release_event=prior_release,
+                        release_receipt=prior,
+                    )
                 attached_release = dict(prior)
                 attached_release["status"] = "release_attached"
                 attached_release["attached"] = True
@@ -1232,13 +1822,28 @@ def execute_partitioned_nodes(
         and not failed_nodes
         and all(item.get("ok") is True for item in partition_results)
     )
+    authoritative_partition_results: list[dict[str, Any]] = []
+    completed_events = _ledger_events(ledger)
+    for name in RELEASE_PARTITIONS:
+        if not classification["partitions"].get(name):
+            continue
+        event = _latest_event(
+            completed_events,
+            release_id=rid,
+            event_type="partition_completed",
+            partition=name,
+        )
+        receipt = event.get("receipt") if isinstance(event, Mapping) else None
+        if not isinstance(receipt, Mapping):
+            raise NewsGraspReleaseGateError("release_partition_authoritative_receipt_missing")
+        authoritative_partition_results.append(dict(receipt))
     result = {
         "schemaVersion": RELEASE_GATE_SCHEMA,
         "ok": green,
         "status": "green" if green else "blocked",
         "partition": classification,
         "node_receipts": results,
-        "partition_receipts": partition_results,
+        "partition_receipts": authoritative_partition_results,
         "executed_node_count": len(seen),
         "executed_process_count": sum(int(item.get("process_count", 0)) for item in partition_results),
         "union_node_count": len(ordered),
@@ -1247,14 +1852,14 @@ def execute_partitioned_nodes(
         "release_id": rid,
         "ledger_path": str(ledger),
     }
-    _append_ledger(
-        ledger,
-        "release_completed",
-        release_id=rid,
-        collection_sha256=classification["collection_sha256"],
-        receipt=result,
-        receipt_hash=_mapping_hash(result),
-    )
+    release_event = _finalize_release_event(ledger, result)
+    if green and not _test_only_allow_ledger_override:
+        _ensure_daily_promotion(
+            repo_root=root,
+            ledger=ledger,
+            release_event=release_event,
+            release_receipt=result,
+        )
     return result
 
 
@@ -1462,6 +2067,7 @@ def _forbidden_payload_keys(payload: Mapping[str, Any]) -> list[str]:
         "selectors",
         "node_ids",
         "runner",
+        "ledger_path",
         "collection",
         "-k",
         "--ignore",
@@ -1513,12 +2119,10 @@ def _main(argv: Sequence[str] | None = None) -> int:
                 raise NewsGraspReleaseGateError(f"release_payload_selector_or_fake_collection_forbidden:{forbidden}")
             repo_root = args[2]
             rid = _safe_id(payload.get("release_id") or os.environ.get(RELEASE_ID_ENV), field="release_id")
-            ledger_path = payload.get("ledger_path")
             timeout = payload.get("timeout_seconds")
             collected = collect_only_nodes(
                 repo_root,
                 timeout_seconds=timeout,
-                ledger_path=ledger_path,
                 release_id=rid,
             )
             if collected.get("ok") is not True:
@@ -1529,7 +2133,6 @@ def _main(argv: Sequence[str] | None = None) -> int:
                     repo_root=repo_root,
                     collection_receipt=collected,
                     release_id=rid,
-                    ledger_path=ledger_path,
                     timeout_seconds=timeout,
                 )
                 result["collection"] = collected

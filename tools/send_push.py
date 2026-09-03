@@ -264,6 +264,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--run-id", default="", help="direct runtime run ID")
     p.add_argument("--run-intent", default="scheduled_production_direct", help="実行意図")
     p.add_argument("--retry-count", type=int, default=0, help="cause-bound retry回数")
+    p.add_argument("--skip-prune", action="store_true",
+                   help="Daily outboxでは購読削除を別maintenanceへ分離する")
     return p.parse_args()
 
 
@@ -362,6 +364,8 @@ def _notification_state(
     original_sent_at: str = "",
     sender_event_id: str = "",
     prior_sender_producer_sha256: str = "",
+    recipient_event_ledger_path: str = "",
+    recipient_event_ledger_sha256: str = "",
 ) -> dict:
     producer_sha256 = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     if not payload_sha256:
@@ -449,11 +453,17 @@ def _notification_state(
             "senderEventId": sender_event_id or producer_run_id,
             **_trusted_sender_source_binding(prior_sender_producer_sha256 or producer_sha256),
         }
+        if recipient_event_ledger_path and re.fullmatch(r"[0-9a-f]{64}", recipient_event_ledger_sha256):
+            receipt_v2["recipientEventLedgerPath"] = recipient_event_ledger_path
+            receipt_v2["recipientEventLedgerSha256"] = recipient_event_ledger_sha256
         receipt_v2["receiptSha256"] = hashlib.sha256(
             json.dumps(receipt_v2, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
         ).hexdigest()
         state["deliveryReceiptV2"] = receipt_v2
         state["deliveryReceiptV2Sha256"] = receipt_v2["receiptSha256"]
+        if recipient_event_ledger_path and re.fullmatch(r"[0-9a-f]{64}", recipient_event_ledger_sha256):
+            state["recipientEventLedgerPath"] = recipient_event_ledger_path
+            state["recipientEventLedgerSha256"] = recipient_event_ledger_sha256
     return state
 
 
@@ -554,6 +564,110 @@ def _recipient_key(subscription: dict, audience_set_sha256: str) -> str:
     """endpointを保存せず、receipt内で安定した匿名化keyへ変換する。"""
     endpoint = str(subscription.get("endpoint") or "")
     return hashlib.sha256(f"{audience_set_sha256}:{endpoint}".encode("utf-8")).hexdigest()
+
+
+def _recipient_event_path(record_state: str | None, issue_date: str) -> Path | None:
+    if not record_state:
+        return None
+    return Path(record_state).with_name(f"{issue_date}.recipient-events.jsonl")
+
+
+def _recipient_event(
+    *,
+    issue_date: str,
+    run_id: str,
+    run_intent: str,
+    payload_sha256: str,
+    audience_set_sha256: str,
+    recipient_key: str,
+    event_id: str,
+    status: str,
+) -> dict:
+    value = {
+        "schemaVersion": "NEWS_GRASP_NOTIFICATION_RECIPIENT_EVENT_V1",
+        "issueDate": issue_date,
+        "runId": run_id,
+        "runIntent": run_intent,
+        "payloadIdentity": payload_sha256,
+        "audienceIdentity": audience_set_sha256,
+        "recipientKey": recipient_key,
+        "eventId": event_id,
+        "status": status,
+        "recordedAt": datetime.now().astimezone().isoformat(),
+    }
+    value["receiptSha256"] = hashlib.sha256(
+        json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    return value
+
+
+def _append_recipient_event(path: Path, value: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        info = os.lstat(path)
+    except FileNotFoundError:
+        info = None
+    if info is not None:
+        attributes = int(getattr(info, "st_file_attributes", 0))
+        if (
+            not stat.S_ISREG(info.st_mode)
+            or stat.S_ISLNK(info.st_mode)
+            or attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+        ):
+            raise ValueError("recipient_event_ledger_unsafe")
+    raw = (
+        json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
+    ).encode("utf-8")
+    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+    try:
+        os.write(descriptor, raw)
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def _load_recipient_events(
+    path: Path | None,
+    *,
+    issue_date: str,
+    run_id: str,
+    run_intent: str,
+    payload_sha256: str,
+    audience_set_sha256: str,
+) -> dict[str, dict]:
+    if path is None or not path.exists():
+        return {}
+    raw = _safe_regular_bytes(path, max_bytes=2 * 1024 * 1024)
+    latest: dict[str, dict] = {}
+    for line in raw.decode("utf-8").splitlines():
+        value = json.loads(line)
+        if not isinstance(value, dict):
+            raise ValueError("recipient_event_ledger_invalid")
+        body = {key: item for key, item in value.items() if key != "receiptSha256"}
+        expected = hashlib.sha256(
+            json.dumps(body, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+        if (
+            value.get("schemaVersion") != "NEWS_GRASP_NOTIFICATION_RECIPIENT_EVENT_V1"
+            or value.get("receiptSha256") != expected
+            or value.get("issueDate") != issue_date
+            or value.get("runId") != run_id
+            or value.get("runIntent") != run_intent
+            or value.get("payloadIdentity") != payload_sha256
+            or value.get("audienceIdentity") != audience_set_sha256
+            or not re.fullmatch(r"[0-9a-f]{64}", str(value.get("recipientKey") or ""))
+            or str(value.get("status") or "") not in {"reserved", "sent", "gone", "failed"}
+        ):
+            raise ValueError("recipient_event_ledger_invalid")
+        key = str(value["recipientKey"])
+        prior = latest.get(key)
+        if prior is not None:
+            if prior.get("status") != "reserved" or prior.get("eventId") != value.get("eventId"):
+                raise ValueError("recipient_event_transition_invalid")
+            if value.get("status") == "reserved":
+                raise ValueError("recipient_event_duplicate_reservation")
+        latest[key] = value
+    return latest
 
 
 def _load_prior_delivery_receipt(path: Path) -> tuple[dict, str] | None:
@@ -832,12 +946,101 @@ def main() -> int:
     ok = 0
     stale_endpoints: list[str] = []
     recipient_results: list[dict] = []
+    issue_date = _today_jst_str()
+    recipient_events_path = _recipient_event_path(args.record_state, issue_date)
+    try:
+        prior_recipient_events = _load_recipient_events(
+            recipient_events_path,
+            issue_date=issue_date,
+            run_id=args.run_id,
+            run_intent=args.run_intent,
+            payload_sha256=payload_sha256,
+            audience_set_sha256=audience_set_sha256,
+        )
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
+        _write_notification_state(
+            args.record_state,
+            _notification_state(
+                status="recipient_ledger_invalid",
+                ok=False,
+                source=source,
+                subscription_count=len(subs),
+                sent_count=0,
+                detail=str(exc),
+                payload_sha256=payload_sha256,
+                audience_set_sha256=audience_set_sha256,
+                run_id=args.run_id,
+                run_intent=args.run_intent,
+            ),
+        )
+        return 1
+    ambiguous_keys = sorted(
+        key for key, value in prior_recipient_events.items()
+        if value.get("status") == "reserved"
+    )
+    if ambiguous_keys:
+        _write_notification_state(
+            args.record_state,
+            _notification_state(
+                status="unknown_delivery",
+                ok=False,
+                source=source,
+                subscription_count=len(subs),
+                sent_count=sum(1 for value in prior_recipient_events.values() if value.get("status") == "sent"),
+                detail="recipient_delivery_ambiguous:" + "|".join(ambiguous_keys),
+                payload_sha256=payload_sha256,
+                audience_set_sha256=audience_set_sha256,
+                run_id=args.run_id,
+                run_intent=args.run_intent,
+            ),
+        )
+        return 1
     for sub in subs:
+        recipient_key = _recipient_key(sub, audience_set_sha256)
+        prior_event = prior_recipient_events.get(recipient_key)
+        if prior_event is not None:
+            prior_status = str(prior_event.get("status") or "")
+            recipient_results.append({"recipientKey": recipient_key, "status": prior_status})
+            if prior_status == "sent":
+                ok += 1
+            elif prior_status == "gone":
+                stale_endpoints.append(sub["endpoint"])
+            continue
+        event_id = uuid.uuid4().hex
+        if recipient_events_path is not None:
+            _append_recipient_event(
+                recipient_events_path,
+                _recipient_event(
+                    issue_date=issue_date,
+                    run_id=args.run_id,
+                    run_intent=args.run_intent,
+                    payload_sha256=payload_sha256,
+                    audience_set_sha256=audience_set_sha256,
+                    recipient_key=recipient_key,
+                    event_id=event_id,
+                    status="reserved",
+                ),
+            )
         sent, gone, detail = send_one(sub, payload, str(key_file), VAPID_CLAIMS_SUB)
+        terminal_status = "sent" if sent else ("gone" if gone else "failed")
+        if recipient_events_path is not None:
+            _append_recipient_event(
+                recipient_events_path,
+                _recipient_event(
+                    issue_date=issue_date,
+                    run_id=args.run_id,
+                    run_intent=args.run_intent,
+                    payload_sha256=payload_sha256,
+                    audience_set_sha256=audience_set_sha256,
+                    recipient_key=recipient_key,
+                    event_id=event_id,
+                    status=terminal_status,
+                ),
+            )
         recipient_results.append(
             {
-                "recipientKey": _recipient_key(sub, audience_set_sha256),
-                "status": "sent" if sent else ("gone" if gone else "failed"),
+                "recipientKey": recipient_key,
+                "status": terminal_status,
             }
         )
         if sent:
@@ -848,6 +1051,11 @@ def main() -> int:
                 stale_endpoints.append(sub["endpoint"])
 
     print(f"OK: {ok}/{len(subs)} 件に送信成功")
+    recipient_events_sha256 = ""
+    if recipient_events_path is not None and recipient_events_path.is_file():
+        recipient_events_sha256 = hashlib.sha256(
+            _safe_regular_bytes(recipient_events_path, max_bytes=2 * 1024 * 1024)
+        ).hexdigest()
     _write_notification_state(
         args.record_state,
         _notification_state(
@@ -862,11 +1070,13 @@ def main() -> int:
             run_intent=args.run_intent,
             retry_count=args.retry_count,
             recipient_results=recipient_results,
+            recipient_event_ledger_path=(recipient_events_path.name if recipient_events_path else ""),
+            recipient_event_ledger_sha256=recipient_events_sha256,
         ),
     )
 
     # 失効した購読を取得元から自動除去（次回以降のノイズを消す）
-    if stale_endpoints:
+    if stale_endpoints and not bool(getattr(args, "skip_prune", False)):
         if source == "worker":
             for ep in stale_endpoints:
                 prune_from_worker(worker_url, ep)
@@ -877,6 +1087,8 @@ def main() -> int:
                 encoding="utf-8",
             )
         print(f"失効購読 {len(stale_endpoints)} 件を除去しました")
+    elif stale_endpoints:
+        print(f"失効購読 {len(stale_endpoints)} 件の除去はmaintenanceへ延期しました")
 
     return 0 if ok == len(subs) else 1
 

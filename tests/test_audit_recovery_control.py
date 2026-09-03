@@ -939,6 +939,7 @@ def test_automation_and_direct_skill_use_executable_direct_terminal_contract() -
     ).read_text(encoding="utf-8-sig")
     for source in (automation, skill):
         assert "$news-grasp-direct-mainline" in source or "News-Grasp Direct Mainline" in source
+        assert "tools.news_grasp_daily_launcher" in source
         for operation in (
             "static_check",
             "scoped_contract_unit",
@@ -947,7 +948,8 @@ def test_automation_and_direct_skill_use_executable_direct_terminal_contract() -
             "consumer_public_verification",
             "atomic_completion",
         ):
-            assert f"tools.news_grasp_daily_gate {operation}" in source
+            assert operation in source
+            assert f"tools.news_grasp_daily_gate {operation}" not in source
         assert "python -m tools.news_grasp_direct_runtime start" not in source
         assert "consumer_public_verification" in source
         assert "atomic_completion" in source

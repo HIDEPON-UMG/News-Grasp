@@ -60,32 +60,75 @@ def _normalized_public_url(value: str) -> str:
     parsed = urlsplit(str(value))
     host = (parsed.hostname or "").casefold()
     netloc = host if parsed.port is None else f"{host}:{parsed.port}"
-    return urlunsplit((parsed.scheme.casefold(), netloc, parsed.path, parsed.query, parsed.fragment))
+    # `v` はGitHub Release assetのcache-busterでありasset identityではない。
+    # 単一の正規形だけを除外し、未知queryや重複queryはidentityへ残して
+    # fail-closedにする。
+    query = "" if re.fullmatch(r"v=[0-9a-f]{12}", parsed.query or "") else parsed.query
+    return urlunsplit((parsed.scheme.casefold(), netloc, parsed.path, query, parsed.fragment))
 
 
 def _validate_release_url(value: str, *, audio_type: str, issue_date: str) -> bool:
     parsed = urlsplit(str(value))
-    expected_path = f"/HIDEPON-UMG/News-Grasp/releases/download/audio-{audio_type}/{issue_date}.mp3"
-    return parsed.scheme.casefold() == "https" and (parsed.hostname or "").casefold() == "github.com" and parsed.path == expected_path and not parsed.username and not parsed.password and parsed.port in {None, 443} and not parsed.query and not parsed.fragment
+    prefix = f"/HIDEPON-UMG/News-Grasp/releases/download/audio-{audio_type}/"
+    stable_path = prefix + f"{issue_date}.mp3"
+    immutable = re.fullmatch(
+        re.escape(prefix + issue_date) + r"-([0-9a-f]{12})\.mp3",
+        parsed.path,
+    )
+    query_match = re.fullmatch(r"v=([0-9a-f]{12})", parsed.query or "")
+    path_ok = parsed.path == stable_path or immutable is not None
+    query_ok = (
+        not parsed.query
+        or (
+            query_match is not None
+            and (immutable is None or immutable.group(1) == query_match.group(1))
+        )
+    )
+    return parsed.scheme.casefold() == "https" and (parsed.hostname or "").casefold() == "github.com" and path_ok and not parsed.username and not parsed.password and parsed.port in {None, 443} and query_ok and not parsed.fragment
 
 
-def _probe_public_audio(url: str) -> dict[str, Any]:
-    request = urllib.request.Request(url, headers={"Range": "bytes=0-65535", "Cache-Control": "no-cache", "User-Agent": "News-Grasp-audio-verifier"})
+def _probe_public_audio(url: str, *, expected_sha256: str = "") -> dict[str, Any]:
+    """公開asset全bytesを読み、sealed input SHA-256と照合する。"""
+
+    if not re.fullmatch(r"[0-9a-f]{64}", expected_sha256):
+        return {"ok": False, "reasonCode": "audio_expected_sha256_missing"}
+    request = urllib.request.Request(
+        url,
+        headers={"Cache-Control": "no-cache", "Pragma": "no-cache", "User-Agent": "News-Grasp-audio-verifier"},
+    )
     try:
         with safe_urlopen(request, timeout=20) as response:
             final = urlsplit(response.geturl())
             final_host = (final.hostname or "").casefold()
             if final.scheme.casefold() != "https" or not (final_host == "github.com" or final_host.endswith(".githubusercontent.com")):
                 return {"ok": False, "reasonCode": "audio_redirect_target_invalid"}
-            body = response.read(65537)
+            digest = hashlib.sha256()
+            size = 0
+            while True:
+                chunk = response.read(1024 * 1024)
+                if not chunk:
+                    break
+                size += len(chunk)
+                if size > 256 * 1024 * 1024:
+                    return {"ok": False, "reasonCode": "audio_public_asset_too_large"}
+                digest.update(chunk)
+            observed_sha256 = digest.hexdigest()
             content_type = str(response.headers.get("Content-Type") or "").split(";", 1)[0].casefold()
-            ok = 200 <= int(getattr(response, "status", 200)) < 400 and 0 < len(body) <= 65536 and content_type in {"audio/mpeg", "audio/mp3", "application/octet-stream", "binary/octet-stream"}
+            ok = (
+                200 <= int(getattr(response, "status", 200)) < 400
+                and size > 0
+                and content_type in {"audio/mpeg", "audio/mp3", "application/octet-stream", "binary/octet-stream"}
+                and observed_sha256 == expected_sha256
+            )
             return {
                 "ok": ok,
                 "contentType": content_type,
-                "size": len(body),
+                "size": size,
+                "sha256": observed_sha256,
+                "expectedSha256": expected_sha256,
                 "finalHost": final_host,
                 "finalPathSha256": hashlib.sha256(final.path.encode("utf-8", errors="replace")).hexdigest(),
+                **({} if ok else {"reasonCode": "audio_public_asset_hash_mismatch"}),
             }
     except (OSError, ValueError) as exc:
         return {"ok": False, "reasonCode": "audio_public_probe_failed", "detail": str(exc)}
@@ -145,6 +188,8 @@ def normalize_audio_projection(
         "completionState": completion,
         "adapterSourceSchema": str(value.get("schemaVersion") or "legacy_v1"),
     }
+    if isinstance(value.get("externalOutboxBindings"), Mapping):
+        projection["externalOutboxBindings"] = dict(value["externalOutboxBindings"])
     projection["ok"] = not validate_audio_projection(projection)["reasonCodes"]
     return projection
 

@@ -4,7 +4,7 @@ import importlib
 import inspect
 import json
 import tomllib
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
@@ -153,6 +153,119 @@ def _semantic_pages(manifest: Mapping[str, Any]) -> dict[str, str]:
 def _write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def test_release_materializer_rebinds_old_publish_status_to_current_issue_before_manifest(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """release materializerは旧publish-statusをcurrent issueへ束縛してcommit候補にする。"""
+
+    release = _module("tools.news_grasp_daily_release")
+    runtime = _module("tools.news_grasp_direct_runtime")
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    status_path = repo / "docs" / "publish-status.json"
+    _write_json(status_path, {"date": "2026-09-03", "result": "published_ok"})
+    start_seal = {
+        "sourceBaseline": "a" * 40,
+        "remoteBaseSha": "b" * 40,
+        "schedulerTriggerAt": "2026-09-04T06:00:00+09:00",
+    }
+    monkeypatch.setattr(
+        runtime,
+        "inspect_run",
+        lambda _store, run_id: {"run_id": run_id, "start_seal": start_seal},
+    )
+
+    def fake_git(_root: Path, args: list[str], **_kwargs: Any) -> str:
+        if args == ["rev-parse", "origin/main"]:
+            return "b" * 40 + "\n"
+        if args == ["rev-parse", "HEAD"]:
+            return "a" * 40 + "\n"
+        if args == ["symbolic-ref", "--short", "HEAD"]:
+            return "main\n"
+        raise AssertionError(f"unexpected git probe: {args}")
+
+    monkeypatch.setattr(release, "_git", fake_git)
+
+    def stop_after_status(**_kwargs: Any) -> None:
+        raise release.DailyReleaseError("fixture_stop_after_status")
+
+    monkeypatch.setattr(release, "build_publish_manifest", stop_after_status)
+    with pytest.raises(release.DailyReleaseError, match="fixture_stop_after_status"):
+        release.materialize_and_seal_release(
+            store=object(),
+            repo_root=repo,
+            issue_date=ISSUE_DATE,
+            run_id="actual-run-20260904",
+            run_intent=RUN_INTENT,
+            writer_lease="writer-fixture",
+            fencing_token=1,
+            content_receipt={"ok": True, "run_id": "actual-run-20260904"},
+        )
+
+    current = _load_json(status_path)
+    assert current["date"] == ISSUE_DATE
+    assert current["result"] == "publication_pending"
+    assert current["status"] == "awaiting_external_completion_attestation"
+    assert current["completionAuthority"] == "consumer-owned_public_verifier"
+    assert current["runId"] == "actual-run-20260904"
+    assert current["runIntent"] == RUN_INTENT
+    assert current["updated_at"] == start_seal["schedulerTriggerAt"]
+
+
+def test_release_materializer_rejects_non_main_before_publish_status_mutation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """main以外ではpublish-statusを一byteも書き換えずに止める。"""
+
+    release = _module("tools.news_grasp_daily_release")
+    runtime = _module("tools.news_grasp_direct_runtime")
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    status_path = repo / "docs" / "publish-status.json"
+    _write_json(status_path, {"date": "2026-09-03", "result": "published_ok"})
+    before = status_path.read_bytes()
+    start_seal = {
+        "sourceBaseline": "a" * 40,
+        "remoteBaseSha": "b" * 40,
+        "schedulerTriggerAt": "2026-09-04T06:00:00+09:00",
+    }
+    monkeypatch.setattr(
+        runtime,
+        "inspect_run",
+        lambda _store, run_id: {"run_id": run_id, "start_seal": start_seal},
+    )
+
+    def fake_git(_root: Path, args: list[str], **_kwargs: Any) -> str:
+        if args == ["rev-parse", "origin/main"]:
+            return "b" * 40 + "\n"
+        if args == ["symbolic-ref", "--short", "HEAD"]:
+            return "feature\n"
+        raise AssertionError(f"unexpected git probe: {args}")
+
+    monkeypatch.setattr(release, "_git", fake_git)
+    monkeypatch.setattr(
+        release,
+        "_write_publish_status",
+        lambda **_kwargs: pytest.fail("publish-status must not be mutated on non-main"),
+    )
+
+    with pytest.raises(release.DailyReleaseError, match="RELEASE_BRANCH_NOT_MAIN"):
+        release.materialize_and_seal_release(
+            store=object(),
+            repo_root=repo,
+            issue_date=ISSUE_DATE,
+            run_id="actual-run-20260904",
+            run_intent=RUN_INTENT,
+            writer_lease="writer-fixture",
+            fencing_token=1,
+            content_receipt={"ok": True, "run_id": "actual-run-20260904"},
+        )
+
+    assert status_path.read_bytes() == before
 
 
 def test_f01_daily_route_rejects_release_and_raw_process_before_spawn() -> None:
@@ -465,6 +578,22 @@ def test_f17_direct_completion_requires_fresh_observation_and_side_effect_identi
     assert completion.__doc__ and "caller" in completion.__doc__
 
 
+def test_consumer_public_verifier_does_not_reaudit_current_issue_quality_predicates() -> None:
+    """consumer verifierはcurrent_issue_integrationの品質predicateを再実行しない。"""
+
+    completion = _module("tools.news_grasp_direct_completion")
+    source = inspect.getsource(completion.verify_direct_public_completion)
+
+    # DeepDive本文品質とDaily品質はcurrent_issue_integration receiptのownerであり、
+    # consumer側はsealed manifestとfresh public network semanticだけを照合する。
+    assert "_deepdive_quality(" not in source
+    assert "_daily_quality(" not in source
+    assert "load_manifest" in source
+    assert "manifest=manifest" in source
+    assert "_public_web(" in source
+    assert '"predicateOwner": "current_issue_integration"' in source
+
+
 def test_f18_arbitrary_caller_green_json_is_not_completion_authority(tmp_path: Path) -> None:
     completion = _module("tools.news_grasp_direct_completion")
     fixture = _fixture("F18")
@@ -560,6 +689,47 @@ def test_ng_rrt_duplicate_side_effect_uses_sealed_ledger_identity_not_key_name()
     assert "duplicate_upload_detected" in duplicate["failures"]
 
 
+def test_ng_rrt_consumer_rejects_arbitrary_side_effect_identity_not_bound_to_outbox() -> None:
+    """caller自己申告のoperationId/payloadIdentityをoutbox未束縛のままGreenにしない。"""
+
+    completion = _module("tools.news_grasp_direct_completion")
+    verifier = _require_callable(
+        "tools.news_grasp_direct_completion",
+        "_validate_side_effect_identity",
+    )
+    surfaces = {
+        "youtube_daily": {
+            "ok": True,
+            "immutableLedger": [
+                {
+                    "operationId": "attacker-operation-id",
+                    "payloadSha256": "d" * 64,
+                    "status": "uploaded",
+                    # provider/local payloadの自己申告だけではoutbox bindingにならない。
+                    "ledgerBound": True,
+                }
+            ],
+        },
+        "youtube_deepdive": {"ok": False},
+        "notification": {"ok": False},
+    }
+    expected_outbox = {
+        "youtube_daily": [
+            {
+                "operationId": "sealed-youtube-daily-operation",
+                "payloadIdentity": "e" * 64,
+            }
+        ]
+    }
+
+    # expected_outboxはconsumerがruntime external_outboxから取得した束縛projection。
+    # 現在の未修正consumerがこの引数を持たない場合も、設計欠落としてRedにする。
+    result = verifier(surfaces, expected_outbox=expected_outbox)
+
+    assert result["ok"] is False
+    assert any("unbound" in str(reason).casefold() for reason in result["failures"])
+
+
 def test_ng_rrt_automation_template_has_exact_prompt_parity_contract() -> None:
     sync = _module("tools.sync_news_grasp_codex_automation")
     template_path = ROOT / "automation" / "news-grasp-6-40" / "automation.toml.template"
@@ -579,6 +749,8 @@ def test_ng_rrt_automation_template_has_exact_prompt_parity_contract() -> None:
     )
     assert result["ok"] is True
     assert prompt.count(required_phrase) == 3
+    launcher = r"C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_daily_launcher"
+    assert prompt.count(launcher) == 1
     for operation in (
         "static_check",
         "scoped_contract_unit",
@@ -587,7 +759,216 @@ def test_ng_rrt_automation_template_has_exact_prompt_parity_contract() -> None:
         "consumer_public_verification",
         "atomic_completion",
     ):
-        assert (
-            rf"C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_daily_gate {operation}"
-            in prompt
+        assert operation in prompt
+        assert f"tools.news_grasp_daily_gate {operation}" not in prompt
+
+
+def test_ng_rrt_writer_heartbeat_survives_ttl_and_second_start_is_attach_only(
+    tmp_path: Path,
+) -> None:
+    """10分TTLを跨ぐ長時間operationでもheartbeatがwriterを保持する。"""
+
+    runtime = _module("tools.news_grasp_direct_runtime")
+
+    class FakeClock:
+        def __init__(self) -> None:
+            self.value = datetime.fromisoformat("2026-09-03T06:00:00+09:00")
+
+        def __call__(self) -> datetime:
+            return self.value
+
+    clock = FakeClock()
+    store = runtime.DirectRunStore(
+        tmp_path / "state",
+        clock=clock,
+        lease_ttl=timedelta(minutes=10),
+        test_only_allow_semantic_verifier=True,
+    )
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    first = runtime.start_run(
+        store,
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        scheduler_trigger_at="2026-09-03T06:00:00+09:00",
+        manifest_id="a" * 64,
+    )
+
+    # 初回leaseの期限直前にownerだけがheartbeatを打つ。これによりwall-clockは
+    # 10分を超えても、別startは新writerを作らずread-only attachになる。
+    clock.value += timedelta(minutes=9, seconds=59)
+    heartbeat = runtime.renew_daily_writer_lease(
+        store,
+        run_id=first["run_id"],
+        writer_lease=first["writer_lease"],
+        fencing_token=first["fencing_token"],
+    )
+    assert heartbeat["status"] == "renewed"
+    clock.value += timedelta(seconds=2)
+    assert clock.value > datetime.fromisoformat("2026-09-03T06:10:00+09:00")
+
+    second = runtime.start_run(
+        store,
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        scheduler_trigger_at="2026-09-03T06:00:00+09:00",
+        manifest_id="a" * 64,
+    )
+
+    assert second["status"] == "attached"
+    assert second["single_flight"] == "attached"
+    assert second["attached_to_run_id"] == first["run_id"]
+    assert "writer_lease" not in second
+    assert "fencing_token" not in second
+    with store.connect() as conn:
+        active = conn.execute(
+            "SELECT COUNT(*) FROM runs WHERE issue_date=? AND run_intent=? "
+            "AND status IN ('active','executing','finalizing')",
+            (ISSUE_DATE, RUN_INTENT),
+        ).fetchone()[0]
+    assert active == 1
+
+
+def test_ng_rrt_expired_external_owner_recovery_rebinds_claim_to_reconcile(
+    tmp_path: Path,
+) -> None:
+    """expired ownerはexternal副作用を再送せず同runへreconcileだけを継承する。"""
+
+    runtime = _module("tools.news_grasp_direct_runtime")
+
+    class FakeClock:
+        def __init__(self) -> None:
+            self.value = datetime.fromisoformat("2026-09-03T06:00:00+09:00")
+
+        def __call__(self) -> datetime:
+            return self.value
+
+    clock = FakeClock()
+    store = runtime.DirectRunStore(
+        tmp_path / "state",
+        clock=clock,
+        lease_ttl=timedelta(minutes=10),
+        test_only_allow_semantic_verifier=True,
+    )
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    allowed = ["external_publication"]
+    manifest_id = "a" * 64
+    first = runtime.start_run(
+        store,
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        scheduler_trigger_at="2026-09-03T06:00:00+09:00",
+        source_baseline="e" * 40,
+        remote_base_sha="e" * 40,
+        manifest_id=manifest_id,
+        runtime_generation="fixture-runtime-generation",
+        allowed_side_effect_ids=allowed,
+    )
+
+    # 先行3 operationだけを一度で完了し、external_publicationはclaim済みだが
+    # receipt未適用の状態を作る。publish sealは外部startより前に固定する。
+    for index, operation_id in enumerate(runtime.DAILY_OPERATION_ORDER[:3]):
+        input_hash = f"input-{operation_id}"
+        handler_id = f"fixture.handler.{operation_id}"
+        runtime.claim_daily_operation(
+            store,
+            run_id=first["run_id"],
+            writer_lease=first["writer_lease"],
+            fencing_token=first["fencing_token"],
+            operation_id=operation_id,
+            input_hash=input_hash,
+            handler_id=handler_id,
         )
+        applied = runtime.apply_daily_operation_atomic(
+            store,
+            run_id=first["run_id"],
+            writer_lease=first["writer_lease"],
+            fencing_token=first["fencing_token"],
+            operation_id=operation_id,
+            input_hash=input_hash,
+            handler_id=handler_id,
+            producer_receipt={
+                "schemaVersion": f"FIXTURE_{index}_V1",
+                "ok": True,
+                "status": "verified",
+            },
+        )
+        assert applied["status"] == "completed"
+    runtime.claim_daily_operation(
+        store,
+        run_id=first["run_id"],
+        writer_lease=first["writer_lease"],
+        fencing_token=first["fencing_token"],
+        operation_id="external_publication",
+        input_hash="input-external-publication",
+        handler_id="fixture.handler.external_publication",
+    )
+    runtime.seal_publish(
+        store,
+        run_id=first["run_id"],
+        writer_lease=first["writer_lease"],
+        fencing_token=first["fencing_token"],
+        release_commit_sha="b" * 40,
+        exact_write_set=["docs/index.html"],
+        file_hashes={"docs/index.html": "c" * 64},
+        manifest_id=manifest_id,
+        bundle_id="fixture-bundle",
+        external_operation_ids=["external_publication"],
+    )
+    runtime.record_external_outbox(
+        store,
+        run_id=first["run_id"],
+        writer_lease=first["writer_lease"],
+        fencing_token=first["fencing_token"],
+        operation_id="external_publication",
+        side_effect_id="external_publication",
+        status="reserved",
+        payload={"issueDate": ISSUE_DATE, "runId": first["run_id"]},
+    )
+    runtime.transition_external_outbox(
+        store,
+        run_id=first["run_id"],
+        writer_lease=first["writer_lease"],
+        fencing_token=first["fencing_token"],
+        operation_id="external_publication",
+        expected_status="reserved",
+        next_status="started",
+    )
+    clock.value += timedelta(minutes=11)
+
+    recovered = runtime.start_run(
+        store,
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        scheduler_trigger_at="2026-09-03T06:00:00+09:00",
+        source_baseline="e" * 40,
+        remote_base_sha="e" * 40,
+        manifest_id=manifest_id,
+        runtime_generation="fixture-runtime-generation",
+        allowed_side_effect_ids=allowed,
+    )
+
+    assert recovered["status"] == "active"
+    assert recovered["single_flight"] == "recovered_after_expired_owner"
+    assert recovered["continuation_recovery"] is True
+    assert recovered["run_id"] == first["run_id"]
+    assert recovered["writer_lease"] != first["writer_lease"]
+    # このfixtureはDaily runtimeのcustom operation recoveryだけを検証する。
+    # provider external outboxのcanonical operation projection（別owner）へ
+    # genericなDaily operation IDを渡して成功扱いにしない。
+    with store.connect() as conn:
+        claim_status = conn.execute(
+            "SELECT status FROM daily_operation_claims WHERE run_id=? AND operation_id=?",
+            (first["run_id"], "external_publication"),
+        ).fetchone()[0]
+        outbox_status = conn.execute(
+            "SELECT status FROM external_outbox WHERE run_id=? AND logical_operation_id=?",
+            (first["run_id"], "external_publication"),
+        ).fetchone()[0]
+    assert claim_status == "recoverable"
+    assert outbox_status == "started"

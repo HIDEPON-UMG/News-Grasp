@@ -3,100 +3,100 @@
   "owner": "News-Grasp Operator",
   "trigger": "06:00 Codex scheduled production direct mainline",
   "actor": "Codex automation, direct runtime, repo-local content tools, public completion verifier",
-  "entryGate": "installed Codex automation must be gpt-5.6-luna with reasoning_effort=max and direct-mainline prompt",
-  "executionPath": "Codex automation -> title control -> direct runtime stage_history -> repo-local generation and quality tools -> public surfaces -> direct public completion verifier",
+  "entryGate": "installed Codex automation must invoke only tools.news_grasp_daily_launcher with Python 3.12; unknown and Release-only routes fail before process dispatch",
+  "executionPath": "static_check -> scoped_contract_unit -> current_issue_integration -> external_publication -> consumer_public_verification -> atomic_completion",
   "states": ["active", "executing", "stage_red", "surface_deferred", "completed", "automation_config_red"],
   "statePredicate": "direct runtime state, stage history, and public verifier observations are independently materialized",
   "outcomes": ["same_day_public_green", "surface_scoped_defer", "exact_successor_required"],
   "evidence": ["title status receipt", "stage_history", "quality verifier output", "public verifier observation", "automation config semantic observation"],
   "recovery": "operation-local Red returns exact successor; title failures and scoped external failures are recorded without becoming runner/readiness authority",
   "maintenance": "contract test and route parity audit run before source promotion",
-  "contractTest": "tests/test_news_grasp_daily_control.py",
-  "operationalCost": "one bounded local registry validation at each controller entry",
-  "activeMainline": "direct_public_v1",
+  "contractTest": "tests/test_news_grasp_daily_45m_contract.py and tests/test_news_grasp_daily_route_runtime_review.py",
+  "operationalCost": "one six-operation route admission plus operation-local TOCTOU checks; Release tests are unreachable",
+  "activeMainline": "daily_public_v2",
   "legacyRunnerStatus": "disabled_history_only",
   "directMainline": {
     "schemaVersion": "NEWS_GRASP_DIRECT_MAINLINE_ROUTES_V1",
-    "completionMode": "direct_public_v1",
+    "completionMode": "direct_public_v2",
     "declaredRouteIds": [
-      "title_control",
-      "scheduled_inventory",
-      "direct_generation",
-      "shared_quality",
-      "direct_publish",
-      "direct_completion"
+      "static_check",
+      "scoped_contract_unit",
+      "current_issue_integration",
+      "external_publication",
+      "consumer_public_verification",
+      "atomic_completion"
     ],
     "consumerRouteIds": [
-      "title_control",
-      "scheduled_inventory",
-      "direct_generation",
-      "shared_quality",
-      "direct_publish",
-      "direct_completion"
+      "static_check",
+      "scoped_contract_unit",
+      "current_issue_integration",
+      "external_publication",
+      "consumer_public_verification",
+      "atomic_completion"
     ],
     "positiveFixtureRouteIds": [
-      "title_control",
-      "scheduled_inventory",
-      "direct_generation",
-      "shared_quality",
-      "direct_publish",
-      "direct_completion"
+      "static_check",
+      "scoped_contract_unit",
+      "current_issue_integration",
+      "external_publication",
+      "consumer_public_verification",
+      "atomic_completion"
     ],
     "negativeFixtureRouteIds": [
-      "title_control",
-      "scheduled_inventory",
-      "direct_generation",
-      "shared_quality",
-      "direct_publish",
-      "direct_completion"
+      "static_check",
+      "scoped_contract_unit",
+      "current_issue_integration",
+      "external_publication",
+      "consumer_public_verification",
+      "atomic_completion"
     ],
     "routes": [
-      {"routeId": "title_control", "consumerPath": "tools/news_grasp_title_control.py", "consumerSymbol": "record_title_status"},
-      {"routeId": "scheduled_inventory", "consumerPath": "tools/publish_inventory.py", "consumerSymbol": "scheduled_category_ids"},
-      {"routeId": "direct_generation", "consumerPath": "automation/skills/news-grasp-direct-mainline/SKILL.md", "consumerSymbol": "Direct 本線工程"},
-      {"routeId": "shared_quality", "consumerPath": "tools/validate_daily_quality.py", "consumerSymbol": "--require-deepdive"},
-      {"routeId": "direct_publish", "consumerPath": "automation/skills/news-grasp-direct-mainline/SKILL.md", "consumerSymbol": "Quality・公開gate"},
-      {"routeId": "direct_completion", "consumerPath": "tools/news_grasp_completion_guard.py", "consumerSymbol": "evaluate_direct_public"}
+      {"routeId": "static_check", "consumerPath": "tools/news_grasp_daily_gate.py", "consumerSymbol": "_default_static_check"},
+      {"routeId": "scoped_contract_unit", "consumerPath": "tools/news_grasp_daily_gate.py", "consumerSymbol": "_default_scoped_contract_unit"},
+      {"routeId": "current_issue_integration", "consumerPath": "tools/news_grasp_daily_gate.py", "consumerSymbol": "_default_current_issue_integration"},
+      {"routeId": "external_publication", "consumerPath": "tools/news_grasp_daily_gate.py", "consumerSymbol": "_default_external_publication"},
+      {"routeId": "consumer_public_verification", "consumerPath": "tools/news_grasp_daily_gate.py", "consumerSymbol": "_default_consumer_public_verification"},
+      {"routeId": "atomic_completion", "consumerPath": "tools/news_grasp_daily_gate.py", "consumerSymbol": "_default_atomic_completion"}
     ]
   },
   "declaredRouteIds": [
-    "title_control",
-    "scheduled_inventory",
-    "direct_runtime_stage_history",
-    "daily_quality",
-    "deepdive_quality",
-    "direct_completion"
+    "static_check",
+    "scoped_contract_unit",
+    "current_issue_integration",
+    "external_publication",
+    "consumer_public_verification",
+    "atomic_completion"
   ],
   "consumerRouteIds": [
-    "title_control",
-    "scheduled_inventory",
-    "direct_runtime_stage_history",
-    "daily_quality",
-    "deepdive_quality",
-    "direct_completion"
+    "static_check",
+    "scoped_contract_unit",
+    "current_issue_integration",
+    "external_publication",
+    "consumer_public_verification",
+    "atomic_completion"
   ],
   "positiveFixtureRouteIds": [
-    "title_control",
-    "scheduled_inventory",
-    "direct_runtime_stage_history",
-    "daily_quality",
-    "deepdive_quality",
-    "direct_completion"
+    "static_check",
+    "scoped_contract_unit",
+    "current_issue_integration",
+    "external_publication",
+    "consumer_public_verification",
+    "atomic_completion"
   ],
   "negativeFixtureRouteIds": [
-    "title_control",
-    "scheduled_inventory",
-    "direct_runtime_stage_history",
-    "daily_quality",
-    "deepdive_quality",
-    "direct_completion"
+    "static_check",
+    "scoped_contract_unit",
+    "current_issue_integration",
+    "external_publication",
+    "consumer_public_verification",
+    "atomic_completion"
   ],
   "routes": [
-    {"routeId": "title_control", "consumerPath": "tools/news_grasp_title_control.py", "consumerSymbol": "expected_title", "productionCallerPath": "tools/news_grasp_direct_runtime.py", "productionCallSymbol": "_expected_title"},
-    {"routeId": "scheduled_inventory", "consumerPath": "tools/publish_inventory.py", "consumerSymbol": "scheduled_category_ids", "productionCallerPath": "automation/skills/news-grasp-direct-mainline/SKILL.md", "productionCallSymbol": "scheduled_category_ids"},
-    {"routeId": "direct_runtime_stage_history", "consumerPath": "tools/news_grasp_direct_runtime.py", "consumerSymbol": "DIRECT_STAGES", "productionCallerPath": "tools/news_grasp_direct_runtime.py", "productionCallSymbol": "start_run"},
-    {"routeId": "daily_quality", "consumerPath": "tools/validate_daily_quality.py", "consumerSymbol": "require_deepdive", "productionCallerPath": "automation/skills/news-grasp-direct-mainline/SKILL.md", "productionCallSymbol": "validate_daily_quality"},
-    {"routeId": "deepdive_quality", "consumerPath": "tools/deepdive_quality.py", "consumerSymbol": "audit_issue", "productionCallerPath": "automation/skills/news-grasp-direct-mainline/SKILL.md", "productionCallSymbol": "audit-issue"},
-    {"routeId": "direct_completion", "consumerPath": "tools/news_grasp_direct_runtime.py", "consumerSymbol": "verify_public_completion", "productionCallerPath": "automation/news-grasp-6-40/completion_guard.py", "productionCallSymbol": "verify_public_completion"}
+    {"routeId": "static_check", "consumerPath": "tools/news_grasp_daily_gate.py", "consumerSymbol": "_default_static_check", "productionCallerPath": "tools/news_grasp_daily_launcher.py", "productionCallSymbol": "run_sequence"},
+    {"routeId": "scoped_contract_unit", "consumerPath": "tools/news_grasp_daily_gate.py", "consumerSymbol": "_default_scoped_contract_unit", "productionCallerPath": "tools/news_grasp_daily_launcher.py", "productionCallSymbol": "run_sequence"},
+    {"routeId": "current_issue_integration", "consumerPath": "tools/news_grasp_daily_gate.py", "consumerSymbol": "_default_current_issue_integration", "productionCallerPath": "tools/news_grasp_daily_launcher.py", "productionCallSymbol": "run_sequence"},
+    {"routeId": "external_publication", "consumerPath": "tools/news_grasp_daily_gate.py", "consumerSymbol": "_default_external_publication", "productionCallerPath": "tools/news_grasp_daily_launcher.py", "productionCallSymbol": "run_sequence"},
+    {"routeId": "consumer_public_verification", "consumerPath": "tools/news_grasp_daily_gate.py", "consumerSymbol": "_default_consumer_public_verification", "productionCallerPath": "tools/news_grasp_daily_launcher.py", "productionCallSymbol": "run_sequence"},
+    {"routeId": "atomic_completion", "consumerPath": "tools/news_grasp_daily_gate.py", "consumerSymbol": "_default_atomic_completion", "productionCallerPath": "tools/news_grasp_daily_launcher.py", "productionCallSymbol": "run_sequence"}
   ]
 }

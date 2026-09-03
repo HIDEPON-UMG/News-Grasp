@@ -566,6 +566,174 @@ def test_public_completion_rejects_notification_receipt_path_alias(tmp_path) -> 
     assert "notification_v2_path_id_invalid" in result["failures"]
 
 
+def _configure_recipient_ledger_run(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    subscriptions: list[dict],
+) -> tuple[Path, Path, str]:
+    """recipient event fixtureを実providerへ接続せず、固定issue dateで起動する。"""
+
+    issue_date = "2026-09-03"
+    subscriptions_path = tmp_path / "subscriptions.json"
+    subscriptions_path.write_text(
+        json.dumps(subscriptions, ensure_ascii=False), encoding="utf-8"
+    )
+    key_path = tmp_path / "vapid.pem"
+    key_path.write_text("fixture-key", encoding="utf-8")
+    state_path = tmp_path / "build" / "notification" / f"{issue_date}.json"
+    monkeypatch.setattr(sp, "PUSH_WORKER_URL", "")
+    monkeypatch.setattr(sp, "_today_jst_str", lambda: issue_date)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "send_push.py",
+            "--subscriptions-file",
+            str(subscriptions_path),
+            "--token-file",
+            str(tmp_path / "missing-token"),
+            "--vapid-key-file",
+            str(key_path),
+            "--record-state",
+            str(state_path),
+            "--run-id",
+            "daily-run-20260903-recipient",
+            "--run-intent",
+            "scheduled_production_direct",
+            "--skip-prune",
+        ],
+    )
+    return subscriptions_path, state_path, issue_date
+
+
+def test_recipient_reservation_crash_restarts_as_unknown_without_resend(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """reservation後provider crashは曖昧送達として停止し、再送しない。"""
+
+    _subscriptions_path, state_path, issue_date = _configure_recipient_ledger_run(
+        monkeypatch,
+        tmp_path,
+        [SAMPLE_SUB],
+    )
+    first_calls: list[str] = []
+
+    def provider_crash(subscription: dict, *_args: object) -> tuple[bool, bool, str]:
+        first_calls.append(str(subscription["endpoint"]))
+        raise RuntimeError("provider crashed after reservation")
+
+    monkeypatch.setattr(sp, "send_one", provider_crash)
+    with pytest.raises(RuntimeError, match="provider crashed"):
+        main()
+
+    events_path = state_path.with_name(f"{issue_date}.recipient-events.jsonl")
+    events = [
+        json.loads(line)
+        for line in events_path.read_text(encoding="utf-8").splitlines()
+    ]
+    assert [event["status"] for event in events] == ["reserved"]
+    assert first_calls == [SAMPLE_SUB["endpoint"]]
+    assert not state_path.exists()
+
+    second_calls: list[str] = []
+    monkeypatch.setattr(
+        sp,
+        "send_one",
+        lambda subscription, *_args: (
+            second_calls.append(str(subscription["endpoint"])) or (True, False, "ok")
+        ),
+    )
+    assert main() == 1
+    assert second_calls == []
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    assert state["status"] == "unknown_delivery"
+    assert state["ok"] is False
+
+
+def test_recipient_terminal_sent_crash_sends_only_unsent_recipients_once(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """terminal sent後final ledger前のcrashから未送信recipientだけを継続する。"""
+
+    second_sub = {
+        **SAMPLE_SUB,
+        "endpoint": "https://fcm.googleapis.com/fcm/send/def456",
+    }
+    _subscriptions_path, state_path, issue_date = _configure_recipient_ledger_run(
+        monkeypatch,
+        tmp_path,
+        [SAMPLE_SUB, second_sub],
+    )
+    original_append = sp._append_recipient_event
+    append_count = 0
+
+    def crash_before_next_reservation(path: Path, value: dict) -> None:
+        nonlocal append_count
+        append_count += 1
+        # first recipientのreserved+sentをdurableにした直後、次recipientの
+        # reservation前で停止する。final notification ledgerはまだ無い。
+        if append_count == 3:
+            raise RuntimeError("crashed before next recipient reservation")
+        original_append(path, value)
+
+    first_calls: list[str] = []
+    monkeypatch.setattr(sp, "_append_recipient_event", crash_before_next_reservation)
+    monkeypatch.setattr(
+        sp,
+        "send_one",
+        lambda subscription, *_args: (
+            first_calls.append(str(subscription["endpoint"])) or (True, False, "ok")
+        ),
+    )
+    with pytest.raises(RuntimeError, match="before next recipient"):
+        main()
+    assert first_calls == [SAMPLE_SUB["endpoint"]]
+
+    events_path = state_path.with_name(f"{issue_date}.recipient-events.jsonl")
+    events = [
+        json.loads(line)
+        for line in events_path.read_text(encoding="utf-8").splitlines()
+    ]
+    assert [event["status"] for event in events] == ["reserved", "sent"]
+    assert not state_path.exists()
+
+    second_calls: list[str] = []
+    monkeypatch.setattr(sp, "_append_recipient_event", original_append)
+    monkeypatch.setattr(
+        sp,
+        "send_one",
+        lambda subscription, *_args: (
+            second_calls.append(str(subscription["endpoint"])) or (True, False, "ok")
+        ),
+    )
+    assert main() == 0
+    assert second_calls == [second_sub["endpoint"]]
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    assert state["status"] == "sent"
+    assert state["sent_count"] == 2
+
+    events = [
+        json.loads(line)
+        for line in events_path.read_text(encoding="utf-8").splitlines()
+    ]
+    assert [event["status"] for event in events] == [
+        "reserved",
+        "sent",
+        "reserved",
+        "sent",
+    ]
+    assert len({event["eventId"] for event in events}) == 2
+    assert len(
+        {
+            event["recipientKey"]
+            for event in events
+            if event["status"] == "sent"
+        }
+    ) == 2
+
+
 def test_sent_state_without_canonical_delivery_ledger_is_rejected(tmp_path):
     from tools import daily_self_heal
 

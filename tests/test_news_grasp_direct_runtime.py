@@ -1395,7 +1395,7 @@ def test_public_template_keeps_portable_cwd_and_exact_approved_python312() -> No
 def test_start_cli_uses_jst_today_when_issue_date_is_omitted(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """06:00 promptはangle placeholderを実行せず、runtimeがJST当日を確定できる。"""
+    """launcher相当の明示identityを渡し、runtimeがJST当日を確定できる。"""
 
     api = _api()
     monkeypatch.setattr(
@@ -1405,6 +1405,20 @@ def test_start_cli_uses_jst_today_when_issue_date_is_omitted(
     )
     monkeypatch.setattr(api, "_now_jst", lambda: STARTED_AT)
     monkeypatch.chdir(REPO)
+    live_identity_args = [
+        "--run-intent",
+        api.RUN_INTENT,
+        "--manifest-reservation-id",
+        "a" * 64,
+        "--scheduler-trigger-at",
+        f"{ISSUE_DATE}T06:00:00+09:00",
+        "--source-baseline",
+        "b" * 40,
+        "--remote-base-sha",
+        "c" * 40,
+    ]
+    for operation_id in api.DAILY_OPERATION_ORDER:
+        live_identity_args.extend(["--allowed-side-effect-id", operation_id])
     monkeypatch.setattr(
         sys,
         "argv",
@@ -1413,12 +1427,13 @@ def test_start_cli_uses_jst_today_when_issue_date_is_omitted(
             "start",
             "--state-root",
             str(tmp_path / "direct-mainline"),
+            *live_identity_args,
         ],
     )
 
     assert api._main() == 0
     output = json.loads(capsys.readouterr().out)
-    assert output["schemaVersion"] == "NEWS_GRASP_DIRECT_RUNTIME_V1"
+    assert output["schemaVersion"] == "NEWS_GRASP_DIRECT_RUNTIME_V2"
     assert output["issue_date"] == ISSUE_DATE
     assert output["exact_successor"] == "title_control"
 
@@ -1551,6 +1566,20 @@ def test_advance_cli_records_exact_successor_title_stage(
     state_root = tmp_path / "direct-mainline"
     monkeypatch.setattr(api, "_now_jst", lambda: STARTED_AT)
     monkeypatch.chdir(REPO)
+    live_identity_args = [
+        "--run-intent",
+        api.RUN_INTENT,
+        "--manifest-reservation-id",
+        "a" * 64,
+        "--scheduler-trigger-at",
+        f"{ISSUE_DATE}T06:00:00+09:00",
+        "--source-baseline",
+        "b" * 40,
+        "--remote-base-sha",
+        "c" * 40,
+    ]
+    for operation_id in api.DAILY_OPERATION_ORDER:
+        live_identity_args.extend(["--allowed-side-effect-id", operation_id])
     monkeypatch.setattr(
         sys,
         "argv",
@@ -1559,6 +1588,7 @@ def test_advance_cli_records_exact_successor_title_stage(
             "start",
             "--state-root",
             str(state_root),
+            *live_identity_args,
         ],
     )
     assert api._main() == 0
@@ -1586,6 +1616,8 @@ def test_advance_cli_records_exact_successor_title_stage(
             started["run_id"],
             "--writer-lease",
             started["writer_lease"],
+            "--fencing-token",
+            str(started["fencing_token"]),
             "--evidence-json",
             evidence,
         ],
