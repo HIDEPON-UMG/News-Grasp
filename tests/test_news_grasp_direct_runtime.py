@@ -951,6 +951,16 @@ def test_installed_direct_config_semantics_are_validated_by_producer() -> None:
     assert "title_status=already_ok" in prompt
     assert "post_publish_issue_list" in prompt
     assert "direct completion guard" in prompt
+    for operation in (
+        "static_check",
+        "scoped_contract_unit",
+        "current_issue_integration",
+        "external_publication",
+        "consumer_public_verification",
+        "atomic_completion",
+    ):
+        assert operation in prompt
+    assert "protected_release_reexecution_forbidden" in prompt
 
     live_result = _mapping(api.validate_installed_automation_semantics())
     assert live_result.get("ok") is True

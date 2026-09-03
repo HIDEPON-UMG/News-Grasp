@@ -5864,16 +5864,18 @@ def validate_installed_automation_semantics(path: str | Path | None = None) -> d
     required_prompt_parts = (
         "$news-grasp-direct-mainline",
         "YY/MM/DD",
-        "news_grasp_title_materializer",
         "title_status",
         "title_status=already_ok",
         "already_ok",
         "post_publish_issue_list",
         "direct completion guard",
-        "completion_guard.py",
-        "direct_public",
-        "validate_daily_quality",
-        "--require-deepdive",
+        "static_check",
+        "scoped_contract_unit",
+        "current_issue_integration",
+        "external_publication",
+        "consumer_public_verification",
+        "atomic_completion",
+        "protected_release_reexecution_forbidden",
     )
     for part in required_prompt_parts:
         if part not in prompt:
