@@ -323,6 +323,12 @@ def test_p01_automation_assets_bind_projection_and_single_writer() -> None:
     assert "write_atomic_json" in product_guard
     assert "write_atomic_json" not in projection
     assert "Assert-NewsGraspAutomationProjectionAsset" in installer
+    projection_contract = installer.split(
+        "function Assert-NewsGraspAutomationProjectionAsset", 1
+    )[1].split("function Resolve-NewsGraspWorkspaceHarnessRoot", 1)[0]
+    assert "news-grasp-6-40-completion-guard-projection-v1" in projection_contract
+    assert "automation\\news-grasp-6-40\\completion_guard.py" in projection_contract
+    assert "automation\\news-grasp-6-40\\*" not in projection_contract
 
 
 def test_completion_guard_rejects_readiness_proof_after_deadman_drift(tmp_path: Path) -> None:

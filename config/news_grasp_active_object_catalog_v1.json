@@ -1,6 +1,6 @@
 {
   "schemaVersion": "NEWS_GRASP_ACTIVE_OBJECT_CATALOG_V1",
-  "sourceCommit": "48c64cd57163e00dd661fbcf12c0dffb20eea1d5",
+  "sourceCommit": "f84b834e9d420274de7db9f47995b5c4a9fc26d7",
   "discoveryMode": "git_index_plus_untracked_wip_plus_route_reference_scan",
   "objects": [
     {
@@ -2503,7 +2503,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "28f9c0adecca743dc339516319e63e0a3d6b8bae8f67ef22688022d81b608341",
+      "sha256": "ce2ba3d659eeca49776eb6c5c4e0f43a86b00d6cfc06bd9a39c238783e6ced18",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -2647,7 +2647,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "ada7f4353582b97a037cc31661edbc152de7fd6238ca39fa535f3fcdf9b62777",
+      "sha256": "1f5acbc897ac3a6fe477010bfc4ef7d8842d457dd2d493f34fc0e0e78abcb569",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -2683,7 +2683,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "0bcd3bb4c005c48c1c49bd21e255de29505eb05bd95a1cbb8b2db245a8c0c115",
+      "sha256": "68e3f8f6df280e24e3723602b3459d305cd91f0ce1df613393620d65f65caeae",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -3251,7 +3251,7 @@
         "NGC-C11",
         "NGC-C13"
       ],
-      "sha256": "37237becd8d8249fd82f433d232d740b4fb05581ff8f6a760e4f12f53dcad122",
+      "sha256": "4ed7a069187d15449459e10e095b064cccbbf005284efd71d243c4f193d3a89e",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -5329,7 +5329,7 @@
         "NGC-C06",
         "NGC-C14"
       ],
-      "sha256": "d3ad25cdaf1012adb6701795014bdc8db57c4f6c98c5a919f9d1eba71a6f64cd",
+      "sha256": "0e4497ae204d4c30199f97e0afa66fca0866acb27d66fbe4b690e9efd68d1261",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },

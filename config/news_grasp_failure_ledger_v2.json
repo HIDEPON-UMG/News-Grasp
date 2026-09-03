@@ -494,6 +494,20 @@
       "owner": "direct entry and Release NoPublish cutover owner",
       "maintenance_condition": "installer managed files、bootstrap fetch/convergence、scheduled task action/Python environment、P08 isolation consumer、deadman recovery、Release NoPublish adapter変更時",
       "status": "open"
+    },
+    {
+      "defect_code": "NG-I36",
+      "incident_codes": ["INSTALLER-AUTOMATION-ASSET-OVERBROAD-PROJECTION-CHECK"],
+      "source_of_truth": ["config/news_grasp_automation_assets_v2.json", "scripts/ops/install-news-grasp-ops.ps1"],
+      "affected_consumer": ["production installer", "automation template installer"],
+      "impact_binding": "completion guard専用のstdout projection制約をautomation directory全体へ適用すると、正しいautomation.toml.templateがproduction mutation前に拒否され、本番反映不能になる",
+      "red_fixture": ["automation template contains stdout contract but is not a projection program"],
+      "green_test": ["tests/test_news_grasp_completion_guard.py::test_p01_automation_assets_bind_projection_and_single_writer"],
+      "operational_recovery": "assetIdとexact sourcePathでcompletion guard projectionだけを選択し、templateはprompt integrityの独立consumerへ委譲してinstallerを再実行する",
+      "independent_evidence": ["installer pre-mutation typed Red", "focused Green exit code", "installed asset hash parity"],
+      "owner": "News-Grasp operations installer owner",
+      "maintenance_condition": "automation asset manifest、completion guard projection、installer asset validation変更時",
+      "status": "open"
     }
   ]
 }

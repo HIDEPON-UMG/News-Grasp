@@ -2557,7 +2557,7 @@
     },
     {
       "path": "tests/test_news_grasp_completion_guard.py",
-      "sha256": "d3ad25cdaf1012adb6701795014bdc8db57c4f6c98c5a919f9d1eba71a6f64cd",
+      "sha256": "0e4497ae204d4c30199f97e0afa66fca0866acb27d66fbe4b690e9efd68d1261",
       "nodeCount": 12,
       "nodeIds": [
         "tests/test_news_grasp_completion_guard.py::test_20260813_historical_four_hour_shape_fails_and_repaired_replay_passes",

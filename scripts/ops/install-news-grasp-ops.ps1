@@ -92,8 +92,12 @@ function Assert-NewsGraspAutomationProjectionAsset {
         [Parameter(Mandatory = $true)]$Asset,
         [Parameter(Mandatory = $true)][byte[]]$Bytes
     )
+    $assetId = [string]$Asset.assetId
+    if ($assetId -cne 'news-grasp-6-40-completion-guard-projection-v1') { return }
     $sourcePath = ([string]$Asset.sourcePath).Replace('/', '\')
-    if ($sourcePath -notlike 'automation\news-grasp-6-40\*') { return }
+    if ($sourcePath -cne 'automation\news-grasp-6-40\completion_guard.py') {
+        throw 'NEWS_GRASP_AUTOMATION_PROJECTION_ASSET_PATH_INVALID'
+    }
     $text = [Text.Encoding]::UTF8.GetString($Bytes)
     if ($text -notmatch '(?i)stdout' -or $text -notmatch '(?i)projection') {
         throw 'NEWS_GRASP_AUTOMATION_PROJECTION_CONTRACT_MISSING'
