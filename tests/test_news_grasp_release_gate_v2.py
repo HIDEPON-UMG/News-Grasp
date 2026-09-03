@@ -8,7 +8,9 @@
 from __future__ import annotations
 
 import inspect
+import io
 import json
+import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from types import SimpleNamespace
@@ -20,6 +22,22 @@ from tools import news_grasp_release_gate as gate
 
 
 _REAL_OBSERVE_RELEASE_SOURCE = gate._observe_release_source
+
+
+def test_machine_stdout_is_reconfigured_to_utf8_before_non_cp932_json(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Windows既定CP932でもreceipt JSONをUTF-8で一度だけ出力する。"""
+
+    raw = io.BytesIO()
+    stdout = io.TextIOWrapper(raw, encoding="cp932", errors="strict", newline="\r\n")
+    monkeypatch.setattr(sys, "stdout", stdout)
+
+    gate._emit({"ok": True, "value": "\ufffd"})
+    stdout.flush()
+
+    assert stdout.encoding.casefold() == "utf-8"
+    assert raw.getvalue() == b'{"ok":true,"value":"\xef\xbf\xbd"}\n'
 
 
 @pytest.fixture(autouse=True)

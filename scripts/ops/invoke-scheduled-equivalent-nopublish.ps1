@@ -17,6 +17,7 @@ param(
     [Parameter(Mandatory=$true)][string] $SimulationReceiptPath,
     [Parameter(Mandatory=$true)][string] $E2EAdmissionPath,
     [Parameter(Mandatory=$true)][string] $ReleaseReflectionReceiptPath,
+    [Parameter(Mandatory=$true)][string] $IsolationReceiptPath,
     [string] $HighCostBindingPath = '',
     [string] $HighCostBindingReceiptSha256 = '',
     [string] $E2EAttemptPolicyPath = '',
@@ -31,6 +32,30 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $null = Import-Module Microsoft.PowerShell.Utility -ErrorAction Stop
+$gitEnvironmentRedirectKeys = @(
+    [Environment]::GetEnvironmentVariables([EnvironmentVariableTarget]::Process).Keys |
+        ForEach-Object { [string]$_ } |
+        Where-Object { $_.StartsWith('GIT_', [StringComparison]::OrdinalIgnoreCase) }
+)
+foreach ($gitEnvironmentRedirectKey in $gitEnvironmentRedirectKeys) {
+    [Environment]::SetEnvironmentVariable(
+        $gitEnvironmentRedirectKey,
+        $null,
+        [EnvironmentVariableTarget]::Process
+    )
+}
+$runtimeInstallMutex = [Threading.Mutex]::new($false, 'Local\NewsGraspOpsInstallV1')
+$runtimeInstallMutexHeld = $false
+try {
+    $runtimeInstallMutexHeld = $runtimeInstallMutex.WaitOne(0)
+} catch [Threading.AbandonedMutexException] {
+    $runtimeInstallMutexHeld = $true
+}
+if (-not $runtimeInstallMutexHeld) {
+    $runtimeInstallMutex.Dispose()
+    throw 'NEWS_GRASP_RUNTIME_INSTALL_IN_PROGRESS'
+}
+try {
 $repoPath = [System.IO.Path]::GetFullPath((Resolve-Path -LiteralPath $RepoRoot -ErrorAction Stop).Path)
 $statePath = [System.IO.Path]::GetFullPath($StateFile)
 $logPath = [System.IO.Path]::GetFullPath($LogDir)
@@ -446,13 +471,18 @@ try {
     $powerShellSha256 = (Get-FileHash -LiteralPath $powerShellCanonicalPath -Algorithm SHA256).Hash.ToLowerInvariant()
     $runtimeRepoCommit = (& git -C $runtimeRepoPath rev-parse HEAD 2>$null).Trim().ToLowerInvariant()
     if ($LASTEXITCODE -ne 0) { throw 'runtime commit unavailable' }
+    $runtimeRepoTree = (& git -C $runtimeRepoPath rev-parse 'HEAD^{tree}' 2>$null).Trim().ToLowerInvariant()
+    if ($LASTEXITCODE -ne 0 -or $runtimeRepoTree -notmatch '^[0-9a-f]{40}$') { throw 'runtime tree unavailable' }
     $executionRepoCommit = (& git -C $repoPath rev-parse HEAD 2>$null).Trim().ToLowerInvariant()
     if ($LASTEXITCODE -ne 0) { throw 'execution commit unavailable' }
-    $executionTrackedDiff = @(& git -C $repoPath status --porcelain --untracked-files=no 2>$null)
     if ($LASTEXITCODE -ne 0 -or $runtimeRepoCommit -notmatch '^[0-9a-f]{40}$' -or
         $executionRepoCommit -notmatch '^[0-9a-f]{40}$' -or
-        $executionRepoCommit -cne $runtimeRepoCommit -or $executionTrackedDiff.Count -ne 0) {
+        $executionRepoCommit -cne $runtimeRepoCommit) {
         throw 'execution generation is not the clean active runtime generation'
+    }
+    $runtimeRepoStatus = (& git -C $runtimeRepoPath status --porcelain=v1 --untracked-files=all 2>$null | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0 -or $runtimeRepoStatus) {
+        throw 'active runtime generation is dirty'
     }
 
     $ReleaseReflectionReceiptPath = Get-CanonicalExistingFile -Path $ReleaseReflectionReceiptPath -Label 'release reflection receipt' -Boundary $workspacePath -MaxBytes 65536
@@ -484,6 +514,37 @@ $AdversarialReviewPath = Get-CanonicalExistingFile -Path $AdversarialReviewPath 
 $RouteManifestPath = Get-CanonicalExistingFile -Path $RouteManifestPath -Label 'route manifest evidence' -Boundary $workspacePath -MaxBytes 4194304
 $StaticReceiptPath = Get-CanonicalExistingFile -Path $StaticReceiptPath -Label 'static evidence' -Boundary $workspacePath -MaxBytes 4194304
 $SimulationReceiptPath = Get-CanonicalExistingFile -Path $SimulationReceiptPath -Label 'simulation evidence' -Boundary $workspacePath -MaxBytes 4194304
+$IsolationReceiptPath = Get-CanonicalExistingFile -Path $IsolationReceiptPath -Label 'NoPublish isolation receipt' -Boundary $workspacePath -MaxBytes 4194304
+$p08EvidenceToolPath = Get-CanonicalExistingFile -Path (Join-Path $runtimeRepoPath 'tools\news_grasp_p08_evidence.py') -Label 'P08 evidence validator' -Boundary $runtimeRepoPath -MaxBytes 4194304
+$p08EvidenceToolSha256 = (Get-FileHash -LiteralPath $p08EvidenceToolPath -Algorithm SHA256).Hash.ToLowerInvariant()
+$p08EvidenceToolBlob = (& git -C $runtimeRepoPath hash-object -- $p08EvidenceToolPath 2>$null).Trim().ToLowerInvariant()
+$p08EvidenceToolBlobExitCode = $LASTEXITCODE
+$p08EvidenceToolHeadBlob = (& git -C $runtimeRepoPath rev-parse 'HEAD:tools/news_grasp_p08_evidence.py' 2>$null).Trim().ToLowerInvariant()
+$p08EvidenceToolHeadBlobExitCode = $LASTEXITCODE
+if (
+    $p08EvidenceToolBlobExitCode -ne 0 -or
+    $p08EvidenceToolHeadBlobExitCode -ne 0 -or
+    $p08EvidenceToolBlob -cne $p08EvidenceToolHeadBlob
+) {
+    throw 'NEWS_GRASP_NOPUBLISH_RUNTIME_VALIDATOR_BLOB_INVALID'
+}
+$isolationValidationJson = (& $pythonCanonicalPath '-I' '-S' '-B' $p08EvidenceToolPath 'validate-isolation' '--repo-root' $repoPath '--source-repo' $runtimeRepoPath '--issue-date' $DateStamp '--isolation-receipt' $IsolationReceiptPath 2>&1 | Out-String).Trim()
+if ($LASTEXITCODE -ne 0) {
+    throw "NEWS_GRASP_NOPUBLISH_ISOLATION_INVALID detail=$isolationValidationJson"
+}
+try {
+    $isolationValidation = $isolationValidationJson | ConvertFrom-Json -ErrorAction Stop
+} catch {
+    throw "NEWS_GRASP_NOPUBLISH_ISOLATION_INVALID detail=$isolationValidationJson"
+}
+if (
+    [string]$isolationValidation.validation.sourceHead -cne $runtimeRepoCommit -or
+    [string]$isolationValidation.validation.sourceTree -cne $runtimeRepoTree -or
+    -not [string]::Equals([System.IO.Path]::GetFullPath([string]$isolationValidation.validation.validatorPath), $p08EvidenceToolPath, [StringComparison]::OrdinalIgnoreCase) -or
+    [string]$isolationValidation.validation.validatorSha256 -cne $p08EvidenceToolSha256
+) {
+    throw 'NEWS_GRASP_NOPUBLISH_RUNTIME_VALIDATOR_IDENTITY_INVALID'
+}
 $E2EAdmissionPath = Get-CanonicalExistingFile -Path $E2EAdmissionPath -Label 'issued E2E admission' -Boundary $repoPath -MaxBytes 65536
 try {
     $issuedAdmission = Read-BoundedJsonFile -Path $E2EAdmissionPath -MaxBytes 65536
@@ -496,6 +557,19 @@ try {
     }
 } catch {
     throw "NEWS_GRASP_E2E_ATTEMPT_BINDING_INVALID: $($_.Exception.Message)"
+}
+$isolationBindings = @($issuedAdmission.evidenceBindings | Where-Object { [string]$_.kind -ceq 'isolation' })
+$isolationReceiptSha256 = (Get-FileHash -LiteralPath $IsolationReceiptPath -Algorithm SHA256).Hash.ToLowerInvariant()
+if (
+    $isolationBindings.Count -ne 1 -or
+    -not [string]::Equals(
+        [System.IO.Path]::GetFullPath([string]$isolationBindings[0].path),
+        [System.IO.Path]::GetFullPath($IsolationReceiptPath),
+        [System.StringComparison]::OrdinalIgnoreCase
+    ) -or
+    [string]$isolationBindings[0].sha256 -cne $isolationReceiptSha256
+) {
+    throw 'NEWS_GRASP_E2E_ISOLATION_ADMISSION_BINDING_INVALID'
 }
 if (-not $attemptPolicy.admissionBinding -or
     [string]$attemptPolicy.admissionBinding.attemptKey -ne [string]$issuedAdmission.attemptKey -or
@@ -725,6 +799,33 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $startedAt = Get-Date
+$runtimeRepoCommitBeforeLaunch = (& git -C $runtimeRepoPath rev-parse HEAD 2>$null).Trim().ToLowerInvariant()
+$runtimeRepoCommitBeforeLaunchExitCode = $LASTEXITCODE
+$runtimeRepoTreeBeforeLaunch = (& git -C $runtimeRepoPath rev-parse 'HEAD^{tree}' 2>$null).Trim().ToLowerInvariant()
+$runtimeRepoTreeBeforeLaunchExitCode = $LASTEXITCODE
+$runtimeRepoStatusBeforeLaunch = (& git -C $runtimeRepoPath status --porcelain=v1 --untracked-files=all 2>$null | Out-String).Trim()
+$runtimeRepoStatusBeforeLaunchExitCode = $LASTEXITCODE
+$p08EvidenceToolSha256BeforeLaunch = (Get-FileHash -LiteralPath $p08EvidenceToolPath -Algorithm SHA256).Hash.ToLowerInvariant()
+$p08EvidenceToolBlobBeforeLaunch = (& git -C $runtimeRepoPath hash-object -- $p08EvidenceToolPath 2>$null).Trim().ToLowerInvariant()
+$p08EvidenceToolBlobBeforeLaunchExitCode = $LASTEXITCODE
+$p08EvidenceToolHeadBlobBeforeLaunch = (& git -C $runtimeRepoPath rev-parse 'HEAD:tools/news_grasp_p08_evidence.py' 2>$null).Trim().ToLowerInvariant()
+$p08EvidenceToolHeadBlobBeforeLaunchExitCode = $LASTEXITCODE
+if (
+    $runtimeRepoCommitBeforeLaunchExitCode -ne 0 -or
+    $runtimeRepoTreeBeforeLaunchExitCode -ne 0 -or
+    $runtimeRepoStatusBeforeLaunchExitCode -ne 0 -or
+    $p08EvidenceToolBlobBeforeLaunchExitCode -ne 0 -or
+    $p08EvidenceToolHeadBlobBeforeLaunchExitCode -ne 0 -or
+    $runtimeRepoCommitBeforeLaunch -cne $runtimeRepoCommit -or
+    $runtimeRepoTreeBeforeLaunch -cne $runtimeRepoTree -or
+    $runtimeRepoStatusBeforeLaunch -or
+    $p08EvidenceToolSha256BeforeLaunch -cne $p08EvidenceToolSha256 -or
+    $p08EvidenceToolBlobBeforeLaunch -cne $p08EvidenceToolBlob -or
+    $p08EvidenceToolHeadBlobBeforeLaunch -cne $p08EvidenceToolHeadBlob -or
+    $p08EvidenceToolBlobBeforeLaunch -cne $p08EvidenceToolHeadBlobBeforeLaunch
+) {
+    throw 'NEWS_GRASP_NOPUBLISH_RUNTIME_DRIFT_BEFORE_LAUNCH'
+}
 $launchPowerShellSha256 = (Get-FileHash -LiteralPath $powerShellCanonicalPath -Algorithm SHA256).Hash.ToLowerInvariant()
 if ($launchPowerShellSha256 -ne $powerShellSha256) {
     throw "HIGH_COST_POWERSHELL_EXECUTABLE_DRIFT: $powerShellCanonicalPath"
@@ -807,3 +908,9 @@ if (-not $receipt.ok) {
 }
 Write-Output $json
 exit 0
+} finally {
+    if ($runtimeInstallMutexHeld) {
+        $runtimeInstallMutex.ReleaseMutex()
+    }
+    $runtimeInstallMutex.Dispose()
+}

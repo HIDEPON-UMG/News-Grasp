@@ -3150,6 +3150,9 @@ def _forbidden_repair_payload_keys(payload: Mapping[str, Any]) -> list[str]:
 def _emit(result: Mapping[str, Any]) -> None:
     # No BOM and exactly one machine-readable JSON line. The final newline is the
     # record delimiter, not an additional JSON value.
+    reconfigure = getattr(sys.stdout, "reconfigure", None)
+    if callable(reconfigure):
+        reconfigure(encoding="utf-8", errors="strict", newline="\n")
     sys.stdout.write(json.dumps(dict(result), ensure_ascii=False, separators=(",", ":")) + "\n")
 
 

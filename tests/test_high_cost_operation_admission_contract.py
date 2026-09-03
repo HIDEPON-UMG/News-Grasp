@@ -528,6 +528,8 @@ def test_official_wrapper_rejects_junction_outputs_before_outside_write(tmp_path
         str(repo / "admission.json"),
         "-ReleaseReflectionReceiptPath",
         str(evidence),
+        "-IsolationReceiptPath",
+        str(evidence),
         "-PowerShellExe",
         "powershell.exe",
     ]

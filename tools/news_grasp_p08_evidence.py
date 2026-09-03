@@ -363,6 +363,265 @@ def _validate_sealed_artifact(path: Path, *, schema: str | None = None, require_
     return value
 
 
+def _load_repo_module(repo_root: Path, filename: str) -> Any:
+    """product worktree内の実sourceだけをimportする。"""
+
+    repo = repo_root.resolve(strict=True)
+    path = (repo / "tools" / filename).resolve(strict=True)
+    try:
+        path.relative_to(repo)
+    except ValueError as error:
+        raise P08EvidenceError("P08_PRODUCT_MODULE_INVALID") from error
+    if path.is_symlink():
+        raise P08EvidenceError("P08_PRODUCT_MODULE_INVALID")
+    module_name = f"_news_grasp_p08_product_{path.stem}_{file_sha256(path)[:12]}"
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    if spec is None or spec.loader is None:
+        raise P08EvidenceError("P08_PRODUCT_MODULE_INVALID")
+    module = importlib.util.module_from_spec(spec)
+    module.__file__ = str(path)
+    try:
+        spec.loader.exec_module(module)
+    except Exception as error:
+        raise P08EvidenceError("P08_PRODUCT_MODULE_INVALID") from error
+    if Path(str(getattr(module, "__file__", ""))).resolve() != path:
+        raise P08EvidenceError("P08_PRODUCT_MODULE_INVALID")
+    return module
+
+
+def _git_head(repo_root: Path) -> str:
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if not key.upper().startswith("GIT_")
+    }
+    env["PYTHONIOENCODING"] = "utf-8"
+    completed = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo_root.resolve(strict=True),
+        check=False,
+        capture_output=True,
+        shell=False,
+        text=True,
+        encoding="utf-8",
+        errors="strict",
+        env=env,
+        timeout=30,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+    )
+    value = completed.stdout.strip().lower()
+    if completed.returncode != 0 or len(value) != 40 or any(character not in "0123456789abcdef" for character in value):
+        raise P08EvidenceError("P08_SOURCE_COMMIT_INVALID")
+    return value
+
+
+def _git_tree(repo_root: Path) -> str:
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if not key.upper().startswith("GIT_")
+    }
+    env["PYTHONIOENCODING"] = "utf-8"
+    completed = subprocess.run(
+        ["git", "rev-parse", "HEAD^{tree}"],
+        cwd=repo_root.resolve(strict=True),
+        check=False,
+        capture_output=True,
+        shell=False,
+        text=True,
+        encoding="utf-8",
+        errors="strict",
+        env=env,
+        timeout=30,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+    )
+    value = completed.stdout.strip().lower()
+    if completed.returncode != 0 or len(value) != 40 or any(character not in "0123456789abcdef" for character in value):
+        raise P08EvidenceError("P08_SOURCE_TREE_INVALID")
+    return value
+
+
+def _git_tracked_changes(repo_root: Path) -> list[str]:
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if not key.upper().startswith("GIT_")
+    }
+    env["PYTHONIOENCODING"] = "utf-8"
+    completed = subprocess.run(
+        ["git", "diff", "--name-only", "-z", "HEAD", "--"],
+        cwd=repo_root.resolve(strict=True),
+        check=False,
+        capture_output=True,
+        shell=False,
+        env=env,
+        timeout=30,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+    )
+    if completed.returncode != 0:
+        raise P08EvidenceError("P08_ISOLATION_EVIDENCE_INVALID")
+    try:
+        return sorted(
+            part.decode("utf-8", errors="strict").replace("\\", "/")
+            for part in completed.stdout.split(b"\0")
+            if part
+        )
+    except UnicodeDecodeError as error:
+        raise P08EvidenceError("P08_ISOLATION_EVIDENCE_INVALID") from error
+
+
+def _git_untracked_changes(repo_root: Path) -> list[str]:
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if not key.upper().startswith("GIT_")
+    }
+    env["PYTHONIOENCODING"] = "utf-8"
+    completed = subprocess.run(
+        ["git", "ls-files", "--others", "--exclude-standard", "-z"],
+        cwd=repo_root.resolve(strict=True),
+        check=False,
+        capture_output=True,
+        shell=False,
+        env=env,
+        timeout=30,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+    )
+    if completed.returncode != 0:
+        raise P08EvidenceError("P08_ISOLATION_EVIDENCE_INVALID")
+    try:
+        return sorted(
+            part.decode("utf-8", errors="strict").replace("\\", "/")
+            for part in completed.stdout.split(b"\0")
+            if part
+        )
+    except UnicodeDecodeError as error:
+        raise P08EvidenceError("P08_ISOLATION_EVIDENCE_INVALID") from error
+
+
+def generate_red_suite_coverage(*, repo_root: Path, output_path: Path) -> dict[str, Any]:
+    """current sourceからcoverageを一度だけ再計算してatomicに保存する。"""
+
+    repo = repo_root.resolve(strict=True)
+    producer = _load_repo_module(repo, "deepdive_red_suite_coverage.py")
+    matrix_path = repo / "fixtures" / "deepdive_quality" / "tdd_acceptance_matrix.json"
+    matrix = json.loads(matrix_path.read_text(encoding="utf-8"))
+    report = producer.validate_red_suite_coverage(matrix, root=repo)
+    if not isinstance(report, dict) or report.get("status") != "Green" or report.get("findings") != []:
+        raise P08EvidenceError("P08_RED_SUITE_COVERAGE_NOT_GREEN")
+    _write_json(output_path, report)
+    return report
+
+
+def _runner_artifacts_present(repo_root: Path, issue_date: str) -> bool:
+    candidates = [
+        *repo_root.glob(f"digest/*/{issue_date}-*.md"),
+        repo_root / f"digest/Summary/{issue_date}.md",
+        repo_root / f"docs/{issue_date}/index.html",
+    ]
+    reporter = repo_root / f"build/reporter-artifacts/{issue_date}"
+    return any(path.exists() for path in candidates) or (
+        reporter.is_dir() and any(reporter.iterdir())
+    )
+
+
+def validate_isolation_receipt(
+    path: Path,
+    *,
+    repo_root: Path,
+    source_repo_root: Path,
+    issue_date: str,
+) -> dict[str, Any]:
+    """cleanroom ownerのreceiptを当日・target・commitへ再束縛する。"""
+
+    repo = repo_root.resolve(strict=True)
+    expected_source = source_repo_root.resolve(strict=True)
+    value = _validate_sealed_artifact(path, require_status=True)
+    try:
+        target = Path(str(value.get("targetRoot") or "")).resolve(strict=True)
+        source = Path(str(value.get("sourceRepo") or "")).resolve(strict=True)
+    except OSError as error:
+        raise P08EvidenceError("P08_ISOLATION_EVIDENCE_INVALID") from error
+    try:
+        allowed_parent = Path(str(value.get("allowedParent") or "")).resolve(strict=True)
+    except OSError as error:
+        raise P08EvidenceError("P08_ISOLATION_EVIDENCE_INVALID") from error
+    head = _git_head(repo)
+    source_head = _git_head(expected_source)
+    source_tree = _git_tree(expected_source)
+    validator_path = Path(__file__).resolve(strict=True)
+    removed = value.get("removed")
+    try:
+        isolation_policy = _load_repo_module(
+            Path(__file__).resolve().parent.parent,
+            "e2e_isolation.py",
+        )
+        removed = isolation_policy.validate_removed_issue_artifacts(
+            removed,
+            issue_date=issue_date,
+            removed_article_count=value.get("removedArticleCount"),
+        )
+        removed_set_sha256 = isolation_policy.isolation_removed_set_sha256(removed)
+        isolation_policy.validate_sanitized_issue_transform(
+            source_root=expected_source,
+            target_root=repo,
+            issue_date=issue_date,
+            removed=removed,
+            removed_article_count=value.get("removedArticleCount"),
+        )
+    except Exception as error:
+        raise P08EvidenceError("P08_ISOLATION_EVIDENCE_INVALID") from error
+    if (
+        value.get("removalPolicyVersion")
+        != isolation_policy.REMOVAL_POLICY_VERSION
+        or value.get("removedSetSha256") != removed_set_sha256
+    ):
+        raise P08EvidenceError("P08_ISOLATION_EVIDENCE_INVALID")
+    removed_exact = {
+        item.split("#", 1)[0].rstrip("/")
+        for item in removed
+        if not item.endswith("/")
+    }
+    removed_prefixes = tuple(item for item in removed if item.endswith("/"))
+    tracked_changes = _git_tracked_changes(repo)
+    untracked_changes = _git_untracked_changes(repo)
+    source_tracked_changes = _git_tracked_changes(expected_source)
+    source_untracked_changes = _git_untracked_changes(expected_source)
+    changes_are_isolation_only = all(
+        changed in removed_exact or any(changed.startswith(prefix) for prefix in removed_prefixes)
+        for changed in tracked_changes
+    )
+    if not all(
+        (
+            value.get("schemaVersion") == "NEWS_GRASP_E2E_ISOLATION_V1",
+            value.get("status") == "Green",
+            value.get("issueDate") == issue_date,
+            target == repo,
+            source == expected_source,
+            source != repo,
+            allowed_parent == repo.parent,
+            value.get("sourceCommit") == head == source_head,
+            value.get("targetCommit") == head,
+            value.get("runnerArtifactPredicate") is False,
+            not _runner_artifacts_present(repo, issue_date),
+            changes_are_isolation_only,
+            not untracked_changes,
+            not source_tracked_changes,
+            not source_untracked_changes,
+        )
+    ):
+        raise P08EvidenceError("P08_ISOLATION_EVIDENCE_INVALID")
+    return {
+        **value,
+        "validation": {
+            "sourceHead": source_head,
+            "sourceTree": source_tree,
+            "validatorPath": str(validator_path),
+            "validatorSha256": file_sha256(validator_path),
+        },
+    }
+
+
 def _validate_design_and_review(design: dict[str, Any], route: dict[str, Any], review: dict[str, Any], workspace: Path) -> None:
     if design.get("designSha256") != canonical_sha256({key: item for key, item in design.items() if key != "designSha256"}):
         raise P08EvidenceError("HIGH_COST_DESIGN_HASH_INVALID")
@@ -376,7 +635,15 @@ def _validate_design_and_review(design: dict[str, Any], route: dict[str, Any], r
         raise P08EvidenceError("HIGH_COST_REVIEW_HASH_INVALID")
 
 
-def generate(*, repo_root: Path, workspace_root: Path, output_dir: Path, thread_id: str, issue_date: str) -> dict[str, Any]:
+def generate(
+    *,
+    repo_root: Path,
+    workspace_root: Path,
+    output_dir: Path,
+    thread_id: str,
+    issue_date: str,
+    isolation_receipt_path: Path,
+) -> dict[str, Any]:
     repo = repo_root.resolve(strict=True)
     workspace = _canonical_workspace_root(workspace_root)
     out = output_dir.resolve()
@@ -418,8 +685,9 @@ def generate(*, repo_root: Path, workspace_root: Path, output_dir: Path, thread_
         cwd=repo,
     )
     _write_json(out / "simulation-verification.json", simulation)
-    coverage_path = repo / "build" / "operational-redesign" / "red-suite-coverage-report.json"
-    isolation_path = repo / "build" / "operational-redesign" / "e2e-isolation-20260817.json"
+    coverage_path = out / "red-suite-coverage-report.json"
+    generate_red_suite_coverage(repo_root=repo, output_path=coverage_path)
+    isolation_path = isolation_receipt_path.resolve(strict=True)
     paths = {
         "efficiency_design": out / "efficiency-design.json",
         "adversarial_review": out / "adversarial-review.json",
@@ -455,15 +723,37 @@ def generate(*, repo_root: Path, workspace_root: Path, output_dir: Path, thread_
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("generate", choices=("generate",))
-    parser.add_argument("--repo-root", type=Path, required=True)
-    parser.add_argument("--workspace-root", type=Path, required=True)
-    parser.add_argument("--output-dir", type=Path, required=True)
-    parser.add_argument("--thread-id", required=True)
-    parser.add_argument("--issue-date", required=True)
+    subparsers = parser.add_subparsers(dest="operation", required=True)
+    generate_parser = subparsers.add_parser("generate")
+    generate_parser.add_argument("--repo-root", type=Path, required=True)
+    generate_parser.add_argument("--workspace-root", type=Path, required=True)
+    generate_parser.add_argument("--output-dir", type=Path, required=True)
+    generate_parser.add_argument("--thread-id", required=True)
+    generate_parser.add_argument("--issue-date", required=True)
+    generate_parser.add_argument("--isolation-receipt", type=Path, required=True)
+    isolation_parser = subparsers.add_parser("validate-isolation")
+    isolation_parser.add_argument("--repo-root", type=Path, required=True)
+    isolation_parser.add_argument("--source-repo", type=Path, required=True)
+    isolation_parser.add_argument("--issue-date", required=True)
+    isolation_parser.add_argument("--isolation-receipt", type=Path, required=True)
     args = parser.parse_args(argv)
     try:
-        result = generate(repo_root=args.repo_root, workspace_root=args.workspace_root, output_dir=args.output_dir, thread_id=args.thread_id, issue_date=args.issue_date)
+        if args.operation == "generate":
+            result = generate(
+                repo_root=args.repo_root,
+                workspace_root=args.workspace_root,
+                output_dir=args.output_dir,
+                thread_id=args.thread_id,
+                issue_date=args.issue_date,
+                isolation_receipt_path=args.isolation_receipt,
+            )
+        else:
+            result = validate_isolation_receipt(
+                args.isolation_receipt,
+                repo_root=args.repo_root,
+                source_repo_root=args.source_repo,
+                issue_date=args.issue_date,
+            )
     except (P08EvidenceError, OSError, ValueError, ImportError, json.JSONDecodeError) as error:
         print(str(error), file=sys.stderr)
         return 80

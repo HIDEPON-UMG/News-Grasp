@@ -1,8 +1,8 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 3218,
-  "collectedNodeSetSha256": "7aafc90fc91b3a5e109be79565acedd65b5b140a523eb8a15d0322540771cffd",
+  "collectedNodeCount": 3226,
+  "collectedNodeSetSha256": "4b2c0de07ad27f7c5373cb1b1338392c904d893278306e1c7451e779e3988b82",
   "files": [
     {
       "path": "tests/test_20260813_control_plane_repair.py",
@@ -1908,7 +1908,7 @@
     },
     {
       "path": "tests/test_high_cost_operation_admission_contract.py",
-      "sha256": "606960523311e53ad322e48e766865d0dcdfa5cb428836350ffda42d05105d0b",
+      "sha256": "2a8d13e9c24b5e45e7eeb1851bb74ddba7d5722fc7d0efe1268780fa782c8341",
       "nodeCount": 27,
       "nodeIds": [
         "tests/test_high_cost_operation_admission_contract.py::test_every_full_e2e_model_process_issues_exact_child_immediately_before_start",
@@ -3365,12 +3365,19 @@
     },
     {
       "path": "tests/test_news_grasp_p08_evidence.py",
-      "sha256": "39d0ca3f747b519f299446f19214b1c3c84bcb6c63f6724d1c7f230585a060fb",
-      "nodeCount": 5,
+      "sha256": "fd99565675ae10e1606b497be21d08be6b6691340a8b16a05491015508ff72c2",
+      "nodeCount": 12,
       "nodeIds": [
         "tests/test_news_grasp_p08_evidence.py::test_caller_evidence_order_excludes_red_execution",
         "tests/test_news_grasp_p08_evidence.py::test_command_receipt_is_green_only_for_zero_exit",
         "tests/test_news_grasp_p08_evidence.py::test_design_and_route_seals_are_recomputed",
+        "tests/test_news_grasp_p08_evidence.py::test_e2e_isolation_cleans_partial_worktree_after_add_timeout",
+        "tests/test_news_grasp_p08_evidence.py::test_e2e_isolation_git_calls_ignore_inherited_git_redirects",
+        "tests/test_news_grasp_p08_evidence.py::test_e2e_isolation_wraps_unexpected_outer_failure",
+        "tests/test_news_grasp_p08_evidence.py::test_nopublish_wrapper_validates_bound_isolation_before_launch",
+        "tests/test_news_grasp_p08_evidence.py::test_p08_generate_requires_explicit_isolation_receipt",
+        "tests/test_news_grasp_p08_evidence.py::test_p08_generates_current_source_red_suite_coverage_once",
+        "tests/test_news_grasp_p08_evidence.py::test_p08_isolation_receipt_is_bound_to_issue_target_and_head",
         "tests/test_news_grasp_p08_evidence.py::test_review_rejects_route_source_drift",
         "tests/test_news_grasp_p08_evidence.py::test_runtime_python_identity_requires_fixed_trust_anchor_and_thumbprint"
       ],
@@ -3557,8 +3564,8 @@
     },
     {
       "path": "tests/test_news_grasp_release_gate_v2.py",
-      "sha256": "6b1fb52b7253a1db25c892cd8051586982c65a9a6f74d0d13f0a37f43f5f485e",
-      "nodeCount": 61,
+      "sha256": "076e66e97d081900ae4a03d412f14fdf4be537ad75b41bb2be62b8b9daa09492",
+      "nodeCount": 62,
       "nodeIds": [
         "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_01_authoritative_collection_count_mismatch_is_red",
         "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_01_authoritative_collection_hash_mismatch_is_red",
@@ -3620,7 +3627,8 @@
         "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_27_authoritative_repair_is_single_capability_without_caller_green",
         "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_28_prior_candidate_release_resume_attaches_and_promotes_once",
         "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_29_causal_repair_source_mismatch_rejects_before_process",
-        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_30_promote_cli_returns_zero_for_trusted_receipt"
+        "tests/test_news_grasp_release_gate_v2.py::test_NG_RG_30_promote_cli_returns_zero_for_trusted_receipt",
+        "tests/test_news_grasp_release_gate_v2.py::test_machine_stdout_is_reconfigured_to_utf8_before_non_cp932_json"
       ],
       "clauseIds": [
         "NGC-C06",
@@ -4137,7 +4145,7 @@
     },
     {
       "path": "tests/test_product_spec_contract.py",
-      "sha256": "e2e6ab2f89f0355172a9e51bda1bda080be4ff70b8a9eb032314690615ced90d",
+      "sha256": "aa0afe2f7c1183184fcf2468af9d2b5cb123c14b1b5a81ff21c331e96c0eaaab",
       "nodeCount": 25,
       "nodeIds": [
         "tests/test_product_spec_contract.py::test_daily_45m_contract_is_bound_to_gate_matrix_and_public_completion",

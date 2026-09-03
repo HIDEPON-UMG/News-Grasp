@@ -466,6 +466,20 @@
       "owner": "consumer public observation owner",
       "maintenance_condition": "public surface adapter、observation metadata、YouTube/playlist/notification verifier引数変更時",
       "status": "open"
+    },
+    {
+      "defect_code": "NG-I34",
+      "incident_codes": ["RELEASE-NOPUBLISH-FIXED-EVIDENCE-PATH", "RELEASE-NOPUBLISH-SANITIZED-WORKTREE-REJECTED", "NOPUBLISH-ISOLATION-RECEIPT-SELF-ALLOWLIST", "NOPUBLISH-RUNTIME-GIT-ENV-TOCTOU", "NOPUBLISH-ISOLATION-DATA-TRANSFORM-UNBOUND"],
+      "source_of_truth": ["tools/news_grasp_p08_evidence.py", "tools/e2e_isolation.py", "scripts/ops/invoke-scheduled-equivalent-nopublish.ps1", "issued E2E admission evidenceBindings"],
+      "affected_consumer": ["Release-only P08 evidence producer", "scheduled-equivalent NoPublish entry gate", "E2E final admission"],
+      "impact_binding": "P08が固定日の未生成evidenceを要求するか、wrapperがsanitize済みtargetのvalidator、Git redirect環境、時間差runtime、receipt自己申告removed集合、pathだけのdata変換を信頼すると、NoPublishは実行不能またはdirty code/dataによる自己承認になる",
+      "red_fixture": ["current issue isolation receipt with no fixed 20260817 artifact", "current source coverage output absent", "sanitized tracked deletions bound to isolation receipt", "unbound code diff mixed into cleanroom", "untracked module mixed into cleanroom", "validator code path added to self-declared removed set", "GIT_DIR or GIT_CONFIG_PARAMETERS redirects repository observation", "retained articles content differs from exact source transform", "runtime validator identity drifts before launch", "runtime validator working-tree bytes differ from its HEAD blob", "prelaunch git status failure is overwritten by a later successful git command", "isolation git subprocess does not terminate", "outer prepare failure escapes typed CLI boundary", "failed worktree remove leaves fresh stale metadata", "repository-wide prune removes an unrelated worktree entry"],
+      "green_test": ["test_p08_generates_current_source_red_suite_coverage_once", "test_p08_isolation_receipt_is_bound_to_issue_target_and_head", "test_p08_generate_requires_explicit_isolation_receipt", "test_nopublish_wrapper_validates_bound_isolation_before_launch", "test_e2e_isolation_git_calls_ignore_inherited_git_redirects", "test_e2e_isolation_cleans_partial_worktree_after_add_timeout", "test_e2e_isolation_wraps_unexpected_outer_failure"],
+      "operational_recovery": "current sourceからcoverageを一度だけ生成し、cleanroom receiptをissue date、target、source HEAD/tree/clean、正規removal policy、exact data transformへ束縛する。isolation generatorとwrapperはGit実行前に全GIT_*を除去し、全Git呼出しを有限timeoutと個別exit codeへ束縛する。worktree add失敗は同じtransactionでexact targetだけを二段階removeし、worktree listでmetadata不在を確認する。repository-wide pruneは禁止し、回収不能ならtyped cleanup_requiredで停止する。wrapperはinstaller mutexをtry/finallyで保持・解放しabandoned ownerを回収する。cleanなinstalled runtime validatorのfile hashとHEAD blobを検証時とlaunch直前に再観測してから起動する",
+      "independent_evidence": ["focused Red/Green exit code", "coverage source recomputation", "isolation receipt file hash", "issued admission binding", "unexpected code diff rejection", "untracked module rejection", "self-declared code removal rejection", "Git environment redirection rejection and scrub", "source/target exact data transform", "runtime validator prelaunch file hash and HEAD blob identity", "NoPublish external mutation count 0"],
+      "owner": "Release NoPublish admission owner",
+      "maintenance_condition": "P08 evidence path、isolation sanitizer、NoPublish wrapper、E2E evidence binding変更時",
+      "status": "open"
     }
   ]
 }
