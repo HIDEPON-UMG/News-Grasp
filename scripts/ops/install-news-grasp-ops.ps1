@@ -15,6 +15,11 @@ $ErrorActionPreference = 'Stop'
 $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 [Console]::InputEncoding = [System.Text.UTF8Encoding]::new($false)
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+
+# Windows Task Scheduler経路は2026-08-30に廃止済み。現行本番反映は
+# tools.sync_news_grasp_codex_automation --promote だけを使用する。
+throw 'NEWS_GRASP_WINDOWS_TASK_SCHEDULER_RETIRED'
+
 $script:InstallationCommitted = $false
 $script:InstallationMutationStarted = $false
 $script:DeliveryReceiptSummary = $null

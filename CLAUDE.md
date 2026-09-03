@@ -7,6 +7,7 @@ This is the root routing contract for Claude Code and Codex.
 ### 2026-08-30 direct 06:00 mainline supersession
 
 - 06:00 Codex automation の通常日次公開は `$news-grasp-direct-mainline` を使う direct 本線である。旧 runner、NoPublish、fallback publish、runner state、readiness、goal、audit/report、URL 200単独、publish-status単独は、この route の public completion authority ではない。
+- Windows Task SchedulerによるProduction、Bootstrap、Deadman、Runner、Title Materializerは廃止済みである。通常日次の起動・install・readiness・completionには使用せず、旧installerはmutation前にfail-closedにする。
 - この route は `tools.news_grasp_direct_runtime` の21工程 state と `NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1` の consumer-owned public verifier を authority にする。caller作成の completion JSON、文字列 marker、fixture、URL 200、commit/push 単独を Green に読み替えない。
 - title は最初の実作業で `YY/MM/DD News-Grasp 臨時本線日次バッチ 6:00 記事作成・公開` を試行し、`updated / already_ok / unavailable / failed / skipped` を記録する。title 失敗は公開作業を止めず、`post_publish_issue_list` に残す。
 - content-derived identity、SHA、digest、hash、fingerprint、Merkle は 06:00 direct 本線の active 制御 authority に使わない。カテゴリ digest のような記事生成物名称はこの禁止に含めない。
@@ -15,7 +16,7 @@ This is the root routing contract for Claude Code and Codex.
 ### Same-day public recovery constitution
 
 - `same_day_public_recovery_first`: 対象日の公開面が Definition of Done を満たさない間は、同日公開の typed recovery を最優先の作業とする。
-- `daily_45m_public_route`: ScheduledProduction は `tools.news_grasp_daily_launcher` だけを起動し、同一processの `tools.news_grasp_daily_gate` 六operationを順に一回ずつ実行する。Dailyから個別operation CLI、raw/full pytest、historical、Playwright全件、crash/replay/drift、Release gate、final NoPublish、unknown routeを起動せず、同一runのfresh consumer public verifier Greenまで完了扱いにしない。
+- `daily_45m_public_route`: Codex automation `news-grasp-6-40` は `tools.news_grasp_daily_launcher` だけを起動し、同一processの `tools.news_grasp_daily_gate` 六operationを順に一回ずつ実行する。Dailyから個別operation CLI、raw/full pytest、historical、Playwright全件、crash/replay/drift、Release gate、final NoPublish、unknown routeを起動せず、同一runのfresh consumer public verifier Greenまで完了扱いにしない。
 - 公開 Green 前に許されるのは `scheduled_recovery`、その開始に不可欠な `minimal_recovery_unblocker`、または復旧不能を明示する `escalate_major_incident` だけである。
 - 公開 Green 直後は `runner_finalization_only` とし、manifest再検証、Global production ledger witnessとsemantic one-shot consumptionへ束縛したrecovery finalization receipt、typed finalizer、同receiptのclock/root/hashを再検証するcompletion guardだけを行う。crash再開は同一receiptのpending journalに限定する。production recovery bindingは自己申告を信頼せず、canonical PythonのValid Authenticode/PSF signer、trusted remote mainと一致するtracked・untracked・ignoredすべてcleanなops HEAD、validator依存hashを再検証する。critical Python entrypointは検証済み絶対pathを`-I -S -B`で直接起動し、ambient importとstartup customizationを拒否する。receipt本文の自己SHAだけをauthorityとしてはならない。その完了後に `incident_report_polish`、`root_cause_hardening`、無関係な cleanup を行う。公開欠落を報告作成やハーネス改善より後回しにしてはならない。
 - この順序は `tools.audit_recovery_control` の sealed decision と 6:40 automation が同じ predicate で fail-closed に強制する。
@@ -50,5 +51,5 @@ This is the root routing contract for Claude Code and Codex.
 - DeepDive quality review schema: `DEEPDIVE_QUALITY_REVIEW_V2`; shared route registry schema: `DEEPDIVE_SHARED_QUALITY_ROUTES_V2`; engine: `tools.deepdive_quality`.
 - DeepDive quality issue codes (exact): `deepdive_url_provenance_invalid`, `deepdive_article_value_invalid`, `deepdive_relation_quality_invalid`, `deepdive_dialogue_value_invalid`, `deepdive_research_evidence_insufficient`, `deepdive_public_surface_invalid`.
 - DeepDive quality declared routes (exact): `production_generation`, `repair_publish`, `daily_quality`, `codex_daily_audit`; unknown route policy: `fail_closed`.
-- Projection SHA-256: `691cc6ae3de9fa93e550490aa9f9c4ee07824eb2a8caa296163798a2b5f32418`; product asset set SHA-256: `dadf276104ab50a2eaf8cb3482d09aacb68febedb9208d4e6fa137ece9315c62`.
+- Projection SHA-256: `691cc6ae3de9fa93e550490aa9f9c4ee07824eb2a8caa296163798a2b5f32418`; product asset set SHA-256: `4afb1fab80a484a39f19aae12f56a7d357fdc3e265be1c051a39b295d718ce69`.
 <!-- NEWS_GRASP_CONSTITUTION_PROJECTION_V1_END -->

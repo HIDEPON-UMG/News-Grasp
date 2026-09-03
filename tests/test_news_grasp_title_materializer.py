@@ -290,19 +290,11 @@ def test_materializer_rejects_a_noncanonical_template_name(tmp_path: Path) -> No
         )
 
 
-def test_scheduled_entrypoint_is_a_hidden_title_only_preflight() -> None:
+def test_windows_task_scheduler_title_entrypoint_is_retired() -> None:
     root = Path(__file__).parents[1]
-    entrypoint = root / "scripts" / "ops" / "news-grasp-title-materializer.pyw"
     installer = root / "scripts" / "ops" / "install-news-grasp-title-materializer.ps1"
-    entrypoint_text = entrypoint.read_text(encoding="utf-8-sig")
     installer_text = installer.read_text(encoding="utf-8-sig")
 
-    assert "news_grasp_title_materializer" in entrypoint_text
-    assert "-Daily -At" in installer_text
-    assert "AddMinutes(59)" in installer_text
-    assert "pythonw.exe" in installer_text
-    assert "MultipleInstances IgnoreNew" in installer_text
-    assert "-Hidden" in installer_text
-    assert "-StartWhenAvailable" in installer_text
-    assert "News-Grasp Production" not in installer_text
-    assert "news-grasp-runner" not in installer_text
+    guard_at = installer_text.index("NEWS_GRASP_WINDOWS_TASK_SCHEDULER_RETIRED")
+    register_at = installer_text.index("Register-ScheduledTask")
+    assert guard_at < register_at

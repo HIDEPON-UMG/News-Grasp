@@ -1,5 +1,9 @@
 $ErrorActionPreference = 'Stop'
 
+# 実行前title用のWindows Task Scheduler経路は廃止済み。現在のCodex taskが
+# 開始後最初のhost操作として自身のtitleを一回だけ更新する。
+throw 'NEWS_GRASP_WINDOWS_TASK_SCHEDULER_RETIRED'
+
 $TaskName = 'News-Grasp Title Materializer'
 $RepoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $PythonExe = (& py -3.12 -c 'import sys; print(sys.executable)').Trim()

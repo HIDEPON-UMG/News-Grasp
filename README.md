@@ -2,7 +2,7 @@
 
 > 時勢を掴み、日々に新たに。
 
-早朝にローカル PC 上の Claude Code (Sonnet 4.6) が起動し、watchlist の対象を Web 検索 → 過去 90 日の関連記事と照合 → カテゴリ別 digest Markdown を生成 → GitHub に commit & push → 公開 web (GitHub Pages + PWA) に SSG で配信、毎朝 07:30 JST を更新目安として公開する **個人運用の日次ニュースダイジェスト**。
+毎朝6:00 JSTのCodex automationがdirect mainlineを起動し、watchlist の対象を Web 検索 → 過去 90 日の関連記事と照合 → カテゴリ別 digest Markdown を生成 → GitHub に commit & push → 公開 web (GitHub Pages + PWA) に SSG で配信する **個人運用の日次ニュースダイジェスト**。
 
 配信は **公開 Web (GitHub Pages + PWA) + Web Push 通知** のみ。旧 Gmail SMTP 直送によるメール配信は 2026-06-05 に機能ごと廃止済み。
 
@@ -29,22 +29,19 @@ SSG は `tools/generate_pages.py` (Jinja2)。`docs/` 配下に静的 HTML を生
 - 「7 つの § セクション」見出しは 768px 以下で「7 つの」「§ セクション」の 2 行に強制改行
 - Home の subscribe band は「毎朝 7:30 更新 / 土日祝日も毎朝公開」に統一 (メール購読を前提とした旧表現は撤去)
 
-## アーキテクチャ概要 (ローカル Codex runner + dead-man)
+## アーキテクチャ概要（Codex automation direct mainline）
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│ Windows タスクスケジューラ「News-Grasp Runner」 早朝に毎日実行   │
-│   └─→ %USERPROFILE%\bin\news-grasp-runner.ps1                    │
-│         ├─ repo 管理版 scripts/ops/news-grasp-runner.ps1 と同期確認 │
-│         ├─ git fetch / pull origin main                           │
-│         └─ codex exec による newsroom fan-out / editor 統合         │
-│ Windows タスクスケジューラ「News-Grasp Deadman」 1 時間ごと       │
-│   └─→ pythonw.exe → %USERPROFILE%\bin\news-grasp-deadman-launcher.pyw │
-│         └─ CREATE_NO_WINDOW で news-grasp-deadman.ps1 を起動       │
-│         └─ stale / no ok / publish_failed を検知し RecoverOnly 起動 │
+│ Codex automation `news-grasp-6-40` が毎朝6:00 JSTに起動           │
+│   └─→ $news-grasp-direct-mainline                                 │
+│         └─固定Python 3.12で tools.news_grasp_daily_launcher       │
+│              ├─ Daily六operationを同一process・同一writerで実行   │
+│              └─ consumer-owned public verifierで完了確定          │
+│ Windows Task Scheduler / legacy runner / deadman は廃止済み       │
 └──────────────────────────────────────────────────────────────────┘
                           │
-                  runner が以下を段階実行
+             direct launcher が以下を段階実行
                           │
    ┌────────────────────────────────────────────────────────────┐
    │ ① 当日 (JST) の対象カテゴリを曜日マトリクスで決定          │
@@ -56,7 +53,7 @@ SSG は `tools/generate_pages.py` (Jinja2)。`docs/` 配下に静的 HTML を生
    │ ⑦ git commit (push は ps1 が代行)                          │
    └────────────────────────────────────────────────────────────┘
                           │
-                  Claude 終了後に ps1 が継続
+                 同一Daily routeが継続
                           │
    ┌────────────────────────────────────────────────────────────┐
    │ A. git push origin main                                     │
@@ -192,11 +189,11 @@ News-Grasp/
 │   └── _partials/
 ├── scripts/
 │   └── ops/
-│       ├── news-grasp-runner.ps1       # repo 管理版 runner
-│       ├── watch-news-grasp-runner.ps1 # runner watcher / RecoverOnly 起動
-│       ├── news-grasp-deadman.ps1      # dead-man switch
-│       ├── news-grasp-deadman-launcher.pyw # Deadman の no-console launcher
-│       └── install-news-grasp-ops.ps1  # %USERPROFILE%\bin へ同期
+│       ├── news-grasp-runner.ps1       # 廃止済み履歴実装（起動禁止）
+│       ├── watch-news-grasp-runner.ps1 # 廃止済み履歴実装（起動禁止）
+│       ├── news-grasp-deadman.ps1      # 廃止済み履歴実装（起動禁止）
+│       ├── news-grasp-deadman-launcher.pyw # 廃止済み履歴実装（起動禁止）
+│       └── install-news-grasp-ops.ps1  # fail-closed tombstone
 │       └── pwa-head.html         # PWA <head> include (manifest / theme-color / apple-touch-icon / sw)
 ├── assets/                  # OGP 不足時の NG プレースホルダ (公開 Web 用、計 14 JPG)
 │   ├── ng-thumb-{cat}.jpg          # FEATURED 横長 1136×400

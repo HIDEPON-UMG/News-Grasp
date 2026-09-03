@@ -85,7 +85,7 @@
         "kind": "skill",
         "sourcePath": "automation/skills/news-grasp-direct-mainline/SKILL.md",
         "installPath": "skills/news-grasp-direct-mainline/SKILL.md",
-        "sourceSha256": "602ee3e17e6dbced9a7142d78b5d6c2c19f70f43b5eba23ef762e1e81989d89e"
+        "sourceSha256": "f64878f3acbcfadd7713f3cc403cd781045bbf1578afc215efec7bee00fc7aa1"
       },
       {
         "assetId": "direct-mainline-openai-yaml-v1",
@@ -134,7 +134,7 @@
         "kind": "automation",
         "sourcePath": "automation/news-grasp-6-40/automation.toml.template",
         "installPath": "automations/news-grasp-6-40/automation.toml",
-        "sourceSha256": "c97901f8ef13fe6e2cece6017d9cc8e025fc62c24cfde420a5dd9a5ae3dc8273"
+        "sourceSha256": "e136ee6a705ec067d452836bb4798c07b54964607c2a4190defa4d810182c2a9"
       },
       {
         "assetId": "news-grasp-6-40-completion-guard-projection-v1",
@@ -144,7 +144,7 @@
         "sourceSha256": "77112e72c167230d6b0aebc9dc71114879b4cf896fbfaaf423248b5456e86657"
       }
     ],
-    "assetSetSha256": "dadf276104ab50a2eaf8cb3482d09aacb68febedb9208d4e6fa137ece9315c62"
+    "assetSetSha256": "4afb1fab80a484a39f19aae12f56a7d357fdc3e265be1c051a39b295d718ce69"
   },
   "deepDiveQualityRoutes": {
     "schemaVersion": "DEEPDIVE_SHARED_QUALITY_ROUTES_V2",
@@ -202,15 +202,15 @@
   "outputs": [
     {
       "path": "AGENTS.md",
-      "managedBlockSha256": "baca7a585486ae52232b4808eccd9391a1500fb20bccac2c3baa6c5ff8e1eec1"
+      "managedBlockSha256": "403318dd32b412fef6bdcf6d46b863f704ff2be4437e1ac31386d396d4536e9a"
     },
     {
       "path": "CLAUDE.md",
-      "managedBlockSha256": "baca7a585486ae52232b4808eccd9391a1500fb20bccac2c3baa6c5ff8e1eec1"
+      "managedBlockSha256": "403318dd32b412fef6bdcf6d46b863f704ff2be4437e1ac31386d396d4536e9a"
     },
     {
       "path": "docs/specs/2026-08-12_news-grasp-product-constitution.html",
-      "sha256": "4b623e96cd6ab1c078e636f45b97af75b29b8f662bd6b6725df49c1fe4cec4ce",
+      "sha256": "58917af3391c7c5793802c6d88a696ae4057470198528dd3f24b741baa60c39c",
       "lineCount": 1064
     },
     {

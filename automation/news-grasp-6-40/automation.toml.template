@@ -30,7 +30,7 @@ News-Grasp の臨時本線日次バッチを実行してください。
 - コスト起因またはハーネス起因で、記事品質・公開完成と無関係な停止判断をしないでください。
 
 セッション名:
-- 実行スレッドの表示名は、スケジューラが保持する対象日と title_status receipt の観測値を表示するだけです。本文から表示名、automation、App DB、schedulerを変更してはいけません。
+- 実行スレッド開始後の最初のhost操作として、現在のtask titleを対象日の exact `YY/MM/DD News-Grasp 臨時本線日次バッチ 6:00 記事作成・公開` へ一回だけ更新してください。automation定義、App DB、scheduler自体は変更してはいけません。
 - 対象日は Asia/Tokyo の当日として、static_check が発行した issue_date と title_status を以後の全receiptへ引き継いでください。固定日付、日時 placeholder、保存済みcaller JSONの再利用は禁止です。
 - title_status は updated / already_ok / unavailable / failed / skipped のいずれかを producer receipt に記録し、成功時の具体例 `title_status=already_ok` を含めて公開可否と混同しないでください。
 
@@ -44,7 +44,7 @@ News-Grasp の臨時本線日次バッチを実行してください。
 
 実行入口:
 - 既存 runner、旧runtime、audit recovery control、raw/full pytest、historical、Playwright、NoPublish は使いません。
-- ScheduledProductionが起動できるcommandは次の一つだけです。launcherは同一process memory内の同一writer leaseで六つのDaily operationを順番に一回ずつ実行し、全producer receiptを一つのmachine receiptへ束縛します。
+- Codex automationが起動できるcommandは次の一つだけです。launcherは同一process memory内の同一writer leaseで六つのDaily operationを順番に一回ずつ実行し、全producer receiptを一つのmachine receiptへ束縛します。
   `C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -m tools.news_grasp_daily_launcher`
 - launcher内部の正規順序は `static_check` → `scoped_contract_unit` → `current_issue_integration` → `external_publication` → `consumer_public_verification` → `atomic_completion` です。個別operation CLI、任意のraw Python、別module、別route、順序飛ばし、同一operation再実行はRedです。
 - writer leaseとfencing capabilityをstdout、環境変数、receipt、logへ出してはいけません。brokerのadmission表示やcaller自己申告だけでは完了にしません。

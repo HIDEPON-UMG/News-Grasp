@@ -13,7 +13,7 @@ description: Run the 06:00 News-Grasp scheduled production directly with Codex, 
 2. `static_check` がscheduler triggerをT0として、Asia/Tokyoの `issue_date`、`run_intent`、DB発行のactual run ID、writer lease/fencing token、source baseline、runtime generation、remote base SHA、許可外部副作用をstart sealへ固定する。`final`等のrun aliasを作らない。
 3. single-flight identityは `automation_id + issue_date + run_intent` である。既存active writerへattachしたcallerはobserverであり、writer leaseを再利用してmutationしない。inflight/unknown deliveryがあれば新runを作らず照合へ進む。
 4. V1 runtime stateとnotification ledgerは、run作成より前にV2へ正規migrationする。migration receiptが無い状態でstageを開始しない。
-5. ScheduledProductionが実行可能なentryは下記の単一launcherだけである。launcherが同一process memory内のwriter leaseで六operationを順に一回ずつ実行する。UTF-8一行JSON receiptの`ok=true`、前receipt hash、同一seal identity、exact successorを確認する。個別operation CLI、raw Python、旧runtimeの`start/advance`、Release gate、NoPublish、historical、Playwright、full pytest、未登録commandは使わない。
+5. Codex automationが実行可能なentryは下記の単一launcherだけである。launcherが同一process memory内のwriter leaseで六operationを順に一回ずつ実行する。UTF-8一行JSON receiptの`ok=true`、前receipt hash、同一seal identity、exact successorを確認する。個別operation CLI、raw Python、旧runtimeの`start/advance`、Release gate、NoPublish、historical、Playwright、full pytest、未登録commandは使わない。
 6. `tools.publish_inventory.scheduled_category_ids(issue_date)` を当日の対象カテゴリ正本にする。7カテゴリはpublic verifierのuniverse coverageであり、毎日の固定生成対象へ読み替えない。
 
 ## Direct 本線工程（Daily 六phase）

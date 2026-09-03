@@ -508,6 +508,20 @@
       "owner": "News-Grasp operations installer owner",
       "maintenance_condition": "automation asset manifest、completion guard projection、installer asset validation変更時",
       "status": "open"
+    },
+    {
+      "defect_code": "NG-I37",
+      "incident_codes": ["RETIRED-WINDOWS-TASK-SCHEDULER-STILL-CANONICAL"],
+      "source_of_truth": ["docs/spec.md", "automation/news-grasp-6-40/automation.toml.template", "tools/sync_news_grasp_codex_automation.py"],
+      "affected_consumer": ["operator", "production deployment", "daily readiness", "task title lifecycle"],
+      "impact_binding": "direct mainline supersession後も旧Windows Task Schedulerのinstaller・readiness・title materializerをactive仕様として残すと、operatorが廃止経路を本番反映入口と誤認し、不要な権限エラーと部分rollbackを発生させる",
+      "red_fixture": ["current spec and README still describe Windows Task Scheduler as the production path", "legacy installers can reach Register-ScheduledTask"],
+      "green_test": ["tests/test_news_grasp_scheduler_retirement.py::test_codex_automation_is_the_only_daily_scheduler_and_legacy_installers_fail_closed"],
+      "operational_recovery": "現行schedulerをCodex automation news-grasp-6-40へ一意化し、tools.sync_news_grasp_codex_automation --promoteだけを本番反映入口とする。旧Windows Task Scheduler installerは登録処理より前にtyped tombstoneで停止する",
+      "independent_evidence": ["focused Red/Green exit code", "template/installed/App DB/snapshot parity", "legacy installer pre-registration tombstone", "remote main SHA"],
+      "owner": "Codex automation direct mainline owner",
+      "maintenance_condition": "scheduler、automation promotion、daily entry、title lifecycle、legacy installer変更時",
+      "status": "open"
     }
   ]
 }

@@ -1,8 +1,8 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 3244,
-  "collectedNodeSetSha256": "23869c809ac454b8cc28f46c6afde5cdbfca575a23dd41a8b270d0e1bf0cfc4b",
+  "collectedNodeCount": 3245,
+  "collectedNodeSetSha256": "e584a9cb1a94d660d542d1a84e12a4afd8ce7b6bd173717618975d8d2a30ffcf",
   "files": [
     {
       "path": "tests/test_20260813_control_plane_repair.py",
@@ -3692,6 +3692,18 @@
       ]
     },
     {
+      "path": "tests/test_news_grasp_scheduler_retirement.py",
+      "sha256": "2ffbd3abeb224fc1668aaa747dc43a5527a5788b0b9fa52743dfa18a6e2247f0",
+      "nodeCount": 1,
+      "nodeIds": [
+        "tests/test_news_grasp_scheduler_retirement.py::test_codex_automation_is_the_only_daily_scheduler_and_legacy_installers_fail_closed"
+      ],
+      "clauseIds": [
+        "NGC-C06",
+        "NGC-C14"
+      ]
+    },
+    {
       "path": "tests/test_news_grasp_scoped_test_broker.py",
       "sha256": "74b7379f7df51224e2be2cad33f707d68507d78cec881736d9c1d9960f4f3e9a",
       "nodeCount": 14,
@@ -3775,7 +3787,7 @@
     },
     {
       "path": "tests/test_news_grasp_title_materializer.py",
-      "sha256": "c065b36113bf057352c7a9e49161380a415b98bab2c6437059b82bb294b014a5",
+      "sha256": "7a44b5fec80d31deb10f58f310dd3eda09fcebcf4dee9a4ee6f908b9cb7d5b7f",
       "nodeCount": 12,
       "nodeIds": [
         "tests/test_news_grasp_title_materializer.py::test_cli_default_receipt_is_written_under_fixed_prefix",
@@ -3789,7 +3801,7 @@
         "tests/test_news_grasp_title_materializer.py::test_materializer_rejects_reparse_receipt_chain[leaf]",
         "tests/test_news_grasp_title_materializer.py::test_materializer_rejects_reparse_receipt_chain[parent]",
         "tests/test_news_grasp_title_materializer.py::test_materializer_updates_only_names_and_binds_issue_date",
-        "tests/test_news_grasp_title_materializer.py::test_scheduled_entrypoint_is_a_hidden_title_only_preflight"
+        "tests/test_news_grasp_title_materializer.py::test_windows_task_scheduler_title_entrypoint_is_retired"
       ],
       "clauseIds": [
         "NGC-C06",
@@ -3923,7 +3935,7 @@
     },
     {
       "path": "tests/test_operational_redesign_contract.py",
-      "sha256": "17831cb79851d11908e46ef5a86e6040190a96e8b5979e96ee1ff7c2bbae3db7",
+      "sha256": "6d5f33a1a02e9bdeb6fd40df16b0f499f90ecd997f76317a44eafb2048298158",
       "nodeCount": 53,
       "nodeIds": [
         "tests/test_operational_redesign_contract.py::test_ng2_a01_adversarial_scope_escape",
@@ -3953,7 +3965,7 @@
         "tests/test_operational_redesign_contract.py::test_ng2_a08_registered_deterministic_builder_reuses_artifact",
         "tests/test_operational_redesign_contract.py::test_ng2_a08_unknown_builder_input_does_not_fallback_to_model",
         "tests/test_operational_redesign_contract.py::test_ng2_a09_asset_manifest_rejects_escape_and_absolute_paths",
-        "tests/test_operational_redesign_contract.py::test_ng2_a09_installer_declares_versioned_asset_sync",
+        "tests/test_operational_redesign_contract.py::test_ng2_a09_codex_automation_syncer_owns_live_promotion",
         "tests/test_operational_redesign_contract.py::test_ng2_a09_product_automation_asset_manifest_is_versioned_and_bound",
         "tests/test_operational_redesign_contract.py::test_ng2_a09_valid_checkpoint_is_not_regenerated",
         "tests/test_operational_redesign_contract.py::test_ng2_a11_human_impact_contract_is_green",
@@ -3969,7 +3981,7 @@
         "tests/test_operational_redesign_contract.py::test_ng2_wp02_historical_fixture_preserves_public_and_lineage",
         "tests/test_operational_redesign_contract.py::test_ng2_wp02_matrix_does_not_admit_placeholder_or_mock_only_consumer",
         "tests/test_operational_redesign_contract.py::test_ng2_wp03_generation_manifest_rejects_worktree_bound_task_action",
-        "tests/test_operational_redesign_contract.py::test_ng2_wp03_installer_tasks_bind_stable_launcher_without_worktree_path",
+        "tests/test_operational_redesign_contract.py::test_ng2_wp03_windows_task_scheduler_installer_is_retired",
         "tests/test_operational_redesign_contract.py::test_ng2_wp05_daily_lineage_does_not_reset_on_run_or_session_change",
         "tests/test_operational_redesign_contract.py::test_ng2_wp06_all_registered_reason_codes_dispatch_once",
         "tests/test_operational_redesign_contract.py::test_ng2_wp06_default_registry_handlers_are_registered_and_typed",
@@ -4174,7 +4186,7 @@
     },
     {
       "path": "tests/test_product_spec_contract.py",
-      "sha256": "09c2fe0ece9f00d6882a85c55bafd5025a02bceef9fd855868bb21aadb7e5e70",
+      "sha256": "08cb8dbe92d00cbe33fa592589037af6faa5619d68c0e7200dc54c0884a068f4",
       "nodeCount": 25,
       "nodeIds": [
         "tests/test_product_spec_contract.py::test_daily_45m_contract_is_bound_to_gate_matrix_and_public_completion",
@@ -4196,10 +4208,10 @@
         "tests/test_product_spec_contract.py::test_product_constitution_keeps_recovered_state_and_future_gates_separate",
         "tests/test_product_spec_contract.py::test_product_constitution_links_summary_lanes_to_quality_gates",
         "tests/test_product_spec_contract.py::test_product_constitution_locks_done_and_autonomous_repair_principles",
-        "tests/test_product_spec_contract.py::test_product_constitution_locks_exact_scheduled_task_role_commitments",
         "tests/test_product_spec_contract.py::test_product_constitution_maps_category_schedule_impact",
         "tests/test_product_spec_contract.py::test_product_constitution_maps_feature_changes_to_quality_gates",
         "tests/test_product_spec_contract.py::test_product_constitution_requires_horizontal_incident_bugfix_investigation",
+        "tests/test_product_spec_contract.py::test_product_constitution_retires_windows_task_scheduler_from_daily_authority",
         "tests/test_product_spec_contract.py::test_runner_matrix_separates_scheduled_production_from_final_e2e_budget",
         "tests/test_product_spec_contract.py::test_weekly_failure_source_of_truth_and_runner_terminal_semantics_are_documented"
       ],

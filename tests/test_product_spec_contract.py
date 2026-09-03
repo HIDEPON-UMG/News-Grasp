@@ -101,15 +101,13 @@ def test_product_constitution_maps_feature_changes_to_quality_gates() -> None:
         "NEWS_GRASP_PUBLISH_MANIFEST_V2",
         "NEWS_GRASP_DIRECT_RUNTIME_V2",
         "causalRemediationReceipt",
-        "Scheduled automation title / task lifecycle",
-        "News-Grasp Title Materializer",
-        "tools/news_grasp_title_materializer.py",
-        "実行スレッド生成前",
+        "Codex automation title / task lifecycle",
+        "task自身が開始後最初のhost操作",
+        "tools/news_grasp_title_control.py",
         "Codex App DB",
-        "single-instance",
-        "Runner / state / recovery",
-        "NEWS_GRASP_SKIP_URL_CHECK=1",
-        '-m "not network"',
+        "template/installed/App DB/snapshot exact parity",
+        "Direct runtime / state / recovery",
+        "旧installer起動はmutation前にfail-closed",
         "Incident / reporting",
         "recovery evidence",
         "新規 `docs/incidents/*-report.html` は追跡・公開しない",
@@ -157,23 +155,10 @@ def test_product_constitution_maps_category_schedule_impact() -> None:
         "YouTube Podcast / publish_complete",
         "historical fallback evidence",
         "verify-publish-complete",
-        "repo/live runner SHA",
-        "repo/live watcher SHA",
-        "repo/live bootstrap SHA",
-        "Scheduled Task watcher/bootstrap target",
-        "Production 06:00のみ/IgnoreNew",
-        "Bootstrap 05:55/IgnoreNew",
-        "Deadman 06:40+PT1H/P1D/IgnoreNew",
-        "Pull/legacy Runner disabled-or-absent",
-        "NextRunTime",
-        "NumberOfMissedRuns=0",
-        "Runner Action 本番起動 mode",
-        "direct runner pre-run interlock",
-        "Runner より前の 05:55 Bootstrap task",
-        "LastTaskResult=0",
-        "short timeout",
-        "isolated state/log",
-        "実起動 canary `smoke_ok`",
+        "Codex automation template/installed/App DB/snapshot parity",
+        "direct launcherとruntime generation",
+        "consumer-owned public verifier",
+        "Windows Task Scheduler、runner、bootstrap、deadman readinessを公開成功条件へ戻さない",
     ]:
         assert phrase in text
 
@@ -265,23 +250,15 @@ def test_runner_matrix_separates_scheduled_production_from_final_e2e_budget() ->
         assert phrase in text
 
 
-def test_product_constitution_locks_exact_scheduled_task_role_commitments() -> None:
-    """06:40事故の再発防止としてTask役割・時刻・重複方針を仕様正本へ固定する。"""
+def test_product_constitution_retires_windows_task_scheduler_from_daily_authority() -> None:
+    """廃止済みTask Schedulerを通常日次の入口・readinessへ戻さない。"""
     text = _read(SPEC)
 
-    required = (
-        "正規日次roleはBootstrap=05:55 enabled/IgnoreNew、"
-        "Production=06:00のみ enabled/IgnoreNew、"
-        "Deadman=06:40開始+PT1H/P1D enabled/IgnoreNewとし、"
-        "Pull/legacy RunnerはDisabledを維持する。"
-    )
-    assert required in text
-    assert "Production=06:00のみ enabled/IgnoreNew" in text
-    assert "Deadman=06:40開始+PT1H/P1D enabled/IgnoreNew" in text
-    assert "Pull/legacy RunnerはDisabledを維持する" in text
-    assert "Production=06:40" not in text
-    assert "Production=06:00/06:40" not in text
-    assert "Parallel" not in text[text.index("Scheduled Task / runner / bootstrap / deadman") : text.index("Scheduled Task / runner / bootstrap / deadman") + 600]
+    assert "Windows Task Scheduler は廃止済み" in text
+    assert "Codex automation `news-grasp-6-40`" in text
+    assert "NEWS_GRASP_WINDOWS_TASK_SCHEDULER_RETIRED" in text
+    current = text[text.index("## 2026-08-30 Direct 06:00 Mainline Supersession") : text.index("## 憲法の機械正本")]
+    assert "通常日次の起動、preflight、readiness、install、rollback、completion evidenceに使用しない" in current
 
 
 def test_product_constitution_defines_sustainable_complete_repair_invariants() -> None:
@@ -594,7 +571,7 @@ def test_daily_45m_contract_is_bound_to_gate_matrix_and_public_completion() -> N
     assert len(contract["fixtureRegistry"]) == 18
     assert ledger["task_id"] == "NG-DAILY-45M-20260902"
     assert {row["defect_code"] for row in ledger["entries"]} == {
-        f"NG-I{index:02d}" for index in range(1, 36)
+        f"NG-I{index:02d}" for index in range(1, 38)
     }
     required = {
         "defect_code",

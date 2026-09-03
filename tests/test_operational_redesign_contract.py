@@ -555,27 +555,10 @@ def test_ng2_a02_recovery_rollback_previous_generation(tmp_path: Path) -> None:
     assert active["generationId"] == "generation-001"
 
 
-def test_ng2_wp03_installer_tasks_bind_stable_launcher_without_worktree_path() -> None:
+def test_ng2_wp03_windows_task_scheduler_installer_is_retired() -> None:
     repo = Path(__file__).resolve().parents[1]
     installer = (repo / "scripts/ops/install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
-    assert '$runnerArgs = "-I -S -B `"$taskLauncherPath`" dispatch --schedule-id news-grasp-daily-v1 --intent reconcile"' in installer
-    assert '$bootstrapArgs = "-I -S -B `"$taskLauncherPath`" bootstrap --scheduled-task-name `"$BootstrapTaskName`" --high-cost-binding-path' in installer
-    assert "[string] $PullTaskName = 'News-Grasp Pull'" in installer
-    assert "Register-ScheduledTask -TaskPath '\\' -TaskName $DeadmanTaskName" in installer
-    assert "Enable-ScheduledTask -TaskPath '\\' -TaskName $DeadmanTaskName" in installer
-    assert 'Disable-ScheduledTask -TaskName $DeadmanTaskName' not in installer
-    assert "Disable-ScheduledTask -TaskPath '\\' -TaskName $disabledTaskName -ErrorAction Stop" in installer
-    assert "foreach ($disabledTaskName in @($PullTaskName, $LegacyRunnerTaskName))" in installer
-    managed_names = (
-        "$RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName, "
-        "$PullTaskName, $LegacyRunnerTaskName"
-    )
-    assert f"$managedTaskNames = @({managed_names})" in installer
-    assert f"foreach ($taskName in @({managed_names}))" in installer
-    assert "-ExpectedTaskNames $managedTaskNames" in installer
-    assert "foreach ($disabledTaskName in @($PullTaskName, $LegacyRunnerTaskName))" in installer
-    assert 'NEWS_GRASP_TASK_NAME_AUTHORITY_INVALID' in installer
-    assert '--repo-dir `"$RepoDir`"' not in installer
+    assert installer.index("NEWS_GRASP_WINDOWS_TASK_SCHEDULER_RETIRED") < installer.index("Register-ScheduledTask")
 
 
 def test_ng2_wp03_generation_manifest_rejects_worktree_bound_task_action() -> None:
@@ -1027,10 +1010,11 @@ def test_ng2_a09_asset_manifest_rejects_escape_and_absolute_paths(tmp_path: Path
         assets.load_manifest(bad)
 
 
-def test_ng2_a09_installer_declares_versioned_asset_sync() -> None:
-    installer = (Path(__file__).parents[1] / "scripts" / "ops" / "install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
-    assert "news_grasp_automation_assets_v2.json" in installer
-    assert "news-grasp-assets" in installer
-    assert "source_sha256" in installer
-    assert "Assert-NewsGraspAssetInstallDestination" in installer
-    assert "Assert-NewsGraspAutomationProjectionAsset" in installer
+def test_ng2_a09_codex_automation_syncer_owns_live_promotion() -> None:
+    syncer = (Path(__file__).parents[1] / "tools" / "sync_news_grasp_codex_automation.py").read_text(encoding="utf-8-sig")
+    assert "Windows Scheduled Task や旧 runner には触れない" in syncer
+    assert '"--promote"' in syncer
+    assert '"--write-snapshot"' in syncer
+    assert '"--write-skill"' in syncer
+    assert '"--write-app-db"' in syncer
+    assert "rollback_receipt" in syncer
