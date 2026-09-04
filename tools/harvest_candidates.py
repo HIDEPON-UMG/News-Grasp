@@ -61,6 +61,7 @@ from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from html.parser import HTMLParser
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # tools パッケージ経由（python -m / pytest）と flat 実行（python tools/...）両対応の import。
 try:
@@ -650,13 +651,41 @@ def harvest_category_with_audit(
     items: list[dict] = []
     audit = _empty_audit(category)
 
+    query_specs: list[tuple[str, str]] = []
     for base_query in category_queries(category):
         url = build_feed_url(base_query)
         query = build_query(base_query)
         audit["queries"].append(query)
         source_id = f"google_news:{query}"
         audit["source_breakdown"][source_id] = _source_stats(None, url)
-        xml_text = fetch_feed(url, timeout=timeout)
+        query_specs.append((url, source_id))
+
+    source_specs = _source_definitions_for_category(category)
+    for source in source_specs:
+        source_id = _source_id(source.url)
+        audit["queries"].append(source.url)
+        audit["source_breakdown"][source_id] = _source_stats(source, source.url)
+
+    fetch_jobs: list[tuple[str, int, Any]] = []
+    for index, (url, _source_id_value) in enumerate(query_specs):
+        fetch_jobs.append(("query", index, (url, None)))
+    for index, source in enumerate(source_specs):
+        fetch_jobs.append(("source", index, (source.url, source)))
+
+    fetched: dict[tuple[str, int], Any] = {}
+    with ThreadPoolExecutor(max_workers=min(8, len(fetch_jobs))) as pool:
+        futures = {}
+        for kind, index, (url, source) in fetch_jobs:
+            if source is not None and source.mode == "scrapling_page":
+                future = pool.submit(fetch_scrapling_page, url, timeout=timeout)
+            else:
+                future = pool.submit(fetch_feed, url, timeout=timeout)
+            futures[future] = (kind, index)
+        for future in as_completed(futures):
+            fetched[futures[future]] = future.result()
+
+    for index, (url, source_id) in enumerate(query_specs):
+        xml_text = fetched[("query", index)]
         if not xml_text:
             print(f"WARN: feed 取得失敗 category={category} url={url}", file=sys.stderr)
             continue
@@ -667,12 +696,11 @@ def harvest_category_with_audit(
             row["trust_tier"] = "search"
         items.extend(_filter_rows(rows, audit, source_id))
 
-    for source in _source_definitions_for_category(category):
+    for index, source in enumerate(source_specs):
         source_id = _source_id(source.url)
-        audit["queries"].append(source.url)
-        audit["source_breakdown"][source_id] = _source_stats(source, source.url)
+        fetched_value = fetched[("source", index)]
         if source.mode == "rss":
-            xml_text = fetch_feed(source.url, timeout=timeout)
+            xml_text = fetched_value
             if not xml_text:
                 print(f"WARN: RSS 取得失敗 category={category} url={source.url}", file=sys.stderr)
                 _mark_broken(audit, source, "fetch_failed")
@@ -688,7 +716,7 @@ def harvest_category_with_audit(
             continue
 
         if source.mode == "scrapling_page":
-            res = fetch_scrapling_page(source.url, timeout=timeout)
+            res = fetched_value
             if not getattr(res, "ok", False) or _looks_broken_scrapling_page(getattr(res, "html", None)):
                 print(f"WARN: Scrapling 取得失敗 category={category} url={source.url}", file=sys.stderr)
                 _mark_broken(audit, source, "scrapling_failed_or_broken_page")

@@ -7,7 +7,9 @@ import json
 import os
 import re
 import shutil
+import sys
 import tempfile
+import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date
 from pathlib import Path
@@ -203,7 +205,7 @@ def _default_candidate_provider(category: str, issue_date: str) -> tuple[list[di
     prepared, dropped = prepare_rows(
         candidates,
         max_rows=25,
-        thumb_limit=25,
+        thumb_limit=5,
         decode_timeout=3.0,
         thumb_timeout=5.0,
         thumb_retries=0,
@@ -224,11 +226,12 @@ def _default_candidate_provider(category: str, issue_date: str) -> tuple[list[di
 
 
 def _resolve_codex_executable() -> Path:
-    direct = shutil.which("codex.exe") or shutil.which("codex")
-    candidates: list[Path] = [Path(direct)] if direct else []
-    local = os.environ.get("LOCALAPPDATA", "").strip()
+    candidates: list[Path] = []
+    local = os.environ.get("USERPROFILE", "").strip()
     if local:
-        candidates.extend(Path(local).glob("OpenAI/Codex/bin/*/codex.exe"))
+        candidates.extend(
+            Path(local).glob(".vscode/extensions/openai.chatgpt-*/bin/windows-x86_64/codex.exe")
+        )
     unique: dict[str, Path] = {}
     for candidate in candidates:
         try:
@@ -254,6 +257,10 @@ def _model_prompt(
         source = (root / "prompts" / "newsroom-reporter-system.md").read_text(encoding="utf-8-sig")
         return (
             f"{source}\n\nこの実行ではrepoを変更してはならない。候補を再収集せず、指定JSON schemaだけを返す。"
+            "recordsのpublished_dateはissue_dateと完全一致させ、RSS/pubDateの時刻を公開日証拠に使わない。"
+            "前日以前の候補は採用せず、date_evidence_sourceはRSS由来以外の根拠だけを記載する。"
+            "recordのurlは入力candidatesにあるURL文字列を完全コピーし、未収集URLや別URLへ置換しない。"
+            "digest_markdownの各記事カード見出しは必ず`### [1]`、`### [2]`の形式でrecordsと同数だけ置き、余分なカード見出しを置かない。"
             f"\nissue_date={issue_date}\ncategory={category}\n入力:\n"
             f"{json.dumps(context, ensure_ascii=False)}"
         )
@@ -287,7 +294,7 @@ def _default_model_runner(
     from tools.model_spawn_client import run_model_process
 
     model = "gpt-5.6-sol" if role == "deepdive" else "gpt-5.6-luna"
-    effort = "high" if role == "deepdive" else "max"
+    effort = "max"
     schema = {
         "reporter": REPORTER_SCHEMA,
         "editor": EDITOR_SCHEMA,
@@ -325,9 +332,16 @@ def _default_model_runner(
         "-",
     ]
     try:
+        route = (
+            f"reporter:{category}"
+            if role == "reporter" and category
+            else "newsroom_editor"
+            if role == "editor"
+            else "deepdive"
+        )
         completed = run_model_process(
             command,
-            route=f"news_grasp_daily_{role}",
+            route=route,
             input=prompt,
             text=True,
             capture_output=True,
@@ -337,10 +351,15 @@ def _default_model_runner(
             check=False,
         )
     except Exception as exc:  # noqa: BLE001 - broker failure is typed and has no canonical mutation.
-        raise DailyContentError(f"MODEL_PROCESS_FAILED:{role}:{type(exc).__name__}") from exc
+        raise DailyContentError(f"MODEL_PROCESS_FAILED:{role}:{type(exc).__name__}:{exc}") from exc
     (output_dir / f"{label}.events.jsonl").write_text(str(completed.stdout or ""), encoding="utf-8")
     (output_dir / f"{label}.stderr.log").write_text(str(completed.stderr or ""), encoding="utf-8")
     if completed.returncode != 0 or not output.is_file():
+        print(
+            f"ERROR: model role={role} category={category} returncode={completed.returncode} "
+            f"stderr={str(completed.stderr or '')[-3000:]}",
+            file=sys.stderr,
+        )
         raise DailyContentError(f"MODEL_PROCESS_FAILED:{role}:{completed.returncode}")
     try:
         value = json.loads(output.read_text(encoding="utf-8"))
@@ -375,18 +394,30 @@ def _validate_reporter(value: Any, *, category: str, issue_date: str, search_aud
             raise DailyContentError(f"REPORTER_OUTPUT_INVALID:{category}:schema") from exc
         url = str(record.get("url") or "").rstrip("/")
         thumb = str(record.get("thumb") or "")
-        if (
-            record.get("date") != issue_date
-            or str(record.get("published_date") or "") not in {issue_date, str(date.fromisoformat(issue_date))}
-            or not str(record.get("date_evidence_source") or "").strip()
-            or "rss" in str(record.get("date_evidence_source") or "").casefold()
-            or is_google_news_rss_url(url)
-            or looks_homepage_or_section_landing(url)
-            or not thumb.startswith(("http://", "https://"))
-            or is_google_news_proxy_thumb(thumb)
-            or is_news_grasp_self_thumb(thumb)
-        ):
-            raise DailyContentError(f"REPORTER_OUTPUT_INVALID:{category}:semantic")
+        semantic_errors: list[str] = []
+        if record.get("date") != issue_date:
+            semantic_errors.append("date")
+        if str(record.get("published_date") or "") not in {issue_date, str(date.fromisoformat(issue_date))}:
+            semantic_errors.append("published_date")
+        evidence = str(record.get("date_evidence_source") or "")
+        if not evidence.strip():
+            semantic_errors.append("date_evidence_source_missing")
+        elif "rss" in evidence.casefold():
+            semantic_errors.append("date_evidence_source_rss")
+        if is_google_news_rss_url(url):
+            semantic_errors.append("google_news_url")
+        if looks_homepage_or_section_landing(url):
+            semantic_errors.append("landing_url")
+        if not thumb.startswith(("http://", "https://")):
+            semantic_errors.append("thumb_missing")
+        elif is_google_news_proxy_thumb(thumb):
+            semantic_errors.append("google_thumb")
+        elif is_news_grasp_self_thumb(thumb):
+            semantic_errors.append("self_thumb")
+        if semantic_errors:
+            raise DailyContentError(
+                f"REPORTER_OUTPUT_INVALID:{category}:semantic:{','.join(semantic_errors)}"
+            )
         if candidate_urls and url not in candidate_urls:
             raise DailyContentError(f"REPORTER_OUTPUT_INVALID:{category}:candidate_provenance")
         normalized_records.append(dict(record))
@@ -591,7 +622,7 @@ def produce_current_issue(
         ordered_reporters, editor, deepdive = cached_bundle
     else:
         candidates_by_category: dict[str, tuple[list[dict[str, Any]], dict[str, Any]]] = {}
-        with ThreadPoolExecutor(max_workers=min(4, len(categories))) as pool:
+        with ThreadPoolExecutor(max_workers=len(categories)) as pool:
             futures = {pool.submit(candidate_fn, category, issue_date): category for category in categories}
             for future in as_completed(futures):
                 category = futures[future]
@@ -627,9 +658,17 @@ def produce_current_issue(
                         reporter_rows[category] = _validate_reporter(
                             future.result(), category=category, issue_date=issue_date, search_audit=audit_input
                         )
-                    except DailyContentError:
+                    except DailyContentError as exc:
+                        print(
+                            f"ERROR: reporter category={category} validation={exc}",
+                            file=sys.stderr,
+                        )
                         raise
                     except Exception as exc:  # noqa: BLE001
+                        print(
+                            f"ERROR: reporter category={category} validation={exc}",
+                            file=sys.stderr,
+                        )
                         raise DailyContentError(f"REPORTER_OUTPUT_INVALID:{category}:{type(exc).__name__}") from exc
             ordered_reporters = [reporter_rows[category] for category in categories]
             editor_raw = model_fn(

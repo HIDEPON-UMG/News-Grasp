@@ -6,6 +6,7 @@ import argparse
 import json
 import re
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date
 from email.utils import parsedate_to_datetime
 from pathlib import Path
@@ -121,6 +122,7 @@ def prepare_rows(
     prepared: list[dict[str, Any]] = []
     dropped: list[dict[str, Any]] = []
     thumb_attempts = 0
+    thumb_jobs: list[tuple[int, str]] = []
     for row in rows[:max_rows]:
         item = dict(row)
         url = str(item.get("url") or "")
@@ -154,14 +156,27 @@ def prepare_rows(
         if item.get("thumb") in ("", None) and thumb_attempts < thumb_limit:
             item["thumb"] = None
             thumb_attempts += 1
-            try:
-                ogp = fetch_ogp_func(url, timeout=thumb_timeout, retries=thumb_retries)
-            except Exception:
-                ogp = {}
-            thumb = _pick_thumb(ogp)
-            if thumb:
-                item["thumb"] = thumb
+            thumb_jobs.append((len(prepared), url))
         prepared.append(item)
+
+    if thumb_jobs:
+        thumb_results: dict[int, dict[str, Any]] = {}
+        with ThreadPoolExecutor(max_workers=min(8, len(thumb_jobs))) as pool:
+            futures = {
+                pool.submit(fetch_ogp_func, url, timeout=thumb_timeout, retries=thumb_retries): index
+                for index, url in thumb_jobs
+            }
+            for future in as_completed(futures):
+                index = futures[future]
+                try:
+                    value = future.result()
+                except Exception:
+                    value = {}
+                thumb_results[index] = value if isinstance(value, dict) else {}
+        for index, _url in thumb_jobs:
+            thumb = _pick_thumb(thumb_results.get(index, {}))
+            if thumb:
+                prepared[index]["thumb"] = thumb
     return prepared, dropped
 
 

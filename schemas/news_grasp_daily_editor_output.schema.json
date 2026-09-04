@@ -6,13 +6,13 @@
   "required": ["issue_date", "inputs", "append_records", "summary_markdown"],
   "properties": {
     "issue_date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
-    "inputs": {"type": "object"},
+    "inputs": {"type": "object", "additionalProperties": false, "required": []},
     "append_records": {
       "type": "array",
       "minItems": 1,
       "items": {
         "type": "object",
-        "additionalProperties": true,
+        "additionalProperties": false,
         "required": ["date", "genre", "title", "title_ja", "url", "source", "thumb", "summary", "bullets", "published_date", "date_evidence_source", "seen_at"],
         "properties": {
           "date": {"type": "string"},

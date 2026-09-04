@@ -13,7 +13,7 @@
       "maxItems": 5,
       "items": {
         "type": "object",
-        "additionalProperties": true,
+        "additionalProperties": false,
         "required": ["date", "genre", "title", "title_ja", "url", "source", "thumb", "summary", "bullets", "published_date", "date_evidence_source", "seen_at"],
         "properties": {
           "date": {"type": "string"},
@@ -32,6 +32,16 @@
       }
     },
     "digest_markdown": {"type": "string", "minLength": 200},
-    "search_audit": {"type": "object"}
+    "search_audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["queries", "raw_results_total", "candidates_total", "selected_total"],
+      "properties": {
+        "queries": {"type": "array", "items": {"type": "string"}},
+        "raw_results_total": {"type": "integer"},
+        "candidates_total": {"type": "integer"},
+        "selected_total": {"type": "integer"}
+      }
+    }
   }
 }
