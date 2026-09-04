@@ -1,22 +1,10 @@
 {
-  "2026-09-03": {
-    "date": "2026-09-03",
-    "result": "published_ok",
-    "status": "published_ok",
-    "updated_at": "2026-09-03T07:40:26+09:00"
-  },
-  "date": "2026-09-03",
-  "manifestId": "e3cb7e75aac30201c3dbc08d0de45b9fd0c11b6ba0ffa3c32f25525477d45a1d",
-  "ok": true,
-  "result": "published_ok",
-  "runId": "direct-2026-09-03-1-3f3e6b7a2bba445298d6fa216b11a865",
+  "completionAuthority": "consumer-owned_public_verifier",
+  "date": "2026-09-04",
+  "manifestId": "0dd4623d81632ebad9080db60fda1b828016b84b8a42aff54c696ed92dd96241",
+  "result": "publication_pending",
+  "runId": "direct-2026-09-04-30-f863da6ac4cc44d088430dd79c72a486",
   "runIntent": "scheduled_production_direct",
-  "status": "published_ok",
-  "updated_at": "2026-09-03T07:40:26+09:00",
-  "value": {
-    "date": "2026-09-03",
-    "result": "published_ok",
-    "status": "published_ok",
-    "updated_at": "2026-09-03T07:40:26+09:00"
-  }
+  "status": "awaiting_external_completion_attestation",
+  "updated_at": "2026-09-04T06:00:00+09:00"
 }
