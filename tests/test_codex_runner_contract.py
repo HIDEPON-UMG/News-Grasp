@@ -31,7 +31,7 @@ def test_daily_automation_points_to_direct_mainline_without_runner_command() -> 
     text = AUTOMATION_TEMPLATE.read_text(encoding="utf-8-sig")
 
     assert "$news-grasp-direct-mainline" in text
-    assert text.count("Python312\\\\python.exe -m tools.news_grasp_daily_launcher") == 1
+    assert text.count("Python312\\\\python.exe -m tools.news_grasp_direct_runtime daily") == 1
     for operation in (
         "static_check",
         "scoped_contract_unit",

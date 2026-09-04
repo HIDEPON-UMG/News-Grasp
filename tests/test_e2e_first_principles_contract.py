@@ -152,7 +152,7 @@ def test_temporary_mainline_automation_template_matches_viability_contract() -> 
         "post_publish_issue_list",
         "tools.publish_inventory.scheduled_category_ids(issue_date)",
         "automation/skills/news-grasp-e2e-discipline/SKILL.md",
-        "tools.news_grasp_daily_launcher",
+        "tools.news_grasp_direct_runtime daily",
         "current_issue_integration",
         "consumer_public_verification",
         "atomic_completion",

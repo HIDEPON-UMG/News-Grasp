@@ -9,7 +9,7 @@
 ScheduledProductionが直接起動できるPython commandは次の一つだけである。launcherは同一process memoryのwriter leaseを保持し、六operationを順序どおり一回ずつ実行する。
 
 ```powershell
-C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_daily_launcher
+C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_direct_runtime daily
 ```
 
 内部順序は `static_check` → `scoped_contract_unit` → `current_issue_integration` → `external_publication` → `consumer_public_verification` → `atomic_completion` である。stdoutはUTF-8・BOMなし・一行JSONだけを受理し、writer lease/fencing capabilityを含めない。ログはstderrまたはUTF-8 JSONLへ分離する。個別operation CLI、raw Python、raw/full pytest、Release gate、historical corpus、Playwright全件、crash/replay/drift、NoPublish、unknown operationはDailyから起動しない。

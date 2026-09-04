@@ -39,14 +39,12 @@ SCOPED_PATH_TEST_REGISTRY: dict[str, tuple[str, ...]] = {
     "tools/news_grasp_daily_gate.py": (
         "tests/test_news_grasp_daily_45m_contract.py",
     ),
-    "tools/news_grasp_daily_launcher.py": (
-        "tests/test_news_grasp_daily_45m_contract.py",
-    ),
     "tools/news_grasp_gate_profiles.py": (
         "tests/test_news_grasp_daily_45m_contract.py",
     ),
     "tools/news_grasp_direct_runtime.py": (
         "tests/test_news_grasp_daily_45m_contract.py",
+        "tests/test_news_grasp_retired_daily_entry.py",
     ),
     "tools/news_grasp_direct_completion.py": (
         "tests/test_news_grasp_daily_45m_contract.py",

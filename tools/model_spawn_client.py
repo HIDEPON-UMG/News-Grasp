@@ -102,7 +102,7 @@ def ensure_scheduled_operation_admission(*, repo_root: Path, issue_date: str) ->
 
         mission = _run_broker_json(["issue-news-grasp-audit-mission"])
         task_contract = root / "automation" / "news-grasp-6-40" / "automation.toml.template"
-        runner = root / "tools" / "news_grasp_daily_launcher.py"
+        runner = root / "tools" / "news_grasp_direct_runtime.py"
         if not task_contract.is_file() or task_contract.is_symlink() or not runner.is_file() or runner.is_symlink():
             raise RuntimeError("HIGH_COST_SCHEDULED_AUTHORITY_SOURCE_MISSING")
         broker = _load_broker()

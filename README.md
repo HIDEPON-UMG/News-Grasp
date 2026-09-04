@@ -35,7 +35,7 @@ SSG は `tools/generate_pages.py` (Jinja2)。`docs/` 配下に静的 HTML を生
 ┌──────────────────────────────────────────────────────────────────┐
 │ Codex automation `news-grasp-6-40` が毎朝6:00 JSTに起動           │
 │   └─→ $news-grasp-direct-mainline                                 │
-│         └─固定Python 3.12で tools.news_grasp_daily_launcher       │
+│         └─固定Python 3.12で tools.news_grasp_direct_runtime daily │
 │              ├─ Daily六operationを同一process・同一writerで実行   │
 │              └─ consumer-owned public verifierで完了確定          │
 │ Windows Task Scheduler / legacy runner / deadman は廃止済み       │

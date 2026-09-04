@@ -139,23 +139,23 @@ runnerはURL provenance capture、記事・関係図・対談のV2 review、meta
 
 ### Authority / Budget / Entrypoint Matrix
 
-- `production_scheduled_run`: `SCHEDULED_PRODUCTION_LAUNCH_PERMIT_V1`で起動し、同一issue-date最大9 external model callsを持つ。05:55 bootstrapと06:00 runnerが所有し、対話goalの有無をadmission条件にしない。
-- 正規entrypointは05:55/06:00の`pythonw news-grasp-task-launcher.pyw`からclean production runtime bootstrapへ入る一経路とする。direct runnerは防御interlockがあってもnext-run readyの正規証拠にしない。bootstrap self-repairはlauncher自身も同期し、次回起動へsource変更を反映する。
+- `production_scheduled_run`: Codex automationのscheduled triggerで起動し、同一issue-date最大9 external model callsを持つ。対話goalの有無をadmission条件にしない。
+- 正規entrypointは固定Python 3.12による`python -m tools.news_grasp_direct_runtime daily`の一経路だけとする。旧Windows task、旧wrapper、旧runnerを通常日次の起動候補・fallback・next-run readyの証拠にしない。source変更は明示的promotionでinstalled automationとruntimeへ反映する。
 - `production_recovery_run`: 不変の`SCHEDULED_FAILURE_RECEIPT_V1`から派生した`SCHEDULED_RECOVERY_AUTHORITY_V1`で一度だけ起動する。productionと同じissue-date ledgerの残予算を共有し、run ID・workspace・receipt名を変えて予算をresetしない。full E2E budgetは0。
 - `audit_run`: `AUDIT_MISSION_AUTHORITY_V1`でread-only分類、typed recovery起動、same-gate再検証、major incident terminal発行を所有する。通常budgetはexternal model 0 / full E2E 0。audit自身がproduction model call権限を持つのではなく、brokerが発行したrecovery authorityをproduction recoveryへ渡す。
 - audit agent 自身はrunnerの起動・retry・再開を所有しない。repo-local `tools.audit_recovery_control execute` が唯一の起動consumerであり、one-shot recovery後に必ずtyped terminalまで到達する。これにより自由文の「deferred」や、判断後に実行を忘れる状態を作らない。
 
 ### Recovery Workspace And Live Ops Root
 
-- dirty canonical repoを保護するためclean recovery workspaceを使ってよいが、`artifact_repo_root`と`ops_repo_root`を混同しない。artifact rootは当日生成物・git HEAD・distribution・publish manifest、ops rootはScheduled Task・live runner・bootstrap・watcherの正本である。
+- dirty canonical repoを保護するためclean recovery workspaceを使ってよいが、`artifact_repo_root`と`ops_repo_root`を混同しない。artifact rootは当日生成物・git HEAD・distribution・publish manifest、ops rootはCodex automation・installed runtime・snapshotの正本である。
 - recovery runnerは`-OpsRepoRootOverride <canonical-repo>`、completion verifierは`--repo-root <artifact-recovery-workspace> --ops-repo-root <canonical-repo>`を使う。recovery cloneのcheckout改行差をlive runner driftと誤認したり、clone bytesをcanonical live sourceへ昇格したりしない。
 - `verify-publish-complete` Green後にrunner stateだけがRedなら、生成・TTS・upload・notificationを再実行しない。runnerの`-FinalizeVerifiedPublishManifest`を`ScheduledRecoveryFull` intentで一度だけ使い、同一manifestのdate、public status、scheduled/recovery status、Podcast、notification、next-run readiness、local/remote commitを再検証して`publish_complete`へ遷移させる。
 - typed finalizerが失敗した場合は`deferred`や再生成へ逃がさず、`audit_major_incident_open`とする。
 - `blocked_startup_self_repair_failed` はfixed stateの`attempt_terminal=true`と`scheduled_failure_receipt_path`を必須証拠とする。broker ledger一致なら通常のrecovery authorityを導出し、receipt欠落・terminalizer失敗・ledger不一致は外部境界として丸めず`audit_major_incident_open`にする。手製receiptや自由文reconcileで復旧権限を作らない。
 
 - Preserve three independent fields throughout audit and recovery: `scheduled_attempt_status`, `recovery_attempt_status`, and `public_status`. A later recovery/public Green must not rewrite a failed scheduled attempt to success.
-- 通常06:00 runnerのhigh-cost admissionは `scheduled_production`、同日復旧は `scheduled_recovery` を使う。通常日次失敗をfinal E2Eの再試行へ読み替えず、final E2Eを起動しない。
-- scheduled productionは`AUDIT_MISSION_AUTHORITY_V1`から05:55 bootstrapが発行した`SCHEDULED_PRODUCTION_LAUNCH_PERMIT_V1`、scheduled recoveryは同日の不変`SCHEDULED_FAILURE_RECEIPT_V1`からbrokerが派生した`SCHEDULED_RECOVERY_AUTHORITY_V1`だけを使う。`active goals=0`はscheduled production/recoveryの通常停止理由ではない。
+- 通常06:00 Codex automationのhigh-cost admissionは `scheduled_production`、同日復旧は `scheduled_recovery` を使う。通常日次失敗をfinal E2Eの再試行へ読み替えず、final E2Eを起動しない。
+- scheduled productionはCodex automation triggerに束縛した`SCHEDULED_PRODUCTION_LAUNCH_PERMIT_V1`、scheduled recoveryは同日の不変`SCHEDULED_FAILURE_RECEIPT_V1`からbrokerが派生した`SCHEDULED_RECOVERY_AUTHORITY_V1`だけを使う。`active goals=0`はscheduled production/recoveryの通常停止理由ではない。
 - `scheduled_recovery` は同じissue date identityの残予算を使い、run ID、receipt path、session、復旧名義を変えて新しい9 callを発行しない。scheduled receiptを全model callのbroker consumerへ引き継ぎ、receipt hash、task identity、attempt event、残call数を実ledgerで検証する。
 - Process existence is never progress evidence. Use stage transition, log timestamp, progress marker, repair ledger, and artifact count/hash delta to classify healthy progress or abnormal continuation.
 - If abnormal continuation requires interruption, use only `ownership-bound canonical runner control` after verifying the runner-issued identity, parent/child relation, creation time, Job Object, or equivalent ownership evidence.

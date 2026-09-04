@@ -14,7 +14,7 @@ class E2ECompositionContractError(RuntimeError):
 ROUTES = {
     "automation": "automation/news-grasp-6-40/automation.toml.template",
     "skill": "automation/skills/news-grasp-direct-mainline/SKILL.md",
-    "launcher": "tools/news_grasp_daily_launcher.py",
+    "launcher": "tools/news_grasp_direct_runtime.py",
     "daily_gate": "tools/news_grasp_daily_gate.py",
     "runtime": "tools/news_grasp_direct_runtime.py",
     "completion": "tools/news_grasp_direct_completion.py",
@@ -67,7 +67,7 @@ def validate_e2e_launch_contract(
         '$news-grasp-direct-mainline',
         'model = "gpt-5.6-luna"',
         'reasoning_effort = "max"',
-        "tools.news_grasp_daily_launcher",
+        "tools.news_grasp_direct_runtime daily",
         "static_check",
         "scoped_contract_unit",
         "current_issue_integration",
@@ -77,7 +77,7 @@ def validate_e2e_launch_contract(
     )
     skill_markers = (
         "Direct 本線工程（Daily 六phase）",
-        "tools.news_grasp_daily_launcher",
+        "tools.news_grasp_direct_runtime daily",
         "single-flight identity",
         "consumer_public_verification",
         "public incompleteかつexact successorがある状態で終了しない",
@@ -135,7 +135,7 @@ def validate_e2e_launch_contract(
             raise E2ECompositionContractError(code)
 
     title_at = automation.index("title_status")
-    launcher_at = automation.index("tools.news_grasp_daily_launcher")
+    launcher_at = automation.index("tools.news_grasp_direct_runtime daily")
     quality_at = automation.index("current_issue_integration", launcher_at)
     verification_at = automation.index("consumer_public_verification", quality_at)
     completion_at = automation.index("atomic_completion", verification_at)

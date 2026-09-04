@@ -190,7 +190,7 @@
     {
       "defect_code": "NG-I14",
       "incident_codes": ["PREPUSH-P1-WRITER-CAPABILITY-PROJECTION"],
-      "source_of_truth": ["tools/news_grasp_daily_launcher.py", "tools/news_grasp_daily_gate.py"],
+      "source_of_truth": ["tools/news_grasp_direct_runtime.py", "tools/news_grasp_daily_gate.py"],
       "affected_consumer": ["ScheduledProduction", "Daily operation sequencer"],
       "impact_binding": "writer leaseをstdout、receipt、環境変数で次processへ渡すと、ログ閲覧者や別processがactive writerとしてmutationできる",
       "red_fixture": ["nested writerLease receipt", "single operation CLI", "later process without in-memory writer"],
@@ -218,7 +218,7 @@
     {
       "defect_code": "NG-I16",
       "incident_codes": ["PREPUSH-P0-PROTECTED-RELEASE-REEXECUTION"],
-      "source_of_truth": ["config/news_grasp_daily_45m_contract_v1.json", "tools/news_grasp_daily_launcher.py"],
+      "source_of_truth": ["config/news_grasp_daily_45m_contract_v1.json", "tools/news_grasp_direct_runtime.py"],
       "affected_consumer": ["ScheduledProduction", "protected 2026-09-02 public release"],
       "impact_binding": "保護済みissue dateを通常launcherへ渡せると、新run/outbox identityで既存YouTube、playlist、notification、配信を重複実行できる",
       "red_fixture": ["NEWS_GRASP_ISSUE_DATE=2026-09-02", "protected contract drift"],
@@ -260,7 +260,7 @@
     {
       "defect_code": "NG-I19",
       "incident_codes": ["PREPUSH-P0-GLOBAL-DAILY-LAUNCHER-DRIFT"],
-      "source_of_truth": ["AIHarnessState snapshot harness policy", "tools/news_grasp_daily_launcher.py", "automation template"],
+      "source_of_truth": ["AIHarnessState snapshot harness policy", "tools/news_grasp_direct_runtime.py", "automation template"],
       "affected_consumer": ["workspace-global ScheduledProduction entry", "News-Grasp automation"],
       "impact_binding": "product automationが単一launcherへ移行してもglobal policyが旧個別operationを許可したままなら、正規automationを拒否し旧迂回路を残す",
       "red_fixture": ["fixed Python single launcher rejected", "old daily_gate operation admitted", "argument-bearing launcher"],
@@ -484,12 +484,12 @@
     {
       "defect_code": "NG-I35",
       "incident_codes": ["RETIRED-RUNNER-INSTALL-DEPENDENCY", "SCHEDULED-LEGACY-BOOTSTRAP-REACHABLE", "DEADMAN-LEGACY-RUNNER-REACHABLE", "BOOTSTRAP-RUNTIME-FRESHNESS-DRIFT", "NOPUBLISH-ISOLATION-CONSUMER-DRIFT", "PYTHON-MODULE-RESOLUTION-DRIFT", "GIT-ENVIRONMENT-INJECTION", "NOPUBLISH-CLAIM-BYPASS", "WORKTREE-CONTENT-TOCTOU", "NONATOMIC-OUTER-RECEIPT"],
-      "source_of_truth": ["tools/news_grasp_daily_launcher.py", "tools/news_grasp_p08_evidence.py", "scripts/ops/news-grasp-task-launcher.pyw", "scripts/ops/news-grasp-release-nopublish.ps1", "tools/news_grasp_release_nopublish.py"],
+      "source_of_truth": ["tools/news_grasp_direct_runtime.py", "tools/news_grasp_p08_evidence.py", "scripts/ops/news-grasp-task-launcher.pyw", "scripts/ops/news-grasp-release-nopublish.ps1", "tools/news_grasp_release_nopublish.py"],
       "affected_consumer": ["operations installer", "production bootstrap", "production scheduled dispatch", "deadman recovery", "Release-only final NoPublish"],
       "impact_binding": "廃止済みnews-grasp-runner.ps1への依存、未検証installed/runtime codeの先行import、caller Python/Git環境注入、claim前mutation、同一path bytesのTOCTOU、非atomic receiptは、direct Dailyの六operation・single-flight・cleanroomを迂回または起動不能にし、部分stateを残す",
       "red_fixture": ["installer managed file set contains missing runner", "scheduled child argv reaches bootstrap or runner script", "deadman imports installed/runtime code before authority and active-generation validation", "bootstrap validates stale runtime without fetching and converging origin/main", "Release NoPublish calls the P08 consumer with a wrong schema", "inherited PYTHONPATH/GIT_CONFIG or caller cwd changes executed code", "caller Python differs from installed runtime binding", "claim failure mutates state or receipt", "same changed path bytes drift after isolation validation", "outer receipt is visible before durable atomic promotion"],
       "green_test": ["tests/test_news_grasp_direct_nopublish_cutover.py::test_NG_CUTOVER_01_installer_managed_files_exclude_legacy_runner", "tests/test_news_grasp_direct_nopublish_cutover.py::test_NG_CUTOVER_03_scheduled_runner_child_uses_fixed_python_daily_launcher_once", "tests/test_news_grasp_direct_nopublish_cutover.py::test_NG_CUTOVER_05_deadman_converges_to_stable_task_launcher", "tests/test_news_grasp_direct_nopublish_cutover.py::test_NG_CUTOVER_07_release_nopublish_isolated_state_and_zero_external_effects", "tests/test_news_grasp_direct_nopublish_cutover.py::test_NG_CUTOVER_09_bootstrap_syncs_evidence_origin_before_active_generation_validation", "tests/test_news_grasp_direct_nopublish_cutover.py::test_NG_CUTOVER_13_release_cli_claim_missing_fails_before_import_or_receipt_mutation", "tests/test_news_grasp_direct_nopublish_cutover.py::test_NG_CUTOVER_14_run_git_scrubs_all_inherited_git_config_environment", "tests/test_news_grasp_direct_nopublish_cutover.py::test_NG_CUTOVER_15_outer_receipt_flushes_and_atomically_moves_temp_file", "tests/test_news_grasp_direct_nopublish_cutover.py::test_NG_CUTOVER_16_deadman_validates_authority_and_runtime_before_import", "tests/test_news_grasp_direct_nopublish_cutover.py::test_NG_CUTOVER_17_working_tree_identity_changes_with_same_path_bytes", "tests/test_news_grasp_direct_nopublish_cutover.py::test_NG_CUTOVER_18_wrapper_binds_caller_python_before_first_child", "tests/test_news_grasp_e2e_composition_contract.py", "tests/test_news_grasp_cleanroom_operational_cutover.py"],
-      "operational_recovery": "installerのmanaged setを現存direct adapterだけへ束縛する。bootstrapはremote SHAへtransactionalに収束し、scheduledは固定Python 3.12・runtime cwd・scrub済みPython環境からtools/news_grasp_daily_launcher.pyを1回だけ起動する。deadmanはstable task launcherのexact dispatch actionへ収束し、Release NoPublishは実P08 consumerで隔離を検証して外部副作用0の専用moduleだけを使う",
+      "operational_recovery": "installerのmanaged setを現存direct adapterだけへ束縛する。bootstrapはremote SHAへtransactionalに収束し、scheduledは固定Python 3.12・runtime cwd・scrub済みPython環境からtools/news_grasp_direct_runtime.pyのdaily subcommandを1回だけ起動する。deadmanはstable task launcherのexact dispatch actionへ収束し、Release NoPublishは実P08 consumerで隔離を検証して外部副作用0の専用moduleだけを使う",
       "independent_evidence": ["focused Red/Green exit code", "installed managed file manifest", "bootstrap origin SHA and active generation receipt", "scheduled/deadman exact argv and scrubbed environment", "P08 isolation validation receipt", "NoPublish externalEffectCount=0", "source repository legacy runner absence", "third-party review"],
       "owner": "direct entry and Release NoPublish cutover owner",
       "maintenance_condition": "installer managed files、bootstrap fetch/convergence、scheduled task action/Python environment、P08 isolation consumer、deadman recovery、Release NoPublish adapter変更時",
@@ -521,6 +521,20 @@
       "independent_evidence": ["focused Red/Green exit code", "template/installed/App DB/snapshot parity", "legacy installer pre-registration tombstone", "remote main SHA"],
       "owner": "Codex automation direct mainline owner",
       "maintenance_condition": "scheduler、automation promotion、daily entry、title lifecycle、legacy installer変更時",
+      "status": "open"
+    },
+    {
+      "defect_code": "NG-I38",
+      "incident_codes": ["RETIRED-STANDALONE-DAILY-ENTRY-STILL-SELECTABLE"],
+      "source_of_truth": ["tools/news_grasp_direct_runtime.py", "automation/news-grasp-6-40/automation.toml.template", "workspace-global News-Grasp daily route registry"],
+      "affected_consumer": ["Codex automation", "workspace-global entry policy", "daily operator", "installed direct skill"],
+      "impact_binding": "廃止したstandalone daily entryのmodule、prompt、skill、spec、snapshot、fixtureのいずれかがactiveだと、Codex automationまたはoperatorがdirect runtimeを迂回し、同一process・同一writerのDaily六phaseを開始できない",
+      "red_fixture": ["retired entry module exists", "direct runtime has no daily subcommand", "ScheduledProduction admits retired or extra-argument route"],
+      "green_test": ["tests/test_news_grasp_retired_daily_entry.py", "tests/test_news_grasp_daily_route_runtime_review.py", "workspace-global tools/tests/test_news_grasp_daily_route_v2.py"],
+      "operational_recovery": "旧moduleを復元せず、固定Python 3.12のtools.news_grasp_direct_runtime dailyだけをsource、installed automation、App DB、skill、snapshot、hook policyへpromotionする。unknown、旧module、引数欠落・追加はspawn前にfail-closedにする",
+      "independent_evidence": ["active-surface exact-name search zero", "old import spec absent", "direct daily argparse smoke", "automation dry-run parity changed=false", "workspace-global allow/deny contract Green"],
+      "owner": "daily direct entry owner",
+      "maintenance_condition": "automation prompt、daily CLI、entry policy、direct skill、spec、snapshot変更時",
       "status": "open"
     }
   ]

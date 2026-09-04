@@ -221,7 +221,7 @@ def _validate_direct_mainline_skill_semantics(root: Path, overlay_path: str) -> 
         raise ValueError("CONSTITUTION_DIRECT_SKILL_PATH_INVALID") from exc
     text = _bounded_utf8_text(skill, "CONSTITUTION_DIRECT_SKILL_TEXT_INVALID")
     required_markers = (
-        "tools.news_grasp_daily_launcher",
+        "tools.news_grasp_direct_runtime daily",
         "static_check",
         "scoped_contract_unit",
         "current_issue_integration",
@@ -251,7 +251,7 @@ def _validate_direct_spec_semantics(spec_path: Path) -> None:
     required = (
         "2026-08-30 Direct 06:00 Mainline Supersession",
         "$news-grasp-direct-mainline",
-        "tools.news_grasp_daily_launcher",
+        "tools.news_grasp_direct_runtime daily",
         "static_check",
         "current_issue_integration",
         "consumer_public_verification",

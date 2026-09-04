@@ -939,7 +939,7 @@ def test_automation_and_direct_skill_use_executable_direct_terminal_contract() -
     ).read_text(encoding="utf-8-sig")
     for source in (automation, skill):
         assert "$news-grasp-direct-mainline" in source or "News-Grasp Direct Mainline" in source
-        assert "tools.news_grasp_daily_launcher" in source
+        assert "tools.news_grasp_direct_runtime daily" in source
         for operation in (
             "static_check",
             "scoped_contract_unit",

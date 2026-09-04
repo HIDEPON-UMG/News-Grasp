@@ -62,7 +62,7 @@ DAILY_ROUTE_SCHEMA = "NEWS_GRASP_DAILY_ROUTE_CAPABILITY_V1"
 _ROOT = Path(__file__).resolve().parents[1]
 _DAILY_ROUTE_REGISTRY = _ROOT / "config" / "news_grasp_daily_control_routes.json"
 _DAILY_ENTRY_MODULES = (
-    _ROOT / "tools" / "news_grasp_daily_launcher.py",
+    _ROOT / "tools" / "news_grasp_direct_runtime.py",
     _ROOT / "tools" / "news_grasp_daily_gate.py",
     _ROOT / "tools" / "news_grasp_gate_profiles.py",
 )
@@ -274,8 +274,8 @@ def validate_profiles() -> dict[str, Any]:
             "routeId": operation_id,
             "consumerPath": "tools/news_grasp_daily_gate.py",
             "consumerSymbol": f"_default_{operation_id}",
-            "productionCallerPath": "tools/news_grasp_daily_launcher.py",
-            "productionCallSymbol": "run_sequence",
+            "productionCallerPath": "tools/news_grasp_direct_runtime.py",
+            "productionCallSymbol": "run_daily_mainline",
         }
         for operation_id in DAILY_OPERATIONS
     ]

@@ -2021,7 +2021,8 @@ def _cleanroom_child_command(
             "-I",
             "-S",
             "-B",
-            str(child_cwd / "tools" / "news_grasp_daily_launcher.py"),
+            str(child_cwd / "tools" / "news_grasp_direct_runtime.py"),
+            "daily",
         ]
         safety: dict[str, object] = {
             "route": route,
@@ -5929,7 +5930,7 @@ def main() -> int:
             )
             return 72
 
-    direct_entry = runtime_repo / "tools" / "news_grasp_daily_launcher.py"
+    direct_entry = runtime_repo / "tools" / "news_grasp_direct_runtime.py"
     failure_state = bin_dir / "news-grasp-runner-state.json"
     wal = bin_dir / "news-grasp-task-launcher-wal.json"
     issue_date = date.today().isoformat()
@@ -5948,6 +5949,7 @@ def main() -> int:
             "-S",
             "-B",
             str(direct_entry),
+            "daily",
         ]
         safety = {
             "route": "runner",

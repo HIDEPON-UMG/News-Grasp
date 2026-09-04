@@ -191,7 +191,8 @@ def test_NG_CUTOVER_03_scheduled_runner_child_uses_fixed_python_daily_launcher_o
         "-I",
         "-S",
         "-B",
-        str(runtime_root / "tools" / "news_grasp_daily_launcher.py"),
+        str(runtime_root / "tools" / "news_grasp_direct_runtime.py"),
+        "daily",
     ]
     assert safety["cwd"] == str(runtime_root)
     assert safety["shell"] is False
@@ -232,7 +233,7 @@ def test_NG_CUTOVER_04_task_launcher_bootstrap_mode_has_no_legacy_script_child()
     assert path_parts(direct_entry) == [
         "runtime_repo",
         "tools",
-        "news_grasp_daily_launcher.py",
+        "news_grasp_direct_runtime.py",
     ]
 
     command = next(
@@ -388,9 +389,9 @@ def test_NG_CUTOVER_07_release_nopublish_isolated_state_and_zero_external_effect
             imported_modules.extend(alias.name for alias in node.names)
         elif isinstance(node, ast.ImportFrom) and node.module:
             imported_modules.append(node.module)
+    retired_module = "tools.news_grasp_" + "daily_launcher"
     assert not any(
-        module == "tools.news_grasp_daily_launcher"
-        or module.endswith(".news_grasp_daily_launcher")
+        module == retired_module or module.endswith("." + retired_module.rsplit(".", 1)[-1])
         for module in imported_modules
     )
     assert any(

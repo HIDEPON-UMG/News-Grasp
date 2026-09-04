@@ -6,7 +6,6 @@ from pathlib import Path
 import pytest
 
 from tools import news_grasp_daily_gate as daily
-from tools import news_grasp_daily_launcher as launcher
 from tools import news_grasp_direct_runtime as runtime
 
 
@@ -127,7 +126,7 @@ def test_ng_rrt_launcher_runs_exact_sequence_and_never_projects_writer_capabilit
         ],
     )
 
-    result = launcher.run_sequence(
+    result = runtime.run_daily_mainline(
         repo_root=ROOT,
         state_root=tmp_path / "state",
         issue_date=ISSUE_DATE,
@@ -139,7 +138,7 @@ def test_ng_rrt_launcher_runs_exact_sequence_and_never_projects_writer_capabilit
     assert [row["operation_id"] for row in result["operation_receipts"]] == list(
         daily.DAILY_OPERATIONS
     )
-    assert launcher._contains_writer_capability(result) is False
+    assert runtime._contains_writer_capability(result) is False
 
 
 @pytest.mark.parametrize(
@@ -167,7 +166,7 @@ def test_ng_rrt_launcher_rejects_nested_writer_capability_projection(
         * len(daily.DAILY_OPERATIONS),
     )
 
-    result = launcher.run_sequence(
+    result = runtime.run_daily_mainline(
         repo_root=ROOT,
         state_root=tmp_path / "state",
         issue_date=ISSUE_DATE,
@@ -191,7 +190,7 @@ def test_ng_rrt_protected_20260902_is_rejected_before_identity_or_state(
     )
     state_root = tmp_path / "state"
 
-    result = launcher.run_sequence(
+    result = runtime.run_daily_mainline(
         repo_root=ROOT,
         state_root=state_root,
         issue_date="2026-09-02",
@@ -210,7 +209,7 @@ def test_ng_rrt_launcher_cli_ignores_state_root_environment_redirect(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    assert "news_grasp_release_gate" not in Path(launcher.__file__).read_text(
+    assert "news_grasp_release_gate" not in Path(runtime.__file__).read_text(
         encoding="utf-8-sig"
     )
     trusted_local = tmp_path / "known-folder"
@@ -218,26 +217,26 @@ def test_ng_rrt_launcher_cli_ignores_state_root_environment_redirect(
     attacker_state = tmp_path / "attacker-state"
     observed: dict[str, object] = {}
     monkeypatch.setattr(
-        launcher,
+        runtime,
         "_canonical_daily_state_root",
         lambda: trusted_local / "News-Grasp" / "direct-mainline",
     )
     monkeypatch.setenv("NEWS_GRASP_STATE_ROOT", str(attacker_state))
     # launcherのPython固定入口を通過させ、state rootのauthorityだけを検証する。
-    monkeypatch.setattr(launcher.sys, "executable", daily.DAILY_PYTHON)
+    monkeypatch.setattr(runtime.sys, "executable", daily.DAILY_PYTHON)
     monkeypatch.setattr(
-        launcher,
-        "run_sequence",
+        runtime,
+        "run_daily_mainline",
         lambda **kwargs: observed.update(kwargs)
         or {
-            "schemaVersion": launcher.SEQUENCE_SCHEMA,
+            "schemaVersion": runtime.DAILY_SEQUENCE_SCHEMA,
             "ok": False,
             "status": "red",
             "failures": ["fixture_stop"],
         },
     )
 
-    assert launcher._main([]) == 1
+    assert runtime._main(["daily"]) == 1
     capsys.readouterr()
     assert observed["state_root"] == trusted_local / "News-Grasp" / "direct-mainline"
     assert observed["state_root"] != attacker_state
@@ -1155,8 +1154,8 @@ def test_ng_rrt_completed_identity_reexecution_is_blocked_before_new_row_or_hand
     monkeypatch.setattr(daily, "protected_release_failure", lambda **_kwargs: None)
     monkeypatch.setattr(daily, "resolve_daily_identity_context", lambda **_kwargs: _identity())
     monkeypatch.setattr(daily, "run_daily_operation", handler_must_not_run)
-    monkeypatch.setattr(launcher.runtime, "DirectRunStore", lambda *_args, **_kwargs: store)
-    result = launcher.run_sequence(
+    monkeypatch.setattr(runtime, "DirectRunStore", lambda *_args, **_kwargs: store)
+    result = runtime.run_daily_mainline(
         repo_root=alternate_repo,
         state_root=store.state_root,
         issue_date=ISSUE_DATE,
@@ -1167,6 +1166,6 @@ def test_ng_rrt_completed_identity_reexecution_is_blocked_before_new_row_or_hand
     assert result["failures"] == ["same_issue_completed_reexecution_forbidden"]
     assert result["operation_count"] == 1
     assert handler_calls == []
-    assert launcher._contains_writer_capability(result) is False
+    assert runtime._contains_writer_capability(result) is False
     assert _snapshot_identity_rows(store) == before_rows
     assert store.db_path.read_bytes() == before_db

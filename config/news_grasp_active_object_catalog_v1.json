@@ -8512,25 +8512,6 @@
       "rollback": "restore tracked bytes from the bound source commit"
     },
     {
-      "objectId": "db4e9e93bfa3c87c3b298518",
-      "class": "production_consumer",
-      "path": "tools/news_grasp_daily_launcher.py",
-      "owner": "News-Grasp",
-      "generationBinding": "source_commit",
-      "disposition": "active_linked",
-      "active": true,
-      "clauseIds": [
-        "NGC-C04",
-        "NGC-C06",
-        "NGC-C09",
-        "NGC-C10",
-        "NGC-C14"
-      ],
-      "sha256": "6d54fd1a3436573c5f757bc621a199092062265e9ab4222a94006005db60d27d",
-      "hashPolicy": "exact",
-      "rollback": "restore tracked bytes from the bound source commit"
-    },
-    {
       "objectId": "184fe386c8384d5a080b93d6",
       "class": "production_consumer",
       "path": "tools/news_grasp_daily_release.py",

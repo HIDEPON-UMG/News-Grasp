@@ -51,9 +51,9 @@ News-Grasp の臨時本線日次バッチを実行してください。
 
 実行入口:
 - 既存 runner、旧runtime、audit recovery control、raw/full pytest、historical、Playwright、NoPublish は使いません。
-- Codex automationが起動できるcommandは次の一つだけです。launcherは同一process memory内の同一writer leaseで六つのDaily operationを順番に一回ずつ実行し、全producer receiptを一つのmachine receiptへ束縛します。
-  `C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -m tools.news_grasp_daily_launcher`
-- launcher内部の正規順序は `static_check` → `scoped_contract_unit` → `current_issue_integration` → `external_publication` → `consumer_public_verification` → `atomic_completion` です。個別operation CLI、任意のraw Python、別module、別route、順序飛ばし、同一operation再実行はRedです。
+- Codex automationが起動できるcommandは次の一つだけです。direct runtimeは同一process memory内の同一writer leaseで六つのDaily operationを順番に一回ずつ実行し、全producer receiptを一つのmachine receiptへ束縛します。
+  `C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -m tools.news_grasp_direct_runtime daily`
+- direct runtime内部の正規順序は `static_check` → `scoped_contract_unit` → `current_issue_integration` → `external_publication` → `consumer_public_verification` → `atomic_completion` です。個別operation CLI、任意のraw Python、別module、別route、順序飛ばし、同一operation再実行はRedです。
 - writer leaseとfencing capabilityをstdout、環境変数、receipt、logへ出してはいけません。brokerのadmission表示やcaller自己申告だけでは完了にしません。
 - task contractのprotectedReleaseと同じissue dateは、launcherがstate作成・外部処理前に`protected_release_reexecution_forbidden`で拒否します。通常Dailyから解除せず、明示的な別run intentと新release authorityへ戻してください。
 - `consumer_public_verification` は新しいnetwork observation token、observed_at、external_operation_idを発行し、Home、当日カテゴリ、Summary/DeepDive MarkdownとHTML、Daily/DeepDive audio、YouTube、playlist、distribution、publish-status、notification immutable ledger、Pagesをfreshに論理積検証してください。

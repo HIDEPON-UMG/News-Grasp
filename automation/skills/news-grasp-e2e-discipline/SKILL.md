@@ -112,11 +112,11 @@ py -3 -m tools.deepdive_quality --repo-root . audit-issue --date <issue-date> --
 
 ## 2. E2Eの定義
 
-News-GraspでE2Eと呼べるのは、production Scheduled Taskと同じ `scripts/ops/news-grasp-runner.ps1` を、隔離state/log、`-NoPublish`、実際のstage順、実際のquality gate、実際のrepair routingで開始し、attempt Aまたは条件付きattempt Bを所定の終端stateまで通す試験である。論理attemptは最大2件で、attempt Cは契約違反として発行前に拒否する。
+News-GraspでE2Eと呼べるのは、Release gate専用の隔離runnerを、隔離state/log、`-NoPublish`、実際のstage順、実際のquality gate、実際のrepair routingで開始し、attempt Aまたは条件付きattempt Bを所定の終端stateまで通す試験である。これは通常日次の起動経路ではない。論理attemptは最大2件で、attempt Cは契約違反として発行前に拒否する。
 
 ### 2.1 通常日次とのidentity分離
 
-通常06:00 Scheduled TaskはE2Eではない。通常日次は `scheduled_production`、異常終了後のproduction repair pathは `scheduled_recovery` として、final E2Eの `News-Grasp:<issue-date>:scheduled-equivalent-nopublish` から別identityへ固定する。
+通常06:00 Codex automationはE2Eではない。通常日次は `scheduled_production`、異常終了後のproduction repair pathは `scheduled_recovery` として、final E2Eの `News-Grasp:<issue-date>:scheduled-equivalent-nopublish` から別identityへ固定する。
 
 - 通常日次はissue date単位の最大9 model callを持つ。
 - 復旧は同じ日付identityの残予算を共有し、run ID、receipt path、session、復旧名義で新しい9 callを発行しない。

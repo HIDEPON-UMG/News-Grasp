@@ -3,7 +3,7 @@
   "owner": "News-Grasp Operator",
   "trigger": "06:00 Codex scheduled production direct mainline",
   "actor": "Codex automation, direct runtime, repo-local content tools, public completion verifier",
-  "entryGate": "installed Codex automation must invoke only tools.news_grasp_daily_launcher with Python 3.12; unknown and Release-only routes fail before process dispatch",
+  "entryGate": "installed Codex automation must invoke only tools.news_grasp_direct_runtime daily with Python 3.12; unknown and Release-only routes fail before process dispatch",
   "executionPath": "static_check -> scoped_contract_unit -> current_issue_integration -> external_publication -> consumer_public_verification -> atomic_completion",
   "states": ["active", "executing", "stage_red", "surface_deferred", "completed", "automation_config_red"],
   "statePredicate": "direct runtime state, stage history, and public verifier observations are independently materialized",
@@ -92,11 +92,11 @@
     "atomic_completion"
   ],
   "routes": [
-    {"routeId": "static_check", "consumerPath": "tools/news_grasp_daily_gate.py", "consumerSymbol": "_default_static_check", "productionCallerPath": "tools/news_grasp_daily_launcher.py", "productionCallSymbol": "run_sequence"},
-    {"routeId": "scoped_contract_unit", "consumerPath": "tools/news_grasp_daily_gate.py", "consumerSymbol": "_default_scoped_contract_unit", "productionCallerPath": "tools/news_grasp_daily_launcher.py", "productionCallSymbol": "run_sequence"},
-    {"routeId": "current_issue_integration", "consumerPath": "tools/news_grasp_daily_gate.py", "consumerSymbol": "_default_current_issue_integration", "productionCallerPath": "tools/news_grasp_daily_launcher.py", "productionCallSymbol": "run_sequence"},
-    {"routeId": "external_publication", "consumerPath": "tools/news_grasp_daily_gate.py", "consumerSymbol": "_default_external_publication", "productionCallerPath": "tools/news_grasp_daily_launcher.py", "productionCallSymbol": "run_sequence"},
-    {"routeId": "consumer_public_verification", "consumerPath": "tools/news_grasp_daily_gate.py", "consumerSymbol": "_default_consumer_public_verification", "productionCallerPath": "tools/news_grasp_daily_launcher.py", "productionCallSymbol": "run_sequence"},
-    {"routeId": "atomic_completion", "consumerPath": "tools/news_grasp_daily_gate.py", "consumerSymbol": "_default_atomic_completion", "productionCallerPath": "tools/news_grasp_daily_launcher.py", "productionCallSymbol": "run_sequence"}
+    {"routeId": "static_check", "consumerPath": "tools/news_grasp_daily_gate.py", "consumerSymbol": "_default_static_check", "productionCallerPath": "tools/news_grasp_direct_runtime.py", "productionCallSymbol": "run_daily_mainline"},
+    {"routeId": "scoped_contract_unit", "consumerPath": "tools/news_grasp_daily_gate.py", "consumerSymbol": "_default_scoped_contract_unit", "productionCallerPath": "tools/news_grasp_direct_runtime.py", "productionCallSymbol": "run_daily_mainline"},
+    {"routeId": "current_issue_integration", "consumerPath": "tools/news_grasp_daily_gate.py", "consumerSymbol": "_default_current_issue_integration", "productionCallerPath": "tools/news_grasp_direct_runtime.py", "productionCallSymbol": "run_daily_mainline"},
+    {"routeId": "external_publication", "consumerPath": "tools/news_grasp_daily_gate.py", "consumerSymbol": "_default_external_publication", "productionCallerPath": "tools/news_grasp_direct_runtime.py", "productionCallSymbol": "run_daily_mainline"},
+    {"routeId": "consumer_public_verification", "consumerPath": "tools/news_grasp_daily_gate.py", "consumerSymbol": "_default_consumer_public_verification", "productionCallerPath": "tools/news_grasp_direct_runtime.py", "productionCallSymbol": "run_daily_mainline"},
+    {"routeId": "atomic_completion", "consumerPath": "tools/news_grasp_daily_gate.py", "consumerSymbol": "_default_atomic_completion", "productionCallerPath": "tools/news_grasp_direct_runtime.py", "productionCallSymbol": "run_daily_mainline"}
   ]
 }

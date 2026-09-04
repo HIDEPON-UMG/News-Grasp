@@ -30,6 +30,13 @@ from typing import Any
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+# ``python -m tools.news_grasp_direct_runtime daily`` で起動した場合も、
+# 日次producerがimportするcanonical moduleと同じmodule instanceを共有する。
+# これが無いと ``__main__`` とpackage名で二重loadされ、DirectRunStoreの型identityが
+# 分裂して同一process・同一writerという日次契約を破る。
+if __name__ == "__main__" and __spec__ is not None:
+    sys.modules[__spec__.name] = sys.modules[__name__]
+
 
 DIRECT_STAGES = (
     "title_control",
@@ -104,6 +111,7 @@ DAILY_OPERATION_ORDER = (
     "consumer_public_verification",
     "atomic_completion",
 )
+DAILY_SEQUENCE_SCHEMA = "NEWS_GRASP_DAILY_SEQUENCE_RECEIPT_V2"
 
 
 def _strict_json_object_pairs(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -6170,9 +6178,180 @@ def _cli_stage_verifier(
     )
 
 
-def _main() -> int:
+def _canonical_daily_state_root() -> Path:
+    """Windows Known Folderから唯一のproduction state rootを解決する。"""
+
+    if os.name != "nt":
+        raise OSError("daily_windows_known_folder_required")
+    import ctypes
+
+    class _Guid(ctypes.Structure):
+        _fields_ = [
+            ("data1", ctypes.c_uint32),
+            ("data2", ctypes.c_uint16),
+            ("data3", ctypes.c_uint16),
+            ("data4", ctypes.c_ubyte * 8),
+        ]
+
+    folder_id = _Guid.from_buffer_copy(
+        uuid.UUID("f1b32785-6fba-4fcf-9d55-7b8e7f157091").bytes_le
+    )
+    output = ctypes.c_wchar_p()
+    status = ctypes.windll.shell32.SHGetKnownFolderPath(
+        ctypes.byref(folder_id),
+        0,
+        None,
+        ctypes.byref(output),
+    )
+    if status != 0 or not output.value:
+        raise OSError(f"daily_known_folder_unavailable:{status}")
+    try:
+        return (Path(output.value) / "News-Grasp" / "direct-mainline").resolve(
+            strict=False
+        )
+    finally:
+        ctypes.windll.ole32.CoTaskMemFree(output)
+
+
+def _contains_writer_capability(value: Any) -> bool:
+    """machine receiptへwriter capabilityを投影しない。"""
+
+    if isinstance(value, Mapping):
+        for key, nested in value.items():
+            canonical_key = str(key).replace("_", "").casefold()
+            if canonical_key in {
+                "writerlease",
+                "fencingtoken",
+                "continuationcapability",
+            }:
+                return True
+            if _contains_writer_capability(nested):
+                return True
+        return False
+    if isinstance(value, (list, tuple)):
+        return any(_contains_writer_capability(item) for item in value)
+    return False
+
+
+def _daily_red(reason: str, **extra: Any) -> dict[str, Any]:
+    return {
+        "schemaVersion": DAILY_SEQUENCE_SCHEMA,
+        "ok": False,
+        "status": "red",
+        "failures": [reason],
+        "humanImpact": {
+            "noFocusTheft": True,
+            "noAutoOpen": True,
+            "noUserMonitoring": True,
+        },
+        **extra,
+    }
+
+
+def run_daily_mainline(
+    *,
+    repo_root: Path,
+    state_root: Path,
+    issue_date: str,
+    scheduler_trigger_at: str,
+) -> dict[str, Any]:
+    """Daily六operationをdirect runtime process内で順序実行する。"""
+
+    from tools import news_grasp_daily_gate as daily
+
+    protected_failure = daily.protected_release_failure(
+        repo_root=repo_root,
+        issue_date=issue_date,
+        require_contract_integrity=True,
+    )
+    if protected_failure:
+        return _daily_red(
+            protected_failure,
+            issue_date=issue_date,
+            protected_release=daily.PROTECTED_RELEASE,
+            protected_release_policy=daily.PROTECTED_RELEASE_POLICY,
+            exact_successor="explicit_new_release_authority_required",
+        )
+    identity = daily.resolve_daily_identity_context(
+        repo_root=repo_root,
+        issue_date=issue_date,
+    )
+    if identity.get("ok") is not True:
+        return _daily_red("daily_identity_preflight_red", identity=identity)
+    store = DirectRunStore(state_root)
+    receipts = daily.run_daily_sequence(
+        store=store,
+        cwd=repo_root,
+        issue_date=issue_date,
+        run_intent=RUN_INTENT,
+        automation_id=AUTOMATION_ID,
+        scheduler_trigger_at=scheduler_trigger_at,
+        manifest_id=str(identity.get("manifest_id") or ""),
+        manifest_reservation_id=str(identity.get("manifest_reservation_id") or ""),
+        source_baseline=str(identity.get("source_baseline") or ""),
+        runtime_generation=RUNTIME_SCHEMA_V2,
+        remote_base_sha=str(identity.get("remote_base_sha") or ""),
+        allowed_side_effect_ids=list(identity.get("allowed_side_effect_ids") or ()),
+    )
+    final = receipts[-1] if receipts else {}
+    result = {
+        "schemaVersion": DAILY_SEQUENCE_SCHEMA,
+        "ok": (
+            len(receipts) == len(daily.DAILY_OPERATIONS)
+            and final.get("ok") is True
+            and final.get("status") == "completed"
+        ),
+        "status": final.get("status") or "red",
+        "run_id": str((receipts[0] if receipts else {}).get("run_id") or ""),
+        "operation_count": len(receipts),
+        "operation_receipts": receipts,
+        "failures": list(final.get("failures") or ()),
+        "humanImpact": {
+            "noFocusTheft": True,
+            "noAutoOpen": True,
+            "noUserMonitoring": True,
+        },
+    }
+    if _contains_writer_capability(result):
+        return _daily_red("daily_writer_capability_projection_violation")
+    return result
+
+
+def _run_daily_cli() -> dict[str, Any]:
+    from tools import news_grasp_daily_gate as daily
+
+    if os.path.normcase(os.path.abspath(sys.executable)) != os.path.normcase(
+        os.path.abspath(daily.DAILY_PYTHON)
+    ):
+        return _daily_red(
+            "fixed_python_3_12_required",
+            expected_python=daily.DAILY_PYTHON,
+            observed_python=sys.executable,
+        )
+    issue_date = (
+        os.environ.get("NEWS_GRASP_ISSUE_DATE", "").strip()
+        or daily._issue_date_default()
+    )
+    repo_root = Path(os.environ.get("NEWS_GRASP_REPO_ROOT", str(Path.cwd())))
+    scheduler_trigger_at = (
+        os.environ.get("NEWS_GRASP_SCHEDULER_TRIGGER_AT", "").strip()
+        or f"{issue_date}T06:00:00+09:00"
+    )
+    try:
+        return run_daily_mainline(
+            repo_root=repo_root,
+            state_root=_canonical_daily_state_root(),
+            issue_date=issue_date,
+            scheduler_trigger_at=scheduler_trigger_at,
+        )
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
+        return _daily_red(f"daily_sequence_error:{type(exc).__name__}:{exc}")
+
+
+def _main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="cmd", required=True)
+    sub.add_parser("daily")
     validate = sub.add_parser("validate-installed")
     validate.add_argument("--path", type=Path, default=None)
 
@@ -6278,8 +6457,10 @@ def _main() -> int:
     finalize.add_argument("--poll-sec", type=int, default=30)
     finalize.add_argument("--fencing-token", type=int, default=None)
 
-    args = parser.parse_args()
-    if args.cmd == "validate-installed":
+    args = parser.parse_args(argv)
+    if args.cmd == "daily":
+        result = _run_daily_cli()
+    elif args.cmd == "validate-installed":
         result = validate_installed_automation_semantics(args.path)
     elif args.cmd == "relocate-state":
         result = relocate_runtime_state_v1(
@@ -6446,6 +6627,12 @@ def _main() -> int:
                     fencing_token=args.fencing_token,
                 )
     _emit_cli(result)
+    if args.cmd == "daily":
+        return (
+            0
+            if result.get("ok") is True and result.get("status") == "completed"
+            else 1
+        )
     if result.get("ok", True) is not False:
         return 0
     status = str(result.get("status") or "").casefold()

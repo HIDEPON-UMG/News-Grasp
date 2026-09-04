@@ -592,5 +592,5 @@ def test_daily_45m_contract_is_bound_to_gate_matrix_and_public_completion() -> N
     )
     for entrypoint in (_read(AGENTS), _read(CLAUDE)):
         assert "daily_45m_public_route" in entrypoint
-        assert "tools.news_grasp_daily_launcher" in entrypoint
+        assert "tools.news_grasp_direct_runtime daily" in entrypoint
         assert "fresh consumer public verifier Green" in entrypoint

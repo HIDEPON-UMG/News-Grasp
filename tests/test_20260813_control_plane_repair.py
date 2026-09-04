@@ -284,9 +284,9 @@ def test_ng813_runner_passes_real_state_file_and_ops_root() -> None:
     """primary: 単一launcherがcanonical stateを内部解決しwriter capabilityを公開しない。"""
     prompt = _automation_prompt()
     direct_branch = _direct_branch()
-    launcher = _source("tools/news_grasp_daily_launcher.py")
+    launcher = _source("tools/news_grasp_direct_runtime.py")
 
-    assert "tools.news_grasp_daily_launcher" in prompt
+    assert "tools.news_grasp_direct_runtime daily" in prompt
     assert "--direct-state-root" not in prompt
     assert "--direct-run-id" not in prompt
     assert "state作成・外部処理前" in prompt
@@ -466,7 +466,7 @@ def test_ng813_recovery_python_entrypoints_are_isolated_direct_scripts() -> None
     assert "& $PythonExe @controlPlaneArgs" in bootstrap
     assert "from tools.news_grasp_direct_runtime import" in direct_branch
     assert "DirectRunStore(args.direct_state_root, create=False)" in direct_branch
-    assert "tools.news_grasp_daily_launcher" in prompt
+    assert "tools.news_grasp_direct_runtime daily" in prompt
     assert "static_check" in prompt
     assert "atomic_completion" in prompt
     assert "tools.news_grasp_daily_gate static_check" not in prompt

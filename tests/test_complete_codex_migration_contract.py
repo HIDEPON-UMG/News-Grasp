@@ -40,7 +40,7 @@ def test_direct_automation_contract_contains_title_quality_and_completion_gates(
         "YY/MM/DD",
         "title_status=already_ok",
         "post_publish_issue_list",
-        "tools.news_grasp_daily_launcher",
+        "tools.news_grasp_direct_runtime daily",
         "current_issue_integration",
         "consumer_public_verification",
         "atomic_completion",

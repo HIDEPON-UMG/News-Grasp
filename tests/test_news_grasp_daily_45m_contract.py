@@ -781,7 +781,7 @@ def test_ng_rrt_automation_template_has_exact_prompt_parity_contract() -> None:
     )
     assert result["ok"] is True
     assert prompt.count(required_phrase) == 3
-    launcher = r"C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_daily_launcher"
+    launcher = r"C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_direct_runtime daily"
     assert prompt.count(launcher) == 1
     for operation in (
         "static_check",
