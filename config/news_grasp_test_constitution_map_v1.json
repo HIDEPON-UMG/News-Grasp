@@ -732,7 +732,7 @@
     },
     {
       "path": "tests/test_daily_model_cost_projection.py",
-      "sha256": "585ffb26581a14c3288eb03558cd1077ef57f81eb3745989a611536866397545",
+      "sha256": "64de482531c5d2666445f01f5483f5ce7ff3196383775364f8dbed3ca2ca2851",
       "nodeCount": 3,
       "nodeIds": [
         "tests/test_daily_model_cost_projection.py::test_calibration_uses_current_model_policy_without_retired_fallback",
@@ -1326,7 +1326,7 @@
     },
     {
       "path": "tests/test_deepdive_terra_benchmark.py",
-      "sha256": "7755bf21b3e15ae7fb4cdf19a9452ecd2ba415116b5ad269bc5cff750a298455",
+      "sha256": "fe98a928ff1be3f3ce25586b292434d0cc5a86c6b98cbd7df6dfde2716b10daf",
       "nodeCount": 2,
       "nodeIds": [
         "tests/test_deepdive_terra_benchmark.py::test_blind_bundle_removes_model_identity_and_self_scores",
@@ -1339,7 +1339,7 @@
     },
     {
       "path": "tests/test_deepdive_triad_judge.py",
-      "sha256": "dfd31be392a16f8e092a1f85739c4d2dfe391c3f90fc79f8bf0bbeb2ba21a9e3",
+      "sha256": "982347f373ec637508c1ead1cd3fdcb1d7e01575bfe3370f3345867b3db96436",
       "nodeCount": 2,
       "nodeIds": [
         "tests/test_deepdive_triad_judge.py::test_deepdive_weights_prioritize_decision_support",
@@ -1694,7 +1694,7 @@
     },
     {
       "path": "tests/test_gate_contract.py",
-      "sha256": "c23cbfa2b55641f2cd806667fcbac22bdb184f50d94caa9741b785aeee0d5110",
+      "sha256": "51819dd1c476d05c5f1b90ca7f67f9b118591cdd1255cbd59a48adae4b74f4e7",
       "nodeCount": 8,
       "nodeIds": [
         "tests/test_gate_contract.py::test_category_budget_allows_distinct_failures_after_artifact_changes",
@@ -1727,7 +1727,7 @@
     },
     {
       "path": "tests/test_generate_pages.py",
-      "sha256": "cd8687a04727725304b99560e06d6918f184b30b9758054cb613bd13b62a5371",
+      "sha256": "6c70f1a443511bb969cfe781dd9245d7af3f3bf612c825c75fda86e1d48c86c9",
       "nodeCount": 21,
       "nodeIds": [
         "tests/test_generate_pages.py::test_article_thumb_accepts_non_thumb_markdown_alt",
@@ -1775,7 +1775,7 @@
     },
     {
       "path": "tests/test_generate_pages_integration.py",
-      "sha256": "eb30c8934768c7c30750a04194f8bbe3b2944bdb97c6138a7417d0c3f3865a33",
+      "sha256": "4696fae39a6c584468e09307a19ec6110dc3787d18a569c09f433cb3176ae10f",
       "nodeCount": 11,
       "nodeIds": [
         "tests/test_generate_pages_integration.py::test_all_required_ogp_meta_present",
@@ -2085,7 +2085,7 @@
     },
     {
       "path": "tests/test_incident_report_tracking_policy.py",
-      "sha256": "8837189f90c6010d5f89c510837f95e35efbdd2af6b8f662ff55a1c269332768",
+      "sha256": "617d55824c8be50f91410058dafdb47f7f547406c0520a3387f3d75821836d9a",
       "nodeCount": 4,
       "nodeIds": [
         "tests/test_incident_report_tracking_policy.py::test_2026_06_30_public_report_is_not_tracked",
@@ -2161,7 +2161,7 @@
     },
     {
       "path": "tests/test_model_benchmark.py",
-      "sha256": "7902dfb51ebc873c788bb619a4211d07f2e7fcdaaabea60408a62dad52a7d1b9",
+      "sha256": "66530115ab81ecadb2a591de72fbf523c364abfd419983a00de7b64afe7e5f92",
       "nodeCount": 3,
       "nodeIds": [
         "tests/test_model_benchmark.py::test_official_api_prices_are_recorded_per_million_tokens",
@@ -2233,7 +2233,7 @@
     },
     {
       "path": "tests/test_model_selection_html_report.py",
-      "sha256": "7cae92be02a536dc74606aec7ce9a38346cb947b5179b0628512119ee217ecd5",
+      "sha256": "2596127f08d35c51eb59938e22342c8cb5df8b4b6dad639b5ad5c228aae7deb0",
       "nodeCount": 3,
       "nodeIds": [
         "tests/test_model_selection_html_report.py::test_deepdive_stacks_sum_to_displayed_scores_with_unique_axis_colors",
@@ -3693,7 +3693,7 @@
     },
     {
       "path": "tests/test_news_grasp_scheduler_retirement.py",
-      "sha256": "2ffbd3abeb224fc1668aaa747dc43a5527a5788b0b9fa52743dfa18a6e2247f0",
+      "sha256": "35f15f8a311c7a2857448c8778ab80861fcf4ae79adc6836cf7d616741205e24",
       "nodeCount": 1,
       "nodeIds": [
         "tests/test_news_grasp_scheduler_retirement.py::test_codex_automation_is_the_only_daily_scheduler_and_legacy_installers_fail_closed"
@@ -3826,7 +3826,7 @@
     },
     {
       "path": "tests/test_newsroom_append_safety_benchmark.py",
-      "sha256": "e27ef9fa5e8db50807415d35bce4300175b213a93d0312865afeb6983e9b518d",
+      "sha256": "1c2be89b05bb7078945c2cdbe86ae4d7aa3b55fbed193cfe93da972388dacb2e",
       "nodeCount": 2,
       "nodeIds": [
         "tests/test_newsroom_append_safety_benchmark.py::test_append_safety_fixture_covers_five_failure_boundaries",
@@ -3859,7 +3859,7 @@
     },
     {
       "path": "tests/test_newsroom_prompts.py",
-      "sha256": "ac9ab1e1e6c41ce4593abad1ec6d49c2c2036226c4276421fe72e636825c69b1",
+      "sha256": "15744653a0a60c53fb5fcf2358082a0143639342b742b32b63ae1e0f643b9530",
       "nodeCount": 22,
       "nodeIds": [
         "tests/test_newsroom_prompts.py::test_active_newsroom_prompts_do_not_reference_legacy_agents",
@@ -4093,7 +4093,7 @@
     },
     {
       "path": "tests/test_overview_pattern_c.py",
-      "sha256": "0b6d7336e8175382745085a67380b2f6c696ec0c72fc9dc07ac5758982ba0c7b",
+      "sha256": "813dbde6d855331838e0f010e20659d31ec12cdaf1bc8b984da947a7344cd3e0",
       "nodeCount": 11,
       "nodeIds": [
         "tests/test_overview_pattern_c.py::test_build_all_overviews_creates_unique_dates_only",
@@ -4157,7 +4157,7 @@
     },
     {
       "path": "tests/test_prepare_editor_workspace.py",
-      "sha256": "f97df29ae5e5a46d4c075b662e550065ec1eeb23e9ec71b8a210cd4732500d68",
+      "sha256": "2397a1d5dc51876312932b41b109986ec22fd82039206f2a9cef6c26d21fc632",
       "nodeCount": 1,
       "nodeIds": [
         "tests/test_prepare_editor_workspace.py::test_prepare_editor_workspace_removes_only_target_issue_date"
@@ -5065,7 +5065,7 @@
     },
     {
       "path": "tests/test_session_url_fragments.py",
-      "sha256": "9960ce058151ffcb5d3584ae119557f028d69f14c8bdba1b35340c29908a1c44",
+      "sha256": "1695970b346507e447e75eab2510a4d9bddcae10ac55878b9babda736c64de0b",
       "nodeCount": 4,
       "nodeIds": [
         "tests/test_session_url_fragments.py::test_broken_fragment_is_warn_skipped",
@@ -5186,7 +5186,7 @@
     },
     {
       "path": "tests/test_summary_pattern_d.py",
-      "sha256": "52e410e6ead384187415a8f4eaa1aa96f10019127839bfb2c36ba8a7406eb862",
+      "sha256": "e2a0d472776abffa271071d7b5246b37aea18d2bb1f8cf1f69c9888b537c8781",
       "nodeCount": 26,
       "nodeIds": [
         "tests/test_summary_pattern_d.py::test_3_takeaways_always_rendered",
@@ -5420,7 +5420,7 @@
     },
     {
       "path": "tests/test_tts_generate_bgm.py",
-      "sha256": "988ff8382149c3e8805ca94cfdfb56e0a6bad8113e6c610ebb70136d0add37bb",
+      "sha256": "1ee3a906ecdbb60af426ba06e46993320bf57548436442eaad6d6b6e67a51867",
       "nodeCount": 19,
       "nodeIds": [
         "tests/test_tts_generate_bgm.py::test_all_styles_render_mono_quiet_and_deterministic",
@@ -5589,7 +5589,7 @@
     },
     {
       "path": "tests/test_validate_editor_output_preview.py",
-      "sha256": "f51fd549da466f6d9671ea90a787ea73ac2bb7eee814dc90357ca7762daf118d",
+      "sha256": "8467f651772a4e0d0e65441dd5b3797a766b4058eb5441242fa455387ad58e7d",
       "nodeCount": 5,
       "nodeIds": [
         "tests/test_validate_editor_output_preview.py::test_accepts_semantically_valid_editor_payload",
