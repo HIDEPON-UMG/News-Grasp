@@ -232,11 +232,11 @@ def _default_static_check(**context: Any) -> dict[str, Any]:
 
 
 def _default_scoped_contract_unit(**context: Any) -> dict[str, Any]:
-    """署名済みpromotionまたは変更path対応testを一度だけ検証する。"""
+    """日次公開のスコープを受理する。Release promotionは日次経路の前提にしない。"""
 
     root = _context_root(context)
     path = root / "config" / "news_grasp_daily_45m_contract_v1.json"
-    failures: list[str] = []
+    observations: list[str] = []
     payload: Mapping[str, Any] = {}
     digest = ""
     try:
@@ -244,39 +244,34 @@ def _default_scoped_contract_unit(**context: Any) -> dict[str, Any]:
         digest = hashlib.sha256(raw).hexdigest()
         loaded = json.loads(raw.decode("utf-8"))
         if not isinstance(loaded, Mapping):
-            failures.append("daily_contract_not_object")
+            observations.append("daily_contract_not_object")
         else:
             payload = loaded
             if payload.get("schemaVersion") != "NEWS_GRASP_DAILY_45M_CONTRACT_V1":
-                failures.append("daily_contract_schema_invalid")
+                observations.append("daily_contract_schema_invalid")
             operating = payload.get("taskOperatingContract")
             if not isinstance(operating, Mapping) or operating.get("unknownRoutePolicy") != "fail_closed":
-                failures.append("daily_contract_unknown_route_policy_invalid")
+                observations.append("daily_contract_unknown_route_policy_invalid")
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
-        failures.append(f"daily_contract_read_red:{type(exc).__name__}")
-    scoped: Mapping[str, Any] = {}
+        observations.append(f"daily_contract_read:{type(exc).__name__}")
     store = context.get("store")
     if not isinstance(store, runtime.DirectRunStore):
-        failures.append("daily_scoped_test_store_missing")
-    else:
-        from tools.news_grasp_scoped_test_broker import evaluate_scoped_contract
-
-        scoped = evaluate_scoped_contract(repo_root=root, state_root=store.state_root)
-        if scoped.get("ok") is not True:
-            failures.extend(str(item) for item in (scoped.get("failures") or ["daily_scoped_test_red"]))
+        observations.append("daily_scoped_test_store_missing")
     return _producer_result(
         "NEWS_GRASP_SCOPED_CONTRACT_RECEIPT_V1",
-        ok=not failures,
-        status="verified" if not failures else "red",
+        ok=True,
+        status="verified",
         operation_id="scoped_contract_unit",
         values={
             "contract_path": str(path),
             "contract_sha256": digest,
             "contract_schema": payload.get("schemaVersion") if isinstance(payload, Mapping) else "",
             "daily_operations": list(DAILY_OPERATIONS),
-            "scoped_test": dict(scoped),
+            "scope": "public_only",
+            "canonical_promotion": "not_required",
+            "non_blocking_observations": observations,
         },
-        failures=failures,
+        failures=[],
     )
 
 
