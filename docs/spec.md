@@ -1,7 +1,7 @@
 # Product Spec: News-Grasp
 
 > **Status**: Constitution
-> **Last Updated**: 2026-08-27
+> **Last Updated**: 2026-09-05
 > **Owner**: News-Grasp Operator
 
 ## Product Constitution
@@ -23,6 +23,14 @@ direct 本線は `static_check`、`scoped_contract_unit`、`current_issue_integr
 `NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1` は consumer-owned public verifier が実成果物と実公開面を検査して作る projection だけを authority にする。caller作成の completion JSON、fixture、文字列 marker、URL 200単独、publish-status単独は Green に読み替えない。content-derived identity、SHA、digest、hash、fingerprint、Merkle は 06:00 direct 本線の active 制御 authority に使わない。記事工程名としてのカテゴリ digest はこの禁止に含めない。
 
 title は最初の実作業で `YY/MM/DD News-Grasp 臨時本線日次バッチ 6:00 記事作成・公開` を試行し、`title_status` を `updated / already_ok / unavailable / failed / skipped` のいずれかで記録する。`updated/already_ok` の場合だけ実 title の exact pattern 一致を必須にし、失敗 status は `post_publish_issue_list` に残して公開 critical path を継続する。
+
+### 2026-09-05 Same-run Recovery Amendment
+
+06:00 direct 本線の制御identityは `automation_id + issue_date + run_intent` と開始時のimmutable start sealである。start sealはself hash、run行の不変項目、`O_EXCL`で独立保存したsidecar bytesへ束縛し、runtime generationはDaily実行ファイル群のbytes manifest hashとする。開始後にtemplate、installed automation、App DB、snapshot、`origin/main`、caller観測のIDまたはSHAが変化しても、開始済みrunを停止・rebind・新generation化しない。現runはstart sealのsource baseline、remote base、manifest reservationで継続し、差分は `nextRunReadinessStatus=Red` のdebtとして次回promotionへ分離する。runtime bytesまたはcanonical許可side effect集合の差異はdebtへ格下げしない。
+
+競合するlive writerが存在せずleaseが失効した場合は、保存済みDaily operation receiptの連続列をcanonical authorityとし、同じrun IDとdaily lineageへCAS takeoverする。新しいwriter leaseとfencing tokenを発行し、未完了claimだけを`recoverable`へ移し、最初の未完了operationを唯一のexact successorとする。Green receipt、Green artifact、provider receiptを再実行・再送してはならない。安全なsuccessorが存在する不一致を`blocked` terminalへ変換しない。
+
+runtime改ざん、state DB破損、競合live writer、許可外副作用だけは推測継続せず`failed_integrity`とする。caller supplied run ID、manifest ID、SHA、pathはactive制御authorityにせず、通常Daily入口は空入力相当の単一`tools.news_grasp_direct_runtime daily`だけとする。
 
 <!-- NEWS_GRASP_CONSTITUTION_V1_START -->
 ## 憲法の機械正本（NEWS_GRASP_CONSTITUTION_V1）

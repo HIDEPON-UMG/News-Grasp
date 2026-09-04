@@ -1644,6 +1644,7 @@ def resolve_daily_identity_context(*, repo_root: Path, issue_date: str) -> dict[
     observed_manifest_id = ""
     source_baseline = ""
     remote_base_sha = ""
+    runtime_generation = ""
     allowed_side_effect_ids = list(DAILY_ALLOWED_SIDE_EFFECT_IDS)
     manifest: Mapping[str, Any] = {}
     try:
@@ -1677,13 +1678,19 @@ def resolve_daily_identity_context(*, repo_root: Path, issue_date: str) -> dict[
         failures.append("remote_base_sha_not_ancestor")
     if len(set(allowed_side_effect_ids)) != len(allowed_side_effect_ids) or not allowed_side_effect_ids:
         failures.append("allowed_side_effect_ids_missing")
+    try:
+        runtime_generation = runtime.daily_runtime_generation(
+            Path(__file__).resolve().parents[1]
+        )
+    except (OSError, ValueError):
+        failures.append("runtime_generation_unobserved")
     reservation_identity = {
         "automation_id": runtime.AUTOMATION_ID,
         "issue_date": issue_date,
         "run_intent": runtime.RUN_INTENT,
         "source_baseline": source_baseline,
         "remote_base_sha": remote_base_sha,
-        "runtime_generation": runtime.RUNTIME_SCHEMA_V2,
+        "runtime_generation": runtime_generation,
         "allowed_side_effect_ids": allowed_side_effect_ids,
     }
     manifest_reservation_id = hashlib.sha256(
@@ -1699,6 +1706,7 @@ def resolve_daily_identity_context(*, repo_root: Path, issue_date: str) -> dict[
         "manifest_reservation_id": manifest_reservation_id,
         "source_baseline": source_baseline,
         "remote_base_sha": remote_base_sha,
+        "runtime_generation": runtime_generation,
         "allowed_side_effect_ids": allowed_side_effect_ids,
         "failures": failures,
         "manifest": dict(manifest),

@@ -10,100 +10,44 @@ execution_environment = "local"
 cwds = ['${NEWS_GRASP_REPO_ROOT}']
 
 prompt = """
-News-Grasp の臨時本線日次バッチを実行してください。
+News-Graspの日次公開を実行してください。このautomation は監査バッチではありません。
 
-最初に `$news-grasp-direct-mainline` を読み、その工程・品質・回復・public-only completion 契約をこの実行の正本として使用してください。
+最初に `$news-grasp-direct-mainline` を読み、Lunaの操作を一回の起動に限定してください。`automation/skills/news-grasp-e2e-discipline/SKILL.md` はruntime内部のRelease-only境界であり、日次中にLunaが個別実行しません。
 
-この automation は監査バッチではありません。既存 News-Grasp runner も使いません。Codex が本線担当として、当日公開面を直接作成・公開してください。
+最優先事項:
+- 完全な品質で記事公開するまで完了してはならない。
+- 対象日はAsia/Tokyoの当日、titleは `YY/MM/DD News-Grasp 臨時本線日次バッチ 6:00 記事作成・公開` とし、runtimeの `title_status`（例: `title_status=already_ok`）を報告してください。
+- 目標は45分、SLO は 90 分です。75 分時点で新規 high-cost stage を開始しない。90 分を超えた場合は SLO 超過を記録し、実行可能な public-critical successor がある限り継続します。
 
-本日の達成対象:
-1. task title の先頭に対象日を YY/MM/DD 形式で入れること。
-2. 日次バッチが品質と速度を両立した形で完走すること。
-
-最優先制御:
-- 最優先事項: 完全な品質で記事公開するまで完了してはならない。
-- 唯一の主成果物は、当日の News-Grasp 公開体験 Web / Daily audio / DeepDive / DeepDive audio / YouTube Podcast / playlist / notification / distribution / publish-status を読者可視まで完成させることです。
-- 旧 runner state と Codex durable goal は completion authorityではない。consumer-owned public verifierだけが完了を確定します。
-- 記事品質または公開面完成に直結しない問題は、post_publish_issue_list に 1 行で記録し、修正に入らず公開作成へ戻ってください。
-- 公開面が incomplete の間に許される作業は、記事生成、品質 gate Green 化、TTS、YouTube/playlist、notification、distribution、publish-status、Pages 反映、またはそれらの開始に不可欠な最小 local unblocker だけです。
-- 旧 runner、監査 terminal、audit_major_incident_open、原因説明、report polish、harness 整理、恒久対策、NoPublish、fallback publish を完了の代替にしないでください。
-- コスト起因またはハーネス起因で、記事品質・公開完成と無関係な停止判断をしないでください。
-- 絶対契約（PUBLIC_ONLY_SCOPE_CONTRACT_V1）: 実行中に許可される作業は、当日記事と公開面を作成・反映・検証し、公開完了を確定する処理、またはその開始・再開に不可欠な最小 local unblocker だけです。
-- ユーザーの明示指令なしに、原因究明、監査、レポート作成、ハーネス整理、恒久対策、広域テスト、Release-only 検証、NoPublish、歴史検証、Playwright、性能調査、追加分析、依存更新、cleanup、rename、一般的な品質改善、メモリ・goal・計画の拡張を開始してはいけません。
-- 非公開作業を「念のため」「品質確認」「将来対策」「安全のため」と再分類して実施してはいけません。公開処理に直接必要かを判定し、不要なら実施せず、必要なら最小限だけ実施してください。
-- 公開に直結しない問題を発見しても、公開処理を止めて調べてはいけません。`post_publish_issue_list` に一行だけ記録し、公開処理へ戻ってください。ただし、その問題が公開処理を直接阻害する場合に限り、阻害を解消する最小 unblocker だけを実施してください。
-- この絶対契約は、作業量・時間・コスト・モデル・ハーネス起因の都合で緩めてはいけません。未承認の別 route、別 process、個別 operation、raw command、追加 retry を開始してはいけません。
-- 迷った場合の既定値は「実施しない」です。新しい作業を追加するには、ユーザーの明示指令または公開開始・公開完了に対する直接の因果必要性が必要です。
-- ブロック禁止: 公開処理を `blocked` として停止・完了扱いにしてはいけません。実行可能な公開critical successorがある限り、公開完了まで継続してください。
-
-セッション名:
-- 実行スレッド開始後の最初のhost操作として、現在のtask titleを対象日の exact `YY/MM/DD News-Grasp 臨時本線日次バッチ 6:00 記事作成・公開` へ一回だけ更新してください。automation定義、App DB、scheduler自体は変更してはいけません。
-- 対象日は Asia/Tokyo の当日として、static_check が発行した issue_date と title_status を以後の全receiptへ引き継いでください。固定日付、日時 placeholder、保存済みcaller JSONの再利用は禁止です。
-- title_status は updated / already_ok / unavailable / failed / skipped のいずれかを producer receipt に記録し、成功時の具体例 `title_status=already_ok` を含めて公開可否と混同しないでください。
-
-品質と速度:
-- 開始時刻は毎日 06:00 JST。
-- 2026-08-29 の direct recovery 実績は約 45 分で reader-visible public Green まで到達しました。この経路を翌日以降の標準サイクルとして扱ってください。
-- 目標は 45 分以内、SLO は 90 分以内です。
-- 45 分時点で、未完了 stage、残 gate、残 external publish を列挙し、closeout reserve を確保してください。
-- 75 分時点で新規 high-cost stage を開始しないでください。以後は公開に直結する最短作業だけに絞ってください。
-- 90 分を超えた場合は SLO 超過を記録し、新規 high-cost stage / 追加分析 / report polish を増やさず、実行可能な public-critical successor がある限り継続してください。OAuth 再同意、2FA、quota 変更、rollback、削除、未承認 public incident publication、外部サービス障害の具体的証明だけが残る場合は、Green ではなく未完了/blocked として exact successor と残surfaceを報告してください。
-
-実行入口:
-- 既存 runner、旧runtime、audit recovery control、raw/full pytest、historical、Playwright、NoPublish は使いません。
-- Codex automationが起動できるcommandは次の一つだけです。direct runtimeは同一process memory内の同一writer leaseで六つのDaily operationを順番に一回ずつ実行し、全producer receiptを一つのmachine receiptへ束縛します。
+実行:
+- 次のcommandを一回だけ起動してください。
   `C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -m tools.news_grasp_direct_runtime daily`
-- direct runtime内部の正規順序は `static_check` → `scoped_contract_unit` → `current_issue_integration` → `external_publication` → `consumer_public_verification` → `atomic_completion` です。個別operation CLI、任意のraw Python、別module、別route、順序飛ばし、同一operation再実行はRedです。
-- writer leaseとfencing capabilityをstdout、環境変数、receipt、logへ出してはいけません。brokerのadmission表示やcaller自己申告だけでは完了にしません。
-- task contractのprotectedReleaseと同じissue dateは、launcherがstate作成・外部処理前に`protected_release_reexecution_forbidden`で拒否します。通常Dailyから解除せず、明示的な別run intentと新release authorityへ戻してください。
-- `consumer_public_verification` は新しいnetwork observation token、observed_at、external_operation_idを発行し、Home、当日カテゴリ、Summary/DeepDive MarkdownとHTML、Daily/DeepDive audio、YouTube、playlist、distribution、publish-status、notification immutable ledger、Pagesをfreshに論理積検証してください。
-- `atomic_completion` は direct completion guard として全producer receiptとfresh consumer observationを束ねた完了receiptだけを発行します。保存済みcaller JSON、URL 200、publish-status、commit/push、runner/readiness単独をGreen authorityにしないでください。
-- repo-local deterministic tools は六operation内部のproducerとしてのみ使い、通常公開のad hoc 手編集、外部状態の無断再送、Windows Scheduled Taskの変更を行わないでください。
-- public mutation はこの臨時本線バッチの範囲で許可済みです: git commit/push, GitHub Pages 更新, Release audio upload, YouTube Podcast upload, playlist 登録, notification 送信。開始後のsource/manifest driftは同runへrebindせず新generationへ送ってください。
-- rollback、削除、OAuth 再同意、2FA、quota 変更、public incident publication は許可外です。
+- runtimeが `static_check` → `scoped_contract_unit` → `current_issue_integration` → `external_publication` → `consumer_public_verification` → `atomic_completion` を所有します。
+- `tools.publish_inventory.scheduled_category_ids(issue_date)` が当日の対象カテゴリ正本です。
+- 開始時seal、same-run復帰、成果物再利用、provider照合、public verifier、direct completion guardはruntimeが判断します。Lunaはrun ID、SHA、manifest ID、個別phase、retry、exact successorを操作しません。
+- task contractの保護日再実行はstate作成・外部処理前に `protected_release_reexecution_forbidden` となります。
 
-モデル・役割:
-- repo-local tools/model_policy.py をモデル正本として参照してください。
-- reporter / editor / repair / newsroom_editor は gpt-5.6-luna、reasoning max 相当で扱います。
-- DeepDive は gpt-5.6-sol、reasoning high 相当の別 route として扱います。
-- カテゴリ別 reporter fan-out の役割分担は維持します。対象カテゴリは tools.publish_inventory.scheduled_category_ids(issue_date) の結果だけを required とし、固定 7 カテゴリで起動しないでください。
-- 単一親モデルが全記事本文をまとめて書く設計へ潰さないでください。
-
-開始時に読む正本:
-- AGENTS.md
-- CLAUDE.md
-- docs/spec.md
-- tools/model_policy.py
-- automation/skills/news-grasp-e2e-discipline/SKILL.md
-- 必要に応じて prompts/newsroom-editor-system.md, prompts/newsroom-reporter-system.md, prompts/deepdive-research-system.md
+品質・回復:
+- Summaryはfrontmatter付きMarkdown、DeepDiveはcurrent issueの実bytesを正本にします。
+- reporter/editor/repair/newsroom_editorはLuna/max、DeepDiveはSol/highです。
+- 開始後のID/SHA driftは現runを止めず次回readiness debtへ分離します。lease失効時は同じrunへCAS takeoverし、Green producer receiptと成果物を再実行しません。
+- provider ACKが得られない場合は `unknown_unobtainable` を保持し、再送しません。
+- 公開に直結しない事項は `post_publish_issue_list` に一行だけ残します。
+- コスト起因またはハーネス起因で、記事品質・公開完成と無関係な停止判断をしない。
 
 完了条件:
-- 完了条件: 完全な品質で記事公開するまで完了してはならない。
-- title_status が updated / already_ok / unavailable / failed / skipped のいずれかで記録されていること。updated / already_ok の場合は task title が exact `YY/MM/DD News-Grasp 臨時本線日次バッチ 6:00 記事作成・公開` に一致すること。
-- 当日対象カテゴリ digest、Summary、DeepDive md、DeepDive HTML、日付 docs、Daily audio、DeepDive audio、YouTube Podcast、playlist、notification、distribution manifest、docs/publish-status.json が同一日付で揃うこと。
-- 単一launcher内部の六つのDaily operationが順序どおり一回ずつGreenとなり、各producer receiptのinput identityと出力hashが連続していること。
-- `consumer_public_verification` のfresh public verifierが実成果物と公開面を読んでGreenとなり、provider ACK欠落は `unknown_unobtainable` のまま保持されること。
-- runner/readiness を含まない public-only 検証で、Web / audio / Podcast / playlist / notification / distribution / publish-status / Pages が Green。
-- docs/publish-status.json が対象日・run intent・actual run IDへ束縛された `publication_pending / awaiting_external_completion_attestation` であり、外部公開後に同runのsourceへ書き戻されていないこと。最終 `published_ok` authorityはmanifestでsealしたimmutable completion attestationとfresh consumer verifierの組だけです。
-- origin/main への push と GitHub Pages 反映が確認済み。
-- planned_elapsed、actual_elapsed、slo_delta、overrun_branch_triggered が最終報告にあること。
+- 完全な品質で記事公開するまで完了してはならない。
+- consumer-owned verifierと`atomic_completion`がWeb、Daily audio、DeepDive article/audio、YouTube、playlist、notification、distribution、publish-status、remote、Pagesを同一issue date/run lineageでGreenにした場合だけcompletedです。
+- callerの自己申告、artifact存在、runner/readiness、URL 200、commit/push単独はcompletion authorityではない。
 
 禁止:
-- 禁止条件: 完全な品質で記事公開するまで完了してはならない。
-- 監査バッチとしての分類完了で止まること。
-- 旧 runner 起動、旧 runner state を完了根拠にすること。
-- audit_major_incident_open、typed Red、証跡作成、原因説明、レポート作成を公開作成の代替にすること。
-- 記事品質・公開完成に直結しないバグ調査や修正を public Green 前に始めること。
-- fallback publish、NoPublish、URL 200 単独、local generation 単独、前日 publish-status を public Green にすること。
-- Codex durable goal を完了根拠にすること。
-- raw process kill、共有 PowerShell / Windows Terminal / VS Code / browser の停止。
+- 完全な品質で記事公開するまで完了してはならない。
+- 旧runner、個別operation CLI、raw script、手動repair、polling、同一command再実行、NoPublish、URL 200 単独、historical、Playwright、full test、原因調査を開始しません。
+- `public incomplete を Green として最終応答しない`でください。安全なexact successorがあればruntimeが継続し、改ざん、DB破損、競合writer、許可外副作用だけを`failed_integrity`にします。
 
 最終報告:
-- 日本語で、まず臨時本線バッチの結果を報告してください。
-- ユーザー向け冒頭は次の形を守ってください: **結論**、- **状態**、- **根拠**、- **残るリスク**、- **次の作業**。
-- issue_date, title_status, public_status, remote publish observation, YouTube videoId, playlist, notification sent_count, 主要 gate exit code, 証跡 path, resource usage, planned_elapsed, actual_elapsed, slo_delta, overrun_branch_triggered を含めてください。Git commit ID は観測値としてだけ扱い、制御 authority にはしないでください。
-- post_publish_issue_list があれば、公開後に見つけたが公開面作成のために着手しなかった問題として末尾に列挙してください。
-- public incomplete を Green として最終応答しないでください。OAuth 再同意、2FA、quota 変更、rollback、削除、未承認 public incident publication、外部サービス障害だけを未公開停止条件にできます。その場合も、完了ではなく未完了/blocked として exact successor と残surfaceを報告してください。
+- 結論、状態、根拠、残るrisk、次の作業の順に、`issue_date`、`title_status`、public status、typed terminal、exact successor、主要surface、elapsed、SLO差分、`post_publish_issue_list`を報告してください。
+- Git commit ID は観測値としてだけ扱い、制御authorityにしません。
 """
 created_at = 1788014431516
-updated_at = 1788077226171
+updated_at = 1788577200000

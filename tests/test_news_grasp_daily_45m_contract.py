@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib
 import inspect
 import json
+import re
 import tomllib
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -861,6 +862,519 @@ def test_ng_rrt_writer_heartbeat_survives_ttl_and_second_start_is_attach_only(
             (ISSUE_DATE, RUN_INTENT),
         ).fetchone()[0]
     assert active == 1
+
+
+def test_ng_rrt_expired_pre_external_owner_resumes_same_run_from_next_operation(
+    tmp_path: Path,
+) -> None:
+    """開始後driftは新runを作らず、保存済みreceiptの次へ復帰する。"""
+
+    runtime = _module("tools.news_grasp_direct_runtime")
+
+    class FakeClock:
+        def __init__(self) -> None:
+            self.value = datetime.fromisoformat("2026-09-03T06:00:00+09:00")
+
+        def __call__(self) -> datetime:
+            return self.value
+
+    clock = FakeClock()
+    store = runtime.DirectRunStore(
+        tmp_path / "state",
+        clock=clock,
+        lease_ttl=timedelta(minutes=10),
+        test_only_allow_semantic_verifier=True,
+    )
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    allowed = ["external_publication"]
+    first = runtime.start_run(
+        store,
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        scheduler_trigger_at="2026-09-03T06:00:00+09:00",
+        source_baseline="a" * 40,
+        remote_base_sha="a" * 40,
+        manifest_id="f" * 64,
+        runtime_generation="fixture-runtime-generation",
+        allowed_side_effect_ids=allowed,
+    )
+    runtime.claim_daily_operation(
+        store,
+        run_id=first["run_id"],
+        writer_lease=first["writer_lease"],
+        fencing_token=first["fencing_token"],
+        operation_id="static_check",
+        input_hash="input-static-check",
+        handler_id="fixture.handler.static_check",
+    )
+    runtime.apply_daily_operation_atomic(
+        store,
+        run_id=first["run_id"],
+        writer_lease=first["writer_lease"],
+        fencing_token=first["fencing_token"],
+        operation_id="static_check",
+        input_hash="input-static-check",
+        handler_id="fixture.handler.static_check",
+        producer_receipt={"schemaVersion": "FIXTURE_STATIC_V1", "ok": True, "status": "verified"},
+    )
+    clock.value += timedelta(minutes=11)
+
+    recovered = runtime.start_run(
+        store,
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        scheduler_trigger_at="2026-09-03T06:00:00+09:00",
+        source_baseline="b" * 40,
+        remote_base_sha="c" * 40,
+        manifest_id="f" * 64,
+        runtime_generation="fixture-runtime-generation",
+        allowed_side_effect_ids=allowed,
+    )
+
+    assert recovered["status"] == "active"
+    assert recovered["single_flight"] == "recovered_after_expired_owner"
+    assert recovered["continuation_recovery"] is True
+    assert recovered["run_id"] == first["run_id"]
+    assert recovered["generation"] == first["generation"]
+    assert recovered["writer_lease"] != first["writer_lease"]
+    assert recovered["fencing_token"] > first["fencing_token"]
+    assert recovered["exact_successor"] == "scoped_contract_unit"
+    with pytest.raises(PermissionError, match="fenc|lease"):
+        runtime.renew_daily_writer_lease(
+            store,
+            run_id=first["run_id"],
+            writer_lease=first["writer_lease"],
+            fencing_token=first["fencing_token"],
+        )
+    with store.connect() as conn:
+        assert conn.execute(
+            "SELECT COUNT(*) FROM runs WHERE issue_date=? AND run_intent=?",
+            (ISSUE_DATE, RUN_INTENT),
+        ).fetchone()[0] == 1
+
+
+def test_ng_rrt_expired_claim_resumes_same_run_without_repeating_green_receipts(
+    tmp_path: Path,
+) -> None:
+    """失効時の未完了claimだけをrecoverable化し、Green receiptを保持する。"""
+
+    runtime = _module("tools.news_grasp_direct_runtime")
+
+    class FakeClock:
+        def __init__(self) -> None:
+            self.value = datetime.fromisoformat("2026-09-03T06:00:00+09:00")
+
+        def __call__(self) -> datetime:
+            return self.value
+
+    clock = FakeClock()
+    store = runtime.DirectRunStore(
+        tmp_path / "state",
+        clock=clock,
+        lease_ttl=timedelta(minutes=10),
+        test_only_allow_semantic_verifier=True,
+    )
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    first = runtime.start_run(
+        store,
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        scheduler_trigger_at="2026-09-03T06:00:00+09:00",
+        source_baseline="a" * 40,
+        remote_base_sha="a" * 40,
+        manifest_id="f" * 64,
+        runtime_generation="fixture-runtime-generation",
+        allowed_side_effect_ids=["external_publication"],
+    )
+    runtime.claim_daily_operation(
+        store,
+        run_id=first["run_id"],
+        writer_lease=first["writer_lease"],
+        fencing_token=first["fencing_token"],
+        operation_id="static_check",
+        input_hash="input-static-check",
+        handler_id="fixture.handler.static_check",
+    )
+    clock.value += timedelta(minutes=11)
+
+    recovered = runtime.start_run(
+        store,
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        scheduler_trigger_at="2026-09-03T06:00:00+09:00",
+        source_baseline="a" * 40,
+        remote_base_sha="a" * 40,
+        manifest_id="f" * 64,
+        runtime_generation="fixture-runtime-generation",
+        allowed_side_effect_ids=["external_publication"],
+    )
+
+    assert recovered["run_id"] == first["run_id"]
+    assert recovered["exact_successor"] == "static_check"
+    with store.connect() as conn:
+        claim = conn.execute(
+            "SELECT status,fencing_token FROM daily_operation_claims WHERE run_id=? AND operation_id='static_check'",
+            (first["run_id"],),
+        ).fetchone()
+    assert tuple(claim) == ("recoverable", recovered["fencing_token"])
+
+
+def test_ng_rrt_restart_uses_start_seal_when_observed_sha_drifted(
+    tmp_path: Path,
+) -> None:
+    """開始後のSHA観測差は現runを止めず、次回readiness debtへ分離する。"""
+
+    runtime = _module("tools.news_grasp_direct_runtime")
+    store = runtime.DirectRunStore(
+        tmp_path / "state",
+        test_only_allow_semantic_verifier=True,
+    )
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    started = runtime.start_run(
+        store,
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        scheduler_trigger_at="2026-09-03T06:00:00+09:00",
+        source_baseline="a" * 40,
+        remote_base_sha="b" * 40,
+        manifest_id="f" * 64,
+        runtime_generation="fixture-runtime-generation",
+        allowed_side_effect_ids=["external_publication"],
+    )
+    observed = {
+        "schemaVersion": "NEWS_GRASP_DAILY_IDENTITY_CONTEXT_V2",
+        "ok": False,
+        "failures": ["remote_base_sha_not_ancestor"],
+        "source_baseline": "c" * 40,
+        "remote_base_sha": "d" * 40,
+        "manifest_reservation_id": "e" * 64,
+        "runtime_generation": "fixture-runtime-generation",
+        "allowed_side_effect_ids": ["external_publication"],
+    }
+
+    resolved = runtime.resolve_daily_start_identity(
+        store,
+        issue_date=ISSUE_DATE,
+        observed_identity=observed,
+    )
+
+    assert resolved["ok"] is True
+    assert resolved["resume_identity"] is True
+    assert resolved["run_id"] == started["run_id"]
+    assert resolved["source_baseline"] == "a" * 40
+    assert resolved["remote_base_sha"] == "b" * 40
+    assert resolved["runtime_generation"] == "fixture-runtime-generation"
+    assert resolved["next_run_readiness_status"] == "red"
+    assert "remote_base_sha_not_ancestor" in resolved["next_run_readiness_debt"]
+
+
+def test_ng_rrt_tampered_start_seal_fails_integrity_without_new_generation(
+    tmp_path: Path,
+) -> None:
+    """有効形式へのseal改変でも現run authorityへ再採用しない。"""
+
+    runtime = _module("tools.news_grasp_direct_runtime")
+
+    class FakeClock:
+        def __init__(self) -> None:
+            self.value = datetime.fromisoformat("2026-09-03T06:00:00+09:00")
+
+        def __call__(self) -> datetime:
+            return self.value
+
+    clock = FakeClock()
+    store = runtime.DirectRunStore(
+        tmp_path / "state",
+        clock=clock,
+        lease_ttl=timedelta(minutes=10),
+        test_only_allow_semantic_verifier=True,
+    )
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    started = runtime.start_run(
+        store,
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        scheduler_trigger_at="2026-09-03T06:00:00+09:00",
+        source_baseline="a" * 40,
+        remote_base_sha="b" * 40,
+        manifest_id="f" * 64,
+        runtime_generation="fixture-runtime-generation",
+        allowed_side_effect_ids=["external_publication"],
+    )
+    with store.connect() as conn:
+        seal = json.loads(
+            conn.execute(
+                "SELECT start_seal_json FROM runs WHERE run_id=?",
+                (started["run_id"],),
+            ).fetchone()[0]
+        )
+        seal["sourceBaseline"] = "c" * 40
+        seal["startSealSha256"] = runtime._start_seal_sha256(seal)
+        conn.execute(
+            "UPDATE runs SET start_seal_json=? WHERE run_id=?",
+            (json.dumps(seal, sort_keys=True, separators=(",", ":")), started["run_id"]),
+        )
+        conn.commit()
+
+    resolved = runtime.resolve_daily_start_identity(
+        store,
+        issue_date=ISSUE_DATE,
+        observed_identity={"ok": True},
+    )
+    assert resolved["ok"] is False
+    assert resolved["status"] == "failed_integrity"
+    assert "active_start_seal_receipt_mismatch" in resolved["failures"]
+    with store.connect() as conn:
+        assert conn.execute(
+            "SELECT status FROM runs WHERE run_id=?",
+            (started["run_id"],),
+        ).fetchone()[0] == "failed_integrity"
+
+    clock.value += timedelta(minutes=11)
+    restarted = runtime.start_run(
+        store,
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        scheduler_trigger_at="2026-09-03T06:00:00+09:00",
+        source_baseline="d" * 40,
+        remote_base_sha="d" * 40,
+        manifest_id="e" * 64,
+        runtime_generation="fixture-runtime-generation",
+        allowed_side_effect_ids=["external_publication"],
+    )
+    assert restarted["status"] == "failed_integrity"
+    assert restarted["run_id"] == started["run_id"]
+    with store.connect() as conn:
+        assert conn.execute(
+            "SELECT COUNT(*) FROM runs WHERE issue_date=? AND run_intent=?",
+            (ISSUE_DATE, RUN_INTENT),
+        ).fetchone()[0] == 1
+
+
+def test_ng_rrt_runtime_generation_is_bound_to_runtime_bytes(tmp_path: Path) -> None:
+    """runtime file差替えは同じschema名でも別generationとして検出する。"""
+
+    runtime = _module("tools.news_grasp_direct_runtime")
+    repo = tmp_path / "repo"
+    for relative in runtime.DAILY_RUNTIME_RELATIVE_PATHS:
+        target = repo / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes((ROOT / relative).read_bytes())
+
+    before = runtime.daily_runtime_generation(repo)
+    changed = repo / runtime.DAILY_RUNTIME_RELATIVE_PATHS[0]
+    changed.write_bytes(changed.read_bytes() + b"\n# runtime drift\n")
+    after = runtime.daily_runtime_generation(repo)
+
+    assert before.startswith(f"{runtime.RUNTIME_SCHEMA_V2}:")
+    assert re.fullmatch(rf"{runtime.RUNTIME_SCHEMA_V2}:[0-9a-f]{{64}}", before)
+    assert after != before
+
+
+def test_ng_rrt_runtime_bytes_drift_fails_active_identity_integrity(
+    tmp_path: Path,
+) -> None:
+    """開始後のruntime generation差替えは次回debtへ格下げしない。"""
+
+    runtime = _module("tools.news_grasp_direct_runtime")
+    store = runtime.DirectRunStore(
+        tmp_path / "state",
+        test_only_allow_semantic_verifier=True,
+    )
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    started = runtime.start_run(
+        store,
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        scheduler_trigger_at="2026-09-03T06:00:00+09:00",
+        source_baseline="a" * 40,
+        remote_base_sha="b" * 40,
+        manifest_id="f" * 64,
+        runtime_generation="runtime-bytes-a",
+        allowed_side_effect_ids=["external_publication"],
+    )
+
+    resolved = runtime.resolve_daily_start_identity(
+        store,
+        issue_date=ISSUE_DATE,
+        observed_identity={
+            "ok": True,
+            "runtime_generation": "runtime-bytes-b",
+        },
+    )
+
+    assert resolved["ok"] is False
+    assert resolved["status"] == "failed_integrity"
+    assert resolved["run_id"] == started["run_id"]
+    assert "active_start_seal_runtime_bytes_mismatch" in resolved["failures"]
+
+
+def test_ng_rrt_unobserved_runtime_bytes_fail_active_identity_integrity(
+    tmp_path: Path,
+) -> None:
+    """runtime generationを観測できない再開は保存sealへfallbackしない。"""
+
+    runtime = _module("tools.news_grasp_direct_runtime")
+    store = runtime.DirectRunStore(
+        tmp_path / "state",
+        test_only_allow_semantic_verifier=True,
+    )
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    runtime.start_run(
+        store,
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        scheduler_trigger_at="2026-09-03T06:00:00+09:00",
+        source_baseline="a" * 40,
+        remote_base_sha="b" * 40,
+        manifest_id="f" * 64,
+        runtime_generation="runtime-bytes-a",
+        allowed_side_effect_ids=["external_publication"],
+    )
+
+    resolved = runtime.resolve_daily_start_identity(
+        store,
+        issue_date=ISSUE_DATE,
+        observed_identity={
+            "ok": False,
+            "failures": ["runtime_generation_unobserved"],
+            "runtime_generation": "",
+            "allowed_side_effect_ids": ["external_publication"],
+        },
+    )
+
+    assert resolved["status"] == "failed_integrity"
+    assert "active_start_seal_runtime_bytes_unobserved" in resolved["failures"]
+
+
+def test_ng_rrt_allowed_side_effect_drift_fails_active_identity_integrity(
+    tmp_path: Path,
+) -> None:
+    """許可副作用集合は現在runtimeのcanonical集合とexact一致させる。"""
+
+    runtime = _module("tools.news_grasp_direct_runtime")
+    store = runtime.DirectRunStore(
+        tmp_path / "state",
+        test_only_allow_semantic_verifier=True,
+    )
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    runtime.start_run(
+        store,
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        scheduler_trigger_at="2026-09-03T06:00:00+09:00",
+        source_baseline="a" * 40,
+        remote_base_sha="b" * 40,
+        manifest_id="f" * 64,
+        runtime_generation="runtime-bytes-a",
+        allowed_side_effect_ids=["external_publication"],
+    )
+
+    resolved = runtime.resolve_daily_start_identity(
+        store,
+        issue_date=ISSUE_DATE,
+        observed_identity={
+            "ok": True,
+            "runtime_generation": "runtime-bytes-a",
+            "allowed_side_effect_ids": ["unauthorized_side_effect"],
+        },
+    )
+
+    assert resolved["status"] == "failed_integrity"
+    assert (
+        "active_start_seal_allowed_side_effect_ids_mismatch"
+        in resolved["failures"]
+    )
+
+
+def test_ng_rrt_claim_recovery_cas_conflict_rolls_back_run_takeover(
+    tmp_path: Path,
+) -> None:
+    """破損claimを見つけたtakeoverはrunだけを部分更新しない。"""
+
+    runtime = _module("tools.news_grasp_direct_runtime")
+
+    class FakeClock:
+        def __init__(self) -> None:
+            self.value = datetime.fromisoformat("2026-09-03T06:00:00+09:00")
+
+        def __call__(self) -> datetime:
+            return self.value
+
+    clock = FakeClock()
+    store = runtime.DirectRunStore(
+        tmp_path / "state",
+        clock=clock,
+        lease_ttl=timedelta(minutes=10),
+        test_only_allow_semantic_verifier=True,
+    )
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    started = runtime.start_run(
+        store,
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        scheduler_trigger_at="2026-09-03T06:00:00+09:00",
+        source_baseline="a" * 40,
+        remote_base_sha="b" * 40,
+        manifest_id="f" * 64,
+        runtime_generation="runtime-bytes-a",
+        allowed_side_effect_ids=["external_publication"],
+    )
+    runtime.claim_daily_operation(
+        store,
+        run_id=started["run_id"],
+        writer_lease=started["writer_lease"],
+        fencing_token=started["fencing_token"],
+        operation_id="static_check",
+        input_hash="input-static-check",
+        handler_id="fixture.handler.static_check",
+    )
+    with store.connect() as conn:
+        conn.execute(
+            "UPDATE daily_operation_claims SET fencing_token=? WHERE run_id=?",
+            (started["fencing_token"] + 99, started["run_id"]),
+        )
+        conn.commit()
+    clock.value += timedelta(minutes=11)
+
+    with pytest.raises(PermissionError, match="claim_recovery_cas_conflict"):
+        runtime.start_run(
+            store,
+            cwd=repo,
+            issue_date=ISSUE_DATE,
+            run_intent=RUN_INTENT,
+            scheduler_trigger_at="2026-09-03T06:00:00+09:00",
+            source_baseline="a" * 40,
+            remote_base_sha="b" * 40,
+            manifest_id="f" * 64,
+            runtime_generation="runtime-bytes-a",
+            allowed_side_effect_ids=["external_publication"],
+        )
+    with store.connect() as conn:
+        row = conn.execute(
+            "SELECT writer_lease,fencing_token FROM runs WHERE run_id=?",
+            (started["run_id"],),
+        ).fetchone()
+    assert tuple(row) == (started["writer_lease"], started["fencing_token"])
 
 
 def test_ng_rrt_expired_external_owner_recovery_rebinds_claim_to_reconcile(

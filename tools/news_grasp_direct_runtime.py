@@ -112,6 +112,23 @@ DAILY_OPERATION_ORDER = (
     "atomic_completion",
 )
 DAILY_SEQUENCE_SCHEMA = "NEWS_GRASP_DAILY_SEQUENCE_RECEIPT_V2"
+DAILY_RUNTIME_RELATIVE_PATHS = (
+    "tools/news_grasp_direct_runtime.py",
+    "tools/news_grasp_daily_gate.py",
+    "tools/news_grasp_daily_content.py",
+    "tools/news_grasp_daily_release.py",
+    "tools/news_grasp_daily_external.py",
+    "tools/news_grasp_direct_completion.py",
+    "tools/news_grasp_production_adapters.py",
+    "tools/news_grasp_publish_contract.py",
+    "tools/news_grasp_gate_profiles.py",
+    "tools/news_grasp_audio_projection.py",
+    "tools/publish_inventory.py",
+    "config/news_grasp_daily_45m_contract_v1.json",
+    "schemas/news_grasp_daily_reporter_output.schema.json",
+    "schemas/news_grasp_daily_editor_output.schema.json",
+    "schemas/news_grasp_daily_deepdive_output.schema.json",
+)
 
 
 def _strict_json_object_pairs(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -463,6 +480,167 @@ def _row_value(row: sqlite3.Row, key: str, default: Any = None) -> Any:
         return row[key]
     except (IndexError, KeyError):
         return default
+
+
+def daily_runtime_generation(repo_root: str | Path) -> str:
+    """Daily本線を構成する実bytesを1つのruntime generationへ束縛する。"""
+
+    root = Path(repo_root).resolve(strict=True)
+    entries: list[dict[str, str]] = []
+    for relative in DAILY_RUNTIME_RELATIVE_PATHS:
+        path = (root / relative).resolve(strict=True)
+        try:
+            path.relative_to(root)
+        except ValueError as exc:
+            raise ValueError("daily_runtime_path_escape") from exc
+        if not path.is_file():
+            raise FileNotFoundError(f"daily_runtime_file_missing:{relative}")
+        entries.append(
+            {
+                "path": relative.replace("\\", "/"),
+                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            }
+        )
+    digest = hashlib.sha256(_json_dump(entries).encode("utf-8")).hexdigest()
+    return f"{RUNTIME_SCHEMA_V2}:{digest}"
+
+
+def _start_seal_sha256(seal: Mapping[str, Any]) -> str:
+    unsigned = dict(seal)
+    unsigned.pop("startSealSha256", None)
+    return hashlib.sha256(_json_dump(unsigned).encode("utf-8")).hexdigest()
+
+
+def _start_seal_receipt_path(store: "DirectRunStore", run_id: str) -> Path:
+    if re.fullmatch(r"direct-\d{4}-\d{2}-\d{2}-\d+-[0-9a-f]{32}", run_id) is None:
+        raise ValueError("start_seal_run_id_invalid")
+    return store.state_root / "start-seals" / f"{run_id}.json"
+
+
+def _write_start_seal_receipt(
+    store: "DirectRunStore",
+    *,
+    run_id: str,
+    seal: Mapping[str, Any],
+) -> None:
+    directory = store.state_root / "start-seals"
+    directory.mkdir(parents=True, exist_ok=True)
+    _reject_reparse_chain(directory, reason="start_seal_receipt_directory_reparse_forbidden")
+    path = _start_seal_receipt_path(store, run_id)
+    payload = _json_dump(dict(seal)).encode("utf-8")
+    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    try:
+        with os.fdopen(descriptor, "wb", closefd=False) as stream:
+            stream.write(payload)
+            stream.flush()
+            os.fsync(stream.fileno())
+    finally:
+        os.close(descriptor)
+
+
+def _start_seal_receipt_matches(
+    store: "DirectRunStore",
+    *,
+    run_id: str,
+    seal: Mapping[str, Any],
+) -> bool:
+    try:
+        path = _start_seal_receipt_path(store, run_id)
+        _reject_reparse_chain(path, reason="start_seal_receipt_reparse_forbidden")
+        info = os.lstat(path)
+        attributes = int(getattr(info, "st_file_attributes", 0))
+        if (
+            not stat.S_ISREG(info.st_mode)
+            or stat.S_ISLNK(info.st_mode)
+            or attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+            or info.st_size > 64 * 1024
+        ):
+            return False
+        return path.read_bytes() == _json_dump(dict(seal)).encode("utf-8")
+    except (OSError, ValueError):
+        return False
+
+
+def _start_seal_integrity_failures(
+    seal: Any,
+    *,
+    store: "DirectRunStore" | None = None,
+    row: Any | None = None,
+    expected_runtime_generation: str | None = None,
+    expected_side_effect_ids: Sequence[str] | None = None,
+    allow_legacy_fields: bool = False,
+) -> list[str]:
+    if not isinstance(seal, Mapping):
+        return ["active_start_seal_missing"]
+    failures: list[str] = []
+    sealed_hash = str(seal.get("startSealSha256") or "").casefold()
+    if not re.fullmatch(r"[0-9a-f]{64}", sealed_hash):
+        failures.append("active_start_seal_hash_missing")
+    elif sealed_hash != _start_seal_sha256(seal):
+        failures.append("active_start_seal_hash_mismatch")
+    if seal.get("schemaVersion") != "NEWS_GRASP_START_SEAL_V2":
+        failures.append("active_start_seal_schema_mismatch")
+
+    source_baseline = str(seal.get("sourceBaseline") or "").casefold()
+    remote_base_sha = str(seal.get("remoteBaseSha") or "").casefold()
+    reservation_id = str(seal.get("manifestReservationId") or "").casefold()
+    runtime_generation = str(seal.get("runtimeGeneration") or "")
+    side_effect_ids = seal.get("allowedSideEffectIds")
+    if not allow_legacy_fields:
+        if not re.fullmatch(r"[0-9a-f]{40}", source_baseline):
+            failures.append("active_start_seal_source_baseline_invalid")
+        if not re.fullmatch(r"[0-9a-f]{40}", remote_base_sha):
+            failures.append("active_start_seal_remote_base_sha_invalid")
+        if not re.fullmatch(r"[0-9a-f]{64}", reservation_id):
+            failures.append("active_start_seal_manifest_reservation_id_invalid")
+        if not runtime_generation:
+            failures.append("active_start_seal_runtime_generation_missing")
+        if (
+            not isinstance(side_effect_ids, list)
+            or not side_effect_ids
+            or any(not isinstance(item, str) or not item for item in side_effect_ids)
+            or len(set(side_effect_ids)) != len(side_effect_ids)
+        ):
+            failures.append("active_start_seal_allowed_side_effect_ids_invalid")
+    if expected_runtime_generation is not None:
+        if not expected_runtime_generation:
+            failures.append("active_start_seal_runtime_bytes_unobserved")
+        elif runtime_generation != expected_runtime_generation:
+            failures.append("active_start_seal_runtime_bytes_mismatch")
+    if expected_side_effect_ids is not None and side_effect_ids != list(
+        expected_side_effect_ids
+    ):
+        failures.append("active_start_seal_allowed_side_effect_ids_mismatch")
+
+    if row is not None:
+        bindings = {
+            "runId": "run_id",
+            "automationId": "automation_id",
+            "issueDate": "issue_date",
+            "runIntent": "run_intent",
+            "generation": "generation",
+            "schedulerTriggerAt": "scheduler_trigger_at",
+            "cwd": "cwd",
+            "manifestReservationId": "manifest_reservation_id",
+        }
+        for seal_key, row_key in bindings.items():
+            if seal.get(seal_key) != _row_value(row, row_key, None):
+                failures.append(f"active_start_seal_row_mismatch:{seal_key}")
+        try:
+            sealed_fence = int(seal.get("fencingToken"))
+            current_fence = int(_row_value(row, "fencing_token", 0) or 0)
+            if sealed_fence <= 0 or sealed_fence > current_fence:
+                failures.append("active_start_seal_fencing_token_invalid")
+        except (TypeError, ValueError):
+            failures.append("active_start_seal_fencing_token_invalid")
+        run_id = str(_row_value(row, "run_id", "") or "")
+        if store is not None and not _start_seal_receipt_matches(
+            store,
+            run_id=run_id,
+            seal=seal,
+        ):
+            failures.append("active_start_seal_receipt_mismatch")
+    return list(dict.fromkeys(failures))
 
 
 def _require_fencing_token(store: "DirectRunStore", fencing_token: int | None) -> int | None:
@@ -3455,6 +3633,67 @@ def start_run(
             conn.rollback()
             return projection
         if latest is not None:
+            if latest["status"] == "failed_integrity":
+                projection = _projection_from_row(store, conn, latest)
+                projection.update(
+                    {
+                        "ok": False,
+                        "status": "failed_integrity",
+                        "single_flight": "failed_integrity",
+                        "failures": ["same_issue_integrity_failure_requires_operator_repair"],
+                        "exact_successor": "repair_start_identity_under_explicit_authority",
+                    }
+                )
+                projection.pop("writer_lease", None)
+                projection.pop("fencing_token", None)
+                conn.rollback()
+                return projection
+            if latest["status"] in {"active", "executing", "finalizing"}:
+                stored_start_seal = _json_load(
+                    _row_value(latest, "start_seal_json", "{}"),
+                    {},
+                )
+                seal_failures = _start_seal_integrity_failures(
+                    stored_start_seal,
+                    store=store,
+                    row=latest,
+                    expected_runtime_generation=(
+                        str(runtime_generation)
+                        if runtime_generation or not store.test_only_allow_semantic_verifier
+                        else None
+                    ),
+                    expected_side_effect_ids=side_effect_ids,
+                    allow_legacy_fields=store.test_only_allow_semantic_verifier,
+                )
+                if seal_failures:
+                    changed = conn.execute(
+                        "UPDATE runs SET status='failed_integrity',updated_at=?,exact_successor=? "
+                        "WHERE run_id=? AND status=? AND updated_at=?",
+                        (
+                            now_text,
+                            "repair_start_identity_under_explicit_authority",
+                            latest["run_id"],
+                            latest["status"],
+                            latest["updated_at"],
+                        ),
+                    ).rowcount
+                    if changed != 1:
+                        conn.rollback()
+                        raise PermissionError("start_seal_integrity_state_cas_conflict")
+                    failed = store._run_row(conn, str(latest["run_id"]))
+                    projection = _projection_from_row(store, conn, failed)
+                    projection.update(
+                        {
+                            "ok": False,
+                            "status": "failed_integrity",
+                            "single_flight": "failed_integrity",
+                            "failures": seal_failures,
+                        }
+                    )
+                    projection.pop("writer_lease", None)
+                    projection.pop("fencing_token", None)
+                    conn.commit()
+                    return projection
             lease_until = _parse_time(latest["lease_until"])
             if latest["status"] in {"active", "executing", "finalizing"} and lease_until and lease_until > now:
                 projection = _projection_from_row(store, conn, latest)
@@ -3475,6 +3714,121 @@ def start_run(
                 return projection
             if latest["status"] in {"active", "executing", "finalizing"}:
                 external_state = store._external_side_effect_state(conn, latest["run_id"])
+                stored_start_seal = _json_load(
+                    _row_value(latest, "start_seal_json", "{}"),
+                    {},
+                )
+                prior_operation_rows = conn.execute(
+                    "SELECT operation_id,operation_index FROM daily_operation_receipts "
+                    "WHERE run_id=? ORDER BY operation_index",
+                    (latest["run_id"],),
+                ).fetchall()
+                prior_operation_indices = [int(item[1]) for item in prior_operation_rows]
+                next_operation_index = len(prior_operation_indices)
+                active_claims = conn.execute(
+                    "SELECT operation_id,operation_index,fencing_token,status "
+                    "FROM daily_operation_claims WHERE run_id=? "
+                    "AND status IN ('claimed','recoverable') ORDER BY operation_index",
+                    (latest["run_id"],),
+                ).fetchall()
+                current_issue_index = DAILY_OPERATION_ORDER.index("current_issue_integration")
+                claim_is_pre_external_recoverable = (
+                    not active_claims
+                    or (
+                        len(active_claims) == 1
+                        and int(active_claims[0][1]) == next_operation_index
+                        and next_operation_index < current_issue_index
+                    )
+                )
+                can_recover_pre_external = (
+                    latest["status"] in {"active", "executing"}
+                    and external_state == "none"
+                    and not str(latest["external_started_at"] or "")
+                    and stored_start_seal.get("runtimeGeneration") == str(runtime_generation)
+                    and stored_start_seal.get("allowedSideEffectIds") == side_effect_ids
+                    and prior_operation_indices == list(range(next_operation_index))
+                    and next_operation_index <= current_issue_index
+                    and claim_is_pre_external_recoverable
+                )
+                if can_recover_pre_external:
+                    exact_successor = DAILY_OPERATION_ORDER[next_operation_index]
+                    recovery_lease = _opaque_id(
+                        "lease-pre-external-recovery",
+                        issue,
+                        int(latest["generation"]),
+                    )
+                    prior_fencing_token = int(
+                        _row_value(latest, "fencing_token", 0) or 0
+                    )
+                    recovery_fencing_token = prior_fencing_token + 1
+                    renewed_until = _iso(now + store.lease_ttl)
+                    changed = conn.execute(
+                        "UPDATE runs SET writer_lease=?,lease_until=?,fencing_token=?,"
+                        "status='active',updated_at=?,exact_successor=? "
+                        "WHERE run_id=? AND writer_lease=? AND lease_until=? "
+                        "AND fencing_token=? AND status IN ('active','executing')",
+                        (
+                            recovery_lease,
+                            renewed_until,
+                            recovery_fencing_token,
+                            now_text,
+                            exact_successor,
+                            latest["run_id"],
+                            latest["writer_lease"],
+                            latest["lease_until"],
+                            prior_fencing_token,
+                        ),
+                    ).rowcount
+                    if changed != 1:
+                        conn.rollback()
+                        raise PermissionError(
+                            "pre_external_continuation_lease_cas_conflict"
+                        )
+                    if active_claims:
+                        claim_changed = conn.execute(
+                            "UPDATE daily_operation_claims "
+                            "SET status='recoverable',fencing_token=?,completed_at=? "
+                            "WHERE run_id=? AND operation_id=? "
+                            "AND fencing_token=? AND status IN ('claimed','recoverable')",
+                            (
+                                recovery_fencing_token,
+                                now_text,
+                                latest["run_id"],
+                                exact_successor,
+                                prior_fencing_token,
+                            ),
+                        ).rowcount
+                        if claim_changed != 1:
+                            conn.rollback()
+                            raise PermissionError(
+                                "pre_external_claim_recovery_cas_conflict"
+                            )
+                    _append_timing_event_in_tx(
+                        conn,
+                        run_id=str(latest["run_id"]),
+                        event_kind="handoff",
+                        started_at=str(latest["lease_until"]),
+                        ended_at=now_text,
+                        evidence={
+                            "phase": exact_successor,
+                            "event": "expired_owner_same_run_continuation",
+                            "preservedOperationCount": next_operation_index,
+                            "priorFencingToken": prior_fencing_token,
+                            "recoveryFencingToken": recovery_fencing_token,
+                        },
+                    )
+                    recovered = store._run_row(conn, str(latest["run_id"]))
+                    projection = _projection_from_row(store, conn, recovered)
+                    projection.update(
+                        {
+                            "status": "active",
+                            "single_flight": "recovered_after_expired_owner",
+                            "continuation_recovery": True,
+                            "recovery_class": "recoverable_same_run",
+                        }
+                    )
+                    conn.commit()
+                    return projection
                 if latest["status"] == "finalizing" and str(latest["finalization_nonce"] or ""):
                     admission_receipt = _json_load(
                         str(latest["observation_receipt_json"] or "{}"),
@@ -3883,6 +4237,8 @@ def start_run(
                 (schema_receipt.get("migration_receipt") or {}).get("migrationHash") or ""
             ),
         }
+        start_seal["startSealSha256"] = _start_seal_sha256(start_seal)
+        _write_start_seal_receipt(store, run_id=run_id, seal=start_seal)
         conn.execute(
             """
             INSERT INTO runs (
@@ -6248,6 +6604,104 @@ def _daily_red(reason: str, **extra: Any) -> dict[str, Any]:
     }
 
 
+def resolve_daily_start_identity(
+    store: DirectRunStore,
+    *,
+    issue_date: str,
+    observed_identity: Mapping[str, Any],
+    automation_id: str = AUTOMATION_ID,
+    run_intent: str = RUN_INTENT,
+) -> dict[str, Any]:
+    """開始済みrunでは現在観測よりimmutable start sealを優先する。"""
+
+    active = get_active_run(
+        store,
+        automation_id=automation_id,
+        issue_date=issue_date,
+        run_intent=run_intent,
+        include_writer=True,
+    )
+    if active is None:
+        return dict(observed_identity)
+    seal = active.get("start_seal")
+    observed_side_effect_ids = observed_identity.get("allowed_side_effect_ids")
+    expected_side_effect_ids = (
+        list(observed_side_effect_ids)
+        if isinstance(observed_side_effect_ids, (list, tuple))
+        else None
+    )
+    seal_failures = _start_seal_integrity_failures(
+        seal,
+        store=store,
+        row=active,
+        expected_runtime_generation=str(observed_identity.get("runtime_generation") or ""),
+        expected_side_effect_ids=expected_side_effect_ids,
+        allow_legacy_fields=store.test_only_allow_semantic_verifier,
+    )
+    if seal_failures:
+        now_text = _iso(store.now())
+        with closing(store.connect()) as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            changed = conn.execute(
+                "UPDATE runs SET status='failed_integrity',updated_at=?,exact_successor=? "
+                "WHERE run_id=? AND writer_lease=? AND fencing_token=? "
+                "AND status IN ('active','executing','finalizing') AND updated_at=?",
+                (
+                    now_text,
+                    "repair_start_identity_under_explicit_authority",
+                    active["run_id"],
+                    active["writer_lease"],
+                    int(active["fencing_token"]),
+                    active["updated_at"],
+                ),
+            ).rowcount
+            if changed != 1:
+                conn.rollback()
+                raise PermissionError("start_seal_integrity_state_cas_conflict")
+            conn.commit()
+        return {
+            **dict(observed_identity),
+            "ok": False,
+            "status": "failed_integrity",
+            "failures": seal_failures,
+            "run_id": str(active.get("run_id") or ""),
+            "exact_successor": "repair_start_identity_under_explicit_authority",
+        }
+    assert isinstance(seal, Mapping)
+    source_baseline = str(seal.get("sourceBaseline") or "").casefold()
+    remote_base_sha = str(seal.get("remoteBaseSha") or "").casefold()
+    manifest_reservation_id = str(
+        seal.get("manifestReservationId") or ""
+    ).casefold()
+    runtime_generation = str(seal.get("runtimeGeneration") or "")
+    allowed_side_effect_ids = [
+        str(item) for item in (seal.get("allowedSideEffectIds") or ())
+    ]
+    debt = [str(item) for item in (observed_identity.get("failures") or ())]
+    observed_bindings = {
+        "source_baseline": source_baseline,
+        "remote_base_sha": remote_base_sha,
+        "manifest_reservation_id": manifest_reservation_id,
+        "runtime_generation": runtime_generation,
+        "allowed_side_effect_ids": allowed_side_effect_ids,
+    }
+    for key, sealed_value in observed_bindings.items():
+        observed_value = observed_identity.get(key)
+        if observed_value not in (None, "", []) and observed_value != sealed_value:
+            debt.append(f"post_start_{key}_drift")
+    debt = list(dict.fromkeys(debt))
+    return {
+        "schemaVersion": "NEWS_GRASP_DAILY_IDENTITY_CONTEXT_V2",
+        "ok": True,
+        "resume_identity": True,
+        "run_id": str(active.get("run_id") or ""),
+        "manifest_id": str(active.get("manifest_id") or ""),
+        **observed_bindings,
+        "next_run_readiness_status": "red" if debt else "green",
+        "next_run_readiness_debt": debt,
+    }
+
+
 def run_daily_mainline(
     *,
     repo_root: Path,
@@ -6272,13 +6726,21 @@ def run_daily_mainline(
             protected_release_policy=daily.PROTECTED_RELEASE_POLICY,
             exact_successor="explicit_new_release_authority_required",
         )
-    identity = daily.resolve_daily_identity_context(
+    store = DirectRunStore(state_root)
+    observed_identity = daily.resolve_daily_identity_context(
         repo_root=repo_root,
         issue_date=issue_date,
     )
+    identity = resolve_daily_start_identity(
+        store,
+        issue_date=issue_date,
+        observed_identity=observed_identity,
+    )
     if identity.get("ok") is not True:
-        return _daily_red("daily_identity_preflight_red", identity=identity)
-    store = DirectRunStore(state_root)
+        result = _daily_red("daily_identity_preflight_red", identity=identity)
+        if identity.get("status") == "failed_integrity":
+            result["status"] = "failed_integrity"
+        return result
     receipts = daily.run_daily_sequence(
         store=store,
         cwd=repo_root,
@@ -6289,7 +6751,7 @@ def run_daily_mainline(
         manifest_id=str(identity.get("manifest_id") or ""),
         manifest_reservation_id=str(identity.get("manifest_reservation_id") or ""),
         source_baseline=str(identity.get("source_baseline") or ""),
-        runtime_generation=RUNTIME_SCHEMA_V2,
+        runtime_generation=str(identity.get("runtime_generation") or ""),
         remote_base_sha=str(identity.get("remote_base_sha") or ""),
         allowed_side_effect_ids=list(identity.get("allowed_side_effect_ids") or ()),
     )
