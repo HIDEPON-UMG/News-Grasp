@@ -861,7 +861,7 @@ def test_runner_exposes_full_generation_scheduled_recovery_intent() -> None:
     assert "public_completion" in runtime
     assert "run_exact_successor" in runtime
     assert "ScheduledRecoveryFull" not in runtime
-    assert "tool不在時にshell fallbackへ切り替えず" in skill
+    assert "command起動不能時は別経路へ切り替えず" in skill
 
 
 def test_recover_only_is_not_the_all_artifacts_missing_recovery_path() -> None:
@@ -939,7 +939,8 @@ def test_automation_and_direct_skill_use_executable_direct_terminal_contract() -
     ).read_text(encoding="utf-8-sig")
     for source in (automation, skill):
         assert "$news-grasp-direct-mainline" in source or "News-Grasp Direct Mainline" in source
-        assert "news_grasp_daily.run_daily" in source
+        assert "tools.news_grasp_direct_runtime daily" in source
+        assert "news_grasp_daily.run_daily" not in source
         for operation in (
             "static_check",
             "scoped_contract_unit",

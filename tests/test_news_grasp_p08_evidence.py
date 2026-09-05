@@ -278,30 +278,52 @@ def test_p08_generate_requires_explicit_isolation_receipt() -> None:
     assert "isolation_receipt_path" in parameters
 
 
+def test_p08_route_manifest_uses_candidate_owner_without_post_promotion_evidence() -> None:
+    design = evidence.build_design(
+        workspace_root=ROOT,
+        thread_id="01a06f12-ab74-7340-8e8a-ccd52214f885",
+        task_root_user_event_hash="a" * 64,
+    )
+    source = (ROOT / "tools" / "news_grasp_p08_evidence.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "candidate_owner" in design["requiredRouteIds"]
+    assert "installed_launcher" not in design["requiredRouteIds"]
+    assert "R08_source_isolation_owner_parity" in design["requirementIds"]
+    assert "R08_source_installed_task_parity" not in design["requirementIds"]
+    chosen = next(
+        item
+        for item in design["candidateStrategies"]
+        if item["strategyId"] == design["chosenStrategyId"]
+    )
+    assert "release_reflection" not in chosen["reusedEvidenceIds"]
+    assert "news_grasp_nopublish_owner.py" in source
+    assert "& $installedTaskPythonPath" not in source
+
+
 def test_nopublish_wrapper_validates_bound_isolation_before_launch() -> None:
     wrapper = (
         ROOT / "scripts" / "ops" / "invoke-scheduled-equivalent-nopublish.ps1"
     ).read_text(encoding="utf-8-sig")
 
     assert "[Parameter(Mandatory=$true)][string] $IsolationReceiptPath" in wrapper
-    assert "active runtime generation is dirty" in wrapper
+    assert "source candidate generation is dirty" in wrapper
     assert ".StartsWith('GIT_', [StringComparison]::OrdinalIgnoreCase)" in wrapper
     assert "[Environment]::SetEnvironmentVariable(" in wrapper
-    assert "Local\\NewsGraspOpsInstallV1" in wrapper
-    assert "catch [Threading.AbandonedMutexException]" in wrapper
-    assert "} finally {" in wrapper
-    assert "$runtimeInstallMutex.ReleaseMutex()" in wrapper
-    assert "NEWS_GRASP_NOPUBLISH_RUNTIME_DRIFT_BEFORE_LAUNCH" in wrapper
-    assert "$runtimeRepoStatusBeforeLaunchExitCode = $LASTEXITCODE" in wrapper
+    assert "Local\\NewsGraspOpsInstallV1" not in wrapper
+    assert "$runtimeInstallMutex.ReleaseMutex()" not in wrapper
+    assert "NEWS_GRASP_NOPUBLISH_CANDIDATE_DRIFT_BEFORE_LAUNCH" in wrapper
+    assert "$sourceRepoStatusBeforeLaunchExitCode = $LASTEXITCODE" in wrapper
+    assert "$executionTrackedStatusBeforeLaunchExitCode = $LASTEXITCODE" in wrapper
     assert "$p08EvidenceToolBlobBeforeLaunchExitCode -ne 0" in wrapper
     assert "HEAD:tools/news_grasp_p08_evidence.py" in wrapper
     assert "NEWS_GRASP_NOPUBLISH_RUNTIME_VALIDATOR_BLOB_INVALID" in wrapper
-    assert "Join-Path $runtimeRepoPath 'tools\\news_grasp_p08_evidence.py'" in wrapper
-    assert "Join-Path $repoPath 'tools\\news_grasp_p08_evidence.py'" not in wrapper
-    assert "'--source-repo' $runtimeRepoPath" in wrapper
+    assert "Join-Path $repoPath 'tools\\news_grasp_p08_evidence.py'" in wrapper
+    assert "'--source-repo' $sourceRepoPath" in wrapper
     validation = wrapper.index("'validate-isolation'")
     binding = wrapper.index("NEWS_GRASP_E2E_ISOLATION_ADMISSION_BINDING_INVALID")
-    launch = wrapper.index("& $installedTaskPythonPath")
+    launch = wrapper.index("'-B' $nopublishOwnerPath")
     assert validation < binding < launch
 
 

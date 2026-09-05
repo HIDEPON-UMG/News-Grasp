@@ -30,13 +30,13 @@ TTSまたは公開HTMLの生成前に、共有internal-metadata stripperでraw/e
 
 対談は記事固有の根拠を入力にLLMが生成し、7価値区間の順序を保ったままturn数を可変にする。先輩は常体、若手は敬体とし、fillerや根拠の言換えだけの反復を許可しない。最低文字数・最低再生時間・固定turn数は品質条件にせず、最大値だけを暴走安全弁として扱う。
 
-唯一のL8経路は `official wrapper→installed launcher→runner→broker` とする。official wrapperが発行する`NEWS_GRASP_INSTALLED_NOPUBLISH_LAUNCH_AUTHORITY_V1`は`externalHealthAuthorityFixturePath`と`externalHealthAuthorityFixtureSha256`を必須fieldとしてsealし、installed launcherはlaunch直前にfile bytes、repo containment、reparse不在、64KiB上限、runner arguments中の`-ExternalHealthAuthorityPathOverride`とのcanonical path一致を再検証する。claim witnessはcanonical file pathとして渡し、inline JSON、別path、別hashへ置換しない。
+唯一のL8経路は `clean pre-promotion candidate→issue-specific isolation→official wrapper→candidate-local owner→runner→broker` とする。NoPublish Greenまでproduction runtimeへ切り替えない。official wrapperはsource candidateと隔離worktreeのcommit・Git common-dir、source clean、tracked code不変、外部fixtureのpath/hashをlaunch直前に再検証する。candidate-local ownerは実runner process handleのcreation identityを取得し、claim、state hash、実exitと同一lineageのterminal authorityを発行する。claim witnessはcanonical file pathとして渡し、inline JSON、別path、別hashへ置換しない。
 
 ## 1. 目的
 
 E2Eは、完成済みの運用鎖が本番相当入口で成立することを確認する最終試験である。毎日inputが変わるNews-Graspでは、E2E Greenは「そのinputで一度通った」証拠であり、翌日以降の完走性の十分証明ではない。朝6時に任せてよいか、または最小NoPublish検証で何が担保できたかを問われた場合は、L8を先に求めず、下記の完走性choke point matrixを先に判定する。必須のattempt A（安定化）を一度実行し、Aが失敗した場合だけ、失敗原因へ作用する最小修正と同一attempt内の再開を一回まで許可した後、完全修正後のattempt B（最終確認）を一度だけ実行する。Aが無修正で成功した場合はBを実行しない。Bで修正起因でないrandom/design failureが発生した場合は設計feedbackを記録して終端し、3回目は実行しない。
 
-遷移receiptは実行前の自己申告で作成しない。`tools/e2e_final_admission_bridge.py validate-issued` はissueイベントだけを記録し、installed launcherが実runner process handleのcreation identity、claim、state hash、実exitを束ねた`NEWS_GRASP_E2E_RUNNER_TERMINAL_AUTHORITY_V1`を発行する。実runner終了後の同bridgeの`record-outcome`はこのterminal authorityだけを検証してterminal receiptを発行し、callerのstate JSONやexit codeを成功証拠として受け取らない。success・resume・full correctionはterminal receiptのstate hashとowner identityへ束縛される。launcherはこのreceiptとledgerのread-only検証だけを行い、caller作成receiptや実行前Greenを受理しない。
+遷移receiptは実行前の自己申告で作成しない。`tools/e2e_final_admission_bridge.py validate-issued` はissueイベントだけを記録し、`tools/news_grasp_nopublish_owner.py`が実runner process handleのcreation identity、claim、state hash、実exitを束ねた`NEWS_GRASP_E2E_RUNNER_TERMINAL_AUTHORITY_V1`を発行する。実runner終了後の同bridgeの`record-outcome`はこのterminal authorityだけを検証してterminal receiptを発行し、callerのstate JSONやexit codeを成功証拠として受け取らない。success・resume・full correctionはterminal receiptのstate hashとowner identityへ束縛される。ownerはこのreceiptとledgerのread-only検証だけを行い、caller作成receiptや実行前Greenを受理しない。
 
 E2Eを次の用途に使ってはならない。
 
@@ -249,12 +249,14 @@ official wrapperは次だけである。
 
 wrapperは次の順で動かなければならない。
 
-1. pathと隔離境界を検証する。
-2. high-cost budget consumerを一度だけ通し、reservation receiptを保存する。
-3. reservation receiptを同じattempt IDで検証し、runner引数へ渡す。
-4. `tools/e2e_final_admission_bridge.py consume`でfinal admissionを消費する。
-5. runnerは渡されたreservation receiptを再検証して再予約せず、同じrunnerを`-NoPublish`で起動する。
-6. state、log、exit code、所要時間、no-publish/no-pushをreceiptへ記録する。
+1. clean pre-promotion candidateから作成済みのissue-specific isolationだけを受理する。
+2. source candidateと隔離worktreeのcommit・common-dir・code freshness、pathと隔離境界を検証する。
+3. high-cost budget consumerを一度だけ通し、reservation receiptを保存する。
+4. reservation receiptを同じattempt IDで検証し、runner引数へ渡す。
+5. `tools/e2e_final_admission_bridge.py consume`でfinal admissionを消費する。
+6. candidate-local ownerがrunnerを`-NoPublish`で起動し、実process identityと終端authorityを記録する。
+7. state、log、exit code、所要時間、no-publish/no-pushをreceiptへ記録する。
+8. NoPublish Greenを確認した後だけpushとproduction runtime promotionへ進む。
 
 wrapper外からfull runnerをE2E目的で直接起動してはならない。
 

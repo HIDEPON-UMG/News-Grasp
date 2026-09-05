@@ -6,7 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 RETIRED_BASENAME = "news_grasp_" + "daily_launcher"
 RETIRED_MODULE = "tools." + RETIRED_BASENAME
-DAILY_MCP_TOOL = "news_grasp_daily.run_daily"
+DAILY_DIRECT_COMMAND = "tools.news_grasp_direct_runtime daily"
 TEXT_SUFFIXES = {
     ".json",
     ".md",
@@ -65,6 +65,7 @@ def test_direct_runtime_is_the_single_documented_daily_process() -> None:
 
     assert 'sub.add_parser("daily")' in runtime
     assert "def run_daily_mainline(" in runtime
-    assert automation.count(DAILY_MCP_TOOL) == 1
-    assert "tools.news_grasp_direct_runtime daily" not in automation
-    assert "shell command、fallback launcher、二回目のtool callは開始しません" in automation
+    assert automation.count(DAILY_DIRECT_COMMAND) == 1
+    assert "GetFolderPath('LocalApplicationData')" in automation
+    assert "news_grasp_daily.run_daily" not in automation
+    assert "二回目のcommandは開始しません" in automation

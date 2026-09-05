@@ -289,6 +289,18 @@ def test_20260813_control_plane_incident_is_registered_without_publishing_report
     assert scenario.evidence_path in LOCAL_ONLY_EVIDENCE_SHA256
 
 
+def test_20260905_external_control_plane_spof_is_registered() -> None:
+    scenario = next(
+        item for item in historical_failure_scenarios() if item.issue_date == "2026-09-05"
+    )
+
+    assert "MCP registration" in scenario.direct_cause
+    assert "single point" in scenario.root_pattern
+    assert "one product-local command" in scenario.missing_invariant
+    assert "NoPublish E2E" in scenario.cheapest_e2e_or_fixture
+    assert scenario.evidence_path == "tests/test_news_grasp_daily_broker.py"
+
+
 def test_historical_failure_matrix_covers_codex_residual_work_public_reflection() -> None:
     scenarios = historical_failure_scenarios()
     matches = [

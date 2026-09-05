@@ -2686,7 +2686,7 @@ def record_runner_outcome(
     terminal_authority_path: Path,
     outcome_receipt_path: Path | None = None,
 ) -> dict[str, Any]:
-    """installed launcherが発行した実runner終端authorityだけを受理する。"""
+    """candidate-local ownerが発行した実runner終端authorityだけを受理する。"""
 
     admission = Path(admission_path).resolve(strict=True)
     policy = Path(attempt_policy_path).resolve(strict=True)

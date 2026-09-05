@@ -50,7 +50,7 @@ def test_nopublish_wrapper_authorizes_and_activates_parent_before_runner_launch(
     activate = text.index("& $pythonCanonicalPath -I $highCostOperationBudgetPath 'activate'")
     validate_parent = text.index("'validate-activated'")
     consume = text.index("& $pythonCanonicalPath -I $e2eAdmissionBridgePath 'consume'")
-    runner_launch = text.index("& $installedTaskPythonPath @installedLauncherArguments")
+    runner_launch = text.index("'-B' $nopublishOwnerPath")
     assert validate_issued < authorize < activate < validate_parent < consume < runner_launch
     assert "'full_e2e'" in text
     assert "tools\\harness\\high_cost_operation_budget.py" in text
@@ -63,7 +63,7 @@ def test_nopublish_wrapper_authorizes_and_activates_parent_before_runner_launch(
     assert "$attemptId = \"nopublish:$DateStamp\"" in text
     assert "Get-Content -LiteralPath $E2EAdmissionPath" not in text
     assert "'--reservation-output' $reservationReceiptPath" in text
-    assert "NEWS_GRASP_INSTALLED_NOPUBLISH_LAUNCH_AUTHORITY_V1" in text
+    assert "product_local_candidate_owner" in text
     assert "& $PowerShellExe @runnerArguments" not in text
 
 
@@ -102,7 +102,7 @@ def test_nopublish_wrapper_rejects_supersession_without_causal_proof() -> None:
 
 
 def test_nopublish_wrapper_binds_authority_and_runner_to_isolated_repo() -> None:
-    """installed launcherを使いつつ、生成先は固定generationの隔離worktreeへ束縛する。"""
+    """candidate-local ownerと生成先を同じ隔離generationへ束縛する。"""
     text = WRAPPER.read_text(encoding="utf-8-sig")
 
     assert "$runnerPath = Join-Path $repoPath 'scripts\\ops\\news-grasp-release-nopublish.ps1'" in text
@@ -112,11 +112,12 @@ def test_nopublish_wrapper_binds_authority_and_runner_to_isolated_repo() -> None
     assert "'--execution-root' $repoPath" in text
     assert "'-IsolationReceiptPath', $IsolationReceiptPath" in text
     assert "'-LaunchEvidencePath', $launchEvidencePath" in text
-    assert "executionRepoRoot = $repoPath" in text
-    assert "executionRepoCommit = $executionRepoCommit" in text
-    assert "runtimeRepoCommit = $runtimeRepoCommit" in text
-    assert "e2eAdmissionPath = [System.IO.Path]::GetFullPath($E2EAdmissionPath)" in text
-    assert "e2eAdmissionSha256 = (Get-FileHash -LiteralPath $E2EAdmissionPath -Algorithm SHA256).Hash.ToLowerInvariant()" in text
+    assert "source_repo_root = $sourceRepoPath" in text
+    assert "source_repo_commit = $sourceRepoCommit" in text
+    assert "execution_repo_commit = $executionRepoCommit" in text
+    assert "nopublish_owner_path = $nopublishOwnerPath" in text
+    assert "e2e_admission_path = [System.IO.Path]::GetFullPath($E2EAdmissionPath)" in text
+    assert "e2e_admission_sha256 = (Get-FileHash -LiteralPath $E2EAdmissionPath -Algorithm SHA256).Hash.ToLowerInvariant()" in text
 
 
 def test_nopublish_wrapper_propagates_parent_authority_not_shared_child_receipt() -> None:
@@ -137,7 +138,7 @@ def test_nopublish_wrapper_threads_optional_user_supersession_approval_fail_clos
     assert "$supersessionArguments = @('--supersession-approval', $SupersessionApprovalPath)" in text
     authorize = text.index("'authorize-causal-replacement'")
     approval = text.index("@supersessionArguments", authorize)
-    runner = text.index("& $installedTaskPythonPath @installedLauncherArguments")
+    runner = text.index("'-B' $nopublishOwnerPath")
     assert authorize < approval < runner
     assert "SupersessionApprovalPath" not in text[text.index("$runnerArguments = @("):runner]
 
@@ -147,7 +148,7 @@ def test_supersession_approval_is_bound_to_issued_attempt_and_issue_date() -> No
     guard = text.split("if ($SupersessionApprovalPath)", 1)[1].split(
         "$statePath = Get-CanonicalFuturePath", 1
     )[0]
-    assert "$supersessionApproval = Get-Content -LiteralPath $SupersessionApprovalPath" in guard
+    assert "$supersessionApproval = Read-BoundedJsonFile -Path $SupersessionApprovalPath" in guard
     assert '$issuedAttemptKey = "News-Grasp:${DateStamp}:scheduled-equivalent-nopublish"' in guard
     assert "$supersessionApproval.canonicalAttemptKey" in guard
     assert "$supersessionApproval.issueDate" in guard
@@ -400,7 +401,7 @@ def test_nopublish_wrapper_uses_deterministic_parent_and_final_argument_paths() 
     assert "[System.IO.FileMode]::CreateNew" in text
     validate = text.index("'validate-activated'")
     consume = text.index("'consume'")
-    runner = text.index("& $installedTaskPythonPath @installedLauncherArguments")
+    runner = text.index("'-B' $nopublishOwnerPath")
     assert validate < consume < runner
 
 
@@ -530,8 +531,6 @@ def test_official_wrapper_rejects_junction_outputs_before_outside_write(tmp_path
             str(evidence),
         "-E2EAdmissionPath",
         str(repo / "admission.json"),
-        "-ReleaseReflectionReceiptPath",
-        str(evidence),
         "-IsolationReceiptPath",
         str(evidence),
         "-PowerShellExe",

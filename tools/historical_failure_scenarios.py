@@ -806,6 +806,16 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "plans/2026-08-27-news-grasp-public-recovery-closeout/operational-design.md",
         "fixture_required",
     ),
+    HistoricalFailureScenario(
+        "2026-09-05",
+        "scheduled direct entry / runtime promotion / same-run recovery / completion reporting",
+        "the product runtime was ready to resume, but the only daily entry depended on Codex MCP registration, marketplace activation, and tools/list before the product process could start",
+        "external control-plane single point before product-owned recovery",
+        "one product-local command must start the canonical runtime without MCP, goal, caller ID, SHA, manifest ID, or plugin availability, while product state keeps same-run continuation authority",
+        "direct-command contract, plugin-unavailable negative fixture, same-run identity fixture, and final NoPublish E2E",
+        "tests/test_news_grasp_daily_broker.py",
+        "runtime_e2e_required",
+    ),
 )
 
 

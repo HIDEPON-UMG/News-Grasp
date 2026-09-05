@@ -7,15 +7,15 @@ description: Run the 06:00 News-Grasp scheduled production through its single di
 
 ## Lunaの操作
 
-実行操作は次のMCP toolを空のJSONで一回だけ呼び出すことに限る。個別phase、管理command、raw script、旧runner、NoPublish、historical、Playwright、full test、手動repair、pollingを開始しない。
+実行操作は次の製品内commandを一回だけ実行することに限る。個別phase、管理command、raw script、旧runner、MCP、NoPublish、historical、Playwright、full test、手動repair、pollingを開始しない。
 
-```text
-news_grasp_daily.run_daily {}
+```powershell
+& ([IO.Path]::Combine([Environment]::GetFolderPath('LocalApplicationData'), 'Programs/Python/Python312/python.exe')) -B -m tools.news_grasp_direct_runtime daily
 ```
 
-toolが返したmachine receiptを日本語で報告する。原因調査、別経路への切替え、run ID・SHA・manifest IDの指定、同じtoolの再実行をLunaが判断しない。`public incompleteかつexact successorがある状態で終了しない`責任はruntime brokerが持ち、Lunaは低位operationを列挙・実行しない。tool不在時にshell fallbackへ切り替えず、`typed_tool_unavailable`として報告する。
+commandが返したmachine receiptを日本語で報告する。原因調査、別経路への切替え、run ID・SHA・manifest IDの指定、同じcommandの再実行をLunaが判断しない。`public incompleteかつexact successorがある状態で終了しない`責任は製品内runtimeが持ち、Lunaは低位operationを列挙・実行しない。command起動不能時は別経路へ切り替えず、typed resultまたはprocess exitをそのまま報告する。
 
-## Runtime契約
+## Direct 本線工程（Daily 六phase）
 
 Daily 六phaseはruntimeが次の順序で所有する。
 
@@ -26,9 +26,9 @@ Daily 六phaseはruntimeが次の順序で所有する。
 5. `consumer_public_verification`
 6. `atomic_completion`
 
-runtimeは `automation_id + issue_date + run_intent` と開始時sealからactual runを解決する。開始後の観測SHA・設定driftは現runを止めず次回readiness debtへ分離する。lease失効時は競合writer不在を確認し、同じrunへCAS takeoverして最初の未完了phaseから続ける。Green receipt、成果物、provider receiptは再実行・再送しない。
+runtimeは `automation_id + issue_date + run_intent` と開始時sealをsingle-flight identityとしてactual runを解決する。開始後の観測SHA・設定driftは現runを止めず次回readiness debtへ分離する。lease失効時は競合writer不在を確認し、同じrunへCAS takeoverして最初の未完了phaseから続ける。Green receipt、成果物、provider receiptは再実行・再送しない。
 
-MCP serverはinstalled TOMLのcwdを実行authorityにしない。非terminal runがない時だけ固定clean runtimeをpromotionし、broker receipt、marketplace、installed/enabled plugin、file hash、実serverの`tools/list`を同じsource generationへ束縛する。実行時はcommit ancestryとserver bytesも検証し、stdinとchild出力をboundedに処理する。90分でchildをkillせず、SLO debt後も同じrunの決定論的successor、read-only reconcile、consumer verification、finalizationをruntime内で続ける。
+Codex automationのcwdはpromotion済み固定runtimeであり、Luna入力のpathを実行authorityにしない。promotionは非terminal runがない時だけtemplate、installed TOML、App DB、skill、snapshot、runtime file manifestを同じsource generationへ束縛する。MCP登録・plugin有効化・goal再開は起動条件でも完了条件でもない。90分でprocessをkillせず、SLO debt後も同じrunの決定論的successor、read-only reconcile、consumer verification、finalizationをruntime内で続ける。
 
 runtime改ざん、state DB破損、競合live writer、許可外副作用だけは`failed_integrity`とする。provider ACKが取得不能なら`unknown_unobtainable`を保持し、推測で成功または再送へ変換しない。
 

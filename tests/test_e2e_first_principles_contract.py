@@ -152,14 +152,13 @@ def test_temporary_mainline_automation_template_matches_viability_contract() -> 
         "post_publish_issue_list",
         "tools.publish_inventory.scheduled_category_ids(issue_date)",
         "automation/skills/news-grasp-e2e-discipline/SKILL.md",
-        "news_grasp_daily.run_daily",
-        "空のJSON `{}`",
+        "tools.news_grasp_direct_runtime daily",
         "current_issue_integration",
         "consumer_public_verification",
         "atomic_completion",
     )
     assert all(fragment in template for fragment in required)
-    assert "tools.news_grasp_direct_runtime daily" not in template
+    assert template.count("tools.news_grasp_direct_runtime daily") == 1
     forbidden = (
         'schedule = "40 6 * * *"',
         'execution_mode = "stdout_projection"',
@@ -167,6 +166,22 @@ def test_temporary_mainline_automation_template_matches_viability_contract() -> 
         "runner、installer、publisher、\nfinalizerを起動せず",
     )
     assert not any(fragment in template for fragment in forbidden)
+
+
+def test_direct_daily_e2e_composition_uses_the_executable_entry() -> None:
+    from tools.news_grasp_e2e_contract import validate_e2e_launch_contract
+
+    result = validate_e2e_launch_contract(ROOT)
+
+    assert result["status"] == "green"
+    assert result["compositionOrder"] == [
+        "automation_prompt",
+        "title_observation",
+        "daily_launcher",
+        "daily_sequence",
+        "consumer_public_verification",
+        "atomic_completion",
+    ]
 
 
 def test_e2e_attempt_identity_cannot_reset_through_aliases_or_resume() -> None:
@@ -217,7 +232,7 @@ def test_scheduled_production_budget_is_disjoint_from_final_e2e_budget() -> None
     skill = _skill()
     spec = _spec()
     required = (
-        "通常06:00 Scheduled TaskはE2Eではない",
+        "通常06:00 Codex automationはE2Eではない",
         "scheduled_production",
         "scheduled_recovery",
         "issue date単位の最大9 model call",

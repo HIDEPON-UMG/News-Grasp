@@ -172,7 +172,6 @@ def daily_process_mutex(*, timeout_ms: int = 0):
     finally:
         os.close(descriptor)
 DAILY_RUNTIME_RELATIVE_PATHS = (
-    "tools/news_grasp_daily_broker.py",
     "tools/news_grasp_direct_runtime.py",
     "tools/news_grasp_daily_gate.py",
     "tools/news_grasp_daily_content.py",
@@ -191,10 +190,6 @@ DAILY_RUNTIME_RELATIVE_PATHS = (
     "schemas/news_grasp_daily_reporter_shard_output.schema.json",
     "schemas/news_grasp_daily_editor_output.schema.json",
     "schemas/news_grasp_daily_deepdive_output.schema.json",
-    ".agents/plugins/marketplace.json",
-    "plugins/news-grasp-daily/server.py",
-    "plugins/news-grasp-daily/.mcp.json",
-    "plugins/news-grasp-daily/.codex-plugin/plugin.json",
 )
 
 
@@ -7009,8 +7004,7 @@ def validate_installed_automation_semantics(path: str | Path | None = None) -> d
     required_prompt_parts = (
         "$news-grasp-direct-mainline",
         "YY/MM/DD",
-        "news_grasp_daily.run_daily",
-        "空のJSON",
+        "tools.news_grasp_direct_runtime daily",
         "title_status",
         "title_status=already_ok",
         "already_ok",

@@ -112,8 +112,7 @@ APP_DB_ROW_HASH_SCHEMA_VERSION = "NEWS_GRASP_CODEX_AUTOMATION_ROW_HASH_V1"
 REQUIRED_PROMPT_PARTS = (
     "$news-grasp-direct-mainline",
     "YY/MM/DD",
-    "news_grasp_daily.run_daily",
-    "空のJSON",
+    "tools.news_grasp_direct_runtime daily",
     "title_status",
     "title_status=already_ok",
     "already_ok",
@@ -2364,6 +2363,7 @@ def validate_skill_semantics(path: Path) -> dict[str, Any]:
 
     required = (
         "Daily 六phase",
+        "tools.news_grasp_direct_runtime daily",
         "static_check",
         "scoped_contract_unit",
         "current_issue_integration",
@@ -2781,80 +2781,17 @@ def _sync_unlocked(
                 "sourceHead": broker_receipt["sourceHead"],
                 "sourceGeneration": broker_receipt["sourceGeneration"],
             }
-            for relative in DAILY_PLUGIN_DEPLOYMENT_RELATIVE_FILES:
-                source_path = repo / relative
-                target_path = _assert_approved_path(
-                    DAILY_PLUGIN_ROOT / relative,
-                    repo_root=repo,
-                    label="daily_plugin_deployment",
-                )
-                source_bytes = _read_bytes_no_follow(
-                    source_path, limit=2 * 1024 * 1024
-                )
-                if relative == "plugins/news-grasp-daily/.mcp.json":
-                    source_bytes = _render_daily_plugin_mcp(source_bytes)
-                try:
-                    source_text = source_bytes.decode("utf-8", errors="strict")
-                except UnicodeError as exc:
-                    raise ValueError(
-                        f"daily_plugin_source_encoding_invalid:{relative}"
-                    ) from exc
-                target = _capture_promotion_target(
-                    target_path,
-                    kind=f"daily_plugin:{relative}",
-                )
-                promotion_targets.append(target)
-                explicit_promote(target, source_text)
-                if promotion_failures:
-                    raise ValueError("daily_plugin_deployment_red")
-                installed_bytes = _read_bytes_no_follow(
-                    target_path, limit=2 * 1024 * 1024
-                )
-                if installed_bytes != source_bytes:
-                    raise ValueError(
-                        f"daily_plugin_deployment_postimage_mismatch:{relative}"
-                    )
-            plugin_activation_result = _activate_daily_plugin(
-                repo,
-                marketplace_root=DAILY_PLUGIN_ROOT,
-                force_refresh=True,
-            )
-            if plugin_activation_result.get("ok") is not True:
-                raise ValueError("daily_plugin_activation_red")
         except Exception as exc:  # noqa: BLE001 - promotion rollback is receipt-bound.
             promotion_failures.append(
-                f"daily_broker_activation:{type(exc).__name__}:{exc}"
+                f"daily_runtime_promotion:{type(exc).__name__}:{exc}"
             )
             if promoted_targets:
                 rollback_receipt = _rollback_promotion_targets(promoted_targets)
-            if (
-                isinstance(plugin_activation_result, Mapping)
-                and any(
-                    plugin_activation_result.get(marker) is True
-                    for marker in (
-                        "pluginAdded",
-                        "pluginAddAttempted",
-                        "pluginRemovedForRefresh",
-                        "pluginRemoveAttempted",
-                        "marketplaceAdded",
-                        "marketplaceAddAttempted",
-                    )
-                )
-            ):
-                plugin_rollback_result = _rollback_daily_plugin_activation(
-                    plugin_activation_result
-                )
             broker_promotion_result = {
                 "ok": False,
                 "status": "failed",
                 "failures": [f"{type(exc).__name__}:{exc}"],
             }
-            if plugin_activation_result is None:
-                plugin_activation_result = {
-                    "ok": False,
-                    "status": "failed",
-                    "failures": [f"{type(exc).__name__}:{exc}"],
-                }
 
     snapshot_results: list[dict[str, Any]] = []
     if not dry_run:
@@ -2938,20 +2875,6 @@ def _sync_unlocked(
             "changed": False,
             "failures": ["promotion_aborted_after_failure"],
         }
-    if (
-        promotion_failures
-        and plugin_rollback_result is None
-        and isinstance(plugin_activation_result, Mapping)
-        and plugin_activation_result.get("ok") is True
-    ):
-        plugin_rollback_result = _rollback_daily_plugin_activation(
-            plugin_activation_result
-        )
-        if plugin_rollback_result.get("ok") is not True:
-            promotion_failures.extend(
-                f"daily_plugin_rollback:{failure}"
-                for failure in plugin_rollback_result.get("failures") or ()
-            )
     if dry_run:
         installed_result = _validate_loaded_automation(
             tomllib.loads(rendered),
@@ -3029,13 +2952,6 @@ def _sync_unlocked(
             and (skill_result is None or skill_result.get("ok") is True)
             and (app_db_result is None or app_db_result.get("ok") is True)
             and (broker_promotion_result is None or broker_promotion_result.get("ok") is True)
-            and (
-                not (promote and not dry_run and not allow_custom_paths)
-                or (
-                    isinstance(plugin_activation_result, Mapping)
-                    and plugin_activation_result.get("ok") is True
-                )
-            )
             and not promotion_failures
         ),
         "dry_run": dry_run,

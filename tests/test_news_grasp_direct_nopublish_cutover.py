@@ -364,13 +364,14 @@ def test_NG_CUTOVER_05_deadman_converges_to_stable_task_launcher() -> None:
     ), "authority action must be checked against the exact dispatch tail"
 
 
-def test_NG_CUTOVER_06_release_nopublish_wrapper_uses_installed_launcher_module() -> None:
-    """Release-only wrapperはlegacy runnerを参照せずinstalled authorityへ委譲する。"""
+def test_NG_CUTOVER_06_release_nopublish_wrapper_uses_candidate_local_owner() -> None:
+    """Release-only wrapperはlegacy/installed launcherを使わずcandidate ownerへ委譲する。"""
 
     source = _read(OPS / "invoke-scheduled-equivalent-nopublish.ps1")
     assert "news-grasp-runner.ps1" not in source
-    assert "news-grasp-task-launcher.pyw" in source
-    assert "scheduled-equivalent-nopublish" in source
+    assert "news-grasp-task-launcher.pyw" not in source
+    assert "news_grasp_nopublish_owner.py" in source
+    assert "product_local_candidate_owner" in source
     assert "tools.news_grasp_release_nopublish" in source
 
 
@@ -877,11 +878,12 @@ def test_NG_CUTOVER_17_working_tree_identity_changes_with_same_path_bytes(
 
 
 def test_NG_CUTOVER_18_wrapper_binds_caller_python_before_first_child() -> None:
-    """caller Pythonはinstalled runtime path/hashと一致してからのみ実行する。"""
+    """caller Pythonは固定pathと署名identityを満たした場合だけ実行する。"""
 
     source = _read(OPS / "invoke-scheduled-equivalent-nopublish.ps1")
-    binding_reject = source.index("authority Python does not match installed runtime binding")
+    binding_reject = source.index("authority Python identity invalid")
     first_child = source.index("& $pythonCanonicalPath")
-    assert "[string]::Equals($pythonCanonicalPath, $installedTaskPythonPath" in source
-    assert "[string]::Equals($pythonCanonicalSha256, $installedPythonSha256" in source
+    assert "Programs\\Python\\Python312\\python.exe" in source
+    assert "$pythonSignature.Status -ne 'Valid'" in source
+    assert "36168ee17c1a240517388540c903bb6717dd2563" in source
     assert binding_reject < first_child

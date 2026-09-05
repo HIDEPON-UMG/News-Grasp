@@ -1726,10 +1726,9 @@ def test_ng_rrt_automation_template_has_exact_prompt_parity_contract() -> None:
     )
     assert result["ok"] is True
     assert prompt.count(required_phrase) == 3
-    launcher = "news_grasp_daily.run_daily"
+    launcher = "tools.news_grasp_direct_runtime daily"
     assert prompt.count(launcher) == 1
-    assert "空のJSON `{}`" in prompt
-    assert "tools.news_grasp_direct_runtime daily" not in prompt
+    assert "news_grasp_daily.run_daily" not in prompt
     for operation in (
         "static_check",
         "scoped_contract_unit",

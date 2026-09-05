@@ -21,11 +21,13 @@ def test_codex_automation_is_the_only_daily_scheduler_and_legacy_installers_fail
     assert "Windows タスクスケジューラ「News-Grasp Runner」" not in readme
     assert "Codex automation" in readme
     assert "ScheduledProductionが起動できるcommand" not in automation
-    assert "news_grasp_daily.run_daily" in automation
-    assert "shell command、fallback launcher、二回目のtool callは開始しません" in automation
+    assert automation.count("tools.news_grasp_direct_runtime daily") == 1
+    assert "GetFolderPath('LocalApplicationData')" in automation
+    assert "news_grasp_daily.run_daily" not in automation
+    assert "二回目のcommandは開始しません" in automation
     assert "ScheduledProductionが実行可能なentry" not in skill
-    assert "news_grasp_daily.run_daily {}" in skill
-    assert "tool不在時にshell fallbackへ切り替えず" in skill
+    assert "tools.news_grasp_direct_runtime daily" in skill
+    assert "news_grasp_daily.run_daily" not in skill
     assert "Windows Scheduled Task や旧 runner には触れない" in syncer
 
     for relative in (

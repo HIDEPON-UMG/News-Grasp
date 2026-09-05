@@ -374,7 +374,7 @@ def test_mcp_server_rejects_oversized_request_without_reading_unbounded_input() 
     assert len(completed.stderr) == 0
 
 
-def test_mcp_repo_root_uses_committed_promotion_receipt_not_automation_cwd(
+def test_retired_mcp_rejects_the_direct_runtime_promotion_receipt(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -428,25 +428,23 @@ def test_mcp_repo_root_uses_committed_promotion_receipt_not_automation_cwd(
     monkeypatch.setattr(module, "PROMOTION_RECEIPT", receipt_path)
     monkeypatch.setattr(module, "TRUSTED_RUNTIME_ROOT", repo.resolve())
 
-    assert module._repo_root() == repo.resolve()
-    tampered_receipt = dict(receipt)
-    tampered_receipt["remoteEvidenceSha256"] = "0" * 64
-    receipt_path.write_text(json.dumps(tampered_receipt), encoding="utf-8")
-    with pytest.raises(RuntimeError, match="REMOTE_INVALID"):
-        module._repo_root()
-    receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
-    (repo / "tools" / "news_grasp_daily_broker.py").write_text("tampered", encoding="utf-8")
-    with pytest.raises(RuntimeError, match="PROMOTED_SOURCE_DRIFT"):
+    with pytest.raises(RuntimeError, match="PROMOTION_FILE_SET_INVALID"):
         module._repo_root()
 
 
-def test_promoted_runtime_file_sets_are_exactly_shared() -> None:
+def test_direct_runtime_promotion_excludes_the_retired_mcp_surface() -> None:
     module = _load_server_module()
     from tools import news_grasp_direct_runtime as runtime
     from tools import sync_news_grasp_codex_automation as syncer
 
     assert set(syncer.DAILY_BROKER_PROMOTION_FILES) == set(runtime.DAILY_RUNTIME_RELATIVE_PATHS)
-    assert module.PROMOTED_RUNTIME_FILES == set(runtime.DAILY_RUNTIME_RELATIVE_PATHS)
+    assert module.PROMOTED_RUNTIME_FILES - set(runtime.DAILY_RUNTIME_RELATIVE_PATHS) == {
+        ".agents/plugins/marketplace.json",
+        "plugins/news-grasp-daily/.codex-plugin/plugin.json",
+        "plugins/news-grasp-daily/.mcp.json",
+        "plugins/news-grasp-daily/server.py",
+        "tools/news_grasp_daily_broker.py",
+    }
 
 
 def test_plugin_activation_binds_marketplace_installed_source_and_loaded_tool(
@@ -771,3 +769,39 @@ def test_promotion_rejects_expired_nonterminal_run_until_same_run_recovery_finis
 
     with pytest.raises(ValueError, match="daily_broker_active_run:run-expired:active"):
         syncer._assert_daily_promotion_quiescent()
+
+
+def test_daily_runtime_promotion_has_no_plugin_control_plane_dependency() -> None:
+    from tools import news_grasp_direct_runtime as runtime
+    from tools import sync_news_grasp_codex_automation as syncer
+
+    assert "tools/news_grasp_daily_broker.py" not in runtime.DAILY_RUNTIME_RELATIVE_PATHS
+    assert not any(
+        path.startswith("plugins/") or path.startswith(".agents/plugins/")
+        for path in runtime.DAILY_RUNTIME_RELATIVE_PATHS
+    )
+
+    source = Path(syncer.__file__).read_text(encoding="utf-8")
+    promotion = source.split(
+        "if promote and not dry_run and not allow_custom_paths:", 1
+    )[1].split("snapshot_results:", 1)[0]
+    assert "DAILY_PLUGIN_DEPLOYMENT_RELATIVE_FILES" not in promotion
+    assert "_activate_daily_plugin(" not in promotion
+
+
+def test_daily_runtime_import_closure_has_no_host_goal_or_mcp_dependency() -> None:
+    from tools import news_grasp_direct_runtime as runtime
+
+    forbidden = (
+        "completion_evidence_broker",
+        "create_goal",
+        "plugins.news-grasp-daily",
+        "news_grasp_daily.run_daily",
+    )
+    for relative in runtime.DAILY_RUNTIME_RELATIVE_PATHS:
+        if not relative.endswith(".py"):
+            continue
+        source = (Path(__file__).resolve().parents[1] / relative).read_text(
+            encoding="utf-8"
+        )
+        assert not any(token in source for token in forbidden), relative

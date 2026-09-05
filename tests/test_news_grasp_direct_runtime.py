@@ -915,12 +915,21 @@ def test_active_direct_controls_have_no_content_derived_authority_fields() -> No
     assert not violations, f"DIRECT_CONTENT_DERIVED_AUTHORITY_FIELD:{violations}"
 
 
-def test_installed_direct_config_semantics_are_validated_by_producer() -> None:
-    """installed configはLuna/max/06:00/direct skill/title contractを検証器で判定する。"""
+def test_candidate_direct_config_semantics_are_validated_before_promotion(
+    tmp_path: Path,
+) -> None:
+    """pre-promotionではinstalled stateでなくcandidate templateを検証する。"""
 
     api = _api()
-    path = Path.home() / ".codex" / "automations" / AUTOMATION_ID / "automation.toml"
-    assert path.is_file(), f"RED_INSTALLED_DIRECT_CONFIG_MISSING:{path}"
+    template = REPO / "automation" / "news-grasp-6-40" / "automation.toml.template"
+    path = tmp_path / "automation.toml"
+    path.write_text(
+        template.read_text(encoding="utf-8-sig").replace(
+            "${NEWS_GRASP_REPO_ROOT}",
+            str(REPO).replace("\\", "\\\\"),
+        ),
+        encoding="utf-8",
+    )
     result = _mapping(api.validate_installed_automation_semantics(path))
     assert result.get("ok") is True
 
@@ -961,13 +970,6 @@ def test_installed_direct_config_semantics_are_validated_by_producer() -> None:
     ):
         assert operation in prompt
     assert "protected_release_reexecution_forbidden" in prompt
-
-    live_result = _mapping(api.validate_installed_automation_semantics())
-    assert live_result.get("ok") is True
-    assert live_result.get("app_db", {}).get("reasoning_effort") == "max"
-    assert live_result.get("snapshots")
-    assert all(item.get("ok") is True for item in live_result["snapshots"])
-
 
 def test_codex_automation_sync_renders_luna_max_and_preserves_app_target(
     tmp_path: Path,
@@ -1376,15 +1378,16 @@ def test_installed_direct_config_rejects_codex_app_schema_timestamp_gaps(
     assert "automation_app_schema_updated_at_invalid" in result.get("failures", [])
 
 
-def test_public_template_keeps_portable_cwd_and_exposes_only_typed_daily_tool() -> None:
-    """cwdは可搬のまま、Lunaへshell/Python起動authorityを渡さない。"""
+def test_public_template_keeps_portable_cwd_and_exposes_one_daily_command() -> None:
+    """cwdは可搬のまま、Lunaへ一つの製品内commandだけを渡す。"""
 
     template_path = REPO / "automation/news-grasp-6-40/automation.toml.template"
     template_text = template_path.read_text(encoding="utf-8-sig")
     template = tomllib.loads(template_text)
     assert template.get("cwds") == ["${NEWS_GRASP_REPO_ROOT}"]
-    assert "news_grasp_daily.run_daily" in template["prompt"]
-    assert "tools.news_grasp_direct_runtime daily" not in template["prompt"]
+    assert template["prompt"].count("tools.news_grasp_direct_runtime daily") == 1
+    assert "GetFolderPath('LocalApplicationData')" in template["prompt"]
+    assert "news_grasp_daily.run_daily" not in template["prompt"]
     assert "C:\\Users\\" not in template["prompt"]
 
     installed_path = Path.home() / ".codex" / "automations" / AUTOMATION_ID / "automation.toml"

@@ -137,14 +137,14 @@ def build_design(
     requirements = [
         "R01_single_operation_owner", "R02_completion_single_writer", "R03_precommit_finalization",
         "R04_invalid_receipt_start_zero", "R05_public_readiness_slo_separation", "R06_automation_read_only",
-        "R07_capsule_immutability", "R08_source_installed_task_parity", "R09_historical_replay_finite",
+        "R07_capsule_immutability", "R08_source_isolation_owner_parity", "R09_historical_replay_finite",
         "R10_bounded_human_impact", "P08_upstream_evidence_provenance",
     ]
-    route_ids = ["bridge_admission", "runner_entry", "installed_launcher", "final_nopublish", "budget_gate"]
+    route_ids = ["bridge_admission", "runner_entry", "candidate_owner", "final_nopublish", "budget_gate"]
     chosen = {
         "strategyId": "local_evidence_first",
         "coveredRequirementIds": requirements,
-        "reusedEvidenceIds": ["red_suite_coverage", "isolation", "run_envelope", "release_reflection"],
+        "reusedEvidenceIds": ["red_suite_coverage", "isolation", "run_envelope"],
         "externalModelCalls": 0,
         "fullE2EAttempts": 0,
         "wallClockSeconds": 1800,
@@ -660,9 +660,9 @@ def generate(
     _write_json(out / "efficiency-design.json", design)
     specs = [
         ("bridge_admission", repo / "tools" / "e2e_final_admission_bridge.py", "def issue_admission(", "execute_red_suite("),
-        ("runner_entry", repo / "scripts" / "ops" / "invoke-scheduled-equivalent-nopublish.ps1", "Get-CanonicalExistingFile", "& $installedTaskPythonPath"),
-        ("installed_launcher", repo / "scripts" / "ops" / "news-grasp-task-launcher.pyw", "def _load_stable_launcher_identity", "subprocess.run("),
-        ("final_nopublish", repo / "scripts" / "ops" / "invoke-scheduled-equivalent-nopublish.ps1", "Get-CanonicalExistingFile", "& $installedTaskPythonPath"),
+        ("runner_entry", repo / "scripts" / "ops" / "invoke-scheduled-equivalent-nopublish.ps1", "Get-CanonicalExistingFile", "$e2eAdmissionValidation ="),
+        ("candidate_owner", repo / "tools" / "news_grasp_nopublish_owner.py", "def run_owned_nopublish(", "owned.spawn_owned("),
+        ("final_nopublish", repo / "scripts" / "ops" / "invoke-scheduled-equivalent-nopublish.ps1", "$runnerArguments = @(", "'-B' $nopublishOwnerPath"),
         ("budget_gate", workspace / "tools" / "harness" / "high_cost_operation_budget.py", "def authorize(", "authorization_id = _canonical_sha256("),
     ]
     route = build_route_manifest(workspace_root=workspace, task_identity=design["taskIdentity"], route_specs=specs, required_route_ids=design["requiredRouteIds"])

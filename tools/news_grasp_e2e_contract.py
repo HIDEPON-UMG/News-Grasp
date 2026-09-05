@@ -83,10 +83,11 @@ def validate_e2e_launch_contract(
         "public incompleteかつexact successorがある状態で終了しない",
     )
     launcher_markers = (
-        "NEWS_GRASP_DAILY_SEQUENCE_RECEIPT_V1",
+        "NEWS_GRASP_DAILY_SEQUENCE_RECEIPT_V2",
+        'sub.add_parser("daily")',
+        "def run_daily_mainline(",
         "run_daily_sequence(",
         "_canonical_daily_state_root(",
-        "daily_sequence_argv_forbidden",
     )
     daily_gate_markers = (
         "DAILY_OPERATIONS",
