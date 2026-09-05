@@ -1018,11 +1018,17 @@ def _open_windows_no_reparse(path: Path, *, directory: bool) -> tuple[int, int]:
         None,
     )
     if handle == INVALID_HANDLE_VALUE:
-        raise OSError(ctypes.get_last_error(), f"CreateFileW failed: {path}")
+        raise ctypes.WinError(
+            ctypes.get_last_error(),
+            f"CreateFileW failed: {path}",
+        )
     info = BY_HANDLE_FILE_INFORMATION()
     try:
         if not _GetFileInformationByHandle(handle, ctypes.byref(info)):
-            raise OSError(ctypes.get_last_error(), f"GetFileInformationByHandle failed: {path}")
+            raise ctypes.WinError(
+                ctypes.get_last_error(),
+                f"GetFileInformationByHandle failed: {path}",
+            )
         attrs = int(info.dwFileAttributes)
         if attrs & FILE_ATTRIBUTE_REPARSE_POINT:
             raise ValueError(f"unsafe_reparse_path:{path}")

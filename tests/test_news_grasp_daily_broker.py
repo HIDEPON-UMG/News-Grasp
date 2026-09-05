@@ -729,14 +729,18 @@ def test_promotion_rejects_live_nonterminal_daily_run(tmp_path: Path, monkeypatc
 def test_promotion_capture_accepts_missing_first_generation_file(tmp_path: Path) -> None:
     from tools import sync_news_grasp_codex_automation as syncer
 
-    target = syncer._capture_promotion_target(
+    for path in (
         tmp_path / "daily-broker-promotion.json",
-        kind="daily_broker_promotion",
-    )
+        tmp_path / "missing" / "nested" / "marketplace.json",
+    ):
+        target = syncer._capture_promotion_target(
+            path,
+            kind="daily_broker_promotion",
+        )
 
-    assert target["preimagePresent"] is False
-    assert target["preimageBytes"] == b""
-    assert target["status"] == "pending"
+        assert target["preimagePresent"] is False
+        assert target["preimageBytes"] == b""
+        assert target["status"] == "pending"
 
 
 def test_promotion_rejects_expired_nonterminal_run_until_same_run_recovery_finishes(
