@@ -30,6 +30,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 $null = Import-Module Microsoft.PowerShell.Utility -ErrorAction Stop
 $gitEnvironmentRedirectKeys = @(
     [Environment]::GetEnvironmentVariables([EnvironmentVariableTarget]::Process).Keys |
