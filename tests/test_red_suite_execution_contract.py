@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 from tools.deepdive_red_suite_coverage import (
@@ -11,6 +13,27 @@ from tools.red_suite_execution import _Recorder, _fixture_selectors
 
 ROOT = Path(__file__).resolve().parents[1]
 MATRIX = ROOT / "fixtures" / "deepdive_quality" / "tdd_acceptance_matrix.json"
+
+
+def test_admission_bridge_imports_execution_helpers_without_site_packages() -> None:
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-I",
+            "-S",
+            "-B",
+            "-c",
+            "import sys; sys.path.insert(0, sys.argv[1]); import tools.e2e_final_admission_bridge",
+            str(ROOT),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stderr
 
 
 def test_execution_producer_has_exact_selector_and_pair_case_sets() -> None:

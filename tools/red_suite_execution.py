@@ -9,8 +9,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import pytest
-
 from tools.deepdive_red_suite_coverage import (
     MATRIX,
     ROOT,
@@ -114,6 +112,8 @@ def execute_red_suite(
     matrix_path: Path = MATRIX,
     root: Path = ROOT,
 ) -> dict[str, Any]:
+    import pytest
+
     matrix = json.loads(matrix_path.read_text(encoding="utf-8"))
     coverage_report = validate_red_suite_coverage(matrix, root=root)
     if coverage_report["status"] != "Green":
