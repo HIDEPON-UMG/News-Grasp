@@ -494,7 +494,7 @@ try {
     $highCostModelBrokerPath = Get-CanonicalExistingFile -Path $highCostModelBrokerPath -Label 'installed model broker' -MaxBytes 67108864
     if ((-not $HighCostBindingPath) -or (-not $HighCostBindingReceiptSha256)) { throw 'HIGH_COST_WORKSPACE_BINDING_MISSING' }
     $highCostBindingResolverPath = Join-Path $repoPath 'tools\news_grasp_high_cost_binding.py'
-    $bindingJson = (& $pythonCanonicalPath '-I' '-S' '-B' $highCostBindingResolverPath 'resolve' '--binding' $HighCostBindingPath '--expected-receipt-sha256' $HighCostBindingReceiptSha256 2>&1 | Out-String).Trim()
+    $bindingJson = (& $pythonCanonicalPath -X utf8 '-I' '-S' '-B' $highCostBindingResolverPath 'resolve' '--binding' $HighCostBindingPath '--expected-receipt-sha256' $HighCostBindingReceiptSha256 2>&1 | Out-String).Trim()
     if ($LASTEXITCODE -ne 0) { throw "HIGH_COST_WORKSPACE_BINDING_MISSING detail=$bindingJson" }
     $resolvedBinding = $bindingJson | ConvertFrom-Json -ErrorAction Stop
     if (
@@ -567,7 +567,7 @@ if (
 ) {
     throw 'NEWS_GRASP_NOPUBLISH_RUNTIME_VALIDATOR_BLOB_INVALID'
 }
-$isolationValidationJson = (& $pythonCanonicalPath '-I' '-S' '-B' $p08EvidenceToolPath 'validate-isolation' '--repo-root' $repoPath '--source-repo' $sourceRepoPath '--issue-date' $DateStamp '--isolation-receipt' $IsolationReceiptPath 2>&1 | Out-String).Trim()
+$isolationValidationJson = (& $pythonCanonicalPath -X utf8 '-I' '-S' '-B' $p08EvidenceToolPath 'validate-isolation' '--repo-root' $repoPath '--source-repo' $sourceRepoPath '--issue-date' $DateStamp '--isolation-receipt' $IsolationReceiptPath 2>&1 | Out-String).Trim()
 if ($LASTEXITCODE -ne 0) {
     throw "NEWS_GRASP_NOPUBLISH_ISOLATION_INVALID detail=$isolationValidationJson"
 }
@@ -733,7 +733,7 @@ try {
 } finally {
     if ($runnerArgumentsStream) { $runnerArgumentsStream.Dispose() }
 }
-$e2eAdmissionValidation = & $pythonCanonicalPath -I $e2eAdmissionBridgePath 'validate-issued' `
+$e2eAdmissionValidation = & $pythonCanonicalPath -X utf8 -I $e2eAdmissionBridgePath 'validate-issued' `
     '--admission' $E2EAdmissionPath `
     '--runner-arguments-file' $runnerArgumentsPath `
     '--parent-authority' $parentAuthorityFullPath `
@@ -747,7 +747,7 @@ $e2eAdmissionValidation = & $pythonCanonicalPath -I $e2eAdmissionBridgePath 'val
 if ($LASTEXITCODE -ne 0) {
     throw "E2E_FINAL_ISSUED_ADMISSION_REJECTED exit=$LASTEXITCODE"
 }
-$authorizeOutput = & $pythonCanonicalPath -I $highCostOperationBudgetPath $authorizationCommand `
+$authorizeOutput = & $pythonCanonicalPath -X utf8 -I $highCostOperationBudgetPath $authorizationCommand `
     '--workspace-root' $workspacePath `
     '--budget' $BudgetPath `
     '--efficiency-design' $EfficiencyDesignPath `
@@ -761,13 +761,13 @@ $authorizeOutput = & $pythonCanonicalPath -I $highCostOperationBudgetPath $autho
 if ($LASTEXITCODE -ne 0) {
     throw "HIGH_COST_OPERATION_AUTHORIZATION_REJECTED exit=$LASTEXITCODE"
 }
-$activateOutput = & $pythonCanonicalPath -I $highCostOperationBudgetPath 'activate' `
+$activateOutput = & $pythonCanonicalPath -X utf8 -I $highCostOperationBudgetPath 'activate' `
     '--workspace-root' $workspacePath `
     '--admission' $parentAuthorityFullPath
 if ($LASTEXITCODE -ne 0) {
     throw "HIGH_COST_OPERATION_ACTIVATION_REJECTED exit=$LASTEXITCODE"
 }
-$validatedOutput = & $pythonCanonicalPath -I $highCostOperationBudgetPath 'validate-activated' `
+$validatedOutput = & $pythonCanonicalPath -X utf8 -I $highCostOperationBudgetPath 'validate-activated' `
     '--workspace-root' $workspacePath `
     '--admission' $parentAuthorityFullPath `
     '--expected-attempt-kind' $operationKind `
@@ -775,7 +775,7 @@ $validatedOutput = & $pythonCanonicalPath -I $highCostOperationBudgetPath 'valid
 if ($LASTEXITCODE -ne 0) {
     throw "HIGH_COST_OPERATION_VALIDATION_REJECTED exit=$LASTEXITCODE"
 }
-& $pythonCanonicalPath -I $e2eAdmissionBridgePath 'consume' `
+& $pythonCanonicalPath -X utf8 -I $e2eAdmissionBridgePath 'consume' `
     '--admission' $E2EAdmissionPath `
     '--runner-arguments-file' $runnerArgumentsPath `
     '--parent-authority' $parentAuthorityFullPath `
@@ -852,7 +852,7 @@ foreach ($pythonEnvironmentKey in @('PYTHONPATH','PYTHONHOME','PYTHONSTARTUP','P
 $env:PYTHONNOUSERSITE = '1'
 $env:PYTHONIOENCODING = 'utf-8'
 $env:PYTHONUTF8 = '1'
-& $pythonCanonicalPath '-I' '-S' '-B' $nopublishOwnerPath `
+& $pythonCanonicalPath -X utf8 '-I' '-S' '-B' $nopublishOwnerPath `
     '--repo-root' $repoPath `
     '--python-executable' $pythonCanonicalPath `
     '--powershell-executable' $powerShellCanonicalPath `
@@ -872,7 +872,7 @@ $ownerOutput = ''
 if ($runnerExitCode -eq 0) {
     $runnerOutcomeReceiptPath = Join-Path (Split-Path -Parent $e2eAttemptPolicyFullPath) ("e2e-transition-" + ([int]$attemptPolicy.transition.sequence + 1) + ".json")
     $runnerTerminalAuthorityPath = Join-Path (Split-Path -Parent $e2eAttemptPolicyFullPath) ("e2e-terminal-authority-" + ([int]$E2ELogicalAttempt) + ".json")
-    & $pythonCanonicalPath -I $e2eAdmissionBridgePath 'record-outcome' `
+    & $pythonCanonicalPath -X utf8 -I $e2eAdmissionBridgePath 'record-outcome' `
         '--admission' $E2EAdmissionPath `
         '--attempt-policy' $e2eAttemptPolicyFullPath `
         '--terminal-authority' $runnerTerminalAuthorityPath `

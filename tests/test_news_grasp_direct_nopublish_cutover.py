@@ -890,7 +890,7 @@ def test_NG_CUTOVER_18_wrapper_binds_caller_python_before_first_child() -> None:
 
 
 def test_NG_CUTOVER_19_wrapper_fixes_native_output_to_utf8_before_first_child() -> None:
-    """日本語pathを含むnative JSONは最初の子processからUTF-8で復号する。"""
+    """日本語pathを含むnative JSONはproducerとconsumerの両端をUTF-8にする。"""
 
     source = _read(OPS / "invoke-scheduled-equivalent-nopublish.ps1")
     output_encoding = source.index(
@@ -902,3 +902,7 @@ def test_NG_CUTOVER_19_wrapper_fixes_native_output_to_utf8_before_first_child() 
     first_child = source.index("& $pythonCanonicalPath")
     assert output_encoding < first_child
     assert console_output_encoding < first_child
+    assert source.count("& $pythonCanonicalPath") > 0
+    assert source.count("& $pythonCanonicalPath") == source.count(
+        "& $pythonCanonicalPath -X utf8"
+    )
