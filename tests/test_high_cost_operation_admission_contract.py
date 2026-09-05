@@ -45,11 +45,15 @@ def test_nopublish_wrapper_authorizes_and_activates_parent_before_runner_launch(
     text = WRAPPER.read_text(encoding="utf-8-sig")
     validate_issued = text.index("'validate-issued'")
     authorize = text.index(
-        "& $pythonCanonicalPath -I $highCostOperationBudgetPath $authorizationCommand"
+        "& $pythonCanonicalPath -X utf8 -I $highCostOperationBudgetPath $authorizationCommand"
     )
-    activate = text.index("& $pythonCanonicalPath -I $highCostOperationBudgetPath 'activate'")
+    activate = text.index(
+        "& $pythonCanonicalPath -X utf8 -I $highCostOperationBudgetPath 'activate'"
+    )
     validate_parent = text.index("'validate-activated'")
-    consume = text.index("& $pythonCanonicalPath -I $e2eAdmissionBridgePath 'consume'")
+    consume = text.index(
+        "& $pythonCanonicalPath -X utf8 -I $e2eAdmissionBridgePath 'consume'"
+    )
     runner_launch = text.index("'-B' $nopublishOwnerPath")
     assert validate_issued < authorize < activate < validate_parent < consume < runner_launch
     assert "'full_e2e'" in text

@@ -2136,7 +2136,7 @@ def test_final_e2e_wrapper_consumes_before_runner_and_forbids_resume() -> None:
     source = WRAPPER.read_text(encoding="utf-8-sig")
     consume = source.index("e2e_final_admission_bridge.py")
     launch = source.index(
-        "& $pythonCanonicalPath '-I' '-S' '-B' $nopublishOwnerPath"
+        "& $pythonCanonicalPath -X utf8 '-I' '-S' '-B' $nopublishOwnerPath"
     )
     assert consume < launch
     assert "E2EAdmissionPath" in source
