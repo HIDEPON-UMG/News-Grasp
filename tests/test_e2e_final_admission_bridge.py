@@ -2562,6 +2562,58 @@ def test_claim_accepts_causal_replacement_metadata_kept_in_ledger_row(
     assert claimed["state"] == "runner_claimed"
 
 
+def test_v2_causal_replacement_shape_binds_predecessor_and_successor() -> None:
+    source = {
+        "attemptKey": "News-Grasp:2026-09-05:scheduled-equivalent-nopublish",
+        "admissionId": "b" * 64,
+    }
+    existing = {
+        "state": "runner_reserved",
+        "admissionId": "a" * 64,
+        "admissionPath": "C:/evidence/predecessor-admission.json",
+        "admissionSha256": "c" * 64,
+        "claimReceiptPath": None,
+        "claimReceiptSha256": None,
+    }
+    proof = {
+        "schemaVersion": "HIGH_COST_RECOVERY_PROOF_V2",
+        "patternId": "PRE_ENTRY_RUNNER_BOOTSTRAP_RECOVERY_V2",
+        "registrySha256": "d" * 64,
+        "canonicalAttemptKey": source["attemptKey"],
+        "originalEvidence": {
+            "finalAdmission": {
+                "path": existing["admissionPath"],
+                "sha256": existing["admissionSha256"],
+            }
+        },
+        "successor": {
+            "admissionId": source["admissionId"],
+            "admissionPath": "C:/evidence/successor-admission.json",
+            "admissionSha256": "e" * 64,
+            "evidenceSetSha256": "f" * 64,
+            "commandSha256": "1" * 64,
+        },
+        "proofSha256": "2" * 64,
+    }
+
+    bridge_module._validate_causal_replacement_proof_shape(
+        proof,
+        source=source,
+        existing=existing,
+    )
+
+    proof["patternId"] = "UNKNOWN_PATTERN"
+    with pytest.raises(
+        E2EFinalAdmissionError,
+        match="E2E_CAUSAL_REPLACEMENT_PATTERN_INVALID",
+    ):
+        bridge_module._validate_causal_replacement_proof_shape(
+            proof,
+            source=source,
+            existing=existing,
+        )
+
+
 @pytest.mark.skipif(os.name != "nt", reason="Windows process identity contract")
 def test_windows_process_identity_is_observed_from_os() -> None:
     identity = bridge_module._query_process_identity(os.getpid())

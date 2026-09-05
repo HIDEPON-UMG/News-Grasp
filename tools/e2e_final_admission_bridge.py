@@ -3123,6 +3123,53 @@ def _claim_row(
     return row
 
 
+def _validate_causal_replacement_proof_shape(
+    proof: dict[str, Any],
+    *,
+    source: dict[str, Any],
+    existing: dict[str, Any],
+) -> None:
+    """high-cost ownerが検証済みのproofを同一reservation lineageへ再束縛する。"""
+
+    schema = proof.get("schemaVersion")
+    if schema == "HIGH_COST_RECOVERY_PROOF_V2":
+        if (
+            proof.get("patternId")
+            != "PRE_ENTRY_RUNNER_BOOTSTRAP_RECOVERY_V2"
+            or HEX_64_RE.fullmatch(str(proof.get("registrySha256") or "")) is None
+            or HEX_64_RE.fullmatch(str(proof.get("proofSha256") or "")) is None
+        ):
+            raise E2EFinalAdmissionError(
+                "E2E_CAUSAL_REPLACEMENT_PATTERN_INVALID"
+            )
+    elif schema != "HIGH_COST_CAUSAL_REPLACEMENT_PROOF_V1":
+        raise E2EFinalAdmissionError("E2E_CAUSAL_REPLACEMENT_PROOF_INVALID")
+
+    original_evidence = proof.get("originalEvidence")
+    original_final_admission = (
+        original_evidence.get("finalAdmission")
+        if isinstance(original_evidence, dict)
+        else None
+    )
+    successor = proof.get("successor")
+    if (
+        proof.get("canonicalAttemptKey") != source.get("attemptKey")
+        or not isinstance(successor, dict)
+        or successor.get("admissionId") != source.get("admissionId")
+        or not isinstance(original_final_admission, dict)
+        or Path(str(original_final_admission.get("path") or "")).resolve()
+        != Path(str(existing.get("admissionPath") or "")).resolve()
+        or original_final_admission.get("sha256")
+        != existing.get("admissionSha256")
+        or existing.get("state") != "runner_reserved"
+        or existing.get("claimReceiptPath")
+        or existing.get("claimReceiptSha256")
+    ):
+        raise E2EFinalAdmissionError(
+            "E2E_CAUSAL_REPLACEMENT_PREDECESSOR_INVALID"
+        )
+
+
 def _immutable_consume_admission(
     *,
     admission_path: Path,
@@ -3211,40 +3258,15 @@ def _immutable_consume_admission(
                         source=source,
                         attempt_key=attempt_key,
                     )
-                successor = proof.get("successor") if isinstance(proof, dict) else None
-                original_evidence = (
-                    proof.get("originalEvidence") if isinstance(proof, dict) else None
-                )
-                original_final_admission = (
-                    original_evidence.get("finalAdmission")
-                    if isinstance(original_evidence, dict)
-                    else None
-                )
-                if not prestart_rebind and (
-                    proof is None
-                    or proof_hash is None
-                    or proof.get("schemaVersion")
-                    != "HIGH_COST_CAUSAL_REPLACEMENT_PROOF_V1"
-                    or proof.get("canonicalAttemptKey") != attempt_key
-                    or not isinstance(successor, dict)
-                    or successor.get("admissionId") != source.get("admissionId")
-                    or Path(
-                        str(
-                            original_final_admission.get("path")
-                            if isinstance(original_final_admission, dict)
-                            else ""
+                if not prestart_rebind:
+                    if proof is None or proof_hash is None:
+                        raise E2EFinalAdmissionError(
+                            "E2E_CAUSAL_REPLACEMENT_PREDECESSOR_INVALID"
                         )
-                    ).resolve()
-                    != Path(str(existing.get("admissionPath") or "")).resolve()
-                    or not isinstance(original_final_admission, dict)
-                    or original_final_admission.get("sha256")
-                    != existing.get("admissionSha256")
-                    or existing.get("state") != "runner_reserved"
-                    or existing.get("claimReceiptPath")
-                    or existing.get("claimReceiptSha256")
-                ):
-                    raise E2EFinalAdmissionError(
-                        "E2E_CAUSAL_REPLACEMENT_PREDECESSOR_INVALID"
+                    _validate_causal_replacement_proof_shape(
+                        proof,
+                        source=source,
+                        existing=existing,
                     )
                 prior_replacement = ledger_value.get("replacements", {}).get(
                     attempt_key
