@@ -1131,7 +1131,7 @@ def _default_derived_builder(
 ) -> dict[str, Any]:
     from tools import generate_pages
     from tools.news_grasp_deterministic_builders import materialize_summary_audio_script
-    from tools.tts import deepdive_audio, deepdive_dialogue, publish_audio, synthesize_daily
+    from tools.tts import build_script, deepdive_audio, deepdive_dialogue, publish_audio, synthesize_daily
     from tools.youtube_podcast import build_video
 
     actions = dict(repair_actions or {})
@@ -1170,6 +1170,10 @@ def _default_derived_builder(
     daily_mp3: Path | None = None
     if needs("daily_audio"):
         high_cost_guard("daily_audio")
+        normalized_script = build_script.build(issue_date)
+        if normalized_script is None:
+            raise DailyContentError("AUDIO_SCRIPT_NORMALIZATION_FAILED")
+        artifacts.append(str(normalized_script))
         synthesized = synthesize_daily.synthesize(issue_date)
         if synthesized is None:
             raise DailyContentError("AUDIO_SYNTHESIS_FAILED:daily")

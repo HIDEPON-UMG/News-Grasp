@@ -968,3 +968,54 @@ def test_high_cost_derived_stage_is_frozen_before_tts_call(tmp_path: Path, monke
             repair_actions=actions,
             high_cost_admission=lambda: False,
         )
+
+
+def test_daily_audio_build_normalizes_script_before_synthesis(tmp_path: Path, monkeypatch) -> None:
+    from tools.news_grasp_daily_content import _default_derived_builder
+    from tools.tts import build_script, synthesize_daily
+
+    normalized = tmp_path / "build" / "tts" / f"{ISSUE_DATE}.script.txt"
+    mp3 = tmp_path / "build" / "tts" / f"{ISSUE_DATE}.mp3"
+    built = False
+
+    def build(date: str) -> Path:
+        nonlocal built
+        assert date == ISSUE_DATE
+        normalized.parent.mkdir(parents=True, exist_ok=True)
+        normalized.write_text("normalized", encoding="utf-8")
+        built = True
+        return normalized
+
+    def synthesize(date: str) -> Path:
+        assert date == ISSUE_DATE
+        assert built
+        mp3.write_bytes(b"mp3")
+        return mp3
+
+    monkeypatch.setattr(build_script, "build", build)
+    monkeypatch.setattr(synthesize_daily, "synthesize", synthesize)
+    actions = {
+        artifact_id: "reuse"
+        for artifact_id in (
+            "daily_audio_script",
+            "daily_audio_projection",
+            "daily_video",
+            "deepdive_html",
+            "deepdive_audio",
+            "deepdive_audio_projection",
+            "deepdive_video",
+            "site_html",
+        )
+    }
+    actions["daily_audio"] = "rebuild_deterministic"
+
+    result = _default_derived_builder(
+        repo_root=tmp_path,
+        issue_date=ISSUE_DATE,
+        run_id=RUN_ID,
+        repair_actions=actions,
+    )
+
+    assert result["ok"] is True
+    assert str(normalized) in result["artifacts"]
+    assert str(mp3) in result["artifacts"]
