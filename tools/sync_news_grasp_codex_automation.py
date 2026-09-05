@@ -163,7 +163,8 @@ if os.name == "nt":
             ("nFileIndexLow", wintypes.DWORD),
         ]
 
-    _CreateFileW = ctypes.windll.kernel32.CreateFileW
+    _kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    _CreateFileW = _kernel32.CreateFileW
     _CreateFileW.argtypes = [
         wintypes.LPCWSTR,
         wintypes.DWORD,
@@ -174,10 +175,10 @@ if os.name == "nt":
         wintypes.HANDLE,
     ]
     _CreateFileW.restype = wintypes.HANDLE
-    _GetFileInformationByHandle = ctypes.windll.kernel32.GetFileInformationByHandle
+    _GetFileInformationByHandle = _kernel32.GetFileInformationByHandle
     _GetFileInformationByHandle.argtypes = [wintypes.HANDLE, ctypes.c_void_p]
     _GetFileInformationByHandle.restype = wintypes.BOOL
-    _CloseHandle = ctypes.windll.kernel32.CloseHandle
+    _CloseHandle = _kernel32.CloseHandle
     _CloseHandle.argtypes = [wintypes.HANDLE]
     _CloseHandle.restype = wintypes.BOOL
 
