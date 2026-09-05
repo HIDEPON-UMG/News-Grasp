@@ -40,6 +40,15 @@ def _installed_green(*_args: object, **_kwargs: object) -> dict[str, object]:
     }
 
 
+def _allow_fixture_state_root(monkeypatch: pytest.MonkeyPatch) -> None:
+    store_type = runtime.DirectRunStore
+    monkeypatch.setattr(
+        runtime,
+        "DirectRunStore",
+        lambda path: store_type(path, test_only_allow_semantic_verifier=True),
+    )
+
+
 def test_ng_rrt_sequence_keeps_one_writer_in_memory_across_exact_six_operations(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -110,6 +119,7 @@ def test_ng_rrt_launcher_runs_exact_sequence_and_never_projects_writer_capabilit
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    _allow_fixture_state_root(monkeypatch)
     monkeypatch.setattr(daily, "resolve_daily_identity_context", lambda **_kwargs: _identity())
     monkeypatch.setattr(
         daily,
@@ -150,6 +160,7 @@ def test_ng_rrt_launcher_rejects_nested_writer_capability_projection(
     monkeypatch: pytest.MonkeyPatch,
     capability_key: str,
 ) -> None:
+    _allow_fixture_state_root(monkeypatch)
     monkeypatch.setattr(daily, "resolve_daily_identity_context", lambda **_kwargs: _identity())
     monkeypatch.setattr(
         daily,

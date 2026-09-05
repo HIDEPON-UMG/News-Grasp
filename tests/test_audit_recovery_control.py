@@ -852,7 +852,7 @@ def test_runner_exposes_full_generation_scheduled_recovery_intent() -> None:
         encoding="utf-8"
     )
     skill = (
-        Path.home() / ".codex" / "skills" / "news-grasp-direct-mainline" / "SKILL.md"
+        root / "automation" / "skills" / "news-grasp-direct-mainline" / "SKILL.md"
     ).read_text(encoding="utf-8-sig")
     assert not runner_path.exists()
     assert "NEWS_GRASP_DIRECT_MAINLINE_RECEIPT_V1" in runtime
@@ -861,7 +861,7 @@ def test_runner_exposes_full_generation_scheduled_recovery_intent() -> None:
     assert "public_completion" in runtime
     assert "run_exact_successor" in runtime
     assert "ScheduledRecoveryFull" not in runtime
-    assert "news-grasp-runner.ps1`を起動しない" in skill
+    assert "tool不在時にshell fallbackへ切り替えず" in skill
 
 
 def test_recover_only_is_not_the_all_artifacts_missing_recovery_path() -> None:
@@ -939,7 +939,7 @@ def test_automation_and_direct_skill_use_executable_direct_terminal_contract() -
     ).read_text(encoding="utf-8-sig")
     for source in (automation, skill):
         assert "$news-grasp-direct-mainline" in source or "News-Grasp Direct Mainline" in source
-        assert "tools.news_grasp_direct_runtime daily" in source
+        assert "news_grasp_daily.run_daily" in source
         for operation in (
             "static_check",
             "scoped_contract_unit",

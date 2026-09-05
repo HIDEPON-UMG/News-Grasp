@@ -457,6 +457,950 @@ def test_f10_completion_elapsed_freezes_and_dispatches_45_75_90_boundaries(tmp_p
         assert result["time_band"] == branch["expectedBand"]
 
 
+def test_post_90_admission_blocks_regeneration_but_keeps_same_run_recovery(tmp_path: Path) -> None:
+    runtime = _module("tools.news_grasp_direct_runtime")
+
+    class FakeClock:
+        def __init__(self) -> None:
+            self.value = datetime.fromisoformat("2026-09-03T06:00:00+09:00")
+
+        def __call__(self) -> datetime:
+            return self.value
+
+    clock = FakeClock()
+    store = runtime.DirectRunStore(
+        tmp_path / "state",
+        clock=clock,
+        test_only_allow_semantic_verifier=True,
+    )
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    run = runtime.start_run(
+        store,
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        scheduler_trigger_at="2026-09-03T06:00:00+09:00",
+    )
+    clock.value += timedelta(minutes=91)
+
+    admission = runtime.admit_daily_operation(
+        store,
+        run_id=run["run_id"],
+        writer_lease=run["writer_lease"],
+        fencing_token=run["fencing_token"],
+        operation_id="consumer_public_verification",
+    )
+
+    assert admission["dispatch"] == "deadline_revision"
+    assert admission["model_regeneration_allowed"] is False
+    assert admission["high_cost_generation_allowed"] is False
+    assert admission["provider_initial_send_allowed"] is True
+    assert admission["provider_resend_allowed"] is False
+    assert admission["read_only_reconcile_allowed"] is True
+    assert admission["same_run_resume_allowed"] is True
+    assert admission["deterministic_successor_allowed"] is True
+    assert admission["finalization_allowed"] is True
+
+
+@pytest.mark.parametrize(
+    ("elapsed_seconds", "expected_attempts"),
+    [(3600, 1), (5500, 2)],
+)
+def test_consumer_public_verifier_poll_continues_after_slo_debt(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    elapsed_seconds: int,
+    expected_attempts: int,
+) -> None:
+    gate = _module("tools.news_grasp_daily_gate")
+    runtime = _module("tools.news_grasp_direct_runtime")
+    completion = _module("tools.news_grasp_direct_completion")
+    store = runtime.DirectRunStore(tmp_path / "state", test_only_allow_semantic_verifier=True)
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    run = runtime.start_run(
+        store,
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        manifest_id="f" * 64,
+    )
+    observed: dict[str, Any] = {}
+    attempts: list[int] = []
+    monotonic_values = iter((0.0, 601.0, 602.0, 603.0))
+
+    def verify(**kwargs: Any) -> dict[str, Any]:
+        observed.update(kwargs)
+        attempts.append(1)
+        if elapsed_seconds > 5400 and len(attempts) == 1:
+            return {
+                "ok": False,
+                "status": "blocked",
+                "failures": ["public_surface_red:web"],
+                "public_surfaces": {
+                    "web": {
+                        "status": "blocked",
+                        "retryDisposition": "transient",
+                        "public": {"status": "red", "failures": ["public_digest_mismatch:home"]},
+                    },
+                    "pages": {
+                        "status": "blocked",
+                        "retryDisposition": "transient",
+                        "workflow": {
+                            "status": "pending",
+                            "pendingWorkflowRun": {"head_sha": "a" * 40, "status": "in_progress"},
+                        },
+                    },
+                },
+                "observationToken": "fresh-observation-red",
+                "observedAt": "2026-09-05T07:00:00+09:00",
+            }
+        return {
+            "ok": True,
+            "status": "verified",
+            "observationToken": "fresh-observation",
+            "observedAt": "2026-09-05T07:00:00+09:00",
+        }
+
+    monkeypatch.setattr(completion, "verify_direct_public_completion", verify)
+    monkeypatch.setattr(gate.time, "sleep", lambda _seconds: None)
+    monkeypatch.setattr(gate.time, "monotonic", lambda: next(monotonic_values))
+    result = gate._default_consumer_public_verification(
+        store=store,
+        repo_root=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        run_id=run["run_id"],
+        writer_lease=run["writer_lease"],
+        fencing_token=run["fencing_token"],
+        public_base_url="https://example.test/News-Grasp/",
+        slo_dispatch={"elapsed_seconds": elapsed_seconds},
+    )
+
+    assert result["observation"]["ok"] is True, result
+    assert observed["wait_sec"] == 0
+    assert observed["poll_sec"] == 30
+    assert result["observation_attempt_count"] == expected_attempts
+
+
+def test_consumer_public_retry_classifier_rejects_terminal_provider_failure() -> None:
+    gate = _module("tools.news_grasp_daily_gate")
+
+    assert gate._public_observation_retryable(
+        {
+            "failures": ["public_surface_red:youtube_daily"],
+            "public_surfaces": {
+                "youtube_daily": {
+                    "status": "blocked",
+                    "retryDisposition": "terminal",
+                    "provider": {"status": "failed", "reason": "upload_rejected"},
+                }
+            },
+        }
+    ) is False
+
+
+def test_consumer_public_poll_continues_same_run_at_slo_deadline(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate = _module("tools.news_grasp_daily_gate")
+    runtime = _module("tools.news_grasp_direct_runtime")
+    completion = _module("tools.news_grasp_direct_completion")
+
+    class FakeClock:
+        def __init__(self) -> None:
+            self.value = datetime.fromisoformat("2026-09-03T06:00:00+09:00")
+
+        def __call__(self) -> datetime:
+            return self.value
+
+    clock = FakeClock()
+    store = runtime.DirectRunStore(
+        tmp_path / "state",
+        clock=clock,
+        test_only_allow_semantic_verifier=True,
+    )
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    run = runtime.start_run(
+        store,
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        manifest_id="f" * 64,
+        scheduler_trigger_at="2026-09-03T06:00:00+09:00",
+    )
+    clock.value = datetime.fromisoformat("2026-09-03T07:30:00+09:00")
+    attempts: list[int] = []
+
+    def verify(**_kwargs: Any) -> dict[str, Any]:
+        attempts.append(1)
+        if len(attempts) == 1:
+            return {
+                "ok": False,
+                "status": "blocked",
+                "failures": ["public_surface_red:web"],
+                "public_surfaces": {
+                    "pages": {
+                        "retryDisposition": "transient",
+                        "workflow": {"status": "pending"},
+                    },
+                },
+                "observationToken": "fresh-observation-red",
+                "observedAt": "2026-09-03T07:30:00+09:00",
+            }
+        return {
+            "ok": True,
+            "status": "verified",
+            "observationToken": "fresh-observation-green",
+            "observedAt": "2026-09-03T07:35:00+09:00",
+        }
+
+    sleeps: list[float] = []
+    monkeypatch.setattr(completion, "verify_direct_public_completion", verify)
+    monkeypatch.setattr(gate.time, "sleep", sleeps.append)
+
+    result = gate._default_consumer_public_verification(
+        store=store,
+        repo_root=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        run_id=run["run_id"],
+        writer_lease=run["writer_lease"],
+        fencing_token=run["fencing_token"],
+        public_base_url="https://example.test/News-Grasp/",
+        slo_dispatch={"elapsed_seconds": 5_400},
+    )
+
+    assert result["observation"]["ok"] is True, result
+    assert result["observation_attempt_count"] == 2
+    assert sleeps == [pytest.approx(300.0)]
+    with store.connect() as conn:
+        assert [
+            tuple(row)
+            for row in conn.execute(
+                "SELECT checkpoint_minute FROM runtime_checkpoints WHERE run_id=? ORDER BY checkpoint_minute",
+                (run["run_id"],),
+            ).fetchall()
+        ] == [(45,), (75,), (90,)]
+
+
+def test_public_verification_red_keeps_same_run_successor_recoverable(
+    tmp_path: Path,
+) -> None:
+    gate = _module("tools.news_grasp_daily_gate")
+    runtime = _module("tools.news_grasp_direct_runtime")
+    store = runtime.DirectRunStore(
+        tmp_path / "state",
+        test_only_allow_semantic_verifier=True,
+    )
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    run = runtime.start_run(
+        store,
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        manifest_id="f" * 64,
+    )
+    prior = list(gate.DAILY_OPERATIONS[:4])
+    for index, operation_id in enumerate(prior):
+        input_hash = f"input-{index}"
+        handler_id = f"fixture.{operation_id}"
+        runtime.claim_daily_operation(
+            store,
+            run_id=run["run_id"],
+            writer_lease=run["writer_lease"],
+            operation_id=operation_id,
+            input_hash=input_hash,
+            handler_id=handler_id,
+            fencing_token=run["fencing_token"],
+        )
+        runtime.apply_daily_operation_atomic(
+            store,
+            run_id=run["run_id"],
+            writer_lease=run["writer_lease"],
+            operation_id=operation_id,
+            input_hash=input_hash,
+            handler_id=handler_id,
+            producer_receipt=gate._producer_result(
+                f"FIXTURE_{operation_id}",
+                ok=True,
+                status="verified",
+                operation_id=operation_id,
+            ),
+            fencing_token=run["fencing_token"],
+        )
+
+    result = gate.run_daily_operation(
+        "consumer_public_verification",
+        completed_operations=prior,
+        store=store,
+        run_id=run["run_id"],
+        writer_lease=run["writer_lease"],
+        fencing_token=run["fencing_token"],
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        handlers={
+            "consumer_public_verification": lambda **_context: gate._producer_result(
+                "NEWS_GRASP_CONSUMER_PUBLIC_VERIFICATION_RECEIPT_V1",
+                ok=False,
+                status="red",
+                operation_id="consumer_public_verification",
+                failures=("public_surface_red:web",),
+            )
+        },
+    )
+
+    assert result["ok"] is False
+    assert runtime.inspect_run(store, run_id=run["run_id"])["status"] in {
+        "active",
+        "executing",
+    }
+    with store.connect() as conn:
+        assert tuple(
+            conn.execute(
+                "SELECT status FROM daily_operation_claims WHERE run_id=? AND operation_id='consumer_public_verification'",
+                (run["run_id"],),
+            ).fetchone()
+        ) == ("recoverable",)
+
+
+def test_pages_deployment_surfaces_same_head_in_progress_as_pending() -> None:
+    evaluate = _require_callable(
+        "tools.news_grasp_publish_contract",
+        "evaluate_pages_deployment",
+    )
+    head = "a" * 40
+
+    result = evaluate(
+        remote_head=head,
+        workflow_runs=[
+            {
+                "head_sha": head,
+                "path": ".github/workflows/deploy-pages.yml",
+                "event": "push",
+                "head_branch": "main",
+                "status": "in_progress",
+                "conclusion": None,
+            }
+        ],
+        manifest_id="b" * 64,
+        issue_date=ISSUE_DATE,
+    )
+
+    assert result["ok"] is False
+    assert result["status"] == "pending"
+    assert result["pendingWorkflowRun"]["head_sha"] == head
+
+
+def test_public_surface_retry_disposition_is_closed_for_transport_and_semantic_red() -> None:
+    completion = _module("tools.news_grasp_direct_completion")
+    classify = completion._surface_retry_disposition
+
+    assert classify(
+        "pages",
+        {"ok": False, "semantic_ok": False, "reasonCodes": ["pages_workflow_fetch_failed"]},
+        {},
+    ) == "transient"
+    assert classify(
+        "remote_commit",
+        {"ok": False, "semantic_ok": False, "status": "red", "remote_exit_code": 128},
+        {},
+    ) == "transient"
+    assert classify(
+        "daily_audio",
+        {"ok": False, "semantic_ok": False, "reasonCodes": ["audio_public_probe_failed"]},
+        {},
+    ) == "transient"
+    assert classify(
+        "daily_audio",
+        {"ok": False, "semantic_ok": False, "reasonCodes": ["audio_projection_invalid"]},
+        {},
+    ) == "terminal"
+
+
+def test_web_propagation_and_pages_api_failure_remain_same_call_retryable() -> None:
+    completion = _module("tools.news_grasp_direct_completion")
+    gate = _module("tools.news_grasp_daily_gate")
+    surfaces: dict[str, dict[str, Any]] = {
+        "web": {
+            "ok": False,
+            "semantic_ok": False,
+            "status": "blocked",
+            "public": {"failures": ["public_digest_mismatch:home"]},
+        },
+        "pages": {
+            "ok": False,
+            "semantic_ok": False,
+            "status": "blocked",
+            "workflow": {
+                "ok": False,
+                "semantic_ok": False,
+                "status": "blocked",
+                "reasonCodes": ["pages_workflow_fetch_failed"],
+            },
+        },
+    }
+    for name in ("web", "pages"):
+        surfaces[name]["retryDisposition"] = completion._surface_retry_disposition(
+            name,
+            surfaces[name],
+            surfaces,
+        )
+
+    assert {row["retryDisposition"] for row in surfaces.values()} == {"transient"}
+    assert gate._public_observation_retryable(
+        {
+            "failures": ["public_surface_red:web", "public_surface_red:pages"],
+            "public_surfaces": surfaces,
+        }
+    ) is True
+
+
+def test_pages_completed_failure_stops_web_propagation_poll() -> None:
+    completion = _module("tools.news_grasp_direct_completion")
+    gate = _module("tools.news_grasp_daily_gate")
+    evaluate = _require_callable(
+        "tools.news_grasp_publish_contract",
+        "evaluate_pages_deployment",
+    )
+    head = "a" * 40
+    workflow = evaluate(
+        remote_head=head,
+        workflow_runs=[
+            {
+                "head_sha": head,
+                "path": ".github/workflows/deploy-pages.yml",
+                "event": "push",
+                "head_branch": "main",
+                "status": "completed",
+                "conclusion": "failure",
+            }
+        ],
+        manifest_id="b" * 64,
+        issue_date=ISSUE_DATE,
+    )
+    surfaces: dict[str, dict[str, Any]] = {
+        "web": {
+            "ok": False,
+            "semantic_ok": False,
+            "status": "blocked",
+            "public": {"failures": ["public_digest_mismatch:home"]},
+        },
+        "pages": {
+            "ok": False,
+            "semantic_ok": False,
+            "status": "blocked",
+            "workflow": workflow,
+        },
+    }
+    for name in ("web", "pages"):
+        surfaces[name]["retryDisposition"] = completion._surface_retry_disposition(
+            name,
+            surfaces[name],
+            surfaces,
+        )
+
+    assert surfaces["web"]["retryDisposition"] == "terminal"
+    assert surfaces["pages"]["retryDisposition"] == "terminal"
+    assert workflow["failedWorkflowRun"]["conclusion"] == "failure"
+    assert gate._public_observation_retryable(
+        {
+            "failures": ["public_surface_red:web", "public_surface_red:pages"],
+            "public_surfaces": surfaces,
+        }
+    ) is False
+
+
+def test_pages_pending_rerun_supersedes_failed_history_for_retry() -> None:
+    completion = _module("tools.news_grasp_direct_completion")
+    evaluate = _require_callable(
+        "tools.news_grasp_publish_contract",
+        "evaluate_pages_deployment",
+    )
+    head = "a" * 40
+    workflow = evaluate(
+        remote_head=head,
+        workflow_runs=[
+            {
+                "head_sha": head,
+                "path": ".github/workflows/deploy-pages.yml",
+                "event": "push",
+                "head_branch": "main",
+                "status": "in_progress",
+                "conclusion": None,
+            },
+            {
+                "head_sha": head,
+                "path": ".github/workflows/deploy-pages.yml",
+                "event": "push",
+                "head_branch": "main",
+                "status": "completed",
+                "conclusion": "failure",
+            },
+        ],
+        manifest_id="b" * 64,
+        issue_date=ISSUE_DATE,
+    )
+    surface = {
+        "ok": False,
+        "semantic_ok": False,
+        "status": "blocked",
+        "workflow": workflow,
+    }
+
+    assert workflow["status"] == "pending"
+    assert workflow["failedWorkflowRun"]["conclusion"] == "failure"
+    assert completion._surface_retry_disposition(
+        "pages",
+        surface,
+        {"pages": surface},
+    ) == "transient"
+
+
+def test_pages_pending_cannot_hide_immutable_release_contract_red() -> None:
+    completion = _module("tools.news_grasp_direct_completion")
+    evaluate = _require_callable(
+        "tools.news_grasp_publish_contract",
+        "evaluate_pages_deployment",
+    )
+    head = "a" * 40
+    workflow = evaluate(
+        remote_head=head,
+        workflow_runs=[
+            {
+                "head_sha": head,
+                "path": ".github/workflows/deploy-pages.yml",
+                "event": "push",
+                "head_branch": "main",
+                "status": "in_progress",
+                "conclusion": None,
+            }
+        ],
+        manifest_id="b" * 64,
+        issue_date=ISSUE_DATE,
+        changed_paths=["docs/category/ai.html"],
+    )
+    surface = {
+        "ok": False,
+        "semantic_ok": False,
+        "status": "blocked",
+        "workflow": workflow,
+    }
+
+    assert "pages_public_release_docs_diff_missing" in workflow["reasonCodes"]
+    assert completion._surface_retry_disposition(
+        "pages",
+        surface,
+        {"pages": surface},
+    ) == "terminal"
+
+
+def test_consumer_public_verifier_recovers_distinct_transport_reds_in_same_call(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate = _module("tools.news_grasp_daily_gate")
+    runtime = _module("tools.news_grasp_direct_runtime")
+    completion = _module("tools.news_grasp_direct_completion")
+    store = runtime.DirectRunStore(tmp_path / "state", test_only_allow_semantic_verifier=True)
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    run = runtime.start_run(
+        store,
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        manifest_id="f" * 64,
+    )
+    observations = iter(
+        [
+            {
+                "ok": False,
+                "status": "blocked",
+                "failures": [f"public_surface_red:{surface}"],
+                "public_surfaces": {
+                    surface: {"ok": False, "retryDisposition": "transient"}
+                },
+                "observationToken": f"red-{surface}",
+                "observedAt": "2026-09-05T07:00:00+09:00",
+            }
+            for surface in ("pages", "remote_commit", "daily_audio")
+        ]
+        + [
+            {
+                "ok": True,
+                "status": "verified",
+                "observationToken": "green",
+                "observedAt": "2026-09-05T07:00:00+09:00",
+            }
+        ]
+    )
+    monkeypatch.setattr(completion, "verify_direct_public_completion", lambda **_kwargs: next(observations))
+    monkeypatch.setattr(gate.time, "sleep", lambda _seconds: None)
+    monkeypatch.setattr(gate.time, "monotonic", lambda: 0.0)
+
+    result = gate._default_consumer_public_verification(
+        store=store,
+        repo_root=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        run_id=run["run_id"],
+        writer_lease=run["writer_lease"],
+        fencing_token=run["fencing_token"],
+        public_base_url="https://example.test/News-Grasp/",
+        slo_dispatch={"elapsed_seconds": 0},
+    )
+
+    assert result["observation"]["ok"] is True
+    assert result["observation_attempt_count"] == 4
+
+
+def test_current_issue_handler_executes_persisted_repair_plan_in_same_call(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate = _module("tools.news_grasp_daily_gate")
+    runtime = _module("tools.news_grasp_direct_runtime")
+    content = _module("tools.news_grasp_daily_content")
+    inventory = _module("tools.publish_inventory")
+    repair = _module("tools.news_grasp_repair_registry")
+    store = runtime.DirectRunStore(
+        tmp_path / "state",
+        test_only_allow_semantic_verifier=True,
+    )
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    run = runtime.start_run(
+        store,
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        manifest_id="f" * 64,
+    )
+    calls: list[int] = []
+
+    def produce(**kwargs):
+        calls.append(len(calls) + 1)
+        if len(calls) == 1:
+            ledger = runtime.DailyArtifactLedger(
+                kwargs["runtime_store"],
+                run_id=kwargs["run_id"],
+                issue_date=kwargs["issue_date"],
+                writer_lease=kwargs["writer_lease"],
+                fencing_token=kwargs["fencing_token"],
+            )
+            ledger.record_failure(
+                {
+                    "stage": "reporter",
+                    "artifactId": "reporter:fx",
+                    "predicateId": "reporter_output_valid",
+                    "reasonCode": "fixture_quality_red",
+                    "inputHash": "fixture-input",
+                    "causeInputMask": ["/records/0/summary"],
+                }
+            )
+            checkpoints = ledger.list_checkpoints()
+            ledger.persist_repair_plan(
+                repair.build_repair_plan(
+                    issue_date=kwargs["issue_date"],
+                    run_id=kwargs["run_id"],
+                    categories=("fx",),
+                    checkpoints=checkpoints,
+                    failures=[checkpoints["reporter:fx"]["failure"]],
+                )
+            )
+            raise content.DailyContentError("fixture_quality_red")
+        return {"ok": True, "status": "completed", "run_id": kwargs["run_id"]}
+
+    monkeypatch.setattr(content, "produce_current_issue", produce)
+    monkeypatch.setattr(inventory, "scheduled_category_ids", lambda _issue: ("fx",))
+    monkeypatch.setattr(gate, "_CURRENT_ISSUE_PRODUCER_GROUPS", ())
+    result = gate._default_current_issue_integration(
+        store=store,
+        repo_root=repo,
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_id=run["run_id"],
+        writer_lease=run["writer_lease"],
+        fencing_token=run["fencing_token"],
+        run=run,
+        run_intent=RUN_INTENT,
+        route_capability={"capability": "scheduled_production_daily"},
+        content_model_runner=lambda **_: None,
+    )
+
+    assert result["ok"] is True
+    assert calls == [1, 2]
+
+
+def test_post_materialization_quality_red_repairs_and_rechecks_in_same_call(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    from tools import news_grasp_daily_gate as gate
+    from tools import news_grasp_direct_runtime as runtime
+
+    store = runtime.DirectRunStore(tmp_path / "state", test_only_allow_semantic_verifier=True)
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    run = runtime.start_run(
+        store,
+        cwd=repo,
+        issue_date="2026-09-05",
+        run_intent=runtime.RUN_INTENT,
+        manifest_id="f" * 64,
+    )
+    produced: list[int] = []
+    checked: list[int] = []
+
+    def produce(**_kwargs):
+        produced.append(1)
+        return {"ok": True, "status": "completed"}
+
+    def quality(_context):
+        checked.append(1)
+        return {
+            "predicate_id": "summary_markdown_quality",
+            "failures": ["summary quality red"] if len(checked) == 1 else [],
+        }
+
+    monkeypatch.setattr("tools.news_grasp_daily_content.produce_current_issue", produce)
+    monkeypatch.setattr(gate, "_CURRENT_ISSUE_PRODUCER_GROUPS", (("summary", quality),))
+    monkeypatch.setattr(
+        gate,
+        "_record_current_issue_quality_failures",
+        lambda *_args, **_kwargs: {
+            "status": "repair_required",
+            "planSha256": f"{len(checked):064x}",
+            "steps": [{"action": "repair_model"}],
+        },
+    )
+
+    result = gate._default_current_issue_integration(
+        store=store,
+        cwd=repo,
+        issue_date="2026-09-05",
+        run_id=run["run_id"],
+        run=runtime.inspect_run(store, run_id=run["run_id"]),
+        run_intent=runtime.RUN_INTENT,
+        writer_lease=run["writer_lease"],
+        fencing_token=run["fencing_token"],
+        route_capability={"capability": "scheduled_production_daily"},
+        content_model_runner=lambda **_kwargs: {},
+    )
+
+    assert result["ok"] is True, result
+    assert len(produced) == 2
+    assert len(checked) == 2
+
+
+def test_post_quality_summary_failure_records_only_summary_field(tmp_path: Path) -> None:
+    from tools import news_grasp_daily_gate as gate
+    from tools import news_grasp_direct_runtime as runtime
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    store = runtime.DirectRunStore(tmp_path / "state", test_only_allow_semantic_verifier=True)
+    run = runtime.start_run(
+        store,
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        manifest_id="f" * 64,
+    )
+    ledger = runtime.DailyArtifactLedger(
+        store,
+        run_id=run["run_id"],
+        issue_date=ISSUE_DATE,
+        writer_lease=run["writer_lease"],
+        fencing_token=run["fencing_token"],
+    )
+    ledger.write_checkpoint(
+        artifact_id="editor",
+        input_hash="editor-input",
+        validator_id="editor_output_valid_v1",
+        payload={
+            "issue_date": ISSUE_DATE,
+            "append_records": [{"url": "https://example.test/keep"}],
+            "summary_markdown": "old summary",
+        },
+    )
+
+    plan = gate._record_current_issue_quality_failures(
+        ledger,
+        categories=("fx",),
+        results=[
+            {
+                "predicate_id": "summary_markdown_quality",
+                "failures": ["reflection section §01 lacks required emphasis"],
+            }
+        ],
+    )
+
+    failure = ledger.load_failure("editor")
+    assert failure is not None
+    assert failure["allowedMutationPaths"] == ["/summary_markdown"]
+    actions = {item["artifactId"]: item["action"] for item in plan["steps"]}
+    assert actions["editor"] == "repair_model"
+
+
+def test_quality_failure_resolver_covers_relation_and_followup_exact_field() -> None:
+    from tools import news_grasp_daily_gate as gate
+
+    relation = gate._quality_failure_target(
+        predicate_id="deepdive_current_issue_audit",
+        failure="deepdive_relation_quality_invalid",
+        categories=("fx",),
+        checkpoints={},
+    )
+    followup = gate._quality_failure_target(
+        predicate_id="jsonl_source_freshness",
+        failure=(
+            "articles.jsonl:1 [fx]: follow-up matched_with URL date 2026-09-01 "
+            "is old; matched_with=https://example.test/2026/09/01/story; "
+            "add followup_review_note"
+        ),
+        categories=("fx",),
+        checkpoints={
+            "reporter:fx": {
+                "payload": {
+                    "records": [
+                        {"matched_with": "https://example.test/2026/09/01/story"}
+                    ]
+                }
+            }
+        },
+    )
+    missing_jsonl = gate._quality_failure_target(
+        predicate_id="jsonl_source_freshness",
+        failure="articles JSONL が存在しません",
+        categories=("fx",),
+        checkpoints={},
+    )
+
+    assert relation == ("deepdive_model", ["/article_markdown"])
+    assert followup == ("reporter:fx", ["/records/0/followup_review_note"])
+    assert missing_jsonl == ("articles_jsonl", [])
+
+
+def test_sequence_continues_distinct_external_reconcile_progress_in_same_call(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate = _module("tools.news_grasp_daily_gate")
+    runtime = _module("tools.news_grasp_direct_runtime")
+    store = runtime.DirectRunStore(tmp_path / "state", test_only_allow_semantic_verifier=True)
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    external_calls: list[int] = []
+    progress_calls: list[int] = []
+
+    def operation(operation_id: str, **_kwargs: Any) -> dict[str, Any]:
+        if operation_id != "external_publication":
+            return {"ok": True, "status": "completed", "operation_id": operation_id}
+        external_calls.append(1)
+        if len(external_calls) < 3:
+            return {
+                "ok": False,
+                "status": "reconcile_required",
+                "operation_id": operation_id,
+                "exact_successor": f"external_reconcile:step-{len(external_calls)}",
+                "slo_dispatch": {"read_only_reconcile_allowed": True},
+            }
+        return {"ok": True, "status": "completed", "operation_id": operation_id}
+
+    def outbox(*_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        progress_calls.append(1)
+        return [
+            {
+                "logical_operation_id": "fixture",
+                "status": f"state-{len(progress_calls)}",
+            }
+        ]
+
+    monkeypatch.setattr(gate, "run_daily_operation", operation)
+    monkeypatch.setattr(runtime, "inspect_external_outbox", outbox)
+
+    receipts = gate.run_daily_sequence(
+        store=store,
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        scheduler_trigger_at=f"{ISSUE_DATE}T06:00:00+09:00",
+    )
+
+    assert [item["operation_id"] for item in receipts] == list(gate.DAILY_OPERATIONS)
+    assert len(external_calls) == 3
+
+
+def test_external_and_consumer_red_persist_repair_plan_in_same_run(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate = _module("tools.news_grasp_daily_gate")
+    external = _module("tools.news_grasp_daily_external")
+    runtime = _module("tools.news_grasp_direct_runtime")
+    store = runtime.DirectRunStore(
+        tmp_path / "state",
+        test_only_allow_semantic_verifier=True,
+    )
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    run = runtime.start_run(
+        store,
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+    )
+    monkeypatch.setattr(
+        external,
+        "execute_external_publication",
+        lambda **_kwargs: {
+            "ok": False,
+            "status": "reconcile_required",
+            "operation_id": "notification",
+            "exact_successor": "notification",
+            "failures": ["provider_ack_unknown"],
+            "adapter_call_count": 0,
+        },
+    )
+    context = {
+        "store": store,
+        "repo_root": repo,
+        "issue_date": ISSUE_DATE,
+        "run_intent": RUN_INTENT,
+        "run_id": run["run_id"],
+        "writer_lease": run["writer_lease"],
+        "fencing_token": run["fencing_token"],
+        "slo_dispatch": {"provider_resend_allowed": False},
+    }
+
+    external_result = gate._default_external_publication(**context)
+    consumer_result = gate._default_consumer_public_verification(
+        **context,
+        public_base_url="",
+    )
+    ledger = runtime.DailyArtifactLedger(
+        store,
+        run_id=run["run_id"],
+        issue_date=ISSUE_DATE,
+        writer_lease=run["writer_lease"],
+        fencing_token=run["fencing_token"],
+    )
+    checkpoints = ledger.list_checkpoints()
+
+    assert external_result["ok"] is False
+    assert consumer_result["ok"] is False
+    assert checkpoints["notification"]["status"] == "Red"
+    assert checkpoints["public_verification"]["status"] == "Red"
+    assert ledger.load_repair_plan()["status"] == "repair_required"
+
+
 def test_f11_home_is_required_and_source_only_release_does_not_require_pages(tmp_path: Path) -> None:
     api = _module("tools.news_grasp_publish_contract")
     fixture = _fixture("F11")
@@ -782,8 +1726,10 @@ def test_ng_rrt_automation_template_has_exact_prompt_parity_contract() -> None:
     )
     assert result["ok"] is True
     assert prompt.count(required_phrase) == 3
-    launcher = r"C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_direct_runtime daily"
+    launcher = "news_grasp_daily.run_daily"
     assert prompt.count(launcher) == 1
+    assert "空のJSON `{}`" in prompt
+    assert "tools.news_grasp_direct_runtime daily" not in prompt
     for operation in (
         "static_check",
         "scoped_contract_unit",
@@ -1518,3 +2464,92 @@ def test_ng_rrt_expired_external_owner_recovery_rebinds_claim_to_reconcile(
         ).fetchone()[0]
     assert claim_status == "recoverable"
     assert outbox_status == "started"
+
+
+@pytest.mark.parametrize(
+    ("completed_count", "expected_successor"),
+    [
+        (3, "external_publication"),
+        (4, "consumer_public_verification"),
+    ],
+)
+def test_expired_owner_resumes_same_run_at_first_missing_daily_receipt(
+    tmp_path: Path,
+    completed_count: int,
+    expected_successor: str,
+) -> None:
+    runtime = _module("tools.news_grasp_direct_runtime")
+
+    class FakeClock:
+        def __init__(self) -> None:
+            self.value = datetime.fromisoformat("2026-09-03T06:00:00+09:00")
+
+        def __call__(self) -> datetime:
+            return self.value
+
+    clock = FakeClock()
+    store = runtime.DirectRunStore(
+        tmp_path / "state",
+        clock=clock,
+        lease_ttl=timedelta(minutes=10),
+        test_only_allow_semantic_verifier=True,
+    )
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    first = runtime.start_run(
+        store,
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        scheduler_trigger_at="2026-09-03T06:00:00+09:00",
+        source_baseline="a" * 40,
+        remote_base_sha="a" * 40,
+        manifest_id="f" * 64,
+        runtime_generation="fixture-runtime-generation",
+        allowed_side_effect_ids=["external_publication"],
+    )
+    for operation_id in runtime.DAILY_OPERATION_ORDER[:completed_count]:
+        input_hash = f"input-{operation_id}"
+        handler_id = f"fixture.handler.{operation_id}"
+        runtime.claim_daily_operation(
+            store,
+            run_id=first["run_id"],
+            writer_lease=first["writer_lease"],
+            fencing_token=first["fencing_token"],
+            operation_id=operation_id,
+            input_hash=input_hash,
+            handler_id=handler_id,
+        )
+        runtime.apply_daily_operation_atomic(
+            store,
+            run_id=first["run_id"],
+            writer_lease=first["writer_lease"],
+            fencing_token=first["fencing_token"],
+            operation_id=operation_id,
+            input_hash=input_hash,
+            handler_id=handler_id,
+            producer_receipt={
+                "schemaVersion": "FIXTURE_OPERATION_V1",
+                "ok": True,
+                "status": "verified",
+                "external_started": operation_id == "external_publication",
+            },
+        )
+    clock.value += timedelta(minutes=11)
+
+    recovered = runtime.start_run(
+        store,
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=RUN_INTENT,
+        scheduler_trigger_at="2026-09-03T06:00:00+09:00",
+        source_baseline="a" * 40,
+        remote_base_sha="a" * 40,
+        manifest_id="f" * 64,
+        runtime_generation="fixture-runtime-generation",
+        allowed_side_effect_ids=["external_publication"],
+    )
+
+    assert recovered["run_id"] == first["run_id"]
+    assert recovered["exact_successor"] == expected_successor
+    assert recovered["fencing_token"] == first["fencing_token"] + 1

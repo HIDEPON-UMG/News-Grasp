@@ -5,6 +5,8 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import pytest
+
 from tools import news_grasp_daily_release as release
 from tools import news_grasp_direct_runtime as runtime
 
@@ -298,7 +300,7 @@ def test_current_issue_commit_update_ref_crash_reuses_same_run_and_exact_commit_
     assert recovered["status"] == "active"
     assert recovered["run_id"] == first["run_id"]
     assert recovered["generation"] == first["generation"]
-    assert recovered["fencing_token"] == first["fencing_token"]
+    assert recovered["fencing_token"] == first["fencing_token"] + 1
     assert recovered["writer_lease"] != first["writer_lease"]
     reused_sha = release._reuse_exact_commit(
         root,
@@ -353,7 +355,7 @@ def test_current_issue_publish_seal_crash_reuses_seal_and_applies_receipt_withou
     assert recovered["status"] == "active"
     assert recovered["run_id"] == first["run_id"]
     assert recovered["generation"] == first["generation"]
-    assert recovered["fencing_token"] == first["fencing_token"]
+    assert recovered["fencing_token"] == first["fencing_token"] + 1
     reused_seal = _seal_fixture(store, recovered, manifest_id=manifest_id, release_sha=release_sha)
     assert reused_seal == before_seal
     assert int(release._git(root, ["rev-list", "--count", "HEAD"]).strip()) == commit_count
@@ -364,3 +366,35 @@ def test_current_issue_publish_seal_crash_reuses_seal_and_applies_receipt_withou
         release_sha=release_sha,
     )
     assert applied["status"] == "completed"
+
+
+def test_current_issue_publish_seal_takeover_rejects_changed_release(
+    tmp_path: Path,
+) -> None:
+    """引継ぎは旧sealを再利用できても、公開内容の差替えは許可しない。"""
+
+    root, baseline, clock, store, first, manifest_id, _ = _current_issue_recovery_fixture(tmp_path)
+    release_sha = release._create_exact_commit(
+        root,
+        paths=["docs/index.html"],
+        expected_parent=baseline,
+        issue_date=ISSUE_DATE,
+        run_id=str(first["run_id"]),
+    )
+    _seal_fixture(store, first, manifest_id=manifest_id, release_sha=release_sha)
+    clock.value += timedelta(minutes=11)
+    recovered = runtime.start_run(
+        store,
+        cwd=root,
+        issue_date=ISSUE_DATE,
+        run_intent="scheduled_production_direct",
+        source_baseline=baseline,
+        remote_base_sha=baseline,
+        scheduler_trigger_at="2026-09-04T06:00:00+09:00",
+        manifest_id=manifest_id,
+        runtime_generation="fixture-runtime-generation",
+        allowed_side_effect_ids=["external_publication"],
+    )
+
+    with pytest.raises(RuntimeError, match="publish_seal_idempotency_conflict"):
+        _seal_fixture(store, recovered, manifest_id=manifest_id, release_sha="d" * 40)

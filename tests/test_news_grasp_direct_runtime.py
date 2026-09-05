@@ -1376,19 +1376,16 @@ def test_installed_direct_config_rejects_codex_app_schema_timestamp_gaps(
     assert "automation_app_schema_updated_at_invalid" in result.get("failures", [])
 
 
-def test_public_template_keeps_portable_cwd_and_exact_approved_python312() -> None:
-    """cwdは可搬のまま、実行Pythonだけを承認済み3.12実体へ固定する。"""
+def test_public_template_keeps_portable_cwd_and_exposes_only_typed_daily_tool() -> None:
+    """cwdは可搬のまま、Lunaへshell/Python起動authorityを渡さない。"""
 
     template_path = REPO / "automation/news-grasp-6-40/automation.toml.template"
     template_text = template_path.read_text(encoding="utf-8-sig")
     template = tomllib.loads(template_text)
     assert template.get("cwds") == ["${NEWS_GRASP_REPO_ROOT}"]
-    approved_python = (
-        "C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe"
-    )
-    assert approved_python in template["prompt"]
-    scrubbed = template["prompt"].replace(approved_python, "${NEWS_GRASP_PYTHON312}")
-    assert "C:\\Users\\" not in scrubbed
+    assert "news_grasp_daily.run_daily" in template["prompt"]
+    assert "tools.news_grasp_direct_runtime daily" not in template["prompt"]
+    assert "C:\\Users\\" not in template["prompt"]
 
     installed_path = Path.home() / ".codex" / "automations" / AUTOMATION_ID / "automation.toml"
     installed = tomllib.loads(installed_path.read_text(encoding="utf-8-sig"))

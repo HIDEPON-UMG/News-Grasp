@@ -26,6 +26,11 @@ from urllib.parse import urlencode, urlsplit
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from tools.news_grasp_trusted_process import (
+    sanitized_git_environment,
+    trusted_git_executable,
+)
+
 
 PUBLIC_SCHEMA = "NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V1"
 PUBLIC_SCHEMA_V2 = "NEWS_GRASP_DIRECT_PUBLIC_VERIFICATION_V2"
@@ -535,23 +540,25 @@ def _read_git_blob_bounded(repo_root: Path, *, commit: str, path: str, limit: in
     if re.fullmatch(r"[0-9a-f]{40}", commit) is None or path != "tools/send_push.py":
         return None
     flags = int(getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    git = str(trusted_git_executable())
+    git_env = sanitized_git_environment()
     identity = subprocess.run(
-        ["git", "rev-parse", f"{commit}:{path}"], cwd=str(repo_root), capture_output=True,
+        [git, "rev-parse", f"{commit}:{path}"], cwd=str(repo_root), capture_output=True,
         text=True, encoding="utf-8", errors="replace", timeout=30, check=False,
-        shell=False, creationflags=flags,
+        shell=False, creationflags=flags, env=git_env,
     )
     blob_id = identity.stdout.strip()
     if identity.returncode != 0 or re.fullmatch(r"[0-9a-f]{40,64}", blob_id) is None:
         return None
     kind = subprocess.run(
-        ["git", "cat-file", "-t", blob_id], cwd=str(repo_root), capture_output=True,
+        [git, "cat-file", "-t", blob_id], cwd=str(repo_root), capture_output=True,
         text=True, encoding="utf-8", errors="replace", timeout=30, check=False,
-        shell=False, creationflags=flags,
+        shell=False, creationflags=flags, env=git_env,
     )
     size = subprocess.run(
-        ["git", "cat-file", "-s", blob_id], cwd=str(repo_root), capture_output=True,
+        [git, "cat-file", "-s", blob_id], cwd=str(repo_root), capture_output=True,
         text=True, encoding="ascii", errors="replace", timeout=30, check=False,
-        shell=False, creationflags=flags,
+        shell=False, creationflags=flags, env=git_env,
     )
     try:
         byte_count = int(size.stdout.strip())
@@ -560,8 +567,8 @@ def _read_git_blob_bounded(repo_root: Path, *, commit: str, path: str, limit: in
     if kind.returncode != 0 or kind.stdout.strip() != "blob" or size.returncode != 0 or not 0 <= byte_count <= limit:
         return None
     blob = subprocess.run(
-        ["git", "cat-file", "blob", blob_id], cwd=str(repo_root), capture_output=True,
-        timeout=30, check=False, shell=False, creationflags=flags,
+        [git, "cat-file", "blob", blob_id], cwd=str(repo_root), capture_output=True,
+        timeout=30, check=False, shell=False, creationflags=flags, env=git_env,
     )
     if blob.returncode != 0 or len(blob.stdout) != byte_count or len(blob.stdout) > limit:
         return None
@@ -606,7 +613,7 @@ def resolve_trusted_repo_root(repo_root: str | Path) -> Path:
     if not _same_path(resolved, canonical):
         def common_dir(path: Path) -> Path | None:
             result = subprocess.run(
-                ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
+                [str(trusted_git_executable()), "rev-parse", "--path-format=absolute", "--git-common-dir"],
                 cwd=str(path),
                 capture_output=True,
                 text=True,
@@ -615,6 +622,7 @@ def resolve_trusted_repo_root(repo_root: str | Path) -> Path:
                 timeout=30,
                 check=False,
                 shell=False,
+                env=sanitized_git_environment(),
                 creationflags=int(getattr(subprocess, "CREATE_NO_WINDOW", 0)),
             )
             return Path(result.stdout.strip()).resolve(strict=False) if result.returncode == 0 and result.stdout.strip() else None
@@ -2374,9 +2382,10 @@ def _up_to_date_observation(
         raise ValueError("public_git_target_not_canonical")
     def git(*args: str) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
-            ["git", *args], cwd=str(repo_root), capture_output=True, text=True,
+            [str(trusted_git_executable()), *args], cwd=str(repo_root), capture_output=True, text=True,
             encoding="utf-8", errors="replace", timeout=30, check=False,
-            shell=False, creationflags=int(getattr(subprocess, "CREATE_NO_WINDOW", 0)),
+            shell=False, env=sanitized_git_environment(),
+            creationflags=int(getattr(subprocess, "CREATE_NO_WINDOW", 0)),
         )
 
     status_proc = git("status", "--porcelain=v1", "-b")
@@ -2417,6 +2426,7 @@ def _up_to_date_observation(
         "staged_diff_exit_code": staged_diff_proc.returncode,
         "head": head,
         "remoteHead": remote_head,
+        "remote_exit_code": remote_proc.returncode,
         "remote_contains_local": remote_graph_aligned,
         "local_contains_remote": remote_graph_aligned,
         "remote_graph_aligned": remote_graph_aligned,
@@ -2539,6 +2549,138 @@ def _pages_workflow_observation(
             source_path=url,
         )
     return output
+
+
+def _pages_workflow_retry_disposition(workflow: Any) -> str:
+    """Pages workflow観測をWeb伝播待ちと独立に分類する。"""
+
+    if not isinstance(workflow, Mapping):
+        return "terminal"
+    if workflow.get("ok") is True and workflow.get("semantic_ok") is not False:
+        return "verified"
+    reasons = {
+        str(item).casefold()
+        for item in (workflow.get("reasonCodes") or workflow.get("failures") or ())
+    }
+    status = str(workflow.get("status") or "").casefold()
+    if reasons == {"pages_workflow_fetch_failed"}:
+        return "transient"
+    if (
+        status == "pending"
+        and isinstance(workflow.get("pendingWorkflowRun"), Mapping)
+        and reasons == {"pages_successful_head_missing"}
+    ):
+        return "transient"
+    return "terminal"
+
+
+def _surface_retry_disposition(
+    surface_name: str,
+    surface: Mapping[str, Any],
+    surfaces: Mapping[str, Mapping[str, Any]],
+) -> str:
+    """公開観測Redをclosed enumでread-only再観測可否へ分類する。"""
+
+    if surface.get("ok") is True and surface.get("semantic_ok") is True:
+        return "verified"
+
+    pages = surfaces.get("pages", {})
+    workflow = pages.get("workflow") if isinstance(pages, Mapping) else None
+    if surface_name == "pages" and not isinstance(workflow, Mapping):
+        workflow = surface.get("workflow")
+        if not isinstance(workflow, Mapping):
+            workflow = surface
+    workflow_disposition = _pages_workflow_retry_disposition(workflow)
+    if surface_name == "pages" and workflow_disposition != "verified":
+        return workflow_disposition
+
+    states: set[str] = set()
+    reasons: set[str] = set()
+    status_codes: set[int] = set()
+
+    def collect(value: Any, key: str = "") -> None:
+        folded = key.casefold()
+        if isinstance(value, Mapping):
+            for child_key, child in value.items():
+                collect(child, str(child_key))
+            return
+        if isinstance(value, (list, tuple)):
+            for child in value:
+                collect(child, key)
+            return
+        if folded in {"status", "state", "conclusion", "result"} and isinstance(value, str):
+            states.add(value.strip().casefold())
+        if folded in {"reason", "reasoncode", "reasoncodes", "failures", "detail"} and isinstance(value, str):
+            reasons.add(value.strip().casefold())
+        if folded in {"status_code", "statuscode"} and isinstance(value, int):
+            status_codes.add(value)
+
+    collect(surface)
+    terminal_markers = (
+        "binding_invalid",
+        "binding_mismatch",
+        "duplicate_",
+        "identity_mismatch",
+        "manifest_",
+        "projection_invalid",
+        "redirect_target_invalid",
+        "too_large",
+    )
+    if any(marker in reason for marker in terminal_markers for reason in reasons):
+        return "terminal"
+    if states.intersection(
+        {"action_required", "cancelled", "canceled", "failed", "failure", "invalid", "rejected", "timed_out"}
+    ):
+        return "terminal"
+    if states.intersection(
+        {"in_progress", "pending", "processing", "provider_read_failed", "queued", "reconcile_required", "requested", "waiting"}
+    ):
+        return "transient"
+    if status_codes.intersection({408, 425, 429, 500, 502, 503, 504}):
+        return "transient"
+    if surface_name == "remote_commit" and int(surface.get("remote_exit_code") or 0) != 0:
+        return "transient"
+    if any(
+        marker in reason
+        for marker in (
+            "connection",
+            "fetch_failed",
+            "probe_failed",
+            "provider_read_failed",
+            "public_asset_hash_mismatch",
+            "remote_read_failed",
+            "temporarily",
+            "timeout",
+        )
+        for reason in reasons
+    ):
+        return "transient"
+
+    if surface_name == "web":
+        public = surface.get("public")
+        public_failures = {
+            str(item).casefold()
+            for item in (public.get("failures") or ())
+        } if isinstance(public, Mapping) else set()
+        propagation_only = bool(public_failures) and all(
+            item.startswith(("fetch_failed:", "http_red:", "public_digest_mismatch:", "issue_date_missing:"))
+            for item in public_failures
+        )
+        if propagation_only and workflow_disposition in {"transient", "verified"}:
+            return "transient"
+    dependency_dispositions = {
+        str(surfaces.get(name, {}).get("retryDisposition") or "")
+        for name in ("web", "remote_commit")
+    }
+    if surface_name in {"deepdive_article", "pages", "publish_status"} and "transient" in dependency_dispositions:
+        return "transient"
+    if surface_name == "completion_attestation" and any(
+        reason.startswith("completion_distribution_artifact_")
+        or reason.startswith("completion_attestation_fetch_")
+        for reason in reasons
+    ):
+        return "transient"
+    return "terminal"
 
 
 def verify_direct_public_completion(
@@ -2799,9 +2941,10 @@ def verify_direct_public_completion(
         }
     source_baseline = str((manifest or {}).get("sourceBaseline") or "")
     baseline_check = subprocess.run(
-        ["git", "merge-base", "--is-ancestor", source_baseline, str(remote_observation.get("remoteHead") or "")],
+        [str(trusted_git_executable()), "merge-base", "--is-ancestor", source_baseline, str(remote_observation.get("remoteHead") or "")],
         cwd=str(repo), capture_output=True, text=True, encoding="utf-8", errors="replace",
-        timeout=30, check=False, shell=False, creationflags=int(getattr(subprocess, "CREATE_NO_WINDOW", 0)),
+        timeout=30, check=False, shell=False, env=sanitized_git_environment(),
+        creationflags=int(getattr(subprocess, "CREATE_NO_WINDOW", 0)),
     ) if re.fullmatch(r"[0-9a-f]{40}", source_baseline) and remote_observation.get("remoteHead") else None
     if baseline_check is None or baseline_check.returncode != 0:
         remote_observation = {**remote_observation, "ok": False, "semantic_ok": False, "status": "blocked", "sourceBaseline": source_baseline, "reason": "manifest_source_baseline_not_remote_ancestor"}
@@ -2827,7 +2970,35 @@ def verify_direct_public_completion(
         **remote_observation,
         "issue_date": issue_date,
     }
+    retry_order = (
+        "remote_commit",
+        "web",
+        "daily_audio",
+        "deepdive_audio",
+        "youtube_daily",
+        "youtube_deepdive",
+        "playlist",
+        "notification",
+        "completion_attestation",
+        "deepdive_article",
+        "publish_status",
+        "pages",
+    )
+    for surface_name in retry_order:
+        surface_value = surfaces.get(surface_name)
+        if isinstance(surface_value, dict):
+            surface_value["retryDisposition"] = _surface_retry_disposition(
+                surface_name,
+                surface_value,
+                surfaces,
+            )
     for surface_name, surface_value in list(surfaces.items()):
+        if "retryDisposition" not in surface_value:
+            surface_value["retryDisposition"] = _surface_retry_disposition(
+                surface_name,
+                surface_value,
+                surfaces,
+            )
         surfaces[surface_name] = _attach_surface_observation(
             surface_name,
             surface_value,

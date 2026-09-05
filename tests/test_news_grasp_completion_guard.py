@@ -308,7 +308,8 @@ def test_p01_automation_assets_bind_projection_and_single_writer() -> None:
     ).read_text(encoding="utf-8")
     assert 'model = "gpt-5.6-luna"' in template
     assert 'reasoning_effort = "max"' in template
-    assert "stdout" in template
+    assert "toolが返す最終typed resultだけを報告します" in template
+    assert "tools.news_grasp_direct_runtime daily" not in template
     assert "--output" not in template
 
     projection = (

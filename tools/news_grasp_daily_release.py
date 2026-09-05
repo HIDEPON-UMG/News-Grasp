@@ -20,6 +20,10 @@ from tools.news_grasp_publish_contract import (
     materialize_manifest_markers,
     verify_manifest,
 )
+from tools.news_grasp_trusted_process import (
+    sanitized_git_environment,
+    trusted_git_executable,
+)
 
 
 RELEASE_RECEIPT_SCHEMA = "NEWS_GRASP_DAILY_RELEASE_BUNDLE_V1"
@@ -67,12 +71,9 @@ def _write_publish_status(
 
 
 def _git(root: Path, args: Sequence[str], *, env: Mapping[str, str] | None = None, input_text: str | None = None) -> str:
-    child_env = dict(os.environ)
-    child_env.update({"PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"})
-    if env:
-        child_env.update(env)
+    child_env = sanitized_git_environment(env)
     completed = subprocess.run(
-        ["git", *args],
+        [str(trusted_git_executable()), *args],
         cwd=str(root),
         input=input_text,
         stdin=None if input_text is not None else subprocess.DEVNULL,
@@ -135,7 +136,7 @@ def _committed_hashes(root: Path, release_sha: str, paths: Sequence[str]) -> dic
     hashes: dict[str, str] = {}
     for relative in paths:
         raw = subprocess.run(
-            ["git", "show", f"{release_sha}:{relative}"],
+            [str(trusted_git_executable()), "show", f"{release_sha}:{relative}"],
             cwd=str(root),
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
@@ -143,6 +144,7 @@ def _committed_hashes(root: Path, release_sha: str, paths: Sequence[str]) -> dic
             timeout=30,
             check=False,
             shell=False,
+            env=sanitized_git_environment(),
             creationflags=int(getattr(subprocess, "CREATE_NO_WINDOW", 0)),
         )
         if raw.returncode != 0:

@@ -16,6 +16,7 @@ import re
 import subprocess
 import sys
 import threading
+import time
 import uuid
 from collections.abc import Callable, Mapping, Sequence
 from datetime import date, datetime, timedelta, timezone
@@ -30,6 +31,11 @@ from tools.news_grasp_gate_profiles import (
     build_daily_route_capability,
     daily_operation_command,
     validate_profiles,
+)
+from tools.news_grasp_trusted_process import (
+    TrustedProcessError,
+    sanitized_git_environment,
+    trusted_git_executable,
 )
 from tools import news_grasp_direct_runtime as runtime
 
@@ -161,6 +167,138 @@ def _context_root(context: Mapping[str, Any]) -> Path:
     if not root.is_dir():
         raise ValueError("daily_repo_root_invalid")
     return root
+
+
+def _daily_artifact_ledger(context: Mapping[str, Any]) -> runtime.DailyArtifactLedger:
+    store = context.get("store")
+    if not isinstance(store, runtime.DirectRunStore):
+        raise ValueError("runtime_store_missing")
+    return runtime.DailyArtifactLedger(
+        store,
+        run_id=str(context.get("run_id") or ""),
+        issue_date=str(context.get("issue_date") or ""),
+        writer_lease=str(context.get("writer_lease") or ""),
+        fencing_token=int(context.get("fencing_token") or 0),
+    )
+
+
+def _refresh_daily_repair_plan(
+    ledger: runtime.DailyArtifactLedger,
+    *,
+    categories: Sequence[str],
+) -> dict[str, Any]:
+    from tools.news_grasp_repair_registry import build_repair_plan
+
+    checkpoints = ledger.list_checkpoints()
+    failures = [
+        dict(item.get("failure") or {})
+        for item in checkpoints.values()
+        if item.get("status") == "Red" and item.get("failure")
+    ]
+    return ledger.persist_repair_plan(
+        build_repair_plan(
+            issue_date=ledger.issue_date,
+            run_id=ledger.run_id,
+            categories=categories,
+            checkpoints=checkpoints,
+            failures=failures,
+        )
+    )
+
+
+def _checkpoint_daily_artifact(
+    ledger: runtime.DailyArtifactLedger,
+    *,
+    categories: Sequence[str],
+    artifact_id: str,
+    payload: Mapping[str, Any],
+) -> dict[str, Any]:
+    from tools.news_grasp_repair_registry import build_daily_artifact_dag
+
+    dag = build_daily_artifact_dag(categories)
+    if artifact_id not in dag:
+        raise ValueError(f"daily_artifact_unknown:{artifact_id}")
+    checkpoints = ledger.list_checkpoints()
+    dependencies = {
+        dependency: str((checkpoints.get(dependency) or {}).get("outputHash") or "")
+        for dependency in dag[artifact_id]["dependsOn"]
+    }
+    if not all(dependencies.values()):
+        raise RuntimeError(f"daily_artifact_dependency_checkpoint_missing:{artifact_id}")
+    input_hash = hashlib.sha256(
+        json.dumps(
+            {"artifactId": artifact_id, "dependencyOutputHashes": dependencies},
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    return ledger.write_checkpoint(
+        artifact_id=artifact_id,
+        input_hash=input_hash,
+        validator_id="daily_operation_receipt_v1",
+        payload=payload,
+    )
+
+
+def _record_daily_artifact_failure(
+    ledger: runtime.DailyArtifactLedger,
+    *,
+    categories: Sequence[str],
+    stage: str,
+    artifact_id: str,
+    reason_code: str,
+) -> dict[str, Any]:
+    from tools.news_grasp_repair_registry import build_daily_artifact_dag
+
+    dag = build_daily_artifact_dag(categories)
+    if artifact_id not in dag:
+        raise ValueError(f"daily_artifact_unknown:{artifact_id}")
+    checkpoints = ledger.list_checkpoints()
+    dependencies = {
+        dependency: str((checkpoints.get(dependency) or {}).get("outputHash") or "")
+        for dependency in dag[artifact_id]["dependsOn"]
+    }
+    input_hash = hashlib.sha256(
+        json.dumps(
+            {
+                "artifactId": artifact_id,
+                "dependencyOutputHashes": dependencies,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    ledger.record_failure(
+        {
+            "stage": stage,
+            "artifactId": artifact_id,
+            "predicateId": "daily_operation_artifact_green",
+            "reasonCode": str(reason_code or "daily_operation_red").replace("|", "/"),
+            "inputHash": input_hash,
+            "causeInputMask": [artifact_id],
+        }
+    )
+    return _refresh_daily_repair_plan(ledger, categories=categories)
+
+
+def _external_failure_artifact(external: Mapping[str, Any]) -> str:
+    operation_id = str(external.get("operation_id") or external.get("exact_successor") or "")
+    if not operation_id:
+        failures = " ".join(str(item) for item in external.get("failures") or ())
+        operation_id = failures
+    if "notification" in operation_id:
+        return "notification"
+    if "playlist" in operation_id:
+        return "playlist"
+    if "youtube_deepdive" in operation_id or "audio_deepdive" in operation_id:
+        return "youtube_deepdive"
+    if "youtube_daily" in operation_id or "audio_daily" in operation_id:
+        return "youtube_daily"
+    if "completion_attestation" in operation_id:
+        return "public_verification"
+    return "git_pages"
 
 
 def _producer_result(
@@ -366,6 +504,150 @@ DAILY_PREDICATE_OWNERSHIP: Mapping[str, Mapping[str, str]] = {
 }
 
 
+def _quality_failure_target(
+    *,
+    predicate_id: str,
+    failure: str,
+    categories: Sequence[str],
+    checkpoints: Mapping[str, Mapping[str, Any]],
+) -> tuple[str, list[str]] | None:
+    from tools.validate_daily_quality import daily_quality_issue_code
+
+    issue_code = daily_quality_issue_code(failure)
+    if predicate_id == "summary_markdown_quality":
+        return "editor", ["/summary_markdown"]
+    if predicate_id == "deepdive_current_issue_audit":
+        if failure == "deepdive_current_issue_red":
+            return None
+        if issue_code == "deepdive_dialogue_value_invalid":
+            return "deepdive_model", ["/dialogue_markdown"]
+        if issue_code in {
+            "deepdive_url_provenance_invalid",
+            "deepdive_article_value_invalid",
+            "deepdive_relation_quality_invalid",
+            "deepdive_research_evidence_insufficient",
+            "deepdive_public_surface_invalid",
+        }:
+            return "deepdive_model", ["/article_markdown"]
+        return None
+    if predicate_id == "digest_schedule_and_counts":
+        missing = re.search(r"scheduled category digest missing: ([a-z0-9_-]+)", failure)
+        category = missing.group(1) if missing else ""
+        if not category:
+            path_match = re.search(r"[\\/]digest[\\/]([^\\/]+)[\\/]", failure, re.IGNORECASE)
+            category = path_match.group(1).casefold() if path_match else ""
+        if category in categories:
+            return f"digest:{category}", []
+        if "summary" in failure.casefold():
+            return "editor", ["/summary_markdown"]
+        return None
+    if predicate_id == "jsonl_source_freshness":
+        if issue_code in {"articles_data_missing", "articles_json_invalid"}:
+            return "articles_jsonl", []
+        matched_with_match = re.search(r"matched_with=(https?://[^\s;]+)", failure)
+        if issue_code == "followup_review_required" and matched_with_match:
+            failed_match = matched_with_match.group(1).rstrip("/.,。")
+            for artifact_id, records_key in (
+                *((f"reporter:{category}", "records") for category in categories),
+                ("editor", "append_records"),
+            ):
+                checkpoint = checkpoints.get(artifact_id) or {}
+                payload = checkpoint.get("payload") if isinstance(checkpoint, Mapping) else {}
+                records = payload.get(records_key) if isinstance(payload, Mapping) else []
+                for index, record in enumerate(records or []):
+                    if (
+                        isinstance(record, Mapping)
+                        and str(record.get("matched_with") or "").rstrip("/")
+                        == failed_match.rstrip("/")
+                    ):
+                        return artifact_id, [f"/{records_key}/{index}/followup_review_note"]
+        url_match = re.search(r"(?:^|[;\s])url=(https?://[^\s;]+)", failure)
+        if url_match:
+            failed_url = url_match.group(1).rstrip("/.,。")
+            for artifact_id, records_key in (
+                *((f"reporter:{category}", "records") for category in categories),
+                ("editor", "append_records"),
+            ):
+                checkpoint = checkpoints.get(artifact_id) or {}
+                payload = checkpoint.get("payload") if isinstance(checkpoint, Mapping) else {}
+                records = payload.get(records_key) if isinstance(payload, Mapping) else []
+                for index, record in enumerate(records or []):
+                    if (
+                        isinstance(record, Mapping)
+                        and str(record.get("url") or "").rstrip("/") == failed_url.rstrip("/")
+                    ):
+                        paths = [f"/{records_key}/{index}/url"]
+                        if artifact_id.startswith("reporter:"):
+                            paths.append("/digest_markdown")
+                        return artifact_id, paths
+        return None
+    return None
+
+
+def _record_current_issue_quality_failures(
+    artifact_ledger: runtime.DailyArtifactLedger,
+    *,
+    categories: Sequence[str],
+    results: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    from tools import news_grasp_daily_content as content
+
+    checkpoints = artifact_ledger.list_checkpoints()
+    pending: dict[str, dict[str, Any]] = {}
+    for row in results:
+        predicate_id = str(row.get("predicate_id") or "")
+        row_failures = [
+            str(item)
+            for item in (row.get("failures") or ())
+            if not str(item).startswith("WARNING:")
+        ]
+        for failure in row_failures:
+            target = _quality_failure_target(
+                predicate_id=predicate_id,
+                failure=failure,
+                categories=categories,
+                checkpoints=checkpoints,
+            )
+            if target is None:
+                if failure == "deepdive_current_issue_red" and len(row_failures) > 1:
+                    continue
+                raise ValueError(f"current_issue_quality_scope_unresolved:{predicate_id}")
+            artifact_id, paths = target
+            item = pending.setdefault(
+                artifact_id,
+                {"predicateIds": [], "failures": [], "paths": []},
+            )
+            item["predicateIds"].append(predicate_id)
+            item["failures"].append(failure)
+            item["paths"].extend(paths)
+    if not pending:
+        raise ValueError("current_issue_quality_failure_missing")
+    for artifact_id, item in pending.items():
+        checkpoint = checkpoints.get(artifact_id)
+        if not isinstance(checkpoint, Mapping):
+            raise ValueError(f"current_issue_quality_checkpoint_missing:{artifact_id}")
+        failure: dict[str, Any] = {
+            "stage": "current_issue_integration",
+            "artifactId": artifact_id,
+            "predicateId": "+".join(dict.fromkeys(item["predicateIds"])),
+            "reasonCode": (
+                "POST_QUALITY:"
+                + ";".join(dict.fromkeys(item["failures"]))
+            ).replace("|", "/"),
+            "inputHash": str(checkpoint.get("inputHash") or ""),
+            "causeInputMask": list(dict.fromkeys(item["paths"])),
+        }
+        if item["paths"]:
+            payload = checkpoint.get("payload")
+            if not isinstance(payload, Mapping):
+                raise ValueError(f"current_issue_quality_payload_missing:{artifact_id}")
+            failure["invalidPayload"] = dict(payload)
+            failure["allowedMutationPaths"] = list(dict.fromkeys(item["paths"]))
+            content._assert_repair_scope(failure, payload)
+        artifact_ledger.record_failure(failure)
+    return _refresh_daily_repair_plan(artifact_ledger, categories=categories)
+
+
 def _default_current_issue_integration(**context: Any) -> dict[str, Any]:
     """登録producer群を各一回だけ実行し、predicate evidenceを束ねる。"""
 
@@ -396,6 +678,7 @@ def _default_current_issue_integration(**context: Any) -> dict[str, Any]:
             failures=("producer_route_capability_missing",),
         )
     content_receipt: Mapping[str, Any] = {}
+    content_kwargs: dict[str, Any] | None = None
     # production current_issue_integration は検証済み既存artifactを前提にせず、
     # 当日sourceからカテゴリ/summary/deepdive/派生成果物を一回だけ作る。
     # test storeは既存fixture互換のため、明示seamがある場合だけ生成経路を通す。
@@ -404,45 +687,89 @@ def _default_current_issue_integration(**context: Any) -> dict[str, Any]:
         for key in ("content_candidate_provider", "content_model_runner", "content_derived_builder")
     )
     if not store.test_only_allow_semantic_verifier or content_seam:
-        try:
-            from tools.news_grasp_daily_content import produce_current_issue
-            from tools.publish_inventory import scheduled_category_ids
+        from tools.news_grasp_daily_content import produce_current_issue
+        from tools.publish_inventory import scheduled_category_ids
 
-            content_receipt = produce_current_issue(
-                repo_root=_context_root(context),
-                issue_date=str(context.get("issue_date") or ""),
-                run_id=run_id,
-                scheduled_categories=tuple(
+        content_kwargs = {
+                "repo_root": _context_root(context),
+                "issue_date": str(context.get("issue_date") or ""),
+                "run_id": run_id,
+                "scheduled_categories": tuple(
                     scheduled_category_ids(str(context.get("issue_date") or ""))
                 ),
-                candidate_provider=(
+                "candidate_provider": (
                     context.get("content_candidate_provider")
                     if store.test_only_allow_semantic_verifier
                     and callable(context.get("content_candidate_provider"))
                     else None
                 ),
-                model_runner=(
+                "model_runner": (
                     context.get("content_model_runner")
                     if store.test_only_allow_semantic_verifier
                     and callable(context.get("content_model_runner"))
                     else None
                 ),
-                derived_builder=(
+                "derived_builder": (
                     context.get("content_derived_builder")
                     if store.test_only_allow_semantic_verifier
                     and callable(context.get("content_derived_builder"))
                     else None
                 ),
-            )
-        except Exception as exc:  # noqa: BLE001 - canonical producer failure is typed Red.
-            return _producer_result(
-                "NEWS_GRASP_CURRENT_ISSUE_INTEGRATION_RECEIPT_V1",
-                ok=False,
-                status="red",
-                operation_id="current_issue_integration",
-                values={"content_generation": dict(content_receipt)},
-                failures=(f"content_generation_red:{type(exc).__name__}:{exc}",),
-            )
+                "runtime_store": store,
+                "writer_lease": str(context.get("writer_lease") or ""),
+                "fencing_token": int(context.get("fencing_token") or 0),
+                "slo_dispatch": (
+                    context.get("slo_dispatch")
+                    if isinstance(context.get("slo_dispatch"), Mapping)
+                    else None
+                ),
+        }
+        observed_attempts: set[tuple[str, int]] = set()
+        for attempt in range(5):
+            try:
+                content_receipt = produce_current_issue(**content_kwargs)
+            except Exception as exc:  # noqa: BLE001 - bounded RepairPlan continuation.
+                repair_plan: Mapping[str, Any] | None = None
+                usage: Mapping[str, Any] = {}
+                try:
+                    artifact_ledger = _daily_artifact_ledger(context)
+                    repair_plan = artifact_ledger.load_repair_plan()
+                    usage = artifact_ledger.model_call_usage()
+                except (PermissionError, RuntimeError, TypeError, ValueError):
+                    pass
+                progress = (
+                    str((repair_plan or {}).get("planSha256") or ""),
+                    int(usage.get("total") or 0),
+                )
+                actions = {
+                    str(item.get("action") or "")
+                    for item in (repair_plan or {}).get("steps", [])
+                    if isinstance(item, Mapping)
+                }
+                retryable = bool(
+                    repair_plan
+                    and repair_plan.get("status") == "repair_required"
+                    and actions.intersection({"repair_model", "rebuild_deterministic"})
+                    and progress not in observed_attempts
+                    and attempt < 4
+                )
+                if retryable:
+                    observed_attempts.add(progress)
+                    continue
+                return _producer_result(
+                    "NEWS_GRASP_CURRENT_ISSUE_INTEGRATION_RECEIPT_V1",
+                    ok=False,
+                    status="red",
+                    operation_id="current_issue_integration",
+                    values={
+                        "content_generation": dict(content_receipt),
+                        "repair_plan": dict(repair_plan or {}),
+                        "model_call_usage": dict(usage),
+                    },
+                    failures=(f"content_generation_red:{type(exc).__name__}:{exc}",),
+                )
+            if content_receipt.get("ok") is True:
+                break
         if content_receipt.get("ok") is not True:
             return _producer_result(
                 "NEWS_GRASP_CURRENT_ISSUE_INTEGRATION_RECEIPT_V1",
@@ -456,49 +783,111 @@ def _default_current_issue_integration(**context: Any) -> dict[str, Any]:
     source_base = str(context.get("source_identity") or run.get("manifest_id") or "").strip()
     if not source_base:
         source_base = f"{context.get('issue_date') or ''}:{context.get('run_intent') or ''}"
-    for producer_id, producer in _CURRENT_ISSUE_PRODUCER_GROUPS:
-        predicate_hint = next(
-            (item for item, binding in DAILY_PREDICATE_OWNERSHIP.items() if binding.get("owner") == producer_id),
-            producer_id,
-        )
+    quality_progress: set[tuple[str, int]] = set()
+    warnings: list[str] = []
+    for quality_attempt in range(5):
+        attempt_results: list[dict[str, Any]] = []
+        attempt_failures: list[str] = []
+        for producer_id, producer in _CURRENT_ISSUE_PRODUCER_GROUPS:
+            try:
+                row = producer(context)
+            except Exception as exc:  # noqa: BLE001 - producer failure is typed Red.
+                row = {
+                    "predicate_id": producer_id,
+                    "failures": [f"producer_error:{type(exc).__name__}"],
+                }
+            predicate_id = str(row.get("predicate_id") or producer_id)
+            binding = DAILY_PREDICATE_OWNERSHIP.get(predicate_id)
+            if binding is None or binding.get("owner") != producer_id:
+                attempt_failures.append(f"predicate_owner_registry_mismatch:{predicate_id}")
+            row["producer_id"] = producer_id
+            attempt_results.append(row)
+            for item in row.get("failures") or []:
+                text = str(item)
+                if text.startswith("WARNING:"):
+                    warnings.append(text)
+                else:
+                    attempt_failures.append(text)
+        if not attempt_failures:
+            for row in attempt_results:
+                producer_id = str(row["producer_id"])
+                predicate_id = str(row.get("predicate_id") or producer_id)
+                try:
+                    row["claim"] = ledger.claim_once(
+                        generation_id=generation,
+                        predicate_id=predicate_id,
+                        owner=producer_id,
+                        source_identity=f"{source_base}:{producer_id}",
+                        evidence={
+                            "issue_date": str(context.get("issue_date") or ""),
+                            "producer_id": producer_id,
+                        },
+                    )
+                except (PermissionError, RuntimeError, ValueError) as exc:
+                    attempt_failures.append(f"predicate_claim_red:{producer_id}:{exc}")
+            results = attempt_results
+            failures = attempt_failures
+            break
+        repair_plan: Mapping[str, Any] = {}
+        usage: Mapping[str, Any] = {}
         try:
-            claim = ledger.claim_once(
-                generation_id=generation,
-                predicate_id=predicate_hint,
-                owner=producer_id,
-                source_identity=f"{source_base}:{producer_id}",
-                evidence={"issue_date": str(context.get("issue_date") or ""), "producer_id": producer_id},
+            from tools.publish_inventory import scheduled_category_ids
+
+            artifact_ledger = _daily_artifact_ledger(context)
+            repair_plan = _record_current_issue_quality_failures(
+                artifact_ledger,
+                categories=tuple(
+                    scheduled_category_ids(str(context.get("issue_date") or ""))
+                ),
+                results=attempt_results,
             )
-        except (PermissionError, RuntimeError, ValueError) as exc:
-            failures.append(f"predicate_claim_red:{producer_id}:{exc}")
-            results.append({"predicate_id": predicate_hint, "producer_id": producer_id, "failures": [str(exc)]})
-            continue
+            usage = artifact_ledger.model_call_usage()
+        except (PermissionError, RuntimeError, TypeError, ValueError) as exc:
+            attempt_failures.append(
+                f"current_issue_quality_repair_plan_red:{type(exc).__name__}:{exc}"
+            )
+        progress = (
+            str(repair_plan.get("planSha256") or ""),
+            int(usage.get("total") or 0),
+        )
+        actions = {
+            str(item.get("action") or "")
+            for item in repair_plan.get("steps", [])
+            if isinstance(item, Mapping)
+        }
+        retryable = bool(
+            content_kwargs is not None
+            and repair_plan.get("status") == "repair_required"
+            and actions.intersection({"repair_model", "rebuild_deterministic"})
+            and progress not in quality_progress
+            and quality_attempt < 4
+        )
+        if not retryable:
+            results = attempt_results
+            failures = attempt_failures
+            break
+        quality_progress.add(progress)
         try:
-            row = producer(context)
-        except Exception as exc:  # noqa: BLE001 - producer failure is typed Red.
-            row = {"predicate_id": producer_id, "failures": [f"producer_error:{type(exc).__name__}"]}
-        predicate_id = str(row.get("predicate_id") or producer_id)
-        binding = DAILY_PREDICATE_OWNERSHIP.get(predicate_id)
-        if binding is None or binding.get("owner") != producer_id:
-            failures.append(f"predicate_owner_registry_mismatch:{predicate_id}")
-        row["producer_id"] = producer_id
-        row["claim"] = claim
-        results.append(row)
-        for item in row.get("failures") or []:
-            text = str(item)
-            if not text.startswith("WARNING:"):
-                failures.append(text)
-    warnings = [
-        str(item)
-        for row in results
-        for item in row.get("failures") or []
-        if str(item).startswith("WARNING:")
-    ]
+            from tools.news_grasp_daily_content import produce_current_issue
+
+            content_receipt = produce_current_issue(**content_kwargs)
+        except Exception as exc:  # noqa: BLE001 - bounded same-call repair.
+            attempt_failures.append(f"content_generation_red:{type(exc).__name__}:{exc}")
+            results = attempt_results
+            failures = attempt_failures
+            break
+        if content_receipt.get("ok") is not True:
+            attempt_failures.append("content_generation_receipt_red")
+            results = attempt_results
+            failures = attempt_failures
+            break
     release_receipt: Mapping[str, Any] = {}
+    release_attempted = False
     release_materializer = context.get("content_release_materializer")
     if not failures and (
         not store.test_only_allow_semantic_verifier or callable(release_materializer)
     ):
+        release_attempted = True
         try:
             if not callable(release_materializer):
                 from tools.news_grasp_daily_release import materialize_and_seal_release
@@ -519,6 +908,64 @@ def _default_current_issue_integration(**context: Any) -> dict[str, Any]:
         else:
             if release_receipt.get("ok") is not True:
                 failures.append("release_bundle_receipt_red")
+            else:
+                try:
+                    from tools.publish_inventory import scheduled_category_ids
+
+                    categories = tuple(
+                        scheduled_category_ids(str(context.get("issue_date") or ""))
+                    )
+                    artifact_ledger = _daily_artifact_ledger(context)
+                    distribution = _checkpoint_daily_artifact(
+                        artifact_ledger,
+                        categories=categories,
+                        artifact_id="distribution_manifest",
+                        payload={
+                            "manifestId": str(release_receipt.get("manifest_id") or ""),
+                            "bundleId": str(release_receipt.get("bundle_id") or ""),
+                            "releaseCommitSha": str(release_receipt.get("release_commit_sha") or ""),
+                            "fileHashes": dict(release_receipt.get("file_hashes") or {}),
+                        },
+                    )
+                    _checkpoint_daily_artifact(
+                        artifact_ledger,
+                        categories=categories,
+                        artifact_id="publish_status",
+                        payload={
+                            "status": "awaiting_external_completion_attestation",
+                            "distributionOutputHash": distribution["outputHash"],
+                        },
+                    )
+                    plan = _refresh_daily_repair_plan(
+                        artifact_ledger,
+                        categories=categories,
+                    )
+                    release_receipt = {
+                        **dict(release_receipt),
+                        "repair_plan_sha256": str(plan.get("planSha256") or ""),
+                    }
+                except (PermissionError, RuntimeError, TypeError, ValueError) as exc:
+                    failures.append(f"release_repair_plan_red:{type(exc).__name__}:{exc}")
+    if release_attempted and failures:
+        try:
+            from tools.publish_inventory import scheduled_category_ids
+
+            categories = tuple(
+                scheduled_category_ids(str(context.get("issue_date") or ""))
+            )
+            plan = _record_daily_artifact_failure(
+                _daily_artifact_ledger(context),
+                categories=categories,
+                stage="current_issue_integration",
+                artifact_id="distribution_manifest",
+                reason_code=failures[-1],
+            )
+            release_receipt = {
+                **dict(release_receipt),
+                "repair_plan_sha256": str(plan.get("planSha256") or ""),
+            }
+        except (PermissionError, RuntimeError, TypeError, ValueError) as exc:
+            failures.append(f"release_failure_plan_red:{type(exc).__name__}:{exc}")
     return _producer_result(
         "NEWS_GRASP_CURRENT_ISSUE_INTEGRATION_RECEIPT_V1",
         ok=not failures,
@@ -578,36 +1025,198 @@ def _default_external_publication(**context: Any) -> dict[str, Any]:
                 "publish_seal": dict(publish_seal),
                 "start_seal": dict(start_seal),
             },
+            allow_provider_send=bool(
+                (context.get("slo_dispatch") or {}).get(
+                    "provider_initial_send_allowed",
+                    True,
+                )
+            ),
         )
     except (PermissionError, RuntimeError, ValueError) as exc:
+        plan: Mapping[str, Any] = {}
+        try:
+            from tools.publish_inventory import scheduled_category_ids
+
+            categories = tuple(
+                scheduled_category_ids(str(context.get("issue_date") or ""))
+            )
+            plan = _record_daily_artifact_failure(
+                _daily_artifact_ledger(context),
+                categories=categories,
+                stage="external_publication",
+                artifact_id="git_pages",
+                reason_code=str(exc),
+            )
+        except (PermissionError, RuntimeError, TypeError, ValueError):
+            pass
         return _producer_result(
             "NEWS_GRASP_EXTERNAL_PUBLICATION_RECEIPT_V1",
             ok=False,
             status="red",
             operation_id="external_publication",
+            values={"repair_plan_sha256": str(plan.get("planSha256") or "")},
             failures=(str(exc),),
         )
     ok = external.get("ok") is True and external.get("status") == "completed"
+    repair_plan: Mapping[str, Any] = {}
+    repair_plan_failure = ""
+    if ok:
+        try:
+            from tools.publish_inventory import scheduled_category_ids
+
+            categories = tuple(
+                scheduled_category_ids(str(context.get("issue_date") or ""))
+            )
+            artifact_ledger = _daily_artifact_ledger(context)
+            external_hash = hashlib.sha256(
+                json.dumps(
+                    dict(external),
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+            ).hexdigest()
+            for artifact_id in (
+                "git_pages",
+                "youtube_daily",
+                "youtube_deepdive",
+                "playlist",
+                "notification",
+            ):
+                _checkpoint_daily_artifact(
+                    artifact_ledger,
+                    categories=categories,
+                    artifact_id=artifact_id,
+                    payload={
+                        "status": "completed",
+                        "externalReceiptHash": external_hash,
+                    },
+                )
+            repair_plan = _refresh_daily_repair_plan(
+                artifact_ledger,
+                categories=categories,
+            )
+        except (PermissionError, RuntimeError, TypeError, ValueError) as exc:
+            ok = False
+            repair_plan_failure = f"external_repair_plan_red:{type(exc).__name__}:{exc}"
+    if not ok and not repair_plan_failure:
+        try:
+            from tools.publish_inventory import scheduled_category_ids
+
+            categories = tuple(
+                scheduled_category_ids(str(context.get("issue_date") or ""))
+            )
+            failure_reason = str(
+                (external.get("failures") or [external.get("exact_successor") or "external_publication_red"])[0]
+            )
+            repair_plan = _record_daily_artifact_failure(
+                _daily_artifact_ledger(context),
+                categories=categories,
+                stage="external_publication",
+                artifact_id=_external_failure_artifact(external),
+                reason_code=failure_reason,
+            )
+        except (PermissionError, RuntimeError, TypeError, ValueError) as exc:
+            repair_plan_failure = f"external_failure_plan_red:{type(exc).__name__}:{exc}"
     return _producer_result(
         "NEWS_GRASP_EXTERNAL_PUBLICATION_RECEIPT_V1",
         ok=ok,
         status="published" if ok else str(external.get("status") or "red"),
         operation_id="external_publication",
-        values={"outbox": external, "external_started": bool(external.get("adapter_call_count"))},
-        failures=external.get("failures") or (() if ok else (str(external.get("exact_successor") or "external_publication_red"),)),
+        values={
+            "outbox": external,
+            "external_started": bool(external.get("adapter_call_count")),
+            "repair_plan_sha256": str(repair_plan.get("planSha256") or ""),
+        },
+        failures=(
+            (repair_plan_failure,)
+            if repair_plan_failure
+            else external.get("failures")
+            or (() if ok else (str(external.get("exact_successor") or "external_publication_red"),))
+        ),
     )
 
 
+def _public_observation_retryable(observation: Mapping[str, Any]) -> bool:
+    failures = [
+        str(item)
+        for item in (
+            observation.get("failures")
+            or observation.get("reasonCodes")
+            or ()
+        )
+    ]
+    surfaces = observation.get("public_surfaces")
+    if not isinstance(surfaces, Mapping):
+        return False
+    web = surfaces.get("web") if isinstance(surfaces, Mapping) else None
+    side_effect = observation.get("sideEffectIdentity")
+    if (
+        isinstance(web, Mapping)
+        and web.get("manifest_failures")
+        or isinstance(side_effect, Mapping)
+        and side_effect.get("failures")
+        or any(
+            marker in failure
+            for failure in failures
+            for marker in (
+                "duplicate_send_detected",
+                "duplicate_upload_detected",
+                "external_outbox_binding_invalid",
+                "immutable_side_effect_ledger_unbound",
+                "runtime_manifest_id_mismatch",
+                "runtime_run_id_mismatch",
+            )
+        )
+    ):
+        return False
+    high_level_retryable = bool(failures) and all(
+        failure.startswith(
+            (
+                "public_surface_red:",
+                "fresh_public_observation_",
+                "fresh_network_observation_",
+            )
+        )
+        for failure in failures
+    )
+    if not high_level_retryable:
+        return False
+    dispositions = {
+        str(row.get("retryDisposition") or "")
+        for row in surfaces.values()
+        if isinstance(surfaces, Mapping) and isinstance(row, Mapping) and row.get("ok") is not True
+    }
+    return bool(dispositions) and dispositions == {"transient"}
+
+
 def _default_consumer_public_verification(**context: Any) -> dict[str, Any]:
-    """fresh public consumer verifierを一回だけ実行する。"""
+    """transient public stateがconsumer-owned terminalになるまで同一callで検証する。"""
 
     public_base_url = str(context.get("public_base_url") or os.environ.get("NEWS_GRASP_PUBLIC_BASE_URL", "")).strip()
     if not public_base_url:
+        plan: Mapping[str, Any] = {}
+        try:
+            from tools.publish_inventory import scheduled_category_ids
+
+            categories = tuple(
+                scheduled_category_ids(str(context.get("issue_date") or ""))
+            )
+            plan = _record_daily_artifact_failure(
+                _daily_artifact_ledger(context),
+                categories=categories,
+                stage="consumer_public_verification",
+                artifact_id="public_verification",
+                reason_code="public_base_url_missing",
+            )
+        except (PermissionError, RuntimeError, TypeError, ValueError):
+            pass
         return _producer_result(
             "NEWS_GRASP_CONSUMER_PUBLIC_VERIFICATION_RECEIPT_V1",
             ok=False,
             status="red",
             operation_id="consumer_public_verification",
+            values={"repair_plan_sha256": str(plan.get("planSha256") or "")},
             failures=("public_base_url_missing",),
         )
     try:
@@ -627,27 +1236,94 @@ def _default_consumer_public_verification(**context: Any) -> dict[str, Any]:
             run_id=str(context.get("run_id") or ""),
         )
 
-        observation = verify_direct_public_completion(
-            repo_root=_context_root(context),
-            issue_date=str(context["issue_date"]),
-            public_base_url=public_base_url,
-            remote="origin",
-            branch="main",
-            wait_sec=0,
-            poll_sec=30,
-            run_id=str(context.get("run_id") or ""),
-            run_intent=str(context.get("run_intent") or runtime.RUN_INTENT),
-            manifest_id=str(fresh_run.get("manifest_id") or ""),
-            bundle_id=str(publish_seal.get("bundleId") or ""),
-            release_commit_sha=str(publish_seal.get("releaseCommitSha") or ""),
-            external_outbox=external_outbox,
-        )
+        poll_budget_sec = 600
+        if context["store"].test_only_allow_semantic_verifier and isinstance(
+            context.get("public_verification_wait_sec"), int
+        ):
+            poll_budget_sec = max(
+                0,
+                min(600, int(context["public_verification_wait_sec"])),
+            )
+        slice_deadline = time.monotonic() + poll_budget_sec
+        slice_count = 1
+        observation_attempts: list[str] = []
+        observation: Mapping[str, Any] = {}
+        while True:
+            observation = verify_direct_public_completion(
+                repo_root=_context_root(context),
+                issue_date=str(context["issue_date"]),
+                public_base_url=public_base_url,
+                remote="origin",
+                branch="main",
+                wait_sec=0,
+                poll_sec=30,
+                run_id=str(context.get("run_id") or ""),
+                run_intent=str(context.get("run_intent") or runtime.RUN_INTENT),
+                manifest_id=str(fresh_run.get("manifest_id") or ""),
+                bundle_id=str(publish_seal.get("bundleId") or ""),
+                release_commit_sha=str(publish_seal.get("releaseCommitSha") or ""),
+                external_outbox=external_outbox,
+            )
+            observation_attempts.append(
+                hashlib.sha256(
+                    json.dumps(
+                        {
+                            "failures": observation.get("failures") or (),
+                            "reasonCodes": observation.get("reasonCodes") or (),
+                            "status": observation.get("status"),
+                        },
+                        ensure_ascii=False,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ).encode("utf-8")
+                ).hexdigest()
+            )
+            if observation.get("ok") is True or not _public_observation_retryable(
+                observation
+            ):
+                break
+            current_admission = runtime.admit_daily_operation(
+                context["store"],
+                run_id=str(context.get("run_id") or ""),
+                writer_lease=str(context.get("writer_lease") or ""),
+                operation_id="consumer_public_verification",
+                fencing_token=int(context.get("fencing_token") or 0),
+            )
+            now = time.monotonic()
+            remaining = slice_deadline - now
+            if remaining <= 0:
+                slice_count += 1
+                slice_deadline = now + poll_budget_sec
+                continue
+            poll_interval_sec = (
+                300.0
+                if current_admission.get("deadline_revision") is True
+                else 30.0
+            )
+            time.sleep(min(poll_interval_sec, remaining))
     except Exception as exc:  # noqa: BLE001 - public verifier emits typed Red.
+        plan: Mapping[str, Any] = {}
+        try:
+            from tools.publish_inventory import scheduled_category_ids
+
+            categories = tuple(
+                scheduled_category_ids(str(context.get("issue_date") or ""))
+            )
+            plan = _record_daily_artifact_failure(
+                _daily_artifact_ledger(context),
+                categories=categories,
+                stage="consumer_public_verification",
+                artifact_id="public_verification",
+                reason_code=f"public_verifier_error:{type(exc).__name__}",
+            )
+        except (PermissionError, RuntimeError, TypeError, ValueError):
+            pass
         return _producer_result(
             "NEWS_GRASP_CONSUMER_PUBLIC_VERIFICATION_RECEIPT_V1",
             ok=False,
             status="red",
             operation_id="consumer_public_verification",
+            values={"repair_plan_sha256": str(plan.get("planSha256") or "")},
             failures=(f"public_verifier_error:{type(exc).__name__}",),
         )
     ok = observation.get("ok") is True
@@ -676,6 +1352,52 @@ def _default_consumer_public_verification(**context: Any) -> dict[str, Any]:
     }
     if not observation_nonce:
         ok = False
+    repair_plan: Mapping[str, Any] = {}
+    repair_plan_failure = ""
+    if ok:
+        try:
+            from tools.publish_inventory import scheduled_category_ids
+
+            categories = tuple(
+                scheduled_category_ids(str(context.get("issue_date") or ""))
+            )
+            artifact_ledger = _daily_artifact_ledger(context)
+            _checkpoint_daily_artifact(
+                artifact_ledger,
+                categories=categories,
+                artifact_id="public_verification",
+                payload={
+                    "status": "verified",
+                    "observationToken": observation_nonce,
+                    "observedAt": observed_at,
+                },
+            )
+            repair_plan = _refresh_daily_repair_plan(
+                artifact_ledger,
+                categories=categories,
+            )
+        except (PermissionError, RuntimeError, TypeError, ValueError) as exc:
+            ok = False
+            repair_plan_failure = f"consumer_repair_plan_red:{type(exc).__name__}:{exc}"
+    if not ok and not repair_plan_failure:
+        try:
+            from tools.publish_inventory import scheduled_category_ids
+
+            categories = tuple(
+                scheduled_category_ids(str(context.get("issue_date") or ""))
+            )
+            reason = str(
+                (observation.get("failures") or observation.get("reasonCodes") or ["public_verification_red"])[0]
+            )
+            repair_plan = _record_daily_artifact_failure(
+                _daily_artifact_ledger(context),
+                categories=categories,
+                stage="consumer_public_verification",
+                artifact_id="public_verification",
+                reason_code=reason,
+            )
+        except (PermissionError, RuntimeError, TypeError, ValueError) as exc:
+            repair_plan_failure = f"consumer_failure_plan_red:{type(exc).__name__}:{exc}"
     return _producer_result(
         "NEWS_GRASP_CONSUMER_PUBLIC_VERIFICATION_RECEIPT_V1",
         ok=ok,
@@ -686,8 +1408,18 @@ def _default_consumer_public_verification(**context: Any) -> dict[str, Any]:
             "observation_token": observation_nonce,
             "external_operation_id": observation.get("externalOperationId") or observation.get("external_operation_id") or "",
             "freshnessBinding": freshness_binding,
+            "repair_plan_sha256": str(repair_plan.get("planSha256") or ""),
+            "observation_attempt_count": len(observation_attempts),
+            "observation_poll_slice_count": slice_count,
+            "observation_failure_fingerprints": observation_attempts,
         },
-        failures=observation.get("failures") or observation.get("reasonCodes") or (("public_verification_red",) if not ok else ()),
+        failures=(
+            (repair_plan_failure,)
+            if repair_plan_failure
+            else observation.get("failures")
+            or observation.get("reasonCodes")
+            or (("public_verification_red",) if not ok else ())
+        ),
     )
 
 
@@ -1535,39 +2267,76 @@ def run_daily_sequence(
         )
         receipts.append(result)
         if result.get("ok") is not True:
-            # provider結果が曖昧なexternal publicationだけ、同一writer・同一
-            # input hashでread-only reconcileを一回行う。二回目もRedなら終了し、
-            # provider callの再送へは進まない。
+            # provider結果が曖昧なexternal publicationは、outboxが前進した場合だけ
+            # 次のread-only reconcileへ進む。provider call自体は外部producerの
+            # started/unknown判定で再送されず、同じsnapshotの反復はここで止める。
             if (
                 operation_id == "external_publication"
                 and str(result.get("status") or "") == "reconcile_required"
-                and bool((result.get("slo_dispatch") or {}).get("retry_allowed", True))
-            ):
-                retry = run_daily_operation(
-                    operation_id,
-                    command=command,
-                    completed_operations=[item["operation_id"] for item in receipts[:-1] if item.get("ok") is True],
-                    store=store,
-                    run_id=sequence_run_id,
-                    writer_lease=sequence_writer_lease,
-                    cwd=cwd,
-                    issue_date=issue_date,
-                    run_intent=run_intent,
-                    automation_id=automation_id,
-                    scheduler_trigger_at=scheduler_trigger_at,
-                    manifest_id=manifest_id,
-                    manifest_reservation_id=manifest_reservation_id,
-                    source_baseline=source_baseline,
-                    runtime_generation=runtime_generation,
-                    remote_base_sha=remote_base_sha,
-                    allowed_side_effect_ids=allowed_side_effect_ids,
-                    context=context,
-                    handlers=selected_handlers,
-                    route_capability=build_daily_route_capability(operation_id, runtime_generation=runtime_generation),
-                    fencing_token=sequence_fencing_token,
+                and bool(
+                    (result.get("slo_dispatch") or {}).get(
+                        "read_only_reconcile_allowed",
+                        True,
+                    )
                 )
-                receipts[-1] = retry
-                if retry.get("ok") is True:
+            ):
+                observed_progress: set[str] = set()
+                max_reconciles = max(1, len(DAILY_ALLOWED_SIDE_EFFECT_IDS) + 1)
+                for _reconcile_attempt in range(max_reconciles):
+                    try:
+                        outbox = runtime.inspect_external_outbox(
+                            store,
+                            run_id=sequence_run_id,
+                        )
+                    except (PermissionError, RuntimeError, ValueError):
+                        break
+                    fingerprint = hashlib.sha256(
+                        json.dumps(
+                            outbox,
+                            ensure_ascii=False,
+                            sort_keys=True,
+                            separators=(",", ":"),
+                        ).encode("utf-8")
+                    ).hexdigest()
+                    if fingerprint in observed_progress:
+                        break
+                    observed_progress.add(fingerprint)
+                    retry = run_daily_operation(
+                        operation_id,
+                        command=command,
+                        completed_operations=[
+                            item["operation_id"]
+                            for item in receipts[:-1]
+                            if item.get("ok") is True
+                        ],
+                        store=store,
+                        run_id=sequence_run_id,
+                        writer_lease=sequence_writer_lease,
+                        cwd=cwd,
+                        issue_date=issue_date,
+                        run_intent=run_intent,
+                        automation_id=automation_id,
+                        scheduler_trigger_at=scheduler_trigger_at,
+                        manifest_id=manifest_id,
+                        manifest_reservation_id=manifest_reservation_id,
+                        source_baseline=source_baseline,
+                        runtime_generation=runtime_generation,
+                        remote_base_sha=remote_base_sha,
+                        allowed_side_effect_ids=allowed_side_effect_ids,
+                        context=context,
+                        handlers=selected_handlers,
+                        route_capability=build_daily_route_capability(
+                            operation_id,
+                            runtime_generation=runtime_generation,
+                        ),
+                        fencing_token=sequence_fencing_token,
+                    )
+                    receipts[-1] = retry
+                    if retry.get("ok") is True:
+                        break
+                    if str(retry.get("status") or "") != "reconcile_required":
+                        break
+                if receipts[-1].get("ok") is True:
                     continue
             break
     return receipts
@@ -1585,7 +2354,7 @@ def _git_ref_sha(root: Path, ref: str) -> str:
 
     try:
         completed = subprocess.run(
-            ["git", "rev-parse", "--verify", ref],
+            [str(trusted_git_executable()), "rev-parse", "--verify", ref],
             cwd=str(root),
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
@@ -1596,9 +2365,10 @@ def _git_ref_sha(root: Path, ref: str) -> str:
             timeout=10,
             check=False,
             shell=False,
+            env=sanitized_git_environment(),
             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
-    except (OSError, UnicodeError, subprocess.TimeoutExpired):
+    except (OSError, UnicodeError, TrustedProcessError, subprocess.TimeoutExpired):
         return ""
     value = completed.stdout.strip().casefold()
     return value if completed.returncode == 0 and re.fullmatch(r"[0-9a-f]{40}", value) else ""
@@ -1611,7 +2381,7 @@ def _git_is_ancestor(root: Path, candidate: str, descendant: str) -> bool:
         return False
     try:
         completed = subprocess.run(
-            ["git", "merge-base", "--is-ancestor", candidate, descendant],
+            [str(trusted_git_executable()), "merge-base", "--is-ancestor", candidate, descendant],
             cwd=str(root),
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
@@ -1622,9 +2392,10 @@ def _git_is_ancestor(root: Path, candidate: str, descendant: str) -> bool:
             timeout=10,
             check=False,
             shell=False,
+            env=sanitized_git_environment(),
             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
-    except (OSError, UnicodeError, subprocess.TimeoutExpired):
+    except (OSError, UnicodeError, TrustedProcessError, subprocess.TimeoutExpired):
         return False
     return completed.returncode == 0
 

@@ -9,6 +9,7 @@ semantic verifier の観測だけで stage 遷移を行う。
 from __future__ import annotations
 
 import argparse
+import ctypes
 import hashlib
 import json
 import math
@@ -19,9 +20,10 @@ import sqlite3
 import stat
 import subprocess
 import sys
+import tempfile
 import tomllib
 import uuid
-from contextlib import closing
+from contextlib import closing, contextmanager
 from collections.abc import Callable, Mapping, Sequence
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -29,6 +31,11 @@ from typing import Any
 
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from tools.news_grasp_trusted_process import (
+    sanitized_git_environment,
+    trusted_git_executable,
+)
 
 # ``python -m tools.news_grasp_direct_runtime daily`` で起動した場合も、
 # 日次producerがimportするcanonical moduleと同じmodule instanceを共有する。
@@ -112,10 +119,65 @@ DAILY_OPERATION_ORDER = (
     "atomic_completion",
 )
 DAILY_SEQUENCE_SCHEMA = "NEWS_GRASP_DAILY_SEQUENCE_RECEIPT_V2"
+DAILY_PROCESS_MUTEX_NAME = "Local\\NewsGraspDailyExclusiveV1"
+
+
+@contextmanager
+def daily_process_mutex(*, timeout_ms: int = 0):
+    """Daily writerとruntime promotionをprocess寿命で排他する。"""
+
+    if isinstance(timeout_ms, bool) or not isinstance(timeout_ms, int) or timeout_ms < 0:
+        raise ValueError("daily_process_mutex_timeout_invalid")
+    if os.name == "nt":
+        from ctypes import wintypes
+
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32.CreateMutexW.argtypes = (ctypes.c_void_p, wintypes.BOOL, wintypes.LPCWSTR)
+        kernel32.CreateMutexW.restype = wintypes.HANDLE
+        kernel32.WaitForSingleObject.argtypes = (wintypes.HANDLE, wintypes.DWORD)
+        kernel32.WaitForSingleObject.restype = wintypes.DWORD
+        kernel32.ReleaseMutex.argtypes = (wintypes.HANDLE,)
+        kernel32.ReleaseMutex.restype = wintypes.BOOL
+        kernel32.CloseHandle.argtypes = (wintypes.HANDLE,)
+        kernel32.CloseHandle.restype = wintypes.BOOL
+        handle = kernel32.CreateMutexW(None, False, DAILY_PROCESS_MUTEX_NAME)
+        if not handle:
+            raise OSError(ctypes.get_last_error(), "CreateMutexW")
+        acquired = False
+        try:
+            wait_result = int(kernel32.WaitForSingleObject(handle, timeout_ms))
+            if wait_result == 0x00000102:
+                raise RuntimeError("daily_process_mutex_busy")
+            if wait_result not in {0x00000000, 0x00000080}:
+                raise OSError(ctypes.get_last_error(), "WaitForSingleObject")
+            acquired = True
+            yield
+        finally:
+            if acquired:
+                kernel32.ReleaseMutex(handle)
+            kernel32.CloseHandle(handle)
+        return
+
+    import fcntl  # pragma: no cover - Windowsがproduction経路。
+
+    lock_path = Path(tempfile.gettempdir()) / "news-grasp-daily-exclusive-v1.lock"
+    descriptor = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
+    try:
+        flags = fcntl.LOCK_EX | (fcntl.LOCK_NB if timeout_ms == 0 else 0)
+        try:
+            fcntl.flock(descriptor, flags)
+        except BlockingIOError as exc:
+            raise RuntimeError("daily_process_mutex_busy") from exc
+        yield
+    finally:
+        os.close(descriptor)
 DAILY_RUNTIME_RELATIVE_PATHS = (
+    "tools/news_grasp_daily_broker.py",
     "tools/news_grasp_direct_runtime.py",
     "tools/news_grasp_daily_gate.py",
     "tools/news_grasp_daily_content.py",
+    "tools/news_grasp_repair_registry.py",
+    "tools/news_grasp_trusted_process.py",
     "tools/news_grasp_daily_release.py",
     "tools/news_grasp_daily_external.py",
     "tools/news_grasp_direct_completion.py",
@@ -126,8 +188,13 @@ DAILY_RUNTIME_RELATIVE_PATHS = (
     "tools/publish_inventory.py",
     "config/news_grasp_daily_45m_contract_v1.json",
     "schemas/news_grasp_daily_reporter_output.schema.json",
+    "schemas/news_grasp_daily_reporter_shard_output.schema.json",
     "schemas/news_grasp_daily_editor_output.schema.json",
     "schemas/news_grasp_daily_deepdive_output.schema.json",
+    ".agents/plugins/marketplace.json",
+    "plugins/news-grasp-daily/server.py",
+    "plugins/news-grasp-daily/.mcp.json",
+    "plugins/news-grasp-daily/.codex-plugin/plugin.json",
 )
 
 
@@ -686,6 +753,14 @@ class DirectRunStore:
         self._schema_ready = False
         self._schema_migration_receipt: dict[str, Any] = {}
         if create:
+            seal_root = self.state_root / "start-seals"
+            if (
+                not self.test_only_allow_semantic_verifier
+                and not self.db_path.exists()
+                and seal_root.is_dir()
+                and any(seal_root.glob("direct-*.json"))
+            ):
+                raise RuntimeError("production_runtime_db_missing_with_start_seals")
             self.state_root.mkdir(parents=True, exist_ok=True)
             # 既存DBはconstructorでALTER/terminalizeしない。新規DBだけをここで
             # 初期化し、既存V1はstart_runの明示migration境界へ送る。
@@ -767,6 +842,9 @@ class DirectRunStore:
             "external_outbox",
             "notification_ledger",
             "runtime_migration_journal",
+            "daily_artifact_checkpoints",
+            "daily_model_calls",
+            "daily_repair_plans",
         }
         try:
             with closing(sqlite3.connect(str(self.db_path))) as conn:
@@ -1498,6 +1576,55 @@ class DirectRunStore:
                 """
             )
             conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS daily_artifact_checkpoints (
+                    run_id TEXT NOT NULL,
+                    issue_date TEXT NOT NULL,
+                    artifact_id TEXT NOT NULL,
+                    input_hash TEXT NOT NULL,
+                    output_hash TEXT NOT NULL,
+                    validator_id TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    payload_json TEXT NOT NULL,
+                    failure_json TEXT NOT NULL DEFAULT '{}',
+                    fencing_token INTEGER NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    PRIMARY KEY (run_id, artifact_id)
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS daily_model_calls (
+                    run_id TEXT NOT NULL,
+                    call_id TEXT NOT NULL,
+                    issue_date TEXT NOT NULL,
+                    budget_class TEXT NOT NULL,
+                    artifact_id TEXT NOT NULL,
+                    input_hash TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    output_hash TEXT NOT NULL DEFAULT '',
+                    failure_code TEXT NOT NULL DEFAULT '',
+                    fencing_token INTEGER NOT NULL,
+                    started_at TEXT NOT NULL,
+                    completed_at TEXT NOT NULL DEFAULT '',
+                    PRIMARY KEY (run_id, call_id)
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS daily_repair_plans (
+                    run_id TEXT PRIMARY KEY,
+                    issue_date TEXT NOT NULL,
+                    plan_sha256 TEXT NOT NULL,
+                    plan_json TEXT NOT NULL,
+                    fencing_token INTEGER NOT NULL,
+                    updated_at TEXT NOT NULL
+                )
+                """
+            )
+            conn.execute(
                 "DROP INDEX IF EXISTS idx_runs_identity"
             )
             conn.execute(
@@ -1553,6 +1680,584 @@ class DirectRunStore:
         if statuses & {"started", "sent", "acknowledged", "completed", "success"}:
             return "started"
         return "none"
+
+
+class DailyArtifactLedger:
+    """Daily artifact、model call、RepairPlanの正規SQLite台帳。"""
+
+    def __init__(
+        self,
+        store: DirectRunStore,
+        *,
+        run_id: str,
+        issue_date: str,
+        writer_lease: str,
+        fencing_token: int,
+    ) -> None:
+        if not isinstance(store, DirectRunStore):
+            raise TypeError("daily_artifact_ledger_store_invalid")
+        if not run_id or not issue_date or not writer_lease:
+            raise ValueError("daily_artifact_ledger_binding_invalid")
+        _require_fencing_token(store, fencing_token)
+        self.store = store
+        self.run_id = run_id
+        self.issue_date = issue_date
+        self.writer_lease = writer_lease
+        self.fencing_token = int(fencing_token)
+        self._verify_identity()
+
+    def _writer_row(self, conn: sqlite3.Connection) -> sqlite3.Row:
+        row = self.store._run_row(conn, self.run_id)
+        _verify_writer(
+            row,
+            self.writer_lease,
+            self.store.now(),
+            allowed_statuses={"active", "executing", "finalizing"},
+            fencing_token=self.fencing_token,
+        )
+        if str(row["issue_date"]) != self.issue_date:
+            raise PermissionError("daily_artifact_ledger_issue_date_mismatch")
+        return row
+
+    def _verify_identity(self) -> None:
+        self.store.ensure_runtime_schema()
+        with closing(self.store.connect()) as conn:
+            self._writer_row(conn)
+
+    def assert_writer(self) -> None:
+        """外部file mutation直前に現在owner/fenceを再確認する。"""
+
+        with closing(self.store.connect()) as conn:
+            self._writer_row(conn)
+
+    @contextmanager
+    def materialization_fence(self):
+        """物理file置換中はtakeoverのwriter CASを直列化する。"""
+
+        with closing(self.store.connect()) as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            self._writer_row(conn)
+            try:
+                yield
+                self._writer_row(conn)
+            except BaseException:
+                conn.rollback()
+                raise
+            conn.commit()
+
+    @staticmethod
+    def _checkpoint_projection(row: sqlite3.Row) -> dict[str, Any]:
+        payload = _json_load(str(row["payload_json"]), {})
+        failure = _json_load(str(row["failure_json"]), {})
+        if not isinstance(payload, Mapping) or not isinstance(failure, Mapping):
+            raise RuntimeError("daily_artifact_checkpoint_json_invalid")
+        return {
+            "schemaVersion": "NEWS_GRASP_DAILY_ARTIFACT_CHECKPOINT_V1",
+            "runId": str(row["run_id"]),
+            "issueDate": str(row["issue_date"]),
+            "artifactId": str(row["artifact_id"]),
+            "inputHash": str(row["input_hash"]),
+            "outputHash": str(row["output_hash"]),
+            "validatorId": str(row["validator_id"]),
+            "status": str(row["status"]),
+            "payload": dict(payload),
+            "failure": dict(failure),
+            "updatedAt": str(row["updated_at"]),
+        }
+
+    def load_checkpoint(
+        self,
+        *,
+        artifact_id: str,
+        input_hash: str,
+        validator_id: str,
+    ) -> dict[str, Any] | None:
+        if not artifact_id or not input_hash or not validator_id:
+            raise ValueError("daily_artifact_checkpoint_request_invalid")
+        with closing(self.store.connect()) as conn:
+            self._writer_row(conn)
+            row = conn.execute(
+                "SELECT * FROM daily_artifact_checkpoints WHERE run_id=? AND artifact_id=?",
+                (self.run_id, artifact_id),
+            ).fetchone()
+        if row is None or str(row["status"]) != "Green":
+            return None
+        projected = self._checkpoint_projection(row)
+        if (
+            projected["issueDate"] != self.issue_date
+            or projected["inputHash"] != input_hash
+            or projected["validatorId"] != validator_id
+        ):
+            return None
+        payload = projected["payload"]
+        actual_hash = hashlib.sha256(_json_dump(payload).encode("utf-8")).hexdigest()
+        if actual_hash != projected["outputHash"]:
+            raise RuntimeError("daily_artifact_checkpoint_hash_invalid")
+        return projected
+
+    def list_checkpoints(self) -> dict[str, dict[str, Any]]:
+        with closing(self.store.connect()) as conn:
+            self._writer_row(conn)
+            rows = conn.execute(
+                "SELECT * FROM daily_artifact_checkpoints WHERE run_id=? ORDER BY artifact_id",
+                (self.run_id,),
+            ).fetchall()
+        return {
+            str(row["artifact_id"]): self._checkpoint_projection(row)
+            for row in rows
+        }
+
+    def write_checkpoint(
+        self,
+        *,
+        artifact_id: str,
+        input_hash: str,
+        validator_id: str,
+        payload: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        return self._write_checkpoints_in_transaction(
+            artifacts={
+                artifact_id: {
+                    "inputHash": input_hash,
+                    "validatorId": validator_id,
+                    "payload": dict(payload),
+                }
+            },
+            call_id=None,
+        )[artifact_id]
+
+    def _write_checkpoints_in_transaction(
+        self,
+        *,
+        artifacts: Mapping[str, Mapping[str, Any]],
+        call_id: str | None,
+        failures: Mapping[str, Mapping[str, Any]] | None = None,
+    ) -> dict[str, dict[str, Any]]:
+        failure_items = dict(failures or {})
+        if not artifacts and not failure_items:
+            raise ValueError("daily_artifact_checkpoint_empty")
+        now_text = _iso(self.store.now())
+        prepared: dict[str, tuple[str, str, dict[str, Any], str]] = {}
+        for artifact_id, item in artifacts.items():
+            input_hash = str(item.get("inputHash") or "")
+            validator_id = str(item.get("validatorId") or "")
+            payload = item.get("payload")
+            if not artifact_id or not input_hash or not validator_id or not isinstance(payload, Mapping):
+                raise ValueError("daily_artifact_checkpoint_invalid")
+            canonical_payload = dict(payload)
+            output_hash = hashlib.sha256(
+                _json_dump(canonical_payload).encode("utf-8")
+            ).hexdigest()
+            prepared[str(artifact_id)] = (
+                input_hash,
+                validator_id,
+                canonical_payload,
+                output_hash,
+            )
+        with closing(self.store.connect()) as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            self._writer_row(conn)
+            if call_id is not None:
+                call = conn.execute(
+                    "SELECT * FROM daily_model_calls WHERE run_id=? AND call_id=?",
+                    (self.run_id, call_id),
+                ).fetchone()
+                if (
+                    call is None
+                    or str(call["status"]) != "reserved"
+                    or int(call["fencing_token"]) != self.fencing_token
+                ):
+                    conn.rollback()
+                    raise PermissionError("daily_model_call_not_owned")
+            for artifact_id, (input_hash, validator_id, payload, output_hash) in prepared.items():
+                conn.execute(
+                    """
+                    INSERT INTO daily_artifact_checkpoints(
+                        run_id,issue_date,artifact_id,input_hash,output_hash,
+                        validator_id,status,payload_json,failure_json,fencing_token,updated_at
+                    ) VALUES(?,?,?,?,?,?, 'Green', ?, '{}', ?, ?)
+                    ON CONFLICT(run_id,artifact_id) DO UPDATE SET
+                        issue_date=excluded.issue_date,
+                        input_hash=excluded.input_hash,
+                        output_hash=excluded.output_hash,
+                        validator_id=excluded.validator_id,
+                        status='Green',
+                        payload_json=excluded.payload_json,
+                        failure_json='{}',
+                        fencing_token=excluded.fencing_token,
+                        updated_at=excluded.updated_at
+                    """,
+                    (
+                        self.run_id,
+                        self.issue_date,
+                        artifact_id,
+                        input_hash,
+                        output_hash,
+                        validator_id,
+                        _json_dump(payload),
+                        self.fencing_token,
+                        now_text,
+                    ),
+                )
+            failure_signatures: dict[str, str] = {}
+            if failure_items:
+                from tools.news_grasp_repair_registry import failure_signature
+
+                for artifact_id, failure in failure_items.items():
+                    value = dict(failure)
+                    if str(value.get("artifactId") or "") != artifact_id:
+                        conn.rollback()
+                        raise ValueError("daily_artifact_failure_identity_mismatch")
+                    signature = failure_signature(value)
+                    value["failureSignature"] = signature
+                    failure_signatures[artifact_id] = signature
+                    existing = conn.execute(
+                        "SELECT payload_json,validator_id FROM daily_artifact_checkpoints "
+                        "WHERE run_id=? AND artifact_id=?",
+                        (self.run_id, artifact_id),
+                    ).fetchone()
+                    payload_json = str(existing[0]) if existing is not None else "{}"
+                    validator_id = (
+                        str(existing[1])
+                        if existing is not None
+                        else str(value.get("predicateId") or "failure")
+                    )
+                    conn.execute(
+                        """
+                        INSERT INTO daily_artifact_checkpoints(
+                            run_id,issue_date,artifact_id,input_hash,output_hash,
+                            validator_id,status,payload_json,failure_json,fencing_token,updated_at
+                        ) VALUES(?,?,?,?, '', ?, 'Red', ?, ?, ?, ?)
+                        ON CONFLICT(run_id,artifact_id) DO UPDATE SET
+                            issue_date=excluded.issue_date,
+                            input_hash=excluded.input_hash,
+                            output_hash='',
+                            status='Red',
+                            failure_json=excluded.failure_json,
+                            fencing_token=excluded.fencing_token,
+                            updated_at=excluded.updated_at
+                        """,
+                        (
+                            self.run_id,
+                            self.issue_date,
+                            artifact_id,
+                            str(value.get("inputHash") or ""),
+                            validator_id,
+                            payload_json,
+                            _json_dump(value),
+                            self.fencing_token,
+                            now_text,
+                        ),
+                    )
+            if call_id is not None:
+                aggregate_hash = hashlib.sha256(
+                    _json_dump(
+                        {
+                            "green": {
+                                artifact_id: values[3]
+                                for artifact_id, values in sorted(prepared.items())
+                            },
+                            "red": dict(sorted(failure_signatures.items())),
+                        }
+                    ).encode("utf-8")
+                ).hexdigest()
+                changed = conn.execute(
+                    """
+                    UPDATE daily_model_calls
+                    SET status=?,output_hash=?,completed_at=?
+                    WHERE run_id=? AND call_id=? AND status='reserved' AND fencing_token=?
+                    """,
+                    (
+                        "completed_partial" if failure_items else "completed",
+                        aggregate_hash,
+                        now_text,
+                        self.run_id,
+                        call_id,
+                        self.fencing_token,
+                    ),
+                ).rowcount
+                if changed != 1:
+                    conn.rollback()
+                    raise PermissionError("daily_model_call_complete_cas_conflict")
+            conn.commit()
+        return {
+            artifact_id: {
+                "schemaVersion": "NEWS_GRASP_DAILY_ARTIFACT_CHECKPOINT_V1",
+                "runId": self.run_id,
+                "issueDate": self.issue_date,
+                "artifactId": artifact_id,
+                "inputHash": values[0],
+                "outputHash": values[3],
+                "validatorId": values[1],
+                "status": "Green",
+                "payload": values[2],
+                "failure": {},
+                "updatedAt": now_text,
+            }
+            for artifact_id, values in prepared.items()
+        }
+
+    def record_failure(self, failure: Mapping[str, Any]) -> dict[str, Any]:
+        from tools.news_grasp_repair_registry import failure_signature
+
+        value = dict(failure)
+        signature = failure_signature(value)
+        artifact_id = str(value["artifactId"])
+        input_hash = str(value["inputHash"])
+        now_text = _iso(self.store.now())
+        value["failureSignature"] = signature
+        with closing(self.store.connect()) as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            self._writer_row(conn)
+            existing = conn.execute(
+                "SELECT payload_json,validator_id FROM daily_artifact_checkpoints WHERE run_id=? AND artifact_id=?",
+                (self.run_id, artifact_id),
+            ).fetchone()
+            payload_json = str(existing[0]) if existing is not None else "{}"
+            validator_id = str(existing[1]) if existing is not None else str(value.get("predicateId") or "failure")
+            conn.execute(
+                """
+                INSERT INTO daily_artifact_checkpoints(
+                    run_id,issue_date,artifact_id,input_hash,output_hash,
+                    validator_id,status,payload_json,failure_json,fencing_token,updated_at
+                ) VALUES(?,?,?,?, '', ?, 'Red', ?, ?, ?, ?)
+                ON CONFLICT(run_id,artifact_id) DO UPDATE SET
+                    issue_date=excluded.issue_date,
+                    input_hash=excluded.input_hash,
+                    output_hash='',
+                    status='Red',
+                    failure_json=excluded.failure_json,
+                    fencing_token=excluded.fencing_token,
+                    updated_at=excluded.updated_at
+                """,
+                (
+                    self.run_id,
+                    self.issue_date,
+                    artifact_id,
+                    input_hash,
+                    validator_id,
+                    payload_json,
+                    _json_dump(value),
+                    self.fencing_token,
+                    now_text,
+                ),
+            )
+            conn.commit()
+        return value
+
+    def load_failure(self, artifact_id: str) -> dict[str, Any] | None:
+        with closing(self.store.connect()) as conn:
+            self._writer_row(conn)
+            row = conn.execute(
+                "SELECT failure_json,status FROM daily_artifact_checkpoints WHERE run_id=? AND artifact_id=?",
+                (self.run_id, artifact_id),
+            ).fetchone()
+        if row is None or str(row["status"]) != "Red":
+            return None
+        value = _json_load(str(row["failure_json"]), {})
+        if not isinstance(value, Mapping) or not value.get("failureSignature"):
+            raise RuntimeError("daily_artifact_failure_invalid")
+        return dict(value)
+
+    def reserve_model_call(
+        self,
+        *,
+        call_id: str,
+        budget_class: str,
+        artifact_id: str,
+        input_hash: str,
+        initial_limit: int = 5,
+        repair_limit: int = 4,
+    ) -> dict[str, Any]:
+        if budget_class not in {"initial", "repair"} or not all((call_id, artifact_id, input_hash)):
+            raise ValueError("daily_model_call_request_invalid")
+        limit = initial_limit if budget_class == "initial" else repair_limit
+        now_text = _iso(self.store.now())
+        with closing(self.store.connect()) as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            self._writer_row(conn)
+            existing = conn.execute(
+                "SELECT * FROM daily_model_calls WHERE run_id=? AND call_id=?",
+                (self.run_id, call_id),
+            ).fetchone()
+            if existing is not None:
+                same = (
+                    str(existing["issue_date"]) == self.issue_date
+                    and str(existing["budget_class"]) == budget_class
+                    and str(existing["artifact_id"]) == artifact_id
+                    and str(existing["input_hash"]) == input_hash
+                )
+                conn.rollback()
+                if not same:
+                    raise RuntimeError("daily_model_call_idempotency_conflict")
+                return {
+                    "schemaVersion": "NEWS_GRASP_MODEL_CALL_BUDGET_RECEIPT_V2",
+                    "ok": True,
+                    "consumed": False,
+                    "idempotent": True,
+                    "status": str(existing["status"]),
+                    "callId": call_id,
+                    "budgetClass": budget_class,
+                    "artifactId": artifact_id,
+                    "inputHash": input_hash,
+                }
+            used = int(
+                conn.execute(
+                    "SELECT COUNT(*) FROM daily_model_calls WHERE issue_date=? AND budget_class=?",
+                    (self.issue_date, budget_class),
+                ).fetchone()[0]
+            )
+            if used >= limit:
+                conn.rollback()
+                raise RuntimeError(
+                    "NG_MODEL_CALL_INITIAL_BUDGET_EXHAUSTED"
+                    if budget_class == "initial"
+                    else "NG_MODEL_CALL_REPAIR_BUDGET_EXHAUSTED"
+                )
+            conn.execute(
+                """
+                INSERT INTO daily_model_calls(
+                    run_id,call_id,issue_date,budget_class,artifact_id,input_hash,
+                    status,fencing_token,started_at
+                ) VALUES(?,?,?,?,?,?,'reserved',?,?)
+                """,
+                (
+                    self.run_id,
+                    call_id,
+                    self.issue_date,
+                    budget_class,
+                    artifact_id,
+                    input_hash,
+                    self.fencing_token,
+                    now_text,
+                ),
+            )
+            conn.commit()
+        return {
+            "schemaVersion": "NEWS_GRASP_MODEL_CALL_BUDGET_RECEIPT_V2",
+            "ok": True,
+            "consumed": True,
+            "idempotent": False,
+            "status": "reserved",
+            "callId": call_id,
+            "budgetClass": budget_class,
+            "artifactId": artifact_id,
+            "inputHash": input_hash,
+        }
+
+    def commit_model_call(
+        self,
+        *,
+        call_id: str,
+        artifacts: Mapping[str, Mapping[str, Any]],
+    ) -> dict[str, dict[str, Any]]:
+        return self._write_checkpoints_in_transaction(
+            artifacts=artifacts,
+            call_id=call_id,
+        )
+
+    def commit_model_call_partial(
+        self,
+        *,
+        call_id: str,
+        artifacts: Mapping[str, Mapping[str, Any]],
+        failures: Mapping[str, Mapping[str, Any]],
+    ) -> dict[str, dict[str, Any]]:
+        if not failures:
+            raise ValueError("daily_model_call_partial_failures_missing")
+        return self._write_checkpoints_in_transaction(
+            artifacts=artifacts,
+            call_id=call_id,
+            failures=failures,
+        )
+
+    def fail_model_call(self, *, call_id: str, failure_code: str) -> None:
+        now_text = _iso(self.store.now())
+        with closing(self.store.connect()) as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            self._writer_row(conn)
+            changed = conn.execute(
+                """
+                UPDATE daily_model_calls
+                SET status='failed',failure_code=?,completed_at=?
+                WHERE run_id=? AND call_id=? AND status='reserved' AND fencing_token=?
+                """,
+                (failure_code, now_text, self.run_id, call_id, self.fencing_token),
+            ).rowcount
+            if changed != 1:
+                conn.rollback()
+                raise PermissionError("daily_model_call_fail_cas_conflict")
+            conn.commit()
+
+    def model_call_usage(self) -> dict[str, int]:
+        with closing(self.store.connect()) as conn:
+            self._writer_row(conn)
+            rows = conn.execute(
+                "SELECT budget_class,COUNT(*) FROM daily_model_calls WHERE issue_date=? GROUP BY budget_class",
+                (self.issue_date,),
+            ).fetchall()
+        counts = {str(row[0]): int(row[1]) for row in rows}
+        return {
+            "initial": counts.get("initial", 0),
+            "repair": counts.get("repair", 0),
+            "total": counts.get("initial", 0) + counts.get("repair", 0),
+        }
+
+    def persist_repair_plan(self, plan: Mapping[str, Any]) -> dict[str, Any]:
+        from tools.news_grasp_repair_registry import validate_repair_plan
+
+        validated = validate_repair_plan(plan)
+        if validated.get("runId") != self.run_id or validated.get("issueDate") != self.issue_date:
+            raise ValueError("daily_repair_plan_identity_mismatch")
+        now_text = _iso(self.store.now())
+        plan_hash = str(validated["planSha256"])
+        with closing(self.store.connect()) as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            self._writer_row(conn)
+            conn.execute(
+                """
+                INSERT INTO daily_repair_plans(
+                    run_id,issue_date,plan_sha256,plan_json,fencing_token,updated_at
+                ) VALUES(?,?,?,?,?,?)
+                ON CONFLICT(run_id) DO UPDATE SET
+                    issue_date=excluded.issue_date,
+                    plan_sha256=excluded.plan_sha256,
+                    plan_json=excluded.plan_json,
+                    fencing_token=excluded.fencing_token,
+                    updated_at=excluded.updated_at
+                """,
+                (
+                    self.run_id,
+                    self.issue_date,
+                    plan_hash,
+                    _json_dump(validated),
+                    self.fencing_token,
+                    now_text,
+                ),
+            )
+            conn.commit()
+        return validated
+
+    def load_repair_plan(self) -> dict[str, Any] | None:
+        from tools.news_grasp_repair_registry import validate_repair_plan
+
+        with closing(self.store.connect()) as conn:
+            self._writer_row(conn)
+            row = conn.execute(
+                "SELECT plan_sha256,fencing_token,plan_json FROM daily_repair_plans WHERE run_id=?",
+                (self.run_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        if int(row[1]) != self.fencing_token:
+            raise PermissionError("daily_repair_plan_fencing_token_mismatch")
+        value = _json_load(str(row[2]), {})
+        if not isinstance(value, Mapping):
+            raise RuntimeError("daily_repair_plan_json_invalid")
+        validated = validate_repair_plan(value)
+        if str(row[0]) != str(validated.get("planSha256") or ""):
+            raise RuntimeError("daily_repair_plan_db_hash_mismatch")
+        return validated
 
 
 class PredicateLedger:
@@ -1798,8 +2503,16 @@ def admit_daily_operation(
         "scope_reduce": dispatch["dispatch"] == "scope_reduce",
         "deadline_revision": dispatch["dispatch"] == "deadline_revision",
         "high_cost_capability_frozen": dispatch["dispatch"] in {"scope_reduce", "deadline_revision"},
+        "high_cost_generation_allowed": dispatch["dispatch"] not in {"scope_reduce", "deadline_revision"},
         "retry_allowed": dispatch["dispatch"] not in {"deadline_revision"},
         "new_generation_allowed": dispatch["dispatch"] not in {"deadline_revision"},
+        "model_regeneration_allowed": dispatch["dispatch"] not in {"scope_reduce", "deadline_revision"},
+        "provider_initial_send_allowed": True,
+        "provider_resend_allowed": dispatch["dispatch"] not in {"scope_reduce", "deadline_revision"},
+        "read_only_reconcile_allowed": True,
+        "same_run_resume_allowed": True,
+        "deterministic_successor_allowed": True,
+        "finalization_allowed": True,
         "required_inventory_preserved": True,
         "consumer_verifier_preserved": True,
     }
@@ -2962,6 +3675,46 @@ def complete_external_outbox_atomic(
     }
 
 
+def _publish_seal_matches_current_run(
+    seal: Mapping[str, Any],
+    *,
+    run_id: str,
+    current_fencing_token: int,
+) -> bool:
+    """引継ぎ前に作成済みの不変sealを現在のrunへ束縛する。"""
+
+    raw_fencing_token = seal.get("fencingToken")
+    if isinstance(raw_fencing_token, bool) or not isinstance(raw_fencing_token, int):
+        return False
+    sealed_fencing_token = raw_fencing_token
+    return (
+        seal.get("schemaVersion") == "NEWS_GRASP_PUBLISH_SEAL_V1"
+        and seal.get("runId") == run_id
+        and 0 < sealed_fencing_token <= current_fencing_token
+    )
+
+
+def _publish_seal_semantics_match(
+    existing: Mapping[str, Any],
+    candidate: Mapping[str, Any],
+    *,
+    current_fencing_token: int,
+) -> bool:
+    """writer固有token以外のpublish内容が完全一致する場合だけ再利用する。"""
+
+    if not _publish_seal_matches_current_run(
+        existing,
+        run_id=str(candidate.get("runId") or ""),
+        current_fencing_token=current_fencing_token,
+    ):
+        return False
+    existing_semantics = dict(existing)
+    candidate_semantics = dict(candidate)
+    existing_semantics.pop("fencingToken", None)
+    candidate_semantics.pop("fencingToken", None)
+    return existing_semantics == candidate_semantics
+
+
 def seal_publish(
     store: DirectRunStore,
     *,
@@ -3077,9 +3830,19 @@ def seal_publish(
             raise PermissionError("external_side_effect_not_allowed")
         existing = str(_row_value(row, "publish_seal_json", "{}") or "{}")
         if existing not in {"", "{}"}:
-            if row_manifest == manifest_value and existing == seal_json:
+            existing_seal = _json_load(existing, {})
+            current_fencing_token = int(_row_value(row, "fencing_token", 0) or 0)
+            if (
+                row_manifest == manifest_value
+                and isinstance(existing_seal, Mapping)
+                and _publish_seal_semantics_match(
+                    existing_seal,
+                    seal,
+                    current_fencing_token=current_fencing_token,
+                )
+            ):
                 conn.rollback()
-                return _json_load(existing, seal)
+                return dict(existing_seal)
             conn.rollback()
             raise RuntimeError("publish_seal_idempotency_conflict")
         if row_manifest and row_manifest != manifest_value:
@@ -3495,12 +4258,12 @@ def _same_run_release_commit_at_head(
 
     if not re.fullmatch(r"[0-9a-f]{40}", source_baseline):
         return False
-    env = dict(os.environ)
-    env.update({"PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"})
+    env = sanitized_git_environment()
+    git = str(trusted_git_executable())
 
     def probe(*args: str) -> str | None:
         completed = subprocess.run(
-            ["git", *args],
+            [git, *args],
             cwd=cwd,
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
@@ -3731,24 +4494,29 @@ def start_run(
                     "AND status IN ('claimed','recoverable') ORDER BY operation_index",
                     (latest["run_id"],),
                 ).fetchall()
-                current_issue_index = DAILY_OPERATION_ORDER.index("current_issue_integration")
-                claim_is_pre_external_recoverable = (
+                external_index = DAILY_OPERATION_ORDER.index("external_publication")
+                claim_is_exact_successor = (
                     not active_claims
                     or (
                         len(active_claims) == 1
                         and int(active_claims[0][1]) == next_operation_index
-                        and next_operation_index < current_issue_index
+                    )
+                )
+                external_progress_is_consistent = (
+                    next_operation_index >= external_index
+                    or (
+                        external_state == "none"
+                        and not str(latest["external_started_at"] or "")
                     )
                 )
                 can_recover_pre_external = (
                     latest["status"] in {"active", "executing"}
-                    and external_state == "none"
-                    and not str(latest["external_started_at"] or "")
                     and stored_start_seal.get("runtimeGeneration") == str(runtime_generation)
                     and stored_start_seal.get("allowedSideEffectIds") == side_effect_ids
                     and prior_operation_indices == list(range(next_operation_index))
-                    and next_operation_index <= current_issue_index
-                    and claim_is_pre_external_recoverable
+                    and next_operation_index < len(DAILY_OPERATION_ORDER)
+                    and claim_is_exact_successor
+                    and external_progress_is_consistent
                 )
                 if can_recover_pre_external:
                     exact_successor = DAILY_OPERATION_ORDER[next_operation_index]
@@ -3895,10 +4663,13 @@ def start_run(
                         and daily_indices == list(range(len(DAILY_OPERATION_ORDER)))
                         and stored_seal.get("runtimeGeneration") == str(runtime_generation)
                         and stored_seal.get("allowedSideEffectIds") == side_effect_ids
-                        and publish_seal.get("schemaVersion") == "NEWS_GRASP_PUBLISH_SEAL_V1"
-                        and publish_seal.get("runId") == latest["run_id"]
-                        and int(publish_seal.get("fencingToken") or 0)
-                        == int(_row_value(latest, "fencing_token", 0) or 0)
+                        and _publish_seal_matches_current_run(
+                            publish_seal,
+                            run_id=str(latest["run_id"]),
+                            current_fencing_token=int(
+                                _row_value(latest, "fencing_token", 0) or 0
+                            ),
+                        )
                         and external_state in {"started", "unknown_delivery"}
                     )
                     if finalizer_recovery_valid:
@@ -3990,11 +4761,12 @@ def start_run(
                     stored_seal.get("runtimeGeneration") == str(runtime_generation)
                     and stored_seal.get("allowedSideEffectIds") == side_effect_ids
                 )
-                publish_seal_matches = (
-                    publish_seal.get("schemaVersion") == "NEWS_GRASP_PUBLISH_SEAL_V1"
-                    and publish_seal.get("runId") == latest["run_id"]
-                    and int(publish_seal.get("fencingToken") or 0)
-                    == int(_row_value(latest, "fencing_token", 0) or 0)
+                publish_seal_matches = _publish_seal_matches_current_run(
+                    publish_seal,
+                    run_id=str(latest["run_id"]),
+                    current_fencing_token=int(
+                        _row_value(latest, "fencing_token", 0) or 0
+                    ),
                 )
                 commit_matches = _same_run_release_commit_at_head(
                     canonical_cwd,
@@ -4095,10 +4867,13 @@ def start_run(
                     binding_matches = (
                         stored_seal.get("runtimeGeneration") == str(runtime_generation)
                         and stored_seal.get("allowedSideEffectIds") == side_effect_ids
-                        and publish_seal.get("schemaVersion") == "NEWS_GRASP_PUBLISH_SEAL_V1"
-                        and publish_seal.get("runId") == latest["run_id"]
-                        and int(publish_seal.get("fencingToken") or 0)
-                        == int(_row_value(latest, "fencing_token", 0) or 0)
+                        and _publish_seal_matches_current_run(
+                            publish_seal,
+                            run_id=str(latest["run_id"]),
+                            current_fencing_token=int(
+                                _row_value(latest, "fencing_token", 0) or 0
+                            ),
+                        )
                     )
                     external_claim = conn.execute(
                         "SELECT input_hash,handler_id,fencing_token,status FROM daily_operation_claims "
@@ -6152,7 +6927,13 @@ def validate_installed_automation_semantics(path: str | Path | None = None) -> d
         return {"schemaVersion": "NEWS_GRASP_DIRECT_AUTOMATION_CONFIG_V1", "ok": False, "failures": ["installed_config_missing"], "path": str(config_path)}
     except (UnicodeError, tomllib.TOMLDecodeError) as exc:
         return {"schemaVersion": "NEWS_GRASP_DIRECT_AUTOMATION_CONFIG_V1", "ok": False, "failures": [f"installed_config_invalid:{exc}"], "path": str(config_path)}
-    python_path = Path(r"C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe")
+    python_path = (
+        _windows_local_app_data()
+        / "Programs"
+        / "Python"
+        / "Python312"
+        / "python.exe"
+    )
     python_sha256 = ""
     if not python_path.is_file():
         failures.append("python312_executable_missing")
@@ -6228,6 +7009,8 @@ def validate_installed_automation_semantics(path: str | Path | None = None) -> d
     required_prompt_parts = (
         "$news-grasp-direct-mainline",
         "YY/MM/DD",
+        "news_grasp_daily.run_daily",
+        "空のJSON",
         "title_status",
         "title_status=already_ok",
         "already_ok",
@@ -6534,8 +7317,8 @@ def _cli_stage_verifier(
     )
 
 
-def _canonical_daily_state_root() -> Path:
-    """Windows Known Folderから唯一のproduction state rootを解決する。"""
+def _windows_local_app_data() -> Path:
+    """ambient環境変数を使わずWindows LocalAppDataを解決する。"""
 
     if os.name != "nt":
         raise OSError("daily_windows_known_folder_required")
@@ -6562,11 +7345,17 @@ def _canonical_daily_state_root() -> Path:
     if status != 0 or not output.value:
         raise OSError(f"daily_known_folder_unavailable:{status}")
     try:
-        return (Path(output.value) / "News-Grasp" / "direct-mainline").resolve(
-            strict=False
-        )
+        return Path(output.value).resolve(strict=True)
     finally:
         ctypes.windll.ole32.CoTaskMemFree(output)
+
+
+def _canonical_daily_state_root() -> Path:
+    """Windows Known Folderから唯一のproduction state rootを解決する。"""
+
+    return (_windows_local_app_data() / "News-Grasp" / "direct-mainline").resolve(
+        strict=False
+    )
 
 
 def _contains_writer_capability(value: Any) -> bool:
@@ -6702,7 +7491,7 @@ def resolve_daily_start_identity(
     }
 
 
-def run_daily_mainline(
+def _run_daily_mainline_locked(
     *,
     repo_root: Path,
     state_root: Path,
@@ -6727,6 +7516,7 @@ def run_daily_mainline(
             exact_successor="explicit_new_release_authority_required",
         )
     store = DirectRunStore(state_root)
+    store.bind_production_runtime()
     observed_identity = daily.resolve_daily_identity_context(
         repo_root=repo_root,
         issue_date=issue_date,
@@ -6777,6 +7567,33 @@ def run_daily_mainline(
     if _contains_writer_capability(result):
         return _daily_red("daily_writer_capability_projection_violation")
     return result
+
+
+def run_daily_mainline(
+    *,
+    repo_root: Path,
+    state_root: Path,
+    issue_date: str,
+    scheduler_trigger_at: str,
+) -> dict[str, Any]:
+    """単一processだけにDaily writer capabilityを与える。"""
+
+    try:
+        with daily_process_mutex(timeout_ms=0):
+            return _run_daily_mainline_locked(
+                repo_root=repo_root,
+                state_root=state_root,
+                issue_date=issue_date,
+                scheduler_trigger_at=scheduler_trigger_at,
+            )
+    except RuntimeError as exc:
+        if str(exc) != "daily_process_mutex_busy":
+            raise
+        return _daily_red(
+            "daily_process_mutex_busy",
+            issue_date=issue_date,
+            exact_successor="wait_for_current_writer_process_exit_then_resume_same_run",
+        )
 
 
 def _run_daily_cli() -> dict[str, Any]:

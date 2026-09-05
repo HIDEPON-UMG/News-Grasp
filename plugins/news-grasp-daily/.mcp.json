@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "news_grasp_daily": {
+      "command": "${NEWS_GRASP_PYTHON312}",
+      "args": ["-I", "-S", "-B", "server.py"],
+      "cwd": ".",
+      "enabled": true,
+      "enabled_tools": ["run_daily"],
+      "startup_timeout_sec": 30,
+      "tools": {
+        "run_daily": {
+          "output_token_limit": 4000
+        }
+      },
+      "env_vars": []
+    }
+  }
+}

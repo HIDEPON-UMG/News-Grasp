@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -11,7 +12,13 @@ RUN_ID = "direct-2026-09-04-1-test"
 
 
 def _record(category: str) -> dict[str, object]:
-    genre = {"fx": "FX", "ai": "AI"}[category]
+    genre = {
+        "fx": "FX",
+        "ai": "AI",
+        "it": "IT-Consulting",
+        "mobility": "Mobility",
+        "game": "Game",
+    }[category]
     return {
         "date": ISSUE_DATE,
         "genre": genre,
@@ -31,7 +38,13 @@ def _record(category: str) -> dict[str, object]:
 
 
 def _digest(category: str) -> str:
-    genre = {"fx": "FX", "ai": "AI"}[category]
+    genre = {
+        "fx": "FX",
+        "ai": "AI",
+        "it": "IT-Consulting",
+        "mobility": "Mobility",
+        "game": "Game",
+    }[category]
     return (
         "---\n"
         f"title: 'News Grasp #{ISSUE_DATE.replace('-', '')} — {genre}'\n"
@@ -176,6 +189,205 @@ def test_zero_artifact_generation_materializes_one_canonical_bundle(tmp_path: Pa
     }
 
 
+def test_five_categories_use_three_reporter_shards_and_five_total_model_calls(
+    tmp_path: Path,
+) -> None:
+    from tools.news_grasp_daily_content import produce_current_issue
+
+    categories = ("fx", "ai", "it", "mobility", "game")
+    reporter_calls: list[tuple[str, ...]] = []
+
+    def shard_runner(*, role: str, category: str | None = None, **context):
+        if role == "reporter_shard":
+            shard = tuple(context["categories"])
+            reporter_calls.append(shard)
+            return {
+                "issue_date": ISSUE_DATE,
+                "reporters": [
+                    {
+                        "category": item["category"],
+                        "issue_date": ISSUE_DATE,
+                        "records": [_record(item["category"])],
+                        "digest_markdown": _digest(item["category"]),
+                        "search_audit": item["search_audit"],
+                    }
+                    for item in context["items"]
+                ],
+            }
+        if role == "reporter":
+            assert category is not None
+            reporter_calls.append((category,))
+            return {
+                "category": category,
+                "issue_date": ISSUE_DATE,
+                "records": [_record(category)],
+                "digest_markdown": _digest(category),
+                "search_audit": context["search_audit"],
+            }
+        if role == "editor":
+            return {
+                "issue_date": ISSUE_DATE,
+                "inputs": {},
+                "append_records": [_record(item) for item in categories],
+                "summary_markdown": _summary(),
+            }
+        if role == "deepdive":
+            return _deepdive()
+        raise AssertionError(role)
+
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "articles.jsonl").write_text("", encoding="utf-8")
+    result = produce_current_issue(
+        repo_root=tmp_path,
+        issue_date=ISSUE_DATE,
+        run_id=RUN_ID,
+        scheduled_categories=categories,
+        candidate_provider=_candidate_provider,
+        model_runner=shard_runner,
+        derived_builder=lambda **_: {"ok": True, "status": "built", "artifacts": []},
+    )
+
+    assert sorted(reporter_calls) == sorted([("fx", "mobility"), ("ai", "game"), ("it",)])
+    assert result["reporter_call_count"] == 3
+    assert result["model_call_count"] == 5
+    assert result["model_call_count_total"] == 5
+
+
+def test_shard_failure_preserves_green_sibling_and_repairs_only_bad_category(
+    tmp_path: Path,
+) -> None:
+    from tools import news_grasp_direct_runtime as runtime
+    from tools.news_grasp_daily_content import DailyContentError, produce_current_issue
+
+    categories = ("fx", "ai", "it", "mobility", "game")
+    store = runtime.DirectRunStore(
+        tmp_path / "state",
+        test_only_allow_semantic_verifier=True,
+    )
+    run = runtime.start_run(
+        store,
+        cwd=tmp_path,
+        issue_date=ISSUE_DATE,
+        run_intent=runtime.RUN_INTENT,
+        manifest_id="f" * 64,
+    )
+    binding = {
+        "runtime_store": store,
+        "writer_lease": run["writer_lease"],
+        "fencing_token": run["fencing_token"],
+    }
+
+    def derived(**context):
+        paths = {
+            "daily_audio_script": f"digest/Summary/{ISSUE_DATE}-audio-script.md",
+            "daily_audio": f"build/tts/{ISSUE_DATE}.mp3",
+            "daily_audio_projection": "build/tts/daily/latest_audio.json",
+            "daily_video": f"build/youtube-podcast/{ISSUE_DATE}.mp4",
+            "deepdive_html": f"docs/deepdive/{ISSUE_DATE}/index.html",
+            "deepdive_audio": f"build/tts/deepdive/{ISSUE_DATE}.mp3",
+            "deepdive_audio_projection": "build/tts/deepdive/latest_audio.json",
+            "deepdive_video": f"build/youtube-podcast-deepdive/{ISSUE_DATE}.mp4",
+            "site_html": "docs/index.html",
+        }
+        built: list[str] = []
+        for artifact_id, relative in paths.items():
+            if context["repair_actions"][artifact_id] == "reuse":
+                continue
+            target = tmp_path / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(f"{artifact_id}:{ISSUE_DATE}".encode("utf-8"))
+            built.append(str(target))
+        return {"ok": True, "status": "built", "artifacts": built}
+
+    def first_runner(*, role: str, category: str | None = None, **context):
+        if role == "reporter_shard":
+            return {
+                "issue_date": ISSUE_DATE,
+                "reporters": [
+                    (
+                        {"category": "game", "issue_date": ISSUE_DATE}
+                        if item["category"] == "game"
+                        else {
+                            "category": item["category"],
+                            "issue_date": ISSUE_DATE,
+                            "records": [_record(item["category"])],
+                            "digest_markdown": _digest(item["category"]),
+                            "search_audit": item["search_audit"],
+                        }
+                    )
+                    for item in context["items"]
+                ],
+            }
+        if role == "reporter":
+            assert category is not None
+            return {
+                "category": category,
+                "issue_date": ISSUE_DATE,
+                "records": [_record(category)],
+                "digest_markdown": _digest(category),
+                "search_audit": context["search_audit"],
+            }
+        raise AssertionError("editor must not run after reporter Red")
+
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "articles.jsonl").write_text("", encoding="utf-8")
+    with pytest.raises(DailyContentError, match="REPORTER_OUTPUT_INVALID:game"):
+        produce_current_issue(
+            repo_root=tmp_path,
+            issue_date=ISSUE_DATE,
+            run_id=run["run_id"],
+            scheduled_categories=categories,
+            candidate_provider=_candidate_provider,
+            model_runner=first_runner,
+            derived_builder=derived,
+            **binding,
+        )
+
+    repair_calls: list[tuple[str, str | None]] = []
+
+    def repair_runner(*, role: str, category: str | None = None, **context):
+        repair_calls.append((role, category))
+        if role == "reporter":
+            assert category == "game"
+            return {
+                "category": category,
+                "issue_date": ISSUE_DATE,
+                "records": [_record(category)],
+                "digest_markdown": _digest(category),
+                "search_audit": context["search_audit"],
+            }
+        if role == "editor":
+            return {
+                "issue_date": ISSUE_DATE,
+                "inputs": {},
+                "append_records": [_record(item) for item in categories],
+                "summary_markdown": _summary(),
+            }
+        if role == "deepdive":
+            return _deepdive()
+        raise AssertionError(role)
+
+    result = produce_current_issue(
+        repo_root=tmp_path,
+        issue_date=ISSUE_DATE,
+        run_id=run["run_id"],
+        scheduled_categories=categories,
+        candidate_provider=lambda *_: pytest.fail("candidate collection repeated"),
+        model_runner=repair_runner,
+        derived_builder=derived,
+        **binding,
+    )
+
+    assert repair_calls == [("reporter", "game"), ("editor", None), ("deepdive", None)]
+    assert result["reused_model_artifacts"] == [
+        "reporter:fx",
+        "reporter:ai",
+        "reporter:it",
+        "reporter:mobility",
+    ]
+    assert result["repaired_model_artifacts"] == ["reporter:game"]
+
+
 def test_model_failure_before_materialize_does_not_change_canonical_artifacts(tmp_path: Path) -> None:
     from tools.news_grasp_daily_content import DailyContentError, produce_current_issue
 
@@ -306,3 +518,453 @@ def test_derived_failure_retry_reuses_validated_model_bundle(tmp_path: Path) -> 
     assert result["ok"] is True
     assert result["model_call_count"] == 0
     assert result["model_call_count_total"] == 4
+
+
+def test_reporter_failure_reuses_candidates_and_green_reporter_on_repair(
+    tmp_path: Path,
+) -> None:
+    from tools.news_grasp_daily_content import DailyContentError, produce_current_issue
+
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "articles.jsonl").write_text("", encoding="utf-8")
+    first_calls: list[tuple[str, str | None]] = []
+
+    def first_runner(**kwargs):
+        first_calls.append((kwargs["role"], kwargs.get("category")))
+        if kwargs["role"] == "reporter" and kwargs.get("category") == "ai":
+            return {"ok": True}
+        return _model_runner(**kwargs)
+
+    with pytest.raises(DailyContentError, match="REPORTER_OUTPUT_INVALID:ai"):
+        produce_current_issue(
+            repo_root=tmp_path,
+            issue_date=ISSUE_DATE,
+            run_id=RUN_ID,
+            scheduled_categories=("fx", "ai"),
+            candidate_provider=_candidate_provider,
+            model_runner=first_runner,
+            derived_builder=lambda **_: {"ok": True, "artifacts": []},
+        )
+
+    repair_calls: list[tuple[str, str | None]] = []
+
+    def repair_runner(**kwargs):
+        repair_calls.append((kwargs["role"], kwargs.get("category")))
+        return _model_runner(**kwargs)
+
+    result = produce_current_issue(
+        repo_root=tmp_path,
+        issue_date=ISSUE_DATE,
+        run_id=RUN_ID,
+        scheduled_categories=("fx", "ai"),
+        candidate_provider=lambda *_: pytest.fail("candidate collection repeated"),
+        model_runner=repair_runner,
+        derived_builder=lambda **_: {"ok": True, "status": "built", "artifacts": []},
+    )
+
+    assert sorted(first_calls) == [("reporter", "ai"), ("reporter", "fx")]
+    assert repair_calls == [
+        ("reporter", "ai"),
+        ("editor", None),
+        ("deepdive", None),
+    ]
+    assert result["model_call_count"] == 3
+    assert result["reused_model_artifacts"] == ["reporter:fx"]
+    assert result["repaired_model_artifacts"] == ["reporter:ai"]
+
+
+def test_editor_failure_reuses_all_reporters_on_repair(tmp_path: Path) -> None:
+    from tools.news_grasp_daily_content import DailyContentError, produce_current_issue
+
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "articles.jsonl").write_text("", encoding="utf-8")
+
+    def first_runner(**kwargs):
+        if kwargs["role"] == "editor":
+            return {"ok": True}
+        return _model_runner(**kwargs)
+
+    with pytest.raises(DailyContentError, match="EDITOR_OUTPUT_INVALID"):
+        produce_current_issue(
+            repo_root=tmp_path,
+            issue_date=ISSUE_DATE,
+            run_id=RUN_ID,
+            scheduled_categories=("fx", "ai"),
+            candidate_provider=_candidate_provider,
+            model_runner=first_runner,
+            derived_builder=lambda **_: {"ok": True, "artifacts": []},
+        )
+
+    repair_calls: list[tuple[str, str | None]] = []
+
+    def repair_runner(**kwargs):
+        repair_calls.append((kwargs["role"], kwargs.get("category")))
+        assert kwargs["role"] != "reporter"
+        return _model_runner(**kwargs)
+
+    result = produce_current_issue(
+        repo_root=tmp_path,
+        issue_date=ISSUE_DATE,
+        run_id=RUN_ID,
+        scheduled_categories=("fx", "ai"),
+        candidate_provider=lambda *_: pytest.fail("candidate collection repeated"),
+        model_runner=repair_runner,
+        derived_builder=lambda **_: {"ok": True, "status": "built", "artifacts": []},
+    )
+
+    assert repair_calls == [("editor", None), ("deepdive", None)]
+    assert result["model_call_count"] == 2
+    assert result["reused_model_artifacts"] == ["reporter:fx", "reporter:ai"]
+    assert result["repaired_model_artifacts"] == ["editor"]
+
+
+def test_runtime_ledger_repairs_only_drifted_artifact_without_model_recall(
+    tmp_path: Path,
+) -> None:
+    from tools import news_grasp_direct_runtime as runtime
+    from tools import news_grasp_daily_content as content
+
+    produce_current_issue = content.produce_current_issue
+
+    history_row = {
+        **_record("fx"),
+        "date": "2026-09-03",
+        "published_date": "2026-09-03",
+        "url": "https://example.com/fx/history",
+    }
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "articles.jsonl").write_text(
+        json.dumps(history_row, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    assert content._run_local_git(tmp_path, "init", "-q").returncode == 0
+    assert content._run_local_git(tmp_path, "add", "--", "data/articles.jsonl").returncode == 0
+    assert content._run_local_git(
+        tmp_path,
+        "-c",
+        "user.name=News-Grasp fixture",
+        "-c",
+        "user.email=fixture@example.test",
+        "commit",
+        "-q",
+        "--no-gpg-sign",
+        "-m",
+        "baseline",
+    ).returncode == 0
+    baseline_sha = str(
+        content._run_local_git(tmp_path, "rev-parse", "HEAD", text=True).stdout
+    ).strip()
+    store = runtime.DirectRunStore(
+        tmp_path / "state",
+        test_only_allow_semantic_verifier=True,
+    )
+    run = runtime.start_run(
+        store,
+        cwd=tmp_path,
+        issue_date=ISSUE_DATE,
+        run_intent=runtime.RUN_INTENT,
+        manifest_id="f" * 64,
+        source_baseline=baseline_sha,
+        remote_base_sha=baseline_sha,
+    )
+    binding = {
+        "runtime_store": store,
+        "writer_lease": run["writer_lease"],
+        "fencing_token": run["fencing_token"],
+    }
+
+    def derived(**context):
+        paths = {
+            "daily_audio_script": f"digest/Summary/{ISSUE_DATE}-audio-script.md",
+            "daily_audio": f"build/tts/{ISSUE_DATE}.mp3",
+            "daily_audio_projection": "build/tts/daily/latest_audio.json",
+            "daily_video": f"build/youtube-podcast/{ISSUE_DATE}.mp4",
+            "deepdive_html": f"docs/deepdive/{ISSUE_DATE}/index.html",
+            "deepdive_audio": f"build/tts/deepdive/{ISSUE_DATE}.mp3",
+            "deepdive_audio_projection": "build/tts/deepdive/latest_audio.json",
+            "deepdive_video": f"build/youtube-podcast-deepdive/{ISSUE_DATE}.mp4",
+            "site_html": "docs/index.html",
+        }
+        built: list[str] = []
+        for artifact_id, relative in paths.items():
+            if context["repair_actions"][artifact_id] == "reuse":
+                continue
+            target = tmp_path / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(f"{artifact_id}:{ISSUE_DATE}".encode("utf-8"))
+            built.append(str(target))
+        return {"ok": True, "status": "built", "artifacts": built}
+
+    first = produce_current_issue(
+        repo_root=tmp_path,
+        issue_date=ISSUE_DATE,
+        run_id=run["run_id"],
+        scheduled_categories=("fx", "ai"),
+        candidate_provider=_candidate_provider,
+        model_runner=_model_runner,
+        derived_builder=derived,
+        **binding,
+    )
+    assert first["model_call_count"] == 4
+    articles = tmp_path / "data" / "articles.jsonl"
+    first_rows = [json.loads(line) for line in articles.read_text(encoding="utf-8").splitlines()]
+    assert first_rows[0] == history_row
+    assert {row["url"] for row in first_rows if row["date"] == ISSUE_DATE} == {
+        _record("fx")["url"],
+        _record("ai")["url"],
+    }
+    summary = tmp_path / "digest" / "Summary" / f"{ISSUE_DATE}.md"
+    summary.write_text("drifted", encoding="utf-8")
+
+    second = produce_current_issue(
+        repo_root=tmp_path,
+        issue_date=ISSUE_DATE,
+        run_id=run["run_id"],
+        scheduled_categories=("fx", "ai"),
+        candidate_provider=lambda *_: pytest.fail("candidate provider repeated"),
+        model_runner=lambda **_: pytest.fail("model repeated"),
+        derived_builder=derived,
+        **binding,
+    )
+
+    assert second["ok"] is True
+    assert second["model_call_count"] == 0
+    assert summary.read_text(encoding="utf-8") == _summary()
+
+    articles.write_bytes(b'{"invalid":\n')
+    invalid_repair = produce_current_issue(
+        repo_root=tmp_path,
+        issue_date=ISSUE_DATE,
+        run_id=run["run_id"],
+        scheduled_categories=("fx", "ai"),
+        candidate_provider=lambda *_: pytest.fail("candidate provider repeated"),
+        model_runner=lambda **_: pytest.fail("model repeated"),
+        derived_builder=derived,
+        **binding,
+    )
+    invalid_rows = [json.loads(line) for line in articles.read_text(encoding="utf-8").splitlines()]
+    assert invalid_repair["model_call_count"] == 0
+    assert invalid_rows[0] == history_row
+    assert len([row for row in invalid_rows if row["date"] == ISSUE_DATE]) == 2
+
+    stale_row = {**_record("fx"), "url": "https://example.com/stale-current-row"}
+    articles.write_text(
+        "\n".join(json.dumps(row, ensure_ascii=False) for row in (history_row, stale_row)) + "\n",
+        encoding="utf-8",
+    )
+    stale_repair = produce_current_issue(
+        repo_root=tmp_path,
+        issue_date=ISSUE_DATE,
+        run_id=run["run_id"],
+        scheduled_categories=("fx", "ai"),
+        candidate_provider=lambda *_: pytest.fail("candidate provider repeated"),
+        model_runner=lambda **_: pytest.fail("model repeated"),
+        derived_builder=derived,
+        **binding,
+    )
+    repaired_rows = [json.loads(line) for line in articles.read_text(encoding="utf-8").splitlines()]
+    assert stale_repair["model_call_count"] == 0
+    assert repaired_rows[0] == history_row
+    assert {row["url"] for row in repaired_rows if row["date"] == ISSUE_DATE} == {
+        _record("fx")["url"],
+        _record("ai")["url"],
+    }
+
+
+def test_articles_baseline_rejects_missing_blob_and_tampered_start_seal(
+    tmp_path: Path,
+) -> None:
+    from tools import news_grasp_daily_content as content
+    from tools import news_grasp_direct_runtime as runtime
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    assert content._run_local_git(repo, "init", "-q").returncode == 0
+    assert content._run_local_git(
+        repo,
+        "-c",
+        "user.name=News-Grasp fixture",
+        "-c",
+        "user.email=fixture@example.test",
+        "commit",
+        "-q",
+        "--no-gpg-sign",
+        "--allow-empty",
+        "-m",
+        "empty baseline",
+    ).returncode == 0
+    baseline_sha = str(content._run_local_git(repo, "rev-parse", "HEAD", text=True).stdout).strip()
+    store = runtime.DirectRunStore(
+        tmp_path / "state",
+        test_only_allow_semantic_verifier=True,
+    )
+    run = runtime.start_run(
+        store,
+        cwd=repo,
+        issue_date=ISSUE_DATE,
+        run_intent=runtime.RUN_INTENT,
+        manifest_id="f" * 64,
+        source_baseline=baseline_sha,
+        remote_base_sha=baseline_sha,
+    )
+    ledger = runtime.DailyArtifactLedger(
+        store,
+        run_id=run["run_id"],
+        issue_date=ISSUE_DATE,
+        writer_lease=run["writer_lease"],
+        fencing_token=run["fencing_token"],
+    )
+
+    with pytest.raises(content.DailyContentError, match="ARTICLES_BASELINE_BLOB_MISSING"):
+        content._read_articles_jsonl_baseline(repo, ledger)
+
+    with store.connect() as conn:
+        seal = json.loads(
+            conn.execute(
+                "SELECT start_seal_json FROM runs WHERE run_id=?",
+                (run["run_id"],),
+            ).fetchone()[0]
+        )
+        seal["sourceBaseline"] = "b" * 40
+        conn.execute(
+            "UPDATE runs SET start_seal_json=? WHERE run_id=?",
+            (json.dumps(seal, ensure_ascii=False, sort_keys=True), run["run_id"]),
+        )
+        conn.commit()
+
+    with pytest.raises(content.DailyContentError, match="ARTICLES_BASELINE_START_SEAL_INVALID"):
+        content._read_articles_jsonl_baseline(repo, ledger)
+
+
+def test_runtime_ledger_refuses_new_candidate_and_model_work_after_75_minutes(
+    tmp_path: Path,
+) -> None:
+    from tools import news_grasp_direct_runtime as runtime
+    from tools.news_grasp_daily_content import DailyContentError, produce_current_issue
+
+    class FakeClock:
+        def __init__(self) -> None:
+            self.value = datetime.fromisoformat("2026-09-04T06:00:00+09:00")
+
+        def __call__(self) -> datetime:
+            return self.value
+
+    clock = FakeClock()
+    store = runtime.DirectRunStore(
+        tmp_path / "state",
+        clock=clock,
+        test_only_allow_semantic_verifier=True,
+    )
+    run = runtime.start_run(
+        store,
+        cwd=tmp_path,
+        issue_date=ISSUE_DATE,
+        run_intent=runtime.RUN_INTENT,
+        manifest_id="f" * 64,
+        scheduler_trigger_at="2026-09-04T06:00:00+09:00",
+    )
+    clock.value += timedelta(minutes=76)
+    candidate_calls: list[str] = []
+
+    with pytest.raises(DailyContentError, match="SLO_CANDIDATE_COLLECTION_FROZEN"):
+        produce_current_issue(
+            repo_root=tmp_path,
+            issue_date=ISSUE_DATE,
+            run_id=run["run_id"],
+            scheduled_categories=("fx",),
+            candidate_provider=lambda category, _issue: candidate_calls.append(category),
+            model_runner=lambda **_: pytest.fail("model started after SLO freeze"),
+            derived_builder=lambda **_: pytest.fail("derived build started without inputs"),
+            runtime_store=store,
+            writer_lease=run["writer_lease"],
+            fencing_token=run["fencing_token"],
+        )
+
+    assert candidate_calls == []
+
+
+def test_repair_scope_rejects_changes_outside_allowed_json_pointer() -> None:
+    from tools.news_grasp_daily_content import DailyContentError, _assert_repair_scope
+
+    previous = {
+        "category": "fx",
+        "issue_date": ISSUE_DATE,
+        "records": [{"title": "keep", "thumb": "bad"}],
+        "digest_markdown": "keep digest",
+    }
+    failure = {
+        "invalidPayload": previous,
+        "allowedMutationPaths": ["/records/0/thumb"],
+    }
+    scoped = json.loads(json.dumps(previous))
+    scoped["records"][0]["thumb"] = "https://example.com/image.jpg"
+    _assert_repair_scope(failure, scoped)
+
+    unscoped = json.loads(json.dumps(scoped))
+    unscoped["digest_markdown"] = "rewritten digest"
+    with pytest.raises(DailyContentError, match="REPAIR_UNSCOPED_MUTATION"):
+        _assert_repair_scope(failure, unscoped)
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [
+        {"invalidPayload": {"summary_markdown": "old"}},
+        {"invalidPayload": {"summary_markdown": "old"}, "allowedMutationPaths": []},
+        {"invalidPayload": {"summary_markdown": "old"}, "allowedMutationPaths": ["summary_markdown"]},
+        {"invalidPayload": {"summary_markdown": "old"}, "allowedMutationPaths": ["/missing/leaf"]},
+    ],
+)
+def test_repair_scope_fails_closed_when_exact_mask_is_unresolved(failure: dict) -> None:
+    from tools.news_grasp_daily_content import DailyContentError, _assert_repair_scope
+
+    with pytest.raises(DailyContentError, match="REPAIR_MUTATION_SCOPE_UNRESOLVED"):
+        _assert_repair_scope(failure, {"summary_markdown": "new"})
+
+
+def test_repair_scope_allows_only_an_explicit_missing_leaf() -> None:
+    from tools.news_grasp_daily_content import _assert_repair_scope
+
+    previous = {"records": [{"title": "keep"}], "digest_markdown": "keep"}
+    repaired = {"records": [{"title": "keep", "thumb": "https://example.test/a.jpg"}], "digest_markdown": "keep"}
+    _assert_repair_scope(
+        {
+            "invalidPayload": previous,
+            "allowedMutationPaths": ["/records/0/thumb"],
+        },
+        repaired,
+    )
+
+
+def test_high_cost_derived_stage_is_frozen_before_tts_call(tmp_path: Path, monkeypatch) -> None:
+    from tools.news_grasp_daily_content import DailyContentError, _default_derived_builder
+    from tools.tts import synthesize_daily
+
+    monkeypatch.setattr(
+        synthesize_daily,
+        "synthesize",
+        lambda *_args, **_kwargs: pytest.fail("TTS started after SLO freeze"),
+    )
+    actions = {
+        artifact_id: "reuse"
+        for artifact_id in (
+            "daily_audio_script",
+            "daily_audio_projection",
+            "daily_video",
+            "deepdive_html",
+            "deepdive_audio",
+            "deepdive_audio_projection",
+            "deepdive_video",
+            "site_html",
+        )
+    }
+    actions["daily_audio"] = "rebuild_deterministic"
+
+    with pytest.raises(DailyContentError, match="SLO_HIGH_COST_GENERATION_FROZEN:daily_audio"):
+        _default_derived_builder(
+            repo_root=tmp_path,
+            issue_date=ISSUE_DATE,
+            run_id=RUN_ID,
+            repair_actions=actions,
+            high_cost_admission=lambda: False,
+        )

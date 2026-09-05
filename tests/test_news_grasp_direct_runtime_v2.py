@@ -1,12 +1,40 @@
 from __future__ import annotations
 
 import importlib
+import json
 import os
 import sqlite3
+import subprocess
 import sys
 from pathlib import Path
 
 import pytest
+
+
+def test_daily_process_mutex_blocks_a_second_process(tmp_path: Path) -> None:
+    api = importlib.import_module("tools.news_grasp_direct_runtime")
+    script = (
+        "import json,sys;"
+        f"sys.path.insert(0,{str(Path(__file__).resolve().parents[1])!r});"
+        "from tools.news_grasp_direct_runtime import daily_process_mutex;"
+        "\ntry:\n"
+        "  with daily_process_mutex(timeout_ms=0): pass\n"
+        "except RuntimeError as exc:\n"
+        "  print(json.dumps({'error':str(exc)}));raise SystemExit(7)\n"
+    )
+
+    with api.daily_process_mutex(timeout_ms=0):
+        completed = subprocess.run(
+            [sys.executable, "-I", "-S", "-B", "-c", script],
+            cwd=tmp_path,
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+
+    assert completed.returncode == 7
+    assert json.loads(completed.stdout)["error"] == "daily_process_mutex_busy"
 
 
 class _Verifier:
@@ -153,6 +181,21 @@ def test_production_runtime_store_rejects_database_inode_replacement(tmp_path: P
     os.replace(replacement, store.db_path)
     with pytest.raises(PermissionError, match="production_runtime_db_identity_changed"):
         store.connect()
+
+
+def test_production_runtime_store_does_not_recreate_missing_db_with_start_seal(
+    tmp_path: Path, monkeypatch
+) -> None:
+    api = importlib.import_module("tools.news_grasp_direct_runtime")
+    local_app_data = tmp_path / "localapp"
+    canonical = local_app_data / "News-Grasp" / "direct-mainline"
+    seal_root = canonical / "start-seals"
+    seal_root.mkdir(parents=True)
+    (seal_root / "direct-20260905-fixture.json").write_text("{}", encoding="utf-8")
+    monkeypatch.setenv("LOCALAPPDATA", str(local_app_data))
+
+    with pytest.raises(RuntimeError, match="production_runtime_db_missing_with_start_seals"):
+        api.DirectRunStore(canonical)
 
 
 @pytest.mark.parametrize(

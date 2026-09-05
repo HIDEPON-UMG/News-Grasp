@@ -25,6 +25,10 @@ from tools.publish_inventory import (
     docs_artifact_for_category,
     scheduled_category_ids,
 )
+from tools.news_grasp_trusted_process import (
+    sanitized_git_environment,
+    trusted_git_executable,
+)
 
 
 MANIFEST_SCHEMA = "NEWS_GRASP_PUBLISH_MANIFEST_V2"
@@ -875,8 +879,10 @@ def verify_manifest(
         # 実祖先であることを検証する。tmp_path等の非Git fixtureは、既存の
         # unit互換性のため40桁形式チェックに留める。
         root = Path(repo_root).resolve()
+        git = str(trusted_git_executable())
+        git_env = sanitized_git_environment()
         git_head = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
+            [git, "rev-parse", "HEAD"],
             cwd=str(root),
             capture_output=True,
             text=True,
@@ -885,11 +891,12 @@ def verify_manifest(
             timeout=30,
             check=False,
             shell=False,
+            env=git_env,
             creationflags=int(getattr(subprocess, "CREATE_NO_WINDOW", 0)),
         )
         if git_head.returncode == 0 and re.fullmatch(r"[0-9a-f]{40}", git_head.stdout.strip()):
             baseline_check = subprocess.run(
-                ["git", "merge-base", "--is-ancestor", str(manifest.get("sourceBaseline")), git_head.stdout.strip()],
+                [git, "merge-base", "--is-ancestor", str(manifest.get("sourceBaseline")), git_head.stdout.strip()],
                 cwd=str(root),
                 capture_output=True,
                 text=True,
@@ -898,6 +905,7 @@ def verify_manifest(
                 timeout=30,
                 check=False,
                 shell=False,
+                env=git_env,
                 creationflags=int(getattr(subprocess, "CREATE_NO_WINDOW", 0)),
             )
             if baseline_check.returncode != 0:
@@ -1294,18 +1302,24 @@ def evaluate_pages_deployment(
         else None
     )
     matched: dict[str, Any] | None = None
+    pending: dict[str, Any] | None = None
+    failed: dict[str, Any] | None = None
     for raw in workflow_runs:
         row = dict(raw)
-        if (
+        same_release = (
             row.get("head_sha") == remote_head
             and str(row.get("path") or "") == ".github/workflows/deploy-pages.yml"
             and str(row.get("event") or "") == "push"
             and str(row.get("head_branch") or "") == "main"
-            and str(row.get("status") or "").casefold() == "completed"
-            and str(row.get("conclusion") or "").casefold() == "success"
-        ):
+        )
+        status = str(row.get("status") or "").casefold()
+        if same_release and status == "completed" and str(row.get("conclusion") or "").casefold() == "success":
             matched = row
             break
+        if same_release and status in {"queued", "in_progress", "pending", "requested", "waiting"}:
+            pending = row
+        elif same_release and status == "completed" and failed is None:
+            failed = row
     reasons: list[str] = []
     if normalized_release_kind not in {"public", "source_only"}:
         reasons.append("pages_release_kind_invalid")
@@ -1321,17 +1335,22 @@ def evaluate_pages_deployment(
             reasons.append("pages_source_only_docs_change_invalid")
     elif matched is None:
         reasons.append("pages_successful_head_missing")
+        if pending is None and failed is not None:
+            reasons.append("pages_workflow_completed_failure")
     if normalized_release_kind == "public" and normalized_paths is not None and "docs/index.html" not in normalized_paths:
         reasons.append("pages_public_release_docs_diff_missing")
     if not re.fullmatch(r"[0-9a-f]{64}", manifest_id):
         reasons.append("pages_manifest_id_invalid")
     if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", issue_date):
         reasons.append("pages_issue_date_invalid")
+    pending_only = pending is not None and set(reasons) == {"pages_successful_head_missing"}
     return {
         "ok": not reasons,
-        "status": "verified" if not reasons else "blocked",
+        "status": "verified" if not reasons else ("pending" if pending_only else "blocked"),
         "reasonCodes": sorted(set(reasons)),
         "workflowRun": matched,
+        "pendingWorkflowRun": pending,
+        "failedWorkflowRun": failed,
         "remoteHead": remote_head,
         "manifestId": manifest_id,
         "issueDate": issue_date,

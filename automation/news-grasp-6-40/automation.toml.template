@@ -20,8 +20,8 @@ News-Graspの日次公開を実行してください。このautomation は監�
 - 目標は45分、SLO は 90 分です。75 分時点で新規 high-cost stage を開始しない。90 分を超えた場合は SLO 超過を記録し、実行可能な public-critical successor がある限り継続します。
 
 実行:
-- 次のcommandを一回だけ起動してください。
-  `C:\\Users\\hidek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -m tools.news_grasp_direct_runtime daily`
+- MCP tool `news_grasp_daily.run_daily` を空のJSON `{}` で正確に一回だけ呼び出してください。
+- shell command、fallback launcher、二回目のtool callは開始しません。toolが返す最終typed resultだけを報告します。
 - runtimeが `static_check` → `scoped_contract_unit` → `current_issue_integration` → `external_publication` → `consumer_public_verification` → `atomic_completion` を所有します。
 - `tools.publish_inventory.scheduled_category_ids(issue_date)` が当日の対象カテゴリ正本です。
 - 開始時seal、same-run復帰、成果物再利用、provider照合、public verifier、direct completion guardはruntimeが判断します。Lunaはrun ID、SHA、manifest ID、個別phase、retry、exact successorを操作しません。

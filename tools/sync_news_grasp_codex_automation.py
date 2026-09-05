@@ -15,6 +15,7 @@ import hashlib
 import json
 import math
 import os
+import re
 import sqlite3
 import stat
 import subprocess
@@ -22,9 +23,11 @@ import sys
 import tempfile
 import time
 import tomllib
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
 
+from .news_grasp_direct_runtime import DAILY_RUNTIME_RELATIVE_PATHS, _windows_local_app_data
 from .news_grasp_title_control import TITLE_PATTERN, TITLE_SUFFIX
 
 
@@ -37,6 +40,40 @@ MAX_AUTOMATION_TOML_BYTES = 96 * 1024
 MAX_SKILL_BYTES = 96 * 1024
 MAX_APP_GLOBAL_STATE_BYTES = 2 * 1024 * 1024
 MAX_PROMOTION_BACKUP_BYTES = 64 * 1024 * 1024
+DAILY_BROKER_PROMOTION_FILES = DAILY_RUNTIME_RELATIVE_PATHS
+DAILY_RUNTIME_ROOT = Path(r"C:\ngstage\News-Grasp-runtime")
+DAILY_PLUGIN_ROOT = Path(r"C:\ngstage\News-Grasp-daily-plugin")
+DAILY_PLUGIN_ID = "news-grasp-daily@news-grasp"
+DAILY_MARKETPLACE_NAME = "news-grasp"
+DAILY_PYTHON312_TOKEN = "${NEWS_GRASP_PYTHON312}"
+TRUSTED_GIT = Path(r"C:\Program Files\Git\cmd\git.exe")
+TRUSTED_CODEX = (
+    _windows_local_app_data()
+    / "OpenAI"
+    / "Codex"
+    / "bin"
+    / "1e3e57cdf0634c02"
+    / "codex.exe"
+)
+TRUSTED_CODEX_SHA256 = "56a84de2b617af6b95b0c5c5d8ae120d3c2fb69008ab330c7e7df3945b98b782"
+DAILY_PLUGIN_RELATIVE_FILES = (
+    ".codex-plugin/plugin.json",
+    ".mcp.json",
+    "server.py",
+)
+DAILY_PLUGIN_GENERATION_RELATIVE_FILES = (
+    ".mcp.json",
+    "server.py",
+)
+DAILY_PLUGIN_DEPLOYMENT_RELATIVE_FILES = (
+    ".agents/plugins/marketplace.json",
+    "plugins/news-grasp-daily/.codex-plugin/plugin.json",
+    "plugins/news-grasp-daily/.mcp.json",
+    "plugins/news-grasp-daily/server.py",
+)
+TRUSTED_NEWS_GRASP_REMOTE_URLS = {
+    "https://github.com/HIDEPON-UMG/News-Grasp.git",
+}
 APP_DB_AUTOMATION_OWNED_COLUMNS = (
     "id",
     "name",
@@ -75,12 +112,12 @@ APP_DB_ROW_HASH_SCHEMA_VERSION = "NEWS_GRASP_CODEX_AUTOMATION_ROW_HASH_V1"
 REQUIRED_PROMPT_PARTS = (
     "$news-grasp-direct-mainline",
     "YY/MM/DD",
-    r"C:\Users\hidek\AppData\Local\Programs\Python\Python312\python.exe -m tools.news_grasp_direct_runtime daily",
+    "news_grasp_daily.run_daily",
+    "空のJSON",
     "title_status",
     "title_status=already_ok",
     "already_ok",
     "post_publish_issue_list",
-    "tools.news_grasp_direct_runtime daily",
     "static_check",
     "scoped_contract_unit",
     "current_issue_integration",
@@ -163,6 +200,725 @@ def _default_installed() -> Path:
 
 def _default_installed_skill() -> Path:
     return Path.home() / ".codex" / "skills" / "news-grasp-direct-mainline" / "SKILL.md"
+
+
+def _daily_broker_promotion_path(installed_path: Path) -> Path:
+    return installed_path.parent / "daily-broker-promotion.json"
+
+
+def _build_daily_broker_promotion(repo_root: Path) -> dict[str, Any]:
+    if not _same_path(repo_root, DAILY_RUNTIME_ROOT):
+        raise ValueError("daily_broker_runtime_root_invalid")
+    creationflags = int(getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    git_env = {
+        key: value for key, value in os.environ.items() if not key.upper().startswith("GIT_")
+    }
+    git_env.update(
+        {
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_TERMINAL_PROMPT": "0",
+        }
+    )
+
+    def probe(*args: str) -> subprocess.CompletedProcess[bytes]:
+        return subprocess.run(
+            [str(TRUSTED_GIT), *args],
+            cwd=repo_root,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            shell=False,
+            check=False,
+            env=git_env,
+            timeout=30,
+            creationflags=creationflags,
+        )
+
+    head_result = probe("rev-parse", "--verify", "HEAD")
+    try:
+        source_head = bytes(head_result.stdout or b"").decode("ascii", errors="strict").strip().casefold()
+    except UnicodeError as exc:
+        raise ValueError("daily_broker_source_head_invalid") from exc
+    if head_result.returncode != 0 or re.fullmatch(r"[0-9a-f]{40}", source_head) is None:
+        raise ValueError("daily_broker_source_head_invalid")
+    status = probe("status", "--porcelain=v1", "--untracked-files=all")
+    if status.returncode != 0 or bytes(status.stdout or b"").strip():
+        raise ValueError("daily_broker_source_tree_not_clean")
+    remote_result = probe("remote", "get-url", "origin")
+    try:
+        remote_url = bytes(remote_result.stdout or b"").decode("utf-8", errors="strict").strip()
+    except UnicodeError as exc:
+        raise ValueError("daily_broker_remote_url_invalid") from exc
+    if remote_result.returncode != 0 or remote_url not in TRUSTED_NEWS_GRASP_REMOTE_URLS:
+        raise ValueError("daily_broker_remote_url_invalid")
+    remote_main = _read_trusted_remote_main(remote_url, cwd=repo_root)
+    if remote_main != source_head:
+        raise ValueError("daily_broker_trusted_remote_head_mismatch")
+    remote_head_result = probe("rev-parse", "--verify", "origin/main")
+    try:
+        remote_head = bytes(remote_head_result.stdout or b"").decode("ascii", errors="strict").strip().casefold()
+    except UnicodeError as exc:
+        raise ValueError("daily_broker_remote_head_invalid") from exc
+    if remote_head_result.returncode != 0 or remote_head != source_head:
+        raise ValueError("daily_broker_remote_head_mismatch")
+    hashes: dict[str, str] = {}
+    for relative in DAILY_BROKER_PROMOTION_FILES:
+        path = repo_root / relative
+        raw = _read_bytes_no_follow(path, limit=2 * 1024 * 1024)
+        tracked = probe("ls-files", "--error-unmatch", "--", relative)
+        if tracked.returncode != 0:
+            raise ValueError(f"daily_broker_source_not_committed:{relative}")
+        hashes[relative] = hashlib.sha256(raw).hexdigest()
+    generation = hashlib.sha256(
+        json.dumps(hashes, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    remote_evidence = {
+        "remoteUrl": remote_url,
+        "remoteRef": "refs/heads/main",
+        "remoteMainSha": remote_main,
+    }
+    return {
+        "schemaVersion": "NEWS_GRASP_DAILY_BROKER_PROMOTION_V1",
+        "repoRoot": str(repo_root),
+        "sourceHead": source_head,
+        "remoteUrl": remote_url,
+        "remoteRef": "refs/heads/main",
+        "remoteMainSha": remote_main,
+        "remoteEvidenceSha256": hashlib.sha256(
+            json.dumps(
+                remote_evidence,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest(),
+        "sourceGeneration": generation,
+        "fileHashes": hashes,
+    }
+
+
+def _assert_daily_promotion_quiescent() -> None:
+    """実行中runのloaded bytesをpromotionで差し替えない。"""
+
+    from .news_grasp_direct_runtime import _canonical_daily_state_root
+
+    database = _canonical_daily_state_root() / "direct-mainline.sqlite3"
+    if not database.is_file():
+        return
+    connection = sqlite3.connect(f"file:{database.as_posix()}?mode=ro", uri=True)
+    try:
+        rows = connection.execute(
+            "SELECT run_id,status,lease_until FROM runs "
+            "WHERE status IN ('active','executing','finalizing')"
+        ).fetchall()
+    except sqlite3.Error as exc:
+        raise ValueError("daily_broker_runtime_state_invalid") from exc
+    finally:
+        connection.close()
+    for row in rows:
+        raise ValueError(f"daily_broker_active_run:{row[0]}:{row[1]}")
+
+
+def _minimal_subprocess_env() -> dict[str, str]:
+    allowed = (
+        "APPDATA",
+        "HOME",
+        "LOCALAPPDATA",
+        "SystemRoot",
+        "TEMP",
+        "TMP",
+        "USERPROFILE",
+        "WINDIR",
+    )
+    env = {key: os.environ[key] for key in allowed if os.environ.get(key)}
+    env["CODEX_HOME"] = str(Path.home() / ".codex")
+    env["NO_COLOR"] = "1"
+    return env
+
+
+def _trusted_codex_executable() -> Path:
+    _assert_no_reparse_chain(TRUSTED_CODEX)
+    if not _is_regular_file_no_reparse(TRUSTED_CODEX):
+        raise ValueError("daily_plugin_codex_executable_missing")
+    raw = _read_bytes_no_follow(TRUSTED_CODEX, limit=384 * 1024 * 1024)
+    if hashlib.sha256(raw).hexdigest() != TRUSTED_CODEX_SHA256:
+        raise ValueError("daily_plugin_codex_executable_untrusted")
+    return TRUSTED_CODEX.resolve(strict=True)
+
+
+def _trusted_python312_executable() -> Path:
+    executable = (
+        _windows_local_app_data()
+        / "Programs"
+        / "Python"
+        / "Python312"
+        / "python.exe"
+    )
+    _assert_no_reparse_chain(executable)
+    if not _is_regular_file_no_reparse(executable):
+        raise ValueError("daily_plugin_python312_executable_missing")
+    return executable.resolve(strict=True)
+
+
+def _render_daily_plugin_mcp(raw: bytes) -> bytes:
+    try:
+        config = json.loads(raw.decode("utf-8", errors="strict"))
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        raise ValueError("daily_plugin_mcp_source_invalid") from exc
+    server = (config.get("mcpServers") or {}).get("news_grasp_daily")
+    if not isinstance(server, dict) or server.get("command") != DAILY_PYTHON312_TOKEN:
+        raise ValueError("daily_plugin_mcp_python_token_invalid")
+    server["command"] = str(_trusted_python312_executable())
+    rendered = json.dumps(config, ensure_ascii=False, indent=2) + "\n"
+    if DAILY_PYTHON312_TOKEN in rendered:
+        raise ValueError("daily_plugin_mcp_python_token_unresolved")
+    return rendered.encode("utf-8")
+
+
+def _expected_daily_plugin_bytes(plugin_root: Path, relative: str) -> bytes:
+    raw = _read_bytes_no_follow(
+        plugin_root / relative,
+        limit=2 * 1024 * 1024,
+    )
+    return _render_daily_plugin_mcp(raw) if relative == ".mcp.json" else raw
+
+
+def _read_trusted_remote_main(remote_url: str, *, cwd: Path) -> str:
+    git_env = {
+        key: value for key, value in os.environ.items() if not key.upper().startswith("GIT_")
+    }
+    git_env.update(
+        {
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_TERMINAL_PROMPT": "0",
+        }
+    )
+    completed = subprocess.run(
+        [
+            str(TRUSTED_GIT),
+            "ls-remote",
+            "--exit-code",
+            remote_url,
+            "refs/heads/main",
+        ],
+        cwd=cwd,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        shell=False,
+        check=False,
+        env=git_env,
+        timeout=60,
+        creationflags=int(getattr(subprocess, "CREATE_NO_WINDOW", 0)),
+    )
+    try:
+        output = bytes(completed.stdout or b"").decode("ascii", errors="strict").strip()
+    except UnicodeError as exc:
+        raise ValueError("daily_broker_trusted_remote_head_invalid") from exc
+    match = re.fullmatch(r"([0-9a-fA-F]{40})\s+refs/heads/main", output)
+    if completed.returncode != 0 or match is None:
+        raise ValueError("daily_broker_trusted_remote_head_invalid")
+    return match.group(1).casefold()
+
+
+def _run_codex_json(*args: str) -> dict[str, Any]:
+    completed = subprocess.run(
+        [str(_trusted_codex_executable()), *args, "--json"],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=False,
+        check=False,
+        env=_minimal_subprocess_env(),
+        timeout=60,
+        creationflags=int(getattr(subprocess, "CREATE_NO_WINDOW", 0)),
+    )
+    if completed.returncode != 0:
+        raise ValueError(f"daily_plugin_cli_red:{':'.join(args)}")
+    try:
+        value = json.loads(bytes(completed.stdout or b"").decode("utf-8", errors="strict"))
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        raise ValueError(f"daily_plugin_cli_receipt_invalid:{':'.join(args)}") from exc
+    if not isinstance(value, dict):
+        raise ValueError(f"daily_plugin_cli_receipt_invalid:{':'.join(args)}")
+    return value
+
+
+def _run_codex_list_json(*args: str) -> list[Any]:
+    completed = subprocess.run(
+        [str(_trusted_codex_executable()), *args, "--json"],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=False,
+        check=False,
+        env=_minimal_subprocess_env(),
+        timeout=60,
+        creationflags=int(getattr(subprocess, "CREATE_NO_WINDOW", 0)),
+    )
+    if completed.returncode != 0:
+        raise ValueError(f"daily_plugin_cli_red:{':'.join(args)}")
+    try:
+        value = json.loads(bytes(completed.stdout or b"").decode("utf-8", errors="strict"))
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        raise ValueError(f"daily_plugin_cli_receipt_invalid:{':'.join(args)}") from exc
+    if not isinstance(value, list):
+        raise ValueError(f"daily_plugin_cli_receipt_invalid:{':'.join(args)}")
+    return value
+
+
+def _plugin_source_generation(plugin_root: Path) -> tuple[str, dict[str, str]]:
+    hashes = {
+        relative: hashlib.sha256(
+            _read_bytes_no_follow(plugin_root / relative, limit=2 * 1024 * 1024)
+        ).hexdigest()
+        for relative in DAILY_PLUGIN_GENERATION_RELATIVE_FILES
+    }
+    manifest = json.loads(
+        _read_text_limited(
+            plugin_root / ".codex-plugin" / "plugin.json",
+            limit=MAX_AUTOMATION_TOML_BYTES,
+        )
+    )
+    if not isinstance(manifest, dict):
+        raise ValueError("daily_plugin_manifest_invalid")
+    manifest_without_version = dict(manifest)
+    manifest_without_version.pop("version", None)
+    hashes[".codex-plugin/plugin.without-version.json"] = hashlib.sha256(
+        json.dumps(
+            manifest_without_version,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    generation = hashlib.sha256(
+        json.dumps(hashes, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    return generation, hashes
+
+
+def _run_registered_mcp_canary(registered_mcp: Mapping[str, Any]) -> list[str]:
+    transport = registered_mcp.get("transport")
+    if not isinstance(transport, Mapping) or transport.get("type") != "stdio":
+        raise ValueError("daily_plugin_registered_transport_invalid")
+    command = str(transport.get("command") or "")
+    arguments = [str(item) for item in transport.get("args") or ()]
+    cwd = Path(str(transport.get("cwd") or "")).resolve(strict=True)
+    request = "".join(
+        json.dumps(item, separators=(",", ":")) + "\n"
+        for item in (
+            {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": {"protocolVersion": "2025-06-18"},
+            },
+            {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}},
+        )
+    )
+    canary = subprocess.run(
+        [command, *arguments],
+        cwd=cwd,
+        env=_minimal_subprocess_env(),
+        input=request.encode("utf-8"),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=False,
+        check=False,
+        timeout=30,
+        creationflags=int(getattr(subprocess, "CREATE_NO_WINDOW", 0)),
+    )
+    try:
+        responses = [
+            json.loads(line)
+            for line in bytes(canary.stdout or b"").decode(
+                "utf-8", errors="strict"
+            ).splitlines()
+            if line.strip()
+        ]
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        raise ValueError("daily_plugin_loaded_canary_invalid") from exc
+    tools = (
+        (responses[1].get("result") or {}).get("tools")
+        if len(responses) > 1
+        else None
+    )
+    if canary.returncode != 0 or not isinstance(tools, list):
+        raise ValueError("daily_plugin_loaded_canary_red")
+    names = [str(item.get("name") or "") for item in tools if isinstance(item, Mapping)]
+    if len(names) != len(tools) or not names:
+        raise ValueError("daily_plugin_loaded_canary_red")
+    return names
+
+
+def _rollback_daily_plugin_activation(receipt: Mapping[str, Any]) -> dict[str, Any]:
+    failures: list[str] = []
+    removed: list[str] = []
+    restored: list[str] = []
+
+    def observe() -> tuple[Any, Any, Any]:
+        marketplaces = _run_codex_json("plugin", "marketplace", "list").get(
+            "marketplaces"
+        )
+        installed = _run_codex_json("plugin", "list").get("installed")
+        mcp_registry = _run_codex_list_json("mcp", "list")
+        if not isinstance(marketplaces, list) or not isinstance(installed, list):
+            raise ValueError("daily_plugin_rollback_registry_invalid")
+        marketplace = next(
+            (
+                item
+                for item in marketplaces
+                if isinstance(item, Mapping)
+                and item.get("name") == DAILY_MARKETPLACE_NAME
+            ),
+            None,
+        )
+        plugin = next(
+            (
+                item
+                for item in installed
+                if isinstance(item, Mapping) and item.get("pluginId") == DAILY_PLUGIN_ID
+            ),
+            None,
+        )
+        registered_mcp = next(
+            (
+                item
+                for item in mcp_registry
+                if isinstance(item, Mapping) and item.get("name") == "news_grasp_daily"
+            ),
+            None,
+        )
+        return marketplace, plugin, registered_mcp
+
+    def plugin_projection(value: Any) -> Any:
+        if not isinstance(value, Mapping):
+            return None
+        return {
+            key: value.get(key)
+            for key in (
+                "pluginId",
+                "marketplaceName",
+                "version",
+                "installed",
+                "enabled",
+                "source",
+            )
+        }
+
+    previous_marketplace = receipt.get("previousMarketplace")
+    previous_plugin = receipt.get("previousPlugin")
+    try:
+        marketplace, plugin, _registered_mcp = observe()
+        if isinstance(previous_marketplace, Mapping) and not isinstance(
+            marketplace, Mapping
+        ):
+            _run_codex_json(
+                "plugin",
+                "marketplace",
+                "add",
+                str(previous_marketplace.get("root") or ""),
+            )
+            restored.append("previous_marketplace")
+            marketplace, plugin, _registered_mcp = observe()
+        if plugin_projection(plugin) != plugin_projection(previous_plugin):
+            if isinstance(plugin, Mapping):
+                _run_codex_json("plugin", "remove", DAILY_PLUGIN_ID)
+                removed.append("plugin")
+            if isinstance(previous_plugin, Mapping):
+                _run_codex_json("plugin", "add", DAILY_PLUGIN_ID)
+                restored.append("previous_plugin")
+            marketplace, plugin, _registered_mcp = observe()
+        if not isinstance(previous_marketplace, Mapping) and isinstance(
+            marketplace, Mapping
+        ):
+            _run_codex_json(
+                "plugin", "marketplace", "remove", DAILY_MARKETPLACE_NAME
+            )
+            removed.append("marketplace")
+
+        marketplace, plugin, registered_mcp = observe()
+        if plugin_projection(plugin) != plugin_projection(previous_plugin):
+            raise ValueError("daily_plugin_rollback_previous_plugin_mismatch")
+        if isinstance(previous_marketplace, Mapping):
+            if not isinstance(marketplace, Mapping) or not _same_path(
+                Path(str(marketplace.get("root") or "")),
+                Path(str(previous_marketplace.get("root") or "")),
+            ):
+                raise ValueError("daily_plugin_rollback_previous_marketplace_mismatch")
+        elif marketplace is not None:
+            raise ValueError("daily_plugin_rollback_marketplace_still_registered")
+        previous_mcp = receipt.get("previousMcpRegistration")
+        if isinstance(previous_mcp, Mapping):
+            if (
+                registered_mcp != previous_mcp
+                or _run_registered_mcp_canary(registered_mcp)
+                != receipt.get("previousToolNames")
+            ):
+                raise ValueError("daily_plugin_rollback_previous_binding_mismatch")
+        elif registered_mcp is not None:
+            raise ValueError("daily_plugin_rollback_mcp_still_registered")
+    except Exception as exc:  # noqa: BLE001 - rollback verification is receipt-bound.
+        failures.append(f"verification:{type(exc).__name__}:{exc}")
+    return {
+        "schemaVersion": "NEWS_GRASP_DAILY_PLUGIN_ROLLBACK_V1",
+        "ok": not failures,
+        "status": "rolled_back" if not failures else "rollback_failed",
+        "removed": removed,
+        "restored": restored,
+        "failures": failures,
+    }
+
+
+def _activate_daily_plugin(
+    repo_root: Path,
+    *,
+    marketplace_root: Path | None = None,
+    force_refresh: bool = False,
+) -> dict[str, Any]:
+    """marketplace、installed source、loaded MCPを同じruntime bytesへ束縛する。"""
+
+    desired_marketplace_root = (marketplace_root or repo_root).resolve(strict=True)
+    source_plugin_root = repo_root / "plugins" / "news-grasp-daily"
+    expected_plugin_root = desired_marketplace_root / "plugins" / "news-grasp-daily"
+    plugin_manifest = json.loads(
+        _read_text_limited(
+            source_plugin_root / ".codex-plugin" / "plugin.json",
+            limit=MAX_AUTOMATION_TOML_BYTES,
+        )
+    )
+    generation, generation_hashes = _plugin_source_generation(source_plugin_root)
+    version = str(plugin_manifest.get("version") or "")
+    version_match = re.fullmatch(
+        r"[0-9]+\.[0-9]+\.[0-9]+\+codex\.([0-9a-f]{16})", version
+    )
+    if version_match is None or version_match.group(1) != generation[:16]:
+        raise ValueError("daily_plugin_version_generation_mismatch")
+    activation: dict[str, Any] = {
+        "marketplaceAdded": False,
+        "marketplaceAddAttempted": False,
+        "pluginAdded": False,
+        "pluginAddAttempted": False,
+        "pluginRemovedForRefresh": False,
+        "pluginRemoveAttempted": False,
+        "previousMarketplace": None,
+        "previousPlugin": None,
+        "previousPluginVersion": "",
+        "previousPluginSource": None,
+        "previousMcpRegistration": None,
+        "previousToolNames": [],
+    }
+    try:
+        marketplaces = _run_codex_json("plugin", "marketplace", "list").get("marketplaces")
+        if not isinstance(marketplaces, list):
+            raise ValueError("daily_plugin_marketplace_list_invalid")
+        marketplace = next(
+            (
+                item
+                for item in marketplaces
+                if isinstance(item, Mapping) and item.get("name") == DAILY_MARKETPLACE_NAME
+            ),
+            None,
+        )
+        activation["previousMarketplace"] = (
+            dict(marketplace) if isinstance(marketplace, Mapping) else None
+        )
+        if marketplace is None:
+            activation["marketplaceAddAttempted"] = True
+            _run_codex_json(
+                "plugin", "marketplace", "add", str(desired_marketplace_root)
+            )
+            activation["marketplaceAdded"] = True
+            marketplaces = _run_codex_json(
+                "plugin", "marketplace", "list"
+            ).get("marketplaces")
+            marketplace = next(
+                (
+                    item
+                    for item in marketplaces or ()
+                    if isinstance(item, Mapping)
+                    and item.get("name") == DAILY_MARKETPLACE_NAME
+                ),
+                None,
+            )
+        if not isinstance(marketplace, Mapping) or not _same_path(
+            Path(str(marketplace.get("root") or "")),
+            desired_marketplace_root,
+        ):
+            raise ValueError("daily_plugin_marketplace_root_invalid")
+
+        installed = _run_codex_json("plugin", "list").get("installed")
+        if not isinstance(installed, list):
+            raise ValueError("daily_plugin_install_list_invalid")
+        plugin = next(
+            (
+                item
+                for item in installed
+                if isinstance(item, Mapping) and item.get("pluginId") == DAILY_PLUGIN_ID
+            ),
+            None,
+        )
+        activation["previousPlugin"] = (
+            dict(plugin) if isinstance(plugin, Mapping) else None
+        )
+        if isinstance(plugin, Mapping):
+            previous_source = plugin.get("source")
+            previous_root = Path(str((previous_source or {}).get("path") or ""))
+            already_current = (
+                plugin.get("installed") is True
+                and plugin.get("enabled") is True
+                and plugin.get("marketplaceName") == DAILY_MARKETPLACE_NAME
+                and plugin.get("version") == version
+                and isinstance(previous_source, Mapping)
+                and previous_source.get("source") == "local"
+                and _same_path(previous_root, expected_plugin_root)
+            )
+            if force_refresh or not already_current:
+                activation["previousPluginVersion"] = str(
+                    plugin.get("version") or ""
+                )
+                activation["previousPluginSource"] = dict(previous_source or {})
+                previous_registry = _run_codex_list_json("mcp", "list")
+                previous_mcp = next(
+                    (
+                        item
+                        for item in previous_registry
+                        if isinstance(item, Mapping)
+                        and item.get("name") == "news_grasp_daily"
+                    ),
+                    None,
+                )
+                if not isinstance(previous_mcp, Mapping):
+                    raise ValueError("daily_plugin_previous_mcp_registration_missing")
+                activation["previousMcpRegistration"] = dict(previous_mcp)
+                activation["previousToolNames"] = _run_registered_mcp_canary(
+                    previous_mcp
+                )
+                activation["pluginRemoveAttempted"] = True
+                _run_codex_json("plugin", "remove", DAILY_PLUGIN_ID)
+                activation["pluginRemovedForRefresh"] = True
+                plugin = None
+        if plugin is None:
+            activation["pluginAddAttempted"] = True
+            _run_codex_json("plugin", "add", DAILY_PLUGIN_ID)
+            activation["pluginAdded"] = True
+            installed = _run_codex_json("plugin", "list").get("installed")
+            plugin = next(
+                (
+                    item
+                    for item in installed or ()
+                    if isinstance(item, Mapping) and item.get("pluginId") == DAILY_PLUGIN_ID
+                ),
+                None,
+            )
+
+        source = plugin.get("source") if isinstance(plugin, Mapping) else None
+        plugin_root = Path(str((source or {}).get("path") or ""))
+        if (
+            not isinstance(plugin, Mapping)
+            or plugin.get("installed") is not True
+            or plugin.get("enabled") is not True
+            or plugin.get("marketplaceName") != DAILY_MARKETPLACE_NAME
+            or plugin.get("version") != version
+            or not isinstance(source, Mapping)
+            or source.get("source") != "local"
+            or not _same_path(plugin_root, expected_plugin_root)
+        ):
+            raise ValueError("daily_plugin_install_binding_invalid")
+
+        hashes: dict[str, str] = {}
+        for relative in DAILY_PLUGIN_RELATIVE_FILES:
+            expected_bytes = _expected_daily_plugin_bytes(source_plugin_root, relative)
+            installed_bytes = _read_bytes_no_follow(
+                plugin_root / relative, limit=2 * 1024 * 1024
+            )
+            if installed_bytes != expected_bytes:
+                raise ValueError(f"daily_plugin_installed_source_drift:{relative}")
+            hashes[relative] = hashlib.sha256(installed_bytes).hexdigest()
+
+        config = json.loads(
+            _read_text_limited(plugin_root / ".mcp.json", limit=MAX_AUTOMATION_TOML_BYTES)
+        )
+        server = (config.get("mcpServers") or {}).get("news_grasp_daily")
+        if not isinstance(server, Mapping):
+            raise ValueError("daily_plugin_mcp_config_invalid")
+        expected_command = str(server.get("command") or "")
+        expected_arguments = [str(item) for item in server.get("args") or ()]
+        expected_cwd_raw = str(server.get("cwd") or "")
+        expected_cwd = (plugin_root / expected_cwd_raw).resolve(strict=True)
+        expected_env_vars = [str(item) for item in server.get("env_vars") or ()]
+
+        mcp_registry = _run_codex_list_json("mcp", "list")
+        registered_mcp = next(
+            (
+                item
+                for item in mcp_registry
+                if isinstance(item, Mapping) and item.get("name") == "news_grasp_daily"
+            ),
+            None,
+        )
+        transport = (
+            registered_mcp.get("transport")
+            if isinstance(registered_mcp, Mapping)
+            else None
+        )
+        registered_command = str((transport or {}).get("command") or "")
+        registered_arguments = [str(item) for item in (transport or {}).get("args") or ()]
+        registered_cwd_raw = str((transport or {}).get("cwd") or "")
+        try:
+            registered_cwd = Path(registered_cwd_raw).resolve(strict=True)
+        except (OSError, ValueError):
+            registered_cwd = Path()
+        if (
+            not isinstance(registered_mcp, Mapping)
+            or registered_mcp.get("enabled") is not True
+            or not isinstance(transport, Mapping)
+            or transport.get("type") != "stdio"
+            or not _same_path(Path(registered_command), Path(expected_command))
+            or registered_arguments != expected_arguments
+            or not _same_path(registered_cwd, expected_cwd)
+            or transport.get("env") not in (None, {})
+            or [str(item) for item in registered_mcp.get("env_vars") or ()]
+            != expected_env_vars
+        ):
+            raise ValueError("daily_plugin_host_registry_transport_mismatch")
+        tool_names = _run_registered_mcp_canary(registered_mcp)
+        if tool_names != ["run_daily"]:
+            raise ValueError("daily_plugin_loaded_canary_red")
+        return {
+            "schemaVersion": "NEWS_GRASP_DAILY_PLUGIN_ACTIVATION_V1",
+            "ok": True,
+            "status": "registered_and_canary_loaded",
+            "pluginId": DAILY_PLUGIN_ID,
+            "version": version,
+            "marketplaceRoot": str(desired_marketplace_root),
+            "installedRoot": str(plugin_root.resolve(strict=True)),
+            "fileHashes": hashes,
+            "sourceGeneration": generation,
+            "generationFileHashes": generation_hashes,
+            "hostRegistryMcp": "news_grasp_daily",
+            "hostRegistryTransport": {
+                "command": registered_command,
+                "args": registered_arguments,
+                "cwd": str(registered_cwd),
+                "env": transport.get("env"),
+                "env_vars": expected_env_vars,
+            },
+            "toolNames": tool_names,
+            **activation,
+        }
+    except Exception as exc:
+        return {
+            "schemaVersion": "NEWS_GRASP_DAILY_PLUGIN_ACTIVATION_V1",
+            "ok": False,
+            "status": "activation_failed",
+            "pluginId": DAILY_PLUGIN_ID,
+            "marketplaceRoot": str(desired_marketplace_root),
+            "failures": [f"{type(exc).__name__}:{exc}"],
+            **activation,
+        }
 
 
 def _default_app_db() -> Path:
@@ -363,6 +1119,7 @@ def _approved_roots(repo_root: Path) -> tuple[Path, ...]:
         repo_root,
         repo_root.parent / "AIHarnessState",
         CANONICAL_NEWS_GRASP_REPO_ROOT.parent / "AIHarnessState",
+        DAILY_PLUGIN_ROOT,
         Path.home() / ".codex",
         Path(tempfile.gettempdir()),
     )
@@ -1664,7 +2421,7 @@ def sync_app_db(
         }
 
     try:
-        repo_root = _assert_trusted_repo_root(repo_root)
+        repo_root = _assert_trusted_repo_root(repo_root, read_only=dry_run)
         app_db_path = _assert_role_path(
             app_db_path,
             repo_root=repo_root,
@@ -1679,7 +2436,17 @@ def sync_app_db(
         )
         app_db_path_display = str(app_db_path)
         with _existing_file_guard(app_db_path, require_exists=True):
-            conn = sqlite3.connect(str(app_db_path), timeout=5, isolation_level=None)
+            if dry_run:
+                conn = sqlite3.connect(
+                    f"file:{app_db_path.as_posix()}?mode=ro",
+                    uri=True,
+                    timeout=5,
+                    isolation_level=None,
+                )
+            else:
+                conn = sqlite3.connect(
+                    str(app_db_path), timeout=5, isolation_level=None
+                )
             conn.row_factory = sqlite3.Row
             conn.execute("pragma busy_timeout = 5000")
             if not dry_run:
@@ -1817,7 +2584,7 @@ def sync_app_db(
     return result
 
 
-def sync(
+def _sync_unlocked(
     *,
     repo_root: Path | None = None,
     template_path: Path | None = None,
@@ -1845,7 +2612,10 @@ def sync(
     if any(custom_path_args.values()) and not allow_custom_paths:
         return _custom_path_error(custom_path_args)
 
-    repo = _assert_trusted_repo_root(repo_root or _default_repo_root())
+    repo = _assert_trusted_repo_root(
+        repo_root or _default_repo_root(),
+        read_only=dry_run,
+    )
     template = _assert_role_path(
         template_path or _default_template(repo),
         repo_root=repo,
@@ -1924,6 +2694,116 @@ def sync(
                 rollback_receipt = _rollback_promotion_targets([*promoted_targets, target])
             promotion_failures.append(f"{target.get('kind', 'target')}:{type(exc).__name__}:{exc}")
             return False
+
+    broker_promotion_result: dict[str, Any] | None = None
+    plugin_activation_result: dict[str, Any] | None = None
+    plugin_rollback_result: dict[str, Any] | None = None
+    if promote and not dry_run and not allow_custom_paths:
+        broker_path = _daily_broker_promotion_path(installed)
+        try:
+            _assert_daily_promotion_quiescent()
+            _assert_no_reparse_chain(broker_path.parent)
+            broker_receipt = _build_daily_broker_promotion(repo)
+            broker_text = json.dumps(
+                broker_receipt,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ) + "\n"
+            target = _capture_promotion_target(
+                broker_path,
+                kind="daily_broker_promotion",
+            )
+            promotion_targets.append(target)
+            explicit_promote(target, broker_text)
+            if promotion_failures:
+                raise ValueError("daily_broker_promotion_red")
+            observed = json.loads(
+                _read_text_limited(broker_path, limit=MAX_AUTOMATION_TOML_BYTES)
+            )
+            if observed != broker_receipt:
+                raise ValueError("daily_broker_promotion_postimage_mismatch")
+            broker_promotion_result = {
+                "ok": True,
+                "status": "promoted",
+                "path": str(broker_path),
+                "sourceHead": broker_receipt["sourceHead"],
+                "sourceGeneration": broker_receipt["sourceGeneration"],
+            }
+            for relative in DAILY_PLUGIN_DEPLOYMENT_RELATIVE_FILES:
+                source_path = repo / relative
+                target_path = _assert_approved_path(
+                    DAILY_PLUGIN_ROOT / relative,
+                    repo_root=repo,
+                    label="daily_plugin_deployment",
+                )
+                source_bytes = _read_bytes_no_follow(
+                    source_path, limit=2 * 1024 * 1024
+                )
+                if relative == "plugins/news-grasp-daily/.mcp.json":
+                    source_bytes = _render_daily_plugin_mcp(source_bytes)
+                try:
+                    source_text = source_bytes.decode("utf-8", errors="strict")
+                except UnicodeError as exc:
+                    raise ValueError(
+                        f"daily_plugin_source_encoding_invalid:{relative}"
+                    ) from exc
+                target = _capture_promotion_target(
+                    target_path,
+                    kind=f"daily_plugin:{relative}",
+                )
+                promotion_targets.append(target)
+                explicit_promote(target, source_text)
+                if promotion_failures:
+                    raise ValueError("daily_plugin_deployment_red")
+                installed_bytes = _read_bytes_no_follow(
+                    target_path, limit=2 * 1024 * 1024
+                )
+                if installed_bytes != source_bytes:
+                    raise ValueError(
+                        f"daily_plugin_deployment_postimage_mismatch:{relative}"
+                    )
+            plugin_activation_result = _activate_daily_plugin(
+                repo,
+                marketplace_root=DAILY_PLUGIN_ROOT,
+                force_refresh=True,
+            )
+            if plugin_activation_result.get("ok") is not True:
+                raise ValueError("daily_plugin_activation_red")
+        except Exception as exc:  # noqa: BLE001 - promotion rollback is receipt-bound.
+            promotion_failures.append(
+                f"daily_broker_activation:{type(exc).__name__}:{exc}"
+            )
+            if promoted_targets:
+                rollback_receipt = _rollback_promotion_targets(promoted_targets)
+            if (
+                isinstance(plugin_activation_result, Mapping)
+                and any(
+                    plugin_activation_result.get(marker) is True
+                    for marker in (
+                        "pluginAdded",
+                        "pluginAddAttempted",
+                        "pluginRemovedForRefresh",
+                        "pluginRemoveAttempted",
+                        "marketplaceAdded",
+                        "marketplaceAddAttempted",
+                    )
+                )
+            ):
+                plugin_rollback_result = _rollback_daily_plugin_activation(
+                    plugin_activation_result
+                )
+            broker_promotion_result = {
+                "ok": False,
+                "status": "failed",
+                "failures": [f"{type(exc).__name__}:{exc}"],
+            }
+            if plugin_activation_result is None:
+                plugin_activation_result = {
+                    "ok": False,
+                    "status": "failed",
+                    "failures": [f"{type(exc).__name__}:{exc}"],
+                }
 
     snapshot_results: list[dict[str, Any]] = []
     if not dry_run:
@@ -2007,6 +2887,20 @@ def sync(
             "changed": False,
             "failures": ["promotion_aborted_after_failure"],
         }
+    if (
+        promotion_failures
+        and plugin_rollback_result is None
+        and isinstance(plugin_activation_result, Mapping)
+        and plugin_activation_result.get("ok") is True
+    ):
+        plugin_rollback_result = _rollback_daily_plugin_activation(
+            plugin_activation_result
+        )
+        if plugin_rollback_result.get("ok") is not True:
+            promotion_failures.extend(
+                f"daily_plugin_rollback:{failure}"
+                for failure in plugin_rollback_result.get("failures") or ()
+            )
     if dry_run:
         installed_result = _validate_loaded_automation(
             tomllib.loads(rendered),
@@ -2083,6 +2977,15 @@ def sync(
             and all(item.get("ok") is True for item in snapshot_results)
             and (skill_result is None or skill_result.get("ok") is True)
             and (app_db_result is None or app_db_result.get("ok") is True)
+            and (broker_promotion_result is None or broker_promotion_result.get("ok") is True)
+            and (
+                not (promote and not dry_run and not allow_custom_paths)
+                or (
+                    isinstance(plugin_activation_result, Mapping)
+                    and plugin_activation_result.get("ok") is True
+                )
+            )
+            and not promotion_failures
         ),
         "dry_run": dry_run,
         "changed": changed,
@@ -2094,6 +2997,9 @@ def sync(
         "installed": installed_result,
         "skill": skill_result,
         "app_db": app_db_result,
+        "daily_broker_promotion": broker_promotion_result,
+        "daily_plugin_activation": plugin_activation_result,
+        "daily_plugin_rollback": plugin_rollback_result,
         "snapshot": snapshot_result,
         "snapshots": snapshot_results,
         "promotionReceipt": promotion_result,
@@ -2101,6 +3007,60 @@ def sync(
         "rollbackReceipt": rollback_receipt,
         "rollback_receipt": rollback_receipt,
     }
+
+
+def sync(
+    *,
+    repo_root: Path | None = None,
+    template_path: Path | None = None,
+    installed_path: Path | None = None,
+    snapshot_path: Path | None = None,
+    source_skill_path: Path | None = None,
+    installed_skill_path: Path | None = None,
+    app_db_path: Path | None = None,
+    write_snapshot: bool = False,
+    write_skill: bool = False,
+    write_app_db: bool = False,
+    dry_run: bool = False,
+    promote: bool = False,
+    allow_custom_paths: bool = False,
+) -> dict[str, Any]:
+    arguments = {
+        "repo_root": repo_root,
+        "template_path": template_path,
+        "installed_path": installed_path,
+        "snapshot_path": snapshot_path,
+        "source_skill_path": source_skill_path,
+        "installed_skill_path": installed_skill_path,
+        "app_db_path": app_db_path,
+        "write_snapshot": write_snapshot,
+        "write_skill": write_skill,
+        "write_app_db": write_app_db,
+        "dry_run": dry_run,
+        "promote": promote,
+        "allow_custom_paths": allow_custom_paths,
+    }
+    if not (promote and not dry_run and not allow_custom_paths):
+        return _sync_unlocked(**arguments)
+    from .news_grasp_direct_runtime import daily_process_mutex
+
+    try:
+        with daily_process_mutex(timeout_ms=0):
+            return _sync_unlocked(**arguments)
+    except RuntimeError as exc:
+        if str(exc) != "daily_process_mutex_busy":
+            raise
+        return {
+            "schemaVersion": "NEWS_GRASP_CODEX_AUTOMATION_SYNC_V1",
+            "ok": False,
+            "status": "promotion_deferred",
+            "dry_run": False,
+            "changed": False,
+            "failures": ["daily_process_mutex_busy"],
+            "exact_successor": "retry_promotion_after_current_writer_process_exit",
+            "promotionReceipt": None,
+            "rollbackReceipt": None,
+        }
 
 
 def _main(argv: list[str] | None = None) -> int:

@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "News-Grasp daily reporter shard output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["issue_date", "reporters"],
+  "properties": {
+    "issue_date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+    "reporters": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["category", "issue_date", "records", "digest_markdown", "search_audit"],
+        "properties": {
+          "category": {"type": "string", "enum": ["fx", "ai", "it", "mobility", "manufacturing", "economy", "game"]},
+          "issue_date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+          "records": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 5,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["date", "genre", "title", "title_ja", "url", "source", "thumb", "summary", "bullets", "published_date", "date_evidence_source", "seen_at"],
+              "properties": {
+                "date": {"type": "string"},
+                "genre": {"type": "string"},
+                "title": {"type": "string", "minLength": 1},
+                "title_ja": {"type": "string", "minLength": 1},
+                "url": {"type": "string", "pattern": "^https?://"},
+                "source": {"type": "string", "minLength": 1},
+                "thumb": {"type": "string", "pattern": "^https?://"},
+                "summary": {"type": "string", "minLength": 40},
+                "bullets": {"type": "array", "minItems": 3, "items": {"type": "string", "minLength": 1}},
+                "published_date": {"type": "string"},
+                "date_evidence_source": {"type": "string", "minLength": 1},
+                "seen_at": {"type": "string", "minLength": 1}
+              }
+            }
+          },
+          "digest_markdown": {"type": "string", "minLength": 200},
+          "search_audit": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["queries", "raw_results_total", "candidates_total", "selected_total"],
+            "properties": {
+              "queries": {"type": "array", "items": {"type": "string"}},
+              "raw_results_total": {"type": "integer"},
+              "candidates_total": {"type": "integer"},
+              "selected_total": {"type": "integer"}
+            }
+          }
+        }
+      }
+    }
+  }
+}

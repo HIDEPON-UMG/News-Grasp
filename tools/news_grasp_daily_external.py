@@ -32,6 +32,11 @@ from tools.news_grasp_production_adapters import (
     PRODUCTION_RECONCILERS as _FIXED_PRODUCTION_RECONCILERS,
     record_external_provider_binding as _record_external_provider_binding,
 )
+from tools.news_grasp_trusted_process import (
+    TrustedProcessError,
+    sanitized_git_environment,
+    trusted_git_executable,
+)
 
 
 EXTERNAL_PUBLICATION_RECEIPT_SCHEMA = "NEWS_GRASP_EXTERNAL_PUBLICATION_RECEIPT_V1"
@@ -510,12 +515,13 @@ def _sealed_identity(
         return None, None, "publish_seal_bundle_id_invalid"
     if sealed_run_id not in {"", candidate_run_id}:
         return None, None, "publish_seal_run_id_mismatch"
-    if sealed_fence is not _MISSING:
-        try:
-            if int(sealed_fence) != candidate_fence:
-                return None, None, "publish_seal_fencing_token_mismatch"
-        except (TypeError, ValueError):
-            return None, None, "publish_seal_fencing_token_invalid"
+    if (
+        sealed_fence is _MISSING
+        or isinstance(sealed_fence, bool)
+        or not isinstance(sealed_fence, int)
+        or not 0 < sealed_fence <= candidate_fence
+    ):
+        return None, None, "publish_seal_fencing_token_invalid"
     if row["manifest_id"] != manifest_id:
         return None, None, "run_manifest_id_mismatch"
     if not isinstance(external_ids_value, (list, tuple)) or isinstance(
@@ -668,23 +674,27 @@ def _verify_sealed_release_files(
         return "external_repo_root_invalid"
     release_sha = str(identity.get("release_commit_sha") or "")
     try:
+        git = str(trusted_git_executable())
+        git_env = sanitized_git_environment()
         head = subprocess.run(
-            ["git", "rev-parse", "HEAD"], cwd=str(root), stdin=subprocess.DEVNULL,
+            [git, "rev-parse", "HEAD"], cwd=str(root), stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="strict",
-            timeout=15, check=False, shell=False, creationflags=int(getattr(subprocess, "CREATE_NO_WINDOW", 0)),
+            timeout=15, check=False, shell=False, env=git_env,
+            creationflags=int(getattr(subprocess, "CREATE_NO_WINDOW", 0)),
         )
-    except (OSError, UnicodeError, subprocess.SubprocessError):
+    except (OSError, UnicodeError, TrustedProcessError, subprocess.SubprocessError):
         return "external_release_commit_unobservable"
     if head.returncode != 0 or head.stdout.strip().casefold() != release_sha:
         return "external_release_commit_drift"
     try:
         status = subprocess.run(
             [
-                "git", "-c", "core.quotepath=false", "status",
+                git, "-c", "core.quotepath=false", "status",
                 "--porcelain=v1", "-z", "--untracked-files=all",
             ],
             cwd=str(root), stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE, timeout=30, check=False, shell=False,
+            env=git_env,
             creationflags=int(getattr(subprocess, "CREATE_NO_WINDOW", 0)),
         )
     except (OSError, subprocess.SubprocessError):
@@ -705,8 +715,9 @@ def _verify_sealed_release_files(
         if worktree_hash != expected:
             return f"external_release_worktree_drift:{relative}"
         committed = subprocess.run(
-            ["git", "show", f"{release_sha}:{relative}"], cwd=str(root), stdin=subprocess.DEVNULL,
+            [git, "show", f"{release_sha}:{relative}"], cwd=str(root), stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30, check=False, shell=False,
+            env=git_env,
             creationflags=int(getattr(subprocess, "CREATE_NO_WINDOW", 0)),
         )
         if committed.returncode != 0 or hashlib.sha256(committed.stdout).hexdigest() != expected:
@@ -745,31 +756,43 @@ def _verify_remote_cas_before_side_effects(
 
     try:
         root = Path(os.path.abspath(os.fspath(_first(context, "repo_root", "repoRoot", default="")))).resolve(strict=True)
+        git = str(trusted_git_executable())
+        git_env = sanitized_git_environment()
         branch = subprocess.run(
-            ["git", "symbolic-ref", "-q", "HEAD"], cwd=str(root), stdin=subprocess.DEVNULL,
+            [git, "symbolic-ref", "-q", "HEAD"], cwd=str(root), stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="strict",
-            timeout=15, check=False, shell=False, creationflags=int(getattr(subprocess, "CREATE_NO_WINDOW", 0)),
+            timeout=15, check=False, shell=False, env=git_env,
+            creationflags=int(getattr(subprocess, "CREATE_NO_WINDOW", 0)),
         )
         if branch.returncode == 0 and branch.stdout.strip() != "refs/heads/main":
             return "external_main_branch_required"
         head = subprocess.run(
-            ["git", "rev-parse", "--verify", "HEAD"], cwd=str(root), stdin=subprocess.DEVNULL,
+            [git, "rev-parse", "--verify", "HEAD"], cwd=str(root), stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="strict",
-            timeout=15, check=False, shell=False, creationflags=int(getattr(subprocess, "CREATE_NO_WINDOW", 0)),
+            timeout=15, check=False, shell=False, env=git_env,
+            creationflags=int(getattr(subprocess, "CREATE_NO_WINDOW", 0)),
         )
         release_sha = str(identity.get("release_commit_sha") or "")
         parent = subprocess.run(
-            ["git", "rev-parse", f"{release_sha}^"], cwd=str(root), stdin=subprocess.DEVNULL,
+            [git, "rev-parse", f"{release_sha}^"], cwd=str(root), stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="strict",
-            timeout=15, check=False, shell=False, creationflags=int(getattr(subprocess, "CREATE_NO_WINDOW", 0)),
-        )
-        remote = subprocess.run(
-            ["git", "ls-remote", "--exit-code", "--end-of-options", "origin", "refs/heads/main"],
-            cwd=str(root), stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            text=True, encoding="utf-8", errors="strict", timeout=30, check=False, shell=False,
+            timeout=15, check=False, shell=False, env=git_env,
             creationflags=int(getattr(subprocess, "CREATE_NO_WINDOW", 0)),
         )
-    except (OSError, UnicodeError, ValueError, subprocess.SubprocessError):
+        remote = subprocess.run(
+            [git, "ls-remote", "--exit-code", "--end-of-options", "origin", "refs/heads/main"],
+            cwd=str(root), stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            text=True, encoding="utf-8", errors="strict", timeout=30, check=False, shell=False,
+            env=git_env,
+            creationflags=int(getattr(subprocess, "CREATE_NO_WINDOW", 0)),
+        )
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TrustedProcessError,
+        subprocess.SubprocessError,
+    ):
         return "external_remote_cas_unobservable"
     start_seal = _mapping(_first(context, "start_seal", "startSeal", default={})) or {}
     remote_base = str(_first(start_seal, "remoteBaseSha", "remote_base_sha", default="") or "").casefold()
@@ -1330,6 +1353,7 @@ def execute_external_publication(
     adapters: Mapping[str, Callable[..., Mapping[str, Any]]] | None = None,
     reconcilers: Mapping[str, Callable[..., Mapping[str, Any]]] | None = None,
     context: Mapping[str, Any] | None = None,
+    allow_provider_send: bool = True,
 ) -> dict[str, Any]:
     """sealed external outbox を一回だけ順序実行する。
 
@@ -1495,7 +1519,7 @@ def execute_external_publication(
                 f"external_outbox_status_invalid:{spec.operation_id}",
                 **dict(identity),
             )
-        if row is None or row["status"] == "reserved":
+        if allow_provider_send and (row is None or row["status"] == "reserved"):
             _adapter, adapter_failure = _adapter_for(
                 store=store,
                 adapters=adapters,
@@ -1579,6 +1603,20 @@ def execute_external_publication(
                 f"external_outbox_status_invalid:{spec.operation_id}",
                 operations=operation_rows,
                 **dict(identity),
+            )
+
+        if not allow_provider_send:
+            return _reconcile(
+                f"external_provider_send_frozen:{spec.operation_id}",
+                operation_id=spec.operation_id,
+                operations=operation_rows
+                + [_operation_row(spec=spec, row=current, adapter_called=False, idempotent=False)],
+                run_id=str(identity["run_id"]),
+                manifest_id=str(identity["manifest_id"]),
+                bundle_id=str(identity["bundle_id"]),
+                fencing_token=int(identity["fencing_token"]),
+                adapter_call_count=adapter_call_count,
+                provider_ack_unknown_ids=provider_ack_unknown_ids,
             )
 
         # 依存 operation が completed であることを、adapter 呼出し前に確認する。

@@ -26,12 +26,14 @@ def test_legacy_runner_entrypoints_remain_tombstoned() -> None:
 
 
 def test_daily_automation_points_to_direct_mainline_without_runner_command() -> None:
-    """06:00 automation prompt は direct skill/runtime を使い、runner実行へ戻らない。"""
+    """06:00 automation prompt は単一MCPを使い、runnerやshellへ戻らない。"""
 
     text = AUTOMATION_TEMPLATE.read_text(encoding="utf-8-sig")
 
     assert "$news-grasp-direct-mainline" in text
-    assert text.count("Python312\\\\python.exe -m tools.news_grasp_direct_runtime daily") == 1
+    assert text.count("news_grasp_daily.run_daily") == 1
+    assert "空のJSON `{}`" in text
+    assert "shell command、fallback launcher、二回目のtool callは開始しません" in text
     for operation in (
         "static_check",
         "scoped_contract_unit",
@@ -43,6 +45,7 @@ def test_daily_automation_points_to_direct_mainline_without_runner_command() -> 
         assert operation in text
         assert f"tools.news_grasp_daily_gate {operation}" not in text
     assert "python -m tools.news_grasp_direct_runtime start" not in text
+    assert "tools.news_grasp_direct_runtime daily" not in text
     assert "direct completion guard" in text
     assert "news-grasp-runner.ps1" not in text
     assert "news_grasp_runner.py" not in text

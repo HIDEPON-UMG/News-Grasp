@@ -1,0 +1,22 @@
+{
+  "name": "news-grasp-daily",
+  "version": "0.1.0+codex.fbefe04aae086b0d",
+  "description": "News-Grasp daily batch single typed entrypoint",
+  "author": {
+    "name": "Local developer"
+  },
+  "interface": {
+    "displayName": "News Grasp Daily",
+    "shortDescription": "Run the daily batch through one typed tool.",
+    "longDescription": "Exposes one run_daily tool backed by the installed News-Grasp direct runtime.",
+    "developerName": "Local developer",
+    "category": "Productivity",
+    "capabilities": [
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Run today's News-Grasp daily batch."
+    ]
+  },
+  "mcpServers": "./.mcp.json"
+}

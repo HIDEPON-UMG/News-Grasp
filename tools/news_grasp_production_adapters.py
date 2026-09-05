@@ -29,6 +29,13 @@ from types import MappingProxyType
 from typing import Any
 from urllib.parse import urljoin, urlsplit
 
+from tools.news_grasp_trusted_process import (
+    TrustedProcessError,
+    sanitized_git_environment,
+    trusted_gh_executable,
+    trusted_git_executable,
+)
+
 
 EXTERNAL_ADAPTER_RECEIPT_SCHEMA = "NEWS_GRASP_EXTERNAL_ADAPTER_RECEIPT_V1"
 PROTECTED_RELEASE = "2026-09-02"
@@ -966,7 +973,7 @@ def _run_git(root: Path, args: list[str], *, timeout: float = 30.0) -> tuple[int
 
     try:
         completed = subprocess.run(
-            ["git", *args],
+            [str(trusted_git_executable()), *args],
             cwd=str(root),
             capture_output=True,
             text=True,
@@ -975,9 +982,10 @@ def _run_git(root: Path, args: list[str], *, timeout: float = 30.0) -> tuple[int
             timeout=timeout,
             check=False,
             shell=False,
+            env=sanitized_git_environment(),
             creationflags=int(getattr(subprocess, "CREATE_NO_WINDOW", 0)),
         )
-    except (OSError, subprocess.TimeoutExpired) as exc:
+    except (OSError, TrustedProcessError, subprocess.TimeoutExpired) as exc:
         raise ProductionAdapterError(f"production_adapter_git_observation_failed:{type(exc).__name__}") from exc
     return int(completed.returncode), str(completed.stdout or ""), str(completed.stderr or "")
 
@@ -1811,7 +1819,7 @@ def _completion_attestation_publish(
         from tools.tts import proc
 
         view = proc.quiet_run(
-            ["gh", "release", "view", "audio-daily", "--json", "tagName"],
+            [str(trusted_gh_executable()), "release", "view", "audio-daily", "--json", "tagName"],
             check=False,
             timeout=120,
         )
@@ -1824,7 +1832,7 @@ def _completion_attestation_publish(
                 target.write_bytes(asset_raw)
                 targets.append(str(target))
             proc.quiet_run(
-                ["gh", "release", "upload", "audio-daily", *targets],
+                [str(trusted_gh_executable()), "release", "upload", "audio-daily", *targets],
                 timeout=120,
             )
     for item in distribution_assets:

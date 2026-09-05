@@ -268,6 +268,7 @@ def _execute(
     context: dict[str, Any] | None = None,
     run_id: str | None = None,
     fencing_token: int | None = None,
+    allow_provider_send: bool = True,
 ) -> dict[str, Any]:
     return external.execute_external_publication(
         store=bound.store,
@@ -276,7 +277,23 @@ def _execute(
         fencing_token=bound.fencing_token if fencing_token is None else fencing_token,
         adapters=adapters,
         context=bound.context if context is None else context,
+        allow_provider_send=allow_provider_send,
     )
+
+
+def test_slo_freeze_reconciles_reserved_external_work_without_provider_call(
+    tmp_path: Path,
+) -> None:
+    bound = _bind_run(tmp_path)
+
+    result = _execute(bound, adapters={}, allow_provider_send=False)
+
+    assert result["ok"] is False
+    assert result["status"] == "reconcile_required"
+    assert result["adapter_call_count"] == 0
+    assert result["failures"] == [
+        f"external_provider_send_frozen:{external.EXTERNAL_OPERATION_ORDER[0]}"
+    ]
 
 
 def test_production_adapter_unregistered_red_precedes_reserve_and_preserves_db(
@@ -687,6 +704,84 @@ def test_dependency_order_violation_in_publish_seal_is_rejected_before_outbox(tm
     assert result["status"] == "red"
     assert result["failures"] == ["publish_seal_external_operation_ids_mismatch"]
     assert _db_snapshot(bound.store) == before
+    with bound.store.connect() as conn:
+        assert conn.execute("SELECT COUNT(*) FROM external_outbox").fetchone()[0] == 0
+
+
+def test_takeover_reuses_prior_publish_seal_and_reserves_with_current_fence(
+    tmp_path: Path,
+) -> None:
+    bound = _bind_run(tmp_path)
+    current_fence = bound.fencing_token + 1
+    current_lease = "takeover-writer-lease"
+    with bound.store.connect() as conn:
+        conn.execute(
+            "UPDATE runs SET writer_lease=?,fencing_token=? WHERE run_id=?",
+            (current_lease, current_fence, bound.run_id),
+        )
+        conn.commit()
+    context = {**bound.context, "fencing_token": current_fence}
+    recovered = _BoundRun(
+        store=bound.store,
+        cwd=bound.cwd,
+        run_id=bound.run_id,
+        writer_lease=current_lease,
+        fencing_token=current_fence,
+        manifest_id=bound.manifest_id,
+        bundle_id=bound.bundle_id,
+        context=context,
+    )
+    adapters, spies = _adapters()
+
+    result = _execute(recovered, adapters=adapters)
+
+    assert result["ok"] is True
+    assert result["status"] == "completed"
+    assert all(len(spy.calls) == 1 for spy in spies.values())
+    with bound.store.connect() as conn:
+        seals = json.loads(
+            str(
+                conn.execute(
+                    "SELECT publish_seal_json FROM runs WHERE run_id=?",
+                    (bound.run_id,),
+                ).fetchone()[0]
+            )
+        )
+        outbox_fences = {
+            int(row[0])
+            for row in conn.execute(
+                "SELECT fencing_token FROM external_outbox WHERE run_id=?",
+                (bound.run_id,),
+            ).fetchall()
+        }
+    assert seals["fencingToken"] == bound.fencing_token
+    assert outbox_fences == {current_fence}
+
+
+def test_publish_seal_without_fencing_token_is_red_before_outbox(
+    tmp_path: Path,
+) -> None:
+    bound = _bind_run(tmp_path)
+    with bound.store.connect() as conn:
+        seal = json.loads(
+            str(
+                conn.execute(
+                    "SELECT publish_seal_json FROM runs WHERE run_id=?",
+                    (bound.run_id,),
+                ).fetchone()[0]
+            )
+        )
+        seal.pop("fencingToken")
+        conn.execute(
+            "UPDATE runs SET publish_seal_json=? WHERE run_id=?",
+            (json.dumps(seal, sort_keys=True, separators=(",", ":")), bound.run_id),
+        )
+        conn.commit()
+
+    result = _execute(bound, adapters={})
+
+    assert result["ok"] is False
+    assert result["failures"] == ["publish_seal_fencing_token_invalid"]
     with bound.store.connect() as conn:
         assert conn.execute("SELECT COUNT(*) FROM external_outbox").fetchone()[0] == 0
 
