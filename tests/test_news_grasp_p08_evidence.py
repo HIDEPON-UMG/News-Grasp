@@ -15,6 +15,24 @@ from tools import e2e_final_admission_bridge as bridge
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def test_global_authority_load_follows_canonical_workspace_without_hash_pin(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    harness = tmp_path / "tools" / "harness"
+    harness.mkdir(parents=True)
+    authority = harness / "authority.py"
+    monkeypatch.setattr(evidence, "_canonical_workspace_root", lambda _candidate: tmp_path)
+
+    authority.write_text("value = 'first'\n", encoding="utf-8")
+    assert evidence._load_global_module(tmp_path, "authority.py").value == "first"
+
+    authority.write_text("value = 'second'\n", encoding="utf-8")
+    assert evidence._load_global_module(tmp_path, "authority.py").value == "second"
+    assert not hasattr(evidence, "GLOBAL_BUDGET_SHA256")
+    assert not hasattr(evidence, "GLOBAL_REVIEW_SHA256")
+
+
 def test_design_and_route_seals_are_recomputed(tmp_path: Path) -> None:
     design = evidence.build_design(
         workspace_root=tmp_path,

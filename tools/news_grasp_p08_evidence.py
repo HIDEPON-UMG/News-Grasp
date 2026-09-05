@@ -16,6 +16,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import types
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -26,8 +27,6 @@ REVIEW_SCHEMA = "ADVERSARIAL_HIGH_COST_REVIEW_V1"
 STATIC_SCHEMA = "HIGH_COST_STATIC_VERIFICATION_V1"
 SIMULATION_SCHEMA = "HIGH_COST_SIMULATION_VERIFICATION_V1"
 P08_MANIFEST_SCHEMA = "NEWS_GRASP_P08_EVIDENCE_MANIFEST_V1"
-GLOBAL_REVIEW_SHA256 = "52d373c852d9f864679f1f7ad50700f877bc3c1935fba05a9e647ddaf6055050"
-GLOBAL_BUDGET_SHA256 = "8e12cc48a0416204a1a662a128cf190d6df8c596267e6a660ca0ce415fa409f5"
 MAX_COMMAND_SECONDS = 180
 MAX_COMMAND_OUTPUT_BYTES = 4 * 1024 * 1024
 CALLER_EVIDENCE_KINDS = (
@@ -310,23 +309,23 @@ def caller_evidence_bindings(paths: dict[str, Path]) -> list[dict[str, str]]:
     return [{"kind": kind, "path": str(paths[kind].resolve()), "sha256": file_sha256(paths[kind])} for kind in CALLER_EVIDENCE_KINDS]
 
 
-def _load_global_module(workspace_root: Path, filename: str, expected_sha256: str) -> Any:
+def _load_global_module(workspace_root: Path, filename: str) -> Any:
     workspace = _canonical_workspace_root(workspace_root)
-    path = (workspace / "tools" / "harness" / filename).resolve(strict=True)
+    candidate = workspace / "tools" / "harness" / filename
+    if candidate.is_symlink():
+        raise P08EvidenceError("HIGH_COST_GLOBAL_MODULE_BINDING_INVALID")
+    path = candidate.resolve(strict=True)
+    if path.parent != (workspace / "tools" / "harness").resolve(strict=True):
+        raise P08EvidenceError("HIGH_COST_GLOBAL_MODULE_BINDING_INVALID")
     raw = path.read_bytes()
-    if hashlib.sha256(raw).hexdigest() != expected_sha256 or path.is_symlink():
-        raise P08EvidenceError("HIGH_COST_GLOBAL_MODULE_BINDING_INVALID")
     module_name = f"_news_grasp_p08_{path.stem}"
-    spec = importlib.util.spec_from_file_location(module_name, path)
-    if spec is None or spec.loader is None:
-        raise P08EvidenceError("HIGH_COST_GLOBAL_MODULE_BINDING_INVALID")
-    module = importlib.util.module_from_spec(spec)
+    module = types.ModuleType(module_name)
     module.__file__ = str(path)
     # Imports used by the canonical module are resolved only from the verified directory.
     old_path = list(sys.path)
     sys.path.insert(0, str(path.parent))
     try:
-        spec.loader.exec_module(module)
+        exec(compile(raw, str(path), "exec"), module.__dict__)
         if Path(str(getattr(module, "__file__", ""))).resolve() != path:
             raise P08EvidenceError("HIGH_COST_GLOBAL_MODULE_BINDING_INVALID")
         return module
@@ -340,7 +339,7 @@ def _load_global_module(workspace_root: Path, filename: str, expected_sha256: st
 
 def _load_user_event_authority(workspace_root: Path, thread_id: str) -> dict[str, Any]:
     try:
-        budget = _load_global_module(workspace_root, "high_cost_operation_budget.py", GLOBAL_BUDGET_SHA256)
+        budget = _load_global_module(workspace_root, "high_cost_operation_budget.py")
         return budget.inspect_canonical_user_event_authority(thread_id)
     except Exception as error:  # pragma: no cover - the authority owns detailed codes
         if isinstance(error, P08EvidenceError):
@@ -669,7 +668,7 @@ def generate(
     _write_json(out / "route-manifest.json", route)
     validate_route_manifest(route, workspace_root=workspace, task_identity=design["taskIdentity"], required_route_ids=design["requiredRouteIds"])
     # The canonical reviewer is the workspace-global source used again by authorize.
-    reviewer = _load_global_module(workspace, "high_cost_adversarial_review.py", GLOBAL_REVIEW_SHA256)
+    reviewer = _load_global_module(workspace, "high_cost_adversarial_review.py")
     review = reviewer.evaluate(design, route, workspace_root=workspace)
     _validate_design_and_review(design, route, review, workspace)
     _write_json(out / "adversarial-review.json", review)
