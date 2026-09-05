@@ -37,11 +37,12 @@ def _has_reparse_attribute(info: os.stat_result) -> bool:
     return stat.S_ISLNK(info.st_mode) or bool(attributes & reparse_flag)
 
 
-def _file_identity(info: os.stat_result) -> tuple[int, int, int, int, int, int]:
+def _file_identity(info: os.stat_result) -> tuple[int, int, int, int, int]:
+    """Windowsでpath/handle間のpermission bit差を除いた安定identityを返す。"""
+
     return (
         int(info.st_dev),
         int(info.st_ino),
-        int(info.st_mode),
         int(info.st_nlink),
         int(info.st_size),
         int(info.st_mtime_ns),

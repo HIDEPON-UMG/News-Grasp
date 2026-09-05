@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import hashlib
 import importlib.util
 import json
 import os
@@ -147,6 +148,22 @@ def test_candidate_owner_reads_one_bounded_snapshot(tmp_path: Path) -> None:
     value_path.write_bytes(b"{" + (b" " * 1024) + b"}")
     with pytest.raises(RuntimeError, match="NEWS_GRASP_NOPUBLISH_OWNER_INPUT_INVALID"):
         owner._read_json_snapshot(value_path, root=root, max_bytes=1024)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows path/handle stat contract")
+def test_candidate_owner_hashes_system_executable_from_stable_handle() -> None:
+    owner = _load_owner()
+    powershell = (
+        Path(os.environ["SystemRoot"])
+        / "System32"
+        / "WindowsPowerShell"
+        / "v1.0"
+        / "powershell.exe"
+    )
+
+    assert owner._file_sha256(powershell) == hashlib.sha256(
+        powershell.read_bytes()
+    ).hexdigest()
 
 
 def test_candidate_owner_rebinds_claim_to_current_admission_and_arguments() -> None:
