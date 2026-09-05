@@ -457,13 +457,16 @@ def test_plugin_activation_binds_marketplace_installed_source_and_loaded_tool(
 
     repo = tmp_path / "runtime"
     marketplace = tmp_path / "marketplace"
+    cache_plugin = tmp_path / "cache" / "news-grasp-daily"
     source_plugin = Path(__file__).resolve().parents[1] / "plugins" / "news-grasp-daily"
     repo_plugin = repo / "plugins" / "news-grasp-daily"
     plugin = marketplace / "plugins" / "news-grasp-daily"
     shutil.copytree(source_plugin, repo_plugin)
     shutil.copytree(source_plugin, plugin)
+    shutil.copytree(source_plugin, cache_plugin)
     installed_mcp = syncer._render_daily_plugin_mcp((plugin / ".mcp.json").read_bytes())
     (plugin / ".mcp.json").write_bytes(installed_mcp)
+    (cache_plugin / ".mcp.json").write_bytes(installed_mcp)
     version = json.loads(
         (repo_plugin / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8")
     )["version"]
@@ -534,12 +537,15 @@ def test_plugin_activation_binds_marketplace_installed_source_and_loaded_tool(
                     "type": "stdio",
                     "command": installed_server["command"],
                     "args": ["-I", "-S", "-B", "server.py"],
-                    "cwd": str(plugin),
+                    "cwd": str(cache_plugin) + "\\.",
                     "env": None,
+                    "env_vars": [],
                 },
-                "env_vars": [],
             }
         ],
+    )
+    monkeypatch.setattr(
+        syncer, "_daily_plugin_cache_root", lambda _version: cache_plugin
     )
     monkeypatch.setattr(
         syncer.subprocess,
@@ -549,7 +555,7 @@ def test_plugin_activation_binds_marketplace_installed_source_and_loaded_tool(
 
     result = syncer._activate_daily_plugin(repo, marketplace_root=marketplace)
 
-    assert result["ok"] is True
+    assert result["ok"] is True, result
     assert result["marketplaceRoot"] == str(marketplace)
     assert result["installedRoot"] == str(plugin.resolve())
     assert result["toolNames"] == ["run_daily"]
@@ -577,12 +583,10 @@ def test_new_plugin_registration_has_exact_rollback(monkeypatch) -> None:
     def fake_codex(*args: str) -> dict[str, object]:
         calls.append(args)
         if args == ("plugin", "marketplace", "list"):
+            if state["marketplace"]:
+                raise ValueError("daily_plugin_cli_red:plugin:marketplace:list")
             return {
-                "marketplaces": (
-                    [{"name": "news-grasp", "root": "C:/fixture"}]
-                    if state["marketplace"]
-                    else []
-                )
+                "marketplaces": []
             }
         if args == ("plugin", "list"):
             return {

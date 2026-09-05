@@ -500,6 +500,19 @@ def _plugin_source_generation(plugin_root: Path) -> tuple[str, dict[str, str]]:
     return generation, hashes
 
 
+def _daily_plugin_cache_root(version: str) -> Path:
+    plugin_name = DAILY_PLUGIN_ID.split("@", 1)[0]
+    return (
+        Path.home()
+        / ".codex"
+        / "plugins"
+        / "cache"
+        / DAILY_MARKETPLACE_NAME
+        / plugin_name
+        / version
+    )
+
+
 def _run_registered_mcp_canary(registered_mcp: Mapping[str, Any]) -> list[str]:
     transport = registered_mcp.get("transport")
     if not isinstance(transport, Mapping) or transport.get("type") != "stdio":
@@ -612,6 +625,23 @@ def _rollback_daily_plugin_activation(receipt: Mapping[str, Any]) -> dict[str, A
     previous_marketplace = receipt.get("previousMarketplace")
     previous_plugin = receipt.get("previousPlugin")
     try:
+        # A broken or already-restored marketplace cannot be listed. For a fresh
+        # registration, remove only the entries recorded as successfully added
+        # before attempting registry observation.
+        if (
+            not isinstance(previous_plugin, Mapping)
+            and receipt.get("pluginAdded") is True
+        ):
+            _run_codex_json("plugin", "remove", DAILY_PLUGIN_ID)
+            removed.append("plugin")
+        if (
+            not isinstance(previous_marketplace, Mapping)
+            and receipt.get("marketplaceAdded") is True
+        ):
+            _run_codex_json(
+                "plugin", "marketplace", "remove", DAILY_MARKETPLACE_NAME
+            )
+            removed.append("marketplace")
         marketplace, plugin, _registered_mcp = observe()
         if isinstance(previous_marketplace, Mapping) and not isinstance(
             marketplace, Mapping
@@ -849,6 +879,7 @@ def _activate_daily_plugin(
         expected_arguments = [str(item) for item in server.get("args") or ()]
         expected_cwd_raw = str(server.get("cwd") or "")
         expected_cwd = (plugin_root / expected_cwd_raw).resolve(strict=True)
+        expected_cache_cwd = _daily_plugin_cache_root(version)
         expected_env_vars = [str(item) for item in server.get("env_vars") or ()]
 
         mcp_registry = _run_codex_list_json("mcp", "list")
@@ -872,6 +903,9 @@ def _activate_daily_plugin(
             registered_cwd = Path(registered_cwd_raw).resolve(strict=True)
         except (OSError, ValueError):
             registered_cwd = Path()
+        registered_cwd_matches = _same_path(registered_cwd, expected_cwd) or _same_path(
+            registered_cwd, expected_cache_cwd
+        )
         if (
             not isinstance(registered_mcp, Mapping)
             or registered_mcp.get("enabled") is not True
@@ -879,12 +913,21 @@ def _activate_daily_plugin(
             or transport.get("type") != "stdio"
             or not _same_path(Path(registered_command), Path(expected_command))
             or registered_arguments != expected_arguments
-            or not _same_path(registered_cwd, expected_cwd)
+            or not registered_cwd_matches
             or transport.get("env") not in (None, {})
-            or [str(item) for item in registered_mcp.get("env_vars") or ()]
+            or [str(item) for item in transport.get("env_vars") or ()]
             != expected_env_vars
         ):
             raise ValueError("daily_plugin_host_registry_transport_mismatch")
+        runtime_hashes: dict[str, str] = {}
+        for relative in DAILY_PLUGIN_RELATIVE_FILES:
+            runtime_bytes = _read_bytes_no_follow(
+                registered_cwd / relative, limit=2 * 1024 * 1024
+            )
+            expected_bytes = _expected_daily_plugin_bytes(source_plugin_root, relative)
+            if runtime_bytes != expected_bytes:
+                raise ValueError(f"daily_plugin_runtime_source_drift:{relative}")
+            runtime_hashes[relative] = hashlib.sha256(runtime_bytes).hexdigest()
         tool_names = _run_registered_mcp_canary(registered_mcp)
         if tool_names != ["run_daily"]:
             raise ValueError("daily_plugin_loaded_canary_red")
@@ -899,6 +942,7 @@ def _activate_daily_plugin(
             "fileHashes": hashes,
             "sourceGeneration": generation,
             "generationFileHashes": generation_hashes,
+            "runtimeFileHashes": runtime_hashes,
             "hostRegistryMcp": "news_grasp_daily",
             "hostRegistryTransport": {
                 "command": registered_command,
