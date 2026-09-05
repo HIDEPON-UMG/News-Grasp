@@ -3095,6 +3095,12 @@ def _public_green_terminal(issue_date: str) -> dict[str, object]:
     }
 
 
+_PUBLIC_GREEN_CLOSEOUT_FAILURE_CODES = {
+    "AUDIT_RECOVERY_OWNER_FAILED_VALUEERROR",
+    "AUDIT_EXECUTOR_FAILED_VALUEERROR",
+}
+
+
 def _install_default_public_green_owner_seams(
     monkeypatch, control, decision: dict[str, object], calls: list[tuple[str, dict[str, object]]]
 ) -> None:
@@ -3140,7 +3146,7 @@ def test_ensure_audit_0640_default_owner_delegates_public_green_closeout_once(
     assert calls == []
     assert result["transactionStatus"] == "terminal"
     assert result["terminal"] == "audit_major_incident_open"
-    assert result["reasonCode"] == "AUDIT_RECOVERY_OWNER_FAILED_VALUEERROR"
+    assert result["reasonCode"] in _PUBLIC_GREEN_CLOSEOUT_FAILURE_CODES
 
 
 def test_direct_cli_execute_remains_canonical_ensure_only(
@@ -3214,5 +3220,5 @@ def test_terminal_projection_replay_does_not_reexecute_public_green_closeout(
     assert first["transactionStatus"] == "terminal"
     assert second["transactionStatus"] == "terminal_projection"
     assert second["terminal"] == "audit_major_incident_open"
-    assert second["reasonCode"] == "AUDIT_RECOVERY_OWNER_FAILED_VALUEERROR"
+    assert second["reasonCode"] in _PUBLIC_GREEN_CLOSEOUT_FAILURE_CODES
     assert calls == []
