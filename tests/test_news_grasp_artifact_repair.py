@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -220,6 +221,71 @@ def test_runtime_repair_plan_binds_db_hash_and_current_fence(tmp_path: Path) -> 
         connection.commit()
     with pytest.raises(PermissionError, match="daily_repair_plan_fencing_token_mismatch"):
         ledger.load_repair_plan()
+
+
+def test_current_writer_reads_preserved_repair_plan_after_same_run_takeover(tmp_path: Path) -> None:
+    from tools import news_grasp_direct_runtime as runtime
+    from tools import news_grasp_repair_registry as repair
+
+    now = [datetime(2026, 9, 6, 19, 0, tzinfo=timezone(timedelta(hours=9)))]
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    store = runtime.DirectRunStore(
+        tmp_path / "state", clock=lambda: now[0], lease_ttl=timedelta(seconds=10),
+        test_only_allow_semantic_verifier=True,
+    )
+    kwargs = dict(
+        cwd=repo, issue_date=ISSUE_DATE, run_intent=runtime.RUN_INTENT,
+        manifest_id="f" * 64, runtime_generation="fixture-stable-runtime",
+    )
+    first = runtime.start_run(store, **kwargs)
+    old = runtime.DailyArtifactLedger(
+        store, run_id=first["run_id"], issue_date=ISSUE_DATE,
+        writer_lease=first["writer_lease"], fencing_token=first["fencing_token"],
+    )
+    plan = repair.build_repair_plan(
+        issue_date=ISSUE_DATE, run_id=first["run_id"], categories=("fx",),
+        checkpoints={}, failures=[],
+    )
+    old.persist_repair_plan(plan)
+    now[0] += timedelta(seconds=11)
+    second = runtime.start_run(store, **kwargs)
+    assert second["run_id"] == first["run_id"]
+    assert second["fencing_token"] > first["fencing_token"]
+    current = runtime.DailyArtifactLedger(
+        store, run_id=second["run_id"], issue_date=ISSUE_DATE,
+        writer_lease=second["writer_lease"], fencing_token=second["fencing_token"],
+    )
+    assert current.load_repair_plan() == plan
+    with sqlite3.connect(store.db_path) as conn:
+        assert conn.execute("SELECT fencing_token FROM daily_repair_plans").fetchone()[0] == first["fencing_token"]
+        assert conn.execute("SELECT COUNT(*) FROM daily_model_calls").fetchone()[0] == 0
+    with pytest.raises(PermissionError):
+        old.load_repair_plan()
+    with pytest.raises(PermissionError):
+        old.persist_repair_plan(plan)
+    current.persist_repair_plan(plan)
+    assert current.load_repair_plan() == plan
+    for foreign_run, foreign_issue in (
+        ("direct-2026-09-05-1-other", ISSUE_DATE),
+        (first["run_id"], "2026-09-04"),
+    ):
+        foreign = repair.build_repair_plan(
+            issue_date=foreign_issue, run_id=foreign_run, categories=("fx",),
+            checkpoints={}, failures=[],
+        )
+        with sqlite3.connect(store.db_path) as conn:
+            conn.execute(
+                "UPDATE daily_repair_plans SET plan_json=?,plan_sha256=?",
+                (json.dumps(foreign), foreign["planSha256"]),
+            )
+        with pytest.raises(ValueError, match="daily_repair_plan_identity_mismatch"):
+            current.load_repair_plan()
+    current.persist_repair_plan(plan)
+    with sqlite3.connect(store.db_path) as conn:
+        conn.execute("UPDATE daily_repair_plans SET fencing_token=0")
+    with pytest.raises(PermissionError, match="daily_repair_plan_fencing_token_mismatch"):
+        current.load_repair_plan()
 
 
 def test_model_call_budget_is_shared_idempotent_and_bounded(tmp_path: Path) -> None:

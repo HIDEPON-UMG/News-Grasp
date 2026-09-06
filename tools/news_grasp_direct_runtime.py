@@ -2256,12 +2256,17 @@ class DailyArtifactLedger:
             ).fetchone()
         if row is None:
             return None
-        if int(row[1]) != self.fencing_token:
+        # 保存時の世代はprovenanceであり、現在のwriter権限ではない。
+        # 現writerは上の_writer_rowで検証済み。旧ownerの同run計画を読み、
+        # 通常のrefreshで再計算できるようにする。読取り自体は書き換えない。
+        if not 0 < int(row[1]) <= self.fencing_token:
             raise PermissionError("daily_repair_plan_fencing_token_mismatch")
         value = _json_load(str(row[2]), {})
         if not isinstance(value, Mapping):
             raise RuntimeError("daily_repair_plan_json_invalid")
         validated = validate_repair_plan(value)
+        if validated.get("runId") != self.run_id or validated.get("issueDate") != self.issue_date:
+            raise ValueError("daily_repair_plan_identity_mismatch")
         if str(row[0]) != str(validated.get("planSha256") or ""):
             raise RuntimeError("daily_repair_plan_db_hash_mismatch")
         return validated
