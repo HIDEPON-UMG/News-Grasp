@@ -185,3 +185,21 @@ def test_owner_direct_isolated_import_resolves_product_helpers(tmp_path):
                             cwd=tmp_path, capture_output=True, timeout=10, shell=False,
                             creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
     assert result.returncode == 0, result.stderr
+
+
+def test_module_entry_is_observed_even_when_arguments_are_invalid(tmp_path, monkeypatch):
+    """CLI本体到達後の引数拒否を、開始前失敗へ戻さない。業務処理は未実行。"""
+    from tools import news_grasp_release_nopublish as release
+    from tools import e2e_final_admission_bridge as bridge
+    monkeypatch.setenv('NEWS_GRASP_PREENTRY_JOURNAL', str(tmp_path/'entry.sqlite3'))
+    monkeypatch.setenv('NEWS_GRASP_PREENTRY_ISSUE', '2026-09-06')
+    monkeypatch.setenv('NEWS_GRASP_PREENTRY_SESSION', 'invalid-argv-unit')
+    identity = {'pid': os.getpid()}
+    monkeypatch.setattr(bridge, '_query_process_identity', lambda _pid: identity)
+    observations = []
+    monkeypatch.setattr(release, '_await_owner_start_confirmation', lambda root, observed: observations.append((root, observed)))
+    with pytest.raises(SystemExit) as error:
+        release._main([])
+    assert error.value.code == 2
+    assert observations == [(Path(release.__file__).resolve().parents[1], identity)]
+    assert PreentryJournal(tmp_path/'entry.sqlite3').events('2026-09-06')[0]['phase'] == 'module_loaded'
