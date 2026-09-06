@@ -102,7 +102,13 @@ def recover_saved_editor(*, repo_root: Path, ledger: Any, reporters: Sequence[Ma
         proposal, proposal_bytes = read_completed_output(directory, intent(call_id, expected_input))
         projected = content._project_repair_result(feedback, proposal)
         with tempfile.TemporaryDirectory(prefix="ng-saved-scope-preview-") as preview:
-            validated = content._validate_editor(projected, issue_date=ledger.issue_date, reporters=reporters, preview_dir=Path(preview))
+            validated = content._validate_editor(
+                projected,
+                issue_date=ledger.issue_date,
+                reporters=reporters,
+                preview_dir=Path(preview),
+                repo_root=repo_root,
+            )
         receipt = {
             "schemaVersion": "NEWS_GRASP_SAVED_SCOPE_RECOVERY_V1", "runId": ledger.run_id,
             "sourceCallId": call_id, "targetInputHash": initial_input, "appliedPaths": expected_paths,

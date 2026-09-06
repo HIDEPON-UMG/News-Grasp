@@ -385,7 +385,9 @@ def materialize_editor_output(
             handle.write(canonical_json)
             handle.flush()
             os.fsync(handle.fileno())
-        errors = validate_editor_output_preview(candidate_path, issue_date=issue_date)
+        errors = validate_editor_output_preview(
+            candidate_path, issue_date=issue_date, repo_root=repo_root
+        )
         if errors:
             raise MaterializationError(
                 "EDITOR_OUTPUT_SEMANTIC_INVALID: " + " | ".join(errors)

@@ -58,8 +58,20 @@ def _validate_lane_line_syntax(summary: str) -> list[str]:
     ]
 
 
-def _resolve_from_preview(preview_path: Path, rel_or_abs: str) -> Path:
+def _resolve_from_preview(
+    preview_path: Path, rel_or_abs: str, *, repo_root: Path | None = None
+) -> Path:
     candidate = Path(rel_or_abs)
+    if repo_root is not None:
+        from tools.news_grasp_daily_content import _has_reparse_ancestor
+
+        if candidate.is_absolute() or candidate.drive or candidate.root or ".." in candidate.parts:
+            raise ValueError("relative_path_required")
+        target = repo_root / candidate
+        if _has_reparse_ancestor(target):
+            raise ValueError("reparse_reference")
+        target.resolve().relative_to(repo_root.resolve())
+        return target
     if candidate.is_absolute():
         return candidate
     parts = preview_path.resolve().parts
@@ -82,7 +94,18 @@ def _nonempty_jsonl(path: Path) -> bool:
         return False
 
 
-def _validate_reporter_categories(payload: dict, preview_path: Path) -> list[str]:
+def _read_bound_reference(path: Path) -> str:
+    from tools.news_grasp_daily_content import _read_bounded_model_events
+
+    raw = _read_bounded_model_events(path)
+    if raw is None:
+        raise ValueError("regular_stable_reference_required")
+    return raw.decode("utf-8-sig")
+
+
+def _validate_reporter_categories(
+    payload: dict, preview_path: Path, *, repo_root: Path | None = None
+) -> list[str]:
     inputs = payload.get("inputs")
     if not isinstance(inputs, dict):
         return []
@@ -95,11 +118,16 @@ def _validate_reporter_categories(payload: dict, preview_path: Path) -> list[str
     if not manifest_path:
         return []
 
-    manifest = _resolve_from_preview(preview_path, manifest_path)
+    manifest = _resolve_from_preview(preview_path, manifest_path, repo_root=repo_root)
     if not manifest.exists():
+        if repo_root is not None:
+            return [f"editor reporter manifest missing: {manifest}"]
         return []
     try:
-        manifest_payload = json.loads(manifest.read_text(encoding="utf-8-sig"))
+        manifest_payload = json.loads(
+            _read_bound_reference(manifest) if repo_root is not None
+            else manifest.read_text(encoding="utf-8-sig")
+        )
     except (OSError, json.JSONDecodeError) as exc:
         return [f"editor reporter manifest invalid: {exc}"]
 
@@ -118,14 +146,21 @@ def _validate_reporter_categories(payload: dict, preview_path: Path) -> list[str
         for rel in manifest_payload.get("reporter_artifacts") or []:
             rel_text = str(rel).replace("\\", "/")
             if rel_text.endswith(f"/{category_id}.records.jsonl"):
-                records_path = _resolve_from_preview(preview_path, str(rel))
+                records_path = _resolve_from_preview(preview_path, str(rel), repo_root=repo_root)
                 break
-        if records_path is not None and _nonempty_jsonl(records_path) and expected_genre not in append_genres:
+        nonempty = (
+            any(line.strip() for line in _read_bound_reference(records_path).splitlines())
+            if records_path is not None and repo_root is not None
+            else records_path is not None and _nonempty_jsonl(records_path)
+        )
+        if nonempty and expected_genre not in append_genres:
             errors.append(f"editor preview dropped nonempty reporter category: {category_id}")
     return errors
 
 
-def validate_editor_output_preview(path: Path, *, issue_date: str) -> list[str]:
+def validate_editor_output_preview(
+    path: Path, *, issue_date: str, repo_root: Path | None = None
+) -> list[str]:
     try:
         payload = json.loads(path.read_text(encoding="utf-8-sig"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -157,7 +192,10 @@ def validate_editor_output_preview(path: Path, *, issue_date: str) -> list[str]:
         joined = " ".join(str(record.get(key) or "") for key in ("title", "title_ja", "summary"))
         if any(marker in joined for marker in _BLOCK_MARKERS):
             errors.append(f"append_records[{index}] contains abort/block marker")
-    errors.extend(_validate_reporter_categories(payload, path))
+    try:
+        errors.extend(_validate_reporter_categories(payload, path, repo_root=repo_root))
+    except (OSError, ValueError) as exc:
+        errors.append(f"editor reporter reference invalid: {exc}")
     return errors
 
 
@@ -165,6 +203,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("preview", type=Path, nargs="?")
     parser.add_argument("--date")
+    parser.add_argument("--repo-root", type=Path)
     parser.add_argument("--print-producer-contract", action="store_true")
     args = parser.parse_args(argv)
     if args.print_producer_contract:
@@ -172,7 +211,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.preview is None or not args.date:
         parser.error("preview と --date は semantic validation で必須です")
-    errors = validate_editor_output_preview(args.preview, issue_date=args.date)
+    errors = validate_editor_output_preview(args.preview, issue_date=args.date, repo_root=args.repo_root)
     if errors:
         for error in errors:
             print(f"ERROR: {error}", file=sys.stderr)

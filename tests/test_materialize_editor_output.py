@@ -183,9 +183,9 @@ def test_source_hash_is_bound_to_the_parsed_bytes(monkeypatch, tmp_path: Path) -
 
     validator = module.validate_editor_output_preview
 
-    def mutate_after_parse(candidate: Path, *, issue_date: str):
+    def mutate_after_parse(candidate: Path, *, issue_date: str, repo_root: Path):
         source.write_text('{"replaced":true}', encoding="utf-8")
-        return validator(candidate, issue_date=issue_date)
+        return validator(candidate, issue_date=issue_date, repo_root=repo_root)
 
     monkeypatch.setattr(module, "validate_editor_output_preview", mutate_after_parse)
     receipt = materialize_editor_output(

@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from tools.validate_editor_output_preview import (
     editor_preview_producer_contract,
     validate_editor_output_preview,
@@ -121,3 +123,71 @@ def test_rejects_preview_that_drops_nonempty_reporter_category(tmp_path: Path) -
     errors = validate_editor_output_preview(preview, issue_date="2026-07-11")
 
     assert any("dropped nonempty reporter category: manufacturing" in error for error in errors)
+
+
+def test_explicit_repo_root_validates_manifest_from_external_preview(tmp_path: Path, monkeypatch) -> None:
+    repo = tmp_path / "repo"
+    artifact_dir = repo / "build/reporter-artifacts/2026-07-11"
+    artifact_dir.mkdir(parents=True)
+    (artifact_dir / "manufacturing.records.jsonl").write_text('{}\n', encoding="utf-8")
+    (artifact_dir / "editor-input-manifest.json").write_text(json.dumps({
+        "scheduled_categories": ["manufacturing"],
+        "reporter_artifacts": ["build/reporter-artifacts/2026-07-11/manufacturing.records.jsonl"],
+    }), encoding="utf-8")
+    preview = tmp_path / "editor-preview.json"
+    _write_preview(preview, summary="## § 本日のテーマ考察\n\n> " + "主要な企業の動向を整理する。" * 20)
+    monkeypatch.chdir(tmp_path)
+    errors = validate_editor_output_preview(preview, issue_date="2026-07-11", repo_root=repo)
+    assert any("dropped nonempty reporter category: manufacturing" in error for error in errors)
+    payload = json.loads(preview.read_text(encoding="utf-8"))
+    payload["append_records"][0]["genre"] = "Manufacturing"
+    preview.write_text(json.dumps(payload), encoding="utf-8")
+    assert validate_editor_output_preview(preview, issue_date="2026-07-11", repo_root=repo) == []
+
+
+def test_explicit_repo_root_does_not_hide_missing_manifest(tmp_path: Path, monkeypatch) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    preview = tmp_path / "editor-preview.json"
+    _write_preview(preview, summary="## § 本日のテーマ考察\n\n> " + "主要な企業の動向を整理する。" * 20)
+    (tmp_path / "editor-input-manifest.json").write_text('{}', encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    errors = validate_editor_output_preview(preview, issue_date="2026-07-11", repo_root=repo)
+    assert any("reporter manifest missing" in error for error in errors)
+
+
+@pytest.mark.parametrize("reference", ["../other/editor-input-manifest.json", "absolute", "reparse"])
+def test_explicit_root_rejects_unsafe_manifest(tmp_path: Path, monkeypatch, reference: str) -> None:
+    from tools import news_grasp_daily_content as content
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    other = tmp_path / "other/editor-input-manifest.json"
+    other.parent.mkdir()
+    other.write_text('{}', encoding="utf-8")
+    preview = tmp_path / "editor-preview.json"
+    _write_preview(preview, summary="## § 本日のテーマ考察\n\n> " + "主要な企業の動向を整理する。" * 20)
+    if reference == "absolute":
+        reference = str(other)
+    elif reference == "reparse":
+        reference = "editor-input-manifest.json"
+        (repo / reference).write_text('{}', encoding="utf-8")
+        monkeypatch.setattr(content, "_has_reparse_ancestor", lambda path: True)
+    payload = json.loads(preview.read_text(encoding="utf-8"))
+    payload["inputs"]["reporter_artifacts"] = [reference]
+    preview.write_text(json.dumps(payload), encoding="utf-8")
+    errors = validate_editor_output_preview(preview, issue_date="2026-07-11", repo_root=repo)
+    assert any("reporter reference invalid" in error for error in errors)
+
+
+@pytest.mark.parametrize("record_reference", ["../other/manufacturing.records.jsonl", "missing/manufacturing.records.jsonl"])
+def test_explicit_root_rejects_unsafe_or_missing_records(tmp_path: Path, record_reference: str) -> None:
+    repo = tmp_path / "repo"
+    artifacts = repo / "build/reporter-artifacts/2026-07-11"
+    artifacts.mkdir(parents=True)
+    (artifacts / "editor-input-manifest.json").write_text(json.dumps({
+        "scheduled_categories": ["manufacturing"], "reporter_artifacts": [record_reference],
+    }), encoding="utf-8")
+    preview = tmp_path / "editor-preview.json"
+    _write_preview(preview, summary="## § 本日のテーマ考察\n\n> " + "主要な企業の動向を整理する。" * 20)
+    errors = validate_editor_output_preview(preview, issue_date="2026-07-11", repo_root=repo)
+    assert any("reporter reference invalid" in error for error in errors)

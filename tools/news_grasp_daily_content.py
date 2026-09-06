@@ -1411,7 +1411,14 @@ def _validate_reporter(value: Any, *, category: str, issue_date: str, search_aud
     }
 
 
-def _validate_editor(value: Any, *, issue_date: str, reporters: Sequence[Mapping[str, Any]], preview_dir: Path) -> dict[str, Any]:
+def _validate_editor(
+    value: Any,
+    *,
+    issue_date: str,
+    reporters: Sequence[Mapping[str, Any]],
+    preview_dir: Path,
+    repo_root: Path | None = None,
+) -> dict[str, Any]:
     from tools.validate_editor_output_preview import validate_editor_output_preview
 
     if not isinstance(value, Mapping) or value.get("issue_date") != issue_date:
@@ -1434,7 +1441,7 @@ def _validate_editor(value: Any, *, issue_date: str, reporters: Sequence[Mapping
         raise DailyContentError("EDITOR_OUTPUT_INVALID:reporter_binding")
     preview = preview_dir / "editor-preview.json"
     preview.write_bytes(_json_bytes(dict(value)))
-    errors = validate_editor_output_preview(preview, issue_date=issue_date)
+    errors = validate_editor_output_preview(preview, issue_date=issue_date, repo_root=repo_root)
     if errors:
         raise DailyContentError("EDITOR_OUTPUT_INVALID:" + "|".join(errors[:5]))
     return dict(value)
@@ -2516,6 +2523,7 @@ def produce_current_issue(
                         issue_date=issue_date,
                         reporters=ordered_reporters,
                         preview_dir=output_dir,
+                        repo_root=root,
                     )
                 except DailyContentError as exc:
                     editor_failure = _write_failure_checkpoint(
@@ -2567,6 +2575,7 @@ def produce_current_issue(
                         issue_date=issue_date,
                         reporters=ordered_reporters,
                         preview_dir=output_dir,
+                        repo_root=root,
                     )
                 except ModelResultPending:
                     raise
