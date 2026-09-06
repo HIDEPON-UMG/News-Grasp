@@ -258,13 +258,13 @@ def _create_exact_commit(root: Path, *, paths: Sequence[str], expected_parent: s
         index = Path(raw) / "index"
         index_env = {"GIT_INDEX_FILE": str(index)}
         _git(root, ["read-tree", observed_head], env=index_env)
-        _git(root, ["add", "--", *paths], env=index_env)
+        _git(root, ["add", "--force", "--", *paths], env=index_env)
         staged = {
             item for item in _git(root, ["diff", "--cached", "--name-only", "-z"], env=index_env).split("\0") if item
         }
         if not staged:
             raise DailyReleaseError("RELEASE_COMMIT_EMPTY")
-        if not staged.issubset(set(paths)) or dirty != staged:
+        if not staged.issubset(set(paths)) or not dirty.issubset(staged):
             raise DailyReleaseError("RELEASE_STAGED_WRITE_SET_MISMATCH")
         tree = _git(root, ["write-tree"], env=index_env).strip()
         message = f"Publish {issue_date} News-Grasp daily release [{run_id}]\n"

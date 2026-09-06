@@ -31,6 +31,19 @@ def _git_repo(tmp_path: Path) -> tuple[Path, str]:
     return root, baseline
 
 
+def test_exact_commit_includes_declared_ignored_audit_only(tmp_path: Path) -> None:
+    """local excludeに関わらず宣言済み成果だけをcommitする。"""
+    root, baseline = _git_repo(tmp_path)
+    (root / '.git/info/exclude').write_text('data/search_audit/\n', encoding='utf-8')
+    audit = root / 'data/search_audit/current.json'
+    audit.parent.mkdir(parents=True)
+    audit.write_text('{}', encoding='utf-8')
+    (audit.parent / 'unrelated.json').write_text('{"private":true}', encoding='utf-8')
+    sha = release._create_exact_commit(root, paths=['data/search_audit/current.json'], expected_parent=baseline, issue_date=ISSUE_DATE, run_id=RUN_ID)
+    assert release._committed_paths(root, sha) == {'data/search_audit/current.json'}
+    assert (audit.parent / 'unrelated.json').is_file()
+
+
 def test_commit_then_seal_boundary_reuses_same_release_commit_without_second_commit(
     tmp_path: Path,
 ) -> None:
