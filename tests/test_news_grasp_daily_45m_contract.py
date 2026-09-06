@@ -687,8 +687,19 @@ def test_consumer_public_poll_continues_same_run_at_slo_deadline(
         ] == [(45,), (75,), (90,)]
 
 
+@pytest.mark.parametrize(
+    "producer_failures,expected_failures",
+    [
+        (["public_surface_red:web"], ["public_surface_red:web"]),
+        (["x" * 3000] * 20, ["x" * 2048] * 16),
+        ([{"private_context": "not projected"}, "typed_failure"], ["typed_failure"]),
+        ("malformed_failures", []),
+    ],
+)
 def test_public_verification_red_keeps_same_run_successor_recoverable(
     tmp_path: Path,
+    producer_failures: object,
+    expected_failures: list[str],
 ) -> None:
     gate = _module("tools.news_grasp_daily_gate")
     runtime = _module("tools.news_grasp_direct_runtime")
@@ -750,12 +761,13 @@ def test_public_verification_red_keeps_same_run_successor_recoverable(
                 ok=False,
                 status="red",
                 operation_id="consumer_public_verification",
-                failures=("public_surface_red:web",),
-            )
+                failures=(),
+            ) | {"failures": producer_failures}
         },
     )
 
     assert result["ok"] is False
+    assert result["producer_failures"] == expected_failures
     assert runtime.inspect_run(store, run_id=run["run_id"])["status"] in {
         "active",
         "executing",

@@ -2082,6 +2082,16 @@ def run_daily_operation(
             operation_id,
             producer_failure or "daily_operation_producer_receipt_invalid",
             authorization=dict(authorization),
+            producer_failures=[
+                item[:2048]
+                for item in (
+                    produced.get("failures", [])[:16]
+                    if isinstance(produced, Mapping)
+                    and isinstance(produced.get("failures"), (list, tuple))
+                    else []
+                )
+                if isinstance(item, str)
+            ],
         )
     try:
         applied = runtime.apply_daily_operation_atomic(
