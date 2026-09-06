@@ -279,6 +279,10 @@ def _resolve_executable(value: str | os.PathLike[str]) -> str:
         raise OwnedProcessError("OWNED_PROCESS_EXECUTABLE_INVALID")
 
 
+def _is_reparse_point(path: Path) -> bool:
+    return path.is_symlink() or bool(getattr(path, "is_junction", lambda: False)())
+
+
 def _create_pipe() -> tuple[int, int]:
     read_handle = wintypes.HANDLE()
     write_handle = wintypes.HANDLE()
@@ -314,6 +318,33 @@ def _open_null(access: int) -> int:
     return int(handle or 0)
 
 
+def _open_stdin_file(path: str | os.PathLike[str]) -> int:
+    candidate = Path(path)
+    if not candidate.is_file() or _is_reparse_point(candidate):
+        raise OwnedProcessError("OWNED_PROCESS_STDIN_PATH_INVALID")
+    try:
+        resolved = candidate.resolve(strict=True)
+    except OSError as exc:
+        raise OwnedProcessError("OWNED_PROCESS_STDIN_PATH_INVALID") from exc
+    if not resolved.is_file() or _is_reparse_point(resolved):
+        raise OwnedProcessError("OWNED_PROCESS_STDIN_PATH_INVALID")
+    attributes = SECURITY_ATTRIBUTES(
+        ctypes.sizeof(SECURITY_ATTRIBUTES), None, True
+    )
+    handle = _kernel32.CreateFileW(
+        str(resolved),
+        GENERIC_READ,
+        FILE_SHARE_READ | FILE_SHARE_WRITE,
+        ctypes.byref(attributes),
+        OPEN_EXISTING,
+        0,
+        None,
+    )
+    if handle in {0, -1}:
+        _raise_last_error("OWNED_PROCESS_STDIN_OPEN_FAILED")
+    return int(handle or 0)
+
+
 def _as_binary_stream(handle: int) -> BinaryIO:
     import msvcrt
 
@@ -327,6 +358,7 @@ def spawn_owned(
     cwd: str | os.PathLike[str],
     env: Mapping[str, str] | None = None,
     capture_output: bool,
+    stdin_path: str | os.PathLike[str] | None = None,
 ) -> OwnedProcess:
     """processをWindows Job所属として原子的に生成する。"""
 
@@ -360,7 +392,11 @@ def spawn_owned(
             ctypes.sizeof(limits),
         ):
             _raise_last_error("OWNED_PROCESS_JOB_CONFIGURATION_FAILED")
-        stdin_handle = _open_null(GENERIC_READ)
+        stdin_handle = (
+            _open_stdin_file(stdin_path)
+            if stdin_path is not None
+            else _open_null(GENERIC_READ)
+        )
         if capture_output:
             stdout_read, stdout_write = _create_pipe()
             stderr_read, stderr_write = _create_pipe()
@@ -472,11 +508,14 @@ def run_owned_bounded(
     command: Sequence[str | os.PathLike[str]],
     *,
     cwd: str | os.PathLike[str],
-    timeout: int | float,
+    timeout: int | float | None,
     max_output_bytes: int,
     env: Mapping[str, str] | None = None,
     heartbeat: Callable[[], object] | None = None,
     heartbeat_interval_seconds: int | float | None = None,
+    stdin_path: str | os.PathLike[str] | None = None,
+    stdout_sink: BinaryIO | None = None,
+    stderr_sink: BinaryIO | None = None,
 ) -> OwnedRunResult:
     """所有Job内でbounded commandを実行し、超過時はJob closeだけで回収する。
 
@@ -495,34 +534,55 @@ def run_owned_bounded(
             raise OwnedProcessError("OWNED_PROCESS_HEARTBEAT_INTERVAL_INVALID")
         heartbeat_interval = float(heartbeat_interval_seconds)
 
-    process = spawn_owned(command, cwd=cwd, env=env, capture_output=True)
+    process = spawn_owned(
+        command,
+        cwd=cwd,
+        env=env,
+        capture_output=True,
+        stdin_path=stdin_path,
+    )
     stdout = bytearray()
     stderr = bytearray()
     exceeded = threading.Event()
+    sink_errors: list[BaseException] = []
+    sink_error_lock = threading.Lock()
 
-    def drain(stream: BinaryIO | None, target: bytearray) -> None:
+    def drain(
+        stream: BinaryIO | None,
+        target: bytearray,
+        sink: BinaryIO | None,
+    ) -> None:
         if stream is None:
             return
-        while True:
-            chunk = stream.read(64 * 1024)
-            if not chunk:
-                return
-            remaining = max_output_bytes + 1 - len(target)
-            if remaining > 0:
-                target.extend(chunk[:remaining])
-            if len(target) > max_output_bytes or len(chunk) > remaining:
-                exceeded.set()
-                return
+        try:
+            reader = getattr(stream, "read1", stream.read)
+            while True:
+                chunk = reader(64 * 1024)
+                if not chunk:
+                    return
+                if sink is not None:
+                    sink.write(chunk)
+                    sink.flush()
+                remaining = max_output_bytes + 1 - len(target)
+                if remaining > 0:
+                    target.extend(chunk[:remaining])
+                if len(target) > max_output_bytes or len(chunk) > remaining:
+                    exceeded.set()
+                    return
+        except BaseException as exc:  # noqa: BLE001 - sink failure crosses the owner boundary.
+            with sink_error_lock:
+                sink_errors.append(exc)
+            exceeded.set()
 
     threads = [
-        threading.Thread(target=drain, args=(process.stdout, stdout), daemon=True),
-        threading.Thread(target=drain, args=(process.stderr, stderr), daemon=True),
+        threading.Thread(target=drain, args=(process.stdout, stdout, stdout_sink), daemon=True),
+        threading.Thread(target=drain, args=(process.stderr, stderr, stderr_sink), daemon=True),
     ]
     for thread in threads:
         thread.start()
     timed_out = False
     started = time.monotonic()
-    deadline = started + timeout
+    deadline = None if timeout is None else started + float(timeout)
     next_heartbeat = (
         started + heartbeat_interval if heartbeat_interval is not None else None
     )
@@ -532,8 +592,8 @@ def run_owned_bounded(
                 process.close_job()
                 break
             now = time.monotonic()
-            remaining = deadline - now
-            if remaining <= 0:
+            remaining = None if deadline is None else deadline - now
+            if remaining is not None and remaining <= 0:
                 timed_out = True
                 process.close_job()
                 break
@@ -544,7 +604,7 @@ def run_owned_bounded(
             ):
                 heartbeat()
                 next_heartbeat = now + float(heartbeat_interval or 0)
-            wait_seconds = min(0.05, remaining)
+            wait_seconds = 0.05 if remaining is None else min(0.05, remaining)
             if next_heartbeat is not None:
                 wait_seconds = min(wait_seconds, max(0.001, next_heartbeat - now))
             try:
@@ -553,6 +613,8 @@ def run_owned_bounded(
                 continue
         for thread in threads:
             thread.join(timeout=5)
+        if sink_errors:
+            raise OwnedProcessError("OWNED_PROCESS_SINK_WRITE_FAILED") from sink_errors[0]
         return OwnedRunResult(
             returncode=int(process.poll() or 0),
             stdout=bytes(stdout),

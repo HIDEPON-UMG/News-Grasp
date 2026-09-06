@@ -7,6 +7,15 @@ description: Run or plan News-Grasp daily-batch E2E, scheduled-equivalent NoPubl
 
 ## 2026-09-06 運用境界の訂正
 
+最新の設計変更は `docs/spec.md` の「2026-09-06 NoPublish起動設計の置換」および
+「2026-09-06 全工程の運用設計を再構成する要求」を優先する。
+NoPublishの目標入口は製品内実行器であり、旧P08/goal/authority発行連鎖の整合を
+新入口の起動条件にしない。実装と下位検証が済む前に旧制御を飛ばして本体を実行しない。
+NoPublishと本番は同じworkflow・品質oracleを使い、公開adapterの接続を明示分離する。
+同日・同目的の製品内state、OS排他、成果物checkpoint、モデル予算を再利用する。
+新しいworktreeやsessionで試行を作り直さず、同一runの再開と初回開始を区別する。
+本番起動主体の切替は目標設計であり、現06:00設定が変更済みであるとは報告しない。
+
 通常06:00運用の唯一の正本は `python -B -m tools.news_grasp_direct_runtime daily`
 である。本skillのadmission、P08、A/B、隔離worktreeはRelease検証専用であり、
 日次開始条件へ持ち込まない。外部goalの再開を日次またはRelease開始の前提にしない。

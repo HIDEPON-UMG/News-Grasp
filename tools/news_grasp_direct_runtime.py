@@ -2082,9 +2082,21 @@ class DailyArtifactLedger:
                     and str(existing["artifact_id"]) == artifact_id
                     and str(existing["input_hash"]) == input_hash
                 )
-                conn.rollback()
                 if not same:
+                    conn.rollback()
                     raise RuntimeError("daily_model_call_idempotency_conflict")
+                if str(existing["status"]) == "reserved":
+                    conn.execute(
+                        """
+                        UPDATE daily_model_calls
+                        SET fencing_token=?
+                        WHERE run_id=? AND call_id=? AND status='reserved'
+                        """,
+                        (self.fencing_token, self.run_id, call_id),
+                    )
+                    conn.commit()
+                else:
+                    conn.rollback()
                 return {
                     "schemaVersion": "NEWS_GRASP_MODEL_CALL_BUDGET_RECEIPT_V2",
                     "ok": True,
@@ -2502,6 +2514,7 @@ def admit_daily_operation(
         "retry_allowed": dispatch["dispatch"] not in {"deadline_revision"},
         "new_generation_allowed": dispatch["dispatch"] not in {"deadline_revision"},
         "model_regeneration_allowed": dispatch["dispatch"] not in {"scope_reduce", "deadline_revision"},
+        "required_content_generation_allowed": operation_id == "current_issue_integration",
         "provider_initial_send_allowed": True,
         "provider_resend_allowed": dispatch["dispatch"] not in {"scope_reduce", "deadline_revision"},
         "read_only_reconcile_allowed": True,

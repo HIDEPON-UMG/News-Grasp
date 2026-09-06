@@ -836,8 +836,9 @@ def test_articles_baseline_rejects_missing_blob_and_tampered_start_seal(
         content._read_articles_jsonl_baseline(repo, ledger)
 
 
-def test_runtime_ledger_refuses_new_candidate_and_model_work_after_75_minutes(
+def test_runtime_ledger_allows_required_content_after_75_minutes_without_budget_bypass(
     tmp_path: Path,
+    monkeypatch,
 ) -> None:
     from tools import news_grasp_direct_runtime as runtime
     from tools.news_grasp_daily_content import DailyContentError, produce_current_issue
@@ -864,23 +865,89 @@ def test_runtime_ledger_refuses_new_candidate_and_model_work_after_75_minutes(
         scheduler_trigger_at="2026-09-04T06:00:00+09:00",
     )
     clock.value += timedelta(minutes=76)
-    candidate_calls: list[str] = []
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "articles.jsonl").write_text("", encoding="utf-8")
 
-    with pytest.raises(DailyContentError, match="SLO_CANDIDATE_COLLECTION_FROZEN"):
-        produce_current_issue(
-            repo_root=tmp_path,
-            issue_date=ISSUE_DATE,
-            run_id=run["run_id"],
-            scheduled_categories=("fx",),
-            candidate_provider=lambda category, _issue: candidate_calls.append(category),
-            model_runner=lambda **_: pytest.fail("model started after SLO freeze"),
-            derived_builder=lambda **_: pytest.fail("derived build started without inputs"),
-            runtime_store=store,
-            writer_lease=run["writer_lease"],
-            fencing_token=run["fencing_token"],
-        )
+    real_admit = runtime.admit_daily_operation
+    admissions: list[dict] = []
 
-    assert candidate_calls == []
+    def admit_with_required_content(*args, **kwargs):
+        admission = real_admit(*args, **kwargs)
+        if kwargs.get("operation_id") == "current_issue_integration":
+            admission = {
+                **admission,
+                "required_content_generation_allowed": True,
+            }
+        else:
+            admission = {
+                **admission,
+                "required_content_generation_allowed": False,
+            }
+        admissions.append(admission)
+        return admission
+
+    monkeypatch.setattr(runtime, "admit_daily_operation", admit_with_required_content)
+
+    def derived_builder(**context):
+        """existing derived-builder contractを満たす最小の実fixture。"""
+
+        paths = {
+            "daily_audio_script": f"digest/Summary/{ISSUE_DATE}-audio-script.md",
+            "daily_audio": f"build/tts/{ISSUE_DATE}.mp3",
+            "daily_audio_projection": "build/tts/daily/latest_audio.json",
+            "daily_video": f"build/youtube-podcast/{ISSUE_DATE}.mp4",
+            "deepdive_html": f"docs/deepdive/{ISSUE_DATE}/index.html",
+            "deepdive_audio": f"build/tts/deepdive/{ISSUE_DATE}.mp3",
+            "deepdive_audio_projection": "build/tts/deepdive/latest_audio.json",
+            "deepdive_video": f"build/youtube-podcast-deepdive/{ISSUE_DATE}.mp4",
+            "site_html": "docs/index.html",
+        }
+        high_cost_artifacts = {
+            "daily_audio",
+            "daily_video",
+            "deepdive_audio",
+            "deepdive_video",
+        }
+        high_cost_admission = context["high_cost_admission"]
+        built: list[str] = []
+        for artifact_id, relative in paths.items():
+            if context.get("repair_actions", {}).get(artifact_id) == "reuse":
+                continue
+            if artifact_id in high_cost_artifacts:
+                assert high_cost_admission() is True
+            target = tmp_path / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(f"{artifact_id}:{ISSUE_DATE}".encode("utf-8"))
+            built.append(str(target))
+        return {"ok": True, "status": "built", "artifacts": built}
+
+    result = produce_current_issue(
+        repo_root=tmp_path,
+        issue_date=ISSUE_DATE,
+        run_id=run["run_id"],
+        scheduled_categories=("fx", "ai"),
+        candidate_provider=_candidate_provider,
+        model_runner=_model_runner,
+        derived_builder=derived_builder,
+        runtime_store=store,
+        writer_lease=run["writer_lease"],
+        fencing_token=run["fencing_token"],
+    )
+
+    assert result["ok"] is True
+    assert result["model_call_count"] == 4
+    assert result["reporter_call_count"] == 2
+    assert admissions
+    assert all(item["model_regeneration_allowed"] is False for item in admissions)
+    assert all(item["required_content_generation_allowed"] is True for item in admissions)
+    ledger = runtime.DailyArtifactLedger(
+        store,
+        run_id=run["run_id"],
+        issue_date=ISSUE_DATE,
+        writer_lease=run["writer_lease"],
+        fencing_token=run["fencing_token"],
+    )
+    assert ledger.model_call_usage() == {"initial": 4, "repair": 0, "total": 4}
 
 
 def test_repair_scope_rejects_changes_outside_allowed_json_pointer() -> None:

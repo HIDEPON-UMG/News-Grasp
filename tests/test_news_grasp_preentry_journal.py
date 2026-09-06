@@ -188,18 +188,38 @@ def test_owner_direct_isolated_import_resolves_product_helpers(tmp_path):
 
 
 def test_module_entry_is_observed_even_when_arguments_are_invalid(tmp_path, monkeypatch):
-    """CLI本体到達後の引数拒否を、開始前失敗へ戻さない。業務処理は未実行。"""
+    """引数拒否でもcanonical journalへmodule_loaded/preentry_failedを残す。"""
     from tools import news_grasp_release_nopublish as release
-    from tools import e2e_final_admission_bridge as bridge
-    monkeypatch.setenv('NEWS_GRASP_PREENTRY_JOURNAL', str(tmp_path/'entry.sqlite3'))
+
+    release._load_release_runtime_modules()
+    canonical_root = tmp_path / 'LocalAppData' / 'News-Grasp' / 'release-nopublish'
+    monkeypatch.setattr(
+        release.runtime,
+        '_windows_local_app_data',
+        lambda: canonical_root.parent.parent,
+    )
+    legacy_journal = tmp_path / 'legacy-entry.sqlite3'
+    monkeypatch.setenv('NEWS_GRASP_PREENTRY_JOURNAL', str(legacy_journal))
     monkeypatch.setenv('NEWS_GRASP_PREENTRY_ISSUE', '2026-09-06')
-    monkeypatch.setenv('NEWS_GRASP_PREENTRY_SESSION', 'invalid-argv-unit')
-    identity = {'pid': os.getpid()}
-    monkeypatch.setattr(bridge, '_query_process_identity', lambda _pid: identity)
-    observations = []
-    monkeypatch.setattr(release, '_await_owner_start_confirmation', lambda root, observed: observations.append((root, observed)))
+    monkeypatch.setenv('NEWS_GRASP_PREENTRY_SESSION', 'legacy-invalid-argv')
+    owner_ack_calls = []
+    monkeypatch.setattr(
+        release,
+        '_await_owner_start_confirmation',
+        lambda *args, **kwargs: owner_ack_calls.append((args, kwargs)),
+    )
+    issue_date = release._entry_issue_date([])
+
     with pytest.raises(SystemExit) as error:
         release._main([])
     assert error.value.code == 2
-    assert observations == [(Path(release.__file__).resolve().parents[1], identity)]
-    assert PreentryJournal(tmp_path/'entry.sqlite3').events('2026-09-06')[0]['phase'] == 'module_loaded'
+    assert owner_ack_calls == []
+    assert not legacy_journal.exists()
+
+    rows = PreentryJournal(canonical_root / 'preentry.sqlite3').events(issue_date)
+    assert [row['phase'] for row in rows] == ['module_loaded', 'preentry_failed']
+    assert rows[0]['detail']['pid'] == os.getpid()
+    assert rows[0]['detail']['modulePath'] == str(Path(release.__file__).resolve())
+    assert rows[1]['detail']['exitCode'] == 2
+    assert rows[1]['detail']['reasonCode'] == 'argument_parser_exit'
+    assert not any(row['phase'] == 'module_started' for row in rows)

@@ -132,6 +132,38 @@ def ensure_scheduled_operation_admission(*, repo_root: Path, issue_date: str) ->
 def run_model_process(command: list[str], *, route: str, **kwargs: Any) -> Any:
     """公開本線の品質生成だけを実行する直接Codex経路。"""
 
+    stdin_path = kwargs.pop("stdin_path", None)
+    stdout_sink = kwargs.pop("stdout_sink", None)
+    stderr_sink = kwargs.pop("stderr_sink", None)
+    max_output_bytes = int(kwargs.pop("max_output_bytes", 16 * 1024 * 1024))
+    cwd = kwargs.get("cwd", Path.cwd())
+    if stdin_path is not None or stdout_sink is not None or stderr_sink is not None:
+        from tools.news_grasp_owned_process import run_owned_bounded
+
+        kwargs.pop("cwd", None)
+        timeout = kwargs.pop("timeout", None)
+        env = kwargs.pop("env", None)
+        heartbeat = kwargs.pop("heartbeat", None)
+        heartbeat_interval_seconds = kwargs.pop("heartbeat_interval_seconds", None)
+        for key in ("input", "text", "capture_output", "encoding", "errors", "check"):
+            kwargs.pop(key, None)
+        if kwargs:
+            raise TypeError(
+                "MODEL_SPAWN_OWNED_ARGUMENT_INVALID:" + ",".join(sorted(kwargs))
+            )
+        return run_owned_bounded(
+            command,
+            cwd=cwd,
+            timeout=timeout,
+            max_output_bytes=max_output_bytes,
+            env=env,
+            heartbeat=heartbeat,
+            heartbeat_interval_seconds=heartbeat_interval_seconds,
+            stdin_path=stdin_path,
+            stdout_sink=stdout_sink,
+            stderr_sink=stderr_sink,
+        )
+
     for key in (
         "operation_admission_path",
         "expected_operation_kind",

@@ -18,7 +18,8 @@ from typing import Any
 EVENTS = frozenset({
     "wrapper_started", "authority_ready", "reservation_ready", "claim_started",
     "claim_ready", "witness_ready", "module_loaded", "module_entered", "module_started",
-    "terminal", "preentry_failed",
+    "terminal", "preentry_failed", "preentry_started", "local_claim", "os_observed",
+    "resume",
 })
 MAX_EVENTS_PER_ISSUE = 256
 MAX_EVENT_BYTES = 4096
@@ -42,6 +43,9 @@ class PreentryJournal:
             db.execute("CREATE TABLE IF NOT EXISTS events (sequence INTEGER PRIMARY KEY AUTOINCREMENT, issue_date TEXT NOT NULL, session_id TEXT NOT NULL, phase TEXT NOT NULL, observed_at TEXT NOT NULL, detail TEXT NOT NULL, UNIQUE(issue_date,session_id,phase))")
             db.execute("CREATE TRIGGER IF NOT EXISTS events_no_update BEFORE UPDATE ON events BEGIN SELECT RAISE(ABORT,'append_only'); END")
             db.execute("CREATE TRIGGER IF NOT EXISTS events_no_delete BEFORE DELETE ON events BEGIN SELECT RAISE(ABORT,'append_only'); END")
+            db.execute("CREATE TABLE IF NOT EXISTS run_bindings (issue_date TEXT PRIMARY KEY, observed_at TEXT NOT NULL, detail TEXT NOT NULL)")
+            db.execute("CREATE TRIGGER IF NOT EXISTS run_bindings_no_update BEFORE UPDATE ON run_bindings BEGIN SELECT RAISE(ABORT,'append_only'); END")
+            db.execute("CREATE TRIGGER IF NOT EXISTS run_bindings_no_delete BEFORE DELETE ON run_bindings BEGIN SELECT RAISE(ABORT,'append_only'); END")
 
     @contextmanager
     def _connect(self):
@@ -58,6 +62,8 @@ class PreentryJournal:
 
     def append(self, issue_date: str, session_id: str, phase: str, detail: dict[str, Any]) -> int:
         if phase not in EVENTS or not session_id or len(session_id) > 128:
+            raise RuntimeError("NEWS_GRASP_PREENTRY_EVENT_INVALID")
+        if not isinstance(detail, dict):
             raise RuntimeError("NEWS_GRASP_PREENTRY_EVENT_INVALID")
         datetime.strptime(issue_date, "%Y-%m-%d")
         raw = json.dumps(detail, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
@@ -81,6 +87,46 @@ class PreentryJournal:
                     raise RuntimeError("NEWS_GRASP_E2E_BODY_ALREADY_STARTED")
             cursor = db.execute("INSERT INTO events(issue_date,session_id,phase,observed_at,detail) VALUES(?,?,?,?,?)", (issue_date,session_id,phase,datetime.now(timezone.utc).isoformat(),raw))
             return int(cursor.lastrowid)
+
+    def bind(self, issue_date: str, detail: dict[str, Any]) -> dict[str, Any]:
+        """日付ごとの最初のcanonical run bindingを追記し、再開時は同じ値を返す。"""
+
+        datetime.strptime(issue_date, "%Y-%m-%d")
+        if not isinstance(detail, dict):
+            raise RuntimeError("NEWS_GRASP_PREENTRY_BINDING_INVALID")
+        raw = json.dumps(detail, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        if len(raw.encode("utf-8")) > MAX_EVENT_BYTES:
+            raise RuntimeError("NEWS_GRASP_PREENTRY_BINDING_TOO_LARGE")
+        with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            existing = db.execute(
+                "SELECT detail FROM run_bindings WHERE issue_date=?",
+                (issue_date,),
+            ).fetchone()
+            if existing:
+                if existing[0] != raw:
+                    raise RuntimeError("NEWS_GRASP_PREENTRY_BINDING_DRIFT")
+                return json.loads(existing[0])
+            db.execute(
+                "INSERT INTO run_bindings(issue_date,observed_at,detail) VALUES(?,?,?)",
+                (issue_date, datetime.now(timezone.utc).isoformat(), raw),
+            )
+        return dict(detail)
+
+    def binding(self, issue_date: str) -> dict[str, Any] | None:
+        """日付のimmutable bindingを読む。"""
+
+        datetime.strptime(issue_date, "%Y-%m-%d")
+        with self._connect() as db:
+            row = db.execute(
+                "SELECT detail FROM run_bindings WHERE issue_date=?",
+                (issue_date,),
+            ).fetchone()
+        return json.loads(row[0]) if row else None
+
+    # 呼び出し側の命名差を増やさず、production entryの契約名も保持する。
+    bind_run = bind
+    get_binding = binding
 
     def events(self, issue_date: str, session_id: str | None = None) -> list[dict[str, Any]]:
         query = "SELECT sequence,session_id,phase,observed_at,detail FROM events WHERE issue_date=?"

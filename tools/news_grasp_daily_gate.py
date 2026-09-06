@@ -328,7 +328,7 @@ def _producer_result(
 
 
 def _default_static_check(**context: Any) -> dict[str, Any]:
-    """固定route、runtime schema、installed automationのread-only検査。"""
+    """製品のroute/schemaを検査し、起動設定の観測はreadinessへ分離する。"""
 
     failures: list[str] = []
     try:
@@ -349,8 +349,11 @@ def _default_static_check(**context: Any) -> dict[str, Any]:
         config = runtime.validate_installed_automation_semantics()
     except Exception as exc:  # noqa: BLE001
         config = {"ok": False, "failures": [str(exc)]}
-    if config.get("ok") is not True:
-        failures.extend(f"installed_automation:{item}" for item in config.get("failures") or ["red"])
+    readiness_debt = (
+        [f"installed_automation:{item}" for item in config.get("failures") or ["red"]]
+        if config.get("ok") is not True
+        else []
+    )
     issue_date = str(context.get("issue_date") or "")
     title_status = str((context.get("run") or {}).get("title_status") or "unavailable")
     return _producer_result(
@@ -364,6 +367,8 @@ def _default_static_check(**context: Any) -> dict[str, Any]:
             "profile": profile,
             "runtime_schema": schema,
             "automation": config,
+            "next_run_readiness_status": "red" if readiness_debt else "green",
+            "next_run_readiness_debt": readiness_debt,
         },
         failures=failures,
     )

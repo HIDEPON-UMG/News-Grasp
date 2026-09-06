@@ -8,10 +8,10 @@ import os
 import re
 import shutil
 import subprocess
-import sys
 import tempfile
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextlib import contextmanager
 from datetime import date
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
@@ -22,6 +22,8 @@ CONTENT_RECEIPT_SCHEMA = "NEWS_GRASP_DAILY_CONTENT_RECEIPT_V1"
 MODEL_BUNDLE_SCHEMA = "NEWS_GRASP_DAILY_MODEL_BUNDLE_V1"
 MODEL_ARTIFACT_SCHEMA = "NEWS_GRASP_DAILY_MODEL_ARTIFACT_V1"
 MODEL_FAILURE_SCHEMA = "NEWS_GRASP_DAILY_MODEL_FAILURE_V1"
+MODEL_CALL_INTENT_SCHEMA = "NEWS_GRASP_MODEL_CALL_INTENT_V1"
+MODEL_CALL_RAW_FILENAME = "raw.json"
 REPORTER_SCHEMA = "schemas/news_grasp_daily_reporter_output.schema.json"
 REPORTER_SHARD_SCHEMA = "schemas/news_grasp_daily_reporter_shard_output.schema.json"
 EDITOR_SCHEMA = "schemas/news_grasp_daily_editor_output.schema.json"
@@ -42,6 +44,14 @@ _GENRES = {
 
 class DailyContentError(RuntimeError):
     """生成入力、model output、materializationのtyped failure。"""
+
+
+class ModelResultPending(DailyContentError):
+    """送信状態または結果回収が未確定で、同じ予約を保持する運用状態。"""
+
+    def __init__(self, detail: str = "") -> None:
+        suffix = f":{detail}" if detail else ""
+        super().__init__(f"MODEL_RESULT_PENDING{suffix}")
 
 
 def _json_bytes(value: Any) -> bytes:
@@ -278,6 +288,97 @@ def _failure_cache_path(root: Path, run_id: str, artifact_id: str) -> Path:
 
 def _artifact_input_hash(value: Mapping[str, Any]) -> str:
     return _sha256_bytes(_json_bytes(dict(value)))
+
+
+def _is_reparse_point(path: Path) -> bool:
+    return path.is_symlink() or bool(getattr(path, "is_junction", lambda: False)())
+
+
+def _model_call_root(root: Path, run_id: str, call_id: str) -> Path:
+    path = _safe_path(root, f"build/daily-content/{run_id}/model-calls/{call_id}")
+    if path.exists() and (_is_reparse_point(path) or not path.is_dir()):
+        raise DailyContentError("MODEL_CALL_ROOT_INVALID")
+    path.mkdir(parents=True, exist_ok=True)
+    if _is_reparse_point(path):
+        raise DailyContentError("MODEL_CALL_ROOT_INVALID")
+    return path
+
+
+def _model_call_intent(
+    *,
+    root: Path,
+    run_id: str,
+    issue_date: str,
+    role: str,
+    category: str | None,
+    call_id: str,
+    input_hash: str,
+) -> dict[str, Any]:
+    return {
+        "schemaVersion": MODEL_CALL_INTENT_SCHEMA,
+        "runId": run_id,
+        "issueDate": issue_date,
+        "role": role,
+        "category": category,
+        "callId": call_id,
+        "inputHash": input_hash,
+        "expectedResultFilename": MODEL_CALL_RAW_FILENAME,
+    }
+
+
+def _read_json_file(path: Path, *, error_code: str) -> Any:
+    if not path.is_file() or _is_reparse_point(path):
+        raise DailyContentError(error_code)
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise DailyContentError(error_code) from exc
+
+
+def _ensure_model_call_intent(path: Path, expected: Mapping[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        actual = _read_json_file(path, error_code="MODEL_CALL_INTENT_INVALID")
+        if not isinstance(actual, Mapping) or dict(actual) != dict(expected):
+            raise DailyContentError("MODEL_CALL_INTENT_INVALID")
+        return
+    payload = _json_bytes(expected)
+    descriptor = None
+    try:
+        descriptor = os.open(
+            path,
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0),
+            0o600,
+        )
+        with os.fdopen(descriptor, "wb") as handle:
+            descriptor = None
+            handle.write(payload)
+            handle.flush()
+            os.fsync(handle.fileno())
+    except FileExistsError:
+        actual = _read_json_file(path, error_code="MODEL_CALL_INTENT_INVALID")
+        if not isinstance(actual, Mapping) or dict(actual) != dict(expected):
+            raise DailyContentError("MODEL_CALL_INTENT_INVALID")
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+
+
+def _load_model_call_raw(path: Path) -> tuple[bool, Any]:
+    if not path.exists():
+        return False, None
+    return True, _read_json_file(path, error_code="MODEL_RAW_OUTPUT_INVALID")
+
+
+@contextmanager
+def _persistent_model_output_context(root: Path, run_id: str):
+    path = _safe_path(root, f"build/daily-content/{run_id}/model-calls")
+    if path.exists() and (_is_reparse_point(path) or not path.is_dir()):
+        raise DailyContentError("MODEL_CALL_ROOT_INVALID")
+    path.mkdir(parents=True, exist_ok=True)
+    if _is_reparse_point(path):
+        raise DailyContentError("MODEL_CALL_ROOT_INVALID")
+    yield path
 
 
 def _validator_id(artifact_id: str) -> str:
@@ -850,21 +951,45 @@ def _default_model_runner(
         if role == "reporter_shard"
         else role
     )
-    output = output_dir / f"{label}.json"
+    raw_path_value = context.get("raw_path")
+    output = Path(raw_path_value) if raw_path_value else output_dir / f"{label}.json"
+    if output.parent != output_dir:
+        try:
+            output.relative_to(output_dir)
+        except ValueError as exc:
+            raise DailyContentError("MODEL_OUTPUT_PATH_INVALID") from exc
+    prompt_context = {
+        key: value
+        for key, value in context.items()
+        if key not in {"call_id", "input_hash", "intent_path", "raw_path"}
+    }
     prompt = _model_prompt(
         root=repo_root,
         role=role,
         issue_date=issue_date,
         category=category,
-        context=context,
+        context=prompt_context,
     )
+    prompt_path = output_dir / f"{label}.prompt.txt"
+    try:
+        _atomic_write_bytes(prompt_path, prompt.encode("utf-8"))
+    except (OSError, UnicodeError) as exc:
+        raise ModelResultPending(f"{role}:prompt_persist") from exc
+    events_path = output_dir / f"{label}.events.jsonl"
+    stderr_path = output_dir / f"{label}.stderr.log"
+    try:
+        executable = str(_resolve_codex_executable())
+    except Exception as exc:  # noqa: BLE001 - unavailable launcher is operationally pending.
+        raise ModelResultPending(f"{role}:executable") from exc
     command = [
-        str(_resolve_codex_executable()),
+        executable,
         "exec",
         "--json",
         "--ephemeral",
         "--ignore-user-config",
         "--ignore-rules",
+        "-c",
+        "project_doc_max_bytes=0",
         "--skip-git-repo-check",
         "-s",
         "read-only",
@@ -890,28 +1015,24 @@ def _default_model_runner(
             if role == "editor"
             else "deepdive"
         )
-        completed = run_model_process(
-            command,
-            route=route,
-            input=prompt,
-            text=True,
-            capture_output=True,
-            encoding="utf-8",
-            errors="strict",
-            timeout=900 if role == "deepdive" else 600,
-            check=False,
-        )
+        with (
+            events_path.open("ab", buffering=0) as events_sink,
+            stderr_path.open("ab", buffering=0) as stderr_sink,
+        ):
+            completed = run_model_process(
+                command,
+                route=route,
+                cwd=repo_root,
+                stdin_path=prompt_path,
+                stdout_sink=events_sink,
+                stderr_sink=stderr_sink,
+                timeout=None,
+                max_output_bytes=16 * 1024 * 1024,
+            )
     except Exception as exc:  # noqa: BLE001 - broker failure is typed and has no canonical mutation.
-        raise DailyContentError(f"MODEL_PROCESS_FAILED:{role}:{type(exc).__name__}:{exc}") from exc
-    (output_dir / f"{label}.events.jsonl").write_text(str(completed.stdout or ""), encoding="utf-8")
-    (output_dir / f"{label}.stderr.log").write_text(str(completed.stderr or ""), encoding="utf-8")
-    if completed.returncode != 0 or not output.is_file():
-        print(
-            f"ERROR: model role={role} category={category} returncode={completed.returncode} "
-            f"stderr={str(completed.stderr or '')[-3000:]}",
-            file=sys.stderr,
-        )
-        raise DailyContentError(f"MODEL_PROCESS_FAILED:{role}:{completed.returncode}")
+        raise ModelResultPending(f"{role}:{type(exc).__name__}") from exc
+    if not output.is_file():
+        raise ModelResultPending(f"{role}:no_result")
     try:
         value = json.loads(output.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
@@ -1461,8 +1582,8 @@ def produce_current_issue(
                 fencing_token=fencing_token,
                 operation_id="current_issue_integration",
             )
-            if not current_admission.get("model_regeneration_allowed", False):
-                raise DailyContentError("SLO_MODEL_GENERATION_FROZEN")
+            if current_admission.get("required_content_generation_allowed") is not True:
+                raise DailyContentError("SLO_REQUIRED_CONTENT_GENERATION_FROZEN")
             return runtime_ledger.reserve_model_call(**request)
         return budget.consume(**request)
     model_call_count = 0
@@ -1545,7 +1666,7 @@ def produce_current_issue(
                 fencing_token=fencing_token,
                 operation_id="current_issue_integration",
             )
-            if admission.get("model_regeneration_allowed") is not True:
+            if admission.get("required_content_generation_allowed") is not True:
                 raise DailyContentError("SLO_CANDIDATE_COLLECTION_FROZEN")
         with ThreadPoolExecutor(max_workers=max(1, len(missing_candidates))) as pool:
             futures = {
@@ -1596,8 +1717,75 @@ def produce_current_issue(
 
         repair_plan = refresh_repair_plan()
 
-        with tempfile.TemporaryDirectory(prefix=f"news-grasp-daily-content-{issue_date}-") as raw:
-            output_dir = Path(raw)
+        with _persistent_model_output_context(root, run_id) as output_dir:
+            def invoke_model_call(
+                *,
+                reservation: Mapping[str, Any],
+                role: str,
+                category: str | None,
+                call_id: str,
+                input_hash: str,
+                artifact_id: str,
+                **model_context: Any,
+            ) -> tuple[Any, bool]:
+                call_root = _model_call_root(root, run_id, call_id)
+                intent_path = call_root / "intent.json"
+                raw_path = call_root / MODEL_CALL_RAW_FILENAME
+                expected_intent = _model_call_intent(
+                    root=root,
+                    run_id=run_id,
+                    issue_date=issue_date,
+                    role=role,
+                    category=category,
+                    call_id=call_id,
+                    input_hash=input_hash,
+                )
+                is_idempotent = reservation.get("idempotent") is True
+                status = str(reservation.get("status") or "reserved")
+                if is_idempotent and status == "completed":
+                    raise DailyContentError(
+                        f"MODEL_CALL_COMPLETED_CHECKPOINT_MISSING:{artifact_id}"
+                    )
+                if is_idempotent:
+                    if not intent_path.is_file() or _is_reparse_point(intent_path):
+                        raise ModelResultPending(artifact_id)
+                    _ensure_model_call_intent(intent_path, expected_intent)
+                    present, raw_value = _load_model_call_raw(raw_path)
+                    if not present:
+                        raise ModelResultPending(artifact_id)
+                    return raw_value, False
+
+                if intent_path.exists():
+                    _ensure_model_call_intent(intent_path, expected_intent)
+                    present, raw_value = _load_model_call_raw(raw_path)
+                    if present:
+                        return raw_value, False
+                    raise ModelResultPending(artifact_id)
+                _ensure_model_call_intent(intent_path, expected_intent)
+                raw_value = model_fn(
+                    role=role,
+                    repo_root=root,
+                    issue_date=issue_date,
+                    run_id=run_id,
+                    category=category,
+                    output_dir=call_root,
+                    call_id=call_id,
+                    input_hash=input_hash,
+                    intent_path=intent_path,
+                    raw_path=raw_path,
+                    **model_context,
+                )
+                present, persisted_value = _load_model_call_raw(raw_path)
+                if not present:
+                    try:
+                        _atomic_write_bytes(raw_path, _json_bytes(raw_value))
+                    except (OSError, TypeError, ValueError) as exc:
+                        raise DailyContentError("MODEL_RAW_OUTPUT_PERSIST_FAILED") from exc
+                    present, persisted_value = _load_model_call_raw(raw_path)
+                if not present:
+                    raise ModelResultPending(artifact_id)
+                return persisted_value, True
+
             reporter_rows: dict[str, dict[str, Any]] = {}
             reporter_checkpoints: dict[str, dict[str, Any]] = {}
             reporter_inputs: dict[str, dict[str, Any]] = {}
@@ -1670,7 +1858,12 @@ def produce_current_issue(
 
             def produce_reporter_shard(
                 shard: tuple[str, ...],
-            ) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]], list[str]]:
+            ) -> tuple[
+                dict[str, dict[str, Any]],
+                dict[str, dict[str, Any]],
+                list[str],
+                bool,
+            ]:
                 if runtime_ledger is not None and any(
                     planned_action(f"reporter:{category}") != "repair_model"
                     for category in shard
@@ -1710,56 +1903,6 @@ def produce_current_issue(
                     artifact_id=call_artifact_id,
                     input_hash=call_input_hash,
                 )
-                if reservation["idempotent"]:
-                    if reservation.get("status") == "completed":
-                        raise DailyContentError(
-                            f"MODEL_CALL_COMPLETED_CHECKPOINT_MISSING:{call_artifact_id}"
-                        )
-                    if budget_class == "repair":
-                        raise DailyContentError(
-                            f"MODEL_CALL_REPAIR_RESULT_MISSING:{call_artifact_id}"
-                        )
-                    for category in shard:
-                        failure = _write_failure_checkpoint(
-                            root,
-                            run_id=run_id,
-                            issue_date=issue_date,
-                            stage="reporter",
-                            artifact_id=f"reporter:{category}",
-                            predicate_id="model_result_checkpointed",
-                            reason_code="model_call_receipt_without_checkpoint",
-                            input_hash=_artifact_input_hash(reporter_inputs[category]),
-                            cause_input_mask=(f"reporter:{category}",),
-                            runtime_ledger=runtime_ledger,
-                        )
-                        reporter_inputs[category] = {
-                            **reporter_inputs[category],
-                            "repairFailureSignature": failure["failureSignature"],
-                        }
-                        shard_failures[category] = failure
-                    budget_class = "repair"
-                    call_input_hash = _artifact_input_hash(
-                        {
-                            "issueDate": issue_date,
-                            "reporters": {
-                                category: reporter_inputs[category]
-                                for category in shard
-                            },
-                        }
-                    )
-                    call_id = _sha256_bytes(
-                        f"repair|{call_artifact_id}|{call_input_hash}".encode("utf-8")
-                    )
-                    repair_reservation = consume_model_call(
-                        call_id=call_id,
-                        budget_class="repair",
-                        artifact_id=call_artifact_id,
-                        input_hash=call_input_hash,
-                    )
-                    if repair_reservation["idempotent"]:
-                        raise DailyContentError(
-                            f"MODEL_CALL_REPAIR_RESULT_MISSING:{call_artifact_id}"
-                        )
 
                 items = []
                 for category in shard:
@@ -1774,26 +1917,26 @@ def produce_current_issue(
                 try:
                     if len(shard) == 1:
                         item = items[0]
-                        raw_value = model_fn(
+                        raw_value, model_sent = invoke_model_call(
+                            reservation=reservation,
                             role="reporter",
-                            repo_root=root,
-                            issue_date=issue_date,
-                            run_id=run_id,
                             category=shard[0],
-                            output_dir=output_dir,
+                            call_id=call_id,
+                            input_hash=call_input_hash,
+                            artifact_id=call_artifact_id,
                             candidates=item["candidates"],
                             search_audit=item["search_audit"],
                             repair_feedback=shard_failures[shard[0]],
                         )
                         raw_reporters = [raw_value]
                     else:
-                        raw_value = model_fn(
+                        raw_value, model_sent = invoke_model_call(
+                            reservation=reservation,
                             role="reporter_shard",
-                            repo_root=root,
-                            issue_date=issue_date,
-                            run_id=run_id,
                             category=None,
-                            output_dir=output_dir,
+                            call_id=call_id,
+                            input_hash=call_input_hash,
+                            artifact_id=call_artifact_id,
                             categories=list(shard),
                             items=items,
                             repair_feedback={
@@ -1819,6 +1962,8 @@ def produce_current_issue(
                             raise DailyContentError(
                                 f"REPORTER_OUTPUT_INVALID:{shard[0]}:shard_identity"
                             )
+                except ModelResultPending:
+                    raise
                 except Exception as exc:  # noqa: BLE001
                     for category in shard:
                         _write_failure_checkpoint(
@@ -1935,7 +2080,7 @@ def produce_current_issue(
                             for category in shard
                         }
                     )
-                return rows, checkpoints, repaired
+                return rows, checkpoints, repaired, model_sent
 
             reporter_errors: list[DailyContentError] = []
             reporter_shards = _reporter_shards(missing_reporters)
@@ -1946,12 +2091,13 @@ def produce_current_issue(
                 }
                 for future in as_completed(futures):
                     try:
-                        rows, checkpoints, repaired = future.result()
+                        rows, checkpoints, repaired, model_sent = future.result()
                         reporter_rows.update(rows)
                         reporter_checkpoints.update(checkpoints)
                         repaired_model_artifacts.extend(repaired)
-                        model_call_count += 1
-                        reporter_call_count += 1
+                        if model_sent:
+                            model_call_count += 1
+                            reporter_call_count += 1
                     except DailyContentError as exc:
                         reporter_errors.append(exc)
             if reporter_errors:
@@ -2033,47 +2179,19 @@ def produce_current_issue(
                     artifact_id="editor",
                     input_hash=editor_input_hash,
                 )
-                if reservation["idempotent"]:
-                    if reservation.get("status") == "completed":
-                        raise DailyContentError("MODEL_CALL_COMPLETED_CHECKPOINT_MISSING:editor")
-                    if editor_budget_class == "repair":
-                        raise DailyContentError("MODEL_CALL_REPAIR_RESULT_MISSING:editor")
-                    editor_failure = _write_failure_checkpoint(
-                        root,
-                        run_id=run_id,
-                        issue_date=issue_date,
-                        stage="editor",
-                        artifact_id="editor",
-                        predicate_id="model_result_checkpointed",
-                        reason_code="model_call_receipt_without_checkpoint",
-                        input_hash=editor_input_hash,
-                        cause_input_mask=("editor",),
-                        runtime_ledger=runtime_ledger,
-                    )
-                    editor_input["repairFailureSignature"] = editor_failure["failureSignature"]
-                    editor_input_hash = _artifact_input_hash(editor_input)
-                    editor_call_id = _sha256_bytes(
-                        f"repair|editor|{editor_input_hash}".encode("utf-8")
-                    )
-                    if consume_model_call(
-                        call_id=editor_call_id,
-                        budget_class="repair",
-                        artifact_id="editor",
-                        input_hash=editor_input_hash,
-                    )["idempotent"]:
-                        raise DailyContentError("MODEL_CALL_REPAIR_RESULT_MISSING:editor")
                 try:
-                    editor_raw = model_fn(
+                    editor_raw, model_sent = invoke_model_call(
+                        reservation=reservation,
                         role="editor",
-                        repo_root=root,
-                        issue_date=issue_date,
-                        run_id=run_id,
                         category=None,
-                        output_dir=output_dir,
+                        call_id=editor_call_id,
+                        input_hash=editor_input_hash,
+                        artifact_id="editor",
                         reporters=ordered_reporters,
                         repair_feedback=editor_failure,
                     )
-                    model_call_count += 1
+                    if model_sent:
+                        model_call_count += 1
                     _assert_repair_scope(editor_failure, editor_raw)
                     editor = _validate_editor(
                         editor_raw,
@@ -2081,6 +2199,8 @@ def produce_current_issue(
                         reporters=ordered_reporters,
                         preview_dir=output_dir,
                     )
+                except ModelResultPending:
+                    raise
                 except Exception as exc:  # noqa: BLE001
                     _write_failure_checkpoint(
                         root,
@@ -2205,60 +2325,28 @@ def produce_current_issue(
                     artifact_id="deepdive_model",
                     input_hash=deepdive_input_hash,
                 )
-                if reservation["idempotent"]:
-                    if reservation.get("status") == "completed":
-                        raise DailyContentError(
-                            "MODEL_CALL_COMPLETED_CHECKPOINT_MISSING:deepdive_model"
-                        )
-                    if deepdive_budget_class == "repair":
-                        raise DailyContentError(
-                            "MODEL_CALL_REPAIR_RESULT_MISSING:deepdive_model"
-                        )
-                    deepdive_failure = _write_failure_checkpoint(
-                        root,
-                        run_id=run_id,
-                        issue_date=issue_date,
-                        stage="deepdive",
-                        artifact_id="deepdive_model",
-                        predicate_id="model_result_checkpointed",
-                        reason_code="model_call_receipt_without_checkpoint",
-                        input_hash=deepdive_input_hash,
-                        cause_input_mask=("deepdive_model",),
-                        runtime_ledger=runtime_ledger,
-                    )
-                    deepdive_input["repairFailureSignature"] = deepdive_failure["failureSignature"]
-                    deepdive_input_hash = _artifact_input_hash(deepdive_input)
-                    deepdive_call_id = _sha256_bytes(
-                        f"repair|deepdive_model|{deepdive_input_hash}".encode("utf-8")
-                    )
-                    if consume_model_call(
-                        call_id=deepdive_call_id,
-                        budget_class="repair",
-                        artifact_id="deepdive_model",
-                        input_hash=deepdive_input_hash,
-                    )["idempotent"]:
-                        raise DailyContentError(
-                            "MODEL_CALL_REPAIR_RESULT_MISSING:deepdive_model"
-                        )
                 try:
-                        deepdive_raw = model_fn(
+                    deepdive_raw, model_sent = invoke_model_call(
+                        reservation=reservation,
                         role="deepdive",
-                        repo_root=root,
-                        issue_date=issue_date,
-                        run_id=run_id,
                         category=None,
-                        output_dir=output_dir,
+                        call_id=deepdive_call_id,
+                        input_hash=deepdive_input_hash,
+                        artifact_id="deepdive_model",
                         summary_markdown=editor["summary_markdown"],
                         records=editor["append_records"],
-                            repair_feedback=deepdive_failure,
-                        )
+                        repair_feedback=deepdive_failure,
+                    )
+                    if model_sent:
                         model_call_count += 1
-                        _assert_repair_scope(deepdive_failure, deepdive_raw)
-                        deepdive = _validate_deepdive(
+                    _assert_repair_scope(deepdive_failure, deepdive_raw)
+                    deepdive = _validate_deepdive(
                         deepdive_raw,
                         issue_date=issue_date,
                         allowed_urls=allowed_urls,
                     )
+                except ModelResultPending:
+                    raise
                 except Exception as exc:  # noqa: BLE001
                     _write_failure_checkpoint(
                         root,
@@ -2530,7 +2618,7 @@ def produce_current_issue(
                 fencing_token=fencing_token,
                 operation_id="current_issue_integration",
             )
-            return current.get("high_cost_generation_allowed") is True
+            return current.get("required_content_generation_allowed") is True
 
         derived_kwargs.update(
             {

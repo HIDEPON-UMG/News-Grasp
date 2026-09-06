@@ -723,61 +723,40 @@ def test_NG_CUTOVER_12_protected_release_maps_to_simulation_in_real_daily_sequen
     assert adapter_calls == []
 
 
-def test_NG_CUTOVER_13_release_cli_claim_missing_fails_before_import_or_receipt_mutation(
+def test_NG_CUTOVER_13_release_direct_api_without_local_entry_context_fails_before_import_or_receipt_mutation(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """高コストclaim欠落時はruntime importとstate/receipt mutationへ到達しない。"""
+    """local entry contextなしのdirect APIはruntime importやmutationへ到達しない。"""
 
     module = importlib.import_module("tools.news_grasp_release_nopublish")
     repo_root = tmp_path / "execution-repo"
     repo_root.mkdir()
-    state_file = repo_root / "state.json"
-    receipt_path = repo_root / "receipt.json"
     isolation_receipt = repo_root / "isolation-receipt.json"
-    isolation_receipt.write_text('{"status":"Green"}\n', encoding="utf-8")
-    for environment_name in (
-        "NEWS_GRASP_E2E_ADMISSION_PATH",
-        "NEWS_GRASP_E2E_ARGUMENTS_PATH",
-        "NEWS_GRASP_E2E_CLAIM_PATH",
-        "NEWS_GRASP_E2E_RESERVATION_PATH",
-        "NEWS_GRASP_E2E_PARENT_AUTHORITY_PATH",
-    ):
-        monkeypatch.delenv(environment_name, raising=False)
     runtime_imports: list[bool] = []
     writes: list[Path] = []
 
     def fail_if_runtime_imported() -> None:
         runtime_imports.append(True)
-        raise AssertionError("claim admission must precede daily/runtime import")
+        raise AssertionError("local entry rejection must precede daily/runtime import")
 
     def record_write(path: Path, _value: Mapping[str, Any]) -> None:
         writes.append(path)
 
     monkeypatch.setattr(module, "_load_release_runtime_modules", fail_if_runtime_imported)
     monkeypatch.setattr(module, "_atomic_json", record_write)
-    exit_code = module._main(
-        [
-            "--repo-root",
-            str(repo_root),
-            "--source-issue-date",
-            "2026-09-03",
-            "--state-root",
-            str(repo_root / "isolated-state"),
-            "--state-file",
-            str(state_file),
-            "--receipt-path",
-            str(receipt_path),
-            "--isolation-receipt",
-            str(isolation_receipt),
-        ]
-    )
 
-    assert exit_code != 0
+    with pytest.raises(RuntimeError, match="nopublish_public_api_retired_use_cli"):
+        module.run_release_nopublish(
+            repo_root=repo_root,
+            source_issue_date="2026-09-03",
+            state_root=repo_root / "isolated-state",
+            isolation_receipt=isolation_receipt,
+            entry_context=None,
+        )
+
     assert runtime_imports == []
     assert writes == []
-    assert not state_file.exists()
-    assert not receipt_path.exists()
 
 
 def test_NG_CUTOVER_14_run_git_scrubs_all_inherited_git_config_environment(

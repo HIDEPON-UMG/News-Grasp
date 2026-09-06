@@ -55,6 +55,103 @@ NoPublish E2Eを一回だけ実行する。9月5日の公開面復旧はそのGr
 既存成果物の指摘箇所と依存下流のみを修正する。DeepDive生成が長時間であること自体を
 品質欠陥とせず、日次90分SLOの観測とコンテンツ品質の合否を別に保持する。
 
+### 2026-09-06 NoPublish起動設計の置換
+
+ユーザーの「設計を変えろ」を根拠に、Release-only NoPublishも製品内の
+`tools/news_grasp_release_nopublish.py`を唯一の実行入口とする。
+本節は旧wrapper・P08・high-cost parent/claim/witnessの起動必須契約より優先する。
+通常日次の `tools.news_grasp_direct_runtime daily` は変更しない。
+
+NoPublishは隔離worktree・隔離state・対象日付を検査し、製品内のOS排他と
+bounded append-only journalを同じprocessで所有して既存六operationを実行する。
+公開adapterは接続せず、外部公開副作用を許可しない。下位品質検証は受入前に行い、
+その証拠生成を実行時の再試験・共有サービス照会・authority再発行に変換しない。
+外部goal、共有harnessの稼働、固定SHA、caller ID、過去のwrapper失敗の清算を
+起動条件にしない。旧wrapperの別入口による競合実行を許さない。
+
+実行前の入力不正・隔離不正・競合writerは局所的な理由を永続記録して拒否する。
+その拒否でE2E試行を消費しない。本体の開始時にOS process identityと開始eventを
+永続化し、同じ製品内stateで初めて試行を消費する。記録できない場合は生成を開始しない。
+開始記録のために別processのACKや外部authorityを待たない。
+
+再開では同日・同じ実行目的の保存状態を検索し、OS排他取得後に既存checkpointを
+検査して未完了箇所だけを処理する。ID/SHAの相違だけで新規runへ作り直さない。
+改ざん・隔離外出力・生存中の競合writerは拒否するが、旧wrapperの消費数は
+履歴として保持し、新入口の未実行を消費済みと解釈しない。
+モデル呼出しは実呼出し前の製品内永続予約で、通常5カテゴリの初回5回
+（reporter shard 3、editor 1、DeepDive 1）と差分修復4回、合計最大9回を制御する。
+既存artifact ledgerの配分を再利用し、再開でリセットしない。
+90分SLOの超過と品質不合格を分け、DeepDiveの長時間生成だけを不合格にしない。
+
+既存proof/P08の安全性修正は保持するが、新入口の実行必須依存にはしない。
+static→contract→実Windows simulation→resumeを満たした後の最終NoPublish一回、
+そのGreen後の9月5日差分復旧・公開という受入順序は維持する。
+
+### 2026-09-06 全工程の運用設計を再構成する要求
+
+遅延起動・過去日復旧でも、SLO超過を理由に必須成果物の生成を禁止しない。
+75分以降の任意polish・追加診断の凍結と、残予算内の必須content生成・品質修復を
+別の許可として扱う。予定triggerからの実elapsedと90分超過は保持し、復旧開始で
+過去のSLO失敗を成功へ書き換えない。DeepDiveの生成時間だけで品質欠陥を作らない。
+
+モデルcallの予約があるのにcheckpointがない場合は、送信不明または結果回収待ちを
+先に判定する。直ちに新しいrepair callへ置換しない。モデル出力と終了情報は実行中から
+永続化し、既存結果を回収して同じvalidatorへ通す。ACK不明を未送信と推定せず、
+同じ日付・runの予約を保持する。全ての外部障害から自動的に成功できるとは主張しない。
+
+ユーザー根拠は「そもそもの仕組みがおかしい」「本番バッチも同じ仕組みだろ」
+「運用完全性が担保される仕組みを一から考えろ」である。
+ここからはNoPublish入口だけでなく、起動から公開完了・障害復帰までを設計対象とする。
+既存成果物・品質oracle・正常checkpointは引き継ぎ、コード全体の作り直しは要求しない。
+以下は目標設計であり、実装済み・本番反映済みを意味しない。
+
+運用の責任を、時刻起動と再起動を所有する決定論的な起動主体、製品内の永続workflow、
+生成を担当するLuna主体のmodel worker、外部公開adapterの四つに分ける。
+自然言語promptの「完了まで続ける」を、再起動機構の代わりにしない。
+起動主体は単一とし、06:00の予定実行、端末復帰後の未実行検出、process異常終了後の
+同じ仕事の再開を扱う。現行Codex automationと新たな起動主体を併走させない。
+具体的な起動設定の切替は受入後に行い、旧設定へ戻せる状態を保持する。
+
+起動主体の方式は、Codexの会話を起動必須とする現方式、常駐Windowsサービス、
+Windows Task Schedulerから製品dispatchを直接起動する方式を比較する。
+目標方式は最後のものとする。OS標準の再起動・遅延実行を利用でき、常駐serviceや
+外部goalを追加せず、Lunaは生成workerとして維持できるためである。
+廃止済みの旧News-Grasp Runner/installerを復活させるものではない。
+単一の新しいtaskから固定Pythonの製品dispatchだけを無表示で起動し、
+StartWhenAvailable・端末復帰・定期間隔の受付により未完了仕事を発見する。
+dispatchは次回実行時刻前・完了済み・生存writerありなら生成せず終了する。
+OSの起動結果と製品の最初の永続eventを照合できるようにし、Python起動前の故障も
+未起動として検出する。起動のために証明書類を生成するwrapperは置かない。
+電源断・OS停止中は仕事を保持し、端末復帰後に再開する。停止中に実行済みとは扱わない。
+
+製品Known Folderのstateを、日付と実行目的に対する唯一の保存先とする。
+worktree、session、caller IDを変えても同じ仕事・排他・モデル消費へ接続する。
+NoPublishのartifact出力は隔離worktreeに置くが、排他と消費はworktreeごとに作り直さない。
+開始済みの同一NoPublishの再開は試行を追加消費せず、完了済みは再生成せず結果を返す。
+
+| 状態・障害 | 所有者の必須動作 | 禁止する動作 |
+|---|---|---|
+| 時刻到来・未起動・端末復帰 | 起動主体が未完了の同日仕事を起動し、受付を永続記録する | LLMの判断や外部goalを待つ |
+| 起動前の一時失敗 | 原因・次回実行条件を保存し、bounded backoffで起動主体が再開する | E2E消費、無記録終了、即時無限再試行 |
+| 実行中のprocess停止 | OS排他の解放を確認し、保存checkpointから同じ仕事を再開する | 正常成果物の再生成、生存writerの奪取 |
+| 通信断・provider一時障害 | retry-after等の再開条件を保存して待機し、再開時に既存結果を照合する | エラーだけ返して仕事を忘れる |
+| 品質Red | 既存artifact DAGから指摘箇所とdirty downstreamだけを修復する | 全量再生成、品質判定の弱体化 |
+| モデル送信後の結果不明 | 予約・送信・結果確定を分離し、保存出力と所有processを確認する | 未送信とみなす予算返却・重複呼出し |
+| 公開送信後のACK不明 | 保存idempotency keyとprovider照合で既送信を確認する | 重複送信、未検証の公開完了宣言 |
+| 権限失効・容量不足・state破損 | 成果物を保持し、必要な対応と再開条件を記録して運用者へ通知する | 破損stateの推測再作成、無言の永久停止 |
+| 公開完了 | consumer検証と完了stateを確定し、再起動時も既存完了を返す | 完了のためだけの再生成・再送 |
+
+停止条件は安全性を守るものと、一時的に実行できないものを区別する。
+Git remoteの観測や次回配備readinessは生成開始の前提にせず、必要となる公開・配備境界で
+検査する。稼働中の実bytes改ざん、隔離逸脱、競合writerの検出は維持する。
+生成時間はprogress・process生存・外部応答状態と共に観測し、一律900秒の経過だけで
+正常なDeepDiveを中断しない。SLO超過、品質Red、外部待機を別状態として扱う。
+
+全故障での成功を仮定せず、全工程で「再開主体・保存状態・次の操作・通知条件」が
+欠けないことを運用完全性の検証対象とする。試験では本体開始前、生成途中、
+checkpoint保存境界、公開送信前後、完了確定前後に停止を注入し、保持・重複防止・
+自動再開を確認する。既存の同じ境界のGreen証拠は再利用し、E2Eを故障探索に使わない。
+
 ### Artifact Repair Contract
 
 日次成果物の依存正本は `tools.news_grasp_repair_registry.build_daily_artifact_dag` とし、candidate snapshot、カテゴリ別reporter、records/search audit/digest、editor、articles slice、Summary、Daily audio script/audio/projection/video、DeepDive model/article/dialogue/HTML/audio/projection/video、site HTML、distribution manifest、publish status、Git/Pages、YouTube、playlist、notification、public verificationを一つのDAGへ固定する。品質Redまたは欠落の修復単位はfile全体やrun全体ではなくartifact IDである。

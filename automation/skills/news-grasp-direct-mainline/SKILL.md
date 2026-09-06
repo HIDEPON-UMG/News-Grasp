@@ -41,7 +41,7 @@ runtime改ざん、state DB破損、競合live writer、許可外副作用だけ
 - checkpoint、RepairPlan、model call予算は正規runtime SQLiteでrun/issue/writer/fenceへ束縛し、同一issue dateではrun IDを変えても予算をリセットしない。reuse時も正規validatorと実file hashを確認し、不一致のartifactだけを`causeInputMask`付きでdirtyへ戻す。修復は許可されたfield/section以外の変更を拒否し、reporter shardのGreen categoryは部分保存して再生成しない。
 - `DEEPDIVE_QUALITY_REVIEW_V2` のissue codeは `deepdive_url_provenance_invalid`、`deepdive_article_value_invalid`、`deepdive_relation_quality_invalid`、`deepdive_dialogue_value_invalid`、`deepdive_research_evidence_insufficient`、`deepdive_public_surface_invalid` だけとする。
 - cost/ledger/binding failureは該当model operationだけをzero-call Redにし、実行可能なexact public successorを継続する。
-- 45分で公開critical pathへ限定し、75分以降は新規candidate収集、model生成、高コスト派生成果物を開始しない。idempotency keyを予約済みで未送信のpublic-critical初回送信は継続し、startedまたはACK不明のprovider operationは再送せず照合する。SLOは90分だが、same-run復帰、決定論的build、read-only照合、公開検証、finalizationは停止しない。
+- 45分で公開に必要な処理へ限定し、75分以降は任意の追加診断・polishを凍結する。必須candidate収集、必須model生成と品質修復は残予算内で継続し、遅延起動や過去日復旧でもSLO超過だけで禁止しない。予定triggerからのelapsedと90分SLO debtは保持する。idempotency keyを予約済みで未送信の公開必須の初回送信は継続し、startedまたはACK不明のprovider operationは再送せず照合する。同じrunの復帰、決定論的build、read-only照合、公開検証、finalizationを継続する。
 
 ## 完了authority
 

@@ -309,6 +309,98 @@ def test_ng_rrt_cli_rejects_windowsapps_or_noncanonical_python_before_state(
     assert not (state_root / "runtime.sqlite3").exists()
 
 
+def test_ng_rrt_static_check_separates_unavailable_codex_config_from_daily_readiness(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Codex設定の観測不能だけでprofile/runtime schemaをRedにしない。"""
+
+    store = runtime.DirectRunStore(
+        tmp_path / "state",
+        test_only_allow_semantic_verifier=True,
+    )
+    monkeypatch.setattr(
+        runtime,
+        "validate_installed_automation_semantics",
+        lambda: {
+            "schemaVersion": "NEWS_GRASP_DIRECT_AUTOMATION_CONFIG_V1",
+            "ok": False,
+            "status": "verification_unavailable",
+            "verification_unavailable": True,
+            "failures": ["automation_config_unavailable"],
+        },
+    )
+
+    result = daily._default_static_check(
+        store=store,
+        issue_date=ISSUE_DATE,
+        run={"title_status": "unavailable"},
+    )
+
+    assert result["ok"] is True
+    assert result["status"] == "verified"
+    assert result["failures"] == []
+    assert result["profile"]["status"] == "validated"
+    assert result["runtime_schema"]["ok"] is True
+    assert result["automation"]["verification_unavailable"] is True
+
+
+def test_ng_rrt_static_check_keeps_invalid_profile_red(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """profile検査そのものの失敗はreadiness debtへ降格しない。"""
+
+    store = runtime.DirectRunStore(
+        tmp_path / "state",
+        test_only_allow_semantic_verifier=True,
+    )
+
+    def invalid_profile() -> dict[str, object]:
+        raise daily.NewsGraspGateProfileError("fixture_profile_invalid")
+
+    monkeypatch.setattr(daily, "validate_profiles", invalid_profile)
+    monkeypatch.setattr(runtime, "validate_installed_automation_semantics", _installed_green)
+
+    result = daily._default_static_check(
+        store=store,
+        issue_date=ISSUE_DATE,
+        run={"title_status": "unavailable"},
+    )
+
+    assert result["ok"] is False
+    assert result["status"] == "red"
+    assert result["failures"] == ["gate_profile_red:fixture_profile_invalid"]
+
+
+def test_ng_rrt_static_check_keeps_invalid_runtime_schema_red(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """runtime schema検査そのものの失敗はreadiness debtへ降格しない。"""
+
+    store = runtime.DirectRunStore(
+        tmp_path / "state",
+        test_only_allow_semantic_verifier=True,
+    )
+
+    def invalid_schema() -> dict[str, object]:
+        raise RuntimeError("fixture_schema_invalid")
+
+    monkeypatch.setattr(store, "ensure_runtime_schema", invalid_schema)
+    monkeypatch.setattr(runtime, "validate_installed_automation_semantics", _installed_green)
+
+    result = daily._default_static_check(
+        store=store,
+        issue_date=ISSUE_DATE,
+        run={"title_status": "unavailable"},
+    )
+
+    assert result["ok"] is False
+    assert result["status"] == "red"
+    assert result["failures"] == ["runtime_schema_red:fixture_schema_invalid"]
+
+
 def test_ng_rrt_direct_api_cannot_self_authorize_missing_command_or_capability(
     tmp_path: Path,
 ) -> None:
