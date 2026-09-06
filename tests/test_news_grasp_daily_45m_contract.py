@@ -2139,10 +2139,10 @@ def test_ng_rrt_runtime_generation_is_bound_to_runtime_bytes(tmp_path: Path) -> 
     assert after != before
 
 
-def test_ng_rrt_runtime_bytes_drift_fails_active_identity_integrity(
+def test_ng_rrt_runtime_bytes_drift_resumes_same_contract(
     tmp_path: Path,
 ) -> None:
-    """開始後のruntime generation差替えは次回debtへ格下げしない。"""
+    """同じ状態契約の更新は元sealを保持し、同runの再開を許す。"""
 
     runtime = _module("tools.news_grasp_direct_runtime")
     store = runtime.DirectRunStore(
@@ -2160,7 +2160,7 @@ def test_ng_rrt_runtime_bytes_drift_fails_active_identity_integrity(
         source_baseline="a" * 40,
         remote_base_sha="b" * 40,
         manifest_id="f" * 64,
-        runtime_generation="runtime-bytes-a",
+        runtime_generation=runtime.RUNTIME_SCHEMA_V2 + ":" + "a" * 64,
         allowed_side_effect_ids=["external_publication"],
     )
 
@@ -2169,20 +2169,22 @@ def test_ng_rrt_runtime_bytes_drift_fails_active_identity_integrity(
         issue_date=ISSUE_DATE,
         observed_identity={
             "ok": True,
-            "runtime_generation": "runtime-bytes-b",
+            "runtime_generation": runtime.RUNTIME_SCHEMA_V2 + ":" + "b" * 64,
+            "allowed_side_effect_ids": ["external_publication"],
         },
     )
 
-    assert resolved["ok"] is False
-    assert resolved["status"] == "failed_integrity"
+    assert resolved["ok"] is True
+    assert resolved["runtime_compatibility"] == "same_contract"
     assert resolved["run_id"] == started["run_id"]
-    assert "active_start_seal_runtime_bytes_mismatch" in resolved["failures"]
+    assert resolved["runtime_generation"].endswith("b" * 64)
+    assert resolved["sealed_runtime_generation"].endswith("a" * 64)
 
 
-def test_ng_rrt_unobserved_runtime_bytes_fail_active_identity_integrity(
+def test_ng_rrt_unobserved_runtime_bytes_preserve_active_identity(
     tmp_path: Path,
 ) -> None:
-    """runtime generationを観測できない再開は保存sealへfallbackしない。"""
+    """未観測は応答だけを保留し、保存runを破損状態へ書き換えない。"""
 
     runtime = _module("tools.news_grasp_direct_runtime")
     store = runtime.DirectRunStore(
@@ -2215,8 +2217,10 @@ def test_ng_rrt_unobserved_runtime_bytes_fail_active_identity_integrity(
         },
     )
 
-    assert resolved["status"] == "failed_integrity"
-    assert "active_start_seal_runtime_bytes_unobserved" in resolved["failures"]
+    assert resolved["status"] == "blocked"
+    assert resolved["runtime_compatibility"] == "pending"
+    with store.connect() as conn:
+        assert conn.execute("SELECT status FROM runs").fetchone()[0] == "active"
 
 
 def test_ng_rrt_allowed_side_effect_drift_fails_active_identity_integrity(
@@ -2564,3 +2568,60 @@ def test_expired_owner_resumes_same_run_at_first_missing_daily_receipt(
     assert recovered["run_id"] == first["run_id"]
     assert recovered["exact_successor"] == expected_successor
     assert recovered["fencing_token"] == first["fencing_token"] + 1
+
+
+@pytest.mark.parametrize("scenario", ["pre_external", "claim", "current_issue", "external_reconcile", "consumer"])
+def test_compatible_runtime_update_preserves_existing_recovery(tmp_path: Path, monkeypatch, scenario: str) -> None:
+    """既存の回復oracleを、開始後に実bytes世代が変わる条件でも満たす。"""
+    runtime = _module("tools.news_grasp_direct_runtime")
+    original_start = runtime.start_run
+    calls = 0
+    def changed_generation(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        kwargs["runtime_generation"] = runtime.RUNTIME_SCHEMA_V2 + ":" + ("a" if calls == 1 else "b") * 64
+        def immutable_rows():
+            with args[0].connect() as conn:
+                return (
+                    [tuple(row) for row in conn.execute("SELECT run_id,start_seal_json FROM runs ORDER BY run_id")],
+                    [tuple(row) for row in conn.execute("SELECT * FROM daily_operation_receipts ORDER BY run_id,operation_index")],
+                )
+        before = immutable_rows() if calls > 1 else None
+        result = original_start(*args, **kwargs)
+        if before is not None:
+            assert immutable_rows() == before
+        return result
+    monkeypatch.setattr(runtime, "start_run", changed_generation)
+    if scenario == "pre_external":
+        test_ng_rrt_expired_pre_external_owner_resumes_same_run_from_next_operation(tmp_path)
+    elif scenario == "claim":
+        test_ng_rrt_expired_claim_resumes_same_run_without_repeating_green_receipts(tmp_path)
+    elif scenario == "external_reconcile":
+        test_ng_rrt_expired_external_owner_recovery_rebinds_claim_to_reconcile(tmp_path)
+    else:
+        count = 2 if scenario == "current_issue" else 4
+        test_expired_owner_resumes_same_run_at_first_missing_daily_receipt(tmp_path, count, runtime.DAILY_OPERATION_ORDER[count])
+    assert calls == 2
+
+
+@pytest.mark.parametrize("observed", ["", "unknown", "NEWS_GRASP_DIRECT_RUNTIME_V3:" + "b" * 64, "db_schema_changed"])
+def test_unknown_runtime_compatibility_leaves_canonical_db_unchanged(tmp_path: Path, observed: str) -> None:
+    runtime = _module("tools.news_grasp_direct_runtime")
+    store = runtime.DirectRunStore(tmp_path / "state", test_only_allow_semantic_verifier=True)
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    kwargs = dict(cwd=repo, issue_date=ISSUE_DATE, run_intent=RUN_INTENT,
+                  runtime_generation=runtime.RUNTIME_SCHEMA_V2 + ":" + "a" * 64,
+                  allowed_side_effect_ids=["external_publication"])
+    first = runtime.start_run(store, **kwargs)
+    if observed == "db_schema_changed":
+        with store.connect() as conn:
+            conn.execute("UPDATE runs SET runtime_schema='UNKNOWN_RUNTIME_SCHEMA' WHERE run_id=?", (first["run_id"],))
+            conn.commit()
+        observed = runtime.RUNTIME_SCHEMA_V2 + ":" + "b" * 64
+    before = store.db_path.read_bytes()
+    result = runtime.start_run(store, **{**kwargs, "runtime_generation": observed})
+    assert result["status"] == "blocked"
+    assert result["runtime_compatibility"] == "pending"
+    assert "writer_lease" not in result
+    assert store.db_path.read_bytes() == before

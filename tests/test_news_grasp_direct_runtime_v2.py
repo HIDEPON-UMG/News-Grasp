@@ -11,6 +11,24 @@ from pathlib import Path
 import pytest
 
 
+def test_pending_runtime_compatibility_survives_daily_entry_projection(tmp_path, monkeypatch):
+    from tools import news_grasp_direct_runtime as runtime
+    from tools import news_grasp_daily_gate as daily
+
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    monkeypatch.setattr(daily, "protected_release_failure", lambda **_: None)
+    monkeypatch.setattr(daily, "resolve_daily_identity_context", lambda **_: {})
+    monkeypatch.setattr(runtime, "resolve_daily_start_identity", lambda *_, **__: {
+        "ok": False, "status": "blocked", "runtime_compatibility": "pending",
+        "failures": ["runtime_compatibility_pending"], "run_id": "saved-run",
+    })
+    monkeypatch.setattr(daily, "run_daily_sequence", lambda **_: pytest.fail("pending状態で本線へ到達"))
+    result = runtime._run_daily_mainline_locked(repo_root=tmp_path, state_root=tmp_path / "News-Grasp/direct-mainline", issue_date="2026-09-06", scheduler_trigger_at=None)
+    assert result["status"] == "blocked"
+    assert result["runtime_compatibility"] == "pending"
+    assert result["failures"] == ["runtime_compatibility_pending"]
+
+
 def test_daily_process_mutex_blocks_a_second_process(tmp_path: Path) -> None:
     api = importlib.import_module("tools.news_grasp_direct_runtime")
     script = (
@@ -1114,6 +1132,21 @@ def test_schema_preflight_terminalizes_expired_active_row_when_same_identity_is_
         assert conn.execute(
             "SELECT COUNT(*) FROM external_outbox WHERE run_id='legacy-stale-active'"
         ).fetchone() == (0,)
+
+
+def test_finalizer_recovery_after_compatible_runtime_update(tmp_path: Path, monkeypatch) -> None:
+    """同一契約のコード更新後もnonceとreceiptを再利用して完了する。"""
+    api = importlib.import_module("tools.news_grasp_direct_runtime")
+    original_start = api.start_run
+    calls = 0
+    def changed_generation(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        kwargs["runtime_generation"] = api.RUNTIME_SCHEMA_V2 + ":" + ("a" if calls == 1 else "b") * 64
+        return original_start(*args, **kwargs)
+    monkeypatch.setattr(api, "start_run", changed_generation)
+    test_finalizer_crash_resumes_same_nonce_without_public_reprobe_or_external_resend(tmp_path, monkeypatch)
+    assert calls >= 3
 
 
 def test_finalizer_crash_resumes_same_nonce_without_public_reprobe_or_external_resend(

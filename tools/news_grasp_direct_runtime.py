@@ -623,12 +623,31 @@ def _start_seal_receipt_matches(
         return False
 
 
+def _runtime_compatibility(seal: Mapping[str, Any], observed: str, row: Any) -> str:
+    """保存証拠の真正性と、観測コードが同じ状態契約を扱えることを分離する。"""
+    saved = str(seal.get("runtimeGeneration") or "")
+    schema = str(_row_value(row, "runtime_schema", _row_value(row, "schemaVersion", "")))
+    if schema != RUNTIME_SCHEMA_V2:
+        return "pending"
+    if saved and observed and saved == observed:
+        return "exact"
+    pattern = re.escape(RUNTIME_SCHEMA_V2) + r":[0-9a-f]{64}"
+    if re.fullmatch(pattern, saved) and re.fullmatch(pattern, observed):
+        return "same_contract"
+    return "pending"
+
+
+def _runtime_compatibility_pending(run_id: str) -> dict[str, Any]:
+    return {"ok": False, "status": "blocked", "runtime_compatibility": "pending",
+            "run_id": run_id, "failures": ["runtime_compatibility_pending"],
+            "exact_successor": "observe_compatible_product_runtime"}
+
+
 def _start_seal_integrity_failures(
     seal: Any,
     *,
     store: "DirectRunStore" | None = None,
     row: Any | None = None,
-    expected_runtime_generation: str | None = None,
     expected_side_effect_ids: Sequence[str] | None = None,
     allow_legacy_fields: bool = False,
 ) -> list[str]:
@@ -664,11 +683,6 @@ def _start_seal_integrity_failures(
             or len(set(side_effect_ids)) != len(side_effect_ids)
         ):
             failures.append("active_start_seal_allowed_side_effect_ids_invalid")
-    if expected_runtime_generation is not None:
-        if not expected_runtime_generation:
-            failures.append("active_start_seal_runtime_bytes_unobserved")
-        elif runtime_generation != expected_runtime_generation:
-            failures.append("active_start_seal_runtime_bytes_mismatch")
     if expected_side_effect_ids is not None and side_effect_ids != list(
         expected_side_effect_ids
     ):
@@ -4350,8 +4364,6 @@ def start_run(
             raise ValueError("manifest_id_must_be_unsealed_at_start")
         if not re.fullmatch(r"[0-9a-f]{64}", supplied_manifest_reservation_id):
             raise ValueError("manifest_reservation_id_required")
-        if not str(runtime_generation or "").strip():
-            raise ValueError("runtime_generation_required")
         side_effect_ids = [str(item).strip() for item in (allowed_side_effect_ids or ())]
         if not side_effect_ids or len(set(side_effect_ids)) != len(side_effect_ids):
             raise ValueError("allowed_side_effect_ids_required")
@@ -4433,11 +4445,6 @@ def start_run(
                     stored_start_seal,
                     store=store,
                     row=latest,
-                    expected_runtime_generation=(
-                        str(runtime_generation)
-                        if runtime_generation or not store.test_only_allow_semantic_verifier
-                        else None
-                    ),
                     expected_side_effect_ids=side_effect_ids,
                     allow_legacy_fields=store.test_only_allow_semantic_verifier,
                 )
@@ -4470,6 +4477,16 @@ def start_run(
                     projection.pop("fencing_token", None)
                     conn.commit()
                     return projection
+                saved_runtime = str(stored_start_seal.get("runtimeGeneration") or "")
+                legacy_fixture = store.test_only_allow_semantic_verifier and not saved_runtime.startswith(RUNTIME_SCHEMA_V2 + ":")
+                observed_runtime = str(runtime_generation or (saved_runtime if legacy_fixture else ""))
+                compatibility = _runtime_compatibility(stored_start_seal, observed_runtime, latest)
+                if compatibility == "pending":
+                    conn.rollback()
+                    return _runtime_compatibility_pending(str(latest["run_id"]))
+                runtime_evidence = {"sealedRuntimeGeneration": saved_runtime,
+                                    "observedRuntimeGeneration": observed_runtime,
+                                    "runtimeCompatibility": compatibility}
             lease_until = _parse_time(latest["lease_until"])
             if latest["status"] in {"active", "executing", "finalizing"} and lease_until and lease_until > now:
                 projection = _projection_from_row(store, conn, latest)
@@ -4524,7 +4541,7 @@ def start_run(
                 )
                 can_recover_pre_external = (
                     latest["status"] in {"active", "executing"}
-                    and stored_start_seal.get("runtimeGeneration") == str(runtime_generation)
+                    and compatibility in {"exact", "same_contract"}
                     and stored_start_seal.get("allowedSideEffectIds") == side_effect_ids
                     and prior_operation_indices == list(range(next_operation_index))
                     and next_operation_index < len(DAILY_OPERATION_ORDER)
@@ -4593,6 +4610,7 @@ def start_run(
                         evidence={
                             "phase": exact_successor,
                             "event": "expired_owner_same_run_continuation",
+                            **runtime_evidence,
                             "preservedOperationCount": next_operation_index,
                             "priorFencingToken": prior_fencing_token,
                             "recoveryFencingToken": recovery_fencing_token,
@@ -4674,7 +4692,7 @@ def start_run(
                         == consumer_receipt_hash
                         and bool(consumer_receipt_hash)
                         and daily_indices == list(range(len(DAILY_OPERATION_ORDER)))
-                        and stored_seal.get("runtimeGeneration") == str(runtime_generation)
+                        and compatibility in {"exact", "same_contract"}
                         and stored_seal.get("allowedSideEffectIds") == side_effect_ids
                         and _publish_seal_matches_current_run(
                             publish_seal,
@@ -4713,6 +4731,7 @@ def start_run(
                             evidence={
                                 "phase": "atomic_completion",
                                 "event": "finalizer_receipt_resume",
+                                **runtime_evidence,
                                 "external_state": external_state,
                             },
                         )
@@ -4771,7 +4790,7 @@ def start_run(
                     ).fetchall()
                 ]
                 route_binding_matches = (
-                    stored_seal.get("runtimeGeneration") == str(runtime_generation)
+                    compatibility in {"exact", "same_contract"}
                     and stored_seal.get("allowedSideEffectIds") == side_effect_ids
                 )
                 publish_seal_matches = _publish_seal_matches_current_run(
@@ -4851,6 +4870,7 @@ def start_run(
                             "phase": "current_issue_integration",
                             "event": "expired_owner_continuation",
                             "release_commit_reusable": commit_matches,
+                            **runtime_evidence,
                             "publish_seal_reusable": publish_seal_matches,
                         },
                     )
@@ -4878,7 +4898,7 @@ def start_run(
                         {},
                     )
                     binding_matches = (
-                        stored_seal.get("runtimeGeneration") == str(runtime_generation)
+                        compatibility in {"exact", "same_contract"}
                         and stored_seal.get("allowedSideEffectIds") == side_effect_ids
                         and _publish_seal_matches_current_run(
                             publish_seal,
@@ -4954,6 +4974,7 @@ def start_run(
                             evidence={
                                 "phase": "external_publication",
                                 "event": "expired_owner_continuation",
+                                **runtime_evidence,
                                 "external_state": external_state,
                             },
                         )
@@ -4988,6 +5009,11 @@ def start_run(
                     "UPDATE runs SET status = ?, updated_at = ? WHERE run_id = ?",
                     ("stale_writer_rejected", now_text, latest["run_id"]),
                 )
+        if not store.test_only_allow_semantic_verifier and not re.fullmatch(
+            re.escape(RUNTIME_SCHEMA_V2) + r":[0-9a-f]{64}", str(runtime_generation or "")
+        ):
+            conn.rollback()
+            raise ValueError("runtime_generation_required_or_invalid")
         prior_generation = int(latest["generation"]) if latest is not None else 0
         generation = max(prior_generation + 1, _call_generation(store.host_generation))
         fence_row = conn.execute(
@@ -7435,7 +7461,6 @@ def resolve_daily_start_identity(
         seal,
         store=store,
         row=active,
-        expected_runtime_generation=str(observed_identity.get("runtime_generation") or ""),
         expected_side_effect_ids=expected_side_effect_ids,
         allow_legacy_fields=store.test_only_allow_semantic_verifier,
     )
@@ -7469,6 +7494,9 @@ def resolve_daily_start_identity(
             "exact_successor": "repair_start_identity_under_explicit_authority",
         }
     assert isinstance(seal, Mapping)
+    compatibility = _runtime_compatibility(seal, str(observed_identity.get("runtime_generation") or ""), active)
+    if compatibility == "pending":
+        return _runtime_compatibility_pending(str(active.get("run_id") or ""))
     source_baseline = str(seal.get("sourceBaseline") or "").casefold()
     remote_base_sha = str(seal.get("remoteBaseSha") or "").casefold()
     manifest_reservation_id = str(
@@ -7483,7 +7511,7 @@ def resolve_daily_start_identity(
         "source_baseline": source_baseline,
         "remote_base_sha": remote_base_sha,
         "manifest_reservation_id": manifest_reservation_id,
-        "runtime_generation": runtime_generation,
+        "runtime_generation": str(observed_identity.get("runtime_generation") or ""),
         "allowed_side_effect_ids": allowed_side_effect_ids,
     }
     for key, sealed_value in observed_bindings.items():
@@ -7495,6 +7523,8 @@ def resolve_daily_start_identity(
         "schemaVersion": "NEWS_GRASP_DAILY_IDENTITY_CONTEXT_V2",
         "ok": True,
         "resume_identity": True,
+        "runtime_compatibility": compatibility,
+        "sealed_runtime_generation": runtime_generation,
         "run_id": str(active.get("run_id") or ""),
         "manifest_id": str(active.get("manifest_id") or ""),
         **observed_bindings,
@@ -7543,6 +7573,10 @@ def _run_daily_mainline_locked(
         result = _daily_red("daily_identity_preflight_red", identity=identity)
         if identity.get("status") == "failed_integrity":
             result["status"] = "failed_integrity"
+        elif identity.get("status") == "blocked" and identity.get("runtime_compatibility") == "pending":
+            result.update({"status": "blocked", "runtime_compatibility": "pending",
+                           "failures": list(identity.get("failures") or ()),
+                           "exact_successor": identity.get("exact_successor", "observe_compatible_product_runtime")})
         return result
     daily_context: dict[str, Any] | None = None
     if artifact_source is not None:
