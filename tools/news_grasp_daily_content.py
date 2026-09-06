@@ -1546,9 +1546,19 @@ def _default_derived_builder(
     summary_audio: Mapping[str, Any] = {}
     if needs("daily_audio_script"):
         guard()
+        editor_checkpoint = checkpoints.get("editor")
+        article_records = None
+        if editor_checkpoint is not None:
+            if not isinstance(editor_checkpoint, Mapping) or editor_checkpoint.get("status") != "Green":
+                raise DailyContentError("SUMMARY_AUDIO_EDITOR_CHECKPOINT_UNVERIFIED")
+            editor_payload = editor_checkpoint.get("payload")
+            if not isinstance(editor_payload, Mapping) or not isinstance(editor_payload.get("append_records"), list):
+                raise DailyContentError("SUMMARY_AUDIO_EDITOR_CHECKPOINT_INVALID")
+            article_records = editor_payload["append_records"]
         summary_audio = materialize_summary_audio_script(
             repo_root=repo_root,
             issue_date=issue_date,
+            article_records=article_records,
         )
         artifacts.append(str(repo_root / str(summary_audio["artifactPath"])))
 

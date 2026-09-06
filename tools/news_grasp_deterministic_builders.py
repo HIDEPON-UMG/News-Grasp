@@ -299,6 +299,7 @@ def materialize_summary_audio_script(
     repo_root: Path | str,
     issue_date: str,
     expected_source_sha256: str | None = None,
+    article_records: list[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """immutable Summaryから音声原稿を作り、既存TTS品質gate後にだけ確定する。
 
@@ -318,7 +319,7 @@ def materialize_summary_audio_script(
     )
 
     from tools.publish_inventory import scheduled_category_ids
-    from tools.tts.build_script import CATEGORY_ALIASES, validate_script
+    from tools.tts.build_script import CATEGORY_ALIASES, effective_char_count, normalize_for_tts, validate_script
 
     categories = tuple(scheduled_category_ids(issue_date))
     category_names = [CATEGORY_ALIASES[cat_id][0] for cat_id in categories]
@@ -354,6 +355,47 @@ def materialize_summary_audio_script(
         maximum_chars=max(0, 2870 - len(opening) - len(closing)),
     )
     body = "\n\n".join((outline, opening, source_body, closing))
+    supplemental_sources: list[dict[str, str]] = []
+    if effective_char_count(body) < 2500 and article_records is not None:
+        if not isinstance(article_records, list):
+            raise NewsGraspBuilderError("NG_SUMMARY_AUDIO_SUPPLEMENT_INVALID")
+        validated: list[dict[str, str]] = []
+        urls: set[str] = set()
+        for record in article_records:
+            if not isinstance(record, Mapping):
+                raise NewsGraspBuilderError("NG_SUMMARY_AUDIO_SUPPLEMENT_INVALID")
+            title_value = record.get("title_ja") or record.get("title")
+            values = {"date": record.get("date"), "url": record.get("url"),
+                      "title": title_value, "summary": record.get("summary")}
+            if (any(not isinstance(value, str) or not value.strip() for value in values.values())
+                    or values["date"] != issue_date or values["url"] in urls):
+                raise NewsGraspBuilderError("NG_SUMMARY_AUDIO_SUPPLEMENT_INVALID")
+            urls.add(values["url"])
+            validated.append(values)
+        additions: list[str] = []
+        seen = {sentence.strip() for sentence in re.findall(r"[^。！？\n]+[。！？]?", source_body)}
+        for record in validated:
+            used = False
+            supplement = normalize_for_tts(record["title"] + "。\n" + record["summary"])
+            for sentence in re.findall(r"[^。！？\n]+[。！？]?", supplement):
+                sentence = sentence.strip()
+                if not sentence or sentence in seen or sentence in source_body:
+                    continue
+                candidate = "\n\n".join((outline, opening, source_body, "\n".join([*additions, sentence]), closing))
+                if effective_char_count(candidate) > 2870:
+                    continue
+                additions.append(sentence)
+                seen.add(sentence)
+                used = True
+                body = candidate
+                if effective_char_count(body) >= 2500:
+                    break
+            if used:
+                supplemental_sources.append({"url": record["url"], "recordHash": _hash(record)})
+            if effective_char_count(body) >= 2500:
+                break
+        if supplemental_sources:
+            source_hash = _hash({"summarySha256": source_hash, "supplementalSources": supplemental_sources})
     issues = validate_script(
         body,
         date=issue_date,
@@ -395,6 +437,7 @@ def materialize_summary_audio_script(
                     "sourceHash": source_hash,
                     "outputHash": hashlib.sha256(existing_raw).hexdigest(),
                     "qualityGate": "tools.tts.build_script.validate_script",
+                    **({"supplementalSources": supplemental_sources} if supplemental_sources else {}),
                 }
 
     document = (
@@ -415,6 +458,7 @@ def materialize_summary_audio_script(
         "sourceHash": source_hash,
         "outputHash": hashlib.sha256(output_bytes).hexdigest(),
         "qualityGate": "tools.tts.build_script.validate_script",
+        **({"supplementalSources": supplemental_sources} if supplemental_sources else {}),
     }
 
 

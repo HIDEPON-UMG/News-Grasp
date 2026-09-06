@@ -97,7 +97,7 @@ def build_daily_artifact_dag(categories: Sequence[str]) -> dict[str, dict[str, A
         owner="summary_materializer",
     )
     dag["daily_audio_script"] = _node(
-        depends_on=("summary",),
+        depends_on=("summary", "editor"),
         producer_kind="deterministic",
         owner="daily_audio_builder",
     )
@@ -366,6 +366,11 @@ def validate_repair_plan(plan: Mapping[str, Any]) -> dict[str, Any]:
     steps = plan.get("steps")
     if not all(isinstance(item, list) for item in (failures, dirty_roots, dirty_artifacts, steps)):
         raise NewsGraspRepairPlanError("NG_REPAIR_PLAN_SHAPE_INVALID")
+    # 保存済みの旧台本依存だけは、当時のDAGで全体の意味検証を行う。
+    # 新規planはbuild_daily_artifact_dagから現行依存で生成される。
+    if any(isinstance(step, Mapping) and step.get("artifactId") == "daily_audio_script"
+           and step.get("dependsOn") == ["summary"] for step in steps):
+        dag["daily_audio_script"]["dependsOn"] = ["summary"]
     if len(set(dirty_roots)) != len(dirty_roots) or any(item not in dag for item in dirty_roots):
         raise NewsGraspRepairPlanError("NG_REPAIR_PLAN_SEMANTIC_INVALID")
     expected_roots = [item for item in dag_order if item in set(dirty_roots)]
