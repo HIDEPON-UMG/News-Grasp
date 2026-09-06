@@ -629,6 +629,18 @@ def build_publish_manifest(
         ):
             raise ValueError("manifest_content_receipt_invalid")
         receipt_hashes: dict[str, str] = {}
+        marker_neutral_kinds = {
+            "public_home",
+            "issue_index",
+            "summary_html",
+            "deepdive_html",
+            "category_html",
+        }
+        entry_by_path = {
+            str(row.get("localPath") or ""): row
+            for row in entries
+            if isinstance(row, Mapping)
+        }
         for field in ("artifact_hashes", "derived_artifact_hashes"):
             value = content_receipt.get(field)
             if not isinstance(value, Mapping):
@@ -637,7 +649,16 @@ def build_publish_manifest(
                 normalized, absolute = _safe_repo_relative_path(root, str(relative))
                 if not normalized.startswith(("data/", "digest/", "docs/")) or normalized.startswith("data/distribution/"):
                     continue
-                if not absolute.is_file() or hashlib.sha256(_read_regular_no_follow(absolute)).hexdigest() != str(digest):
+                if not absolute.is_file():
+                    raise ValueError("manifest_content_receipt_drift")
+                raw = _read_regular_no_follow(absolute)
+                artifact_kind = str((entry_by_path.get(normalized) or {}).get("artifactKind") or "")
+                observed_digest = (
+                    hashlib.sha256(_marker_neutral_html_bytes(raw)).hexdigest()
+                    if artifact_kind in marker_neutral_kinds
+                    else hashlib.sha256(raw).hexdigest()
+                )
+                if observed_digest != str(digest):
                     raise ValueError("manifest_content_receipt_drift")
                 receipt_hashes[normalized] = str(digest)
         existing_paths = {str(row["localPath"]) for row in entries}

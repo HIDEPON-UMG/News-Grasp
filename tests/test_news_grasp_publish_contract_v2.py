@@ -61,6 +61,28 @@ def _lease(api, tmp_path: Path):
     return api.PublishLeaseStore(tmp_path / "lease-state", test_only_allow_noncanonical=True, test_only_skip_runtime_binding=True)
 
 
+def test_content_receipt_survives_marker_materialization_and_rejects_body_drift(tmp_path: Path) -> None:
+    """原文receiptを保持したまま公開marker付与と再検証を完了する。"""
+    api = _api()
+    _manifest(tmp_path)
+    home = tmp_path / "docs/index.html"
+    receipt_path = tmp_path / "build/daily-content" / RUN_ID / "completion.json"
+    receipt_path.parent.mkdir(parents=True)
+    receipt_path.write_text(json.dumps({
+        "schemaVersion": "NEWS_GRASP_DAILY_CONTENT_RECEIPT_V1",
+        "issue_date": ISSUE_DATE, "run_id": RUN_ID, "ok": True,
+        "artifact_hashes": {},
+        "derived_artifact_hashes": {"docs/index.html": hashlib.sha256(home.read_bytes()).hexdigest()},
+    }), encoding="utf-8")
+    receipt_before = receipt_path.read_bytes()
+    manifest = api.build_publish_manifest(repo_root=tmp_path, issue_date=ISSUE_DATE, run_id=RUN_ID, run_intent=RUN_INTENT, source_baseline="a" * 40)
+    api.materialize_manifest_markers(tmp_path, manifest, lease_store=_lease(api, tmp_path), writer_lease="token-a", test_only_allow_noncanonical_lease_store=True)
+    assert api.verify_manifest(manifest, repo_root=tmp_path, require_files=True)["ok"] is True
+    assert receipt_path.read_bytes() == receipt_before
+    home.write_text(home.read_text(encoding="utf-8").replace("fixture", "tampered"), encoding="utf-8")
+    assert api.verify_manifest(manifest, repo_root=tmp_path, require_files=True)["ok"] is False
+
+
 def test_publish_lease_rejects_runtime_database_replacement(tmp_path: Path, monkeypatch) -> None:
     api = _api()
     runtime = importlib.import_module("tools.news_grasp_direct_runtime")
