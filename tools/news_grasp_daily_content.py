@@ -1728,7 +1728,31 @@ def _default_derived_builder(
         artifacts.append(str(video["mp4_path"]))
     if needs("site_html"):
         guard()
-        artifacts.extend(map(str, generate_pages.build_all(full=False)))
+        docs = repo_root / "docs"
+        digests = generate_pages.scan_digests()
+        issue_digests = [path for path in digests if path.name.startswith(issue_date)]
+        artifacts.extend(map(str, generate_pages.build_all(full=False, docs_root=docs, digests=issue_digests)))
+        entries = generate_pages._collect_entries(digests)
+        from tools.render_deepdive import collect_archive_items
+
+        archive_items = collect_archive_items()
+        artifacts.extend(
+            map(
+                str,
+                [
+                    generate_pages.build_index(entries, docs),
+                    *generate_pages.build_category_pages(entries, docs, digests=digests),
+                    generate_pages.build_overview(issue_date, entries, docs),
+                    generate_pages.build_summary(issue_date, entries, docs, digest_sources=digests),
+                    generate_pages.build_archive(
+                        entries,
+                        docs,
+                        deepdive_items=archive_items["items"],
+                        lens_chips=archive_items["chips"],
+                    ),
+                ],
+            )
+        )
     from tools.render_deepdive import build_deepdive_archive, build_deepdive_pages
 
     if needs("deepdive_html"):
@@ -1833,7 +1857,11 @@ def produce_current_issue(
         raise DailyContentError("CANONICAL_RUNTIME_LEDGER_REQUIRED")
 
     completion_input_hash = _artifact_input_hash(
-        {"issueDate": issue_date, "scheduledCategories": list(categories)}
+        {
+            "issueDate": issue_date,
+            "scheduledCategories": list(categories),
+            "siteProjectionVersion": 2,
+        }
     )
     if runtime_ledger is not None:
         if not _repair_plan_requires_work(runtime_ledger):
@@ -3070,9 +3098,13 @@ def produce_current_issue(
             }
             if not all(dependency_hashes.values()):
                 continue
-            expected_input_hash = _artifact_input_hash(
-                {"artifactId": artifact_id, "dependencyOutputHashes": dependency_hashes}
-            )
+            input_descriptor = {
+                "artifactId": artifact_id,
+                "dependencyOutputHashes": dependency_hashes,
+            }
+            if artifact_id == "site_html":
+                input_descriptor["siteProjectionVersion"] = 2
+            expected_input_hash = _artifact_input_hash(input_descriptor)
             checkpoint = _load_artifact_checkpoint(
                 root,
                 run_id=run_id,
@@ -3171,7 +3203,11 @@ def produce_current_issue(
                     issue_date=issue_date,
                     artifact_id=artifact_id,
                     input_hash=_artifact_input_hash(
-                        {"artifactId": artifact_id, "dependencyOutputHashes": dependency_hashes}
+                        {
+                            "artifactId": artifact_id,
+                            "dependencyOutputHashes": dependency_hashes,
+                            **({"siteProjectionVersion": 2} if artifact_id == "site_html" else {}),
+                        }
                     ),
                     payload={"artifactHashes": owned},
                     runtime_ledger=runtime_ledger,

@@ -635,6 +635,25 @@ def build_context(digest_path: Path) -> dict[str, Any]:
     cat = CATEGORIES[category_id]
 
     date_str = fm.get("date", "")
+    if not date_str:
+        parent_name = Path(digest_path).parent.name
+        parent_category = _resolve_cat_from_dirname(parent_name)
+        stem = Path(digest_path).stem
+        match = re.fullmatch(r"(?P<date>\d{4}-\d{2}-\d{2})(?:-(?P<category>.+))?", stem)
+        if parent_category in CATEGORIES and match is not None:
+            candidate = match.group("date")
+            suffix = match.group("category")
+            if suffix is None or suffix.casefold() in {
+                parent_name.casefold(),
+                parent_category.casefold(),
+            }:
+                try:
+                    from datetime import date as _date
+                    _date.fromisoformat(candidate)
+                except ValueError:
+                    pass
+                else:
+                    date_str = candidate
     # category=summary は廃止された `/summary/{date}/` ではなく統合先
     # `/{date}/summary/` を canonical とする (2026-05-26 統合)。
     if category_id == "summary":
