@@ -331,16 +331,28 @@ def adopt_artifact_source(source: ArtifactSource, *, repo_root: Path, ledger: ru
         relative = owned_paths.get(key)
         if relative is not None:
             outputs[relative] = files[relative]
-    adopted_deepdive = any(
-        key in writes
-        or (
-            key in current
-            and current[key].get("status") == "Green"
-            and current[key].get("outputHash") == selected[key].get("outputHash")
-        )
-        for key in deepdive_materializer_ids.intersection(selected)
-    )
-    if quality_evidence and adopted_deepdive:
+    if quality_evidence:
+        for key in sorted(deepdive_materializer_ids):
+            if key not in selected:
+                raise ValueError("adoption_quality_deepdive_checkpoint_missing")
+            checkpoint = current.get(key)
+            if (
+                not isinstance(checkpoint, Mapping)
+                or checkpoint.get("status") != "Green"
+                or checkpoint.get("outputHash") != selected[key].get("outputHash")
+            ):
+                raise ValueError("adoption_quality_deepdive_checkpoint_mismatch")
+            relative = owned_paths.get(key)
+            if not relative or relative not in files:
+                raise ValueError("adoption_quality_deepdive_file_missing")
+            if relative in outputs:
+                if outputs[relative] != files[relative]:
+                    raise ValueError("adoption_quality_deepdive_file_mismatch")
+            else:
+                expected_hash = hashlib.sha256(files[relative]).hexdigest()
+                existing = _read_source_file(repo_root, relative, expected_hash)
+                if existing != files[relative]:
+                    raise ValueError("adoption_quality_deepdive_file_mismatch")
         outputs.update(quality_evidence)
     with ledger.materialization_fence():
         for relative in outputs:

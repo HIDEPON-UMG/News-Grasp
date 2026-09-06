@@ -12,7 +12,7 @@ import pytest
 
 
 @pytest.mark.parametrize("forbidden_path", [None, "tools/news_grasp_daily_content.py", "data/articles.jsonl", "digest/Summary/2026-09-06.md"])
-def test_adoption_reuses_models_and_audio_without_touching_other_issue(tmp_path: Path, forbidden_path: str | None) -> None:
+def test_adoption_reuses_models_and_audio_without_touching_other_issue(tmp_path: Path, forbidden_path: str | None, monkeypatch) -> None:
     from tools import news_grasp_artifact_adoption as adoption
     from tools import news_grasp_daily_content as content
     from tools import news_grasp_direct_runtime as runtime
@@ -41,6 +41,8 @@ def test_adoption_reuses_models_and_audio_without_touching_other_issue(tmp_path:
         allowed_urls={record[key] for reporter in reporters for record in reporter["records"] for key in ("url", "thumb")},
     )
     for artifact, relative, value in (
+        ("deepdive_article", f"digest/DeepDive/{issue}-DeepDive.md", payloads["deepdive_model"]["article_markdown"].encode()),
+        ("deepdive_dialogue", f"digest/DeepDive/{issue}-DeepDive-dialogue.md", payloads["deepdive_model"]["dialogue_markdown"].encode()),
         ("summary", f"digest/Summary/{issue}.md", fixtures["_summary"]().encode()),
         ("daily_audio_script", f"digest/Summary/{issue}-audio-script.md", b"audio-script"),
         ("daily_audio", f"build/tts/{issue}.mp3", b"preserved-audio"),
@@ -74,6 +76,7 @@ def test_adoption_reuses_models_and_audio_without_touching_other_issue(tmp_path:
         assert ledger.list_checkpoints() == {}
         assert sorted(str(p.relative_to(target)) for p in target.rglob("*") if p.is_file()) == [str(Path("data/articles.jsonl"))]
         return
+    monkeypatch.setattr(adoption, "_capture_quality_evidence", lambda *args: {f"data/deepdive-quality-review/{issue}.json": b'{}'})
     result = adoption.adopt_artifact_source(snapshot, repo_root=target, ledger=ledger, categories=("fx", "ai"))
     assert set(result["adoptedArtifactIds"]) == set(payloads)
     assert ledger.model_call_usage()["total"] == 0
@@ -82,6 +85,13 @@ def test_adoption_reuses_models_and_audio_without_touching_other_issue(tmp_path:
     assert ledger.list_checkpoints()["editor"]["outputHash"] == checkpoints["editor"]["outputHash"]
     again = adoption.adopt_artifact_source(snapshot, repo_root=target, ledger=ledger, categories=("fx", "ai"))
     assert again["adoptedArtifactIds"] == []
+    dialogue_path = target / f"digest/DeepDive/{issue}-DeepDive-dialogue.md"
+    dialogue_before = dialogue_path.read_bytes()
+    dialogue_path.write_bytes(b'changed-target-dialogue')
+    with pytest.raises(ValueError):
+        adoption.adopt_artifact_source(snapshot, repo_root=target, ledger=ledger, categories=("fx", "ai"))
+    assert dialogue_path.read_bytes() == b'changed-target-dialogue'
+    dialogue_path.write_bytes(dialogue_before)
     (source / f"build/tts/{issue}.mp3").write_bytes(b"tampered")
     with pytest.raises(ValueError, match="adoption_source_file_hash"):
         adoption.adopt_artifact_source(snapshot, repo_root=target, ledger=ledger, categories=("fx", "ai"))
