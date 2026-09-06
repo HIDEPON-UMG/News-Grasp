@@ -453,10 +453,7 @@ def test_NG_CUTOVER_07_release_nopublish_isolated_state_and_zero_external_effect
             state_root=repo_root / "isolated-state",
             isolation_receipt=isolation_receipt,
         )
-    assert any(
-        token in str(error.value).casefold()
-        for token in ("claim", "capability", "authority")
-    )
+    assert str(error.value) == "nopublish_public_api_retired_use_cli"
     assert sequence_calls == []
     assert adapter_calls == []
 
