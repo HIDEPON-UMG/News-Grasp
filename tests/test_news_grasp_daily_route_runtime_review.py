@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import uuid
 from pathlib import Path
 
 import pytest
@@ -13,6 +14,12 @@ ROOT = Path(__file__).resolve().parents[1]
 ISSUE_DATE = "2026-09-03"
 RUN_INTENT = runtime.RUN_INTENT
 TRIGGER_AT = "2026-09-03T06:00:00+09:00"
+
+
+@pytest.fixture(autouse=True)
+def _isolate_windows_mutex(monkeypatch: pytest.MonkeyPatch) -> None:
+    """実OS mutexを使い、稼働中の本番writerとは名前だけ分離する。"""
+    monkeypatch.setattr(runtime, "DAILY_PROCESS_MUTEX_NAME", "Local\\NewsGraspTest-" + uuid.uuid4().hex)
 
 
 def _identity() -> dict[str, object]:

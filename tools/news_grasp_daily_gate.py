@@ -63,6 +63,14 @@ DAILY_OPERATION_HANDLERS: dict[str, Callable[..., Any]] = {}
 DAILY_OPERATION_HANDLER_IDS: dict[str, str] = {}
 
 
+def _validate_adoption_context_if_present(context: Mapping[str, Any] | None) -> None:
+    if context is None or "artifact_source" not in context:
+        return
+    from tools.news_grasp_artifact_adoption import _validate_adoption_context
+
+    _validate_adoption_context(context)
+
+
 def protected_release_failure(
     *,
     repo_root: str | Path,
@@ -662,6 +670,7 @@ def _record_current_issue_quality_failures(
 def _default_current_issue_integration(**context: Any) -> dict[str, Any]:
     """登録producer群を各一回だけ実行し、predicate evidenceを束ねる。"""
 
+    _validate_adoption_context_if_present(context)
     results: list[dict[str, Any]] = []
     failures: list[str] = []
     store = context.get("store")
@@ -689,6 +698,7 @@ def _default_current_issue_integration(**context: Any) -> dict[str, Any]:
             failures=("producer_route_capability_missing",),
         )
     content_receipt: Mapping[str, Any] = {}
+    adoption_receipt: Mapping[str, Any] = {}
     content_kwargs: dict[str, Any] | None = None
     # production current_issue_integration は検証済み既存artifactを前提にせず、
     # 当日sourceからカテゴリ/summary/deepdive/派生成果物を一回だけ作る。
@@ -735,6 +745,15 @@ def _default_current_issue_integration(**context: Any) -> dict[str, Any]:
                     else None
                 ),
         }
+        _validate_adoption_context_if_present(context)
+        if context.get("artifact_source") is not None:
+            from tools.news_grasp_artifact_adoption import adopt_artifact_source
+
+            adoption_receipt = adopt_artifact_source(
+                context["artifact_source"], repo_root=_context_root(context),
+                ledger=_daily_artifact_ledger(context),
+                categories=content_kwargs["scheduled_categories"],
+            )
         observed_attempts: set[tuple[str, int]] = set()
         for attempt in range(5):
             try:
@@ -984,6 +1003,7 @@ def _default_current_issue_integration(**context: Any) -> dict[str, Any]:
         operation_id="current_issue_integration",
         values={
             "content_generation": dict(content_receipt),
+            **({"artifact_adoption": dict(adoption_receipt)} if adoption_receipt else {}),
             "release_bundle": dict(release_receipt),
             "predicates": results,
             "warnings": warnings,
@@ -1769,6 +1789,7 @@ def run_daily_operation(
 ) -> dict[str, Any]:
     """一つのDaily operationを認可し、handlerとproducer receiptを適用する。"""
 
+    _validate_adoption_context_if_present(context)
     if operation_id not in DAILY_OPERATIONS:
         authorize_daily_operation(operation_id, list(command or ()))
     expected = _canonical_argv(operation_id)
@@ -1950,6 +1971,7 @@ def run_daily_operation(
         operation_context.update(
             {key: value for key, value in dict(context).items() if key not in immutable_context_keys}
         )
+    _validate_adoption_context_if_present(operation_context)
     try:
         claim = runtime.claim_daily_operation(
             store,
@@ -2179,6 +2201,7 @@ def run_daily_sequence(
 ) -> list[dict[str, Any]]:
     """六operationを一process内の同一writerで順序どおり一回だけ実行する。"""
 
+    _validate_adoption_context_if_present(context)
     if store is None:
         return [_red_result("", "daily_execution_store_required")]
     issue = issue_date or _issue_date_default()
@@ -2194,6 +2217,7 @@ def run_daily_sequence(
                 exact_successor="explicit_new_release_authority_required",
             )
         ]
+    _validate_adoption_context_if_present(context)
     state, failure = _resolve_run(
         store,
         run_id=None,

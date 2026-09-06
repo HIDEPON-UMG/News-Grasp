@@ -7509,6 +7509,7 @@ def _run_daily_mainline_locked(
     state_root: Path,
     issue_date: str,
     scheduler_trigger_at: str,
+    artifact_source: Any = None,
 ) -> dict[str, Any]:
     """Daily六operationをdirect runtime process内で順序実行する。"""
 
@@ -7543,6 +7544,11 @@ def _run_daily_mainline_locked(
         if identity.get("status") == "failed_integrity":
             result["status"] = "failed_integrity"
         return result
+    daily_context: dict[str, Any] | None = None
+    if artifact_source is not None:
+        from tools.news_grasp_artifact_adoption import _authorized_adoption_context
+
+        daily_context = _authorized_adoption_context(artifact_source)
     receipts = daily.run_daily_sequence(
         store=store,
         cwd=repo_root,
@@ -7556,6 +7562,7 @@ def _run_daily_mainline_locked(
         runtime_generation=str(identity.get("runtime_generation") or ""),
         remote_base_sha=str(identity.get("remote_base_sha") or ""),
         allowed_side_effect_ids=list(identity.get("allowed_side_effect_ids") or ()),
+        **({"context": daily_context} if daily_context is not None else {}),
     )
     final = receipts[-1] if receipts else {}
     result = {
@@ -7581,12 +7588,13 @@ def _run_daily_mainline_locked(
     return result
 
 
-def run_daily_mainline(
+def _run_daily_mainline_with_artifacts(
     *,
     repo_root: Path,
     state_root: Path,
     issue_date: str,
     scheduler_trigger_at: str,
+    artifact_source: Any = None,
 ) -> dict[str, Any]:
     """単一processだけにDaily writer capabilityを与える。"""
 
@@ -7597,6 +7605,7 @@ def run_daily_mainline(
                 state_root=state_root,
                 issue_date=issue_date,
                 scheduler_trigger_at=scheduler_trigger_at,
+                **({"artifact_source": artifact_source} if artifact_source is not None else {}),
             )
     except RuntimeError as exc:
         if str(exc) != "daily_process_mutex_busy":
@@ -7606,6 +7615,23 @@ def run_daily_mainline(
             issue_date=issue_date,
             exact_successor="wait_for_current_writer_process_exit_then_resume_same_run",
         )
+
+
+def run_daily_mainline(
+    *,
+    repo_root: Path,
+    state_root: Path,
+    issue_date: str,
+    scheduler_trigger_at: str,
+) -> dict[str, Any]:
+    """単一processだけに通常Daily writer capabilityを与える。"""
+
+    return _run_daily_mainline_with_artifacts(
+        repo_root=repo_root,
+        state_root=state_root,
+        issue_date=issue_date,
+        scheduler_trigger_at=scheduler_trigger_at,
+    )
 
 
 def _run_daily_cli() -> dict[str, Any]:
