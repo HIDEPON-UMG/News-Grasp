@@ -113,6 +113,110 @@ def _owned_artifact_paths(issue_date: str, categories: Sequence[str]) -> dict[st
     return paths
 
 
+def _capture_quality_evidence(
+    root: Path,
+    issue_date: str,
+    payload: Mapping[str, Any],
+) -> dict[str, bytes]:
+    """Green監査済みのDeepDive証拠を保存用の正規2pathへ束縛する。"""
+    from tools import deepdive_quality as quality
+
+    try:
+        observation = quality.audit_issue(
+            repo_root=root,
+            issue_date=issue_date,
+            include_corpus=False,
+            require_rendered_public=False,
+            route="production_generation",
+        )
+    except Exception as exc:  # noqa: BLE001 - adoptionは不確実な監査を拒否する。
+        raise ValueError("adoption_quality_audit_invalid") from exc
+    if (
+        not isinstance(observation, Mapping)
+        or observation.get("status") != "Green"
+        or observation.get("issues") != []
+        or observation.get("issueCodes") != []
+    ):
+        raise ValueError("adoption_quality_audit_not_green")
+
+    relative_paths = {
+        "article": f"digest/DeepDive/{issue_date}-DeepDive.md",
+        "dialogue": f"digest/DeepDive/{issue_date}-DeepDive-dialogue.md",
+        "provenance": f"data/deepdive-provenance/{issue_date}.json",
+        "quality_review": f"data/deepdive-quality-review/{issue_date}.json",
+    }
+    try:
+        paths = {
+            name: content._safe_path(root, relative)
+            for name, relative in relative_paths.items()
+        }
+    except Exception as exc:  # noqa: BLE001 - invalid adoption path is typed below.
+        raise ValueError("adoption_quality_evidence_path_invalid") from exc
+
+    audited_files = observation.get("auditedFiles")
+    if not isinstance(audited_files, list):
+        raise ValueError("adoption_quality_audit_evidence_invalid")
+
+    def read_audited(name: str) -> bytes:
+        path = paths[name]
+        expected_path = str(path.resolve())
+        matches = [
+            item
+            for item in audited_files
+            if isinstance(item, Mapping) and item.get("path") == expected_path
+        ]
+        if len(matches) != 1 or not isinstance(matches[0].get("sha256"), str):
+            raise ValueError("adoption_quality_audit_artifact_missing")
+        raw = content._read_bounded_model_events(path)
+        if raw is None:
+            raise ValueError("adoption_quality_evidence_file_invalid")
+        if hashlib.sha256(raw).hexdigest().casefold() != matches[0]["sha256"].casefold():
+            raise ValueError("adoption_quality_audit_artifact_drift")
+        return raw
+
+    article_bytes = read_audited("article")
+    provenance_bytes = read_audited("provenance")
+    quality_review_bytes = read_audited("quality_review")
+    dialogue_bytes = content._read_bounded_model_events(paths["dialogue"])
+    if dialogue_bytes is None:
+        raise ValueError("adoption_quality_evidence_file_invalid")
+
+    try:
+        quality_review = json.loads(quality_review_bytes.decode("utf-8-sig"))
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        raise ValueError("adoption_quality_review_invalid") from exc
+    if not isinstance(quality_review, Mapping) or quality_review.get("issueDate") != issue_date:
+        raise ValueError("adoption_quality_review_invalid")
+    review_artifacts = quality_review.get("artifacts")
+    review_dialogue = review_artifacts.get("dialogue") if isinstance(review_artifacts, Mapping) else None
+    expected_dialogue_path = relative_paths["dialogue"]
+    if (
+        not isinstance(review_dialogue, Mapping)
+        or set(review_dialogue) != {"path", "sha256"}
+        or review_dialogue.get("path") != expected_dialogue_path
+        or not isinstance(review_dialogue.get("sha256"), str)
+        or review_dialogue["sha256"].casefold() != hashlib.sha256(dialogue_bytes).hexdigest().casefold()
+    ):
+        raise ValueError("adoption_quality_dialogue_binding_invalid")
+
+    if not isinstance(payload, Mapping):
+        raise ValueError("adoption_quality_payload_invalid")
+    article_markdown = payload.get("article_markdown")
+    dialogue_markdown = payload.get("dialogue_markdown")
+    if (
+        not isinstance(article_markdown, str)
+        or not isinstance(dialogue_markdown, str)
+        or article_bytes != article_markdown.encode("utf-8")
+        or dialogue_bytes != dialogue_markdown.encode("utf-8")
+    ):
+        raise ValueError("adoption_quality_payload_drift")
+
+    return {
+        relative_paths["provenance"]: provenance_bytes,
+        relative_paths["quality_review"]: quality_review_bytes,
+    }
+
+
 def adopt_artifact_source(source: ArtifactSource, *, repo_root: Path, ledger: runtime.DailyArtifactLedger,
                           categories: Sequence[str]) -> dict[str, Any]:
     """既存validatorと実file hashを確認し、未作成checkpointだけを採用する。"""
@@ -192,6 +296,14 @@ def adopt_artifact_source(source: ArtifactSource, *, repo_root: Path, ledger: ru
     )
     if deep != payloads["deepdive_model"]:
         raise ValueError("adoption_deepdive_normalization_drift")
+    quality_evidence: dict[str, bytes] = {}
+    deepdive_materializer_ids = {"deepdive_article", "deepdive_dialogue"}
+    if deepdive_materializer_ids.intersection(selected):
+        quality_evidence = _capture_quality_evidence(
+            source.root,
+            source.issue_date,
+            deep,
+        )
     current = ledger.list_checkpoints()
     writes = {}
     outputs = {}
@@ -219,6 +331,17 @@ def adopt_artifact_source(source: ArtifactSource, *, repo_root: Path, ledger: ru
         relative = owned_paths.get(key)
         if relative is not None:
             outputs[relative] = files[relative]
+    adopted_deepdive = any(
+        key in writes
+        or (
+            key in current
+            and current[key].get("status") == "Green"
+            and current[key].get("outputHash") == selected[key].get("outputHash")
+        )
+        for key in deepdive_materializer_ids.intersection(selected)
+    )
+    if quality_evidence and adopted_deepdive:
+        outputs.update(quality_evidence)
     with ledger.materialization_fence():
         for relative in outputs:
             if content._has_reparse_ancestor(repo_root / relative):
