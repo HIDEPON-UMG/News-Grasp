@@ -1,4 +1,4 @@
-# 本番Dailyと同じ六operationを、cleanなpre-promotion candidateから作った
+﻿# 本番Dailyと同じ六operationを、cleanなpre-promotion candidateから作った
 # 隔離worktreeで実行し、公開副作用0のまま最終確認する。
 [CmdletBinding()]
 param(
@@ -71,8 +71,14 @@ trap {
     $preentryExit = if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) { [int]$LASTEXITCODE } else { 1 }
     $reasonMatch = [regex]::Match([string]$preentryError.Exception.Message, '\b[A-Z][A-Z0-9_]{5,127}\b')
     $preentryReason = if ($reasonMatch.Success) { $reasonMatch.Value } else { 'NEWS_GRASP_PREENTRY_UNTYPED_FAILURE' }
-    Write-PreentryBootstrap 'preentry_failed' -ExitCode $preentryExit -ReasonCode $preentryReason
-    & $journalPython -I -S -B $journalScript 'failure' '--exit-code' ([string]$preentryExit) '--reason-code' $preentryReason
+    try {
+        if ($env:NEWS_GRASP_PREENTRY_JOURNAL) {
+            Write-PreentryBootstrap 'preentry_failed' -ExitCode $preentryExit -ReasonCode $preentryReason
+            & $journalPython -I -S -B $journalScript 'failure' '--exit-code' ([string]$preentryExit) '--reason-code' $preentryReason
+        }
+    } catch {
+        [Console]::Error.WriteLine('NEWS_GRASP_PREENTRY_FAILURE_RECORD_UNAVAILABLE')
+    }
     throw $preentryError
 }
 Write-PreentryBootstrap 'wrapper_started'

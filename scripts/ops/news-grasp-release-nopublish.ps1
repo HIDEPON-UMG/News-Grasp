@@ -1,4 +1,4 @@
-# Release gate専用。旧runnerを復活させず、direct NoPublish moduleだけを起動する。
+﻿# Release gate専用。旧runnerを復活させず、direct NoPublish moduleだけを起動する。
 [CmdletBinding()]
 param(
     [switch] $NoPublish,
