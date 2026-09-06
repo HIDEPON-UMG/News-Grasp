@@ -136,3 +136,17 @@ def test_default_builder_rejects_unverified_editor_supplement(tmp_path, monkeypa
     with pytest.raises((DailyContentError, builders.NewsGraspBuilderError)):
         _default_derived_builder(repo_root=tmp_path, issue_date=DAY, run_id="saved-run",
                                  artifact_checkpoints={"editor": {"status": status, "payload": {"append_records": _records()}}})
+
+
+def test_builder_and_real_normalizer_share_history_quality(tmp_path, monkeypatch):
+    from tools.tts import build_script
+    root = _repo(tmp_path, rich=True)
+    scripts = root / "digest/Summary"
+    (scripts / "2026-08-13-audio-script.md").write_text(
+        "今日の観点・考察です。Summaryで確認できた事実と未確定事項を分け、"
+        "誰が実装と継続運用の責任を負うのかを見極めることが重要です。"
+        "明日以降は続報と実装条件を観測点として追います。", encoding="utf-8")
+    builders.materialize_summary_audio_script(repo_root=root, issue_date=DAY, article_records=_records())
+    monkeypatch.setattr(build_script, "SCRIPT_DIR", scripts)
+    monkeypatch.setattr(build_script, "BUILD_DIR", root / "build/tts")
+    assert build_script.build(DAY) is not None

@@ -10,7 +10,7 @@ import stat
 import tempfile
 import ctypes
 from contextlib import contextmanager
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -345,13 +345,28 @@ def materialize_summary_audio_script(
         f"中心に置くのは、{title}です。"
         "背景と前提を押さえ、現場への影響、一方で残るリスク、次の観測点の順で見ていきます。"
     )
-    closing = (
-        "今日の観点・考察です。Summaryで確認できた事実と未確定事項を分け、"
-        "誰が実装と継続運用の責任を負うのかを見極めることが重要です。"
-        "明日以降は続報と実装条件を観測点として追います。"
-    )
+    summary_text = "\n".join(sections)
+    tomorrow = re.search(r"(?m)^明日へ\s*$", summary_text)
+    if tomorrow is not None:
+        closing_content = summary_text[tomorrow.end():].strip()
+        reading_sections = [summary_text[:tomorrow.start()].strip()]
+    else:
+        sentences = re.findall(r"[^。！？\n]+[。！？]?", summary_text)
+        closing_content = "\n".join(sentences[-2:]).strip()
+        reading_sections = ["\n".join(sentences[:-2]).strip()]
+    closing = "今日の観点・考察として、" + closing_content
+    history_texts: list[str] = []
+    for offset in (1, 2):
+        history_path = root / "digest/Summary" / f"{(issue_day - timedelta(days=offset)).isoformat()}-audio-script.md"
+        if os.path.lexists(history_path):
+            with _pinned_output_directories(history_path, root=root):
+                raw_history = _safe_regular_bytes(history_path, maximum=MAX_SUMMARY_BYTES)
+            try:
+                history_texts.append(_strip_frontmatter(raw_history.decode("utf-8-sig")))
+            except UnicodeDecodeError as exc:
+                raise NewsGraspBuilderError("NG_SUMMARY_AUDIO_HISTORY_INVALID") from exc
     source_body = _select_source_sentences(
-        [str(item) for item in sections],
+        reading_sections,
         maximum_chars=max(0, 2870 - len(opening) - len(closing)),
     )
     body = "\n\n".join((outline, opening, source_body, closing))
@@ -399,7 +414,7 @@ def materialize_summary_audio_script(
     issues = validate_script(
         body,
         date=issue_date,
-        history_texts=[],
+        history_texts=history_texts,
         required_categories=categories,
     )
     if issues:
@@ -423,7 +438,7 @@ def materialize_summary_audio_script(
             existing_issues = validate_script(
                 _strip_frontmatter(existing),
                 date=issue_date,
-                history_texts=[],
+                history_texts=history_texts,
                 required_categories=categories,
             )
             if existing_issues:
