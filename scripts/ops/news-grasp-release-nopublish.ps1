@@ -60,7 +60,7 @@ $hasher = [Security.Cryptography.SHA256]::Create()
 try {
     $claimNonce = ([BitConverter]::ToString($hasher.ComputeHash([Text.Encoding]::UTF8.GetBytes($claimNonceSource))) -replace '-', '').ToLowerInvariant()
 } finally { $hasher.Dispose() }
-$claimOutput = (& $python -I $bridge 'claim-runner' `
+& $python -I $bridge 'claim-runner' `
     '--admission' $E2EFinalAdmissionPath `
     '--runner-arguments-file' $E2EFinalRunnerArgumentsPath `
     '--parent-authority' $HighCostParentAuthorityPath `
@@ -69,11 +69,33 @@ $claimOutput = (& $python -I $bridge 'claim-runner' `
     '--runner-executable' $runnerExecutable `
     '--authority-python-executable' $python `
     '--current-runner-pid' ([string]$PID) `
-    '--claim-nonce' $claimNonce 2>&1 | Out-String).Trim()
-if ($LASTEXITCODE -ne 0) { throw "NEWS_GRASP_RELEASE_NOPUBLISH_CLAIM_REJECTED:$claimOutput" }
+    '--claim-nonce' $claimNonce
+$claimExitCode = $LASTEXITCODE
+if ($claimExitCode -ne 0) {
+    $failureCode = 'NEWS_GRASP_RELEASE_NOPUBLISH_CLAIM_REJECTED'
+    $failureHasher = [Security.Cryptography.SHA256]::Create()
+    try {
+        $failureFingerprint = ([BitConverter]::ToString($failureHasher.ComputeHash(
+            [Text.Encoding]::UTF8.GetBytes("$failureCode`0$claimExitCode`0$claimNonce")
+        )) -replace '-', '').ToLowerInvariant()
+    } finally { $failureHasher.Dispose() }
+    & $python -I $bridge 'record-claim-failure' `
+        '--admission' $E2EFinalAdmissionPath `
+        '--reservation-receipt' $E2EFinalReservationReceiptPath `
+        '--failure-code' $failureCode `
+        '--failure-fingerprint' $failureFingerprint `
+        '--runner-executable' $runnerExecutable `
+        '--authority-python-executable' $python `
+        '--current-runner-pid' ([string]$PID)
+    $failureRecordExitCode = $LASTEXITCODE
+    if ($failureRecordExitCode -ne 0) {
+        throw "$failureCode`:exit=$claimExitCode`nNEWS_GRASP_RELEASE_NOPUBLISH_CLAIM_FAILURE_RECORD_REJECTED"
+    }
+    throw "$failureCode`:exit=$claimExitCode"
+}
 $admission = Get-Content -LiteralPath $E2EFinalAdmissionPath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
 $claimWitness = [IO.Path]::GetFullPath([string]$admission.expectedClaimWitnessPath)
-$witnessOutput = (& $python -I $bridge 'write-runner-claim-witness' `
+& $python -I $bridge 'write-runner-claim-witness' `
     '--admission' $E2EFinalAdmissionPath `
     '--runner-arguments-file' $E2EFinalRunnerArgumentsPath `
     '--parent-authority' $HighCostParentAuthorityPath `
@@ -82,8 +104,8 @@ $witnessOutput = (& $python -I $bridge 'write-runner-claim-witness' `
     '--witness-output' $claimWitness `
     '--runner-executable' $runnerExecutable `
     '--authority-python-executable' $python `
-    '--expected-owner-pid' ([string]$PID) 2>&1 | Out-String).Trim()
-if ($LASTEXITCODE -ne 0) { throw "NEWS_GRASP_RELEASE_NOPUBLISH_WITNESS_REJECTED:$witnessOutput" }
+    '--expected-owner-pid' ([string]$PID)
+if ($LASTEXITCODE -ne 0) { throw "NEWS_GRASP_RELEASE_NOPUBLISH_WITNESS_REJECTED:exit=$LASTEXITCODE" }
 
 $state = [IO.Path]::GetFullPath($StateFileOverride)
 $logDir = [IO.Path]::GetFullPath($LogDirOverride)

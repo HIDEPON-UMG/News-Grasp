@@ -868,8 +868,79 @@ $env:PYTHONUTF8 = '1'
     '--expected-owned-process-sha256' ([string]$candidateRuntimeBindings.ownedProcess.sha256)
 $runnerExitCode = $LASTEXITCODE
 $ownerOutput = ''
+$ownerEvidencePath = ''
+$ownerEvidenceSha256 = ''
+$ownerEvidenceSchema = ''
+$ownerEvidenceStatus = ''
+$ownerEvidenceReasonCode = ''
+$ownerEvidenceValid = $false
+if (Test-Path -LiteralPath $launchEvidencePath -PathType Leaf) {
+    try {
+        $ownerEvidenceBindingBefore = Get-StableFileBinding -Path $launchEvidencePath -Label 'runner evidence' -MaxBytes 65536
+        $ownerEvidence = Read-BoundedJsonFile -Path $launchEvidencePath -MaxBytes 65536
+        $ownerEvidenceBindingAfter = Get-StableFileBinding -Path $launchEvidencePath -Label 'runner evidence' -MaxBytes 65536
+        if ([string]$ownerEvidenceBindingBefore.sha256 -cne [string]$ownerEvidenceBindingAfter.sha256) {
+            throw 'runner evidence changed across stable reads'
+        }
+        $allowedOwnerEvidenceSchemas = @(
+            'NEWS_GRASP_RUNNER_LAUNCH_EVIDENCE_V1',
+            'NEWS_GRASP_NOPUBLISH_CHILD_FAILURE_EVIDENCE_V1'
+        )
+        if ([string]$ownerEvidence.schemaVersion -cnotin $allowedOwnerEvidenceSchemas) {
+            throw 'runner evidence schema is not allowed'
+        }
+        if (
+            [string]$ownerEvidence.issueDate -cne $DateStamp -or
+            [int]$ownerEvidence.processId -le 0 -or
+            -not [string]::Equals([IO.Path]::GetFullPath([string]$ownerEvidence.powershellPath), $powerShellCanonicalPath, [StringComparison]::OrdinalIgnoreCase) -or
+            [string]$ownerEvidence.powershellSha256 -cne $powerShellSha256 -or
+            -not [string]::Equals([IO.Path]::GetFullPath([string]$ownerEvidence.runnerPath), $runnerPath, [StringComparison]::OrdinalIgnoreCase) -or
+            [string]$ownerEvidence.runnerSha256 -cne [string]$candidateRuntimeBindings.runner.sha256
+        ) {
+            throw 'runner evidence identity is invalid'
+        }
+        if ([string]$ownerEvidence.schemaVersion -ceq 'NEWS_GRASP_RUNNER_LAUNCH_EVIDENCE_V1') {
+            if ($runnerExitCode -eq 0) {
+                if (
+                    [string]$ownerEvidence.status -cne 'terminal_state_reached' -or
+                    [string]$ownerEvidence.reasonCode -cne 'NEWS_GRASP_RELEASE_NOPUBLISH_TERMINAL' -or
+                    [int]$ownerEvidence.childExitCode -ne 0
+                ) { throw 'runner success evidence is invalid' }
+            } elseif (
+                [string]$ownerEvidence.status -cne 'failed_after_state_claim' -or
+                [string]$ownerEvidence.reasonCode -cne 'NEWS_GRASP_RELEASE_NOPUBLISH_CHILD_FAILED' -or
+                [int]$ownerEvidence.childExitCode -ne $runnerExitCode
+            ) { throw 'runner failure evidence is invalid' }
+        } elseif (
+            $runnerExitCode -eq 0 -or
+            [string]$ownerEvidence.status -cne 'child_failed_before_terminal' -or
+            [string]$ownerEvidence.reasonCode -cnotmatch '^NEWS_GRASP_[A-Z0-9_]{2,127}$' -or
+            [int]$ownerEvidence.childExitCode -ne $runnerExitCode
+        ) {
+            throw 'owner child failure evidence is invalid'
+        }
+        $ownerEvidencePath = [IO.Path]::GetFullPath($launchEvidencePath)
+        $ownerEvidenceSha256 = [string]$ownerEvidenceBindingAfter.sha256
+        $ownerEvidenceSchema = [string]$ownerEvidence.schemaVersion
+        $ownerEvidenceStatus = [string]$ownerEvidence.status
+        $ownerEvidenceReasonCode = [string]$ownerEvidence.reasonCode
+        $ownerEvidenceValid = $true
+        $ownerOutput = ($ownerEvidence | ConvertTo-Json -Depth 6 -Compress)
+        if ([Text.Encoding]::UTF8.GetByteCount($ownerOutput) -gt 65536) {
+            $ownerOutput = 'NEWS_GRASP_NOPUBLISH_OWNER_EVIDENCE_TOO_LARGE'
+        }
+    } catch {
+        $ownerEvidencePath = ''
+        $ownerEvidenceSha256 = ''
+        $ownerEvidenceSchema = ''
+        $ownerEvidenceStatus = ''
+        $ownerEvidenceReasonCode = ''
+        $ownerEvidenceValid = $false
+        $ownerOutput = 'NEWS_GRASP_NOPUBLISH_OWNER_EVIDENCE_INVALID'
+    }
+}
 
-if ($runnerExitCode -eq 0) {
+if ($runnerExitCode -eq 0 -and $ownerEvidenceValid) {
     $runnerOutcomeReceiptPath = Join-Path (Split-Path -Parent $e2eAttemptPolicyFullPath) ("e2e-transition-" + ([int]$attemptPolicy.transition.sequence + 1) + ".json")
     $runnerTerminalAuthorityPath = Join-Path (Split-Path -Parent $e2eAttemptPolicyFullPath) ("e2e-terminal-authority-" + ([int]$E2ELogicalAttempt) + ".json")
     & $pythonCanonicalPath -X utf8 -I $e2eAdmissionBridgePath 'record-outcome' `
@@ -932,8 +1003,14 @@ $receipt = [ordered]@{
     external_health_authority_fixture_path = $ExternalHealthAuthorityFixturePath
     external_health_authority_fixture_sha256 = $externalHealthAuthorityFixtureSha256
     high_cost_parent_authority_sha256 = if (Test-Path -LiteralPath $parentAuthorityFullPath -PathType Leaf) { (Get-FileHash -LiteralPath $parentAuthorityFullPath -Algorithm SHA256).Hash.ToLowerInvariant() } else { '' }
+    runner_evidence_path = $ownerEvidencePath
+    runner_evidence_sha256 = $ownerEvidenceSha256
+    runner_evidence_schema = $ownerEvidenceSchema
+    runner_evidence_status = $ownerEvidenceStatus
+    runner_evidence_reason_code = $ownerEvidenceReasonCode
+    runner_evidence_valid = $ownerEvidenceValid
     runner_output = $ownerOutput
-    ok = ($runnerExitCode -eq 0 -and $observedStatus -eq 'publish_dry_run_ok' -and $durationSloMet)
+    ok = ($runnerExitCode -eq 0 -and $ownerEvidenceValid -and $observedStatus -eq 'publish_dry_run_ok' -and $durationSloMet)
 }
 $json = $receipt | ConvertTo-Json -Depth 6
 $receiptDirectory = Split-Path -Parent $receiptFullPath

@@ -7,9 +7,11 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 import stat
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 from typing import Any, Sequence
@@ -17,7 +19,9 @@ from typing import Any, Sequence
 
 MAX_JSON_BYTES = 64 * 1024
 MAX_RUNTIME_FILE_BYTES = 64 * 1024 * 1024
+MAX_CHILD_OUTPUT_BYTES = 4 * 1024
 HASH_PATTERN_LENGTH = 64
+REASON_CODE_RE = re.compile(r"\b(?:NEWS_GRASP|E2E)_[A-Z0-9_]{2,127}\b")
 
 
 def _path_key(path: Path) -> str:
@@ -216,6 +220,208 @@ def _file_sha256(
         require_unique=require_unique,
     )
     return hashlib.sha256(payload).hexdigest()
+
+
+def _wait_for_owned_process(
+    process: Any,
+    *,
+    timeout_seconds: int | float,
+    max_output_bytes: int = MAX_CHILD_OUTPUT_BYTES,
+) -> dict[str, Any]:
+    """子出力を最後までdrainし、診断に必要な末尾だけを保持する。"""
+
+    if (
+        isinstance(timeout_seconds, bool)
+        or not isinstance(timeout_seconds, (int, float))
+        or timeout_seconds <= 0
+        or isinstance(max_output_bytes, bool)
+        or not isinstance(max_output_bytes, int)
+        or max_output_bytes <= 0
+    ):
+        raise RuntimeError("NEWS_GRASP_NOPUBLISH_OWNER_CAPTURE_LIMIT_INVALID")
+
+    stdout = bytearray()
+    stderr = bytearray()
+    truncated = {"stdout": False, "stderr": False}
+    drain_errors: list[str] = []
+
+    def drain(stream: Any, target: bytearray, name: str) -> None:
+        if stream is None:
+            return
+        try:
+            while True:
+                chunk = stream.read(64 * 1024)
+                if not chunk:
+                    return
+                if len(chunk) >= max_output_bytes:
+                    target[:] = chunk[-max_output_bytes:]
+                    truncated[name] = True
+                    continue
+                overflow = len(target) + len(chunk) - max_output_bytes
+                if overflow > 0:
+                    del target[:overflow]
+                    truncated[name] = True
+                target.extend(chunk)
+        except BaseException:
+            drain_errors.append(name)
+
+    threads = [
+        threading.Thread(
+            target=drain,
+            args=(process.stdout, stdout, "stdout"),
+            daemon=True,
+        ),
+        threading.Thread(
+            target=drain,
+            args=(process.stderr, stderr, "stderr"),
+            daemon=True,
+        ),
+    ]
+    for thread in threads:
+        thread.start()
+    timed_out = False
+    capture_error_code = ""
+    try:
+        try:
+            exit_code = int(process.wait(timeout=timeout_seconds))
+        except subprocess.TimeoutExpired:
+            timed_out = True
+            exit_code = 124
+        except BaseException:
+            exit_code = 76
+            capture_error_code = "NEWS_GRASP_NOPUBLISH_OWNER_WAIT_FAILED"
+        try:
+            # 親終了後もpipeを保持する子孫を同じJobごと回収してEOFを確定する。
+            process.close_job()
+        except BaseException:
+            capture_error_code = "NEWS_GRASP_NOPUBLISH_OWNER_JOB_CLOSE_FAILED"
+        for thread in threads:
+            thread.join(timeout=5)
+        if any(thread.is_alive() for thread in threads):
+            capture_error_code = "NEWS_GRASP_NOPUBLISH_OWNER_CAPTURE_DRAIN_TIMEOUT"
+        elif drain_errors:
+            capture_error_code = "NEWS_GRASP_NOPUBLISH_OWNER_STREAM_READ_FAILED"
+    except BaseException:
+        capture_error_code = "NEWS_GRASP_NOPUBLISH_OWNER_CAPTURE_INTERNAL_FAILED"
+        exit_code = 76
+
+    return {
+        "exitCode": exit_code,
+        "stdout": bytes(stdout).decode("utf-8", errors="replace").strip(),
+        "stderr": bytes(stderr).decode("utf-8", errors="replace").strip(),
+        "stdoutTruncated": truncated["stdout"],
+        "stderrTruncated": truncated["stderr"],
+        "timedOut": timed_out,
+        "captureComplete": not capture_error_code,
+        "captureErrorCode": capture_error_code,
+    }
+
+
+def _child_reason_code(*outputs: str) -> str:
+    matches: list[str] = []
+    for output in outputs:
+        matches.extend(REASON_CODE_RE.findall(output))
+    return matches[-1] if matches else "NEWS_GRASP_NOPUBLISH_CHILD_EXIT_NONZERO"
+
+
+def _write_child_failure_evidence(
+    *,
+    bridge: Any,
+    output_path: Path,
+    root: Path,
+    admission: dict[str, Any],
+    process_identity: dict[str, Any],
+    powershell_path: Path,
+    powershell_sha256: str,
+    runner_path: Path,
+    result: dict[str, Any],
+) -> None:
+    reason_code = (
+        "NEWS_GRASP_RELEASE_NOPUBLISH_TIMEOUT"
+        if result["timedOut"]
+        else (
+            str(result["captureErrorCode"])
+            if not result["captureComplete"]
+            else "NEWS_GRASP_NOPUBLISH_CHILD_EXIT_NONZERO"
+        )
+    )
+    evidence = {
+        "schemaVersion": "NEWS_GRASP_NOPUBLISH_CHILD_FAILURE_EVIDENCE_V1",
+        "status": "child_failed_before_terminal",
+        "reasonCode": reason_code,
+        "childReasonCode": _child_reason_code(
+            str(result.get("stdout") or ""),
+            str(result.get("stderr") or ""),
+        ),
+        "issueDate": str(admission["issueDate"]),
+        "processId": int(process_identity["pid"]),
+        "childExitCode": int(result["exitCode"]),
+        "timedOut": bool(result["timedOut"]),
+        "stdoutTail": str(result["stdout"]),
+        "stderrTail": str(result["stderr"]),
+        "stdoutTruncated": bool(result["stdoutTruncated"]),
+        "stderrTruncated": bool(result["stderrTruncated"]),
+        "captureComplete": bool(result["captureComplete"]),
+        "captureErrorCode": str(result["captureErrorCode"]),
+        "powershellPath": str(powershell_path),
+        "powershellSha256": powershell_sha256,
+        "runnerPath": str(runner_path),
+        "runnerSha256": _file_sha256(
+            runner_path,
+            root=root,
+            require_unique=True,
+        ),
+        "observedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+
+    def validate_existing() -> None:
+        existing, _ = _read_json_snapshot(output_path, root=root)
+        schema = existing.get("schemaVersion") if isinstance(existing, dict) else None
+        status = existing.get("status") if isinstance(existing, dict) else None
+        if (
+            not isinstance(existing, dict)
+            or existing.get("issueDate") != str(admission["issueDate"])
+            or int(existing.get("processId", -1)) != int(process_identity["pid"])
+            or int(existing.get("childExitCode", -1)) != int(result["exitCode"])
+            or _path_key(Path(str(existing.get("powershellPath") or "")))
+            != _path_key(powershell_path)
+            or existing.get("powershellSha256") != powershell_sha256
+            or _path_key(Path(str(existing.get("runnerPath") or "")))
+            != _path_key(runner_path)
+            or existing.get("runnerSha256") != evidence["runnerSha256"]
+        ):
+            raise RuntimeError("NEWS_GRASP_NOPUBLISH_CHILD_FAILURE_EVIDENCE_DRIFT")
+        if schema == "NEWS_GRASP_NOPUBLISH_CHILD_FAILURE_EVIDENCE_V1":
+            if (
+                status != "child_failed_before_terminal"
+                or existing.get("reasonCode") != reason_code
+                or bool(existing.get("timedOut")) != bool(result["timedOut"])
+                or bool(existing.get("captureComplete"))
+                != bool(result["captureComplete"])
+                or str(existing.get("captureErrorCode") or "")
+                != str(result["captureErrorCode"])
+            ):
+                raise RuntimeError("NEWS_GRASP_NOPUBLISH_CHILD_FAILURE_EVIDENCE_DRIFT")
+        elif schema == "NEWS_GRASP_RUNNER_LAUNCH_EVIDENCE_V1":
+            if (
+                status != "failed_after_state_claim"
+                or existing.get("reasonCode")
+                != "NEWS_GRASP_RELEASE_NOPUBLISH_CHILD_FAILED"
+                or int(existing.get("childExitCode", 0)) == 0
+            ):
+                raise RuntimeError("NEWS_GRASP_NOPUBLISH_CHILD_FAILURE_EVIDENCE_DRIFT")
+        else:
+            raise RuntimeError("NEWS_GRASP_NOPUBLISH_CHILD_FAILURE_EVIDENCE_DRIFT")
+
+    if output_path.exists():
+        validate_existing()
+        return
+    try:
+        bridge._write_exclusive(output_path, evidence)
+    except BaseException:
+        if not output_path.exists():
+            raise
+        validate_existing()
 
 
 def _load_bound_module(
@@ -487,7 +693,7 @@ def run_owned_nopublish(
     _canonical_repo_file(policy_path, root=root, max_bytes=MAX_JSON_BYTES, require_unique=True)
     _canonical_repo_future_file(state_path, root=root)
     _canonical_repo_future_file(claim_path, root=root)
-    _canonical_repo_future_file(launch_evidence_path, root=root)
+    launch_evidence = _canonical_repo_future_file(launch_evidence_path, root=root)
 
     child_environment = dict(os.environ)
     for name in ("PYTHONPATH", "PYTHONHOME", "PYTHONSTARTUP", "PYTHONINSPECT", "PYTHONUSERBASE"):
@@ -505,7 +711,7 @@ def run_owned_nopublish(
         [str(powershell), *arguments],
         cwd=str(root.resolve(strict=True)),
         env=child_environment,
-        capture_output=False,
+        capture_output=True,
     )
     try:
         observed = bridge._query_process_identity(process.pid)
@@ -522,45 +728,64 @@ def run_owned_nopublish(
             "imagePath": str(observed["imagePath"]),
             "imageSha256": str(observed["imageSha256"]),
         }
-        try:
-            exit_code = int(process.wait(timeout=60 * 60))
-        except subprocess.TimeoutExpired:
-            process.close_job()
-            raise RuntimeError("NEWS_GRASP_RELEASE_NOPUBLISH_TIMEOUT")
+        result = _wait_for_owned_process(
+            process,
+            timeout_seconds=60 * 60,
+        )
+    except BaseException:
+        process.close()
+        raise
+
+    try:
+        exit_code = int(result["exitCode"])
+        if result["timedOut"] or exit_code != 0 or not result["captureComplete"]:
+            _write_child_failure_evidence(
+                bridge=bridge,
+                output_path=launch_evidence,
+                root=root,
+                admission=admission_value,
+                process_identity=process_identity,
+                powershell_path=powershell,
+                powershell_sha256=powershell_sha256,
+                runner_path=runner_path,
+                result=result,
+            )
+            if result["timedOut"]:
+                raise RuntimeError("NEWS_GRASP_RELEASE_NOPUBLISH_TIMEOUT")
+            if not result["captureComplete"]:
+                raise RuntimeError(str(result["captureErrorCode"]))
+            return exit_code
+        evidence = _read_launch_evidence(
+            launch_evidence_path,
+            issue_date=str(admission_value["issueDate"]),
+            expected_root=root,
+            expected_min_mtime_ns=started_ns,
+        )
+        if (
+            int(evidence.get("processId", -1)) != process_identity["pid"]
+            or _path_key(Path(str(evidence.get("powershellPath") or ""))) != _path_key(powershell)
+            or evidence.get("powershellSha256") != powershell_sha256
+            or _path_key(Path(str(evidence.get("runnerPath") or ""))) != _path_key(runner_path)
+            or evidence.get("runnerSha256")
+            != _file_sha256(runner_path, root=root, require_unique=True)
+        ):
+            raise RuntimeError("NEWS_GRASP_RUNNER_LAUNCH_EVIDENCE_IDENTITY_DRIFT")
+        _write_terminal_authority(
+            bridge=bridge,
+            producer_path=owner_path,
+            repo_root=root,
+            policy_path=policy_path,
+            attempt=attempt,
+            admission_path=admission_path,
+            runner_arguments_path=runner_arguments_path,
+            runner_state_path=state_path,
+            claim_path=claim_path,
+            process_identity=process_identity,
+            child_launch_evidence=evidence,
+        )
+        return 0
     finally:
         process.close()
-
-    if exit_code != 0:
-        return exit_code
-    evidence = _read_launch_evidence(
-        launch_evidence_path,
-        issue_date=str(admission_value["issueDate"]),
-        expected_root=root,
-        expected_min_mtime_ns=started_ns,
-    )
-    if (
-        int(evidence.get("processId", -1)) != process_identity["pid"]
-        or _path_key(Path(str(evidence.get("powershellPath") or ""))) != _path_key(powershell)
-        or evidence.get("powershellSha256") != powershell_sha256
-        or _path_key(Path(str(evidence.get("runnerPath") or ""))) != _path_key(runner_path)
-        or evidence.get("runnerSha256")
-        != _file_sha256(runner_path, root=root, require_unique=True)
-    ):
-        raise RuntimeError("NEWS_GRASP_RUNNER_LAUNCH_EVIDENCE_IDENTITY_DRIFT")
-    _write_terminal_authority(
-        bridge=bridge,
-        producer_path=owner_path,
-        repo_root=root,
-        policy_path=policy_path,
-        attempt=attempt,
-        admission_path=admission_path,
-        runner_arguments_path=runner_arguments_path,
-        runner_state_path=state_path,
-        claim_path=claim_path,
-        process_identity=process_identity,
-        child_launch_evidence=evidence,
-    )
-    return 0
 
 
 def _main(argv: Sequence[str] | None = None) -> int:
