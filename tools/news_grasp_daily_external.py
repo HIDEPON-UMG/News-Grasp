@@ -794,15 +794,34 @@ def _verify_remote_cas_before_side_effects(
         subprocess.SubprocessError,
     ):
         return "external_remote_cas_unobservable"
-    start_seal = _mapping(_first(context, "start_seal", "startSeal", default={})) or {}
-    remote_base = str(_first(start_seal, "remoteBaseSha", "remote_base_sha", default="") or "").casefold()
+    try:
+        start_seal = _mapping(_first(context, "start_seal", "startSeal", default={})) or {}
+        remote_base = str(_first(start_seal, "remoteBaseSha", "remote_base_sha", default="") or "").casefold()
+    except (TypeError, ValueError):
+        return "external_release_base_transition_identity_invalid"
+    candidate_base = parent.stdout.strip().casefold() if parent.returncode == 0 else ""
     if (
         head.returncode != 0
-        or head.stdout.strip().casefold() != release_sha
+        or head.stdout.strip().casefold() != release_sha.casefold()
         or parent.returncode != 0
-        or parent.stdout.strip().casefold() != remote_base
     ):
         return "external_release_parent_remote_base_mismatch"
+    if candidate_base != remote_base:
+        try:
+            source_base = str(_first(start_seal, "sourceBaseline", "source_baseline", default="") or "").casefold()
+            if not _normalise_hash(source_base, length=40) or not _normalise_hash(remote_base, length=40):
+                return "external_release_base_transition_identity_invalid"
+            from tools.news_grasp_daily_release import validate_release_base_transition
+
+            validate_release_base_transition(
+                root,
+                source_baseline=source_base,
+                remote_base_sha=remote_base,
+                candidate_base=candidate_base,
+            )
+        except Exception:  # noqa: BLE001 - base transition is a typed external Red.
+            return "external_release_base_transition_invalid"
+        remote_base = candidate_base
     observed_remote = remote.stdout.split()[0].casefold() if remote.returncode == 0 and remote.stdout.split() else ""
     git_status = str((rows.get("git_release_push") or {}).get("status") or "")
     expected_remote = release_sha if git_status == "completed" else remote_base

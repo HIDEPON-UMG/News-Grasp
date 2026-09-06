@@ -1020,12 +1020,34 @@ def _verify_push_identity(identity: Mapping[str, Any]) -> tuple[str, str]:
     context = identity["context"]
     release_sha = _sealed_sha(context)
     remote_base_sha = _sealed_remote_base_sha(context)
+    candidate_base = _git_sha(root, "rev-parse", f"{release_sha}^")
     head = _git_sha(root, "rev-parse", "--verify", "HEAD")
     if head != release_sha:
         raise ProductionAdapterError("git_release_head_sealed_sha_mismatch")
     returncode, branch_ref, _stderr = _run_git(root, ["symbolic-ref", "-q", "HEAD"])
     if returncode == 0 and branch_ref.strip() != "refs/heads/main":
         raise ProductionAdapterError("git_release_main_or_detached_required")
+    if candidate_base != remote_base_sha:
+        start_seal = _first(context, "start_seal", "startSeal", default={})
+        if not isinstance(start_seal, Mapping):
+            raise ProductionAdapterError("git_release_base_transition_start_seal_invalid")
+        source_baseline = str(
+            _first(start_seal, "sourceBaseline", "source_baseline", default="") or ""
+        ).strip().casefold()
+        if not _SHA1_RE.fullmatch(source_baseline):
+            raise ProductionAdapterError("git_release_source_baseline_required_for_base_transition")
+        try:
+            from tools.news_grasp_daily_release import validate_release_base_transition
+
+            validate_release_base_transition(
+                root,
+                source_baseline=source_baseline,
+                remote_base_sha=remote_base_sha,
+                candidate_base=candidate_base,
+            )
+        except Exception as exc:  # noqa: BLE001 - adapter boundary is typed Red.
+            raise ProductionAdapterError("git_release_base_transition_invalid") from exc
+        remote_base_sha = candidate_base
     observed_remote_base = _remote_ref_sha(root)
     if observed_remote_base != remote_base_sha:
         raise ProductionAdapterError("git_release_remote_base_sha_cas_mismatch")
@@ -1063,6 +1085,7 @@ def _git_release_push(
             "push",
             "--porcelain",
             "--atomic",
+            f"--force-with-lease=refs/heads/main:{remote_base_sha}",
             "origin",
             f"{release_sha}:refs/heads/main",
         ],

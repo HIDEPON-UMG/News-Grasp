@@ -593,6 +593,8 @@ def build_publish_manifest(
         _entry(root, f"digest/Summary/{issue_date}.md", "summary_source", base + f"{issue_date}/summary/", commit_role="publication"),
         _entry(root, f"docs/{issue_date}/summary/index.html", "summary_html", base + f"{issue_date}/summary/", link_from=f"docs/{issue_date}/index.html"),
         _entry(root, f"digest/DeepDive/{issue_date}-DeepDive.md", "deepdive_source", base + f"deepdive/{issue_date}/"),
+        _entry(root, f"data/deepdive-provenance/{issue_date}.json", "deepdive_provenance", base, required=True),
+        _entry(root, f"data/deepdive-quality-review/{issue_date}.json", "deepdive_quality_review", base, required=True),
         _entry(root, f"docs/deepdive/{issue_date}/index.html", "deepdive_html", base + f"deepdive/{issue_date}/", link_from="docs/index.html"),
         _entry(root, "build/tts/daily/latest_audio.json", "daily_audio_state", base, link_from="docs/index.html", commit_role="external_observation"),
         _entry(root, "build/tts/deepdive/latest_audio.json", "deepdive_audio_state", base, link_from=f"docs/deepdive/{issue_date}/index.html", commit_role="external_observation"),

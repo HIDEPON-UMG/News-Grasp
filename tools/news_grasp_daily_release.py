@@ -34,6 +34,74 @@ class DailyReleaseError(RuntimeError):
     """release candidate作成前後のtyped failure。"""
 
 
+def validate_release_base_transition(
+    root: Path,
+    *,
+    source_baseline: str,
+    remote_base_sha: str,
+    candidate_base: str,
+) -> dict[str, Any]:
+    """開始時baseからsource-onlyのcandidate更新だけを許可する。"""
+
+    values = {
+        "sourceBaseline": str(source_baseline or "").strip().casefold(),
+        "remoteBaseSha": str(remote_base_sha or "").strip().casefold(),
+        "candidateBase": str(candidate_base or "").strip().casefold(),
+    }
+    if any(not _SHA1_RE.fullmatch(value) for value in values.values()):
+        raise DailyReleaseError("RELEASE_BASE_IDENTITY_INVALID")
+    if values["sourceBaseline"] == values["remoteBaseSha"] == values["candidateBase"]:
+        return {**values, "changedPaths": []}
+
+    changed_paths: set[str] = set()
+    for ancestor in dict.fromkeys((values["sourceBaseline"], values["remoteBaseSha"])):
+        try:
+            _git(root, ["merge-base", "--is-ancestor", ancestor, values["candidateBase"]])
+            diff = _git(
+                root,
+                [
+                    "diff",
+                    "--no-renames",
+                    "--name-only",
+                    "-z",
+                    ancestor,
+                    values["candidateBase"],
+                ],
+            )
+        except DailyReleaseError as exc:
+            raise DailyReleaseError("RELEASE_BASE_NOT_ANCESTOR") from exc
+        changed_paths.update(
+            item.replace("\\", "/")
+            for item in diff.split("\0")
+            if item
+        )
+
+    forbidden = sorted(
+        path
+        for path in changed_paths
+        if not path.startswith(("tools/", "tests/", "schemas/"))
+    )
+    if forbidden:
+        raise DailyReleaseError("RELEASE_BASE_PUBLIC_DRIFT:" + "|".join(forbidden[:16]))
+
+    paths = sorted(changed_paths)
+    if paths:
+        for tree in (values["sourceBaseline"], values["remoteBaseSha"], values["candidateBase"]):
+            try:
+                entries = _git(root, ["ls-tree", "-r", "-z", tree, "--", *paths])
+            except DailyReleaseError as exc:
+                raise DailyReleaseError("RELEASE_BASE_TREE_UNREADABLE") from exc
+            for entry in entries.split("\0"):
+                if not entry:
+                    continue
+                header, separator, path = entry.partition("\t")
+                mode = header.split(" ", 1)[0] if separator else ""
+                if mode not in {"100644", "100755"}:
+                    raise DailyReleaseError(f"RELEASE_BASE_UNSAFE_TREE_MODE:{path or '<unknown>'}")
+
+    return {**values, "changedPaths": paths}
+
+
 def _write_publish_status(
     root: Path,
     *,
@@ -301,16 +369,23 @@ def materialize_and_seal_release(
     scheduler_trigger_at = str(start.get("schedulerTriggerAt") or "")
     if not _SHA1_RE.fullmatch(source_baseline) or not _SHA1_RE.fullmatch(remote_base_sha):
         raise DailyReleaseError("RELEASE_START_SEAL_IDENTITY_INVALID")
-    if _git(root, ["rev-parse", "origin/main"]).strip().casefold() != remote_base_sha:
-        raise DailyReleaseError("RELEASE_REMOTE_BASE_DRIFT")
+    candidate_base = _git(root, ["rev-parse", "origin/main"]).strip().casefold()
+    transition = validate_release_base_transition(
+        root,
+        source_baseline=source_baseline,
+        remote_base_sha=remote_base_sha,
+        candidate_base=candidate_base,
+    )
     if content_receipt.get("ok") is not True or content_receipt.get("run_id") != run_id:
         raise DailyReleaseError("RELEASE_CONTENT_RECEIPT_INVALID")
     _preflight_head_identity(
         root,
-        expected_parent=source_baseline,
+        expected_parent=candidate_base,
         issue_date=issue_date,
         run_id=run_id,
     )
+    source_baseline = candidate_base
+    remote_base_sha = candidate_base
 
     _write_publish_status(
         root,
@@ -422,6 +497,7 @@ def materialize_and_seal_release(
         "run_id": run_id,
         "run_intent": run_intent,
         "source_baseline": source_baseline,
+        "source_base_transition": transition,
         "remote_base_sha": remote_base_sha,
         "release_commit_sha": release_sha,
         "manifest_id": str(materialized["manifestId"]),
@@ -433,4 +509,9 @@ def materialize_and_seal_release(
     }
 
 
-__all__ = ["RELEASE_RECEIPT_SCHEMA", "DailyReleaseError", "materialize_and_seal_release"]
+__all__ = [
+    "RELEASE_RECEIPT_SCHEMA",
+    "DailyReleaseError",
+    "validate_release_base_transition",
+    "materialize_and_seal_release",
+]
