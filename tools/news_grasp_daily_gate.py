@@ -332,6 +332,12 @@ def _default_static_check(**context: Any) -> dict[str, Any]:
 
     failures: list[str] = []
     try:
+        from tools.news_grasp_daily_content import validate_daily_output_schemas
+
+        validate_daily_output_schemas(_context_root(context))
+    except Exception as exc:  # noqa: BLE001 - static producer emits typed Red.
+        failures.append(f"daily_output_schema_red:{exc}")
+    try:
         profile = validate_profiles()
     except Exception as exc:  # noqa: BLE001 - static producer emits typed Red.
         profile = {}

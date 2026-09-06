@@ -7,6 +7,7 @@ import json
 import os
 import re
 import shutil
+import stat
 import subprocess
 import tempfile
 import uuid
@@ -28,9 +29,16 @@ REPORTER_SCHEMA = "schemas/news_grasp_daily_reporter_output.schema.json"
 REPORTER_SHARD_SCHEMA = "schemas/news_grasp_daily_reporter_shard_output.schema.json"
 EDITOR_SCHEMA = "schemas/news_grasp_daily_editor_output.schema.json"
 DEEPDIVE_SCHEMA = "schemas/news_grasp_daily_deepdive_output.schema.json"
+DAILY_OUTPUT_SCHEMAS = (
+    REPORTER_SCHEMA,
+    REPORTER_SHARD_SCHEMA,
+    EDITOR_SCHEMA,
+    DEEPDIVE_SCHEMA,
+)
 _RUN_ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{7,191}")
 _CARD_RE = re.compile(r"(?m)^###\s+\[")
 _ARTICLES_JSONL_LIMIT = 64 * 1024 * 1024
+_MODEL_EVENTS_MAX_BYTES = 16 * 1024 * 1024
 _GENRES = {
     "fx": "FX",
     "ai": "AI",
@@ -52,6 +60,62 @@ class ModelResultPending(DailyContentError):
     def __init__(self, detail: str = "") -> None:
         suffix = f":{detail}" if detail else ""
         super().__init__(f"MODEL_RESULT_PENDING{suffix}")
+
+
+def _schema_pointer_part(value: object) -> str:
+    return str(value).replace("~", "~0").replace("/", "~1")
+
+
+def _validate_closed_schema_node(node: Any, *, pointer: str) -> None:
+    if isinstance(node, Mapping):
+        if node.get("type") == "object":
+            properties = node.get("properties")
+            required = node.get("required")
+            if not isinstance(properties, Mapping):
+                raise DailyContentError(
+                    f"DAILY_OUTPUT_SCHEMA_INVALID:{pointer}:properties"
+                )
+            if node.get("additionalProperties") is not False:
+                raise DailyContentError(
+                    f"DAILY_OUTPUT_SCHEMA_INVALID:{pointer}:additionalProperties"
+                )
+            if not isinstance(required, list) or any(
+                not isinstance(item, str) for item in required
+            ):
+                raise DailyContentError(
+                    f"DAILY_OUTPUT_SCHEMA_INVALID:{pointer}:required"
+                )
+            if len(required) != len(set(required)) or set(required) != set(properties):
+                raise DailyContentError(
+                    f"DAILY_OUTPUT_SCHEMA_INVALID:{pointer}:required_properties"
+                )
+        for name, child in node.items():
+            _validate_closed_schema_node(
+                child,
+                pointer=f"{pointer}/{_schema_pointer_part(name)}",
+            )
+        return
+    if isinstance(node, list):
+        for index, child in enumerate(node):
+            _validate_closed_schema_node(child, pointer=f"{pointer}/{index}")
+
+
+def validate_daily_output_schemas(repo_root: Path | str) -> None:
+    """日次モデル出力schemaの全objectを静的に閉鎖検査する。"""
+
+    root = _safe_root(repo_root)
+    for relative in DAILY_OUTPUT_SCHEMAS:
+        path = _safe_path(root, relative)
+        try:
+            raw = path.read_bytes()
+            schema = json.loads(raw.decode("utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            raise DailyContentError(
+                f"DAILY_OUTPUT_SCHEMA_INVALID:{relative}:json"
+            ) from exc
+        if not isinstance(schema, Mapping):
+            raise DailyContentError(f"DAILY_OUTPUT_SCHEMA_INVALID:{relative}:root")
+        _validate_closed_schema_node(schema, pointer=f"{relative}#")
 
 
 def _json_bytes(value: Any) -> bytes:
@@ -368,6 +432,171 @@ def _load_model_call_raw(path: Path) -> tuple[bool, Any]:
     if not path.exists():
         return False, None
     return True, _read_json_file(path, error_code="MODEL_RAW_OUTPUT_INVALID")
+
+
+def _has_reparse_ancestor(path: Path) -> bool:
+    current = path
+    while True:
+        try:
+            if _is_reparse_point(current):
+                return True
+        except OSError:
+            return True
+        parent = current.parent
+        if parent == current:
+            return False
+        current = parent
+
+
+def _read_bounded_model_events(path: Path) -> bytes | None:
+    """モデルeventsを正規・非reparseの同一fileから上限付きで読む。"""
+
+    if _has_reparse_ancestor(path) or not path.is_file():
+        return None
+    try:
+        before = path.stat()
+        if not stat.S_ISREG(before.st_mode) or _is_reparse_point(path):
+            return None
+        with path.open("rb") as stream:
+            opened = os.fstat(stream.fileno())
+            if not stat.S_ISREG(opened.st_mode):
+                return None
+            raw = stream.read(_MODEL_EVENTS_MAX_BYTES + 1)
+            after = os.fstat(stream.fileno())
+        if not stat.S_ISREG(after.st_mode):
+            return None
+        identity_before = (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns)
+        identity_opened = (opened.st_dev, opened.st_ino, opened.st_size, opened.st_mtime_ns)
+        identity_after = (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns)
+        if (
+            identity_before != identity_opened
+            or identity_opened != identity_after
+            or len(raw) > _MODEL_EVENTS_MAX_BYTES
+            or len(raw) != opened.st_size
+            or _has_reparse_ancestor(path)
+            or _is_reparse_point(path)
+        ):
+            return None
+        return raw
+    except (OSError, ValueError):
+        return None
+
+
+def _confirmed_schema_rejection_sha256(events_path: Path) -> str | None:
+    """確定したAPI schema拒否を同一read bytesで検証し、そのSHA256を返す。"""
+
+    event_bytes = _read_bounded_model_events(events_path)
+    if event_bytes is None:
+        return None
+    try:
+        lines = event_bytes.splitlines()
+        events = []
+        for line in lines:
+            if not line.strip():
+                return None
+            value = json.loads(line.decode("utf-8"))
+            if not isinstance(value, Mapping):
+                return None
+            events.append(value)
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return None
+    if not events or events[-1].get("type") != "turn.failed":
+        return None
+    if any(event.get("type") == "turn.completed" for event in events):
+        return None
+    error = events[-1].get("error")
+    if not isinstance(error, Mapping) or not isinstance(error.get("message"), str):
+        return None
+    try:
+        detail = json.loads(str(error["message"]))
+    except (TypeError, json.JSONDecodeError):
+        return None
+    if not (
+        isinstance(detail, Mapping)
+        and type(detail.get("status")) is int
+        and detail.get("status") == 400
+        and isinstance(detail.get("error"), Mapping)
+        and detail["error"].get("code") == "invalid_json_schema"
+    ):
+        return None
+    return _sha256_bytes(event_bytes)
+
+
+def _is_confirmed_schema_rejection(events_path: Path) -> bool:
+    """保存済みeventsの末尾が確定したAPI schema拒否かを厳密に判定する。"""
+
+    return _confirmed_schema_rejection_sha256(events_path) is not None
+
+
+def _model_call_label(
+    role: str,
+    category: str | None,
+    context: Mapping[str, Any],
+) -> str:
+    if role == "reporter":
+        return f"reporter-{category}"
+    if role == "reporter_shard":
+        categories = tuple(str(item) for item in context.get("categories", ()))
+        return f"reporter-shard-{'-'.join(categories)}"
+    return role
+
+
+def _model_schema_for_role(role: str) -> str:
+    try:
+        return {
+            "reporter": REPORTER_SCHEMA,
+            "reporter_shard": REPORTER_SHARD_SCHEMA,
+            "editor": EDITOR_SCHEMA,
+            "deepdive": DEEPDIVE_SCHEMA,
+        }[role]
+    except KeyError as exc:
+        raise DailyContentError("MODEL_ROLE_UNKNOWN") from exc
+
+
+def _verified_model_schema_sha256(
+    root: Path,
+    role: str,
+    *,
+    pending_detail: str,
+) -> str:
+    try:
+        validate_daily_output_schemas(root)
+        schema_path = _safe_path(root, _model_schema_for_role(role))
+        schema_bytes = schema_path.read_bytes()
+    except (DailyContentError, OSError, UnicodeError, TypeError, ValueError) as exc:
+        raise ModelResultPending(pending_detail) from exc
+    return _sha256_bytes(schema_bytes)
+
+
+def _schema_recovery_metadata_matches(
+    path: Path,
+    *,
+    call_id: str,
+    original_events_sha: str,
+    schema_sha: str,
+) -> bool:
+    expected = {
+        "schemaVersion": "NEWS_GRASP_MODEL_SCHEMA_RECOVERY_V1",
+        "reason": "invalid_json_schema",
+        "callId": call_id,
+        "originalEventsSha256": original_events_sha,
+        "schemaSha256": schema_sha,
+    }
+    try:
+        actual = _read_json_file(path, error_code="MODEL_SCHEMA_RECOVERY_METADATA_INVALID")
+    except DailyContentError:
+        return False
+    return isinstance(actual, Mapping) and dict(actual) == expected
+
+
+def _schema_recovery_root(call_root: Path) -> Path:
+    recovery_root = _safe_path(call_root, "schema-recovery")
+    if recovery_root.exists() and (_is_reparse_point(recovery_root) or not recovery_root.is_dir()):
+        raise DailyContentError("MODEL_SCHEMA_RECOVERY_ROOT_INVALID")
+    recovery_root.mkdir(parents=True, exist_ok=True)
+    if _is_reparse_point(recovery_root):
+        raise DailyContentError("MODEL_SCHEMA_RECOVERY_ROOT_INVALID")
+    return recovery_root
 
 
 @contextmanager
@@ -937,20 +1166,9 @@ def _default_model_runner(
 
     model = "gpt-5.6-sol" if role == "deepdive" else "gpt-5.6-luna"
     effort = "max"
-    schema = {
-        "reporter": REPORTER_SCHEMA,
-        "reporter_shard": REPORTER_SHARD_SCHEMA,
-        "editor": EDITOR_SCHEMA,
-        "deepdive": DEEPDIVE_SCHEMA,
-    }[role]
+    schema = _model_schema_for_role(role)
     shard_categories = tuple(str(item) for item in context.get("categories", ()))
-    label = (
-        f"reporter-{category}"
-        if role == "reporter"
-        else f"reporter-shard-{'-'.join(shard_categories)}"
-        if role == "reporter_shard"
-        else role
-    )
+    label = _model_call_label(role, category, context)
     raw_path_value = context.get("raw_path")
     output = Path(raw_path_value) if raw_path_value else output_dir / f"{label}.json"
     if output.parent != output_dir:
@@ -1005,6 +1223,11 @@ def _default_model_runner(
         str(output),
         "-",
     ]
+    _verified_model_schema_sha256(
+        repo_root,
+        role,
+        pending_detail=f"{role}:schema",
+    )
     try:
         route = (
             f"reporter:{category}"
@@ -1740,6 +1963,102 @@ def produce_current_issue(
                     call_id=call_id,
                     input_hash=input_hash,
                 )
+
+                def recover_schema_rejection() -> tuple[Any, bool]:
+                    events_path = call_root / (
+                        f"{_model_call_label(role, category, model_context)}.events.jsonl"
+                    )
+                    original_events_sha = _confirmed_schema_rejection_sha256(events_path)
+                    if original_events_sha is None:
+                        raise ModelResultPending(artifact_id)
+                    try:
+                        recovery_root = _schema_recovery_root(call_root)
+                    except (DailyContentError, OSError) as exc:
+                        raise ModelResultPending(
+                            f"{artifact_id}:schema_recovery"
+                        ) from exc
+                    recovery_intent_path = recovery_root / "intent.json"
+                    recovery_raw_path = recovery_root / MODEL_CALL_RAW_FILENAME
+                    schema_sha = _verified_model_schema_sha256(
+                        root,
+                        role,
+                        pending_detail=f"{artifact_id}:schema",
+                    )
+                    if recovery_intent_path.exists():
+                        if not _schema_recovery_metadata_matches(
+                            recovery_root / "metadata.json",
+                            call_id=call_id,
+                            original_events_sha=original_events_sha,
+                            schema_sha=schema_sha,
+                        ):
+                            raise ModelResultPending(
+                                f"{artifact_id}:schema_recovery_metadata"
+                            )
+                        try:
+                            _ensure_model_call_intent(
+                                recovery_intent_path,
+                                expected_intent,
+                            )
+                        except (DailyContentError, OSError) as exc:
+                            raise ModelResultPending(
+                                f"{artifact_id}:schema_recovery_intent"
+                            ) from exc
+                        present, recovery_value = _load_model_call_raw(recovery_raw_path)
+                        if not present:
+                            raise ModelResultPending(artifact_id)
+                        return recovery_value, False
+
+                    try:
+                        metadata = {
+                            "schemaVersion": "NEWS_GRASP_MODEL_SCHEMA_RECOVERY_V1",
+                            "reason": "invalid_json_schema",
+                            "callId": call_id,
+                            "originalEventsSha256": original_events_sha,
+                            "schemaSha256": schema_sha,
+                        }
+                        _atomic_write_bytes(
+                            recovery_root / "metadata.json",
+                            _json_bytes(metadata),
+                        )
+                    except (OSError, TypeError, ValueError) as exc:
+                        raise ModelResultPending(
+                            f"{artifact_id}:schema_recovery_metadata"
+                        ) from exc
+                    try:
+                        _ensure_model_call_intent(recovery_intent_path, expected_intent)
+                    except (DailyContentError, OSError) as exc:
+                        raise ModelResultPending(
+                            f"{artifact_id}:schema_recovery_intent"
+                        ) from exc
+                    recovery_value = model_fn(
+                        role=role,
+                        repo_root=root,
+                        issue_date=issue_date,
+                        run_id=run_id,
+                        category=category,
+                        output_dir=recovery_root,
+                        call_id=call_id,
+                        input_hash=input_hash,
+                        intent_path=recovery_intent_path,
+                        raw_path=recovery_raw_path,
+                        **model_context,
+                    )
+                    present, persisted_value = _load_model_call_raw(recovery_raw_path)
+                    if not present:
+                        try:
+                            _atomic_write_bytes(
+                                recovery_raw_path,
+                                _json_bytes(recovery_value),
+                            )
+                        except (OSError, TypeError, ValueError) as exc:
+                            raise DailyContentError(
+                                "MODEL_RAW_OUTPUT_PERSIST_FAILED"
+                            ) from exc
+                        present, persisted_value = _load_model_call_raw(recovery_raw_path)
+                    if not present:
+                        raise ModelResultPending(artifact_id)
+                    return persisted_value, True
+
                 is_idempotent = reservation.get("idempotent") is True
                 status = str(reservation.get("status") or "reserved")
                 if is_idempotent and status == "completed":
@@ -1752,7 +2071,7 @@ def produce_current_issue(
                     _ensure_model_call_intent(intent_path, expected_intent)
                     present, raw_value = _load_model_call_raw(raw_path)
                     if not present:
-                        raise ModelResultPending(artifact_id)
+                        return recover_schema_rejection()
                     return raw_value, False
 
                 if intent_path.exists():
@@ -1760,7 +2079,7 @@ def produce_current_issue(
                     present, raw_value = _load_model_call_raw(raw_path)
                     if present:
                         return raw_value, False
-                    raise ModelResultPending(artifact_id)
+                    return recover_schema_rejection()
                 _ensure_model_call_intent(intent_path, expected_intent)
                 raw_value = model_fn(
                     role=role,

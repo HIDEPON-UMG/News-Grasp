@@ -388,6 +388,259 @@ def test_intent_only_result_stays_pending_without_repair_or_failure_checkpoint(
         fencing_token=run["fencing_token"],
     )
     assert ledger.model_call_usage() == {"initial": 3, "repair": 0, "total": 3}
+
+
+def _prepare_schema_recovery_for_adversarial_check(tmp_path: Path) -> dict[str, Any]:
+    """既存の同run recovery fixtureをraw到着済みまで進める。"""
+
+    from tools import news_grasp_daily_content as content
+    from tools import news_grasp_direct_runtime as runtime
+    from tools.news_grasp_daily_content import produce_current_issue
+    from tests.test_news_grasp_daily_output_schema import (
+        _copy_schemas,
+        _repo_root,
+        _schema_rejection_event,
+        _write_events,
+    )
+
+    class FakeClock:
+        def __init__(self) -> None:
+            self.value = datetime.fromisoformat("2026-09-04T06:00:00+09:00")
+
+        def __call__(self) -> datetime:
+            return self.value
+
+    clock = FakeClock()
+    store = runtime.DirectRunStore(
+        tmp_path / "state",
+        clock=clock,
+        test_only_allow_semantic_verifier=True,
+    )
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "articles.jsonl").write_text("", encoding="utf-8")
+    _copy_schemas(_repo_root(), tmp_path / "schemas")
+    run = runtime.start_run(
+        store,
+        cwd=tmp_path,
+        issue_date=ISSUE_DATE,
+        run_intent=runtime.RUN_INTENT,
+        manifest_id="f" * 64,
+        scheduler_trigger_at=clock().isoformat(),
+        runtime_generation=runtime.RUNTIME_SCHEMA_V2,
+        allowed_side_effect_ids=(),
+    )
+    run_id = str(run["run_id"])
+    calls: list[dict[str, Any]] = []
+    editor_calls: list[dict[str, Any]] = []
+
+    def model_runner(*, role: str, category: str | None = None, **context: Any):
+        call = {"role": role, "category": category, **context}
+        calls.append(call)
+        if role == "reporter":
+            return {
+                "category": category,
+                "issue_date": ISSUE_DATE,
+                "records": [_record(str(category))],
+                "digest_markdown": _digest(str(category)),
+                "search_audit": context["search_audit"],
+            }
+        if role == "editor":
+            editor_calls.append(call)
+            if len(editor_calls) == 1:
+                _write_events(
+                    Path(context["output_dir"]) / "editor.events.jsonl",
+                    [
+                        {"type": "turn.started"},
+                        _schema_rejection_event(
+                            json.dumps(
+                                {
+                                    "status": 400,
+                                    "error": {"code": "invalid_json_schema"},
+                                }
+                            )
+                        ),
+                    ],
+                )
+                raise SystemExit("simulated_editor_schema_rejection")
+            assert Path(context["raw_path"]).parent.name == "schema-recovery"
+            raise SystemExit("simulated_schema_recovery_intent_only")
+        if role == "deepdive":
+            payload = _deepdive()
+            payload["article_markdown"] = payload["article_markdown"].replace(
+                "https://example.com/ai/",
+                "https://example.com/fx/",
+            )
+            return payload
+        raise AssertionError(role)
+
+    with pytest.raises(SystemExit, match="simulated_editor_schema_rejection"):
+        produce_current_issue(
+            repo_root=tmp_path,
+            issue_date=ISSUE_DATE,
+            run_id=run_id,
+            scheduled_categories=("fx",),
+            candidate_provider=_candidate_provider,
+            model_runner=model_runner,
+            derived_builder=_derived_builder(tmp_path),
+            runtime_store=store,
+            writer_lease=run["writer_lease"],
+            fencing_token=run["fencing_token"],
+        )
+    with pytest.raises(SystemExit, match="simulated_schema_recovery_intent_only"):
+        produce_current_issue(
+            repo_root=tmp_path,
+            issue_date=ISSUE_DATE,
+            run_id=run_id,
+            scheduled_categories=("fx",),
+            candidate_provider=lambda *_: pytest.fail("candidate provider was repeated"),
+            model_runner=model_runner,
+            derived_builder=_derived_builder(tmp_path),
+            runtime_store=store,
+            writer_lease=run["writer_lease"],
+            fencing_token=run["fencing_token"],
+        )
+
+    recovery_root = Path(editor_calls[1]["raw_path"]).parent
+    recovery_payload = {
+        "issue_date": ISSUE_DATE,
+        "inputs": {},
+        "append_records": [_record("fx")],
+        "summary_markdown": _summary(),
+    }
+    (recovery_root / "raw.json").write_text(
+        json.dumps(recovery_payload, ensure_ascii=False, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    ledger = runtime.DailyArtifactLedger(
+        store,
+        run_id=run_id,
+        issue_date=ISSUE_DATE,
+        writer_lease=run["writer_lease"],
+        fencing_token=run["fencing_token"],
+    )
+    original_events_path = Path(editor_calls[0]["output_dir"]) / "editor.events.jsonl"
+    return {
+        "content": content,
+        "runtime": runtime,
+        "store": store,
+        "run": run,
+        "run_id": run_id,
+        "ledger": ledger,
+        "model_runner": model_runner,
+        "calls": calls,
+        "editor_calls": editor_calls,
+        "recovery_root": recovery_root,
+        "original_events_path": original_events_path,
+        "recovery_raw_before": (recovery_root / "raw.json").read_bytes(),
+    }
+
+
+@pytest.mark.parametrize(
+    "tamper_case",
+    ("metadata-missing", "metadata-tampered", "events-replaced"),
+)
+def test_schema_recovery_raw_requires_intact_metadata_and_source_events(
+    tmp_path: Path,
+    tamper_case: str,
+) -> None:
+    """recovery rawはmetadataと元eventsの同一性が崩れたら採用しない。"""
+
+    from tests.test_news_grasp_daily_output_schema import _schema_rejection_event, _write_events
+
+    fixture = _prepare_schema_recovery_for_adversarial_check(tmp_path)
+    recovery_root = fixture["recovery_root"]
+    metadata_path = recovery_root / "metadata.json"
+    assert metadata_path.is_file()
+    original_events_path = fixture["original_events_path"]
+
+    if tamper_case == "metadata-missing":
+        metadata_path.unlink()
+    elif tamper_case == "metadata-tampered":
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        metadata["originalEventsSha256"] = "0" * 64
+        metadata_path.write_text(
+            json.dumps(metadata, ensure_ascii=False, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+    else:
+        replacement_events = [
+            {"type": "turn.started", "sequence": 2},
+            _schema_rejection_event(
+                json.dumps(
+                    {
+                        "status": 400,
+                        "error": {"code": "invalid_json_schema"},
+                    }
+                )
+            ),
+        ]
+        _write_events(original_events_path, replacement_events)
+
+    ledger = fixture["ledger"]
+    before_red = {
+        artifact_id: checkpoint
+        for artifact_id, checkpoint in ledger.list_checkpoints().items()
+        if checkpoint.get("status") == "Red"
+    }
+    editor_call_id = str(fixture["editor_calls"][0]["call_id"])
+    with fixture["store"].connect() as conn:
+        before_status = str(
+            conn.execute(
+                "SELECT status FROM daily_model_calls WHERE run_id=? AND call_id=?",
+                (fixture["run_id"], editor_call_id),
+            ).fetchone()["status"]
+        )
+    assert before_status == "reserved"
+
+    class UnexpectedModelCall(RuntimeError):
+        pass
+
+    additional_model_calls: list[dict[str, Any]] = []
+
+    def no_model_runner(**kwargs: Any):
+        additional_model_calls.append(kwargs)
+        raise UnexpectedModelCall(str(kwargs.get("role")))
+
+    outcome: tuple[str, str] | None = None
+    try:
+        fixture["content"].produce_current_issue(
+            repo_root=tmp_path,
+            issue_date=ISSUE_DATE,
+            run_id=fixture["run_id"],
+            scheduled_categories=("fx",),
+            candidate_provider=lambda *_: pytest.fail("candidate provider was repeated"),
+            model_runner=no_model_runner,
+            derived_builder=_derived_builder(tmp_path),
+            runtime_store=fixture["store"],
+            writer_lease=fixture["run"]["writer_lease"],
+            fencing_token=fixture["run"]["fencing_token"],
+        )
+        outcome = ("returned", "")
+    except fixture["content"].ModelResultPending as exc:
+        outcome = ("pending", str(exc))
+    except UnexpectedModelCall as exc:
+        outcome = ("model_called", str(exc))
+    except Exception as exc:  # noqa: BLE001 - only ModelResultPending is allowed here.
+        outcome = ("unexpected", f"{type(exc).__name__}:{exc}")
+
+    assert outcome is not None
+    assert outcome[0] == "pending", outcome
+    assert additional_model_calls == []
+    assert (recovery_root / "raw.json").read_bytes() == fixture["recovery_raw_before"]
+    with fixture["store"].connect() as conn:
+        after_status = str(
+            conn.execute(
+                "SELECT status FROM daily_model_calls WHERE run_id=? AND call_id=?",
+                (fixture["run_id"], editor_call_id),
+            ).fetchone()["status"]
+        )
+    assert after_status == "reserved"
+    after_red = {
+        artifact_id: checkpoint
+        for artifact_id, checkpoint in ledger.list_checkpoints().items()
+        if checkpoint.get("status") == "Red"
+    }
+    assert after_red == before_red
     assert ledger.load_failure("deepdive_model") is None
 
 
@@ -554,3 +807,209 @@ def test_windows_owned_process_streams_small_utf8_output_to_sinks_while_waiting(
     assert result.output_exceeded is False
     assert "小出力:日本語stdin".encode("utf-8") in stdout_path.read_bytes()
     assert b"stderr" in stderr_path.read_bytes()
+
+
+def test_confirmed_editor_schema_rejection_recovers_once_in_same_run(
+    tmp_path: Path,
+) -> None:
+    """確定したschema拒否だけを同一callの固定recovery領域から一回回収する。"""
+
+    import hashlib
+
+    from tools import news_grasp_daily_content as content
+    from tools import news_grasp_direct_runtime as runtime
+    from tools.news_grasp_daily_content import produce_current_issue
+    from tests.test_news_grasp_daily_output_schema import (
+        _copy_schemas,
+        _repo_root,
+        _schema_rejection_event,
+        _write_events,
+    )
+
+    class FakeClock:
+        def __init__(self) -> None:
+            self.value = datetime.fromisoformat("2026-09-04T06:00:00+09:00")
+
+        def __call__(self) -> datetime:
+            return self.value
+
+    clock = FakeClock()
+    store = runtime.DirectRunStore(
+        tmp_path / "state",
+        clock=clock,
+        test_only_allow_semantic_verifier=True,
+    )
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "articles.jsonl").write_text("", encoding="utf-8")
+    _copy_schemas(_repo_root(), tmp_path / "schemas")
+    run = runtime.start_run(
+        store,
+        cwd=tmp_path,
+        issue_date=ISSUE_DATE,
+        run_intent=runtime.RUN_INTENT,
+        manifest_id="f" * 64,
+        scheduler_trigger_at=clock().isoformat(),
+        runtime_generation=runtime.RUNTIME_SCHEMA_V2,
+        allowed_side_effect_ids=(),
+    )
+    run_id = str(run["run_id"])
+
+    calls: list[dict[str, Any]] = []
+    editor_calls: list[dict[str, Any]] = []
+
+    def model_runner(*, role: str, category: str | None = None, **context: Any):
+        call = {"role": role, "category": category, **context}
+        calls.append(call)
+        if role == "reporter":
+            return {
+                "category": category,
+                "issue_date": ISSUE_DATE,
+                "records": [_record(str(category))],
+                "digest_markdown": _digest(str(category)),
+                "search_audit": context["search_audit"],
+            }
+        if role == "editor":
+            editor_calls.append(call)
+            editor_payload = {
+                "issue_date": ISSUE_DATE,
+                "inputs": {},
+                "append_records": [_record("fx")],
+                "summary_markdown": _summary(),
+            }
+            output_dir = Path(context["output_dir"])
+            if len(editor_calls) == 1:
+                _write_events(
+                    output_dir / "editor.events.jsonl",
+                    [
+                        {"type": "turn.started"},
+                        _schema_rejection_event(
+                            json.dumps(
+                                {
+                                    "status": 400,
+                                    "error": {"code": "invalid_json_schema"},
+                                }
+                            )
+                        ),
+                    ],
+                )
+                raise SystemExit("simulated_editor_schema_rejection")
+            recovery_root = Path(context["raw_path"]).parent
+            assert recovery_root.name == "schema-recovery"
+            raise SystemExit("simulated_schema_recovery_intent_only")
+        if role == "deepdive":
+            payload = _deepdive()
+            payload["article_markdown"] = payload["article_markdown"].replace(
+                "https://example.com/ai/",
+                "https://example.com/fx/",
+            )
+            return payload
+        raise AssertionError(role)
+
+    with pytest.raises(SystemExit, match="simulated_editor_schema_rejection"):
+        produce_current_issue(
+            repo_root=tmp_path,
+            issue_date=ISSUE_DATE,
+            run_id=run_id,
+            scheduled_categories=("fx",),
+            candidate_provider=_candidate_provider,
+            model_runner=model_runner,
+            derived_builder=_derived_builder(tmp_path),
+            runtime_store=store,
+            writer_lease=run["writer_lease"],
+            fencing_token=run["fencing_token"],
+        )
+
+    assert [call["role"] for call in calls] == ["reporter", "editor"]
+    first_editor = editor_calls[0]
+    original_intent_path = Path(first_editor["intent_path"])
+    original_events_path = Path(first_editor["output_dir"]) / "editor.events.jsonl"
+    original_intent = original_intent_path.read_bytes()
+    original_events = original_events_path.read_bytes()
+    original_events_sha = hashlib.sha256(original_events).hexdigest()
+    schema_sha = hashlib.sha256(
+        (tmp_path / "schemas" / "news_grasp_daily_editor_output.schema.json").read_bytes()
+    ).hexdigest()
+
+    with pytest.raises(SystemExit, match="simulated_schema_recovery_intent_only"):
+        produce_current_issue(
+            repo_root=tmp_path,
+            issue_date=ISSUE_DATE,
+            run_id=run_id,
+            scheduled_categories=("fx",),
+            candidate_provider=lambda *_: pytest.fail("candidate provider was repeated"),
+            model_runner=model_runner,
+            derived_builder=_derived_builder(tmp_path),
+            runtime_store=store,
+            writer_lease=run["writer_lease"],
+            fencing_token=run["fencing_token"],
+        )
+
+    assert [call["role"] for call in calls] == ["reporter", "editor", "editor"]
+    assert editor_calls[0]["call_id"] == editor_calls[1]["call_id"]
+    assert editor_calls[0]["input_hash"] == editor_calls[1]["input_hash"]
+    assert original_intent_path.read_bytes() == original_intent
+    assert original_events_path.read_bytes() == original_events
+
+    recovery_root = Path(editor_calls[1]["raw_path"]).parent
+    assert recovery_root.name == "schema-recovery"
+    assert (recovery_root / "intent.json").is_file()
+    assert (recovery_root / "raw.json").is_file() is False
+
+    with pytest.raises(content.ModelResultPending, match="MODEL_RESULT_PENDING:editor"):
+        produce_current_issue(
+            repo_root=tmp_path,
+            issue_date=ISSUE_DATE,
+            run_id=run_id,
+            scheduled_categories=("fx",),
+            candidate_provider=lambda *_: pytest.fail("candidate provider was repeated"),
+            model_runner=lambda **_: pytest.fail("schema-recovery was re-sent after intent-only"),
+            derived_builder=_derived_builder(tmp_path),
+            runtime_store=store,
+            writer_lease=run["writer_lease"],
+            fencing_token=run["fencing_token"],
+        )
+
+    recovery_payload = {
+        "issue_date": ISSUE_DATE,
+        "inputs": {},
+        "append_records": [_record("fx")],
+        "summary_markdown": _summary(),
+    }
+    (recovery_root / "raw.json").write_text(
+        json.dumps(recovery_payload, ensure_ascii=False, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+    resumed = produce_current_issue(
+        repo_root=tmp_path,
+        issue_date=ISSUE_DATE,
+        run_id=run_id,
+        scheduled_categories=("fx",),
+        candidate_provider=lambda *_: pytest.fail("candidate provider was repeated"),
+        model_runner=model_runner,
+        derived_builder=_derived_builder(tmp_path),
+        runtime_store=store,
+        writer_lease=run["writer_lease"],
+        fencing_token=run["fencing_token"],
+    )
+
+    assert resumed["ok"] is True
+    assert [call["role"] for call in calls] == ["reporter", "editor", "editor", "deepdive"]
+    metadata_files = [
+        path
+        for path in recovery_root.glob("*.json")
+        if path.name not in {"intent.json", "raw.json"}
+    ]
+    assert metadata_files, "schema-recovery metadata must be durable"
+    metadata_text = "\n".join(path.read_text(encoding="utf-8") for path in metadata_files)
+    assert original_events_sha in metadata_text
+    assert schema_sha in metadata_text
+    assert "invalid_json_schema" in metadata_text
+    ledger = runtime.DailyArtifactLedger(
+        store,
+        run_id=run_id,
+        issue_date=ISSUE_DATE,
+        writer_lease=run["writer_lease"],
+        fencing_token=run["fencing_token"],
+    )
+    assert ledger.model_call_usage() == {"initial": 3, "repair": 0, "total": 3}
