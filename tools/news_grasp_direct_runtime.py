@@ -1721,7 +1721,7 @@ class DailyArtifactLedger:
             row,
             self.writer_lease,
             self.store.now(),
-            allowed_statuses={"active", "executing", "finalizing"},
+            allowed_statuses={"active", "executing"},
             fencing_token=self.fencing_token,
         )
         if str(row["issue_date"]) != self.issue_date:
@@ -2492,7 +2492,7 @@ def admit_daily_operation(
     with closing(store.connect()) as conn:
         conn.execute("BEGIN IMMEDIATE")
         row = store._run_row(conn, run_id)
-        _verify_writer(row, writer_lease, now, allowed_statuses={"active", "executing", "finalizing"}, fencing_token=fencing_token)
+        _verify_writer(row, writer_lease, now, allowed_statuses={"active", "executing"}, fencing_token=fencing_token)
         lease_until = _iso(now + store.lease_ttl)
         renewed = conn.execute(
             "UPDATE runs SET lease_until=?,updated_at=? "
@@ -2545,6 +2545,61 @@ def admit_daily_operation(
     }
 
 
+def release_daily_writer_lease(
+    store: DirectRunStore, *, run_id: str, writer_lease: str, fencing_token: int,
+) -> dict[str, Any]:
+    """制御を返すowner自身だけが占有を返却し、旧capabilityを失効させる。"""
+    _require_fencing_token(store, fencing_token)
+    now_text = _iso(store.now())
+    with closing(store.connect()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        row = store._run_row(conn, run_id)
+        if row["status"] not in {"active", "executing", "finalizing"}:
+            conn.rollback()
+            return {"ok": True, "status": "not_active", "run_id": run_id}
+        if str(row["writer_lease"]) != writer_lease or int(row["fencing_token"]) != fencing_token:
+            conn.rollback()
+            return {"ok": False, "status": "not_owner", "run_id": run_id}
+        if row["status"] == "finalizing":
+            admission = _json_load(str(row["observation_receipt_json"] or "{}"), {})
+            receipts = conn.execute(
+                "SELECT operation_id,operation_index,input_hash,handler_id,payload_json,receipt_json,"
+                "applied_at,fencing_token,receipt_hash FROM daily_operation_receipts WHERE run_id=? ORDER BY operation_index",
+                (run_id,),
+            ).fetchall()
+            digest = hashlib.sha256(_json_dump([list(item) for item in receipts]).encode("utf-8")).hexdigest()
+            if (not isinstance(admission, Mapping)
+                    or admission.get("schemaVersion") != "NEWS_GRASP_DAILY_FINALIZER_ADMISSION_V1"
+                    or not row["finalization_nonce"]
+                    or admission.get("runId") != run_id or admission.get("nonce") != row["finalization_nonce"]
+                    or admission.get("manifestId") != row["manifest_id"]
+                    or admission.get("admissionUpdatedAt") != row["updated_at"]
+                    or admission.get("dailyReceiptDigest") != digest
+                    or [item[1] for item in receipts] != list(range(len(DAILY_OPERATION_ORDER)))):
+                conn.rollback()
+                raise PermissionError("daily_writer_release_finalizer_admission_invalid")
+            changed = conn.execute(
+                "UPDATE runs SET lease_until=? WHERE run_id=? AND writer_lease=? AND fencing_token=? "
+                "AND status='finalizing' AND lease_until=? AND finalization_nonce=? AND updated_at=?",
+                (now_text, run_id, writer_lease, fencing_token, row["lease_until"], row["finalization_nonce"], row["updated_at"]),
+            ).rowcount
+        else:
+            revoked = _opaque_id("released", str(row["issue_date"]), int(row["generation"]))
+            changed = conn.execute(
+                "UPDATE runs SET writer_lease=?,lease_until=?,updated_at=? "
+                "WHERE run_id=? AND writer_lease=? AND fencing_token=? AND status=?",
+                (revoked, now_text, now_text, run_id, writer_lease, fencing_token, row["status"]),
+            ).rowcount
+        if changed != 1:
+            conn.rollback()
+            raise PermissionError("daily_writer_release_cas_conflict")
+        _append_timing_event_in_tx(conn, run_id=run_id, event_kind="handoff",
+            started_at=now_text, ended_at=now_text,
+            evidence={"event": "invocation_returned", "releasedFencingToken": fencing_token})
+        conn.commit()
+    return {"ok": True, "status": "released", "run_id": run_id}
+
+
 def renew_daily_writer_lease(
     store: DirectRunStore,
     *,
@@ -2564,7 +2619,7 @@ def renew_daily_writer_lease(
             row,
             writer_lease,
             now,
-            allowed_statuses={"active", "executing", "finalizing"},
+            allowed_statuses={"active", "executing"},
             fencing_token=fencing_token,
         )
         lease_until = _iso(now + store.lease_ttl)

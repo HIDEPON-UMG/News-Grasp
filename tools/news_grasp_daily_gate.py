@@ -2241,150 +2241,159 @@ def run_daily_sequence(
     sequence_fencing_token = int(state.get("fencing_token") or 0)
     if not sequence_run_id or not sequence_writer_lease or sequence_fencing_token <= 0:
         return [_red_result("static_check", "daily_active_writer_missing")]
-    if state.get("single_flight") == "recovered_finalizer_receipt":
-        # 六operationは既にatomic receipt化済みであり、再度handler/admissionへ
-        # 通すとpredicate重複とupdated_at driftを作る。保存済み六receiptを読み、
-        # final transactionだけを同じnonceでresumeする。
-        recovered_receipts = [
-            runtime.get_daily_operation_receipt(
-                store,
-                run_id=sequence_run_id,
-                operation_id=operation_id,
-            )
-            for operation_id in DAILY_OPERATIONS
-        ]
-        if any(receipt is None for receipt in recovered_receipts):
-            return [_red_result("atomic_completion", "finalizer_recovery_operation_receipt_missing")]
-        try:
-            finalized = runtime.finalize_public_completion(
-                store,
+    try:
+        if state.get("single_flight") == "recovered_finalizer_receipt":
+            # 六operationは既にatomic receipt化済みであり、再度handler/admissionへ
+            # 通すとpredicate重複とupdated_at driftを作る。保存済み六receiptを読み、
+            # final transactionだけを同じnonceでresumeする。
+            recovered_receipts = [
+                runtime.get_daily_operation_receipt(
+                    store,
+                    run_id=sequence_run_id,
+                    operation_id=operation_id,
+                )
+                for operation_id in DAILY_OPERATIONS
+            ]
+            if any(receipt is None for receipt in recovered_receipts):
+                return [_red_result("atomic_completion", "finalizer_recovery_operation_receipt_missing")]
+            try:
+                finalized = runtime.finalize_public_completion(
+                    store,
+                    run_id=sequence_run_id,
+                    writer_lease=sequence_writer_lease,
+                    exact_successor="public_completion",
+                    fencing_token=sequence_fencing_token,
+                )
+            except (PermissionError, RuntimeError, ValueError) as exc:
+                return [_red_result("atomic_completion", f"daily_finalizer_resume_red:{exc}")]
+            projected = [dict(receipt or {}) for receipt in recovered_receipts]
+            projected[-1] = {
+                **projected[-1],
+                **dict(finalized),
+                "schemaVersion": DAILY_GATE_SCHEMA,
+                "ok": finalized.get("ok") is True and finalized.get("status") == "completed",
+                "status": finalized.get("status") or "red",
+                "operation_id": "atomic_completion",
+                "phase": "atomic_completion",
+                "recovery_mode": "finalizer_receipt_resume",
+            }
+            return projected
+        receipts: list[dict[str, Any]] = []
+        for operation_id in DAILY_OPERATIONS:
+            command = command_factory(operation_id) if callable(command_factory) else _canonical_argv(operation_id)
+            selected_handlers = handlers
+            if callable(handler_factory):
+                produced_handler = handler_factory(operation_id)
+                selected_handlers = {operation_id: produced_handler}
+            result = run_daily_operation(
+                operation_id,
+                command=command,
+                completed_operations=[item["operation_id"] for item in receipts if item.get("ok") is True],
+                store=store,
                 run_id=sequence_run_id,
                 writer_lease=sequence_writer_lease,
-                exact_successor="public_completion",
+                cwd=cwd,
+                issue_date=issue_date,
+                run_intent=run_intent,
+                automation_id=automation_id,
+                scheduler_trigger_at=scheduler_trigger_at,
+                manifest_id=manifest_id,
+                manifest_reservation_id=manifest_reservation_id,
+                source_baseline=source_baseline,
+                runtime_generation=runtime_generation,
+                remote_base_sha=remote_base_sha,
+                allowed_side_effect_ids=allowed_side_effect_ids,
+                context=context,
+                handlers=selected_handlers,
+                route_capability=build_daily_route_capability(
+                    operation_id,
+                    runtime_generation=runtime_generation,
+                ),
                 fencing_token=sequence_fencing_token,
             )
-        except (PermissionError, RuntimeError, ValueError) as exc:
-            return [_red_result("atomic_completion", f"daily_finalizer_resume_red:{exc}")]
-        projected = [dict(receipt or {}) for receipt in recovered_receipts]
-        projected[-1] = {
-            **projected[-1],
-            **dict(finalized),
-            "schemaVersion": DAILY_GATE_SCHEMA,
-            "ok": finalized.get("ok") is True and finalized.get("status") == "completed",
-            "status": finalized.get("status") or "red",
-            "operation_id": "atomic_completion",
-            "phase": "atomic_completion",
-            "recovery_mode": "finalizer_receipt_resume",
-        }
-        return projected
-    receipts: list[dict[str, Any]] = []
-    for operation_id in DAILY_OPERATIONS:
-        command = command_factory(operation_id) if callable(command_factory) else _canonical_argv(operation_id)
-        selected_handlers = handlers
-        if callable(handler_factory):
-            produced_handler = handler_factory(operation_id)
-            selected_handlers = {operation_id: produced_handler}
-        result = run_daily_operation(
-            operation_id,
-            command=command,
-            completed_operations=[item["operation_id"] for item in receipts if item.get("ok") is True],
-            store=store,
-            run_id=sequence_run_id,
-            writer_lease=sequence_writer_lease,
-            cwd=cwd,
-            issue_date=issue_date,
-            run_intent=run_intent,
-            automation_id=automation_id,
-            scheduler_trigger_at=scheduler_trigger_at,
-            manifest_id=manifest_id,
-            manifest_reservation_id=manifest_reservation_id,
-            source_baseline=source_baseline,
-            runtime_generation=runtime_generation,
-            remote_base_sha=remote_base_sha,
-            allowed_side_effect_ids=allowed_side_effect_ids,
-            context=context,
-            handlers=selected_handlers,
-            route_capability=build_daily_route_capability(
-                operation_id,
-                runtime_generation=runtime_generation,
-            ),
-            fencing_token=sequence_fencing_token,
-        )
-        receipts.append(result)
-        if result.get("ok") is not True:
-            # provider結果が曖昧なexternal publicationは、outboxが前進した場合だけ
-            # 次のread-only reconcileへ進む。provider call自体は外部producerの
-            # started/unknown判定で再送されず、同じsnapshotの反復はここで止める。
-            if (
-                operation_id == "external_publication"
-                and str(result.get("status") or "") == "reconcile_required"
-                and bool(
-                    (result.get("slo_dispatch") or {}).get(
-                        "read_only_reconcile_allowed",
-                        True,
-                    )
-                )
-            ):
-                observed_progress: set[str] = set()
-                max_reconciles = max(1, len(DAILY_ALLOWED_SIDE_EFFECT_IDS) + 1)
-                for _reconcile_attempt in range(max_reconciles):
-                    try:
-                        outbox = runtime.inspect_external_outbox(
-                            store,
-                            run_id=sequence_run_id,
+            receipts.append(result)
+            if result.get("ok") is not True:
+                # provider結果が曖昧なexternal publicationは、outboxが前進した場合だけ
+                # 次のread-only reconcileへ進む。provider call自体は外部producerの
+                # started/unknown判定で再送されず、同じsnapshotの反復はここで止める。
+                if (
+                    operation_id == "external_publication"
+                    and str(result.get("status") or "") == "reconcile_required"
+                    and bool(
+                        (result.get("slo_dispatch") or {}).get(
+                            "read_only_reconcile_allowed",
+                            True,
                         )
-                    except (PermissionError, RuntimeError, ValueError):
-                        break
-                    fingerprint = hashlib.sha256(
-                        json.dumps(
-                            outbox,
-                            ensure_ascii=False,
-                            sort_keys=True,
-                            separators=(",", ":"),
-                        ).encode("utf-8")
-                    ).hexdigest()
-                    if fingerprint in observed_progress:
-                        break
-                    observed_progress.add(fingerprint)
-                    retry = run_daily_operation(
-                        operation_id,
-                        command=command,
-                        completed_operations=[
-                            item["operation_id"]
-                            for item in receipts[:-1]
-                            if item.get("ok") is True
-                        ],
-                        store=store,
-                        run_id=sequence_run_id,
-                        writer_lease=sequence_writer_lease,
-                        cwd=cwd,
-                        issue_date=issue_date,
-                        run_intent=run_intent,
-                        automation_id=automation_id,
-                        scheduler_trigger_at=scheduler_trigger_at,
-                        manifest_id=manifest_id,
-                        manifest_reservation_id=manifest_reservation_id,
-                        source_baseline=source_baseline,
-                        runtime_generation=runtime_generation,
-                        remote_base_sha=remote_base_sha,
-                        allowed_side_effect_ids=allowed_side_effect_ids,
-                        context=context,
-                        handlers=selected_handlers,
-                        route_capability=build_daily_route_capability(
-                            operation_id,
-                            runtime_generation=runtime_generation,
-                        ),
-                        fencing_token=sequence_fencing_token,
                     )
-                    receipts[-1] = retry
-                    if retry.get("ok") is True:
-                        break
-                    if str(retry.get("status") or "") != "reconcile_required":
-                        break
-                if receipts[-1].get("ok") is True:
-                    continue
-            break
-    return receipts
+                ):
+                    observed_progress: set[str] = set()
+                    max_reconciles = max(1, len(DAILY_ALLOWED_SIDE_EFFECT_IDS) + 1)
+                    for _reconcile_attempt in range(max_reconciles):
+                        try:
+                            outbox = runtime.inspect_external_outbox(
+                                store,
+                                run_id=sequence_run_id,
+                            )
+                        except (PermissionError, RuntimeError, ValueError):
+                            break
+                        fingerprint = hashlib.sha256(
+                            json.dumps(
+                                outbox,
+                                ensure_ascii=False,
+                                sort_keys=True,
+                                separators=(",", ":"),
+                            ).encode("utf-8")
+                        ).hexdigest()
+                        if fingerprint in observed_progress:
+                            break
+                        observed_progress.add(fingerprint)
+                        retry = run_daily_operation(
+                            operation_id,
+                            command=command,
+                            completed_operations=[
+                                item["operation_id"]
+                                for item in receipts[:-1]
+                                if item.get("ok") is True
+                            ],
+                            store=store,
+                            run_id=sequence_run_id,
+                            writer_lease=sequence_writer_lease,
+                            cwd=cwd,
+                            issue_date=issue_date,
+                            run_intent=run_intent,
+                            automation_id=automation_id,
+                            scheduler_trigger_at=scheduler_trigger_at,
+                            manifest_id=manifest_id,
+                            manifest_reservation_id=manifest_reservation_id,
+                            source_baseline=source_baseline,
+                            runtime_generation=runtime_generation,
+                            remote_base_sha=remote_base_sha,
+                            allowed_side_effect_ids=allowed_side_effect_ids,
+                            context=context,
+                            handlers=selected_handlers,
+                            route_capability=build_daily_route_capability(
+                                operation_id,
+                                runtime_generation=runtime_generation,
+                            ),
+                            fencing_token=sequence_fencing_token,
+                        )
+                        receipts[-1] = retry
+                        if retry.get("ok") is True:
+                            break
+                        if str(retry.get("status") or "") != "reconcile_required":
+                            break
+                    if receipts[-1].get("ok") is True:
+                        continue
+                break
+        return receipts
+    finally:
+        try:
+            runtime.release_daily_writer_lease(
+                store, run_id=sequence_run_id, writer_lease=sequence_writer_lease,
+                fencing_token=sequence_fencing_token,
+            )
+        except Exception as release_error:
+            print(f"[news-grasp] writer_release_failed:{type(release_error).__name__}", file=sys.stderr)
 
 
 def _default_state_root() -> Path:
