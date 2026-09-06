@@ -950,6 +950,40 @@ def _assert_repair_scope(failure: Mapping[str, Any] | None, repaired: Any) -> No
         raise DailyContentError("REPAIR_UNSCOPED_MUTATION")
 
 
+def _project_repair_result(failure: Mapping[str, Any] | None, proposed: Any) -> Any:
+    """元成果へ許可済み箇所だけを適用し、提案の範囲外変更を正本へ持ち込まない。"""
+    if failure is None:
+        return proposed
+    previous = failure.get("invalidPayload")
+    paths = failure.get("allowedMutationPaths")
+    if not isinstance(previous, Mapping) or not isinstance(proposed, Mapping) or not isinstance(paths, list) or not paths:
+        raise ModelResultPending("repair_scope_unresolved")
+    result = json.loads(json.dumps(dict(previous), ensure_ascii=False))
+    candidate = json.loads(json.dumps(dict(proposed), ensure_ascii=False))
+    try:
+        for path in paths:
+            if not isinstance(path, str) or not path.startswith("/") or path.endswith("/"):
+                raise ValueError("pointer")
+            parts = [part.replace("~1", "/").replace("~0", "~") for part in path.split("/")[1:]]
+            if any(not part for part in parts):
+                raise ValueError("pointer")
+            target, source = result, candidate
+            for part in parts[:-1]:
+                target = target[int(part)] if isinstance(target, list) else target[part]
+                source = source[int(part)] if isinstance(source, list) else source[part]
+            leaf = parts[-1]
+            if isinstance(target, list):
+                target[int(leaf)] = source[int(leaf)]
+            elif leaf in source:
+                target[leaf] = source[leaf]
+            else:
+                target.pop(leaf, None)
+        _assert_repair_scope(failure, result)
+    except (KeyError, IndexError, TypeError, ValueError, DailyContentError) as exc:
+        raise ModelResultPending("repair_scope_unresolved") from exc
+    return result
+
+
 def _reporter_shards(categories: Sequence[str]) -> tuple[tuple[str, ...], ...]:
     shard_count = min(3, len(categories))
     shards: list[list[str]] = [[] for _ in range(shard_count)]
@@ -2321,13 +2355,15 @@ def produce_current_issue(
                     artifact_id = f"reporter:{category}"
                     input_hash = _artifact_input_hash(reporter_inputs[category])
                     try:
-                        _assert_repair_scope(shard_failures[category], raw_reporter)
+                        raw_reporter = _project_repair_result(shard_failures[category], raw_reporter)
                         row = _validate_reporter(
                             raw_reporter,
                             category=category,
                             issue_date=issue_date,
                             search_audit=item["search_audit"],
                         )
+                    except ModelResultPending:
+                        raise
                     except DailyContentError as exc:
                         failure_args = {
                             "run_id": run_id,
@@ -2433,6 +2469,20 @@ def produce_current_issue(
                 artifact_id="editor",
                 runtime_ledger=runtime_ledger,
             )
+            if runtime_ledger is not None and editor_failure and any(
+                marker in str(editor_failure.get("reasonCode") or "")
+                for marker in ("REPAIR_UNSCOPED_MUTATION", "REPAIR_MUTATION_SCOPE_UNRESOLVED")
+            ):
+                from tools.news_grasp_saved_scope_recovery import recover_saved_editor
+
+                recovered = recover_saved_editor(
+                    repo_root=root, ledger=runtime_ledger, reporters=ordered_reporters,
+                    reporter_hashes=[reporter_checkpoints[category]["outputHash"] for category in categories],
+                )
+                if recovered is None:
+                    raise ModelResultPending("saved_editor_scope_recovery_unavailable")
+                editor_failure = None
+                repair_plan = refresh_repair_plan()
             editor_input = {
                 "issueDate": issue_date,
                 "reporterOutputHashes": [
@@ -2511,7 +2561,7 @@ def produce_current_issue(
                     )
                     if model_sent:
                         model_call_count += 1
-                    _assert_repair_scope(editor_failure, editor_raw)
+                    editor_raw = _project_repair_result(editor_failure, editor_raw)
                     editor = _validate_editor(
                         editor_raw,
                         issue_date=issue_date,
@@ -2658,7 +2708,7 @@ def produce_current_issue(
                     )
                     if model_sent:
                         model_call_count += 1
-                    _assert_repair_scope(deepdive_failure, deepdive_raw)
+                    deepdive_raw = _project_repair_result(deepdive_failure, deepdive_raw)
                     deepdive = _validate_deepdive(
                         deepdive_raw,
                         issue_date=issue_date,
