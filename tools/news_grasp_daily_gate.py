@@ -810,7 +810,13 @@ def _default_current_issue_integration(**context: Any) -> dict[str, Any]:
                 failures=("content_generation_receipt_red",),
             )
     ledger = runtime.PredicateLedger(store)
-    source_base = str(context.get("source_identity") or run.get("manifest_id") or "").strip()
+    start_seal = run.get("start_seal") if isinstance(run.get("start_seal"), Mapping) else {}
+    source_base = str(
+        start_seal.get("manifestReservationId")
+        or context.get("source_identity")
+        or run.get("manifest_id")
+        or ""
+    ).strip()
     if not source_base:
         source_base = f"{context.get('issue_date') or ''}:{context.get('run_intent') or ''}"
     quality_progress: set[tuple[str, int]] = set()
@@ -852,6 +858,7 @@ def _default_current_issue_integration(**context: Any) -> dict[str, Any]:
                             "issue_date": str(context.get("issue_date") or ""),
                             "producer_id": producer_id,
                         },
+                        reuse_identical=True,
                     )
                 except (PermissionError, RuntimeError, ValueError) as exc:
                     attempt_failures.append(f"predicate_claim_red:{producer_id}:{exc}")

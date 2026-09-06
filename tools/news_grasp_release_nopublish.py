@@ -996,6 +996,18 @@ def _materialize_local_bundle(
         failures.append("manifest_home_missing")
     elif "docs/index.html" not in artifact_hashes:
         artifact_hashes["docs/index.html"] = hashlib.sha256(required_home.read_bytes()).hexdigest()
+    required_external_paths = (
+        f"build/tts/{issue_date}.mp3",
+        f"build/tts/deepdive/{issue_date}.mp3",
+        f"build/youtube-podcast/{issue_date}.mp4",
+        f"build/youtube-podcast-deepdive/{issue_date}.mp4",
+    )
+    external_input_hashes: dict[str, str] = {}
+    for relative in required_external_paths:
+        if relative not in artifact_hashes:
+            failures.append(f"external_input_missing:{relative}")
+            continue
+        external_input_hashes[relative] = str(artifact_hashes[relative]).casefold()
     exact_write_set = sorted(artifact_hashes)
     bundle_id = _sha(
         {
@@ -1009,19 +1021,36 @@ def _materialize_local_bundle(
     store = context.get("store")
     if not failures and isinstance(store, runtime.DirectRunStore):
         fresh = runtime.inspect_run(store, run_id=run_id)
-        publish_seal = runtime.seal_publish(
-            store,
-            run_id=run_id,
-            writer_lease=str(context.get("writer_lease") or ""),
-            release_commit_sha=str(context.get("source_baseline") or fresh.get("source_baseline") or ""),
-            exact_write_set=exact_write_set,
-            file_hashes=artifact_hashes,
-            manifest_id=str(fresh.get("manifest_id") or ""),
-            bundle_id=bundle_id,
-            external_operation_ids=(),
-            external_input_hashes={},
-            fencing_token=int(context.get("fencing_token") or 0),
+        start_seal = fresh.get("start_seal")
+        source_baseline = (
+            str(start_seal.get("sourceBaseline") or "").casefold()
+            if isinstance(start_seal, Mapping)
+            else ""
         )
+        if not re.fullmatch(r"[0-9a-f]{40}", source_baseline):
+            failures.append("bundle_source_baseline_missing")
+        else:
+            local_manifest_id = _sha(
+                {
+                    "schemaVersion": "NEWS_GRASP_NOPUBLISH_LOCAL_MANIFEST_V1",
+                    "issueDate": issue_date,
+                    "runId": run_id,
+                    "bundleId": bundle_id,
+                }
+            )
+            publish_seal = runtime.seal_publish(
+                store,
+                run_id=run_id,
+                writer_lease=str(context.get("writer_lease") or ""),
+                release_commit_sha=source_baseline,
+                exact_write_set=exact_write_set,
+                file_hashes=artifact_hashes,
+                manifest_id=str(fresh.get("manifest_id") or local_manifest_id),
+                bundle_id=bundle_id,
+                external_operation_ids=(),
+                external_input_hashes=external_input_hashes,
+                fencing_token=int(context.get("fencing_token") or 0),
+            )
     return {
         "schemaVersion": "NEWS_GRASP_NOPUBLISH_LOCAL_BUNDLE_V1",
         "ok": not failures,
@@ -1084,7 +1113,7 @@ def _local_consumer_receipt(**context: Any) -> dict[str, Any]:
             writer_lease=str(context.get("writer_lease") or ""),
             fencing_token=int(context.get("fencing_token") or 0),
         ),
-        "updatedAt": str(fresh.get("updated_at") or ""),
+        "updatedAt": str(external.get("applied_at") or ""),
         "observedAt": observed_at,
         "observationNonce": nonce,
     }

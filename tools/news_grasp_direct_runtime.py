@@ -2302,6 +2302,7 @@ class PredicateLedger:
         owner: str,
         source_identity: str,
         evidence: Mapping[str, Any],
+        reuse_identical: bool = False,
     ) -> dict[str, Any]:
         values = (generation_id, predicate_id, owner, source_identity)
         if any(not isinstance(item, str) or not item.strip() for item in values):
@@ -2314,7 +2315,7 @@ class PredicateLedger:
             conn.execute("BEGIN IMMEDIATE")
             existing = conn.execute(
                 """
-                SELECT owner FROM predicate_claims
+                SELECT owner,source_identity,evidence_json,claimed_at FROM predicate_claims
                 WHERE generation_id=? AND predicate_id=?
                 """,
                 (generation_id, predicate_id),
@@ -2323,6 +2324,24 @@ class PredicateLedger:
                 conn.rollback()
                 if str(existing[0]) != owner:
                     raise PermissionError("predicate_owner_mismatch")
+                existing_evidence = _json_load(str(existing[2] or ""), None)
+                identical = (
+                    str(existing[1]) == source_identity
+                    and isinstance(existing_evidence, Mapping)
+                    and _json_dump(dict(existing_evidence)) == _json_dump(dict(evidence))
+                )
+                if reuse_identical is True and identical:
+                    return {
+                        "schemaVersion": PREDICATE_CLAIM_SCHEMA,
+                        "ok": True,
+                        "status": "reused",
+                        "generation_id": generation_id,
+                        "predicate_id": predicate_id,
+                        "owner": owner,
+                        "source_identity": str(existing[1]),
+                        "evidence": dict(existing_evidence),
+                        "claimed_at": str(existing[3]),
+                    }
                 raise RuntimeError("predicate_already_consumed")
             conn.execute(
                 """

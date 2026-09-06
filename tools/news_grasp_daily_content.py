@@ -1468,6 +1468,104 @@ def _validate_deepdive(value: Any, *, issue_date: str, allowed_urls: set[str]) -
     return {"article_markdown": article.rstrip() + "\n", "dialogue_markdown": dialogue.rstrip() + "\n"}
 
 
+def _recover_missing_evidence_failure(root: Path, ledger: Any, *, issue_date: str,
+                                      allowed_urls: set[str], editor_hash: str) -> bool:
+    """旧経路が証拠不足を本文へ誤分類した場合だけ、保存本文を再検証して戻す。"""
+    from tools import deepdive_quality as quality
+    from tools import news_grasp_direct_runtime as runtime
+    row = ledger.list_checkpoints().get('deepdive_model') or {}
+    failure = row.get('failure') or {}
+    if (row.get('status') != 'Red' or failure.get('stage') != 'current_issue_integration'
+            or failure.get('predicateId') != 'deepdive_current_issue_audit'
+            or not str(failure.get('reasonCode', '')).startswith('POST_QUALITY:')):
+        return False
+    old_input_hash = str(row.get('inputHash') or '')
+    if not re.fullmatch(r'[0-9a-fA-F]{64}', old_input_hash):
+        raise DailyContentError('LEGACY_EVIDENCE_RECOVERY_INPUT_HASH_INVALID')
+    observation = quality.audit_issue(repo_root=root, issue_date=issue_date,
+        include_corpus=False, require_rendered_public=False, route='production_generation')
+    if (not isinstance(observation, Mapping)
+            or observation.get('status') != 'Green'
+            or observation.get('issues')
+            or observation.get('issueCodes')):
+        raise DailyContentError('LEGACY_EVIDENCE_RECOVERY_QUALITY_PENDING')
+    payload = _validate_deepdive(row.get('payload'), issue_date=issue_date, allowed_urls=allowed_urls)
+    artifact_paths = {
+        'article': _safe_path(root, f'digest/DeepDive/{issue_date}-DeepDive.md'),
+        'dialogue': _safe_path(root, f'digest/DeepDive/{issue_date}-DeepDive-dialogue.md'),
+        'provenance': _safe_path(root, f'data/deepdive-provenance/{issue_date}.json'),
+        'quality_review': _safe_path(root, f'data/deepdive-quality-review/{issue_date}.json'),
+    }
+    artifact_bytes: dict[str, bytes] = {}
+    audit_files = observation.get('auditedFiles')
+    if not isinstance(audit_files, list):
+        raise DailyContentError('LEGACY_EVIDENCE_RECOVERY_AUDIT_EVIDENCE_INVALID')
+    for name in ('article', 'provenance', 'quality_review'):
+        path = artifact_paths[name]
+        matching = next(
+            (
+                item for item in audit_files
+                if isinstance(item, Mapping)
+                and str(item.get('path') or '') == str(path.resolve())
+            ),
+            None,
+        )
+        if matching is None:
+            raise DailyContentError('LEGACY_EVIDENCE_RECOVERY_AUDIT_ARTIFACT_MISSING')
+        raw = _read_bounded_model_events(path)
+        if raw is None:
+            raise DailyContentError('LEGACY_EVIDENCE_RECOVERY_ARTIFACT_INVALID')
+        artifact_bytes[name] = raw
+        if str(matching.get('sha256') or '').casefold() != _sha256_bytes(raw).casefold():
+            raise DailyContentError('LEGACY_EVIDENCE_RECOVERY_AUDIT_ARTIFACT_DRIFT')
+    dialogue_bytes = _read_bounded_model_events(artifact_paths['dialogue'])
+    if dialogue_bytes is None:
+        raise DailyContentError('LEGACY_EVIDENCE_RECOVERY_ARTIFACT_INVALID')
+    artifact_bytes['dialogue'] = dialogue_bytes
+    try:
+        quality_review = json.loads(artifact_bytes['quality_review'].decode('utf-8'))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise DailyContentError('LEGACY_EVIDENCE_RECOVERY_QUALITY_REVIEW_INVALID') from exc
+    if not isinstance(quality_review, Mapping):
+        raise DailyContentError('LEGACY_EVIDENCE_RECOVERY_QUALITY_REVIEW_INVALID')
+    review_artifacts = quality_review.get('artifacts')
+    review_dialogue = review_artifacts.get('dialogue') if isinstance(review_artifacts, Mapping) else None
+    expected_dialogue_path = f'digest/DeepDive/{issue_date}-DeepDive-dialogue.md'
+    if not isinstance(review_dialogue, Mapping):
+        raise DailyContentError('LEGACY_EVIDENCE_RECOVERY_DIALOGUE_BINDING_INVALID')
+    if (not isinstance(review_dialogue.get('path'), str)
+            or review_dialogue.get('path') != expected_dialogue_path
+            or not isinstance(review_dialogue.get('sha256'), str)
+            or review_dialogue.get('sha256').casefold() != _sha256_bytes(dialogue_bytes).casefold()):
+        raise DailyContentError('LEGACY_EVIDENCE_RECOVERY_DIALOGUE_BINDING_INVALID')
+    if (artifact_bytes.get('article') != payload['article_markdown'].encode('utf-8')
+            or artifact_bytes.get('dialogue') != payload['dialogue_markdown'].encode('utf-8')):
+        raise DailyContentError('LEGACY_EVIDENCE_RECOVERY_PAYLOAD_DRIFT')
+    payload_hash = _sha256_bytes(runtime._json_dump(payload).encode('utf-8'))
+    aggregate = _sha256_bytes(runtime._json_dump({'green': {'deepdive_model': payload_hash}, 'red': {}}).encode('utf-8'))
+    restored_input_hash = _artifact_input_hash({'issueDate': issue_date, 'editorOutputHash': editor_hash,
+                                                'repairFailureSignature': None})
+    with ledger.store.connect() as db:
+        completed = db.execute('SELECT 1 FROM daily_model_calls WHERE run_id=? AND artifact_id=? '
+            "AND status='completed' AND output_hash=? AND input_hash=?",
+            (ledger.run_id, 'deepdive_model', aggregate, old_input_hash)).fetchone()
+    if completed is None:
+        raise DailyContentError('LEGACY_EVIDENCE_RECOVERY_MODEL_RECEIPT_MISSING')
+    now = ledger.store.now()
+    runtime.record_timing_event(ledger.store, run_id=ledger.run_id,
+        writer_lease=ledger.writer_lease, fencing_token=ledger.fencing_token,
+        event_kind='handoff', started_at=now, ended_at=now,
+        evidence={'event': 'saved_evidence_recovery_validated', 'originalFailure': failure,
+                  'oldInputHash': old_input_hash, 'restoredInputHash': restored_input_hash,
+                  'currentEditorOutputHash': editor_hash, 'preservedPayloadSha256': payload_hash,
+                  'correctOwner': 'deepdive_evidence'})
+    _write_artifact_checkpoint(root, run_id=ledger.run_id, issue_date=issue_date,
+        artifact_id='deepdive_model',
+        input_hash=restored_input_hash,
+        payload=payload, runtime_ledger=ledger)
+    return True
+
+
 def _atomic_apply(root: Path, outputs: Mapping[str, bytes]) -> dict[str, str]:
     ordered = sorted(outputs)
     originals: dict[str, bytes | None] = {}
@@ -2645,6 +2743,10 @@ def produce_current_issue(
                 for key in ("url", "thumb")
                 if str(record.get(key) or "").startswith(("http://", "https://"))
             }
+            if runtime_ledger is not None and _recover_missing_evidence_failure(
+                    root, runtime_ledger, issue_date=issue_date, allowed_urls=allowed_urls,
+                    editor_hash=editor_checkpoint["outputHash"]):
+                repair_plan = refresh_repair_plan()
             deepdive_failure = _load_failure_checkpoint(
                 root,
                 run_id=run_id,
