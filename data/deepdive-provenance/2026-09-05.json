@@ -1,0 +1,96 @@
+{
+  "articlePath": "digest/DeepDive/2026-09-05-DeepDive.md",
+  "articleSha256": "591715734c1238db2151937e6253b0cbfd5a9e1c05fb692bd72756c959a0bc44",
+  "claimBindings": [
+    {
+      "claimId": "classification-03",
+      "claimSha256": "c84db02f18ee82380ec8f4992e1bfb137972db0b980c342f47c86f3f7f093de6",
+      "evidenceSha256": "0b01fa6ad004ebf7a41f54840cb61cf9acb2ba88039269d5edebc24373e36fe5",
+      "sourceUrl": "https://www.itmedia.co.jp/news/article/2609/06/2000001202/"
+    },
+    {
+      "claimId": "framework-scope-07",
+      "claimSha256": "690b384a90cbeebd2c73ec8d7dc79ee7415af8accf35ff8a810c440c560dc0bc",
+      "evidenceSha256": "f3a16b8221afd562eb73ac31623c13cfc122d6e4a6b7ed80541367e1aebc314b",
+      "sourceUrl": "https://www.itmedia.co.jp/news/article/2609/06/2000001202/"
+    },
+    {
+      "claimId": "framework-timing-08",
+      "claimSha256": "254f772e2e0d38feb6800e8100a46270464c8d210c36f78796f82d8bc5fac26d",
+      "evidenceSha256": "ea69e39d6c0f237c515d09c30d22e98d9b2d74876b9a0c1459ab7e14a96c88c4",
+      "sourceUrl": "https://www.itmedia.co.jp/news/article/2609/06/2000001202/"
+    },
+    {
+      "claimId": "hf-disclosure-05",
+      "claimSha256": "1c632ea8c179d6bb2ebc29e18d1e9935221529cc06a863e8e53beec864738240",
+      "evidenceSha256": "76e37eb7976091dcbdfd4a042b297bc4b62a2f9bbb2da1bd440748a9511dfeb7",
+      "sourceUrl": "https://www.itmedia.co.jp/news/article/2609/06/2000001202/"
+    },
+    {
+      "claimId": "hf-investigation-06",
+      "claimSha256": "4026ce8069c3b935bdbf780cfba90f1a0007219aa253b818b97150e3b1abaaf0",
+      "evidenceSha256": "e4611057cabab3521f2903f8e071f54e8ac482f3c3449b03050a98836c1c2f25",
+      "sourceUrl": "https://www.itmedia.co.jp/news/article/2609/06/2000001202/"
+    },
+    {
+      "claimId": "individual-disclosure-04",
+      "claimSha256": "5c85fc47a987d28be78a664198eb6e22881dfa66bbddec9781c97181c0fcb2d4",
+      "evidenceSha256": "c4cc803248d75b0accba87185140543ad0d1fc20a1bca614479977ac92dd27c2",
+      "sourceUrl": "https://www.itmedia.co.jp/news/article/2609/06/2000001202/"
+    },
+    {
+      "claimId": "openai-write-01",
+      "claimSha256": "f41294c799d19efeef33fe6a32a72de1ec8dd44d491f546ed5c8c14e0c275164",
+      "evidenceSha256": "d9cde6a3bdb93fbe9ff1c7c30c4bdfb32db6a78c8d6cf3f259d4e2465ff6626e",
+      "sourceUrl": "https://www.itmedia.co.jp/news/article/2609/06/2000001202/"
+    },
+    {
+      "claimId": "regulator-dialogue-09",
+      "claimSha256": "96e34652095dbe069d03ad95bde0b6baa20f566e36387178268580972cac42c6",
+      "evidenceSha256": "12d259865a6d3df310b295ce7a27bac79b82058ea1d8c0351efd0f9181472faf",
+      "sourceUrl": "https://www.itmedia.co.jp/news/article/2609/06/2000001202/"
+    },
+    {
+      "claimId": "response-time-02",
+      "claimSha256": "4fc154a8b9a1b1828e9640396a4042ee2f5f1b86aba44057937d83fa9073fd8f",
+      "evidenceSha256": "0ecf0946a21b132331f8d05b0a1e60ecc5617b08055e36c9775ab9d4c8047b9c",
+      "sourceUrl": "https://www.itmedia.co.jp/news/article/2609/06/2000001202/"
+    },
+    {
+      "claimId": "statement-limit-10",
+      "claimSha256": "6fc3d7d37bdb2d4cc5c7670697aca46d4578ae097f454b8425d304e22c53025a",
+      "evidenceSha256": "643243944733dad5daa3beb42de1f4fd5e87de2dd6b49ca1c1b9735d61b47c88",
+      "sourceUrl": "https://www.itmedia.co.jp/news/article/2609/06/2000001202/"
+    }
+  ],
+  "claimSetSha256": "671120a260c8de539a846963c33c177eae943842462a4effddc13be72629bea6",
+  "issueDate": "2026-09-05",
+  "manifestSha256": "36ba4f5fa1144b7fb29d255d444c985efac4da65bacad33b34c0e6cab393aedb",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V2",
+  "sourceSetSha256": "4e28614627c769887e4d3554fcedf121dcde68d04a9de9bdd3fe383961615644",
+  "sources": [
+    {
+      "contentSha256": "46bd9581e28e67e21ce07a562b572ff91510b4788c70c1d15225880179e546c7",
+      "fetchedAt": "2026-09-06T14:51:10.957161+00:00",
+      "finalUrl": "https://www.itmedia.co.jp/news/article/2609/06/2000001202/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.itmedia.co.jp/news/article/2609/06/2000001202/",
+      "transportEvidence": {
+        "fallbackAttemptCount": 0,
+        "primaryFailure": null,
+        "primaryTransport": "python_urllib",
+        "selectedTransport": "python_urllib"
+      },
+      "url": "https://www.itmedia.co.jp/news/article/2609/06/2000001202/"
+    }
+  ],
+  "status": "Green",
+  "transportEvidenceVersion": 1
+}

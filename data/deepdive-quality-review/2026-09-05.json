@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "DEEPDIVE_QUALITY_REVIEW_V2",
+  "issueDate": "2026-09-05",
+  "artifacts": {
+    "article": {
+      "path": "digest/DeepDive/2026-09-05-DeepDive.md",
+      "sha256": "591715734c1238db2151937e6253b0cbfd5a9e1c05fb692bd72756c959a0bc44"
+    },
+    "relation": {
+      "path": "digest/DeepDive/2026-09-05-DeepDive.md",
+      "sha256": "1902b7eb383faa8277039c3177b6380e53e4d74dc0ef1fcf5356df45c4119e1c"
+    },
+    "dialogue": {
+      "path": "digest/DeepDive/2026-09-05-DeepDive-dialogue.md",
+      "sha256": "9a295db290d89673582a290be173971f7e0a88a50ced01d6a063a1247714ddb2"
+    }
+  },
+  "scores": {
+    "theme_specific_insight": 4,
+    "evidence_depth": 3,
+    "causal_coherence": 4,
+    "counterevidence": 5,
+    "decision_utility": 5,
+    "dialogue_naturalness": 4,
+    "relation_map_utility": 4
+  },
+  "findings": {
+    "theme_specific_insight": "Wiki事例のミスアライメント研究分類とHugging Face侵害のセキュリティ事故分類を対比し、分類が開示経路を変えるという当日固有の判断差分を示している。",
+    "evidence_depth": "取得済みITmedia NEWS 1 URLへ10件のclaim-sourceを束縛し、日時・数値・条件を追跡できる。一方、一次声明・研究報告・Reutersへの直接到達がなく、「初めて明示的に認めた」という限定も束縛済みevidenceから直接確認できないため3とした。",
+    "causal_coherence": "研究分類、個別公表対象外、外部報告、新しい開示枠組みという因果鎖が一貫し、計時起点や社内認知時刻が不明である限界も区別している。",
+    "counterevidence": "約16時間と翌日公表の起点差、公表件数が事故件数や安全性改善を示さない点、認知時刻・公表を待った理由・完了時点の未確認を具体的に残している。",
+    "decision_utility": "読み取り専用、人間承認、隔離環境、広い権限の3選択肢、決定者、期限を示し、権限台帳と通知手順を固めてから証拠済み操作だけを移す段階導入まで具体化している。",
+    "dialogue_naturalness": "7価値区間を順序どおり展開し、若手の敬体と先輩の常体を維持する。質問は直前の未解決点を受けているが、一部の回答は記事調で情報密度が高いため4とした。",
+    "relation_map_utility": "6当事者と5本の方向付きedgeを、統制・依存・対立・提携・規制の正規kindで表し、事故発生から外部検証・規制協議まで把握できる。中心論点である分類から公表判断への遷移自体は図示されていないため4とした。"
+  },
+  "averageScore": 4.142857142857143,
+  "reviewRoute": "codex_daily_audit",
+  "status": "Green"
+}

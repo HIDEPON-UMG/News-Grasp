@@ -1,0 +1,776 @@
+{
+  "audio": {
+    "daily": {
+      "audioType": "daily",
+      "completionState": "external_expected",
+      "issueDate": "2026-09-05",
+      "provider": {
+        "jobIdentity": "audio-daily/2026-09-05",
+        "name": "github-release"
+      },
+      "publicPageHref": "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/2026-09-05-b38d44b8b735.mp3?v=b38d44b8b735",
+      "publicUrl": "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/2026-09-05-b38d44b8b735.mp3?v=b38d44b8b735",
+      "runId": "direct-2026-09-05-32-db5383100e6d46d79f7846e13b09e19c",
+      "runIntent": "scheduled_production_direct",
+      "runtimeState": "build/tts/daily/latest_audio.json",
+      "schemaVersion": "NEWS_GRASP_AUDIO_PROJECTION_V2",
+      "sourceArtifact": "build/tts/2026-09-05.mp3"
+    },
+    "deepdive": {
+      "audioType": "deepdive",
+      "completionState": "external_expected",
+      "issueDate": "2026-09-05",
+      "provider": {
+        "jobIdentity": "audio-deepdive/2026-09-05",
+        "name": "github-release"
+      },
+      "publicPageHref": "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-deepdive/2026-09-05-bda8cae50227.mp3?v=bda8cae50227",
+      "publicUrl": "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-deepdive/2026-09-05-bda8cae50227.mp3?v=bda8cae50227",
+      "runId": "direct-2026-09-05-32-db5383100e6d46d79f7846e13b09e19c",
+      "runIntent": "scheduled_production_direct",
+      "runtimeState": "build/tts/deepdive/latest_audio.json",
+      "schemaVersion": "NEWS_GRASP_AUDIO_PROJECTION_V2",
+      "sourceArtifact": "build/tts/deepdive/2026-09-05.mp3"
+    }
+  },
+  "commitRole": "publication",
+  "completionAttestation": {
+    "completionAuthority": "consumer-owned_public_verifier",
+    "distributionArtifacts": [
+      {
+        "artifactId": "distribution",
+        "hashAuthority": "public_completion_attestation",
+        "publicUrl": "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/2026-09-05-direct-2026-09-05-32-db5383100e6d46d79f7846e13b09e19c-distribution.json"
+      },
+      {
+        "artifactId": "distribution-binding",
+        "hashAuthority": "public_completion_attestation",
+        "publicUrl": "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/2026-09-05-direct-2026-09-05-32-db5383100e6d46d79f7846e13b09e19c-distribution-binding.json"
+      },
+      {
+        "artifactId": "playlist-binding",
+        "hashAuthority": "public_completion_attestation",
+        "publicUrl": "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/2026-09-05-direct-2026-09-05-32-db5383100e6d46d79f7846e13b09e19c-playlist-binding.json"
+      },
+      {
+        "artifactId": "notification-ledger",
+        "hashAuthority": "public_completion_attestation",
+        "publicUrl": "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/2026-09-05-direct-2026-09-05-32-db5383100e6d46d79f7846e13b09e19c-notification-ledger.json"
+      },
+      {
+        "artifactId": "daily-audio-projection",
+        "hashAuthority": "public_completion_attestation",
+        "publicUrl": "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/2026-09-05-direct-2026-09-05-32-db5383100e6d46d79f7846e13b09e19c-daily-audio-projection.json"
+      },
+      {
+        "artifactId": "deepdive-audio-projection",
+        "hashAuthority": "public_completion_attestation",
+        "publicUrl": "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/2026-09-05-direct-2026-09-05-32-db5383100e6d46d79f7846e13b09e19c-deepdive-audio-projection.json"
+      },
+      {
+        "artifactId": "youtube-daily-state",
+        "hashAuthority": "public_completion_attestation",
+        "publicUrl": "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/2026-09-05-direct-2026-09-05-32-db5383100e6d46d79f7846e13b09e19c-youtube-daily-state.json"
+      },
+      {
+        "artifactId": "youtube-deepdive-state",
+        "hashAuthority": "public_completion_attestation",
+        "publicUrl": "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/2026-09-05-direct-2026-09-05-32-db5383100e6d46d79f7846e13b09e19c-youtube-deepdive-state.json"
+      }
+    ],
+    "hashAuthority": "external_completion_receipt",
+    "publicUrl": "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/2026-09-05-direct-2026-09-05-32-db5383100e6d46d79f7846e13b09e19c-completion.json",
+    "required": true,
+    "schemaVersion": "NEWS_GRASP_COMPLETION_ATTESTATION_CONTRACT_V1"
+  },
+  "contentReceiptBinding": {
+    "artifactHashes": {
+      "data/articles.jsonl": "dd73bcbc2788d047db67807284475ccc35d45c9b99a04454b24f60915868c036",
+      "data/search_audit/2026-09-05/ai.json": "f284c87ed1fefb498d16b7c85c8b217b005ceaa1c0d8b4ad030f1ce5696b6a99",
+      "data/search_audit/2026-09-05/fx.json": "7b499a627c836ff994efc5267d9ed9eede2b34404411486dcc9adb0e318f0d75",
+      "data/search_audit/2026-09-05/game.json": "89787cc089d44133fb6dd1f9b7926fbc3ea0d86102db176379399a1ec3a0a25c",
+      "data/search_audit/2026-09-05/it.json": "66c2690f038471876df4cd4fb3d4469bd1c72b669241f41db817a9a03563d721",
+      "data/search_audit/2026-09-05/mobility.json": "01753fa6fe904e1a555f2e61aefe5c83e19a045025d65ecafbb41a93fa3c870f",
+      "digest/AI/2026-09-05-AI.md": "11f50df370049b9252e1e82515c2c7109c9dbbf5f216d2d3a1785dada8a7c11f",
+      "digest/DeepDive/2026-09-05-DeepDive-dialogue.md": "9a295db290d89673582a290be173971f7e0a88a50ced01d6a063a1247714ddb2",
+      "digest/DeepDive/2026-09-05-DeepDive.md": "591715734c1238db2151937e6253b0cbfd5a9e1c05fb692bd72756c959a0bc44",
+      "digest/FX/2026-09-05-FX.md": "c9777f7c541a422e6a3c0a6a076089cd2a4aab9a2ab4f49b28a3181e9462b4d5",
+      "digest/Game/2026-09-05-Game.md": "d3f9f6f94fe347df41ffcf06a47c476a0ce7e876b3ead052bed56347fa52aecc",
+      "digest/IT-Consulting/2026-09-05-IT-Consulting.md": "561efd49f7c1c2f26e73536ce8c6e0053eb9199cb77a23f9a1c44fccc8d03e48",
+      "digest/Mobility/2026-09-05-Mobility.md": "bb39bfa6f68472dea0e302d32a03d205dd6f9504dc6186882b8dbfd96b477509",
+      "digest/Summary/2026-09-05-audio-script.md": "69bce9f59fa5ecfd2fd003cbda51276143a8101e9f9d4eb9de09e8b5b8a3d8d4",
+      "digest/Summary/2026-09-05.md": "024775c85f6bb56f22d23a771ba0041fa54d8d9ac6e0f280109eac106411ebc6",
+      "docs/2026-09-05/index.html": "10a6d32ae4241875c5d07f4a054934f85ed80898a47bcfa2393d619102def209",
+      "docs/2026-09-05/summary/index.html": "2d101e5d260c4499fca21117666e54611de07838ecee2003c22e796a7f2f0826",
+      "docs/ai/2026-09-05/index.html": "1ebcf8ae2a4ea52b5d84b831fdc28204e2e639e7405ed396db1dc41dc1291f7c",
+      "docs/ai/index.html": "0abe71540a73d8cbd83c764c435a6aace51189d1f234fb5aa8fae5b73929cfc8",
+      "docs/archive/index.html": "3875d15827a87cbd23d4c9a51e073a906f9b240bc14031c69dc68433f6858859",
+      "docs/deepdive/2026-09-05/index.html": "2955b6cb8101503ce42cc7950fa522c0872059868425c964c38fef9b400c5baf",
+      "docs/deepdive/index.html": "4d2a45cbcb072f7a2b0274d61b176bcc3d411daf86b90967622df793dc83d137",
+      "docs/economy/index.html": "bc72fd001c2591f2405cb0fdad84a92d0a062b77797c9c8ae24f44384131f932",
+      "docs/fx/2026-09-05/index.html": "a6362172fb17df5c415e6bc1cbeaa682e7c587f9406a9de58a6263646ecf638e",
+      "docs/fx/index.html": "3d57b14957b82858e3a5a0a2c5d82d50a600e0530230b594feb079878d30c001",
+      "docs/game/2026-09-05/index.html": "d47a5e1bae4ed8cdad0a486f632beb742b160dd120dbbc19e6d55e46d2bb3c38",
+      "docs/game/index.html": "fa2d4b63a733dafa1f1566d0d9be9e6c8353be556369b0d2a5fbb044606b8ec4",
+      "docs/index.html": "9602cd8769fe80912c3c5a809351994f64b3a63d317620aee77a5c0d1ed833d1",
+      "docs/it/index.html": "d65d6f0d4f45ef326bfe87ea4bb22b3b28a22ece1e6e9043728a78922d36e8f4",
+      "docs/manufacturing/index.html": "b986f0fc760727f3f894307aacfdd7baf448f513fe9f9de492aaf1fc430d3816",
+      "docs/mobility/2026-09-05/index.html": "ee212fcd706cd65e08026a5aaf14aaf45698fa65083c4e85d4b1fc4526359e22",
+      "docs/mobility/index.html": "40cf15342c8f9ab92de097753156c8395e4c4fed2146cb6dba8000fcbd7a17a0"
+    },
+    "bindingSha256": "55ae15501787db080d76d026009ad7b6ae3cba0a3316aa0d78bd2c662b5c7a1b",
+    "issueDate": "2026-09-05",
+    "producerReceiptSha256": "977f41f55c3ce8759187ee881b0229dabd419a899114ead14bd97288bedfab74",
+    "runId": "direct-2026-09-05-32-db5383100e6d46d79f7846e13b09e19c",
+    "schemaVersion": "NEWS_GRASP_MANIFEST_CONTENT_BINDING_V1"
+  },
+  "entries": [
+    {
+      "artifactKind": "publish_manifest",
+      "commitRole": "publication",
+      "digest": "self_excluded",
+      "digestAuthority": "self_excluded",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "data/publish-manifests/2026-09-05.json",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/",
+      "required": true
+    },
+    {
+      "artifactKind": "public_home",
+      "commitRole": "publication",
+      "digest": "9602cd8769fe80912c3c5a809351994f64b3a63d317620aee77a5c0d1ed833d1",
+      "digestAuthority": "artifact_bytes_marker_neutral",
+      "exists": true,
+      "linkFrom": "root",
+      "localPath": "docs/index.html",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/",
+      "required": true
+    },
+    {
+      "artifactKind": "service_worker",
+      "commitRole": "publication",
+      "digest": "900cc2b21a367865f3af2d2c67a21c6c07d64c149af6404d9f9a42638af2421e",
+      "digestAuthority": "artifact_bytes",
+      "exists": true,
+      "linkFrom": "docs/index.html",
+      "localPath": "docs/sw.js",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/sw.js",
+      "required": true
+    },
+    {
+      "artifactKind": "issue_index",
+      "commitRole": "publication",
+      "digest": "10a6d32ae4241875c5d07f4a054934f85ed80898a47bcfa2393d619102def209",
+      "digestAuthority": "artifact_bytes_marker_neutral",
+      "exists": true,
+      "linkFrom": "docs/index.html",
+      "localPath": "docs/2026-09-05/index.html",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/2026-09-05/",
+      "required": true
+    },
+    {
+      "artifactKind": "summary_source",
+      "commitRole": "publication",
+      "digest": "024775c85f6bb56f22d23a771ba0041fa54d8d9ac6e0f280109eac106411ebc6",
+      "digestAuthority": "artifact_bytes",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "digest/Summary/2026-09-05.md",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/2026-09-05/summary/",
+      "required": true
+    },
+    {
+      "artifactKind": "summary_html",
+      "commitRole": "publication",
+      "digest": "2d101e5d260c4499fca21117666e54611de07838ecee2003c22e796a7f2f0826",
+      "digestAuthority": "artifact_bytes_marker_neutral",
+      "exists": true,
+      "linkFrom": "docs/2026-09-05/index.html",
+      "localPath": "docs/2026-09-05/summary/index.html",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/2026-09-05/summary/",
+      "required": true
+    },
+    {
+      "artifactKind": "deepdive_source",
+      "commitRole": "publication",
+      "digest": "591715734c1238db2151937e6253b0cbfd5a9e1c05fb692bd72756c959a0bc44",
+      "digestAuthority": "artifact_bytes",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "digest/DeepDive/2026-09-05-DeepDive.md",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/deepdive/2026-09-05/",
+      "required": true
+    },
+    {
+      "artifactKind": "deepdive_provenance",
+      "commitRole": "publication",
+      "digest": "79b97fc1eee0c07004f9c212314eb0da3b407295c7df1d231b823f06f4ee1131",
+      "digestAuthority": "artifact_bytes",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "data/deepdive-provenance/2026-09-05.json",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/",
+      "required": true
+    },
+    {
+      "artifactKind": "deepdive_quality_review",
+      "commitRole": "publication",
+      "digest": "d5e2c5f04ae79e488282aa21dce05278a6bbbfcaa862b21779dbe0a1c5bd1275",
+      "digestAuthority": "artifact_bytes",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "data/deepdive-quality-review/2026-09-05.json",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/",
+      "required": true
+    },
+    {
+      "artifactKind": "deepdive_html",
+      "commitRole": "publication",
+      "digest": "2955b6cb8101503ce42cc7950fa522c0872059868425c964c38fef9b400c5baf",
+      "digestAuthority": "artifact_bytes_marker_neutral",
+      "exists": true,
+      "linkFrom": "docs/index.html",
+      "localPath": "docs/deepdive/2026-09-05/index.html",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/deepdive/2026-09-05/",
+      "required": true
+    },
+    {
+      "artifactKind": "daily_audio_state",
+      "commitRole": "external_observation",
+      "digest": "external_outbox:daily_audio_state",
+      "digestAuthority": "runtime_external_operation_receipt",
+      "exists": true,
+      "linkFrom": "docs/index.html",
+      "localPath": "build/tts/daily/latest_audio.json",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/",
+      "required": true
+    },
+    {
+      "artifactKind": "deepdive_audio_state",
+      "commitRole": "external_observation",
+      "digest": "external_outbox:deepdive_audio_state",
+      "digestAuthority": "runtime_external_operation_receipt",
+      "exists": true,
+      "linkFrom": "docs/deepdive/2026-09-05/index.html",
+      "localPath": "build/tts/deepdive/latest_audio.json",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/",
+      "required": true
+    },
+    {
+      "artifactKind": "youtube_daily_state",
+      "commitRole": "external_observation",
+      "digest": "external_outbox:youtube_daily_state",
+      "digestAuthority": "runtime_external_operation_receipt",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "build/youtube-podcast/uploads.json",
+      "publicUrl": "https://www.youtube.com/",
+      "required": true
+    },
+    {
+      "artifactKind": "youtube_deepdive_state",
+      "commitRole": "external_observation",
+      "digest": "external_outbox:youtube_deepdive_state",
+      "digestAuthority": "runtime_external_operation_receipt",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "build/youtube-podcast-deepdive/uploads.json",
+      "publicUrl": "https://www.youtube.com/",
+      "required": true
+    },
+    {
+      "artifactKind": "playlist_state",
+      "commitRole": "external_observation",
+      "digest": "external_outbox:playlist_state",
+      "digestAuthority": "runtime_external_operation_receipt",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "build/distribution/2026-09-05/playlist.json",
+      "publicUrl": "https://www.youtube.com/",
+      "required": true
+    },
+    {
+      "artifactKind": "distribution_binding",
+      "commitRole": "external_observation",
+      "digest": "external_outbox:distribution_binding",
+      "digestAuthority": "runtime_external_operation_receipt",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "build/distribution/2026-09-05/binding.json",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/",
+      "required": true
+    },
+    {
+      "artifactKind": "notification_v2",
+      "commitRole": "external_observation",
+      "digest": "external_outbox:notification_v2",
+      "digestAuthority": "runtime_external_operation_receipt",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "build/notification/2026-09-05.json",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/",
+      "required": true
+    },
+    {
+      "artifactKind": "publish_status",
+      "commitRole": "publication",
+      "digest": "ee6baa0c52827daccfa1e141ae54fc004d032df48522338cb1b80981d0d276c4",
+      "digestAuthority": "artifact_bytes",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "docs/publish-status.json",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/publish-status.json",
+      "required": true
+    },
+    {
+      "artifactKind": "distribution",
+      "commitRole": "external_observation",
+      "digest": "external_outbox:distribution",
+      "digestAuthority": "runtime_external_operation_receipt",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "data/distribution/2026-09-05.json",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/",
+      "required": true
+    },
+    {
+      "artifactKind": "category_digest",
+      "commitRole": "publication",
+      "digest": "c9777f7c541a422e6a3c0a6a076089cd2a4aab9a2ab4f49b28a3181e9462b4d5",
+      "digestAuthority": "artifact_bytes",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "digest/FX/2026-09-05-FX.md",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/fx/2026-09-05/",
+      "required": true
+    },
+    {
+      "artifactKind": "category_html",
+      "commitRole": "publication",
+      "digest": "a6362172fb17df5c415e6bc1cbeaa682e7c587f9406a9de58a6263646ecf638e",
+      "digestAuthority": "artifact_bytes_marker_neutral",
+      "exists": true,
+      "linkFrom": "docs/2026-09-05/index.html",
+      "localPath": "docs/fx/2026-09-05/index.html",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/fx/2026-09-05/",
+      "required": true
+    },
+    {
+      "artifactKind": "category_digest",
+      "commitRole": "publication",
+      "digest": "11f50df370049b9252e1e82515c2c7109c9dbbf5f216d2d3a1785dada8a7c11f",
+      "digestAuthority": "artifact_bytes",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "digest/AI/2026-09-05-AI.md",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/ai/2026-09-05/",
+      "required": true
+    },
+    {
+      "artifactKind": "category_html",
+      "commitRole": "publication",
+      "digest": "1ebcf8ae2a4ea52b5d84b831fdc28204e2e639e7405ed396db1dc41dc1291f7c",
+      "digestAuthority": "artifact_bytes_marker_neutral",
+      "exists": true,
+      "linkFrom": "docs/2026-09-05/index.html",
+      "localPath": "docs/ai/2026-09-05/index.html",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/ai/2026-09-05/",
+      "required": true
+    },
+    {
+      "artifactKind": "category_digest",
+      "commitRole": "publication",
+      "digest": "561efd49f7c1c2f26e73536ce8c6e0053eb9199cb77a23f9a1c44fccc8d03e48",
+      "digestAuthority": "artifact_bytes",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "digest/IT-Consulting/2026-09-05-IT-Consulting.md",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/it/2026-09-05/",
+      "required": true
+    },
+    {
+      "artifactKind": "category_html",
+      "commitRole": "publication",
+      "digest": "d9c578684843732e7885d5c6d605010d93cc5ace2c4f1fc4627eacae0a60337e",
+      "digestAuthority": "artifact_bytes_marker_neutral",
+      "exists": true,
+      "linkFrom": "docs/2026-09-05/index.html",
+      "localPath": "docs/it/2026-09-05/index.html",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/it/2026-09-05/",
+      "required": true
+    },
+    {
+      "artifactKind": "category_digest",
+      "commitRole": "publication",
+      "digest": "bb39bfa6f68472dea0e302d32a03d205dd6f9504dc6186882b8dbfd96b477509",
+      "digestAuthority": "artifact_bytes",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "digest/Mobility/2026-09-05-Mobility.md",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/mobility/2026-09-05/",
+      "required": true
+    },
+    {
+      "artifactKind": "category_html",
+      "commitRole": "publication",
+      "digest": "ee212fcd706cd65e08026a5aaf14aaf45698fa65083c4e85d4b1fc4526359e22",
+      "digestAuthority": "artifact_bytes_marker_neutral",
+      "exists": true,
+      "linkFrom": "docs/2026-09-05/index.html",
+      "localPath": "docs/mobility/2026-09-05/index.html",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/mobility/2026-09-05/",
+      "required": true
+    },
+    {
+      "artifactKind": "category_digest",
+      "commitRole": "publication",
+      "digest": "d3f9f6f94fe347df41ffcf06a47c476a0ce7e876b3ead052bed56347fa52aecc",
+      "digestAuthority": "artifact_bytes",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "digest/Game/2026-09-05-Game.md",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/game/2026-09-05/",
+      "required": true
+    },
+    {
+      "artifactKind": "category_html",
+      "commitRole": "publication",
+      "digest": "d47a5e1bae4ed8cdad0a486f632beb742b160dd120dbbc19e6d55e46d2bb3c38",
+      "digestAuthority": "artifact_bytes_marker_neutral",
+      "exists": true,
+      "linkFrom": "docs/2026-09-05/index.html",
+      "localPath": "docs/game/2026-09-05/index.html",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/game/2026-09-05/",
+      "required": true
+    },
+    {
+      "artifactKind": "current_issue_source",
+      "commitRole": "publication",
+      "digest": "dd73bcbc2788d047db67807284475ccc35d45c9b99a04454b24f60915868c036",
+      "digestAuthority": "artifact_bytes",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "data/articles.jsonl",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/",
+      "required": true
+    },
+    {
+      "artifactKind": "current_issue_source",
+      "commitRole": "publication",
+      "digest": "f284c87ed1fefb498d16b7c85c8b217b005ceaa1c0d8b4ad030f1ce5696b6a99",
+      "digestAuthority": "artifact_bytes",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "data/search_audit/2026-09-05/ai.json",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/",
+      "required": true
+    },
+    {
+      "artifactKind": "current_issue_source",
+      "commitRole": "publication",
+      "digest": "7b499a627c836ff994efc5267d9ed9eede2b34404411486dcc9adb0e318f0d75",
+      "digestAuthority": "artifact_bytes",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "data/search_audit/2026-09-05/fx.json",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/",
+      "required": true
+    },
+    {
+      "artifactKind": "current_issue_source",
+      "commitRole": "publication",
+      "digest": "89787cc089d44133fb6dd1f9b7926fbc3ea0d86102db176379399a1ec3a0a25c",
+      "digestAuthority": "artifact_bytes",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "data/search_audit/2026-09-05/game.json",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/",
+      "required": true
+    },
+    {
+      "artifactKind": "current_issue_source",
+      "commitRole": "publication",
+      "digest": "66c2690f038471876df4cd4fb3d4469bd1c72b669241f41db817a9a03563d721",
+      "digestAuthority": "artifact_bytes",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "data/search_audit/2026-09-05/it.json",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/",
+      "required": true
+    },
+    {
+      "artifactKind": "current_issue_source",
+      "commitRole": "publication",
+      "digest": "01753fa6fe904e1a555f2e61aefe5c83e19a045025d65ecafbb41a93fa3c870f",
+      "digestAuthority": "artifact_bytes",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "data/search_audit/2026-09-05/mobility.json",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/",
+      "required": true
+    },
+    {
+      "artifactKind": "current_issue_source",
+      "commitRole": "publication",
+      "digest": "9a295db290d89673582a290be173971f7e0a88a50ced01d6a063a1247714ddb2",
+      "digestAuthority": "artifact_bytes",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "digest/DeepDive/2026-09-05-DeepDive-dialogue.md",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/",
+      "required": true
+    },
+    {
+      "artifactKind": "current_issue_source",
+      "commitRole": "publication",
+      "digest": "69bce9f59fa5ecfd2fd003cbda51276143a8101e9f9d4eb9de09e8b5b8a3d8d4",
+      "digestAuthority": "artifact_bytes",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "digest/Summary/2026-09-05-audio-script.md",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/",
+      "required": true
+    },
+    {
+      "artifactKind": "derived_public_file",
+      "commitRole": "publication",
+      "digest": "0abe71540a73d8cbd83c764c435a6aace51189d1f234fb5aa8fae5b73929cfc8",
+      "digestAuthority": "artifact_bytes",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "docs/ai/index.html",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/",
+      "required": true
+    },
+    {
+      "artifactKind": "derived_public_file",
+      "commitRole": "publication",
+      "digest": "3875d15827a87cbd23d4c9a51e073a906f9b240bc14031c69dc68433f6858859",
+      "digestAuthority": "artifact_bytes",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "docs/archive/index.html",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/",
+      "required": true
+    },
+    {
+      "artifactKind": "derived_public_file",
+      "commitRole": "publication",
+      "digest": "4d2a45cbcb072f7a2b0274d61b176bcc3d411daf86b90967622df793dc83d137",
+      "digestAuthority": "artifact_bytes",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "docs/deepdive/index.html",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/",
+      "required": true
+    },
+    {
+      "artifactKind": "derived_public_file",
+      "commitRole": "publication",
+      "digest": "bc72fd001c2591f2405cb0fdad84a92d0a062b77797c9c8ae24f44384131f932",
+      "digestAuthority": "artifact_bytes",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "docs/economy/index.html",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/",
+      "required": true
+    },
+    {
+      "artifactKind": "derived_public_file",
+      "commitRole": "publication",
+      "digest": "3d57b14957b82858e3a5a0a2c5d82d50a600e0530230b594feb079878d30c001",
+      "digestAuthority": "artifact_bytes",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "docs/fx/index.html",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/",
+      "required": true
+    },
+    {
+      "artifactKind": "derived_public_file",
+      "commitRole": "publication",
+      "digest": "fa2d4b63a733dafa1f1566d0d9be9e6c8353be556369b0d2a5fbb044606b8ec4",
+      "digestAuthority": "artifact_bytes",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "docs/game/index.html",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/",
+      "required": true
+    },
+    {
+      "artifactKind": "derived_public_file",
+      "commitRole": "publication",
+      "digest": "d65d6f0d4f45ef326bfe87ea4bb22b3b28a22ece1e6e9043728a78922d36e8f4",
+      "digestAuthority": "artifact_bytes",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "docs/it/index.html",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/",
+      "required": true
+    },
+    {
+      "artifactKind": "derived_public_file",
+      "commitRole": "publication",
+      "digest": "b986f0fc760727f3f894307aacfdd7baf448f513fe9f9de492aaf1fc430d3816",
+      "digestAuthority": "artifact_bytes",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "docs/manufacturing/index.html",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/",
+      "required": true
+    },
+    {
+      "artifactKind": "derived_public_file",
+      "commitRole": "publication",
+      "digest": "40cf15342c8f9ab92de097753156c8395e4c4fed2146cb6dba8000fcbd7a17a0",
+      "digestAuthority": "artifact_bytes",
+      "exists": true,
+      "linkFrom": "",
+      "localPath": "docs/mobility/index.html",
+      "publicUrl": "https://hidepon-umg.github.io/News-Grasp/",
+      "required": true
+    }
+  ],
+  "exactWriteSet": [
+    "data/articles.jsonl",
+    "data/deepdive-provenance/2026-09-05.json",
+    "data/deepdive-quality-review/2026-09-05.json",
+    "data/publish-manifests/2026-09-05.json",
+    "data/search_audit/2026-09-05/ai.json",
+    "data/search_audit/2026-09-05/fx.json",
+    "data/search_audit/2026-09-05/game.json",
+    "data/search_audit/2026-09-05/it.json",
+    "data/search_audit/2026-09-05/mobility.json",
+    "digest/AI/2026-09-05-AI.md",
+    "digest/DeepDive/2026-09-05-DeepDive-dialogue.md",
+    "digest/DeepDive/2026-09-05-DeepDive.md",
+    "digest/FX/2026-09-05-FX.md",
+    "digest/Game/2026-09-05-Game.md",
+    "digest/IT-Consulting/2026-09-05-IT-Consulting.md",
+    "digest/Mobility/2026-09-05-Mobility.md",
+    "digest/Summary/2026-09-05-audio-script.md",
+    "digest/Summary/2026-09-05.md",
+    "docs/2026-09-05/index.html",
+    "docs/2026-09-05/summary/index.html",
+    "docs/ai/2026-09-05/index.html",
+    "docs/ai/index.html",
+    "docs/archive/index.html",
+    "docs/deepdive/2026-09-05/index.html",
+    "docs/deepdive/index.html",
+    "docs/economy/index.html",
+    "docs/fx/2026-09-05/index.html",
+    "docs/fx/index.html",
+    "docs/game/2026-09-05/index.html",
+    "docs/game/index.html",
+    "docs/index.html",
+    "docs/it/2026-09-05/index.html",
+    "docs/it/index.html",
+    "docs/manufacturing/index.html",
+    "docs/mobility/2026-09-05/index.html",
+    "docs/mobility/index.html",
+    "docs/publish-status.json",
+    "docs/sw.js"
+  ],
+  "externalOperationContract": {
+    "externalInputHashes": {
+      "build/tts/2026-09-05.mp3": "b38d44b8b73512653c6092320cad41ea71ee262baae2bd80093178f92817f3b1",
+      "build/tts/deepdive/2026-09-05.mp3": "bda8cae502277399cec6bdbc36cc877d63d246ad54acebd509f59139535685f8",
+      "build/youtube-podcast-deepdive/2026-09-05.mp4": "612025bd337d8a57230c2ca6fbc6750add1a8eb5a69bbfc1e6ed33791642483f",
+      "build/youtube-podcast/2026-09-05.mp4": "84a88804a4871c2db40d7fb5c05214daeb5f917ea77e2f080e6932a31901737d"
+    },
+    "issueDate": "2026-09-05",
+    "notificationPayloadSha256": "3d95d3062eb53e789f7b5bdaea45c505b54a332ac1354dbe84472f5109facfb9",
+    "operationIds": [
+      "audio_daily_upload",
+      "audio_deepdive_upload",
+      "youtube_daily_prepare",
+      "youtube_deepdive_prepare",
+      "git_release_push",
+      "pages_deployment_wait",
+      "youtube_daily_finalize",
+      "youtube_deepdive_finalize",
+      "notification_send",
+      "completion_attestation_publish"
+    ],
+    "operations": [
+      {
+        "operationId": "audio_daily_upload",
+        "payloadIdentity": "b38d44b8b73512653c6092320cad41ea71ee262baae2bd80093178f92817f3b1",
+        "payloadIdentityAuthority": "sealed_external_input_sha256",
+        "sideEffectId": "audio_daily_upload"
+      },
+      {
+        "operationId": "audio_deepdive_upload",
+        "payloadIdentity": "bda8cae502277399cec6bdbc36cc877d63d246ad54acebd509f59139535685f8",
+        "payloadIdentityAuthority": "sealed_external_input_sha256",
+        "sideEffectId": "audio_deepdive_upload"
+      },
+      {
+        "operationId": "youtube_daily_prepare",
+        "payloadIdentity": "84a88804a4871c2db40d7fb5c05214daeb5f917ea77e2f080e6932a31901737d",
+        "payloadIdentityAuthority": "sealed_external_input_sha256",
+        "sideEffectId": "youtube_daily_prepare"
+      },
+      {
+        "operationId": "youtube_deepdive_prepare",
+        "payloadIdentity": "612025bd337d8a57230c2ca6fbc6750add1a8eb5a69bbfc1e6ed33791642483f",
+        "payloadIdentityAuthority": "sealed_external_input_sha256",
+        "sideEffectId": "youtube_deepdive_prepare"
+      },
+      {
+        "operationId": "git_release_push",
+        "payloadIdentity": "",
+        "payloadIdentityAuthority": "sealed_release_commit_sha256",
+        "sideEffectId": "git_release_push"
+      },
+      {
+        "operationId": "pages_deployment_wait",
+        "payloadIdentity": "",
+        "payloadIdentityAuthority": "sealed_release_commit_sha256",
+        "sideEffectId": "pages_deployment_wait"
+      },
+      {
+        "operationId": "youtube_daily_finalize",
+        "payloadIdentity": "84a88804a4871c2db40d7fb5c05214daeb5f917ea77e2f080e6932a31901737d",
+        "payloadIdentityAuthority": "sealed_external_input_sha256",
+        "sideEffectId": "youtube_daily_finalize"
+      },
+      {
+        "operationId": "youtube_deepdive_finalize",
+        "payloadIdentity": "612025bd337d8a57230c2ca6fbc6750add1a8eb5a69bbfc1e6ed33791642483f",
+        "payloadIdentityAuthority": "sealed_external_input_sha256",
+        "sideEffectId": "youtube_deepdive_finalize"
+      },
+      {
+        "operationId": "notification_send",
+        "payloadIdentity": "3d95d3062eb53e789f7b5bdaea45c505b54a332ac1354dbe84472f5109facfb9",
+        "payloadIdentityAuthority": "canonical_notification_payload_sha256",
+        "sideEffectId": "notification_send"
+      },
+      {
+        "operationId": "completion_attestation_publish",
+        "payloadIdentity": "",
+        "payloadIdentityAuthority": "prior_provider_binding_receipt_set",
+        "sideEffectId": "completion_attestation_publish"
+      }
+    ],
+    "providerDeliveryAckPolicy": "unknown_unobtainable_is_neither_success_nor_failure",
+    "runId": "direct-2026-09-05-32-db5383100e6d46d79f7846e13b09e19c",
+    "runIntent": "scheduled_production_direct",
+    "schemaVersion": "NEWS_GRASP_EXTERNAL_OPERATION_CONTRACT_V1"
+  },
+  "issueDate": "2026-09-05",
+  "manifestId": "ee002023ecd12eb56c5aa38239c3f5208e577d38f1e733887f6a06f928eecb18",
+  "runId": "direct-2026-09-05-32-db5383100e6d46d79f7846e13b09e19c",
+  "runIntent": "scheduled_production_direct",
+  "scheduledCategoryIds": [
+    "fx",
+    "ai",
+    "it",
+    "mobility",
+    "game"
+  ],
+  "schemaVersion": "NEWS_GRASP_PUBLISH_MANIFEST_V2",
+  "sourceBaseline": "ac502cdd9331bcaf2f5778215f212796aa061bd9"
+}

@@ -1,10 +1,10 @@
 {
   "completionAuthority": "consumer-owned_public_verifier",
-  "date": "2026-09-04",
-  "manifestId": "0dd4623d81632ebad9080db60fda1b828016b84b8a42aff54c696ed92dd96241",
+  "date": "2026-09-05",
+  "manifestId": "ee002023ecd12eb56c5aa38239c3f5208e577d38f1e733887f6a06f928eecb18",
   "result": "publication_pending",
-  "runId": "direct-2026-09-04-30-f863da6ac4cc44d088430dd79c72a486",
+  "runId": "direct-2026-09-05-32-db5383100e6d46d79f7846e13b09e19c",
   "runIntent": "scheduled_production_direct",
   "status": "awaiting_external_completion_attestation",
-  "updated_at": "2026-09-04T06:00:00+09:00"
+  "updated_at": "2026-09-05T06:00:00+09:00"
 }
