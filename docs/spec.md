@@ -32,6 +32,29 @@ title は最初の実作業で `YY/MM/DD News-Grasp 臨時本線日次バッチ 
 
 runtime改ざん、state DB破損、競合live writer、許可外副作用だけは推測継続せず`failed_integrity`とする。caller supplied run ID、manifest ID、SHA、pathはactive制御authorityにせず、通常Daily入口は引数なしの単一製品内command `tools.news_grasp_direct_runtime daily`だけとする。
 
+### 2026-09-06 Pre-entry Incident Amendment
+
+本節は2026-09-06のユーザー引継ぎ指示を根拠とする。通常日次の唯一の入口は
+`tools.news_grasp_direct_runtime daily`であり、Release-only NoPublish、P08、外部goal再開は
+日次の起動条件ではない。以下のRelease検証契約を通常日次へ持ち込まない。
+
+過去3回に観測したのは前段wrapperの終了（03:31:40 JST / exit 76、04:15:11 JST /
+exit 76、04:33:12 JST / exit 1、各約1秒）だけである。全回とも本体のstate、claim、
+witness、module launch evidence、実行logが無く、NoPublish本体へ到達できなかった。
+pre-entry内部の単一根因は未確定であり、追加E2Eを原因探索に使用しない。
+
+Release検証ではwrapper開始、claim、witness、OS観測で確認したmodule-start、terminalを
+製品内のbounded append-only journalへ記録する。wrapper開始やclaimのみでE2E試行を
+消費しない。本体開始確認後に限り一回分を消費し、pre-entry失敗の予算と復帰状態を
+分離する。既存journalと成果物を保持し、原因が変わらない同型再試行を許さない。
+proofの実bytes、内部seal、発行済みauthority、registryはconsume時にも照合する。
+SHAは改ざん・bytes一致の検査用途に限定し、固定SHAや外部goal再開を必須の制御点にしない。
+
+最終確認はstatic → contract → actual Windows simulation → resumeの順に閉じた後、
+NoPublish E2Eを一回だけ実行する。9月5日の公開面復旧はそのGreen後に別作業として行い、
+既存成果物の指摘箇所と依存下流のみを修正する。DeepDive生成が長時間であること自体を
+品質欠陥とせず、日次90分SLOの観測とコンテンツ品質の合否を別に保持する。
+
 ### Artifact Repair Contract
 
 日次成果物の依存正本は `tools.news_grasp_repair_registry.build_daily_artifact_dag` とし、candidate snapshot、カテゴリ別reporter、records/search audit/digest、editor、articles slice、Summary、Daily audio script/audio/projection/video、DeepDive model/article/dialogue/HTML/audio/projection/video、site HTML、distribution manifest、publish status、Git/Pages、YouTube、playlist、notification、public verificationを一つのDAGへ固定する。品質Redまたは欠落の修復単位はfile全体やrun全体ではなくartifact IDである。

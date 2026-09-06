@@ -14,7 +14,12 @@ import sys
 import threading
 import time
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Callable, Sequence
+
+# -I -Sによる直接起動でも、配置済み製品内helperだけを解決する。
+_PRODUCT_ROOT = Path(__file__).resolve().parents[1]
+if str(_PRODUCT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PRODUCT_ROOT))
 
 
 MAX_JSON_BYTES = 64 * 1024
@@ -227,6 +232,7 @@ def _wait_for_owned_process(
     *,
     timeout_seconds: int | float,
     max_output_bytes: int = MAX_CHILD_OUTPUT_BYTES,
+    on_tick: Callable[[], None] | None = None,
 ) -> dict[str, Any]:
     """子出力を最後までdrainし、診断に必要な末尾だけを保持する。"""
 
@@ -279,6 +285,22 @@ def _wait_for_owned_process(
     ]
     for thread in threads:
         thread.start()
+    monitor_stop = threading.Event()
+    monitor_errors: list[str] = []
+
+    def monitor() -> None:
+        while not monitor_stop.wait(0.05):
+            try:
+                if on_tick is not None:
+                    on_tick()
+            except Exception as error:
+                monitor_errors.append(_child_reason_code(str(error)) or "NEWS_GRASP_PREENTRY_OBSERVATION_FAILED")
+                process.close_job()
+                return
+
+    monitor_thread = threading.Thread(target=monitor, daemon=True) if on_tick is not None else None
+    if monitor_thread is not None:
+        monitor_thread.start()
     timed_out = False
     capture_error_code = ""
     try:
@@ -290,6 +312,14 @@ def _wait_for_owned_process(
         except BaseException:
             exit_code = 76
             capture_error_code = "NEWS_GRASP_NOPUBLISH_OWNER_WAIT_FAILED"
+        monitor_stop.set()
+        if monitor_thread is not None:
+            monitor_thread.join(timeout=6)
+            if monitor_thread.is_alive():
+                capture_error_code = "NEWS_GRASP_PREENTRY_OBSERVATION_DRAIN_TIMEOUT"
+            elif monitor_errors:
+                capture_error_code = monitor_errors[0]
+                exit_code = 76
         try:
             # 親終了後もpipeを保持する子孫を同じJobごと回収してEOFを確定する。
             process.close_job()
@@ -606,6 +636,29 @@ def _write_terminal_authority(
     return output
 
 
+def _confirm_module_start(*, journal_context, parent_pid: int, python_executable: Path,
+                          repo_root: Path, query_process_identity, consume_start) -> bool:
+    """生存中の子をOSで照合し、予算の永続消費後にだけ開始ackを出す。"""
+    journal, issue_date, session_id = journal_context
+    rows = journal.events(issue_date)
+    entries = [row for row in rows if row["sessionId"] == session_id and row["phase"] == "module_entered"]
+    if not entries:
+        return False
+    if any(row["phase"] == "module_started" and row["sessionId"] != session_id for row in rows):
+        raise RuntimeError("NEWS_GRASP_E2E_BODY_ALREADY_STARTED")
+    detail = entries[0]["detail"]
+    declared = detail.get("processIdentity", {})
+    actual = query_process_identity(int(declared.get("pid", 0)))
+    if (actual != declared or int(actual["parentPid"]) != parent_pid
+        or _path_key(Path(str(actual["imagePath"]))) != _path_key(python_executable)
+        or _path_key(Path(str(detail.get("modulePath", ""))))
+        != _path_key(repo_root / "tools/news_grasp_release_nopublish.py")):
+        raise RuntimeError("NEWS_GRASP_PREENTRY_START_IDENTITY_DRIFT")
+    consume_start(detail)
+    journal.append(issue_date, session_id, "module_started", detail)
+    return True
+
+
 def run_owned_nopublish(
     *,
     repo_root: Path,
@@ -728,9 +781,34 @@ def run_owned_nopublish(
             "imagePath": str(observed["imagePath"]),
             "imageSha256": str(observed["imageSha256"]),
         }
+        from tools.news_grasp_preentry_journal import environment_journal
+
+        journal_context = environment_journal()
+        start_confirmed = False
+
+        def confirm_module_start() -> None:
+            nonlocal start_confirmed
+            if start_confirmed or journal_context is None:
+                return
+            def consume_start(detail):
+                from tools.news_grasp_p08_evidence import _load_global_module
+                workspace = bridge._require_trusted_workspace_root(root)
+                budget = _load_global_module(workspace, "high_cost_operation_budget.py")
+                budget.consume_full_e2e_start(
+                    workspace_root=workspace,
+                    admission_path=Path(str(admission_value["expectedParentAuthorityPath"])),
+                    expected_execution_root=root, module_start_receipt=detail,
+                )
+            start_confirmed = _confirm_module_start(
+                journal_context=journal_context, parent_pid=process.pid,
+                python_executable=current_python, repo_root=root,
+                query_process_identity=bridge._query_process_identity, consume_start=consume_start,
+            )
+
         result = _wait_for_owned_process(
             process,
-            timeout_seconds=60 * 60,
+            timeout_seconds=90 * 60,
+            on_tick=confirm_module_start if journal_context is not None else None,
         )
     except BaseException:
         process.close()

@@ -4,6 +4,9 @@ import hashlib
 import inspect
 import json
 import subprocess
+import os
+import sys
+import types
 from pathlib import Path
 
 import pytest
@@ -15,20 +18,139 @@ from tools import e2e_final_admission_bridge as bridge
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_global_authority_load_follows_canonical_workspace_without_hash_pin(
+def test_stage1_descriptor_is_not_active_authority(tmp_path, monkeypatch):
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    state = tmp_path / ".codex/state/high-cost-operation"
+    state.mkdir(parents=True)
+    descriptor = {"schemaVersion": "HIGH_COST_CAPABILITY_DESCRIPTOR_V1", "workspaceRoot": str(tmp_path), "generation": 2}
+    (state / "capability-v1.json").write_text(json.dumps(descriptor), encoding="utf-8")
+    authority = {"promotionGuardGenerationId": "high-cost-generation-1", "statefulSelfTestStatus": "green"}
+    authority["receiptSha256"] = evidence.canonical_sha256(authority)
+    path = state / "external-health-authority-v1.json"
+    path.write_text(json.dumps(authority), encoding="utf-8")
+    with pytest.raises(evidence.P08EvidenceError, match="GLOBAL_MODULE_BINDING_INVALID"):
+        evidence._read_authority_descriptor()
+    authority["promotionGuardGenerationId"] = "high-cost-generation-2"
+    authority["receiptSha256"] = evidence.canonical_sha256({key: value for key, value in authority.items() if key != "receiptSha256"})
+    path.write_text(json.dumps(authority), encoding="utf-8")
+    assert evidence._read_authority_descriptor()["generation"] == 2
+
+
+@pytest.fixture
+def promoted_authority(tmp_path, monkeypatch):
+    harness = tmp_path / "tools/harness"
+    harness.mkdir(parents=True)
+    contents = {name: b"value = 'trusted'\n" for name in evidence.AUTHORITY_MODULES}
+    contents["high_cost_operation_budget.py"] = b"import high_cost_adversarial_review as review\nvalue = review.value\n"
+    for name, raw in contents.items():
+        (harness / name).write_bytes(raw)
+    descriptor = {"workspaceRoot": str(tmp_path), "generation": 1,
+                  "authorityModules": {name: hashlib.sha256(raw).hexdigest() for name, raw in contents.items()}}
+    monkeypatch.setattr(evidence, "_read_authority_descriptor", lambda: descriptor)
+    monkeypatch.setattr(evidence, "_authority_module_paths", lambda _: {name: harness / name for name in contents})
+    return tmp_path, harness
+
+
+def test_authority_ignores_import_cache_poison_and_rejects_dependency_replacement(promoted_authority, monkeypatch):
+    root, harness = promoted_authority
+    poison = types.ModuleType("high_cost_adversarial_review")
+    poison.value = "untrusted"
+    monkeypatch.setitem(sys.modules, poison.__name__, poison)
+    assert evidence._load_global_module(root, "high_cost_operation_budget.py").value == "trusted"
+    assert sys.modules[poison.__name__] is poison
+    (harness / "high_cost_adversarial_review.py").write_text("value = 'untrusted'\n", encoding="utf-8")
+    with pytest.raises(evidence.P08EvidenceError, match="GLOBAL_MODULE_BINDING_INVALID"):
+        evidence._load_global_module(root, "high_cost_operation_budget.py")
+
+
+def test_authority_executes_snapshot_when_path_changes_after_read(promoted_authority, monkeypatch):
+    from tools import news_grasp_nopublish_owner as owner
+    root, harness = promoted_authority
+    original = owner._read_stable_bytes
+    reads = []
+    def read(path, **kwargs):
+        result = original(path, **kwargs)
+        reads.append(path.name)
+        if path.name == "high_cost_adversarial_review.py":
+            path.write_text("value = 'untrusted'\n", encoding="utf-8")
+        return result
+    monkeypatch.setattr(owner, "_read_stable_bytes", read)
+    assert evidence._load_global_module(root, "high_cost_operation_budget.py").value == "trusted"
+    assert len(reads) == len(set(reads)) == len(evidence.AUTHORITY_MODULES)
+
+
+def test_authority_rejects_actual_user_code_replacement(promoted_authority):
+    root, harness = promoted_authority
+    module = evidence._load_global_module(root, "high_cost_operation_budget.py")
+    assert module._load_task_operating_contract_module().value == "trusted"
+    (harness / "task_operating_contract.py").write_text("value = 'untrusted'\n", encoding="utf-8")
+    with pytest.raises(evidence.P08EvidenceError, match="GLOBAL_MODULE_BINDING_INVALID"):
+        evidence._load_global_module(root, "high_cost_operation_budget.py")
+
+
+def test_actual_authority_modules_load_with_isolated_python(tmp_path):
+    """stubでなく実6 moduleのimport/実ユーザー判定入口を-I -Sで検証する。"""
+    workspace = Path.home() / "OneDrive/ドキュメント/ProjectFolders"
+    paths = evidence._authority_module_paths(workspace)
+    if not all(path.is_file() for path in paths.values()):
+        pytest.skip("実authority sourceのあるWindows host専用")
+    descriptor = {"workspaceRoot": str(workspace), "generation": 1,
+                  "authorityModules": {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in paths.items()}}
+    descriptor_path = tmp_path / "authority.json"
+    descriptor_path.write_text(json.dumps(descriptor), encoding="utf-8")
+    script = tmp_path / "load.py"
+    script.write_text(
+        "import json,sys,importlib.util\nfrom pathlib import Path\n"
+        "spec=importlib.util.spec_from_file_location('p08',Path(sys.argv[1])/'tools/news_grasp_p08_evidence.py')\n"
+        "p=importlib.util.module_from_spec(spec)\nspec.loader.exec_module(p)\n"
+        "d=json.loads(Path(sys.argv[2]).read_text(encoding='utf-8'))\n"
+        "p._read_authority_descriptor=lambda:d\n"
+        "m=p._load_global_module(Path(d['workspaceRoot']),'high_cost_operation_budget.py')\n"
+        "assert callable(m.consume_full_e2e_start)\n"
+        "assert callable(m._load_task_operating_contract_module()._authoritative_user_events)\n",
+        encoding="utf-8")
+    result = subprocess.run([sys.executable, "-I", "-S", "-B", str(script), str(ROOT), str(descriptor_path)],
+                            capture_output=True, timeout=20, shell=False,
+                            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    assert result.returncode == 0, result.stderr.decode("utf-8", errors="replace")
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows reparse実境界")
+def test_authority_rejects_parent_junction(promoted_authority):
+    import _winapi
+    root, harness = promoted_authority
+    moved = root / "original-harness"
+    harness.rename(moved)
+    _winapi.CreateJunction(str(moved), str(harness))
+    with pytest.raises(evidence.P08EvidenceError, match="GLOBAL_MODULE_BINDING_INVALID"):
+        evidence._load_global_module(root, "high_cost_operation_budget.py")
+
+
+def test_global_authority_requires_promoted_content_and_accepts_new_generation(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     harness = tmp_path / "tools" / "harness"
     harness.mkdir(parents=True)
-    authority = harness / "authority.py"
+    authority = harness / "high_cost_adversarial_review.py"
     monkeypatch.setattr(evidence, "_canonical_workspace_root", lambda _candidate: tmp_path)
-
     authority.write_text("value = 'first'\n", encoding="utf-8")
-    assert evidence._load_global_module(tmp_path, "authority.py").value == "first"
+    names = evidence.AUTHORITY_MODULES
+    for name in names:
+        if name != authority.name:
+            (harness / name).write_text("value = 'dependency'\n", encoding="utf-8")
+    descriptor = {"workspaceRoot": str(tmp_path), "generation": 1, "authorityModules": {
+        name: hashlib.sha256((harness / name).read_bytes()).hexdigest() for name in names}}
+    monkeypatch.setattr(evidence, "_read_authority_descriptor", lambda: descriptor, raising=False)
+    monkeypatch.setattr(evidence, "_authority_module_paths", lambda _: {name: harness / name for name in names})
+    assert evidence._load_global_module(tmp_path, authority.name).value == "first"
 
     authority.write_text("value = 'second'\n", encoding="utf-8")
-    assert evidence._load_global_module(tmp_path, "authority.py").value == "second"
+    with pytest.raises(evidence.P08EvidenceError, match="GLOBAL_MODULE_BINDING_INVALID"):
+        evidence._load_global_module(tmp_path, authority.name)
+    descriptor["generation"] = 2
+    descriptor["authorityModules"][authority.name] = hashlib.sha256(authority.read_bytes()).hexdigest()
+    assert evidence._load_global_module(tmp_path, authority.name).value == "second"
     assert not hasattr(evidence, "GLOBAL_BUDGET_SHA256")
     assert not hasattr(evidence, "GLOBAL_REVIEW_SHA256")
 

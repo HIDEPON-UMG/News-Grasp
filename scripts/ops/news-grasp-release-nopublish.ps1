@@ -40,6 +40,12 @@ if (-not (Test-Path -LiteralPath $launchEvidenceParent -PathType Container) -or
 }
 $bridge = Join-Path $repo 'tools\e2e_final_admission_bridge.py'
 $module = Join-Path $repo 'tools\news_grasp_release_nopublish.py'
+$journalScript = Join-Path $repo 'tools\news_grasp_preentry_journal.py'
+function Write-PreentryPhase {
+    param([string] $Phase)
+    & $python -I -S -B $journalScript $Phase
+    if ($LASTEXITCODE -ne 0) { throw 'NEWS_GRASP_PREENTRY_JOURNAL_WRITE_FAILED' }
+}
 foreach ($path in @(
     $python, $bridge, $module, $HighCostParentAuthorityPath, $E2EFinalAdmissionPath,
     $E2EFinalRunnerArgumentsPath, $E2EFinalReservationReceiptPath,
@@ -60,6 +66,7 @@ $hasher = [Security.Cryptography.SHA256]::Create()
 try {
     $claimNonce = ([BitConverter]::ToString($hasher.ComputeHash([Text.Encoding]::UTF8.GetBytes($claimNonceSource))) -replace '-', '').ToLowerInvariant()
 } finally { $hasher.Dispose() }
+Write-PreentryPhase 'claim_started'
 & $python -I $bridge 'claim-runner' `
     '--admission' $E2EFinalAdmissionPath `
     '--runner-arguments-file' $E2EFinalRunnerArgumentsPath `
@@ -93,6 +100,7 @@ if ($claimExitCode -ne 0) {
     }
     throw "$failureCode`:exit=$claimExitCode"
 }
+Write-PreentryPhase 'claim_ready'
 $admission = Get-Content -LiteralPath $E2EFinalAdmissionPath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
 $claimWitness = [IO.Path]::GetFullPath([string]$admission.expectedClaimWitnessPath)
 & $python -I $bridge 'write-runner-claim-witness' `
@@ -106,6 +114,7 @@ $claimWitness = [IO.Path]::GetFullPath([string]$admission.expectedClaimWitnessPa
     '--authority-python-executable' $python `
     '--expected-owner-pid' ([string]$PID)
 if ($LASTEXITCODE -ne 0) { throw "NEWS_GRASP_RELEASE_NOPUBLISH_WITNESS_REJECTED:exit=$LASTEXITCODE" }
+Write-PreentryPhase 'witness_ready'
 
 $state = [IO.Path]::GetFullPath($StateFileOverride)
 $logDir = [IO.Path]::GetFullPath($LogDirOverride)

@@ -30,6 +30,53 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$journalPython = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'Programs\Python\Python312\python.exe'
+$journalScript = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\tools\news_grasp_preentry_journal.py'))
+$env:NEWS_GRASP_PREENTRY_JOURNAL = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'News-Grasp\release-control\preentry.sqlite3'
+$env:NEWS_GRASP_PREENTRY_ISSUE = $DateStamp
+$env:NEWS_GRASP_PREENTRY_SESSION = [Guid]::NewGuid().ToString('N')
+function Write-PreentryBootstrap {
+    param([string] $Phase, [int] $ExitCode = 0, [string] $ReasonCode = '')
+    # Pythonの起動・import自体が失敗しても、wrapper開始と直接原因を保持する。
+    $directory = Split-Path -Parent $env:NEWS_GRASP_PREENTRY_JOURNAL
+    $cursor = $directory
+    while ($cursor) {
+        if ([IO.Directory]::Exists($cursor) -and (([IO.File]::GetAttributes($cursor) -band [IO.FileAttributes]::ReparsePoint) -ne 0)) {
+            throw 'NEWS_GRASP_PREENTRY_REPARSE_REJECTED'
+        }
+        $cursor = [IO.Path]::GetDirectoryName($cursor)
+    }
+    $null = [IO.Directory]::CreateDirectory($directory)
+    $path = Join-Path $directory 'preentry-bootstrap.jsonl'
+    if ([IO.File]::Exists($path) -and (([IO.File]::GetAttributes($path) -band [IO.FileAttributes]::ReparsePoint) -ne 0)) {
+        throw 'NEWS_GRASP_PREENTRY_REPARSE_REJECTED'
+    }
+    $row = [ordered]@{ issueDate=$DateStamp; sessionId=$env:NEWS_GRASP_PREENTRY_SESSION; phase=$Phase; observedAt=[DateTime]::UtcNow.ToString('o'); processId=$PID; exitCode=$ExitCode; reasonCode=$ReasonCode }
+    $bytes = [Text.UTF8Encoding]::new($false).GetBytes(($row | ConvertTo-Json -Compress) + "`n")
+    $stream = [IO.FileStream]::new($path, [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::Write, [IO.FileShare]::Read)
+    try {
+        if ($stream.Length + $bytes.Length -gt 8388608) { throw 'NEWS_GRASP_PREENTRY_JOURNAL_FULL' }
+        $null = $stream.Seek(0, [IO.SeekOrigin]::End)
+        $stream.Write($bytes, 0, $bytes.Length)
+        $stream.Flush($true)
+    } finally { $stream.Dispose() }
+}
+function Write-PreentryPhase {
+    param([string] $Phase, [int] $ExitCode = 0)
+    & $journalPython -I -S -B $journalScript $Phase '--exit-code' ([string]$ExitCode)
+    if ($LASTEXITCODE -ne 0) { throw 'NEWS_GRASP_PREENTRY_JOURNAL_WRITE_FAILED' }
+}
+trap {
+    $preentryError = $_
+    $preentryExit = if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) { [int]$LASTEXITCODE } else { 1 }
+    $reasonMatch = [regex]::Match([string]$preentryError.Exception.Message, '\b[A-Z][A-Z0-9_]{5,127}\b')
+    $preentryReason = if ($reasonMatch.Success) { $reasonMatch.Value } else { 'NEWS_GRASP_PREENTRY_UNTYPED_FAILURE' }
+    Write-PreentryBootstrap 'preentry_failed' -ExitCode $preentryExit -ReasonCode $preentryReason
+    & $journalPython -I -S -B $journalScript 'failure' '--exit-code' ([string]$preentryExit) '--reason-code' $preentryReason
+    throw $preentryError
+}
+Write-PreentryBootstrap 'wrapper_started'
+Write-PreentryPhase 'wrapper_started'
 $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 $null = Import-Module Microsoft.PowerShell.Utility -ErrorAction Stop
@@ -514,7 +561,8 @@ try {
         [ordered]@{ key='owner'; path=$nopublishOwnerPath; relativePath='tools/news_grasp_nopublish_owner.py'; label='NoPublish process owner' },
         [ordered]@{ key='ownedProcess'; path=$ownedProcessPath; relativePath='tools/news_grasp_owned_process.py'; label='owned process helper' },
         [ordered]@{ key='p08'; path=$p08EvidenceToolPath; relativePath='tools/news_grasp_p08_evidence.py'; label='P08 evidence validator' },
-        [ordered]@{ key='releaseModule'; path=$releaseNoPublishModulePath; relativePath='tools/news_grasp_release_nopublish.py'; label='Release NoPublish module' }
+        [ordered]@{ key='releaseModule'; path=$releaseNoPublishModulePath; relativePath='tools/news_grasp_release_nopublish.py'; label='Release NoPublish module' },
+        [ordered]@{ key='preentryJournal'; path=$journalScript; relativePath='tools/news_grasp_preentry_journal.py'; label='pre-entry journal' }
     )
     $candidateRuntimeBindings = [ordered]@{}
     foreach ($bindingSpec in $candidateRuntimeBindingSpecs) {
@@ -775,6 +823,7 @@ $validatedOutput = & $pythonCanonicalPath -X utf8 -I $highCostOperationBudgetPat
 if ($LASTEXITCODE -ne 0) {
     throw "HIGH_COST_OPERATION_VALIDATION_REJECTED exit=$LASTEXITCODE"
 }
+Write-PreentryPhase 'authority_ready'
 & $pythonCanonicalPath -X utf8 -I $e2eAdmissionBridgePath 'consume' `
     '--admission' $E2EAdmissionPath `
     '--runner-arguments-file' $runnerArgumentsPath `
@@ -785,6 +834,7 @@ if ($LASTEXITCODE -ne 0) {
 if ($LASTEXITCODE -ne 0) {
     throw "E2E_FINAL_ADMISSION_REJECTED exit=$LASTEXITCODE"
 }
+Write-PreentryPhase 'reservation_ready'
 
 $startedAt = Get-Date
 $sourceRepoCommitBeforeLaunch = (& $gitCanonicalPath -C $sourceRepoPath rev-parse HEAD 2>$null).Trim().ToLowerInvariant()
@@ -867,6 +917,7 @@ $env:PYTHONUTF8 = '1'
     '--expected-bridge-sha256' ([string]$candidateRuntimeBindings.bridge.sha256) `
     '--expected-owned-process-sha256' ([string]$candidateRuntimeBindings.ownedProcess.sha256)
 $runnerExitCode = $LASTEXITCODE
+Write-PreentryPhase 'failure' -ExitCode $runnerExitCode
 $ownerOutput = ''
 $ownerEvidencePath = ''
 $ownerEvidenceSha256 = ''
@@ -964,7 +1015,7 @@ if (Test-Path -LiteralPath $statePath -PathType Leaf) {
 $observedStatus = if ($state) { [string] $state.status } else { '' }
 $finishedAt = Get-Date
 $elapsedSeconds = [int]($finishedAt - $startedAt).TotalSeconds
-$durationSloLimitSeconds = 3600
+$durationSloLimitSeconds = 5400
 $durationSloMet = $elapsedSeconds -le $durationSloLimitSeconds
 $receipt = [ordered]@{
     schema = 'NEWS_GRASP_SCHEDULED_EQUIVALENT_NOPUBLISH_E2E_V1'
@@ -996,6 +1047,7 @@ $receipt = [ordered]@{
     elapsed_seconds = $elapsedSeconds
     duration_slo_limit_seconds = $durationSloLimitSeconds
     duration_slo_met = $durationSloMet
+    content_ready = ($runnerExitCode -eq 0 -and $ownerEvidenceValid -and $observedStatus -eq 'publish_dry_run_ok')
     runner_exit_code = $runnerExitCode
     observed_terminal_state = $observedStatus
     high_cost_attempt_id = $attemptId
@@ -1043,7 +1095,7 @@ try {
 }
 
 if (-not $receipt.ok) {
-    Write-Error "scheduled-equivalent NoPublish E2E failed: exit=$runnerExitCode state=$observedStatus receipt=$receiptFullPath"
+    Write-Error "NoPublish実行経路が正常終了条件を満たしません: exit=$runnerExitCode state=$observedStatus slo=$durationSloMet receipt=$receiptFullPath"
     exit 1
 }
 Write-Output $json

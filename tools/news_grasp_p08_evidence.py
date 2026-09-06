@@ -8,6 +8,7 @@ atomicに出力する。NoPublish E2Eの起動はこのモジュールの責務�
 from __future__ import annotations
 
 import argparse
+import builtins
 import hashlib
 import importlib.util
 import json
@@ -19,6 +20,11 @@ import time
 import types
 from pathlib import Path
 from typing import Any, Iterable
+
+# -I -Sによる直接起動でも、配置済み製品内helperだけを解決する。
+_PRODUCT_ROOT = Path(__file__).resolve().parents[1]
+if str(_PRODUCT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PRODUCT_ROOT))
 
 
 DESIGN_SCHEMA = "MAXIMUM_EFFICIENCY_TASK_DESIGN_V1"
@@ -73,13 +79,8 @@ def file_sha256(path: Path) -> str:
 
 
 def _canonical_workspace_root(candidate: Path) -> Path:
-    parents = Path(__file__).resolve().parents
-    expected = (
-        parents[3].resolve(strict=True)
-        if len(parents) > 3
-        and (parents[3] / "tools" / "harness" / "high_cost_operation_budget.py").is_file()
-        else None
-    )
+    descriptor = _read_authority_descriptor()
+    expected = Path(str(descriptor["workspaceRoot"])).resolve(strict=True)
     actual = candidate.resolve(strict=True)
     if expected is None or actual != expected:
         raise P08EvidenceError("HIGH_COST_WORKSPACE_ROOT_INVALID")
@@ -180,7 +181,7 @@ def build_design(
         "chosenStrategyId": chosen["strategyId"],
         "localCriticalPathStrategyId": chosen["strategyId"],
         "budgetLimits": {
-            "maxExternalModelCalls": 0, "maxFullE2EAttempts": 1, "maxWallClockSeconds": 3600,
+            "maxExternalModelCalls": 0, "maxFullE2EAttempts": 1, "maxWallClockSeconds": 5400,
             "maxUsageDelta": 0, "maxTempBytes": 256 * 1024 * 1024,
             "maxPeakMemoryBytes": 1024 * 1024 * 1024, "maxExternalMutations": 0,
         },
@@ -309,38 +310,115 @@ def caller_evidence_bindings(paths: dict[str, Path]) -> list[dict[str, str]]:
     return [{"kind": kind, "path": str(paths[kind].resolve()), "sha256": file_sha256(paths[kind])} for kind in CALLER_EVIDENCE_KINDS]
 
 
-def _load_global_module(workspace_root: Path, filename: str) -> Any:
-    workspace = _canonical_workspace_root(workspace_root)
-    candidate = workspace / "tools" / "harness" / filename
-    if candidate.is_symlink():
-        raise P08EvidenceError("HIGH_COST_GLOBAL_MODULE_BINDING_INVALID")
-    path = candidate.resolve(strict=True)
-    if path.parent != (workspace / "tools" / "harness").resolve(strict=True):
-        raise P08EvidenceError("HIGH_COST_GLOBAL_MODULE_BINDING_INVALID")
-    raw = path.read_bytes()
-    module_name = f"_news_grasp_p08_{path.stem}"
-    module = types.ModuleType(module_name)
-    module.__file__ = str(path)
-    # Imports used by the canonical module are resolved only from the verified directory.
-    old_path = list(sys.path)
-    sys.path.insert(0, str(path.parent))
+AUTHORITY_MODULES = frozenset({
+    "high_cost_operation_budget.py", "high_cost_adversarial_review.py",
+    "recovery_pattern_validation_v2.py", "resource_budget_v2.py", "transactional_json.py",
+    "task_operating_contract.py",
+})
+
+
+def _authority_module_paths(workspace: Path) -> dict[str, Path]:
+    return {
+        name: (Path.home() / ".agents/skills/ops-sdd-tdd-harness-governance/scripts/task_operating_contract.py"
+               if name == "task_operating_contract.py" else workspace / "tools/harness" / name)
+        for name in AUTHORITY_MODULES
+    }
+
+
+def _read_authority_descriptor() -> dict[str, Any]:
+    """promotion済み世代の内容authorityをcanonical配置から一度読む。"""
+    from tools.news_grasp_nopublish_owner import _read_stable_bytes
+
     try:
-        exec(compile(raw, str(path), "exec"), module.__dict__)
-        if Path(str(getattr(module, "__file__", ""))).resolve() != path:
-            raise P08EvidenceError("HIGH_COST_GLOBAL_MODULE_BINDING_INVALID")
-        return module
+        _, raw = _read_stable_bytes(
+            Path.home() / ".codex/state/high-cost-operation/capability-v1.json",
+            max_bytes=64 * 1024, require_unique=True,
+        )
+        value = json.loads(raw.decode("utf-8"))
+        if (not isinstance(value, dict)
+            or value.get("schemaVersion") != "HIGH_COST_CAPABILITY_DESCRIPTOR_V1"
+            or type(value.get("generation")) is not int or value["generation"] <= 0
+            or not str(value.get("workspaceRoot") or "")):
+            raise ValueError("descriptor invalid")
+        _, authority_raw = _read_stable_bytes(
+            Path.home() / ".codex/state/high-cost-operation/external-health-authority-v1.json",
+            max_bytes=64 * 1024, require_unique=True,
+        )
+        authority = json.loads(authority_raw.decode("utf-8"))
+        if (not isinstance(authority, dict)
+            or authority.get("promotionGuardGenerationId") != f"high-cost-generation-{value['generation']}"
+            or authority.get("statefulSelfTestStatus") != "green"
+            or authority.get("receiptSha256") != canonical_sha256({
+                key: item for key, item in authority.items() if key != "receiptSha256"})):
+            raise ValueError("promotion not activated")
+        return value
+    except (OSError, RuntimeError, ValueError) as error:
+        raise P08EvidenceError("HIGH_COST_GLOBAL_MODULE_BINDING_INVALID") from error
+
+
+def _load_global_module(workspace_root: Path, filename: str) -> Any:
+    """検証した同一snapshotだけを実行し、依存importもその集合へ閉じる。"""
+    from tools.news_grasp_nopublish_owner import _read_stable_bytes
+
+    try:
+        descriptor = _read_authority_descriptor()
+        workspace = workspace_root.resolve(strict=True)
+        hashes = descriptor.get("authorityModules")
+        if (Path(str(descriptor["workspaceRoot"])).resolve(strict=True) != workspace
+            or filename not in AUTHORITY_MODULES
+            or not isinstance(hashes, dict) or set(hashes) != AUTHORITY_MODULES):
+            raise ValueError("authority set invalid")
+        snapshots = {}
+        paths = _authority_module_paths(workspace)
+        for name in sorted(AUTHORITY_MODULES):
+            path, raw = _read_stable_bytes(
+                paths[name], max_bytes=4 * 1024 * 1024,
+                root=Path.home() if name == "task_operating_contract.py" else workspace,
+                require_unique=True,
+            )
+            if hashlib.sha256(raw).hexdigest() != hashes[name]:
+                raise ValueError("unpromoted content")
+            snapshots[Path(name).stem] = (path, raw)
+        loaded: dict[str, Any] = {}
+
+        def verified_import(name, globals=None, locals=None, fromlist=(), level=0):
+            if level == 0 and name in snapshots:
+                return load(name)
+            if level == 0 and (workspace / "tools" / "harness" / (name + ".py")).is_file():
+                raise P08EvidenceError("HIGH_COST_GLOBAL_MODULE_BINDING_INVALID")
+            return builtins.__import__(name, globals, locals, fromlist, level)
+
+        def load(name):
+            if name in loaded:
+                return loaded[name]
+            path, raw = snapshots[name]
+            module = types.ModuleType(name)
+            module.__file__ = str(path)
+            module.__dict__["__builtins__"] = dict(vars(builtins), __import__=verified_import)
+            loaded[name] = module
+            old_path = list(sys.path)
+            try:
+                exec(compile(raw, str(path), "exec"), module.__dict__)
+            finally:
+                sys.path[:] = old_path
+            if name == "high_cost_operation_budget":
+                # 実ユーザー判定も同世代snapshotを使い、別のdynamic readをさせない。
+                module._load_task_operating_contract_module = lambda: load("task_operating_contract")
+            return module
+
+        return load(Path(filename).stem)
     except Exception as error:  # pragma: no cover - the authority owns detailed codes
         if isinstance(error, P08EvidenceError):
             raise
         raise P08EvidenceError("HIGH_COST_GLOBAL_MODULE_BINDING_INVALID") from error
-    finally:
-        sys.path[:] = old_path
 
 
 def _load_user_event_authority(workspace_root: Path, thread_id: str) -> dict[str, Any]:
     try:
         budget = _load_global_module(workspace_root, "high_cost_operation_budget.py")
-        return budget.inspect_canonical_user_event_authority(thread_id)
+        return budget.inspect_canonical_goal_lineage(
+            thread_id, required_goal_status=None, include_latest_user_text=False,
+        )
     except Exception as error:  # pragma: no cover - the authority owns detailed codes
         if isinstance(error, P08EvidenceError):
             raise

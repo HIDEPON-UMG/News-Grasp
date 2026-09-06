@@ -16,6 +16,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import time
 import uuid
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -126,7 +127,32 @@ def _require_high_cost_claim(root: Path) -> _ReleaseCapability:
         raise RuntimeError("nopublish_high_cost_claim_invalid")
     if not isinstance(witness.get("claimId"), str) or not witness["claimId"]:
         raise RuntimeError("nopublish_high_cost_claim_invalid")
-    return _ReleaseCapability(witness, _RELEASE_CAPABILITY_MARKER)
+    return _ReleaseCapability({**witness, "moduleProcessIdentity": child_identity}, _RELEASE_CAPABILITY_MARKER)
+
+
+def _await_owner_start_confirmation(root: Path, capability: _ReleaseCapability) -> None:
+    """本体の生存中にownerのOS照合と永続開始確認を待つ。"""
+
+    from tools.news_grasp_preentry_journal import environment_journal
+
+    context = environment_journal()
+    if context is None:
+        raise RuntimeError("NEWS_GRASP_PREENTRY_CONTEXT_MISSING")
+    journal, issue_date, session_id = context
+    detail = {
+        "processIdentity": capability.witness["moduleProcessIdentity"],
+        "modulePath": str(root / "tools" / "news_grasp_release_nopublish.py"),
+    }
+    journal.append(issue_date, session_id, "module_entered", detail)
+    deadline = time.monotonic() + 120
+    while time.monotonic() < deadline:
+        for event in journal.events(issue_date, session_id):
+            if event["phase"] == "module_started":
+                if event["detail"] != detail:
+                    raise RuntimeError("NEWS_GRASP_PREENTRY_START_IDENTITY_DRIFT")
+                return
+        time.sleep(0.05)
+    raise RuntimeError("NEWS_GRASP_PREENTRY_OWNER_CONFIRMATION_TIMEOUT")
 
 
 def _json_bytes(value: Any) -> bytes:
@@ -515,6 +541,13 @@ def run_release_nopublish(
 
 
 def _main(argv: Sequence[str] | None = None) -> int:
+    from tools.news_grasp_preentry_journal import environment_journal
+    context = environment_journal()
+    if context is not None:
+        journal, issue_date, session_id = context
+        journal.append(issue_date, session_id, "module_loaded", {
+            "pid": os.getpid(), "parentPid": os.getppid(), "modulePath": str(Path(__file__).resolve()),
+        })
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo-root", type=Path, required=True)
     parser.add_argument("--source-issue-date", required=True)
@@ -538,6 +571,7 @@ def _main(argv: Sequence[str] | None = None) -> int:
                 raise ValueError(code)
         capability = _require_high_cost_claim(root)
         claim_validated = True
+        _await_owner_start_confirmation(root, capability)
         result = run_release_nopublish(
             repo_root=root,
             source_issue_date=args.source_issue_date,

@@ -2562,6 +2562,72 @@ def test_claim_accepts_causal_replacement_metadata_kept_in_ledger_row(
     assert claimed["state"] == "runner_claimed"
 
 
+@pytest.mark.parametrize("change_after_authorize", [False, True])
+def test_causal_consume_rechecks_authorized_file_before_replacing_ledger(
+    tmp_path: Path, change_after_authorize: bool, monkeypatch,
+) -> None:
+    first, ledger = _issue(tmp_path, repo_root=tmp_path / "first", admission_name="first.json")
+    consume_admission(admission_path=first, ledger_path=ledger)
+    before = ledger.read_bytes()
+    second, _ = _issue(tmp_path, repo_root=tmp_path / "second", admission_name="second.json")
+    value, arguments_path = _materialize_runner_arguments_only(second)
+    proof = {
+        "schemaVersion": "HIGH_COST_CAUSAL_REPLACEMENT_PROOF_V1",
+        "canonicalAttemptKey": value["attemptKey"],
+        "originalEvidence": {"finalAdmission": {"path": str(first), "sha256": _sha256(first)}},
+        "successor": {"admissionId": value["admissionId"]},
+    }
+    proof["proofSha256"] = bridge_module._canonical_sha256(proof)
+    proof_path = _write_json(tmp_path / "proof.json", proof)
+    parent = Path(value["expectedParentAuthorityPath"])
+    _write_json(parent, {
+        "schemaVersion": "HIGH_COST_OPERATION_ADMISSION_V1",
+        "state": "activated",
+        "authorizationMode": "causal_replacement",
+        "causalReplacementProofPath": str(proof_path),
+        "causalReplacementProofSha256": proof["proofSha256"],
+        "causalReplacementProofFileSha256": _sha256(proof_path),
+    })
+    if change_after_authorize:
+        proof_path.write_bytes(proof_path.read_bytes() + b" ")
+    kwargs = {
+        "admission_path": second,
+        "ledger_path": ledger,
+        "runner_arguments": value["runnerArguments"],
+        "parent_authority_path": parent,
+        "runner_arguments_path": arguments_path,
+        "reservation_output": Path(value["expectedReservationReceiptPath"]),
+        "actual_runner_executable_path": Path(value["runnerExecutablePath"]),
+        "actual_authority_python_executable_path": Path(value["authorityPythonExecutablePath"]),
+        "causal_replacement_proof": proof_path,
+    }
+    if change_after_authorize:
+        with pytest.raises(E2EFinalAdmissionError, match="E2E_CAUSAL_REPLACEMENT_BINDING_DRIFT"):
+            _consume_admission(**kwargs)
+        assert ledger.read_bytes() == before
+        assert not Path(value["expectedReservationReceiptPath"]).exists()
+    else:
+        original_replace = bridge_module._replace_json
+        def crash(path, payload):
+            original_replace(path, payload)
+            raise RuntimeError('causal reserve crash')
+        with monkeypatch.context() as patch:
+            patch.setattr(bridge_module, '_replace_json', crash)
+            with pytest.raises(RuntimeError, match='causal reserve crash'):
+                _consume_admission(**kwargs)
+        reserved_bytes = ledger.read_bytes()
+        original_proof = proof_path.read_bytes()
+        proof_path.write_bytes(proof_path.read_bytes() + b" ")
+        kwargs['causal_replacement_proof'] = None
+        with pytest.raises(E2EFinalAdmissionError, match='E2E_CAUSAL_REPLACEMENT_PROOF_REQUIRED'):
+            _consume_admission(**kwargs)
+        assert ledger.read_bytes() == reserved_bytes
+        proof_path.write_bytes(original_proof)
+        kwargs['causal_replacement_proof'] = proof_path
+        result = _consume_admission(**kwargs)
+        assert result['admissionId'] == value['admissionId']
+
+
 def test_v2_causal_replacement_shape_binds_predecessor_and_successor() -> None:
     source = {
         "attemptKey": "News-Grasp:2026-09-05:scheduled-equivalent-nopublish",

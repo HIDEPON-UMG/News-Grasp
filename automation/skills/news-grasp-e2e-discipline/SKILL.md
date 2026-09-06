@@ -5,6 +5,24 @@ description: Run or plan News-Grasp daily-batch E2E, scheduled-equivalent NoPubl
 
 # News-Grasp E2E Discipline
 
+## 2026-09-06 運用境界の訂正
+
+通常06:00運用の唯一の正本は `python -B -m tools.news_grasp_direct_runtime daily`
+である。本skillのadmission、P08、A/B、隔離worktreeはRelease検証専用であり、
+日次開始条件へ持ち込まない。外部goalの再開を日次またはRelease開始の前提にしない。
+
+今回の重大障害対応は static → contract → Windows実構成simulation → resume →
+最終NoPublish一回の順とする。以下の旧A/B上限は今回の追加実行許可ではない。
+既存成果物を保持し、原因へ作用する差分だけを修正する。9月5日公開復旧は
+この最終NoPublishのGreen後に別作業として行う。
+
+wrapper開始とadmission予約はE2E試行の消費ではない。wrapper開始前後から
+claim、witness、本体開始、terminalまで永続journalへ記録し、OSで本体開始を
+確認した後にだけE2E試行を消費する。本体未到達はpre-entry失敗として別に回復する。
+過去3回で観測されたのはwrapper終了だけであり、本体の起動証拠はない。
+固定SHAやIDの差は差分確認・正規再束縛で回復し、回復不能の理由にしない。
+90分SLOと内容品質は別々に判定し、DeepDive生成が長いこと自体を品質欠陥にしない。
+
 ## News-Grasp内の正本境界
 
 このrepo内コピーをNews-Grasp専用のversioned sourceとする。installed copyは`config/news_grasp_automation_assets_v2.json`を読む正規installerだけが同期し、`~/.codex`、`~/.agents`、installed runtimeを直接編集しない。shared/global側と競合した場合はshared側を変更せず、確定hashを新baselineとしてこのoverlayを更新し直す。

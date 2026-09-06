@@ -246,12 +246,14 @@ def test_NG_CUTOVER_04_task_launcher_bootstrap_mode_has_no_legacy_script_child()
                 for target in node.targets
             )
             and isinstance(node.value, ast.List)
-            and len(node.value.elts) == 5
-            and isinstance(node.value.elts[-1], ast.Call)
-            and _call_name(node.value.elts[-1]) == "str"
-            and node.value.elts[-1].args
-            and isinstance(node.value.elts[-1].args[0], ast.Name)
-            and node.value.elts[-1].args[0].id == "direct_entry"
+            and len(node.value.elts) == 6
+            and isinstance(node.value.elts[-1], ast.Constant)
+            and node.value.elts[-1].value == "daily"
+            and isinstance(node.value.elts[-2], ast.Call)
+            and _call_name(node.value.elts[-2]) == "str"
+            and node.value.elts[-2].args
+            and isinstance(node.value.elts[-2].args[0], ast.Name)
+            and node.value.elts[-2].args[0].id == "direct_entry"
         ),
         None,
     )

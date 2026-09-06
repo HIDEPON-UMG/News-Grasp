@@ -3123,6 +3123,36 @@ def _claim_row(
     return row
 
 
+def _validate_causal_replacement_consume_binding(
+    *,
+    proof: dict[str, Any],
+    proof_path: Path,
+    proof_file_sha256: str,
+    parent: dict[str, Any],
+    registry: dict[str, Any] | None,
+) -> None:
+    """発行済み親authorityとconsume時の単一snapshotを再束縛する。"""
+
+    seal = proof.get("proofSha256")
+    unsigned = {key: item for key, item in proof.items() if key != "proofSha256"}
+    if (
+        parent.get("authorizationMode") != "causal_replacement"
+        or _path_key(Path(str(parent.get("causalReplacementProofPath") or "")))
+        != _path_key(proof_path)
+        or parent.get("causalReplacementProofFileSha256") != proof_file_sha256
+        or parent.get("causalReplacementProofSha256") != seal
+        or seal != _canonical_sha256(unsigned)
+        or (
+            proof.get("schemaVersion") == "HIGH_COST_RECOVERY_PROOF_V2"
+            and (
+                registry is None
+                or proof.get("registrySha256") != _canonical_sha256(registry)
+            )
+        )
+    ):
+        raise E2EFinalAdmissionError("E2E_CAUSAL_REPLACEMENT_BINDING_DRIFT")
+
+
 def _validate_causal_replacement_proof_shape(
     proof: dict[str, Any],
     *,
@@ -3218,6 +3248,47 @@ def _immutable_consume_admission(
             exists_code="E2E_RESERVATION_RECEIPT_OUTPUT_EXISTS",
         )
         wal_path = _wal_path(ledger, admission, source["attemptKey"], "reserve")
+        # WAL再開もauthorize後のproof差替えを通さない。
+        bindings = _validate_runtime_bindings(
+            source,
+            runner_arguments=runner_arguments,
+            parent_authority_path=parent_authority_path,
+            runner_arguments_path=runner_arguments_path,
+            actual_runner_executable_path=actual_runner,
+            actual_authority_python_executable_path=actual_python,
+            require_parent=True,
+        )
+        parent = _read_bound_json(
+            Path(bindings["parentAuthorityPath"]),
+            str(bindings["parentAuthoritySha256"]),
+            "E2E_PARENT_AUTHORITY_INVALID",
+        )
+        if parent.get('authorizationMode') == 'causal_replacement' and causal_replacement_proof is None:
+            raise E2EFinalAdmissionError('E2E_CAUSAL_REPLACEMENT_PROOF_REQUIRED')
+        if causal_replacement_proof is not None:
+            proof_path = _canonical_file(
+                Path(causal_replacement_proof),
+                code="E2E_CAUSAL_REPLACEMENT_PROOF_INVALID",
+                max_bytes=MAX_JSON_BYTES,
+            )
+            proof, proof_hash = _json_file_snapshot(
+                proof_path, "E2E_CAUSAL_REPLACEMENT_PROOF_INVALID"
+            )
+            if proof is None or proof_hash is None:
+                raise E2EFinalAdmissionError("E2E_CAUSAL_REPLACEMENT_PROOF_INVALID")
+            if (parent.get("authorizationMode") == "causal_replacement"
+                or proof.get("schemaVersion") != PRESTART_REBIND_PROOF_SCHEMA):
+                registry = None
+                if proof.get("schemaVersion") == "HIGH_COST_RECOVERY_PROOF_V2":
+                    workspace = _require_trusted_workspace_root(repo_root)
+                    registry = _read_json(
+                        workspace / "tools" / "harness" / "recovery_pattern_registry_v2.json",
+                        "E2E_CAUSAL_REPLACEMENT_REGISTRY_INVALID",
+                    )
+                _validate_causal_replacement_consume_binding(
+                    proof=proof, proof_path=proof_path, proof_file_sha256=proof_hash,
+                    parent=parent, registry=registry,
+                )
         recovered = _recover_wal(
             wal_path=wal_path,
             operation="reserve",
@@ -3243,7 +3314,11 @@ def _immutable_consume_admission(
         existing = ledger_value["attempts"].get(attempt_key)
         if existing is not None:
             if causal_replacement_proof is not None:
-                proof_path = Path(causal_replacement_proof).resolve(strict=True)
+                proof_path = _canonical_file(
+                    Path(causal_replacement_proof),
+                    code="E2E_CAUSAL_REPLACEMENT_PROOF_INVALID",
+                    max_bytes=MAX_JSON_BYTES,
+                )
                 proof, proof_hash = _json_file_snapshot(
                     proof_path, "E2E_CAUSAL_REPLACEMENT_PROOF_INVALID"
                 )
@@ -3267,6 +3342,25 @@ def _immutable_consume_admission(
                         proof,
                         source=source,
                         existing=existing,
+                    )
+                    parent = _read_bound_json(
+                        Path(bindings["parentAuthorityPath"]),
+                        str(bindings["parentAuthoritySha256"]),
+                        "E2E_PARENT_AUTHORITY_INVALID",
+                    )
+                    registry = None
+                    if proof.get("schemaVersion") == "HIGH_COST_RECOVERY_PROOF_V2":
+                        workspace = _require_trusted_workspace_root(repo_root)
+                        registry = _read_json(
+                            workspace / "tools" / "harness" / "recovery_pattern_registry_v2.json",
+                            "E2E_CAUSAL_REPLACEMENT_REGISTRY_INVALID",
+                        )
+                    _validate_causal_replacement_consume_binding(
+                        proof=proof,
+                        proof_path=proof_path,
+                        proof_file_sha256=proof_hash,
+                        parent=parent,
+                        registry=registry,
                     )
                 prior_replacement = ledger_value.get("replacements", {}).get(
                     attempt_key
