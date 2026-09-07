@@ -10,10 +10,12 @@ import shutil
 import stat
 import subprocess
 import tempfile
+import threading
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
 from datetime import date
+from functools import cmp_to_key
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
@@ -1124,24 +1126,148 @@ def _validate_candidate_payload(
     return [dict(item) for item in candidates], dict(audit)
 
 
-def _resolve_codex_executable() -> Path:
-    candidates: list[Path] = []
-    local = os.environ.get("USERPROFILE", "").strip()
-    if local:
-        candidates.extend(
-            Path(local).glob(".vscode/extensions/openai.chatgpt-*/bin/windows-x86_64/codex.exe")
-        )
-    unique: dict[str, Path] = {}
-    for candidate in candidates:
-        try:
-            resolved = candidate.resolve(strict=True)
-        except OSError:
+_CODEX_SEMVER_RE = re.compile(
+    r"(?<![0-9A-Za-z])v?(\d+)\.(\d+)\.(\d+)"
+    r"(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?"
+    r"(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?![0-9A-Za-z])"
+)
+
+
+def _parse_codex_version(stdout: bytes) -> tuple[tuple[int, int, int], tuple[tuple[bool, int | str], ...]] | None:
+    try:
+        text = stdout.decode("utf-8")
+    except (AttributeError, UnicodeDecodeError):
+        return None
+    match = _CODEX_SEMVER_RE.search(text)
+    if match is None:
+        return None
+    prerelease = match.group(4)
+    identifiers: list[tuple[bool, int | str]] = []
+    if prerelease:
+        for identifier in prerelease.split("."):
+            if not identifier or (identifier.isdigit() and len(identifier) > 1 and identifier.startswith("0")):
+                return None
+            if identifier.isdigit():
+                identifiers.append((True, int(identifier)))
+            else:
+                identifiers.append((False, identifier))
+    return (
+        (int(match.group(1)), int(match.group(2)), int(match.group(3))),
+        tuple(identifiers),
+    )
+
+
+def _compare_codex_versions(
+    left: tuple[tuple[int, int, int], tuple[tuple[bool, int | str], ...]],
+    right: tuple[tuple[int, int, int], tuple[tuple[bool, int | str], ...]],
+) -> int:
+    if left[0] != right[0]:
+        return 1 if left[0] > right[0] else -1
+    left_pre, right_pre = left[1], right[1]
+    if not left_pre or not right_pre:
+        if left_pre == right_pre:
+            return 0
+        return 1 if not left_pre else -1
+    for left_id, right_id in zip(left_pre, right_pre):
+        if left_id == right_id:
             continue
-        if resolved.is_file():
-            unique[_sha256_bytes(resolved.read_bytes())] = resolved
-    if len(unique) != 1:
-        raise DailyContentError("CODEX_EXECUTABLE_IDENTITY_AMBIGUOUS")
-    return next(iter(unique.values()))
+        if left_id[0] != right_id[0]:
+            return -1 if left_id[0] else 1
+        return 1 if left_id[1] > right_id[1] else -1
+    if len(left_pre) == len(right_pre):
+        return 0
+    return 1 if len(left_pre) > len(right_pre) else -1
+
+
+def _compare_codex_candidates(left: Mapping[str, Any], right: Mapping[str, Any]) -> int:
+    version_cmp = _compare_codex_versions(left["version"], right["version"])
+    if version_cmp:
+        return version_cmp
+    if left["desktop"] != right["desktop"]:
+        return 1 if left["desktop"] else -1
+    if left["path_key"] == right["path_key"]:
+        return 0
+    return 1 if left["path_key"] < right["path_key"] else -1
+
+
+def _resolve_codex_executable() -> Path:
+    from tools import news_grasp_owned_process
+
+    discovered: dict[str, tuple[Path, bool]] = {}
+    userprofile = os.environ.get("USERPROFILE", "").strip()
+    if userprofile:
+        for candidate in sorted(
+            Path(userprofile).glob(
+                ".vscode/extensions/openai.chatgpt-*/bin/windows-x86_64/codex.exe"
+            ),
+            key=lambda path: str(path).casefold(),
+        ):
+            discovered.setdefault(str(candidate), (candidate, False))
+    localappdata = os.environ.get("LOCALAPPDATA", "").strip()
+    if localappdata:
+        for candidate in sorted(
+            Path(localappdata).glob("OpenAI/Codex/bin/*/codex.exe"),
+            key=lambda path: str(path).casefold(),
+        ):
+            key = str(candidate)
+            previous = discovered.get(key)
+            discovered[key] = (candidate, True if previous is None else previous[1] or True)
+
+    valid: list[dict[str, Any]] = []
+    seen_paths: set[str] = set()
+    for candidate, desktop in sorted(
+        discovered.values(), key=lambda item: str(item[0]).casefold()
+    ):
+        try:
+            if _has_reparse_ancestor(candidate):
+                continue
+            before = candidate.stat()
+            if not stat.S_ISREG(before.st_mode) or not candidate.is_file():
+                continue
+            resolved = candidate.resolve(strict=True)
+            if (
+                _has_reparse_ancestor(resolved)
+                or _is_reparse_point(resolved)
+                or not resolved.is_file()
+                or not stat.S_ISREG(resolved.stat().st_mode)
+            ):
+                continue
+        except (OSError, ValueError):
+            continue
+        path_key = os.path.normcase(str(resolved)).casefold()
+        if path_key in seen_paths:
+            continue
+        seen_paths.add(path_key)
+        try:
+            result = news_grasp_owned_process.run_owned_bounded(
+                [str(resolved), "--version"],
+                cwd=resolved.parent,
+                timeout=5,
+                max_output_bytes=4096,
+            )
+        except (news_grasp_owned_process.OwnedProcessError, OSError, TimeoutError, subprocess.TimeoutExpired):
+            continue
+        if (
+            getattr(result, "returncode", None) != 0
+            or getattr(result, "timed_out", False)
+            or getattr(result, "output_exceeded", False)
+            or not isinstance(getattr(result, "stdout", None), (bytes, bytearray))
+        ):
+            continue
+        version = _parse_codex_version(bytes(result.stdout))
+        if version is None:
+            continue
+        valid.append(
+            {
+                "path": resolved,
+                "path_key": path_key,
+                "desktop": desktop,
+                "version": version,
+            }
+        )
+    if not valid:
+        raise DailyContentError("CODEX_EXECUTABLE_UNAVAILABLE")
+    return max(valid, key=cmp_to_key(_compare_codex_candidates))["path"]
 
 
 def _model_prompt(
@@ -1194,6 +1320,7 @@ def _default_model_runner(
     run_id: str,
     category: str | None = None,
     output_dir: Path,
+    codex_executable: Path | None = None,
     **context: Any,
 ) -> dict[str, Any]:
     from tools.model_spawn_client import run_model_process
@@ -1201,6 +1328,19 @@ def _default_model_runner(
     model = "gpt-5.6-sol" if role == "deepdive" else "gpt-5.6-luna"
     effort = "max"
     schema = _model_schema_for_role(role)
+    if codex_executable is None:
+        raise ModelResultPending(f"{role}:executable")
+    executable_path = Path(codex_executable)
+    try:
+        if (
+            _has_reparse_ancestor(executable_path)
+            or _is_reparse_point(executable_path)
+            or not executable_path.is_file()
+            or not stat.S_ISREG(executable_path.stat().st_mode)
+        ):
+            raise ModelResultPending(f"{role}:executable")
+    except OSError as exc:
+        raise ModelResultPending(f"{role}:executable") from exc
     shard_categories = tuple(str(item) for item in context.get("categories", ()))
     label = _model_call_label(role, category, context)
     raw_path_value = context.get("raw_path")
@@ -1229,10 +1369,7 @@ def _default_model_runner(
         raise ModelResultPending(f"{role}:prompt_persist") from exc
     events_path = output_dir / f"{label}.events.jsonl"
     stderr_path = output_dir / f"{label}.stderr.log"
-    try:
-        executable = str(_resolve_codex_executable())
-    except Exception as exc:  # noqa: BLE001 - unavailable launcher is operationally pending.
-        raise ModelResultPending(f"{role}:executable") from exc
+    executable = str(executable_path)
     command = [
         executable,
         "exec",
@@ -1297,6 +1434,187 @@ def _default_model_runner(
     if not isinstance(value, dict):
         raise DailyContentError(f"MODEL_OUTPUT_JSON_INVALID:{role}")
     return value
+
+
+def _invoke_persistent_model_call(
+    *,
+    root: Path,
+    run_id: str,
+    issue_date: str,
+    model_fn: Callable[..., Any],
+    reservation: Mapping[str, Any],
+    role: str,
+    category: str | None,
+    call_id: str,
+    input_hash: str,
+    artifact_id: str,
+    codex_executable_provider: Callable[[], Path | None] | None = None,
+    **model_context: Any,
+) -> tuple[Any, bool]:
+    call_root = _model_call_root(root, run_id, call_id)
+    intent_path = call_root / "intent.json"
+    raw_path = call_root / MODEL_CALL_RAW_FILENAME
+    expected_intent = _model_call_intent(
+        root=root,
+        run_id=run_id,
+        issue_date=issue_date,
+        role=role,
+        category=category,
+        call_id=call_id,
+        input_hash=input_hash,
+    )
+
+    def prepare_launch() -> None:
+        if codex_executable_provider is not None:
+            try:
+                executable = codex_executable_provider()
+            except Exception as exc:
+                raise ModelResultPending(f"{artifact_id}:executable") from exc
+            if executable is not None:
+                model_context["codex_executable"] = executable
+
+    def recover_schema_rejection() -> tuple[Any, bool]:
+        events_path = call_root / (
+            f"{_model_call_label(role, category, model_context)}.events.jsonl"
+        )
+        original_events_sha = _confirmed_schema_rejection_sha256(events_path)
+        if original_events_sha is None:
+            raise ModelResultPending(artifact_id)
+        try:
+            recovery_root = _schema_recovery_root(call_root)
+        except (DailyContentError, OSError) as exc:
+            raise ModelResultPending(
+                f"{artifact_id}:schema_recovery"
+            ) from exc
+        recovery_intent_path = recovery_root / "intent.json"
+        recovery_raw_path = recovery_root / MODEL_CALL_RAW_FILENAME
+        schema_sha = _verified_model_schema_sha256(
+            root,
+            role,
+            pending_detail=f"{artifact_id}:schema",
+        )
+        if recovery_intent_path.exists():
+            if not _schema_recovery_metadata_matches(
+                recovery_root / "metadata.json",
+                call_id=call_id,
+                original_events_sha=original_events_sha,
+                schema_sha=schema_sha,
+            ):
+                raise ModelResultPending(
+                    f"{artifact_id}:schema_recovery_metadata"
+                )
+            try:
+                _ensure_model_call_intent(
+                    recovery_intent_path,
+                    expected_intent,
+                )
+            except (DailyContentError, OSError) as exc:
+                raise ModelResultPending(
+                    f"{artifact_id}:schema_recovery_intent"
+                ) from exc
+            present, recovery_value = _load_model_call_raw(recovery_raw_path)
+            if not present:
+                raise ModelResultPending(artifact_id)
+            return recovery_value, False
+
+        prepare_launch()
+        try:
+            metadata = {
+                "schemaVersion": "NEWS_GRASP_MODEL_SCHEMA_RECOVERY_V1",
+                "reason": "invalid_json_schema",
+                "callId": call_id,
+                "originalEventsSha256": original_events_sha,
+                "schemaSha256": schema_sha,
+            }
+            _atomic_write_bytes(
+                recovery_root / "metadata.json",
+                _json_bytes(metadata),
+            )
+        except (OSError, TypeError, ValueError) as exc:
+            raise ModelResultPending(
+                f"{artifact_id}:schema_recovery_metadata"
+            ) from exc
+        try:
+            _ensure_model_call_intent(recovery_intent_path, expected_intent)
+        except (DailyContentError, OSError) as exc:
+            raise ModelResultPending(
+                f"{artifact_id}:schema_recovery_intent"
+            ) from exc
+        recovery_value = model_fn(
+            role=role,
+            repo_root=root,
+            issue_date=issue_date,
+            run_id=run_id,
+            category=category,
+            output_dir=recovery_root,
+            call_id=call_id,
+            input_hash=input_hash,
+            intent_path=recovery_intent_path,
+            raw_path=recovery_raw_path,
+            **model_context,
+        )
+        present, persisted_value = _load_model_call_raw(recovery_raw_path)
+        if not present:
+            try:
+                _atomic_write_bytes(
+                    recovery_raw_path,
+                    _json_bytes(recovery_value),
+                )
+            except (OSError, TypeError, ValueError) as exc:
+                raise DailyContentError(
+                    "MODEL_RAW_OUTPUT_PERSIST_FAILED"
+                ) from exc
+            present, persisted_value = _load_model_call_raw(recovery_raw_path)
+        if not present:
+            raise ModelResultPending(artifact_id)
+        return persisted_value, True
+
+    is_idempotent = reservation.get("idempotent") is True
+    status = str(reservation.get("status") or "reserved")
+    if is_idempotent and status == "completed":
+        raise DailyContentError(
+            f"MODEL_CALL_COMPLETED_CHECKPOINT_MISSING:{artifact_id}"
+        )
+    if is_idempotent:
+        if not intent_path.is_file() or _is_reparse_point(intent_path):
+            raise ModelResultPending(artifact_id)
+        _ensure_model_call_intent(intent_path, expected_intent)
+        present, raw_value = _load_model_call_raw(raw_path)
+        if not present:
+            return recover_schema_rejection()
+        return raw_value, False
+
+    if intent_path.exists():
+        _ensure_model_call_intent(intent_path, expected_intent)
+        present, raw_value = _load_model_call_raw(raw_path)
+        if present:
+            return raw_value, False
+        return recover_schema_rejection()
+    prepare_launch()
+    _ensure_model_call_intent(intent_path, expected_intent)
+    raw_value = model_fn(
+        role=role,
+        repo_root=root,
+        issue_date=issue_date,
+        run_id=run_id,
+        category=category,
+        output_dir=call_root,
+        call_id=call_id,
+        input_hash=input_hash,
+        intent_path=intent_path,
+        raw_path=raw_path,
+        **model_context,
+    )
+    present, persisted_value = _load_model_call_raw(raw_path)
+    if not present:
+        try:
+            _atomic_write_bytes(raw_path, _json_bytes(raw_value))
+        except (OSError, TypeError, ValueError) as exc:
+            raise DailyContentError("MODEL_RAW_OUTPUT_PERSIST_FAILED") from exc
+        present, persisted_value = _load_model_call_raw(raw_path)
+    if not present:
+        raise ModelResultPending(artifact_id)
+    return persisted_value, True
 
 
 def _validate_reporter(value: Any, *, category: str, issue_date: str, search_audit: Mapping[str, Any]) -> dict[str, Any]:
@@ -1970,7 +2288,32 @@ def produce_current_issue(
         )
         repair_plan = refresh_repair_plan()
 
+    codex_selection_lock = threading.Lock()
+    codex_selection_done = False
+    codex_selection_error: Exception | None = None
+    codex_executable: Path | None = None
+
+    def select_codex_executable() -> Path | None:
+        nonlocal codex_selection_done, codex_selection_error, codex_executable
+        if model_runner is not None:
+            return None
+        with codex_selection_lock:
+            if not codex_selection_done:
+                try:
+                    codex_executable = _resolve_codex_executable()
+                except Exception as exc:  # noqa: BLE001 - shared pre-entry failure.
+                    codex_selection_error = exc
+                codex_selection_done = True
+            if codex_selection_error is not None:
+                raise codex_selection_error
+            if codex_executable is None:
+                raise DailyContentError("CODEX_EXECUTABLE_UNAVAILABLE")
+            return codex_executable
+
     def consume_model_call(**request: Any) -> dict[str, Any]:
+        intent_path = _model_call_root(root, run_id, str(request["call_id"])) / "intent.json"
+        if not intent_path.exists():
+            select_codex_executable()
         if runtime_ledger is not None:
             current_admission = __import__(
                 "tools.news_grasp_direct_runtime",
@@ -2118,169 +2461,12 @@ def produce_current_issue(
         repair_plan = refresh_repair_plan()
 
         with _persistent_model_output_context(root, run_id) as output_dir:
-            def invoke_model_call(
-                *,
-                reservation: Mapping[str, Any],
-                role: str,
-                category: str | None,
-                call_id: str,
-                input_hash: str,
-                artifact_id: str,
-                **model_context: Any,
-            ) -> tuple[Any, bool]:
-                call_root = _model_call_root(root, run_id, call_id)
-                intent_path = call_root / "intent.json"
-                raw_path = call_root / MODEL_CALL_RAW_FILENAME
-                expected_intent = _model_call_intent(
-                    root=root,
-                    run_id=run_id,
-                    issue_date=issue_date,
-                    role=role,
-                    category=category,
-                    call_id=call_id,
-                    input_hash=input_hash,
+            def invoke_model_call(**kwargs: Any) -> tuple[Any, bool]:
+                return _invoke_persistent_model_call(
+                    root=root, run_id=run_id, issue_date=issue_date,
+                    codex_executable_provider=select_codex_executable,
+                    model_fn=model_fn, **kwargs,
                 )
-
-                def recover_schema_rejection() -> tuple[Any, bool]:
-                    events_path = call_root / (
-                        f"{_model_call_label(role, category, model_context)}.events.jsonl"
-                    )
-                    original_events_sha = _confirmed_schema_rejection_sha256(events_path)
-                    if original_events_sha is None:
-                        raise ModelResultPending(artifact_id)
-                    try:
-                        recovery_root = _schema_recovery_root(call_root)
-                    except (DailyContentError, OSError) as exc:
-                        raise ModelResultPending(
-                            f"{artifact_id}:schema_recovery"
-                        ) from exc
-                    recovery_intent_path = recovery_root / "intent.json"
-                    recovery_raw_path = recovery_root / MODEL_CALL_RAW_FILENAME
-                    schema_sha = _verified_model_schema_sha256(
-                        root,
-                        role,
-                        pending_detail=f"{artifact_id}:schema",
-                    )
-                    if recovery_intent_path.exists():
-                        if not _schema_recovery_metadata_matches(
-                            recovery_root / "metadata.json",
-                            call_id=call_id,
-                            original_events_sha=original_events_sha,
-                            schema_sha=schema_sha,
-                        ):
-                            raise ModelResultPending(
-                                f"{artifact_id}:schema_recovery_metadata"
-                            )
-                        try:
-                            _ensure_model_call_intent(
-                                recovery_intent_path,
-                                expected_intent,
-                            )
-                        except (DailyContentError, OSError) as exc:
-                            raise ModelResultPending(
-                                f"{artifact_id}:schema_recovery_intent"
-                            ) from exc
-                        present, recovery_value = _load_model_call_raw(recovery_raw_path)
-                        if not present:
-                            raise ModelResultPending(artifact_id)
-                        return recovery_value, False
-
-                    try:
-                        metadata = {
-                            "schemaVersion": "NEWS_GRASP_MODEL_SCHEMA_RECOVERY_V1",
-                            "reason": "invalid_json_schema",
-                            "callId": call_id,
-                            "originalEventsSha256": original_events_sha,
-                            "schemaSha256": schema_sha,
-                        }
-                        _atomic_write_bytes(
-                            recovery_root / "metadata.json",
-                            _json_bytes(metadata),
-                        )
-                    except (OSError, TypeError, ValueError) as exc:
-                        raise ModelResultPending(
-                            f"{artifact_id}:schema_recovery_metadata"
-                        ) from exc
-                    try:
-                        _ensure_model_call_intent(recovery_intent_path, expected_intent)
-                    except (DailyContentError, OSError) as exc:
-                        raise ModelResultPending(
-                            f"{artifact_id}:schema_recovery_intent"
-                        ) from exc
-                    recovery_value = model_fn(
-                        role=role,
-                        repo_root=root,
-                        issue_date=issue_date,
-                        run_id=run_id,
-                        category=category,
-                        output_dir=recovery_root,
-                        call_id=call_id,
-                        input_hash=input_hash,
-                        intent_path=recovery_intent_path,
-                        raw_path=recovery_raw_path,
-                        **model_context,
-                    )
-                    present, persisted_value = _load_model_call_raw(recovery_raw_path)
-                    if not present:
-                        try:
-                            _atomic_write_bytes(
-                                recovery_raw_path,
-                                _json_bytes(recovery_value),
-                            )
-                        except (OSError, TypeError, ValueError) as exc:
-                            raise DailyContentError(
-                                "MODEL_RAW_OUTPUT_PERSIST_FAILED"
-                            ) from exc
-                        present, persisted_value = _load_model_call_raw(recovery_raw_path)
-                    if not present:
-                        raise ModelResultPending(artifact_id)
-                    return persisted_value, True
-
-                is_idempotent = reservation.get("idempotent") is True
-                status = str(reservation.get("status") or "reserved")
-                if is_idempotent and status == "completed":
-                    raise DailyContentError(
-                        f"MODEL_CALL_COMPLETED_CHECKPOINT_MISSING:{artifact_id}"
-                    )
-                if is_idempotent:
-                    if not intent_path.is_file() or _is_reparse_point(intent_path):
-                        raise ModelResultPending(artifact_id)
-                    _ensure_model_call_intent(intent_path, expected_intent)
-                    present, raw_value = _load_model_call_raw(raw_path)
-                    if not present:
-                        return recover_schema_rejection()
-                    return raw_value, False
-
-                if intent_path.exists():
-                    _ensure_model_call_intent(intent_path, expected_intent)
-                    present, raw_value = _load_model_call_raw(raw_path)
-                    if present:
-                        return raw_value, False
-                    return recover_schema_rejection()
-                _ensure_model_call_intent(intent_path, expected_intent)
-                raw_value = model_fn(
-                    role=role,
-                    repo_root=root,
-                    issue_date=issue_date,
-                    run_id=run_id,
-                    category=category,
-                    output_dir=call_root,
-                    call_id=call_id,
-                    input_hash=input_hash,
-                    intent_path=intent_path,
-                    raw_path=raw_path,
-                    **model_context,
-                )
-                present, persisted_value = _load_model_call_raw(raw_path)
-                if not present:
-                    try:
-                        _atomic_write_bytes(raw_path, _json_bytes(raw_value))
-                    except (OSError, TypeError, ValueError) as exc:
-                        raise DailyContentError("MODEL_RAW_OUTPUT_PERSIST_FAILED") from exc
-                    present, persisted_value = _load_model_call_raw(raw_path)
-                if not present:
-                    raise ModelResultPending(artifact_id)
-                return persisted_value, True
 
             reporter_rows: dict[str, dict[str, Any]] = {}
             reporter_checkpoints: dict[str, dict[str, Any]] = {}
