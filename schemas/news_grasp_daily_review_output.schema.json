@@ -1,0 +1,32 @@
+{
+  "type": "object", "additionalProperties": false,
+  "required": ["scores", "findings"],
+  "properties": {
+    "scores": {
+      "type": "object", "additionalProperties": false,
+      "required": ["theme_specific_insight", "evidence_depth", "causal_coherence", "counterevidence", "decision_utility", "dialogue_naturalness", "relation_map_utility"],
+      "properties": {
+        "theme_specific_insight": {"type": "integer", "minimum": 1, "maximum": 5},
+        "evidence_depth": {"type": "integer", "minimum": 1, "maximum": 5},
+        "causal_coherence": {"type": "integer", "minimum": 1, "maximum": 5},
+        "counterevidence": {"type": "integer", "minimum": 1, "maximum": 5},
+        "decision_utility": {"type": "integer", "minimum": 1, "maximum": 5},
+        "dialogue_naturalness": {"type": "integer", "minimum": 1, "maximum": 5},
+        "relation_map_utility": {"type": "integer", "minimum": 1, "maximum": 5}
+      }
+    },
+    "findings": {
+      "type": "object", "additionalProperties": false,
+      "required": ["theme_specific_insight", "evidence_depth", "causal_coherence", "counterevidence", "decision_utility", "dialogue_naturalness", "relation_map_utility"],
+      "properties": {
+        "theme_specific_insight": {"type": "string"},
+        "evidence_depth": {"type": "string"},
+        "causal_coherence": {"type": "string"},
+        "counterevidence": {"type": "string"},
+        "decision_utility": {"type": "string"},
+        "dialogue_naturalness": {"type": "string"},
+        "relation_map_utility": {"type": "string"}
+      }
+    }
+  }
+}

@@ -136,13 +136,18 @@ def build_daily_artifact_dag(categories: Sequence[str]) -> dict[str, dict[str, A
         producer_kind="deterministic",
         owner="deepdive_materializer",
     )
+    dag["deepdive_evidence"] = _node(
+        depends_on=("deepdive_article", "deepdive_dialogue"),
+        producer_kind="model",
+        owner="deepdive_review",
+    )
     dag["deepdive_html"] = _node(
-        depends_on=("deepdive_article",),
+        depends_on=("deepdive_article", "deepdive_evidence"),
         producer_kind="deterministic",
         owner="site_builder",
     )
     dag["deepdive_audio"] = _node(
-        depends_on=("deepdive_dialogue",),
+        depends_on=("deepdive_dialogue", "deepdive_evidence"),
         producer_kind="deterministic",
         owner="deepdive_audio_builder",
     )
@@ -152,7 +157,7 @@ def build_daily_artifact_dag(categories: Sequence[str]) -> dict[str, dict[str, A
         owner="deepdive_audio_builder",
     )
     dag["deepdive_video"] = _node(
-        depends_on=("deepdive_audio", "deepdive_dialogue"),
+        depends_on=("deepdive_audio", "deepdive_dialogue", "deepdive_evidence"),
         producer_kind="deterministic",
         owner="deepdive_video_builder",
     )

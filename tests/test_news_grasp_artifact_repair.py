@@ -75,9 +75,10 @@ def test_quality_failure_repairs_only_root_and_dirty_downstream() -> None:
     assert actions["reporter:ai"] == "repair_model"
     assert actions["editor"] == "repair_model"
     assert actions["deepdive_model"] == "repair_model"
+    assert actions["deepdive_evidence"] == "repair_model"
     assert actions["daily_audio"] == "rebuild_deterministic"
     assert actions["youtube_daily"] == "reconcile_external"
-    assert plan["modelCallsRequired"] == 3
+    assert plan["modelCallsRequired"] == 4
     assert plan["nextArtifactId"] == "reporter:ai"
 
 
@@ -124,7 +125,7 @@ def test_initial_five_category_plan_counts_three_reporter_shards() -> None:
         failures=[],
     )
 
-    assert plan["modelCallsRequired"] == 5
+    assert plan["modelCallsRequired"] == 6
 
 
 def test_repair_plan_persistence_is_atomic_and_hash_verified(tmp_path: Path) -> None:

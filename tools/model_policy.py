@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """News-Grasp の Codex モデル選定ポリシー。"""
 from __future__ import annotations
+from typing import Any, Mapping
 
 LUNA_MODEL = "gpt-5.6-luna"
 LUNA_REASONING = "max"
@@ -8,9 +9,9 @@ LUNA_REASONING = "max"
 DEFAULT_MODEL_POLICY: dict[str, dict[str, object]] = {
     "reporter": {
         "default": LUNA_MODEL,
-        "escalate": LUNA_MODEL,
+        "escalate": "gpt-5.6-sol",
         "selection_variant": "reporter-56-luna-max",
-        "selection_combo": "luna-max-unified",
+        "selection_combo": "luna-reporter-sol-quality-repair",
         "selection_summary": "build/model-comparison-20260715-luna-high-replacement/summary.json",
         "selection_source": "luna_max_scheduled_direct_mainline_2026_08_30",
         "reasoning": LUNA_REASONING,
@@ -53,17 +54,18 @@ DEFAULT_MODEL_POLICY: dict[str, dict[str, object]] = {
         ],
     },
     "newsroom_editor": {
-        "default": LUNA_MODEL,
-        "escalate": LUNA_MODEL,
+        "default": "gpt-5.6-sol",
+        "escalate": "gpt-5.6-sol",
         "selection_status": "selected",
-        "selection_variant": "newsroom-editor-56-luna-max",
-        "quality_leader_variant": "newsroom-editor-56-luna-max",
-        "selection_summary": "build/model-comparison-20260715-luna-high-replacement/summary.json",
+        "selection_variant": "newsroom-editor-56-sol-max",
+        "quality_leader_variant": "newsroom-editor-56-sol-max",
+        "selection_summary": "",
+        "previous_selection_summary": "build/model-comparison-20260715-luna-high-replacement/summary.json",
         "safety_summary": "build/model-eval-5.6/newsroom-append-safety/summary.json",
-        "selection_source": "luna_max_scheduled_direct_mainline_2026_08_30",
+        "selection_source": "role_separated_quality_recovery_2026_09_07",
         "previous_selection_source": "tts_script_quality_override_2026_07_02",
         "candidate_variants": [
-            "newsroom-editor-56-luna-max",
+            "newsroom-editor-56-sol-max",
         ],
         "reasoning": LUNA_REASONING,
         "escalate_reasoning": LUNA_REASONING,
@@ -83,11 +85,40 @@ DEFAULT_MODEL_POLICY: dict[str, dict[str, object]] = {
     },
     "deepdive": {
         "default": "gpt-5.6-sol",
+        "escalate": "gpt-5.6-sol",
+        "escalate_reasoning": "max",
         "selection_summary": "build/model-eval-5.6/deepdive-triad-judge/summary.json",
         "selection_source": "weighted_triad_benchmark_2026_07_10",
         "reasoning": "high",
     },
+    "daily_narration": {
+        "default": LUNA_MODEL, "reasoning": LUNA_REASONING,
+        "escalate": "gpt-5.6-sol", "escalate_reasoning": "max",
+        "selection_source": "bounded_narration_repair_2026_09_07",
+    },
+    "deepdive_review": {
+        "default": "gpt-5.6-sol", "reasoning": "max",
+        "selection_source": "independent_value_review_2026_09_07",
+    },
 }
+
+
+def select_daily_model_config(role: str, *, repair_feedback: Mapping[str, Any] | None = None) -> dict[str, str]:
+    """直接dailyのモデル・effortを役割正本から一緒に解決する。"""
+    roles = {'reporter': 'reporter', 'reporter_shard': 'reporter',
+             'editor': 'newsroom_editor', 'daily_narration': 'daily_narration',
+             'deepdive': 'deepdive', 'deepdive_review': 'deepdive_review'}
+    if role not in roles:
+        raise ValueError('DAILY_MODEL_ROLE_UNKNOWN')
+    policy = DEFAULT_MODEL_POLICY[roles[role]]
+    repair = bool(repair_feedback)
+    if role == 'daily_narration':
+        repair = bool(repair_feedback and repair_feedback.get('failure'))
+    model = str(policy.get('escalate', policy['default']) if repair else policy['default'])
+    effort = str(policy.get('escalate_reasoning', policy['reasoning']) if repair else policy['reasoning'])
+    if not model.strip() or effort not in {'none', 'low', 'medium', 'high', 'xhigh', 'max'}:
+        raise ValueError('DAILY_MODEL_POLICY_INVALID')
+    return {'model': model, 'reasoning': effort, 'policy_role': roles[role]}
 
 
 def should_escalate_reporter(

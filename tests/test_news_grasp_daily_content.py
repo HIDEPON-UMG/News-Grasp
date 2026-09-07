@@ -28,7 +28,8 @@ def _record(category: str) -> dict[str, object]:
         "source": "Example News",
         "thumb": f"https://example.com/{category}/image.jpg",
         "summary": "事実、背景、実務への影響を一次情報に沿って整理した。",
-        "bullets": ["確認済みの事実", "背景と制約", "次に観測する点"],
+        "score": 90,
+        "bullets": ["【事実・概要】：確認済みの事実を整理する。", "【背景・要点】：背景と制約を整理する。", "【影響・展望】：次の観測点を示す。"],
         "published_date": ISSUE_DATE,
         "date_evidence_source": "canonical-page-date",
         "date_evidence_observed": ISSUE_DATE,
@@ -54,6 +55,7 @@ def _digest(category: str) -> str:
         f"categoryId: {category}\n"
         "---\n\n"
         f"### [90] {category}の重要ニュース\n\n"
+        f"📅 {ISSUE_DATE} | 📰 Example News | 🔗 [元記事](https://example.com/{category}/article)\n\n"
         f"![thumb](https://example.com/{category}/image.jpg)\n\n"
         "- 【事実・概要】：確認済みの事実を整理する。\n"
         "- 【背景・要点】：背景と制約を整理する。\n"
@@ -92,6 +94,14 @@ def _summary() -> str:
 
 
 def _deepdive() -> dict[str, str]:
+    relation = {"title":"監査義務と供給条件", "nodes":[
+        {"id":"regulator","label":"監督当局","group":"監督"},
+        {"id":"supplier","label":"供給企業","group":"供給"}],
+        "edges":[{"from":"regulator","to":"supplier","label":"年1回の監査報告を義務化","kind":"規制"}],
+        "source":"https://example.com/ai/article"}
+    claim = {"claimId":"audit-obligation", "claim":"供給企業に監査報告義務が生じる",
+        "sourceUrl":"https://example.com/ai/article",
+        "evidence":"一次資料では供給企業に2026年9月から年1回の監査報告を義務付けている。"}
     return {
         "article_markdown": (
             "---\n"
@@ -107,6 +117,8 @@ def _deepdive() -> dict[str, str]:
             "## 背景\n\n[[制度]]と**実装**の間には__責任分界__がある。\n\n"
             "## 深掘り\n\n[[企業]]は**運用条件**を定め、__検証可能性__を残す必要がある。\n\n"
             "## 注目点\n\n[[利用者]]への**説明**と__継続観測__が重要になる。\n\n"
+            "```relations\n" + json.dumps(relation, ensure_ascii=False) + "\n```\n\n"
+            "<!-- claim-source: " + json.dumps(claim, ensure_ascii=False) + " -->\n\n"
             "## 参考リンク\n\n- [一次情報](https://example.com/ai/article)\n"
         ),
         "dialogue_markdown": (
@@ -117,6 +129,24 @@ def _deepdive() -> dict[str, str]:
             "---\n\n## 台本\n\n若手: 何が論点ですか。\n\n先輩: 制度と実装の責任分界だ。\n"
         ),
     }
+
+
+def _review() -> dict:
+    from tools.deepdive_quality import DEEPDIVE_QUALITY_REVIEW_AXES
+    return {"scores":{axis:4 for axis in DEEPDIVE_QUALITY_REVIEW_AXES},
+        "findings":{axis:"監査報告義務が供給条件を変える根拠と当事者の関係を検査した。"
+                    for axis in DEEPDIVE_QUALITY_REVIEW_AXES}}
+
+
+@pytest.fixture(autouse=True)
+def _fake_daily_provenance(monkeypatch):
+    """生成・再開のunitではHTTP境界だけを既知の出典本文へ置換する。"""
+    import hashlib
+    from tools import deepdive_quality
+    text = "一次資料では供給企業に2026年9月から年1回の監査報告を義務付けている。"
+    monkeypatch.setattr(deepdive_quality, "_fetch_one", lambda url, **_: {
+        "url":url, "finalUrl":url, "httpStatus":200, "fetchedAt":"2026-09-07T06:00:00+09:00",
+        "contentSha256":hashlib.sha256(text.encode()).hexdigest(), "observedText":text})
 
 
 def _candidate_provider(category: str, _issue_date: str) -> tuple[list[dict], dict]:
@@ -163,6 +193,8 @@ def _model_runner(*, role: str, category: str | None = None, **context):
         }
     if role == "deepdive":
         return _deepdive()
+    if role == "deepdive_review":
+        return _review()
     raise AssertionError(role)
 
 
@@ -240,6 +272,8 @@ def test_five_categories_use_three_reporter_shards_and_five_total_model_calls(
             }
         if role == "deepdive":
             return _deepdive()
+        if role == "deepdive_review":
+            return _review()
         raise AssertionError(role)
 
     (tmp_path / "data").mkdir()
@@ -373,6 +407,8 @@ def test_shard_failure_preserves_green_sibling_and_repairs_only_bad_category(
             }
         if role == "deepdive":
             return _deepdive()
+        if role == "deepdive_review":
+            return _review()
         raise AssertionError(role)
 
     result = produce_current_issue(
@@ -386,7 +422,7 @@ def test_shard_failure_preserves_green_sibling_and_repairs_only_bad_category(
         **binding,
     )
 
-    assert repair_calls == [("reporter", "game"), ("editor", None), ("deepdive", None)]
+    assert repair_calls == [("reporter", "game"), ("editor", None), ("deepdive", None), ("deepdive_review", None)]
     assert result["reused_model_artifacts"] == [
         "reporter:fx",
         "reporter:ai",
@@ -627,8 +663,11 @@ def test_editor_failure_reuses_all_reporters_on_repair(tmp_path: Path) -> None:
     assert result["repaired_model_artifacts"] == ["editor"]
 
 
+@pytest.mark.parametrize("drift_kind", ["summary", "thumbnail", "thumbnail_restart", "thumbnail_referenced"])
 def test_runtime_ledger_repairs_only_drifted_artifact_without_model_recall(
     tmp_path: Path,
+    drift_kind: str,
+    monkeypatch,
 ) -> None:
     from tools import news_grasp_direct_runtime as runtime
     from tools import news_grasp_daily_content as content
@@ -714,7 +753,7 @@ def test_runtime_ledger_repairs_only_drifted_artifact_without_model_recall(
         derived_builder=derived,
         **binding,
     )
-    assert first["model_call_count"] == 4
+    assert first["model_call_count"] == 5
     articles = tmp_path / "data" / "articles.jsonl"
     first_rows = [json.loads(line) for line in articles.read_text(encoding="utf-8").splitlines()]
     assert first_rows[0] == history_row
@@ -723,7 +762,48 @@ def test_runtime_ledger_repairs_only_drifted_artifact_without_model_recall(
         _record("ai")["url"],
     }
     summary = tmp_path / "digest" / "Summary" / f"{ISSUE_DATE}.md"
-    summary.write_text("drifted", encoding="utf-8")
+    deepdive_path = tmp_path / "digest" / "DeepDive" / f"{ISSUE_DATE}-DeepDive.md"
+    original_deepdive = deepdive_path.read_bytes()
+    if drift_kind == "summary":
+        summary.write_text("drifted", encoding="utf-8")
+    else:
+        ledger = runtime.DailyArtifactLedger(store, run_id=run["run_id"], issue_date=ISSUE_DATE,
+            writer_lease=run["writer_lease"], fencing_token=run["fencing_token"])
+        checkpoints = ledger.list_checkpoints()
+        changed_category = "ai" if drift_kind == "thumbnail_referenced" else "fx"
+        row = checkpoints["reporter:" + changed_category]
+        payload = json.loads(json.dumps(row["payload"]))
+        old_thumb = payload["records"][0]["thumb"]
+        new_thumb = f"https://example.com/{changed_category}/verified-image.jpg"
+        payload["records"][0]["thumb"] = new_thumb
+        payload["digest_markdown"] = payload["digest_markdown"].replace(old_thumb, new_thumb)
+        ledger.write_checkpoint(artifact_id="reporter:" + changed_category, input_hash=row["inputHash"],
+            validator_id=row["validatorId"], payload=payload)
+        previous = checkpoints["content_completion"]
+        ledger.write_checkpoint(artifact_id="content_completion", input_hash=previous["inputHash"],
+            validator_id=previous["validatorId"],
+            payload={**previous["payload"], "dailyCardContractVersion": 0})
+
+    if drift_kind == "thumbnail_restart":
+        original_write = runtime.DailyArtifactLedger._write_checkpoints_in_transaction
+        def stop_after_commit(self, **kwargs):
+            result = original_write(self, **kwargs)
+            if kwargs.get("call_id") is None and "editor" in kwargs["artifacts"]:
+                raise content.ModelResultPending("fixture_stop_after_metadata_commit")
+            return result
+        monkeypatch.setattr(runtime.DailyArtifactLedger, "_write_checkpoints_in_transaction", stop_after_commit)
+        with pytest.raises(content.ModelResultPending, match="fixture_stop_after_metadata_commit"):
+            produce_current_issue(repo_root=tmp_path, issue_date=ISSUE_DATE, run_id=run["run_id"],
+                scheduled_categories=("fx", "ai"), candidate_provider=lambda *_: pytest.fail("再収集"),
+                model_runner=lambda **_: pytest.fail("再送"), derived_builder=derived, **binding)
+        monkeypatch.setattr(runtime.DailyArtifactLedger, "_write_checkpoints_in_transaction", original_write)
+
+    observed_review_calls = []
+    def no_generation(**kwargs):
+        if drift_kind == "thumbnail_referenced" and kwargs.get("role") == "deepdive_review":
+            observed_review_calls.append("deepdive_review")
+            return _review()
+        pytest.fail("model repeated")
 
     second = produce_current_issue(
         repo_root=tmp_path,
@@ -731,14 +811,21 @@ def test_runtime_ledger_repairs_only_drifted_artifact_without_model_recall(
         run_id=run["run_id"],
         scheduled_categories=("fx", "ai"),
         candidate_provider=lambda *_: pytest.fail("candidate provider repeated"),
-        model_runner=lambda **_: pytest.fail("model repeated"),
+        model_runner=no_generation,
         derived_builder=derived,
         **binding,
     )
 
     assert second["ok"] is True
-    assert second["model_call_count"] == 0
+    assert second["model_call_count"] == int(drift_kind == "thumbnail_referenced")
+    assert observed_review_calls == (["deepdive_review"] if drift_kind == "thumbnail_referenced" else [])
     assert summary.read_text(encoding="utf-8") == _summary()
+    assert deepdive_path.read_bytes() == (original_deepdive.replace(old_thumb.encode(), new_thumb.encode())
+        if drift_kind == "thumbnail_referenced" else original_deepdive)
+    if drift_kind.startswith("thumbnail"):
+        repaired_rows = [json.loads(line) for line in articles.read_text(encoding="utf-8").splitlines()]
+        current_fx = next(row for row in repaired_rows if row["date"] == ISSUE_DATE and row["genre"] == _record(changed_category)["genre"])
+        assert current_fx["thumb"] == new_thumb
 
     articles.write_bytes(b'{"invalid":\n')
     invalid_repair = produce_current_issue(
@@ -944,7 +1031,7 @@ def test_runtime_ledger_allows_required_content_after_75_minutes_without_budget_
     )
 
     assert result["ok"] is True
-    assert result["model_call_count"] == 4
+    assert result["model_call_count"] == 5
     assert result["reporter_call_count"] == 2
     assert admissions
     assert all(item["model_regeneration_allowed"] is False for item in admissions)
@@ -956,7 +1043,7 @@ def test_runtime_ledger_allows_required_content_after_75_minutes_without_budget_
         writer_lease=run["writer_lease"],
         fencing_token=run["fencing_token"],
     )
-    assert ledger.model_call_usage() == {"initial": 4, "repair": 0, "total": 4}
+    assert ledger.model_call_usage() == {"initial": 4, "repair": 1, "total": 5}
 
 
 def test_repair_scope_rejects_changes_outside_allowed_json_pointer() -> None:

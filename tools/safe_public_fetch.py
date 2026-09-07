@@ -15,6 +15,13 @@ from urllib.parse import urljoin, urlsplit
 MAX_DNS_ADDRESSES = 8
 
 
+def _remaining(deadline: float | None, maximum: Any = None) -> float:
+    remaining = 30.0 if deadline is None else deadline - time.monotonic()
+    if remaining <= 0:
+        raise TimeoutError("public_fetch_deadline_exceeded")
+    return min(remaining, float(maximum)) if isinstance(maximum, (int, float)) else remaining
+
+
 def resolve_public_http_endpoint(url: str) -> tuple[str, str, int, tuple[str, ...]]:
     """URLと公開address集合を一度だけ解決し、pin可能な形で返す。"""
     raw = str(url).strip()
@@ -107,33 +114,60 @@ class _PinnedHTTPSConnection(http.client.HTTPSConnection):
 
 
 class _PinnedHTTPHandler(urllib.request.HTTPHandler):
+    def __init__(self, *, deadline: float | None = None) -> None:
+        super().__init__()
+        self.deadline = deadline
+
     def http_open(self, req: urllib.request.Request):  # noqa: ANN201
+        req.timeout = _remaining(self.deadline, getattr(req, "timeout", None))
         _, _, port, addresses = resolve_public_http_endpoint(req.full_url)
+        req.timeout = _remaining(self.deadline, req.timeout)
         return self.do_open(lambda host, **kwargs: _PinnedHTTPConnection(host, addresses=addresses, pinned_port=port, **kwargs), req)
 
 
 class _PinnedHTTPSHandler(urllib.request.HTTPSHandler):
+    def __init__(self, *, context: Any = None, deadline: float | None = None) -> None:
+        super().__init__(context=context)
+        self.deadline = deadline
+
     def https_open(self, req: urllib.request.Request):  # noqa: ANN201
+        req.timeout = _remaining(self.deadline, getattr(req, "timeout", None))
         _, _, port, addresses = resolve_public_http_endpoint(req.full_url)
+        req.timeout = _remaining(self.deadline, req.timeout)
         context = self._context
         return self.do_open(lambda host, **kwargs: _PinnedHTTPSConnection(host, addresses=addresses, pinned_port=port, context=context, **kwargs), req)
 
 
 class _SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
+    max_redirections = 3
+    max_repeats = 1
+
+    def __init__(self, *, deadline: float | None = None) -> None:
+        super().__init__()
+        self.deadline = deadline
+
     def redirect_request(self, req: Any, fp: Any, code: int, msg: str, headers: Any, newurl: str):  # noqa: ANN401
+        req.timeout = _remaining(self.deadline, getattr(req, "timeout", None))
         validated = validate_public_http_url(urljoin(req.full_url, newurl))
+        req.timeout = _remaining(self.deadline, req.timeout)
         return super().redirect_request(req, fp, code, msg, headers, validated)
 
 
-def safe_urlopen(request: urllib.request.Request | str, *, timeout: float, context: Any = None):  # noqa: ANN201, ANN401
+def safe_urlopen(request: urllib.request.Request | str, *, timeout: float, context: Any = None,
+                 deadline: float | None = None):  # noqa: ANN201, ANN401
     """初期URLと各redirect先をpublic-address gateへ通して取得する。"""
     url = request.full_url if isinstance(request, urllib.request.Request) else str(request)
+    deadline = min(deadline, time.monotonic() + timeout) if deadline is not None else time.monotonic() + timeout
+    _remaining(deadline)
     validate_public_http_url(url)
-    handlers: list[Any] = [urllib.request.ProxyHandler({}), _SafeRedirectHandler(), _PinnedHTTPHandler(), _PinnedHTTPSHandler(context=context)]
+    timeout = _remaining(deadline, timeout)
+    handlers: list[Any] = [urllib.request.ProxyHandler({}), _SafeRedirectHandler(deadline=deadline),
+                           _PinnedHTTPHandler(deadline=deadline), _PinnedHTTPSHandler(context=context, deadline=deadline)]
     opener = urllib.request.build_opener(*handlers)
     response = opener.open(request, timeout=timeout)
     try:
         validate_public_http_url(response.geturl())
+        _remaining(deadline)
     except Exception:
         response.close()
         raise

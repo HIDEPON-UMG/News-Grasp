@@ -22,6 +22,8 @@ from tests.test_news_grasp_daily_content import (
     _record,
     _summary,
     _narration,
+    _review,
+    _fake_daily_provenance,
 )
 
 
@@ -116,9 +118,11 @@ def _derived_builder(tmp_path: Path):
     return build
 
 
+@pytest.mark.parametrize("crash_artifact", ["deepdive_model", "deepdive_evidence"])
 def test_same_run_recovers_persisted_raw_result_without_model_or_repair_reservation(
     tmp_path: Path,
     monkeypatch,
+    crash_artifact,
 ) -> None:
     """checkpoint直前終了後はrawを再検証し、同じcallを再送しない。"""
 
@@ -189,6 +193,8 @@ def test_same_run_recovers_persisted_raw_result_without_model_or_repair_reservat
                 "https://example.com/ai/",
                 "https://example.com/fx/",
             )
+        elif role == "deepdive_review":
+            payload = _review()
         else:
             raise AssertionError(role)
         _write_call_intent_and_raw(
@@ -209,7 +215,7 @@ def test_same_run_recovers_persisted_raw_result_without_model_or_repair_reservat
                 "SELECT artifact_id FROM daily_model_calls WHERE run_id=? AND call_id=?",
                 (run["run_id"], call_id),
             ).fetchone()
-        if row is not None and str(row[0]) == "deepdive_model":
+        if row is not None and str(row[0]) == crash_artifact:
             raise SystemExit("simulated_process_end_after_raw_persist")
         return real_commit(self, call_id=call_id, artifacts=artifacts)
 
@@ -229,7 +235,10 @@ def test_same_run_recovers_persisted_raw_result_without_model_or_repair_reservat
             fencing_token=run["fencing_token"],
         )
 
-    assert model_calls == [("reporter", "fx"), ("editor", None), ("deepdive", None)]
+    expected_initial_calls = [("reporter", "fx"), ("editor", None), ("deepdive", None)]
+    if crash_artifact == "deepdive_evidence":
+        expected_initial_calls.append(("deepdive_review", None))
+    assert model_calls == expected_initial_calls
     first_usage = runtime.DailyArtifactLedger(
         store,
         run_id=run["run_id"],
@@ -237,13 +246,16 @@ def test_same_run_recovers_persisted_raw_result_without_model_or_repair_reservat
         writer_lease=run["writer_lease"],
         fencing_token=run["fencing_token"],
     ).model_call_usage()
-    assert first_usage == {"initial": 3, "repair": 0, "total": 3}
+    reviewed_before_stop = int(crash_artifact == "deepdive_evidence")
+    assert first_usage == {"initial": 3, "repair": reviewed_before_stop, "total": 3 + reviewed_before_stop}
 
     monkeypatch.setattr(runtime.DailyArtifactLedger, "commit_model_call", real_commit)
     resume_model_calls: list[tuple[str, str | None]] = []
 
     def no_model_on_resume(**kwargs: Any):
         resume_model_calls.append((str(kwargs.get("role")), kwargs.get("category")))
+        if kwargs.get("role") == "deepdive_review" and crash_artifact == "deepdive_model":
+            return _review()
         pytest.fail("model was re-sent during raw-result recovery")
 
     resumed = produce_current_issue(
@@ -260,15 +272,15 @@ def test_same_run_recovers_persisted_raw_result_without_model_or_repair_reservat
     )
 
     assert resumed["ok"] is True
-    assert resumed["model_call_count"] == 0
-    assert resume_model_calls == []
+    assert resumed["model_call_count"] == 1 - reviewed_before_stop
+    assert resume_model_calls == ([] if reviewed_before_stop else [("deepdive_review", None)])
     assert runtime.DailyArtifactLedger(
         store,
         run_id=run["run_id"],
         issue_date=ISSUE_DATE,
         writer_lease=run["writer_lease"],
         fencing_token=run["fencing_token"],
-    ).model_call_usage() == {"initial": 3, "repair": 0, "total": 3}
+    ).model_call_usage() == {"initial": 3, "repair": 1, "total": 4}
 
 
 def test_intent_only_result_stays_pending_without_repair_or_failure_checkpoint(
@@ -467,6 +479,8 @@ def _prepare_schema_recovery_for_adversarial_check(tmp_path: Path) -> dict[str, 
                 raise SystemExit("simulated_editor_schema_rejection")
             assert Path(context["raw_path"]).parent.name == "schema-recovery"
             raise SystemExit("simulated_schema_recovery_intent_only")
+        if role == "deepdive_review":
+            return _review()
         if role == "deepdive":
             payload = _deepdive()
             payload["article_markdown"] = payload["article_markdown"].replace(
@@ -901,6 +915,8 @@ def test_confirmed_editor_schema_rejection_recovers_once_in_same_run(
             recovery_root = Path(context["raw_path"]).parent
             assert recovery_root.name == "schema-recovery"
             raise SystemExit("simulated_schema_recovery_intent_only")
+        if role == "deepdive_review":
+            return _review()
         if role == "deepdive":
             payload = _deepdive()
             payload["article_markdown"] = payload["article_markdown"].replace(
@@ -1000,7 +1016,7 @@ def test_confirmed_editor_schema_rejection_recovers_once_in_same_run(
     )
 
     assert resumed["ok"] is True
-    assert [call["role"] for call in calls] == ["reporter", "editor", "editor", "deepdive"]
+    assert [call["role"] for call in calls] == ["reporter", "editor", "editor", "deepdive", "deepdive_review"]
     metadata_files = [
         path
         for path in recovery_root.glob("*.json")
@@ -1018,4 +1034,4 @@ def test_confirmed_editor_schema_rejection_recovers_once_in_same_run(
         writer_lease=run["writer_lease"],
         fencing_token=run["fencing_token"],
     )
-    assert ledger.model_call_usage() == {"initial": 3, "repair": 0, "total": 3}
+    assert ledger.model_call_usage() == {"initial": 3, "repair": 1, "total": 4}

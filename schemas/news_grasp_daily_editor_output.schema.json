@@ -13,8 +13,9 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["date", "genre", "title", "title_ja", "url", "source", "thumb", "summary", "bullets", "published_date", "date_evidence_source", "seen_at"],
+        "required": ["date", "genre", "title", "title_ja", "url", "source", "thumb", "summary", "bullets", "score", "published_date", "date_evidence_source", "seen_at"],
         "properties": {
+          "score": {"type": "integer", "minimum": 0, "maximum": 100},
           "date": {"type": "string"},
           "genre": {"type": "string"},
           "title": {"type": "string", "minLength": 1},

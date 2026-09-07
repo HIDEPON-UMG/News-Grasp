@@ -1119,22 +1119,33 @@ def validate_claim_source_fit(
 def _validate_provenance_with_evidence(
     article_path: Path,
     manifest_path: Path,
+    *,
+    article_bytes_override: bytes | None = None,
+    manifest_bytes_override: bytes | None = None,
 ) -> tuple[list[str], list[dict[str, str]]]:
     """同じ読取bytesでprovenance判定とSHA-256証跡を生成する。"""
 
     issues: list[str] = []
     evidence: list[dict[str, str]] = []
-    article = Path(article_path).resolve()
-    manifest = Path(manifest_path).resolve()
+    article = Path(article_path).absolute()
+    manifest = Path(manifest_path).absolute()
     if not article.is_file():
         return ["DEEPDIVE_ARTICLE_MISSING"], evidence
     if not manifest.is_file():
         return ["DEEPDIVE_PROVENANCE_MISSING"], evidence
     try:
-        article_bytes = article.read_bytes()
-        manifest_bytes = manifest.read_bytes()
+        from tools.news_grasp_deterministic_builders import _safe_regular_bytes, NewsGraspBuilderError
+        from tools.news_grasp_daily_content import _has_reparse_ancestor
+        if _has_reparse_ancestor(article) or _has_reparse_ancestor(manifest):
+            return ["DEEPDIVE_PROVENANCE_UNSAFE_INPUT"], evidence
+        article_bytes = article_bytes_override if article_bytes_override is not None else _safe_regular_bytes(article, maximum=MAX_OBSERVED_BYTES)
+        manifest_bytes = manifest_bytes_override if manifest_bytes_override is not None else _safe_regular_bytes(manifest, maximum=MAX_OBSERVED_BYTES)
+        if len(article_bytes) > MAX_OBSERVED_BYTES or len(manifest_bytes) > MAX_OBSERVED_BYTES:
+            return ["DEEPDIVE_PROVENANCE_UNSAFE_INPUT"], evidence
         article_text = article_bytes.decode("utf-8-sig")
         value = json.loads(manifest_bytes.decode("utf-8-sig"))
+    except NewsGraspBuilderError:
+        return ["DEEPDIVE_PROVENANCE_UNSAFE_INPUT"], evidence
     except (OSError, UnicodeError, json.JSONDecodeError):
         return ["DEEPDIVE_PROVENANCE_INVALID"], evidence
     if not isinstance(value, dict):
@@ -1447,16 +1458,25 @@ def capture_provenance(
     article_path: Path,
     output_path: Path,
     timeout: float = 20.0,
+    article_bytes_override: bytes | None = None,
 ) -> dict[str, Any]:
     """記事内URLを重複排除して一回ずつ取得し、manifestを作る。"""
 
-    article = Path(article_path).resolve(strict=True)
-    locations = _article_url_locations(article.read_text(encoding="utf-8-sig"))
+    from tools.news_grasp_deterministic_builders import _safe_regular_bytes
+    from tools.news_grasp_daily_content import _has_reparse_ancestor
+    article = Path(article_path).absolute()
+    if _has_reparse_ancestor(article):
+        raise DeepDiveQualityError("DEEPDIVE_PROVENANCE_UNSAFE_INPUT")
+    article_bytes = article_bytes_override if article_bytes_override is not None else _safe_regular_bytes(article, maximum=MAX_OBSERVED_BYTES)
+    if len(article_bytes) > MAX_OBSERVED_BYTES:
+        raise DeepDiveQualityError("DEEPDIVE_PROVENANCE_UNSAFE_INPUT")
+    locations = _article_url_locations(article_bytes.decode("utf-8-sig"))
     records = [_fetch_one(url, timeout=timeout) for url in sorted(locations)]
     return build_provenance_manifest(
         article_path=article,
         fetch_records=records,
         output_path=output_path,
+        article_bytes_override=article_bytes,
     )
 
 

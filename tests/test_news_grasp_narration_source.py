@@ -84,8 +84,8 @@ def test_audio_only_repair_keeps_editor_and_deepdive_reusable():
 def test_editor_and_narration_share_one_initial_call():
     from tools.news_grasp_repair_registry import build_repair_plan
     plan = build_repair_plan(issue_date=DAY, run_id="new-run", categories=("ai",), checkpoints={}, failures=[])
-    # Reporter 1、Editorと台本 1、DeepDive 1。独立reviewは別の統合作業。
-    assert plan["modelCallsRequired"] == 3
+    # Reporter 1、Editorと台本 1、DeepDive 1、独立review 1。台本単独callは増えない。
+    assert plan["modelCallsRequired"] == 4
 
 
 def test_editor_validates_new_audio_without_invalidating_legacy_content(tmp_path, monkeypatch):

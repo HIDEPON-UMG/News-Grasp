@@ -81,7 +81,10 @@ bounded append-only journalを同じprocessで所有して既存六operationを�
 モデル呼出しは実呼出し前の製品内永続予約で、通常5カテゴリの初回5回
 （reporter shard 3、editor 1、DeepDive 1）と差分修復4回、合計最大9回を制御する。
 既存artifact ledgerの配分を再利用し、再開でリセットしない。
+DeepDiveの独立reviewもこの既存repair枠を使い、同じ記事・対談・根拠への採点だけを取り直さない。不合格なら指摘が作用する本文を修復し、入力が変わった後に再検証する。
 90分SLOの超過と品質不合格を分け、DeepDiveの長時間生成だけを不合格にしない。
+
+direct本線の役割別モデルとeffortは `tools/model_policy.py` の `select_daily_model_config` を唯一の選択正本とし、呼出し側で別の固定値へ置換しない。通常ReporterはLuna Max、Reporterの品質修復と編集長はSol Max、独立した台本修復はLuna Max（実品質failure後はSol Max）、DeepDive生成は既存選定のSol High（品質修復時はMax）、独立DeepDive reviewはSol Maxを使う。この組合せは役割責務からの今回の設計判断であり、旧Luna統一ベンチマークを新しい組合せの品質・速度・費用実測へ読み替えない。単価・推定費用・実token消費・90分SLOの実績を分けて確認する。
 
 既存proof/P08の安全性修正は保持するが、新入口の実行必須依存にはしない。
 static→contract→実Windows simulation→resumeを満たした後の最終NoPublish一回、

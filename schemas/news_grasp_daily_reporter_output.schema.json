@@ -14,8 +14,9 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["date", "genre", "title", "title_ja", "url", "source", "thumb", "summary", "bullets", "published_date", "date_evidence_source", "seen_at"],
+        "required": ["date", "genre", "title", "title_ja", "url", "source", "thumb", "summary", "bullets", "score", "published_date", "date_evidence_source", "seen_at"],
         "properties": {
+          "score": {"type": "integer", "minimum": 0, "maximum": 100},
           "date": {"type": "string"},
           "genre": {"type": "string"},
           "title": {"type": "string", "minLength": 1},
@@ -35,8 +36,12 @@
     "search_audit": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["queries", "raw_results_total", "candidates_total", "selected_total"],
+      "required": ["queries", "raw_results_total", "candidates_total", "selected_total", "quality_shortfall_reason", "dropped", "coverage_terms_checked"],
       "properties": {
+        "quality_shortfall_reason": {"type": "string"},
+        "coverage_terms_checked": {"type": "array", "items": {"type": "string"}},
+        "dropped": {"type": "array", "items": {"type": "object", "additionalProperties": false,
+          "required": ["url", "reason"], "properties": {"url": {"type": "string"}, "reason": {"type": "string", "minLength": 1}}}},
         "queries": {"type": "array", "items": {"type": "string"}},
         "raw_results_total": {"type": "integer"},
         "candidates_total": {"type": "integer"},

@@ -516,7 +516,8 @@ def validate_digest_source_freshness(digest_root: Path, issue: date) -> list[str
     return errs
 
 
-def validate_digest_article_counts(digest_root: Path, issue: date, *, min_articles: int = 5) -> list[str]:
+def validate_digest_article_counts(digest_root: Path, issue: date, *, min_articles: int = 5,
+                                  audit_root: Path | None = None) -> list[str]:
     """当日カテゴリ digest が5件目標または品質理由付き不足を満たすか検査する。"""
     errs: list[str] = []
     for md in sorted(digest_root.glob(f"*/*{issue.isoformat()}*.md")):
@@ -528,6 +529,9 @@ def validate_digest_article_counts(digest_root: Path, issue: date, *, min_articl
             errs.append(
                 f"{md}: has 0 article(s); category digest is not an article page."
             )
+    errs.extend(validate_search_audit_for_shortfall(
+        digest_root=digest_root, audit_root=audit_root or digest_root.parent / "data" / "search_audit",
+        issue=issue, min_articles=min_articles))
     return errs
 
 
@@ -552,7 +556,7 @@ def validate_search_audit_for_shortfall(
     """5件未満カテゴリは、検索監査ログで収集漏れでないことを検査する。"""
     errs: list[str] = []
     for md in sorted(digest_root.glob(f"*/*{issue.isoformat()}*.md")):
-        if md.parent.name in {"Summary", "DeepDive"}:
+        if not _scheduled_digest_file(md, issue):
             continue
         fm, body = parse_frontmatter(md.read_text(encoding="utf-8-sig", errors="replace"))
         articles_count = len(parse_articles(body))
@@ -967,12 +971,7 @@ def validate_daily_quality(
     errs.extend(validate_card_emphasis_coverage(digest_root, issue))
     errs.extend(validate_digest_style_quality(digest_root, issue))
     errs.extend(validate_issue_schedule(digest_root, issue))
-    errs.extend(validate_digest_article_counts(digest_root, issue))
-    errs.extend(validate_search_audit_for_shortfall(
-        digest_root=digest_root,
-        audit_root=audit_root,
-        issue=issue,
-    ))
+    errs.extend(validate_digest_article_counts(digest_root, issue, audit_root=audit_root))
     errs.extend(validate_issue_thumbnail_coverage(jsonl_path, issue))
     errs.extend(validate_digest_article_thumbnail_coverage(digest_root, issue))
     errs.extend(validate_digest_source_freshness(digest_root, issue))

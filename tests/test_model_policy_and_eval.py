@@ -32,7 +32,7 @@ def _record(cat: str, idx: int) -> dict:
 
 def test_default_model_policy_uses_evaluated_reporter_selection() -> None:
     assert DEFAULT_MODEL_POLICY["reporter"]["default"] == "gpt-5.6-luna"
-    assert DEFAULT_MODEL_POLICY["reporter"]["escalate"] == "gpt-5.6-luna"
+    assert DEFAULT_MODEL_POLICY["reporter"]["escalate"] == "gpt-5.6-sol"
     assert DEFAULT_MODEL_POLICY["reporter"]["reasoning"] == "max"
     assert DEFAULT_MODEL_POLICY["reporter"]["escalate_reasoning"] == "max"
     assert "fx" not in DEFAULT_MODEL_POLICY["reporter"].get("always_escalate_categories", [])
@@ -141,15 +141,16 @@ def test_repair_model_escalates_complex_patterns_to_luna_max() -> None:
 
 
 def test_newsroom_editor_policy_uses_luna_max() -> None:
-    """編集長生成は Luna の max effort へ統一する。"""
+    """既存test IDを維持し、編集長が現在の役割方針へ従うことを確認する。"""
     newsroom_editor = DEFAULT_MODEL_POLICY["newsroom_editor"]
-    assert newsroom_editor["selection_summary"] == "build/model-comparison-20260715-luna-high-replacement/summary.json"
+    assert newsroom_editor["selection_summary"] == ""
+    assert newsroom_editor["previous_selection_summary"] == "build/model-comparison-20260715-luna-high-replacement/summary.json"
     assert newsroom_editor["safety_summary"] == "build/model-eval-5.6/newsroom-append-safety/summary.json"
     assert newsroom_editor["selection_status"] == "selected"
-    assert newsroom_editor["default"] == "gpt-5.6-luna"
-    assert newsroom_editor["selection_variant"] == "newsroom-editor-56-luna-max"
-    assert newsroom_editor["quality_leader_variant"] == "newsroom-editor-56-luna-max"
-    assert newsroom_editor["escalate"] == "gpt-5.6-luna"
+    assert newsroom_editor["default"] == "gpt-5.6-sol"
+    assert newsroom_editor["selection_variant"] == "newsroom-editor-56-sol-max"
+    assert newsroom_editor["quality_leader_variant"] == "newsroom-editor-56-sol-max"
+    assert newsroom_editor["escalate"] == "gpt-5.6-sol"
     assert newsroom_editor["reasoning"] == "max"
     assert newsroom_editor["escalate_reasoning"] == "max"
     assert DEFAULT_MODEL_POLICY["deepdive"]["default"] == "gpt-5.6-sol"
@@ -202,14 +203,14 @@ def test_select_newsroom_editor_model_returns_default_or_quality_leader() -> Non
         append_mismatch=False,
         summary_quality_score=5,
         deepdive_theme_count=1,
-    ) == "gpt-5.6-luna"
+    ) == "gpt-5.6-sol"
     assert select_newsroom_editor_model(
         gate_fail_count=1,
         dedup_conflict_count=0,
         append_mismatch=False,
         summary_quality_score=5,
         deepdive_theme_count=1,
-    ) == "gpt-5.6-luna"
+    ) == "gpt-5.6-sol"
 
 
 def test_operational_prompts_match_selected_model_policy() -> None:
