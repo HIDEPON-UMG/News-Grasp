@@ -1147,7 +1147,7 @@ def _default_candidate_provider(category: str, issue_date: str) -> tuple[list[di
     from tools.harvest_candidates import harvest_category_with_audit
     from tools.prepare_reporter_candidates import prepare_rows
 
-    candidates, audit = harvest_category_with_audit(category, max_per_category=25, timeout=12.0)
+    candidates, audit = harvest_category_with_audit(category, max_per_category=25, timeout=12.0, issue_date=issue_date)
     prepared, dropped = prepare_rows(
         candidates,
         max_rows=25,
@@ -1164,6 +1164,7 @@ def _default_candidate_provider(category: str, issue_date: str) -> tuple[list[di
             "candidates_total": len(prepared),
             "selected_total": 0,
             "dropped_after_prepare": len(dropped),
+            "target_issue_date": issue_date,
         }
     )
     if not prepared:
@@ -2694,6 +2695,7 @@ def produce_current_issue(
             "siteProjectionVersion": 2,
             "dailyNarrationVersion": 1,
             "dailyCardContractVersion": 1,
+            "candidateTargetDateVersion": 1,
             "dailyAssetVerificationVersion": int(verify_assets),
             "deepdiveEvidenceVersion": int(runtime_ledger is not None),
         }
@@ -2714,6 +2716,7 @@ def produce_current_issue(
                     not isinstance(completion_payload, Mapping)
                     or completion_payload.get("dailyNarrationVersion") != 1
                     or completion_payload.get("dailyCardContractVersion") != 1
+                    or completion_payload.get("candidateTargetDateVersion") != 1
                     or completion_payload.get("dailyAssetVerificationVersion") != int(verify_assets)
                     or completion_payload.get("deepdiveEvidenceVersion") != 1
                 ):
@@ -2733,6 +2736,7 @@ def produce_current_issue(
         reused = _load_completion(root, run_id, issue_date)
         if (reused is not None and reused.get("dailyNarrationVersion") == 1
                 and reused.get("dailyCardContractVersion") == 1
+                and reused.get("candidateTargetDateVersion") == 1
                 and reused.get("dailyAssetVerificationVersion") == int(verify_assets)
                 and reused.get("deepdiveEvidenceVersion") == 0):
             return reused
@@ -2912,6 +2916,10 @@ def produce_current_issue(
             candidates = payload.get("candidates")
             audit = payload.get("search_audit")
             try:
+                if candidate_provider is None and (
+                    not isinstance(audit, dict) or audit.get("target_issue_date") != issue_date
+                ):
+                    raise DailyContentError(f"CANDIDATE_TARGET_DATE_UNBOUND:{category}")
                 validated_candidates, validated_audit = _validate_candidate_payload(
                     category=category,
                     issue_date=issue_date,
@@ -4100,6 +4108,7 @@ def produce_current_issue(
         "run_id": run_id,
         "dailyNarrationVersion": 1,
         "dailyCardContractVersion": 1,
+        "candidateTargetDateVersion": 1,
         "dailyAssetVerificationVersion": int(verify_assets),
         "deepdiveEvidenceVersion": int(runtime_ledger is not None),
         "scheduled_categories": list(categories),

@@ -57,7 +57,7 @@ import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from html.parser import HTMLParser
 from pathlib import Path
@@ -255,12 +255,16 @@ def category_queries(category: str) -> list[str]:
 # ── クエリ URL 生成（純関数）─────────────────────────────────────────────────
 
 
-def build_query(base_query: str) -> str:
-    """検索クエリに `when:1d`（直近 24 時間）を必ず付与する。
+def build_query(base_query: str, *, issue_date: str | None = None) -> str:
+    """対象日の範囲を指定し、省略時は直近24時間を検索する。
 
     実測で `when:1d` を付けると Google News RSS が全件直近 24h に絞られる。鮮度を
     決定論で担保する本 CLI の肝なので、base_query に既に when: が無いときだけ足す。
     """
+    if issue_date is not None:
+        target = date.fromisoformat(issue_date)
+        base_query = re.sub(r"\b(?:when|after|before):\S+", "", base_query).strip()
+        return f"{base_query} after:{target - timedelta(days=1)} before:{target + timedelta(days=1)}"
     if "when:" in base_query:
         return base_query
     return f"{base_query} when:1d"
@@ -272,13 +276,14 @@ def build_feed_url(
     hl: str = DEFAULT_HL,
     gl: str = DEFAULT_GL,
     ceid: str = DEFAULT_CEID,
+    issue_date: str | None = None,
 ) -> str:
     """Google News RSS search feed の URL を組み立てる（純関数）。
 
     `https://news.google.com/rss/search?q=<query>+when:1d&hl=ja&gl=JP&ceid=JP:ja`
     形式。クエリは URL エンコードし、when:1d を build_query で必ず付ける。
     """
-    q = build_query(base_query)
+    q = build_query(base_query, issue_date=issue_date)
     params = urllib.parse.urlencode({"q": q, "hl": hl, "gl": gl, "ceid": ceid})
     return f"{GOOGLE_NEWS_RSS}?{params}"
 
@@ -646,6 +651,7 @@ def harvest_category_with_audit(
     *,
     max_per_category: int = DEFAULT_MAX_PER_CATEGORY,
     timeout: float = 15.0,
+    issue_date: str | None = None,
 ) -> tuple[list[dict], dict]:
     """1 カテゴリの候補と収集監査を返す。"""
     items: list[dict] = []
@@ -653,8 +659,8 @@ def harvest_category_with_audit(
 
     query_specs: list[tuple[str, str]] = []
     for base_query in category_queries(category):
-        url = build_feed_url(base_query)
-        query = build_query(base_query)
+        url = build_feed_url(base_query, issue_date=issue_date)
+        query = build_query(base_query, issue_date=issue_date)
         audit["queries"].append(query)
         source_id = f"google_news:{query}"
         audit["source_breakdown"][source_id] = _source_stats(None, url)
@@ -730,6 +736,19 @@ def harvest_category_with_audit(
 
         _mark_broken(audit, source, f"unknown_mode:{source.mode}")
 
+    if issue_date is not None:
+        target = date.fromisoformat(issue_date)
+        def target_day_order(row: dict) -> int:
+            # RSS日時は候補の優先順位にだけ使い、公開日の証明には使わない。
+            try:
+                stamp = datetime.fromisoformat(str(row.get("pubDate", "")).replace("Z", "+00:00"))
+                if stamp.tzinfo is None:
+                    return 1
+                return 0 if stamp.astimezone(timezone(timedelta(hours=9))).date() == target else 2
+            except ValueError:
+                return 1
+        items.sort(key=target_day_order)
+        audit["target_issue_date"] = issue_date
     selected = items[:max_per_category]
     audit["candidates_total"] = len(items)
     audit["selected_total"] = len(selected)
