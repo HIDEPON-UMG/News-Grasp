@@ -30,11 +30,13 @@ MODEL_CALL_RAW_FILENAME = "raw.json"
 REPORTER_SCHEMA = "schemas/news_grasp_daily_reporter_output.schema.json"
 REPORTER_SHARD_SCHEMA = "schemas/news_grasp_daily_reporter_shard_output.schema.json"
 EDITOR_SCHEMA = "schemas/news_grasp_daily_editor_output.schema.json"
+NARRATION_SCHEMA = "schemas/news_grasp_daily_narration_output.schema.json"
 DEEPDIVE_SCHEMA = "schemas/news_grasp_daily_deepdive_output.schema.json"
 DAILY_OUTPUT_SCHEMAS = (
     REPORTER_SCHEMA,
     REPORTER_SHARD_SCHEMA,
     EDITOR_SCHEMA,
+    NARRATION_SCHEMA,
     DEEPDIVE_SCHEMA,
 )
 _RUN_ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{7,191}")
@@ -549,6 +551,7 @@ def _model_schema_for_role(role: str) -> str:
             "reporter": REPORTER_SCHEMA,
             "reporter_shard": REPORTER_SHARD_SCHEMA,
             "editor": EDITOR_SCHEMA,
+            "daily_narration": NARRATION_SCHEMA,
             "deepdive": DEEPDIVE_SCHEMA,
         }[role]
     except KeyError as exc:
@@ -619,6 +622,8 @@ def _validator_id(artifact_id: str) -> str:
         return "reporter_output_valid_v1"
     if artifact_id == "editor":
         return "editor_output_valid_v1"
+    if artifact_id == "daily_audio_script_source":
+        return "daily_narration_source_v1"
     if artifact_id == "deepdive_model":
         return "deepdive_output_valid_v1"
     if artifact_id == "content_completion":
@@ -691,6 +696,8 @@ def _write_artifact_checkpoint(
         "status": "Green",
         "payload": dict(payload),
     }
+    if artifact_id == "daily_audio_script_source":
+        value["validatorId"] = _validator_id(artifact_id)
     _atomic_write_bytes(
         _artifact_cache_path(root, run_id, artifact_id),
         _json_bytes(value),
@@ -809,6 +816,12 @@ def _repair_allowed_paths(
 ) -> list[str]:
     if not isinstance(invalid_payload, Mapping):
         return []
+    if artifact_id == "daily_audio_script_source":
+        required = {"issue_date", "audio_script_markdown"}
+        fields = {"audio_script_markdown"} | (required ^ set(invalid_payload))
+        if "issue_date" in reason_code:
+            fields.add("issue_date")
+        return [f"/{field}" for field in sorted(fields)]
     if artifact_id.startswith("reporter:"):
         category = artifact_id.split(":", 1)[1]
         identity = re.search(r":identity:([a-z_,]+)$", reason_code)
@@ -866,13 +879,15 @@ def _repair_allowed_paths(
             return ["/category"]
     if artifact_id == "editor":
         if ":identity" in reason_code:
-            required = {"issue_date", "inputs", "append_records", "summary_markdown"}
+            required = {"issue_date", "inputs", "append_records", "summary_markdown", "audio_script_markdown"}
             invalid_fields = {"issue_date"}
             invalid_fields.update(required - set(invalid_payload))
             invalid_fields.update(set(invalid_payload) - required)
             return [f"/{field}" for field in sorted(invalid_fields)]
         if ":reporter_binding" in reason_code:
             return ["/append_records"]
+        if ":audio_script_markdown:" in reason_code:
+            return ["/audio_script_markdown"]
         shape = re.search(r":shape:([a-z_,]+)$", reason_code)
         if shape:
             return [f"/{field}" for field in shape.group(1).split(",")]
@@ -983,6 +998,26 @@ def _project_repair_result(failure: Mapping[str, Any] | None, proposed: Any) -> 
         _assert_repair_scope(failure, result)
     except (KeyError, IndexError, TypeError, ValueError, DailyContentError) as exc:
         raise ModelResultPending("repair_scope_unresolved") from exc
+    return result
+
+
+def _project_editor_repair_result(failure: Mapping[str, Any] | None, proposed: Any) -> Any:
+    """旧Editorの本文修復範囲を保ち、新契約の朗読fieldだけを別に受け取る。"""
+    result = _project_repair_result(failure, proposed)
+    if not isinstance(failure, Mapping) or not isinstance(proposed, Mapping):
+        return result
+    previous = failure.get("invalidPayload")
+    legacy_fields = {"issue_date", "append_records", "summary_markdown"}
+    if (
+        failure.get("schemaVersion") == MODEL_FAILURE_SCHEMA
+        and failure.get("artifactId") == "editor"
+        and failure.get("stage") == "editor"
+        and isinstance(previous, Mapping)
+        and set(previous) in (legacy_fields, legacy_fields | {"inputs"})
+        and isinstance(result, dict)
+        and "audio_script_markdown" in proposed
+    ):
+        result["audio_script_markdown"] = proposed["audio_script_markdown"]
     return result
 
 
@@ -1299,7 +1334,17 @@ def _model_prompt(
         source = (root / "prompts" / "newsroom-editor-system.md").read_text(encoding="utf-8-sig")
         return (
             f"{source}\n\nこの実行ではrepoを変更してはならない。reporter recordsを再収集・改変せず、"
-            "重複URLだけを一件に畳み、公開用Summaryとappend_recordsを指定JSON schemaだけで返す。"
+            "重複URLだけを一件に畳み、公開用Summaryとappend_records、E6.5の敬体の朗読台本を"
+            "audio_script_markdownとして、同じ指定JSON schemaだけで返す。"
+            f"\nissue_date={issue_date}\n入力:\n{json.dumps(context, ensure_ascii=False)}"
+        )
+    if role == "daily_narration":
+        source = (root / "prompts" / "newsroom-editor-system.md").read_text(encoding="utf-8-sig")
+        return (
+            source + "\n\n今回はE6.5の日次朗読台本だけを修復する。入力の保存記事とSummaryを根拠に、"
+            "日次朗読の全文を自然なです・ます調にする。記事・Summary・DeepDiveは変更せず、"
+            "新しい事実や数値を追加しない。既存台本の正常な内容と引用の意味を保持し、"
+            "文末の一括置換や文字数の水増しをしない。issue_dateとaudio_script_markdownだけを返す。"
             f"\nissue_date={issue_date}\n入力:\n{json.dumps(context, ensure_ascii=False)}"
         )
     if role == "deepdive":
@@ -1406,7 +1451,7 @@ def _default_model_runner(
             else f"reporter-shard:{_sha256_bytes('|'.join(shard_categories).encode('utf-8'))[:12]}"
             if role == "reporter_shard" and shard_categories
             else "newsroom_editor"
-            if role == "editor"
+            if role in {"editor", "daily_narration"}
             else "deepdive"
         )
         with (
@@ -1736,6 +1781,7 @@ def _validate_editor(
     reporters: Sequence[Mapping[str, Any]],
     preview_dir: Path,
     repo_root: Path | None = None,
+    require_audio_script: bool = False,
 ) -> dict[str, Any]:
     from tools.validate_editor_output_preview import validate_editor_output_preview
 
@@ -1753,6 +1799,20 @@ def _validate_editor(
     ]
     if shape_fields:
         raise DailyContentError(f"EDITOR_OUTPUT_INVALID:shape:{','.join(shape_fields)}")
+    audio_script = value.get("audio_script_markdown")
+    if require_audio_script or audio_script is not None:
+        if not isinstance(audio_script, str) or not audio_script.strip():
+            raise DailyContentError("EDITOR_OUTPUT_INVALID:shape:audio_script_markdown")
+        from tools.tts.build_script import validate_script
+        from tools.publish_inventory import scheduled_category_ids
+        from tools.news_grasp_deterministic_builders import _strip_frontmatter
+        audio_issues = validate_script(
+            _strip_frontmatter(audio_script),
+            date=issue_date,
+            required_categories=scheduled_category_ids(issue_date),
+        )
+        if audio_issues:
+            raise DailyContentError("EDITOR_OUTPUT_INVALID:audio_script_markdown:" + "|".join(audio_issues))
     expected_urls = {str(record.get("url") or "").rstrip("/") for reporter in reporters for record in reporter["records"]}
     actual_urls = [str(record.get("url") or "").rstrip("/") for record in records if isinstance(record, Mapping)]
     if set(actual_urls) != expected_urls or len(actual_urls) != len(set(actual_urls)):
@@ -1919,6 +1979,250 @@ def _atomic_apply(root: Path, outputs: Mapping[str, bytes]) -> dict[str, str]:
     return {relative: _sha256_bytes(outputs[relative]) for relative in ordered}
 
 
+def _checkpoint_output_hash_matches(checkpoint: Mapping[str, Any]) -> bool:
+    payload = checkpoint.get("payload")
+    output_hash = checkpoint.get("outputHash")
+    if not isinstance(payload, Mapping) or not isinstance(output_hash, str):
+        return False
+    canonical_hashes = {
+        _sha256_bytes(_json_bytes(dict(payload))),
+        _sha256_bytes(
+            json.dumps(
+                dict(payload),
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ),
+    }
+    return output_hash in canonical_hashes
+
+
+def _ensure_daily_narration_source(
+    *,
+    root: Path,
+    run_id: str,
+    issue_date: str,
+    editor: Mapping[str, Any],
+    consume_model_call: Callable[..., Any],
+    model_fn: Callable[..., Any],
+    runtime_ledger: Any | None = None,
+    codex_executable: Path | None = None,
+    codex_executable_provider: Callable[[], Path | None] | None = None,
+) -> tuple[dict[str, Any], bool]:
+    """保存済みの日次台本を検証し、不足時だけ台本sourceを修復する。"""
+
+    from tools.news_grasp_deterministic_builders import (
+        NewsGraspBuilderError,
+        _safe_regular_bytes,
+        _strip_frontmatter,
+    )
+    from tools.publish_inventory import scheduled_category_ids
+    from tools.tts.build_script import validate_script
+
+    input_hash = _artifact_input_hash(
+        {
+            "issueDate": issue_date,
+            "summaryMarkdown": editor.get("summary_markdown"),
+            "appendRecords": editor.get("append_records"),
+        }
+    )
+    artifact_id = "daily_audio_script_source"
+    validator_id = "daily_narration_source_v1"
+    categories = tuple(scheduled_category_ids(issue_date))
+
+    def payload_issues(payload: Any) -> list[str]:
+        if not isinstance(payload, Mapping):
+            return ["payload"]
+        if set(payload) != {"issue_date", "audio_script_markdown"}:
+            return ["shape"]
+        if payload.get("issue_date") != issue_date:
+            return ["issue_date"]
+        script = payload.get("audio_script_markdown")
+        if not isinstance(script, str) or not script.strip():
+            return ["audio_script_markdown"]
+        issues = validate_script(
+            _strip_frontmatter(script),
+            date=issue_date,
+            required_categories=categories,
+        )
+        return [str(issue) for issue in issues]
+
+    checkpoint_load_issues: list[str] = []
+    try:
+        source_checkpoint = _load_artifact_checkpoint(
+            root,
+            run_id=run_id,
+            issue_date=issue_date,
+            artifact_id=artifact_id,
+            input_hash=input_hash,
+            runtime_ledger=runtime_ledger,
+        )
+    except DailyContentError:
+        if runtime_ledger is not None:
+            raise
+        source_checkpoint = None
+        checkpoint_load_issues.append("checkpoint_invalid")
+    checkpoint_payload = (
+        source_checkpoint.get("payload")
+        if isinstance(source_checkpoint, Mapping)
+        else None
+    )
+    checkpoint_issues = [
+        *checkpoint_load_issues,
+        *(payload_issues(checkpoint_payload) if source_checkpoint else ["missing"]),
+    ]
+    if source_checkpoint is not None:
+        if source_checkpoint.get("status") != "Green":
+            checkpoint_issues.append("status")
+        if source_checkpoint.get("validatorId") != validator_id:
+            checkpoint_issues.append("validatorId")
+        if source_checkpoint.get("inputHash") != input_hash:
+            checkpoint_issues.append("inputHash")
+        if not _checkpoint_output_hash_matches(source_checkpoint):
+            checkpoint_issues.append("outputHash")
+    if (
+        source_checkpoint is not None
+        and not checkpoint_issues
+    ):
+        return source_checkpoint, False
+
+    saved_script: str | None = None
+    saved_script_issues = ["missing"]
+    script_relative = f"digest/Summary/{issue_date}-audio-script.md"
+    _safe_path(root, script_relative)
+    script_path = root / script_relative
+    if os.path.lexists(script_path):
+        try:
+            script_bytes = _safe_regular_bytes(script_path, maximum=1024 * 1024)
+            saved_script = script_bytes.decode("utf-8-sig")
+            saved_script_payload = {
+                "issue_date": issue_date,
+                "audio_script_markdown": saved_script,
+            }
+            saved_script_issues = payload_issues(saved_script_payload)
+            if not saved_script_issues:
+                saved_script_issues = ["unbound_source"]
+        except (NewsGraspBuilderError, OSError, UnicodeError, ValueError):
+            saved_script = None
+            saved_script_issues = ["saved_script_invalid"]
+
+    failure = _load_failure_checkpoint(
+        root,
+        run_id=run_id,
+        issue_date=issue_date,
+        artifact_id=artifact_id,
+        runtime_ledger=runtime_ledger,
+    )
+    repair_feedback: dict[str, Any] = {
+        "artifactId": artifact_id,
+        "inputHash": input_hash,
+        "checkpointIssues": checkpoint_issues,
+        "savedScriptIssues": saved_script_issues,
+    }
+    if failure is not None:
+        repair_feedback["failure"] = failure
+    existing_script = saved_script
+    if existing_script is None and isinstance(checkpoint_payload, Mapping):
+        candidate_script = checkpoint_payload.get("audio_script_markdown")
+        if isinstance(candidate_script, str):
+            existing_script = candidate_script
+
+    repair_input_hash = (
+        _artifact_input_hash({
+            "sourceInputHash": input_hash,
+            "repairFailureSignature": failure["failureSignature"],
+        })
+        if failure is not None else input_hash
+    )
+    call_id = _sha256_bytes(
+        f"repair|{artifact_id}|{repair_input_hash}".encode("utf-8")
+    )
+    reservation = consume_model_call(
+        call_id=call_id,
+        budget_class="repair",
+        artifact_id=artifact_id,
+        input_hash=repair_input_hash,
+    )
+    try:
+        persistent_kwargs: dict[str, Any] = {}
+        if codex_executable is not None:
+            persistent_kwargs["codex_executable"] = codex_executable
+        raw_value, model_sent = _invoke_persistent_model_call(
+            root=root,
+            run_id=run_id,
+            issue_date=issue_date,
+            model_fn=model_fn,
+            reservation=reservation,
+            role="daily_narration",
+            codex_executable_provider=codex_executable_provider,
+            category=None,
+            call_id=call_id,
+            input_hash=repair_input_hash,
+            artifact_id=artifact_id,
+            editor=dict(editor),
+            existing_audio_script_markdown=existing_script,
+            repair_feedback=repair_feedback,
+            **persistent_kwargs,
+        )
+        if failure is not None and isinstance(failure.get("invalidPayload"), Mapping):
+            raw_value = _project_repair_result(failure, raw_value)
+        output_issues = payload_issues(raw_value)
+        if output_issues:
+            raise DailyContentError(
+                "DAILY_NARRATION_SOURCE_INVALID:" + "|".join(output_issues)
+            )
+        narration_payload = {
+            "issue_date": issue_date,
+            "audio_script_markdown": raw_value["audio_script_markdown"],
+        }
+        if runtime_ledger is not None:
+            checkpoint = runtime_ledger.commit_model_call(
+                call_id=call_id,
+                artifacts={
+                    artifact_id: {
+                        "inputHash": input_hash,
+                        "validatorId": validator_id,
+                        "payload": narration_payload,
+                    }
+                },
+            )[artifact_id]
+        else:
+            checkpoint = _write_artifact_checkpoint(
+                root,
+                run_id=run_id,
+                issue_date=issue_date,
+                artifact_id=artifact_id,
+                input_hash=input_hash,
+                payload=narration_payload,
+            )
+        return checkpoint, model_sent
+    except ModelResultPending:
+        raise
+    except Exception as exc:  # noqa: BLE001 - model quality/shape failure is typed below.
+        _write_failure_checkpoint(
+            root, run_id=run_id, issue_date=issue_date,
+            stage="daily_narration", artifact_id=artifact_id,
+            predicate_id="daily_narration_source_valid", reason_code=str(exc),
+            input_hash=repair_input_hash, cause_input_mask=(artifact_id,),
+            invalid_payload=raw_value if "raw_value" in locals() else None,
+            runtime_ledger=runtime_ledger,
+        )
+        if runtime_ledger is not None:
+            try:
+                runtime_ledger.fail_model_call(
+                    call_id=call_id,
+                    failure_code=f"{type(exc).__name__}:{exc}",
+                )
+            except PermissionError:
+                raise
+        if isinstance(exc, DailyContentError):
+            raise
+        raise DailyContentError(
+            f"DAILY_NARRATION_SOURCE_INVALID:{type(exc).__name__}"
+        ) from exc
+
+
 def _default_derived_builder(
     *,
     repo_root: Path,
@@ -1926,12 +2230,13 @@ def _default_derived_builder(
     run_id: str,
     repair_actions: Mapping[str, str] | None = None,
     artifact_checkpoints: Mapping[str, Mapping[str, Any]] | None = None,
+    narration_input_hash: str | None = None,
     writer_guard: Callable[[], None] | None = None,
     high_cost_admission: Callable[[], bool] | None = None,
     **_: Any,
 ) -> dict[str, Any]:
     from tools import generate_pages
-    from tools.news_grasp_deterministic_builders import materialize_summary_audio_script
+    from tools.news_grasp_deterministic_builders import materialize_editor_audio_script
     from tools.tts import build_script, deepdive_audio, deepdive_dialogue, publish_audio, synthesize_daily
     from tools.youtube_podcast import build_video
 
@@ -1962,19 +2267,30 @@ def _default_derived_builder(
     summary_audio: Mapping[str, Any] = {}
     if needs("daily_audio_script"):
         guard()
-        editor_checkpoint = checkpoints.get("editor")
-        article_records = None
-        if editor_checkpoint is not None:
-            if not isinstance(editor_checkpoint, Mapping) or editor_checkpoint.get("status") != "Green":
-                raise DailyContentError("SUMMARY_AUDIO_EDITOR_CHECKPOINT_UNVERIFIED")
-            editor_payload = editor_checkpoint.get("payload")
-            if not isinstance(editor_payload, Mapping) or not isinstance(editor_payload.get("append_records"), list):
-                raise DailyContentError("SUMMARY_AUDIO_EDITOR_CHECKPOINT_INVALID")
-            article_records = editor_payload["append_records"]
-        summary_audio = materialize_summary_audio_script(
-            repo_root=repo_root,
-            issue_date=issue_date,
-            article_records=article_records,
+        narration_checkpoint = checkpoints.get("daily_audio_script_source")
+        if narration_checkpoint is None:
+            raise ModelResultPending("daily_audio_script_source:missing")
+        if (
+            not isinstance(narration_checkpoint, Mapping)
+            or narration_checkpoint.get("status") != "Green"
+            or narration_checkpoint.get("validatorId") != _validator_id("daily_audio_script_source")
+            or narration_input_hash is None
+            or narration_checkpoint.get("inputHash") != narration_input_hash
+        ):
+            raise DailyContentError("DAILY_NARRATION_SOURCE_UNVERIFIED")
+        narration_payload = narration_checkpoint.get("payload")
+        if (
+            not isinstance(narration_payload, Mapping)
+            or narration_payload.get("issue_date") != issue_date
+            or not isinstance(narration_payload.get("audio_script_markdown"), str)
+            or not narration_payload.get("audio_script_markdown", "").strip()
+        ):
+            raise DailyContentError("DAILY_NARRATION_SOURCE_INVALID")
+        if not _checkpoint_output_hash_matches(narration_checkpoint):
+            raise DailyContentError("DAILY_NARRATION_SOURCE_UNVERIFIED")
+        summary_audio = materialize_editor_audio_script(
+            repo_root=repo_root, issue_date=issue_date,
+            audio_script_markdown=narration_payload.get("audio_script_markdown"),
         )
         artifacts.append(str(repo_root / str(summary_audio["artifactPath"])))
 
@@ -2179,6 +2495,7 @@ def produce_current_issue(
             "issueDate": issue_date,
             "scheduledCategories": list(categories),
             "siteProjectionVersion": 2,
+            "dailyNarrationVersion": 1,
         }
     )
     if runtime_ledger is not None:
@@ -2192,6 +2509,13 @@ def produce_current_issue(
                 runtime_ledger=runtime_ledger,
             )
             if completion_checkpoint is not None:
+                completion_payload = completion_checkpoint.get("payload")
+                if (
+                    not isinstance(completion_payload, Mapping)
+                    or completion_payload.get("dailyNarrationVersion") != 1
+                ):
+                    completion_checkpoint = None
+            if completion_checkpoint is not None:
                 try:
                     return _validate_completion_payload(
                         root,
@@ -2204,7 +2528,7 @@ def produce_current_issue(
                         raise
     else:
         reused = _load_completion(root, run_id, issue_date)
-        if reused is not None:
+        if reused is not None and reused.get("dailyNarrationVersion") == 1:
             return reused
     candidate_fn = candidate_provider or _default_candidate_provider
     model_fn = model_runner or _default_model_runner
@@ -2891,13 +3215,14 @@ def produce_current_issue(
                     )
                     if model_sent:
                         model_call_count += 1
-                    editor_raw = _project_repair_result(editor_failure, editor_raw)
+                    editor_raw = _project_editor_repair_result(editor_failure, editor_raw)
                     editor = _validate_editor(
                         editor_raw,
                         issue_date=issue_date,
                         reporters=ordered_reporters,
                         preview_dir=output_dir,
                         repo_root=root,
+                        require_audio_script=True,
                     )
                 except ModelResultPending:
                     raise
@@ -2926,6 +3251,13 @@ def produce_current_issue(
                     if isinstance(exc, DailyContentError):
                         raise
                     raise DailyContentError(f"EDITOR_OUTPUT_INVALID:{type(exc).__name__}") from exc
+                narration = editor.pop("audio_script_markdown")
+                narration_input_hash = _artifact_input_hash({
+                    "issueDate": issue_date,
+                    "summaryMarkdown": editor["summary_markdown"],
+                    "appendRecords": editor["append_records"],
+                })
+                narration_payload = {"issue_date": issue_date, "audio_script_markdown": narration}
                 if runtime_ledger is not None:
                     editor_checkpoint = runtime_ledger.commit_model_call(
                         call_id=editor_call_id,
@@ -2934,7 +3266,12 @@ def produce_current_issue(
                                 "inputHash": editor_input_hash,
                                 "validatorId": _validator_id("editor"),
                                 "payload": editor,
-                            }
+                            },
+                            "daily_audio_script_source": {
+                                "inputHash": narration_input_hash,
+                                "validatorId": "daily_narration_source_v1",
+                                "payload": narration_payload,
+                            },
                         },
                     )["editor"]
                 else:
@@ -2945,6 +3282,11 @@ def produce_current_issue(
                         artifact_id="editor",
                         input_hash=editor_input_hash,
                         payload=editor,
+                    )
+                    _write_artifact_checkpoint(
+                        root, run_id=run_id, issue_date=issue_date,
+                        artifact_id="daily_audio_script_source",
+                        input_hash=narration_input_hash, payload=narration_payload,
                     )
                 if editor_failure is not None:
                     repaired_model_artifacts.append("editor")
@@ -3112,6 +3454,31 @@ def produce_current_issue(
             editor=editor,
             deepdive=deepdive,
         )
+
+    narration_input_hash = _artifact_input_hash(
+        {
+            "issueDate": issue_date,
+            "summaryMarkdown": editor["summary_markdown"],
+            "appendRecords": editor["append_records"],
+        }
+    )
+    narration_checkpoint, narration_model_sent = _ensure_daily_narration_source(
+        root=root,
+        run_id=run_id,
+        issue_date=issue_date,
+        editor=editor,
+        consume_model_call=consume_model_call,
+        model_fn=model_fn,
+        runtime_ledger=runtime_ledger,
+        codex_executable=codex_executable,
+        codex_executable_provider=select_codex_executable,
+    )
+    if narration_model_sent:
+        model_call_count += 1
+        repaired_model_artifacts.append("daily_audio_script_source")
+    else:
+        reused_model_artifacts.append("daily_audio_script_source")
+    repair_plan = refresh_repair_plan()
 
     desired_outputs: dict[str, bytes] = {}
     path_owner: dict[str, str] = {}
@@ -3314,6 +3681,12 @@ def produce_current_issue(
         "run_id": run_id,
         "artifact_hashes": artifact_hashes,
     }
+    if derived_fn is _default_derived_builder:
+        derived_kwargs["narration_input_hash"] = narration_input_hash
+        if runtime_ledger is None:
+            derived_kwargs["artifact_checkpoints"] = {
+                "daily_audio_script_source": narration_checkpoint,
+            }
     if runtime_ledger is not None:
         def high_cost_admission() -> bool:
             current = __import__(
@@ -3428,6 +3801,7 @@ def produce_current_issue(
         "status": "materialized",
         "issue_date": issue_date,
         "run_id": run_id,
+        "dailyNarrationVersion": 1,
         "scheduled_categories": list(categories),
         "reporter_call_count": reporter_call_count,
         "model_call_count": model_call_count,

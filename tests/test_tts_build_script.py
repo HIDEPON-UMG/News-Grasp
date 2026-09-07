@@ -9,6 +9,37 @@ from tools import repair_audio_script_length
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "tts"
 
 
+def test_daily_narration_rejects_plain_style_in_body_and_closing():
+    for sentence in ("新制度が発表された。", "確認が必要だ。", "影響がある。", "企業が導入する。", "重要だね。", "変更するよ。"):
+        issues = build_script.validate_script("朝のニュースをお伝えします。" + sentence)
+        assert any("日次朗読口調違反" in issue for issue in issues), sentence
+
+
+def test_daily_narration_preserves_polite_style_and_quoted_original():
+    text = "発表されました。影響があります。確認が必要です。企業は「投資は必要だ」と説明しています。"
+    assert not any("日次朗読口調違反" in issue for issue in build_script.validate_script(text))
+
+
+def test_daily_narration_checks_each_sentence_not_only_last_sentence():
+    issues = build_script.validate_script("背景が変わった。続報を確認しましょう。")
+    assert any("日次朗読口調違反" in issue for issue in issues)
+
+
+def test_daily_narration_does_not_check_internal_outline_as_spoken_text():
+    text = "<!-- tts-outline\n背景: 変化がある。\n-->\n変化があります。"
+    assert not any("日次朗読口調違反" in issue for issue in build_script.validate_script(text))
+
+
+def test_daily_narration_rejects_quote_mask_escape_and_nominal_endings():
+    for text in ("冒頭です。「以後は常体だ。", "「全文が常体だ。」", "焦点は供給制約。", "制度変更へ。"):
+        assert "日次朗読口調違反" in build_script.validate_script(text), text
+
+
+def test_daily_narration_accepts_nested_quote_with_polite_attribution():
+    text = "担当者は「『転換点だ』という見方がある」と説明しました。続報を\n確認します。"
+    assert "日次朗読口調違反" not in build_script.validate_script(text)
+
+
 def _outline(categories: tuple[str, ...] = ("fx", "ai", "it", "mobility", "manufacturing", "economy", "game")) -> str:
     points = "\n".join(
         f"- {cat}: 当日の事実から、制約、影響、次の観測点まで踏み込む。"
@@ -32,7 +63,7 @@ def _valid_script(extra: str = "") -> str:
     return (
         _outline()
         + "今日は6月16日です。朝のニュースをお伝えします。"
-        "為替 AI IT-Consulting モビリティ 製造 経済 ゲーム。"
+        "為替、AI、IT-Consulting、モビリティ、製造、経済、ゲームをお伝えします。"
         + ("背景には、投資、制度、供給網の制約が同じ日に並び、影響とリスクを分けて見る必要がありました。次に見るべき観測点は実装条件です。" * 45)
         + extra
         + "今日の観点・考察です。責任分界と供給制約を誰が引き受けるかが焦点です。"
@@ -87,7 +118,7 @@ def test_build_uses_scheduled_categories_not_all_categories_on_wednesday(tmp_pat
         "---\n\n"
         + _outline(("fx", "ai", "it", "mobility", "manufacturing", "economy"))
         + "今日は6月24日です。朝のニュースをお伝えします。"
-        "為替 AI IT-Consulting モビリティ 製造 経済。"
+        "為替、AI、IT-Consulting、モビリティ、製造、経済をお伝えします。"
         + ("背景には認証と防御と供給網の順番があり、影響とリスクを分けて次の観測点を確認する日でした。" * 61)
         + "今日の観点・考察です。責任分界と供給制約を誰が引き受けるかが焦点です。",
         encoding="utf-8",
@@ -244,7 +275,7 @@ def test_repair_audio_script_length_extends_short_script_to_safe_range(tmp_path)
         + _outline(("fx", "ai", "it", "mobility", "manufacturing", "economy"))
         + "今日は6月24日です。朝のニュースをお伝えします。"
         "ニュース グラスプです。"
-        "為替 AI IT-Consulting モビリティ 製造 経済。"
+        "為替、AI、IT-Consulting、モビリティ、製造、経済をお伝えします。"
         + ("背景には認証と防御と供給網の順番があり、影響とリスクを分けて次の観測点を確認する日でした。" * 45)
         + "最後に、今日の観点・考察です。責任分界と供給制約を誰が引き受けるかが焦点です。ニュース グラスプでした。"
     )

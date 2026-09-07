@@ -16,6 +16,7 @@ SCHEMA_FILES = (
     "news_grasp_daily_reporter_output.schema.json",
     "news_grasp_daily_reporter_shard_output.schema.json",
     "news_grasp_daily_editor_output.schema.json",
+    "news_grasp_daily_narration_output.schema.json",
     "news_grasp_daily_deepdive_output.schema.json",
 )
 

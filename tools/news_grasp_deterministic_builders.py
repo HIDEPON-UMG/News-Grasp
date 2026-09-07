@@ -294,6 +294,101 @@ def _load_canonical_summary(
     return title, [normalized], source_hash
 
 
+def materialize_editor_audio_script(
+    *,
+    repo_root: Path | str,
+    issue_date: str,
+    audio_script_markdown: str,
+) -> dict[str, Any]:
+    """検証済みの編集台本だけを日次音声台本として原子的に保存する。"""
+
+    if not isinstance(issue_date, str) or not issue_date.strip():
+        raise NewsGraspBuilderError("NG_BUILDER_INPUT_INVALID")
+    try:
+        issue_day = date.fromisoformat(issue_date)
+    except (TypeError, ValueError) as error:
+        raise NewsGraspBuilderError("NG_BUILDER_INPUT_INVALID") from error
+    if not isinstance(audio_script_markdown, str) or not audio_script_markdown:
+        raise NewsGraspBuilderError("NG_SUMMARY_AUDIO_SCRIPT_QUALITY_INVALID")
+    try:
+        source_bytes = audio_script_markdown.encode("utf-8")
+    except UnicodeEncodeError as error:
+        raise NewsGraspBuilderError("NG_SUMMARY_AUDIO_SCRIPT_QUALITY_INVALID") from error
+    if len(source_bytes) > MAX_SUMMARY_BYTES:
+        raise NewsGraspBuilderError("NG_SUMMARY_AUDIO_SCRIPT_QUALITY_INVALID")
+
+    body = _strip_frontmatter(audio_script_markdown)
+    if body != audio_script_markdown and _frontmatter_value(audio_script_markdown, "date") != issue_date:
+        raise NewsGraspBuilderError("NG_SUMMARY_AUDIO_SCRIPT_QUALITY_INVALID")
+
+    root = _safe_materialization_root(repo_root)
+    from tools.publish_inventory import scheduled_category_ids
+    from tools.tts.build_script import validate_script
+
+    categories = tuple(scheduled_category_ids(issue_date))
+    history_texts: list[str] = []
+    for offset in (1, 2):
+        history_path = root / "digest/Summary" / f"{(issue_day - timedelta(days=offset)).isoformat()}-audio-script.md"
+        if not os.path.lexists(history_path):
+            continue
+        with _pinned_output_directories(history_path, root=root):
+            raw_history = _safe_regular_bytes(history_path, maximum=MAX_SUMMARY_BYTES)
+        try:
+            history_texts.append(_strip_frontmatter(raw_history.decode("utf-8-sig")))
+        except UnicodeDecodeError as error:
+            raise NewsGraspBuilderError("NG_SUMMARY_AUDIO_HISTORY_INVALID") from error
+
+    issues = validate_script(
+        body,
+        date=issue_date,
+        history_texts=history_texts,
+        required_categories=categories,
+    )
+    if issues:
+        raise NewsGraspBuilderError(
+            "NG_SUMMARY_AUDIO_SCRIPT_QUALITY_INVALID:" + "; ".join(issues)
+        )
+
+    source_hash = hashlib.sha256(source_bytes).hexdigest()
+    target = root / "digest" / "Summary" / f"{issue_date}-audio-script.md"
+    document = (
+        "---\n"
+        "title: Audio Script\n"
+        f"date: {issue_date}\n"
+        "type: audio-script\n"
+        f"sourceHash: {source_hash}\n"
+        "---\n\n"
+        f"{body}\n"
+    )
+    document_bytes = document.encode("utf-8")
+    if len(document_bytes) > MAX_SUMMARY_BYTES:
+        raise NewsGraspBuilderError("NG_SUMMARY_AUDIO_SCRIPT_QUALITY_INVALID")
+    with _pinned_output_directories(target, root=root):
+        if target.exists():
+            existing_raw = _safe_regular_bytes(target, maximum=MAX_SUMMARY_BYTES)
+            if existing_raw == document_bytes:
+                return {
+                    "schemaVersion": "SUMMARY_AUDIO_SCRIPT_MATERIALIZATION_V1",
+                    "status": "reused",
+                    "issueDate": issue_date,
+                    "artifactPath": target.relative_to(root).as_posix(),
+                    "sourceHash": source_hash,
+                    "outputHash": hashlib.sha256(existing_raw).hexdigest(),
+                    "qualityGate": "tools.tts.build_script.validate_script",
+                }
+
+    output_bytes = _atomic_write(target, document_bytes, root=root)
+    return {
+        "schemaVersion": "SUMMARY_AUDIO_SCRIPT_MATERIALIZATION_V1",
+        "status": "materialized",
+        "issueDate": issue_date,
+        "artifactPath": target.relative_to(root).as_posix(),
+        "sourceHash": source_hash,
+        "outputHash": hashlib.sha256(output_bytes).hexdigest(),
+        "qualityGate": "tools.tts.build_script.validate_script",
+    }
+
+
 def materialize_summary_audio_script(
     *,
     repo_root: Path | str,

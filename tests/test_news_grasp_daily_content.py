@@ -130,6 +130,11 @@ def _candidate_provider(category: str, _issue_date: str) -> tuple[list[dict], di
     })
 
 
+def _narration() -> str:
+    from tests.test_news_grasp_narration_source import _source
+    return _source().replace("今日は8月14日です。", "今日は9月4日です。")
+
+
 def _model_runner(*, role: str, category: str | None = None, **context):
     if role == "reporter":
         assert category in {"fx", "ai"}
@@ -154,6 +159,7 @@ def _model_runner(*, role: str, category: str | None = None, **context):
             },
             "append_records": records,
             "summary_markdown": _summary(),
+            "audio_script_markdown": _narration(),
         }
     if role == "deepdive":
         return _deepdive()
@@ -230,6 +236,7 @@ def test_five_categories_use_three_reporter_shards_and_five_total_model_calls(
                 "inputs": {},
                 "append_records": [_record(item) for item in categories],
                 "summary_markdown": _summary(),
+                "audio_script_markdown": _narration(),
             }
         if role == "deepdive":
             return _deepdive()
@@ -362,6 +369,7 @@ def test_shard_failure_preserves_green_sibling_and_repairs_only_bad_category(
                 "inputs": {},
                 "append_records": [_record(item) for item in categories],
                 "summary_markdown": _summary(),
+                "audio_script_markdown": _narration(),
             }
         if role == "deepdive":
             return _deepdive()
@@ -384,6 +392,7 @@ def test_shard_failure_preserves_green_sibling_and_repairs_only_bad_category(
         "reporter:ai",
         "reporter:it",
         "reporter:mobility",
+        "daily_audio_script_source",
     ]
     assert result["repaired_model_artifacts"] == ["reporter:game"]
 
@@ -569,7 +578,7 @@ def test_reporter_failure_reuses_candidates_and_green_reporter_on_repair(
         ("deepdive", None),
     ]
     assert result["model_call_count"] == 3
-    assert result["reused_model_artifacts"] == ["reporter:fx"]
+    assert result["reused_model_artifacts"] == ["reporter:fx", "daily_audio_script_source"]
     assert result["repaired_model_artifacts"] == ["reporter:ai"]
 
 
@@ -614,7 +623,7 @@ def test_editor_failure_reuses_all_reporters_on_repair(tmp_path: Path) -> None:
 
     assert repair_calls == [("editor", None), ("deepdive", None)]
     assert result["model_call_count"] == 2
-    assert result["reused_model_artifacts"] == ["reporter:fx", "reporter:ai"]
+    assert result["reused_model_artifacts"] == ["reporter:fx", "reporter:ai", "daily_audio_script_source"]
     assert result["repaired_model_artifacts"] == ["editor"]
 
 

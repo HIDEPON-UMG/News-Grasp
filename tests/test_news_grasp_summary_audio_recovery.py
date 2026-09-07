@@ -1,13 +1,10 @@
-"""保存記事で音声台本の不足だけを補う境界を検証する。"""
-import hashlib
+"""記事常体の転記を拒否し、保存済み本文を保つ回復境界を検証する。"""
 import runpy
 from pathlib import Path
 
 import pytest
 
 from tools import news_grasp_deterministic_builders as builders
-from tools.publish_inventory import scheduled_category_ids
-from tools.tts.build_script import effective_char_count, validate_script
 
 HELPERS = runpy.run_path(str(Path(__file__).with_name("test_2026_08_14_recovery_replay.py")))
 DAY = "2026-08-14"
@@ -29,23 +26,14 @@ def _records():
              )} for i in range(1, 15)]
 
 
-def test_saved_articles_complete_script_without_changing_sources(tmp_path):
+def test_plain_articles_are_not_accepted_as_narration(tmp_path):
     root = _repo(tmp_path)
     source = root / "digest" / "Summary" / f"{DAY}.md"
     original = source.read_bytes()
-    first = builders.materialize_summary_audio_script(repo_root=root, issue_date=DAY, article_records=_records())
-    output = root / first["artifactPath"]
-    body = builders._strip_frontmatter(output.read_text(encoding="utf-8"))
-    assert 2500 <= effective_char_count(body) <= 3000
-    assert validate_script(body, date=DAY, history_texts=[], required_categories=scheduled_category_ids(DAY)) == []
+    with pytest.raises(builders.NewsGraspBuilderError, match="日次朗読口調違反"):
+        builders.materialize_summary_audio_script(repo_root=root, issue_date=DAY, article_records=_records())
     assert source.read_bytes() == original
-    assert first["sourceHash"] != hashlib.sha256(original).hexdigest()
-    assert first["supplementalSources"]
-    assert all(len(item["recordHash"]) == 64 for item in first["supplementalSources"])
-    second = builders.materialize_summary_audio_script(repo_root=root, issue_date=DAY, article_records=_records())
-    assert second["status"] == "reused"
-    assert second["outputHash"] == first["outputHash"]
-    assert second["supplementalSources"] == first["supplementalSources"]
+    assert not (source.parent / f"{DAY}-audio-script.md").exists()
 
 
 @pytest.mark.parametrize("kind", ["wrong_day", "duplicate", "missing_title", "missing_summary", "missing_url", "insufficient"])
@@ -65,20 +53,20 @@ def test_invalid_or_insufficient_supplement_writes_nothing(tmp_path, kind):
     assert not (root / "digest" / "Summary" / f"{DAY}-audio-script.md").exists()
 
 
-def test_sufficient_summary_keeps_original_bytes_and_hash(tmp_path):
+def test_sufficient_length_does_not_override_narration_tone(tmp_path):
     root = _repo(tmp_path, rich=True)
-    original = builders.materialize_summary_audio_script(repo_root=root, issue_date=DAY)
-    with_articles = builders.materialize_summary_audio_script(repo_root=root, issue_date=DAY, article_records=_records())
-    assert with_articles["status"] == "reused"
-    assert original["sourceHash"] == with_articles["sourceHash"]
-    assert original["outputHash"] == with_articles["outputHash"]
-    assert not with_articles.get("supplementalSources")
+    source = root / "digest/Summary" / f"{DAY}.md"
+    original = source.read_bytes()
+    with pytest.raises(builders.NewsGraspBuilderError, match="日次朗読口調違反"):
+        builders.materialize_summary_audio_script(repo_root=root, issue_date=DAY)
+    assert source.read_bytes() == original
 
 
 def test_audio_dependency_binds_editor_not_article_history():
     from tools.news_grasp_repair_registry import build_daily_artifact_dag
-    node = build_daily_artifact_dag(("ai",))["daily_audio_script"]
-    assert tuple(node["dependsOn"]) == ("summary", "editor")
+    dag = build_daily_artifact_dag(("ai",))
+    assert tuple(dag["daily_audio_script"]["dependsOn"]) == ("daily_audio_script_source",)
+    assert tuple(dag["daily_audio_script_source"]["dependsOn"]) == ("editor",)
 
 
 def test_saved_previous_audio_dependency_plan_remains_readable(monkeypatch):
@@ -96,30 +84,27 @@ def test_saved_previous_audio_dependency_plan_remains_readable(monkeypatch):
     assert repair.validate_repair_plan(plan) == plan
 
 
-def test_used_article_change_invalidates_script_binding(tmp_path):
+def test_changed_plain_article_cannot_replace_saved_narration(tmp_path):
     root = _repo(tmp_path)
     records = _records()
-    first = builders.materialize_summary_audio_script(repo_root=root, issue_date=DAY, article_records=records)
+    script = root / "digest/Summary" / f"{DAY}-audio-script.md"
+    script.write_text("保存済みの朗読です。", encoding="utf-8")
+    original = script.read_bytes()
     records[0]["summary"] = records[0]["summary"].replace("設備の稼働計画", "設備の増設計画")
-    changed = builders.materialize_summary_audio_script(repo_root=root, issue_date=DAY, article_records=records)
-    assert changed["status"] == "materialized"
-    assert changed["sourceHash"] != first["sourceHash"]
-    assert changed["outputHash"] != first["outputHash"]
+    with pytest.raises(builders.NewsGraspBuilderError, match="日次朗読口調違反"):
+        builders.materialize_summary_audio_script(repo_root=root, issue_date=DAY, article_records=records)
+    assert script.read_bytes() == original
 
 
-def test_default_builder_passes_saved_editor_records(tmp_path, monkeypatch):
-    from tools.news_grasp_daily_content import _default_derived_builder
+def test_default_builder_does_not_substitute_saved_article_records(tmp_path, monkeypatch):
+    from tools.news_grasp_daily_content import _default_derived_builder, ModelResultPending
     records = _records()
 
-    class Reached(BaseException):
-        pass
-
     def capture(**kwargs):
-        assert kwargs["article_records"] == records
-        raise Reached()
+        pytest.fail("記事を朗読へ転記する旧経路を呼び出しました")
 
     monkeypatch.setattr(builders, "materialize_summary_audio_script", capture)
-    with pytest.raises(Reached):
+    with pytest.raises(ModelResultPending):
         _default_derived_builder(repo_root=tmp_path, issue_date=DAY, run_id="saved-run",
                                  artifact_checkpoints={"editor": {"status": "Green", "payload": {"append_records": records}}})
 
@@ -146,7 +131,10 @@ def test_builder_and_real_normalizer_share_history_quality(tmp_path, monkeypatch
         "今日の観点・考察です。Summaryで確認できた事実と未確定事項を分け、"
         "誰が実装と継続運用の責任を負うのかを見極めることが重要です。"
         "明日以降は続報と実装条件を観測点として追います。", encoding="utf-8")
-    builders.materialize_summary_audio_script(repo_root=root, issue_date=DAY, article_records=_records())
+    narration_helpers = runpy.run_path(str(Path(__file__).with_name("test_news_grasp_narration_source.py")))
+    builders.materialize_editor_audio_script(
+        repo_root=root, issue_date=DAY, audio_script_markdown=narration_helpers["_source"](),
+    )
     monkeypatch.setattr(build_script, "SCRIPT_DIR", scripts)
     monkeypatch.setattr(build_script, "BUILD_DIR", root / "build/tts")
     assert build_script.build(DAY) is not None

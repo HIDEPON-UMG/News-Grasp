@@ -21,6 +21,7 @@ from tests.test_news_grasp_daily_content import (
     _digest,
     _record,
     _summary,
+    _narration,
 )
 
 
@@ -180,6 +181,7 @@ def test_same_run_recovers_persisted_raw_result_without_model_or_repair_reservat
                 "inputs": {},
                 "append_records": [_record("fx")],
                 "summary_markdown": _summary(),
+                "audio_script_markdown": _narration(),
             }
         elif role == "deepdive":
             payload = _deepdive()
@@ -334,6 +336,7 @@ def test_intent_only_result_stays_pending_without_repair_or_failure_checkpoint(
                 "inputs": {},
                 "append_records": [_record("fx")],
                 "summary_markdown": _summary(),
+                "audio_script_markdown": _narration(),
             }
         if role == "deepdive":
             _write_call_intent_only(
@@ -506,6 +509,7 @@ def _prepare_schema_recovery_for_adversarial_check(tmp_path: Path) -> dict[str, 
         "inputs": {},
         "append_records": [_record("fx")],
         "summary_markdown": _summary(),
+        "audio_script_markdown": _narration(),
     }
     (recovery_root / "raw.json").write_text(
         json.dumps(recovery_payload, ensure_ascii=False, sort_keys=True) + "\n",
@@ -875,6 +879,7 @@ def test_confirmed_editor_schema_rejection_recovers_once_in_same_run(
                 "inputs": {},
                 "append_records": [_record("fx")],
                 "summary_markdown": _summary(),
+                "audio_script_markdown": _narration(),
             }
             output_dir = Path(context["output_dir"])
             if len(editor_calls) == 1:
@@ -974,6 +979,7 @@ def test_confirmed_editor_schema_rejection_recovers_once_in_same_run(
         "inputs": {},
         "append_records": [_record("fx")],
         "summary_markdown": _summary(),
+        "audio_script_markdown": _narration(),
     }
     (recovery_root / "raw.json").write_text(
         json.dumps(recovery_payload, ensure_ascii=False, sort_keys=True) + "\n",

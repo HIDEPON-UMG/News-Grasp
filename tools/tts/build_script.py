@@ -202,6 +202,52 @@ def _sentences(text: str) -> list[str]:
     return [m.group(0).strip() for m in _SENTENCE_RE.finditer(normalized) if len(m.group(0).strip()) >= 8]
 
 
+_DAILY_POLITE_ENDINGS = (
+    "でしょう",
+    "ましょう",
+    "でした",
+    "ました",
+    "ません",
+    "ください",
+    "です",
+    "ます",
+)
+
+def _mask_daily_quoted_text(text: str) -> str | None:
+    """対応する引用を一語へ置換し、引用だけで地の文検査を回避させない。"""
+    closing_quotes: list[str] = []
+    masked: list[str] = []
+    quote_pairs = {"「": "」", "『": "』"}
+    for char in text:
+        if char in quote_pairs:
+            if not closing_quotes:
+                masked.append("引用")
+            closing_quotes.append(quote_pairs[char])
+            continue
+        if char in quote_pairs.values():
+            if not closing_quotes or closing_quotes.pop() != char:
+                return None
+            continue
+        if not closing_quotes:
+            masked.append(char)
+    return None if closing_quotes else "".join(masked)
+
+
+def _daily_narration_tone_issues(text: str) -> list[str]:
+    """引用外の各文が日次朗読の敬体で終わることを検査する。"""
+    masked = _mask_daily_quoted_text(text)
+    if masked is None:
+        return ["日次朗読口調違反"]
+    for sentence in re.split(r"[。！？!?]+", masked):
+        ending = sentence.strip().rstrip("ねよか")
+        if not ending:
+            continue
+        if ending.endswith(_DAILY_POLITE_ENDINGS):
+            continue
+        return ["日次朗読口調違反"]
+    return []
+
+
 def _recent_history_texts(target_date: str) -> list[str]:
     try:
         day = date_type.fromisoformat(target_date)
@@ -326,6 +372,8 @@ def validate_script(
             missing.append(cat_id)
     if missing:
         issues.append(f"カテゴリ不足: {', '.join(missing)}")
+
+    issues.extend(_daily_narration_tone_issues(text))
 
     if date:
         issues.extend(_outline_issues(raw_text, categories))
