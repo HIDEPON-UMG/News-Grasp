@@ -134,6 +134,16 @@ _CATEGORY_HERO_THEMES: dict[str, dict[str, str]] = {
         "text": "#F0E8FB",
         "heading": "#F8F3FF",
     },
+    "security": {
+        "base": "#B83A2D",
+        "dark": "#2a0d0a",
+        "ticker": "#1a0806",
+        "gradient_from": "#cf5040",
+        "gradient_to": "#7e271c",
+        "accent": "#F3A294",
+        "text": "#FAE7E2",
+        "heading": "#FFF0EC",
+    },
 }
 
 _CATEGORY_SIGNALS: dict[str, str] = {
@@ -143,6 +153,7 @@ _CATEGORY_SIGNALS: dict[str, str] = {
     "manufacturing": "半導体 · 工場自動化 · 部材価格 · サプライチェーン · 品質投資",
     "economy": "金利 · 物価 · 決算 · 雇用 · 政策期待",
     "game": "新作投入 · プラットフォーム · IP展開 · eスポーツ · 課金規制",
+    "security": "攻撃の仕組み · 脆弱性 · 政策・規制 · AIセキュリティ · 官民連携",
 }
 
 # CRLF / LF 両対応の frontmatter 抽出 (Windows + git autocrlf 環境向け)。
@@ -225,6 +236,8 @@ TAG_TO_CID: dict[str, str] = {
     "ゲーム": "game",
     "Game": "game",
     "Gaming": "game",
+    "Security": "security",
+    "セキュリティ": "security",
 }
 
 
@@ -1687,6 +1700,7 @@ _GENRE_ALIASES: dict[str, set[str]] = {
     "manufacturing": {"Manufacturing"},
     "economy":  {"Economy"},
     "game":     {"Game"},
+    "security": {"Security"},
 }
 
 

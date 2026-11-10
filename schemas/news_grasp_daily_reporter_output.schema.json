@@ -5,7 +5,7 @@
   "additionalProperties": false,
   "required": ["category", "issue_date", "records", "digest_markdown", "search_audit"],
   "properties": {
-    "category": {"type": "string", "enum": ["fx", "ai", "it", "mobility", "manufacturing", "economy", "game"]},
+    "category": {"type": "string", "enum": ["fx", "ai", "it", "mobility", "manufacturing", "economy", "game", "security"]},
     "issue_date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
     "records": {
       "type": "array",

@@ -61,5 +61,6 @@ CATEGORIES: dict[str, dict[str, str]] = {
     "manufacturing": {"label": "Manufacturing",      "jp": "製造",          "accent": "#5A6B7B", "glyph": "⬢"},
     "economy":  {"label": "Economy",                 "jp": "経済",          "accent": "#8E2A19", "glyph": "■"},
     "game":     {"label": "Gaming",                  "jp": "ゲーム",         "accent": "#5E3D8C", "glyph": "▶"},
+    "security": {"label": "Security",                "jp": "Security",      "accent": "#B83A2D", "glyph": "⌖"},
     "summary":  {"label": "Summary",                 "jp": "総括",          "accent": "#475569", "glyph": "★"},
 }

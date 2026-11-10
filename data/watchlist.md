@@ -329,3 +329,27 @@ Mobility の「電池・サプライヤー」節と対象企業が重なるが�
 - アップデート
 - esports
 - ゲーム業界 M&A
+
+---
+
+## Security
+
+- CISA
+- NCSC
+- 国家サイバー統括室
+- 警察庁 サイバー
+- デジタル庁
+- Microsoft Security
+- Google Threat Intelligence
+- CrowdStrike
+- Zscaler
+
+### 汎用キーワード
+
+- サイバー攻撃 仕組み
+- ランサムウェア
+- ゼロデイ 脆弱性
+- 情報漏えい 罰則
+- サイバーセキュリティ 政策
+- AIセキュリティ
+- サプライチェーン攻撃
