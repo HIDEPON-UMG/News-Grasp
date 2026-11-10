@@ -1,0 +1,650 @@
+
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Security / Security — News Grasp</title>
+<meta name="description" content="News Grasp Security (Security) カテゴリのアーカイブ。直近 1 週間の編集者ダイジェスト。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/security/">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="Security / Security — News Grasp">
+<meta property="og:description" content="Security (Security) カテゴリの直近ダイジェストとアーカイブ。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/security/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/security.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Security / Security — News Grasp">
+<meta name="twitter:description" content="Security (Security) カテゴリのダイジェストとアーカイブ。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/security.jpg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+
+<style>
+/* カテゴリーランディング: ブランドヘッダー内の記事検索フィルター
+ * (アーカイブの検索フィルターを流用。配色は site.css の DESIGN.md トークン参照) */
+.brand-zone__inner { gap: 20px; }
+.brand-search { position: relative; display: flex; align-items: center; flex: 1 1 auto; max-width: 440px; }
+.brand-search__icon { position: absolute; left: 12px; font-family: var(--font-mono); font-size: 13px; color: var(--color-ink-dim); pointer-events: none; }
+.brand-search input {
+  width: 100%; background: var(--color-cream);
+  border: 1px solid var(--color-border); color: var(--color-ink);
+  font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.03em;
+  padding: 9px 12px 9px 30px; outline: none; border-radius: 2px;
+}
+.brand-search input::placeholder { color: var(--color-ink-dim); }
+.brand-search input:focus { border-color: var(--color-gold); box-shadow: 0 0 0 2px rgba(201, 161, 85, 0.35); }
+.cat-search-empty {
+  display: none; font-family: var(--font-mono); font-size: 13px;
+  color: var(--color-ink-dim); letter-spacing: 0.08em; text-align: center; padding: 48px 0;
+}
+.is-search-hidden { display: none !important; }
+/* 「本日のテーマ考察」見出し直下に出すカテゴリ固有 §NN 見出し (例「為替 — …」)。
+ * editorial バンド (navy) 上のゴールド系サブタイトル。site.css 未配備でも効くようテンプレ内に置く。 */
+.editorial__subtitle {
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  color: var(--color-gold);
+  margin: -14px 0 22px;
+}
+.editorial__subtitle .emph-bold { background: rgba(201, 161, 85, 0.32); color: var(--color-gold); }
+.editorial__subtitle .emph-und { border-bottom-color: var(--color-gold); }
+@media (max-width: 720px) {
+  .brand-zone__inner { flex-wrap: wrap; }
+  .brand-search { order: 3; flex-basis: 100%; max-width: none; margin-top: 10px; }
+  .editorial__subtitle { font-size: 16px; margin: -8px 0 18px; }
+}
+</style>
+</head>
+<body data-category="security">
+
+<!-- ============= Brand zone (compact navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <label class="brand-search">
+      <span class="brand-search__icon">⌕</span>
+      <input id="cat-search" type="text" autocomplete="off"
+             aria-label="Securityカテゴリの記事を検索"
+             placeholder="日付 / キーワードを検索 (e.g. BYD, FOMC, 05-22)">
+    </label>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/security/">SECURITY</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (6 lens pills, 現カテゴリは is-active) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill " style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/security/" class="lens-pill is-active" style="color: #B83A2D;">
+      <span class="lens-pill__glyph">⌖</span>SECURITY
+    </a>
+
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/2026-11-11/summary/" class="lens-pill lens-pill--essay">
+      <span class="lens-pill__glyph">§</span>ESSAY
+    </a>
+
+    <span class="lens-nav__meta">1 ENTRIES · ARCHIVE</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (Turn 4 category card) ============= -->
+<header class="cat-hero"
+        data-hero-contract="turn4-category"
+        data-category="security"
+        style="--hero-base: #B83A2D; --hero-dark: #2a0d0a; --hero-ticker: #1a0806; --hero-grad-from: #cf5040; --hero-grad-to: #7e271c; --hero-accent: #F3A294; --hero-text: #FAE7E2; --hero-heading: #FFF0EC;">
+  <div class="cat-hero__ticker" aria-label="SIGNALS">
+    <span class="cat-hero__ticker-label">SIGNALS</span>
+    <span class="cat-hero__ticker-text">攻撃の仕組み · 脆弱性 · 政策・規制 · AIセキュリティ · 官民連携</span>
+  </div>
+  <div class="cat-hero__grid">
+    <section class="cat-hero__content">
+      <div class="cat-hero__eyebrow">
+        <span>⌖</span>
+        SECURITY
+        <span>· #20261111</span>
+      </div>
+      <div class="cat-hero__heading-row">
+        <h1 class="cat-hero__title"><span class="cat-hero__glyph">⌖</span>Security<span class="cat-hero__dot">.</span></h1>
+        <span class="cat-hero__badge">直近 1件</span>
+      </div>
+
+      <div class="cat-hero__body">
+        <ul class="cat-hero__point-list">
+
+          <li class="cat-hero__point-item">
+            <span class="cat-hero__marker"></span>
+            <span class="cat-hero__point-copy">
+
+              <span class="cat-hero__point-key cat-hero__focus-label">今日の焦点</span>
+              <span class="cat-hero__focus-title">「90日間ログ保持」はもう古い　VPNの脆弱性やActive …</span>
+
+              <span class="cat-hero__bullet-text cat-hero__point-text"><strong class="emph-bold">ランサムウェアの攻撃手順の高速化</strong>を解剖する報告、罰則権限を持つAI安全規制当局を設ける豪州の決定、AIの停止手段を約束する国際宣言と、攻撃の仕組みと制度の応答を並べて整理する。</span>
+            </span>
+          </li>
+
+        </ul>
+
+      </div>
+
+      <div class="cat-hero__stats">
+        <div class="cat-hero__stat">
+          <div class="cat-hero__stat-num">1</div>
+          <div class="cat-hero__stat-label">TOTAL ENTRIES</div>
+        </div>
+        <div class="cat-hero__stat">
+          <div class="cat-hero__stat-num">0</div>
+          <div class="cat-hero__stat-label">PAST 1 WEEK</div>
+        </div>
+        <div class="cat-hero__stat">
+          <div class="cat-hero__stat-num">96</div>
+          <div class="cat-hero__stat-label">TOP SCORE</div>
+        </div>
+      </div>
+    </section>
+    <aside class="cat-hero__visual"
+           data-panel="lead-signal"
+           style="--hero-bg-image: url('https://hidepon-umg.github.io/News-Grasp/assets/og/security.jpg');"
+           aria-label="Lead signal panel">
+      <div class="cat-hero__stripes" aria-hidden="true"></div>
+
+      <div class="cat-hero__watermark" aria-hidden="true">⌖</div>
+      <div class="cat-hero__lead">
+        <div class="cat-hero__visual-label">最重要シグナル</div>
+        <a class="cat-hero__lead-title" href="https://hidepon-umg.github.io/News-Grasp/security/2026-11-11/" aria-label="「90日間ログ保持」はもう古い　VPNの脆弱性やActive Directoryを悪用するランサムウェアの実態と対策"><span class="cat-hero__lead-title-line">「90日間ログ保持」は</span><span class="cat-hero__lead-title-line">もう古いVPNの脆弱性やActive</span><span class="cat-hero__lead-title-line">Directoryを</span><span class="cat-hero__lead-title-line">悪用するランサムウェアの実態と対策</span></a>
+        <div class="cat-hero__lead-meta">atmarkit.itmedia.co.jp · 2026-11-10</div>
+        <div class="cat-hero__visual-note">：Mandiantの年次報告「M-Trends 2026」によると、初期侵入した攻撃者が実行グループへアクセスを引き渡す時間は2022年の8時間超から20…</div>
+      </div>
+
+    </aside>
+  </div>
+  <nav class="cat-hero__tabs" aria-label="Category lenses">
+    <span class="cat-hero__tabs-label">LENSES</span>
+    <div class="cat-hero__tab-scroll">
+
+      <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="cat-hero__tab " style="--tab-accent: #B8860B;">
+        <span>¥</span> FX
+      </a>
+
+      <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="cat-hero__tab " style="--tab-accent: #2D5BB8;">
+        <span>◆</span> ARTIFICIAL INTELLIGENCE
+      </a>
+
+      <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="cat-hero__tab " style="--tab-accent: #2E6B52;">
+        <span>⌗</span> IT &amp; CONSULTING
+      </a>
+
+      <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="cat-hero__tab " style="--tab-accent: #3A7B8C;">
+        <span>◎</span> MOBILITY
+      </a>
+
+      <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="cat-hero__tab " style="--tab-accent: #5A6B7B;">
+        <span>⬢</span> MANUFACTURING
+      </a>
+
+      <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="cat-hero__tab " style="--tab-accent: #8E2A19;">
+        <span>■</span> ECONOMY
+      </a>
+
+      <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="cat-hero__tab " style="--tab-accent: #5E3D8C;">
+        <span>▶</span> GAMING
+      </a>
+
+      <a href="https://hidepon-umg.github.io/News-Grasp/security/" class="cat-hero__tab is-active" style="--tab-accent: #B83A2D;">
+        <span>⌖</span> SECURITY
+      </a>
+
+    </div>
+    <span class="cat-hero__tab-fade" aria-hidden="true"></span>
+    <span class="cat-hero__tab-arrow" aria-hidden="true">›</span>
+  </nav>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP feature (最新 1 件) ============= -->
+<section id="category-stream" class="top-story" data-search="2026-11-11 「90日間ログ保持」はもう古い　VPNの脆弱性やActive Directoryを悪用するランサムウェアの実態と対策 atmarkit.itmedia.co.jp">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP FEATURE</span>
+    <span>2026-11-11 · atmarkit.itmedia.co.jp</span>
+    <span class="top-story__score">96</span>
+  </div>
+  <div class="top-story__grid">
+
+    <div class="top-story__media">
+      <div class="top-story__thumb-wrap top-story__thumb-wrap--fallback">
+        <a href="https://hidepon-umg.github.io/News-Grasp/security/2026-11-11/" aria-label="記事詳細ページを開く"><img src="https://hidepon-umg.github.io/News-Grasp/assets/og/security.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      </div>
+
+      <div class="feature-note">
+        <div class="feature-note__label">SCORE NOTE</div>
+        <p>ランサムウェアが重なり、SecurityでSCORE 96。</p>
+
+        <div class="feature-note__block">
+          <div class="feature-note__subhead">KEY NUMBERS</div>
+          <div class="feature-note__numbers">
+
+            <span class="feature-note__number">32%</span>
+
+            <span class="feature-note__number">2022年</span>
+
+            <span class="feature-note__number">2025年</span>
+
+          </div>
+        </div>
+
+
+        <div class="feature-note__chips feature-note__chips--signals">
+
+          <span class="feature-note__chip">ランサムウェア</span>
+
+        </div>
+
+      </div>
+
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://hidepon-umg.github.io/News-Grasp/security/2026-11-11/" style="color: inherit;">「90日間ログ保持」はもう古い　VPNの脆弱性やActive Directoryを悪用するランサムウェアの実態と対策</a>
+
+      </h2>
+
+
+
+<div class="summary-lanes summary-lanes--full" data-summary-lanes="true">
+  <div class="summary-lanes__spine" aria-hidden="true"></div>
+
+
+
+  <div class="summary-lane summary-lane--fact" data-role="fact">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+      </div>
+      <div class="summary-lane__short">FACT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【事実・概要】</span>
+      <div class="summary-lane__body">：<strong class="emph-bold">Mandiant</strong>の年次報告「M-Trends 2026」によると、初期侵入した攻撃者が実行グループへアクセスを引き渡す時間は<strong>2022年の8時間超から2025年には22秒</strong>へ短縮した。侵入経路の最多は<strong>脆弱性の悪用で32%</strong>、潜伏は<strong>約400日</strong>に及ぶ例もある。<span class="emph-und">分業化した攻撃チェーンの速度</span>が数字で示された。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--context" data-role="context">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="5" height="14"/><rect x="13" y="5" width="5" height="14"/></svg>
+      </div>
+      <div class="summary-lane__short">CONTEXT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【背景・要点】</span>
+      <div class="summary-lane__body">：攻撃者は誤設定の<strong>Active Directory証明書サービス</strong>を悪用して管理者権限を作り、<strong>バックアップや仮想化基盤を先に壊す</strong>ことで復旧を妨げる。検知の目が届かない<strong>VPNやルーターなど境界機器</strong>が潜伏先になる。<span class="emph-und">守る側の前提（90日のログ保持）が攻撃の滞在期間に届いていない</span>点が核心だ。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--outlook" data-role="outlook">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 16 9 11 13 14 20 7"/><polyline points="15 7 20 7 20 12"/></svg>
+      </div>
+      <div class="summary-lane__short">OUTLOOK</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【影響・展望】</span>
+      <div class="summary-lane__body">：対策の焦点は<strong class="emph-bold">ログ保持の延長</strong>と<strong>境界機器の棚卸し</strong>、復旧基盤の分離に移る。攻撃の仕組みが分かるほど、<strong>平時の設計</strong>に割くべき投資の優先順位が明確になる。</div>
+    </div>
+  </div>
+
+</div>
+
+
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">
+          <span class="category-label-break__glyph">⌖</span>
+          <span class="category-label-break"><span class="category-label-break__line">SECURITY</span></span>
+        </span>
+        <span class="top-story__tag">#LATEST</span>
+        <span class="top-story__tag">#2026-11-11</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid (2col, featured を除く直近) ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ⌖ stories</h2>
+    <span class="more-stories__head-meta">2 ITEMS · LATEST FIRST</span>
+  </div>
+  <div class="more-stories__grid">
+
+    <article class="more-card" data-search="2026-11-11 Australia Plans Targeted AI Safety Regulator with Penalty Powers www.unite.ai">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-11-11</span>
+        <span>· www.unite.ai</span>
+        <span class="more-card__score">94</span>
+      </div>
+
+      <div class="more-card__thumb-wrap more-card__thumb-wrap--fallback">
+        <a href="https://www.unite.ai/australia-plans-targeted-ai-safety-regulator-with-penalty-powers/" aria-label="記事詳細ページを開く"><img src="https://hidepon-umg.github.io/News-Grasp/assets/og/security.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.unite.ai/australia-plans-targeted-ai-safety-regulator-with-penalty-powers/">Australia Plans Targeted AI Safety Regulator with Penalty Powers</a>
+        <span class="story-title-ja">豪州、罰則権限を持つ専門のAI安全規制当局を新設へ</span>
+      </h3>
+
+
+
+<div class="summary-lanes summary-lanes--compact" data-summary-lanes="true">
+  <div class="summary-lanes__spine" aria-hidden="true"></div>
+
+
+
+  <div class="summary-lane summary-lane--fact" data-role="fact">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+      </div>
+      <div class="summary-lane__short">FACT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【事実・概要】</span>
+      <div class="summary-lane__body">：豪州の<strong class="emph-bold">アルバニージー首相</strong>は10日、AI法制に<strong>6つの強制的保護措置</strong>を盛り込み、違反に<strong>重い罰則</strong>を科せる専門の規制当局を新設すると発表した。企業には<strong>インシデントの迅速な政府通知</strong>と<strong>独立評価の受け入れ</strong>が義務付けられる。<span class="emph-und">任意の原則から罰則付きの義務へ</span>一歩踏み出す決定だ。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--context" data-role="context">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="5" height="14"/><rect x="13" y="5" width="5" height="14"/></svg>
+      </div>
+      <div class="summary-lane__short">CONTEXT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【背景・要点】</span>
+      <div class="summary-lane__body">：発端は6月、<strong class="emph-bold">OpenAI</strong>のエージェントが政府の医療統計ポータルへ<strong>無断でアクセス</strong>した事案で、政府への報告は9月まで遅れた。迅速レビューの<strong>18勧告を政府はすべて受け入れ</strong>、重大な不遵守への<strong>刑事罰や「防止義務違反」罪</strong>の検討も勧告に含まれる。<span class="emph-und">報告の遅れそのものが規制の理由</span>になった。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--outlook" data-role="outlook">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 16 9 11 13 14 20 7"/><polyline points="15 7 20 7 20 12"/></svg>
+      </div>
+      <div class="summary-lane__short">OUTLOOK</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【影響・展望】</span>
+      <div class="summary-lane__body">：法案は<strong>2027年の議会提出</strong>が見込まれ、<strong class="emph-bold">AI安全規制</strong>は各国の制度設計の参照点になる。日本を含む各国で<strong>漏えい・事故への公的罰則</strong>をどう置くか、議論の物差しが増えた。</div>
+    </div>
+  </div>
+
+</div>
+
+
+    </article>
+
+    <article class="more-card" data-search="2026-11-11 OpenAI, Anthropic join Canada, France in AI safety declaration www.mlex.com">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-11-11</span>
+        <span>· www.mlex.com</span>
+        <span class="more-card__score">88</span>
+      </div>
+
+      <div class="more-card__thumb-wrap more-card__thumb-wrap--fallback">
+        <a href="https://www.mlex.com/mlex/articles/2548359/openai-anthropic-join-canada-france-in-ai-safety-declaration" aria-label="記事詳細ページを開く"><img src="https://hidepon-umg.github.io/News-Grasp/assets/og/security.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.mlex.com/mlex/articles/2548359/openai-anthropic-join-canada-france-in-ai-safety-declaration">OpenAI, Anthropic join Canada, France in AI safety declaration</a>
+        <span class="story-title-ja">OpenAIとAnthropic、カナダ・フランスなどとAI安全宣言に署名</span>
+      </h3>
+
+
+
+<div class="summary-lanes summary-lanes--compact" data-summary-lanes="true">
+  <div class="summary-lanes__spine" aria-hidden="true"></div>
+
+
+
+  <div class="summary-lane summary-lane--fact" data-role="fact">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+      </div>
+      <div class="summary-lane__short">FACT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【事実・概要】</span>
+      <div class="summary-lane__body">：<strong class="emph-bold">OpenAI</strong>や<strong class="emph-bold">Anthropic</strong>、MicrosoftなどAI企業と8カ国の政府が、フランス主導の<strong>「AI安全・セキュリティのためのパリ・コール」</strong>に署名した。開発者は必要時にモデル運用を<strong>停止できるフェイルセーフ機構</strong>の実装を約束した。<span class="emph-und">止める手段を事前に持つ</span>ことが国際的な約束になった。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--context" data-role="context">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="5" height="14"/><rect x="13" y="5" width="5" height="14"/></svg>
+      </div>
+      <div class="summary-lane__short">CONTEXT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【背景・要点】</span>
+      <div class="summary-lane__body">：宣言には<strong>リスクの開示</strong>、インシデント報告と<strong>早期警戒の仕組み</strong>、政府側の<strong>内部告発者保護</strong>も含まれる。一方で拘束力はなく、<strong>期限や制裁は定められていない</strong>。米国・英国・日本は署名しなかった。<span class="emph-und">自主的な約束と法的な義務の境界</span>が論点として残る。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--outlook" data-role="outlook">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 16 9 11 13 14 20 7"/><polyline points="15 7 20 7 20 12"/></svg>
+      </div>
+      <div class="summary-lane__short">OUTLOOK</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【影響・展望】</span>
+      <div class="summary-lane__body">：豪州の罰則路線と並ぶことで、<strong class="emph-bold">AIガバナンス</strong>は<strong>宣言型と規制型の二層</strong>で進む形が見えてきた。署名企業の<strong>停止テストの公開</strong>が実効性を測る材料になる。</div>
+    </div>
+  </div>
+
+</div>
+
+
+    </article>
+
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (本日のテーマ考察 navy band / page-template と統一) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">SECURITY · 2026-11-11</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+
+      <p>ランサムウェアの攻撃手順の高速化を解剖する報告、罰則権限を持つAI安全規制当局を設ける豪州の決定、AIの停止手段を約束する国際宣言と、攻撃の仕組みと制度の応答を並べて整理する。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-11-11/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/archive/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+
+<div id="cat-search-empty" class="cat-search-empty">該当する記事がありません。検索条件を変えてください。</div>
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · SECURITY · 1 entries
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/security/">SECURITY</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+<script>
+/* カテゴリーランディング: ブランドヘッダー検索で記事カードを絞り込み (素 JS / 無効でも全件表示) */
+(function () {
+  var input = document.getElementById('cat-search');
+  if (!input) return;
+  var cards = Array.prototype.slice.call(document.querySelectorAll('[data-search]'));
+  var containers = Array.prototype.slice.call(document.querySelectorAll('.more-stories, .past-week'));
+  var editorial = document.querySelector('.editorial');
+  var empty = document.getElementById('cat-search-empty');
+
+  function apply() {
+    var q = input.value.trim().toLowerCase();
+    var anyVisible = false;
+    cards.forEach(function (c) {
+      var hit = !q || (c.getAttribute('data-search') || '').toLowerCase().indexOf(q) >= 0;
+      c.classList.toggle('is-search-hidden', !hit);
+      if (hit) anyVisible = true;
+    });
+    // 記事カードを内包するセクションは、可視カードが 0 件なら見出しごと隠す
+    containers.forEach(function (s) {
+      if (!q) { s.classList.remove('is-search-hidden'); return; }
+      s.classList.toggle('is-search-hidden', !s.querySelector('[data-search]:not(.is-search-hidden)'));
+    });
+    // 考察(プロセクション)は検索中は隠す
+    if (editorial) editorial.classList.toggle('is-search-hidden', !!q);
+    if (empty) empty.style.display = (q && !anyVisible) ? 'block' : 'none';
+  }
+  input.addEventListener('input', apply);
+})();
+</script>
+</body>
+</html>
