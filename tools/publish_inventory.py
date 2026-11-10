@@ -20,18 +20,19 @@ CATEGORY_PATHS: dict[str, dict[str, str]] = {
     "manufacturing": {"digest_folder": "Manufacturing", "docs_segment": "manufacturing"},
     "economy": {"digest_folder": "Economy", "docs_segment": "economy"},
     "game": {"digest_folder": "Game", "docs_segment": "game"},
+    "security": {"digest_folder": "Security", "docs_segment": "security"},
 }
 
-CATEGORY_ORDER = ("fx", "ai", "it", "mobility", "manufacturing", "economy", "game")
+CATEGORY_ORDER = ("fx", "ai", "it", "mobility", "manufacturing", "economy", "game", "security")
 
 PUBLICATION_SCHEDULE: dict[int, set[str]] = {
-    0: {"fx", "ai", "it", "mobility", "manufacturing", "economy"},
-    1: {"fx", "ai", "it", "mobility", "manufacturing", "economy", "game"},
-    2: {"fx", "ai", "it", "mobility", "manufacturing", "economy"},
-    3: {"fx", "ai", "it", "mobility", "manufacturing", "economy", "game"},
-    4: {"fx", "ai", "it", "mobility", "manufacturing", "economy"},
-    5: {"fx", "ai", "it", "mobility", "game"},
-    6: {"fx", "ai", "it", "mobility", "game"},
+    0: {"fx", "ai", "it", "mobility", "manufacturing", "economy", "security"},
+    1: {"fx", "ai", "it", "mobility", "manufacturing", "economy", "game", "security"},
+    2: {"fx", "ai", "it", "mobility", "manufacturing", "economy", "security"},
+    3: {"fx", "ai", "it", "mobility", "manufacturing", "economy", "game", "security"},
+    4: {"fx", "ai", "it", "mobility", "manufacturing", "economy", "security"},
+    5: {"fx", "ai", "it", "mobility", "game", "security"},
+    6: {"fx", "ai", "it", "mobility", "game", "security"},
 }
 
 PUBLISHED_DOC_TEMPLATES = (

@@ -34,6 +34,7 @@
   --color-accent-manufacturing: #5A6B7B;
   --color-accent-economy: #8E2A19;
   --color-accent-game: #5E3D8C;
+  --color-accent-security: #B83A2D;
   --color-accent-summary: #475569;
 
   /* Semantic */
@@ -719,6 +720,7 @@ body[data-category="mobility"] { --accent-current: var(--color-accent-mobility);
 body[data-category="manufacturing"] { --accent-current: var(--color-accent-manufacturing); }
 body[data-category="economy"]  { --accent-current: var(--color-accent-economy); }
 body[data-category="game"]     { --accent-current: var(--color-accent-game); }
+body[data-category="security"] { --accent-current: var(--color-accent-security); }
 body[data-category="summary"]  { --accent-current: var(--color-accent-summary); }
 
 /* ---------------- Reset ---------------- */
