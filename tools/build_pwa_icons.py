@@ -9,8 +9,8 @@
     - docs/assets/apple-touch-icon.png        (iOS ホーム画面、256px)
 
 `favicon-512.png` を単一ソースに上記すべてを派生させる。maskable はロゴを
-内側 80% (410/512) に収めて周囲を黒で埋め、OS のマスク切り抜き (円・角丸) で
-ロゴが欠けないようにする。アイコン地色が黒なのでパディングも黒で地続きにする。
+内側 80% (410/512) に収めて周囲を地色のネイビーで埋め、OS のマスク切り抜き (円・角丸) で
+ロゴが欠けないようにする。アイコン地色がネイビーなのでパディングも同色で地続きにする。
 
 要 Pillow (venv にのみ install。再生成は稀なので pyproject 本体には入れない)。
 実行: `python tools/build_pwa_icons.py`
@@ -27,8 +27,8 @@ SRC = ROOT / "docs" / "assets" / "favicon-512.png"
 ASSETS_DIR = ROOT / "docs" / "assets"
 OUT_DIR = ASSETS_DIR / "icons"
 
-# maskable のパディング色。アイコン地色が黒なので黒で地続きにする。
-MASK_BG = (0, 0, 0, 255)
+# maskable のパディング色。アイコン地色がネイビーなので同色で地続きにする。
+MASK_BG = (25, 32, 48, 255)
 
 
 def build() -> None:
@@ -48,7 +48,7 @@ def build() -> None:
     # icon-512: 元画像をそのままコピー保存
     src.save(OUT_DIR / "icon-512.png", "PNG", optimize=True)
 
-    # icon-maskable-512: safe-zone 80% を確保するため周囲に黒パディング
+    # icon-maskable-512: safe-zone 80% を確保するため周囲にネイビーのパディング
     canvas = Image.new("RGBA", (512, 512), MASK_BG)
     inner = src.resize((410, 410), Image.LANCZOS)  # 410/512 ≒ 80%
     canvas.paste(inner, ((512 - 410) // 2, (512 - 410) // 2), inner)
