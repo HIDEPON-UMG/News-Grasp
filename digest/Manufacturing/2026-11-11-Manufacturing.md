@@ -31,6 +31,8 @@ tags:
 
 #cat/manufacturing #topic/パワー半導体 #score/高
 
+![thumb](https://evertiq.com/nimg/Chip/Infineon_wafer-silicon-sic-gan.webp)
+
 - ：[[Infineon]]はオーストリア・フィラッハ工場で、**300mmのSiCウエハー**を機能するパワーデバイスに加工することに**世界で初めて成功**したと発表した。既存のシリコン用設備を使い、300mm化で1枚から**約2.3倍のチップ**が取れる。__大口径化がEV向けパワー半導体の量産効率を左右する__。
 - ：同社は**シリコン・SiC・GaN**の3材料すべてで300mm技術を持つ形になり、フィラッハでは**約11億ユーロ**のGaN量産投資も進む。一方で300mm SiCの**量産時期は未定**で、顧客と足並みをそろえる方針だ。__技術の到達と量産の開始は別の関門__である。
 - ：焦点は[[車載SiC]]の**コスト低下の速度**と歩留まりの実績で、競合の追随が**設備投資競争**を再燃させる可能性がある。ミュンヘンのelectronicaで実物が公開される。
@@ -43,6 +45,8 @@ tags:
 
 #cat/manufacturing #topic/半導体装置 #score/中
 
+![thumb](https://img.biggo.com/M40x92mgmyaaZ5Xolvh2N1fw_M4yq3LX0RpahUkRnf8/fit/1200/0/sm/0/aHR0cHM6Ly9pbWcuYmdvLm9uZS9uZXdzLWltYWdlL2FpX2dlbmVyYXRlZC8yMDI2LTExL2Y2N2U1ODVkLTg2MjAtNDkxZC1iZWI0LTY5OTI4MjJkYjYyM18xNzk0Mjc3OTIwX2RlZmF1bHQuanBn.jpg)
+
 - ：韓国の[[APシステム]]は10日、半導体装置部門の年間新規受注が**初めて1,000億ウォン（約120億円）**を突破したと発表した。前年の部門売上**652億ウォンの約1.5倍**に当たる。__メモリー増設の波が装置受注に届いた__形だ。
 - ：牽引役は**急速熱処理（RTP）装置**で、DRAM工程への適用拡大が進んだ。第二の柱のレーザー装置は**OLED量産で検証した技術**を半導体工程へ移したものだ。__異分野の量産実績を横展開する__装置メーカーの型が表れた。
 - ：受注残は**2027年まで順次売上に反映**される見込みで、先端パッケージ向け**レーザー装置の商用化**が次の上積み材料になる。国内メモリー投資の持続が前提条件だ。
@@ -54,6 +58,8 @@ tags:
 📅 2026-11-06 · 📰 edn.itmedia.co.jp · 🔗 [元記事](https://edn.itmedia.co.jp/edn/spv/2611/06/news046.html)
 
 #cat/manufacturing #topic/ルネサス #score/中
+
+![thumb](https://www.google.com/s2/favicons?domain=edn.itmedia.co.jp&sz=128)
 
 - ：[[ルネサス]]は産業機器向け64ビットMPU**RZ/T2N**を発売し、**量産を開始**した。最大**4軸のモーター制御**、産業イーサネット、Linux処理を**1チップに統合**した点が特徴だ。__複数チップ構成の置き換え__を狙う製品である。
 - ：産業用ロボットやサーボドライブでは**リアルタイム制御とネットワーク処理の両立**が設計の難所で、部品点数と基板面積がコストを押し上げてきた。機能安全ソフトは**2027年後半**に提供予定だ。__統合による小型化と開発期間の短縮__が訴求点になる。
