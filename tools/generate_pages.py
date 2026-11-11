@@ -135,7 +135,7 @@ _CATEGORY_HERO_THEMES: dict[str, dict[str, str]] = {
         "heading": "#F8F3FF",
     },
     "security": {
-        "base": "#B83A2D",
+        "base": "#B01E7E",
         "dark": "#2a0d0a",
         "ticker": "#1a0806",
         "gradient_from": "#cf5040",
